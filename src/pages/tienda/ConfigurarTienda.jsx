@@ -55,6 +55,7 @@ const FORM_INICIAL = {
   youtube: '',
   direccion_publica: '',
   ciudad_publica: '',
+  horario_atencion: '',
   deposito_departamento: '',
   deposito_ciudad: '',
   deposito_direccion: '',
@@ -208,6 +209,7 @@ export default function ConfigurarTienda() {
           youtube: data.youtube || '',
           direccion_publica: data.direccion_publica || '',
           ciudad_publica: data.ciudad_publica || '',
+          horario_atencion: data.horario_atencion || '',
           deposito_departamento: data.deposito_departamento || '',
           deposito_ciudad: data.deposito_ciudad || '',
           deposito_direccion: data.deposito_direccion || '',
@@ -942,6 +944,15 @@ export default function ConfigurarTienda() {
                             value={form.direccion_publica}
                             onChange={e => handleChange('direccion_publica', e.target.value)}
                             placeholder="Ej: Av. España 1234, Edificio Central piso 3"
+                          />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Horario de atención <em>(opcional)</em></span>
+                          <input
+                            value={form.horario_atencion}
+                            onChange={e => handleChange('horario_atencion', e.target.value)}
+                            placeholder="Ej: Lunes a viernes de 9 a 18 horas"
+                            maxLength={150}
                           />
                         </label>
                       </div>

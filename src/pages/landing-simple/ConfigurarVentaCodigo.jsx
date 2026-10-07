@@ -144,7 +144,6 @@ const ENLACES_BANNER_INICIO = [
 const MENU_PRINCIPAL_DEFAULT = [
   { id: 'inicio', texto: 'Inicio', destino: '#inicio', visible: true },
   { id: 'productos', texto: 'Productos', destino: '/catalogo', visible: true },
-  { id: 'colecciones', texto: 'Colecciones', destino: '#colecciones', visible: true },
 ];
 const ENCABEZADO_INICIO_DEFAULT = {
   logo_tamano: 46,

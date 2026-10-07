@@ -24,7 +24,7 @@ import { subirImagenPendiente } from '../../components/OfertaImagenPicker';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
   Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity,
-  Settings, Layers, Eye, Circle, AlertTriangle, CheckCircle2
+  Settings, Layers, Eye, Circle, AlertTriangle, CheckCircle2, Bot, FileJson
 } from 'lucide-react';
 import './productos.css';
 import '../combos/combos.css'; // Reutilizar estilos de métricas de combos
@@ -315,6 +315,55 @@ function EncabezadoProductoFields({ datos, onDatos }) {
   );
 }
 
+
+
+const PROMPT_IA = `Actúa como un asistente especializado en creación y publicación de productos de e-commerce para Gesicom.
+
+Tu objetivo es ayudarme a crear la ficha completa de un producto haciendo el menor número posible de preguntas y terminar generando un archivo JSON compatible con Gesicom.
+
+## REGLA PRINCIPAL
+No me hagas llenar manualmente información que puedas deducir razonablemente a partir de: fotografías del producto, packaging, etiquetas, características visibles. Nunca inventes: precio, costo, stock, SKU, proveedor, descuentos, garantías o especificaciones técnicas no demostradas.
+Sí puedes crear: propuesta de valor, descripción, beneficios, puntos destacados, preguntas frecuentes, textos comerciales.
+
+## PASO 1 — FOTOGRAFÍAS
+Pedime que suba fotos del producto/packaging y analizalas antes de hacer preguntas. Identificá marca, modelo, presentación, etc.
+
+## PASO 2 — PREGUNTAS ESENCIALES
+Hacé únicamente las preguntas necesarias agrupadas: 
+1. Nombre
+2. Categoría sugerida
+3. Precio de venta
+4. Precio ancla (precio tachado anterior, si aplica)
+5. Descuento (porcentaje y fechas de vigencia inicio/fin, si aplica)
+6. Costo de compra (y aclarame si es en Dólares o Moneda local)
+7. Stock disponible (Salón y Depósito)
+8. SKU (o inventá uno si no hay)
+9. Proveedor, Ofertas, Variantes.
+
+## PASO 3 — INVENTARIO
+Construye el inventario usando stock de salón y depósito.
+
+## PASO 4 — SECCIÓN COMERCIAL (LIENZO EN BLANCO)
+Genera contenido comercial persuasivo.
+
+## PASO 5 — REVISIÓN Y JSON
+Mostrame un resumen. Si apruebo, generá UN SOLO JSON válido ajustado a este esquema:
+
+{
+  "schema_version": "1.1",
+  "product": {
+    "identity": { "name": "", "sku": "", "category": { "name": "", "id": null }, "provider": { "name": null, "id": null }, "tags": [] },
+    "pricing": { "purchase_cost": 0, "purchase_currency": "LOCAL", "sale_price": 0, "anchor_price": null, "discount": { "percentage": 0, "valid_from": null, "valid_until": null } },
+    "inventory": { "stock_store": 0, "stock_warehouse": 0, "minimum_total_stock": 0 },
+    "publication": { "sale_status": "en_venta", "active": true, "featured": false },
+    "landing_blocks": {
+      "product_showcase": { "badge": "", "tagline": "", "description": "", "highlights": [], "cta": "" },
+      "faqs": [ { "question": "", "answer": "" } ]
+    }
+  }
+}
+`;
+
 export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -346,6 +395,53 @@ export default function ProductForm() {
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(esEdicion);
   const [error, setError] = useState(null);
+
+  const handleImportarJSON = (e) => {
+    try {
+      const raw = e.target.value;
+      if (!raw.trim()) return;
+      const data = JSON.parse(raw);
+      const p = data.product;
+      if (!p) return;
+      
+      if (p.identity?.name) setValue('nombre', p.identity.name, { shouldDirty: true });
+      if (p.identity?.sku) setValue('sku', p.identity.sku, { shouldDirty: true });
+      if (p.identity?.tags) setValue('tags', p.identity.tags.join(', '), { shouldDirty: true });
+      
+      if (p.pricing?.sale_price) setValue('precio_base', p.pricing.sale_price, { shouldDirty: true });
+      if (p.pricing?.purchase_cost) setValue('precio_costo', p.pricing.purchase_cost, { shouldDirty: true });
+      if (p.pricing?.purchase_currency === 'USD') setValue('es_dolar', true, { shouldDirty: true });
+      if (p.pricing?.anchor_price) setValue('precio_ancla', p.pricing.anchor_price, { shouldDirty: true });
+      if (p.pricing?.discount?.percentage) setValue('descuento_porcentaje', p.pricing.discount.percentage, { shouldDirty: true });
+      if (p.pricing?.discount?.valid_from) setValue('descuento_inicio', p.pricing.discount.valid_from, { shouldDirty: true });
+      if (p.pricing?.discount?.valid_until) setValue('descuento_fin', p.pricing.discount.valid_until, { shouldDirty: true });
+      
+      if (p.inventory) {
+        if (p.inventory.stock_store !== undefined) setValue('stock_salon', p.inventory.stock_store, { shouldDirty: true });
+        if (p.inventory.stock_warehouse !== undefined) setValue('stock_deposito', p.inventory.stock_warehouse, { shouldDirty: true });
+        if (p.inventory.minimum_total_stock !== undefined) setValue('stock_minimo', p.inventory.minimum_total_stock, { shouldDirty: true });
+        setValue('cantidad_disponible', (p.inventory.stock_store || 0) + (p.inventory.stock_warehouse || 0), { shouldDirty: true });
+      }
+      
+      if (p.publication) {
+        if (p.publication.sale_status) setValue('estado_venta', p.publication.sale_status, { shouldDirty: true });
+        if (p.publication.active !== undefined) setValue('activo', p.publication.active, { shouldDirty: true });
+        if (p.publication.featured !== undefined) setValue('destacado', p.publication.featured, { shouldDirty: true });
+      }
+      
+      if (p.landing_blocks?.product_showcase) {
+         setValue('propuesta_valor', p.landing_blocks.product_showcase.tagline, { shouldDirty: true });
+         setValue('descripcion_larga', p.landing_blocks.product_showcase.description, { shouldDirty: true });
+      }
+
+      setAviso('JSON importado correctamente. Revisa los campos y guarda.');
+      e.target.value = '';
+    } catch (err) {
+      console.error(err);
+      setError('El texto pegado no es un JSON válido.');
+    }
+  };
+
   const [ofertasBorrador, setOfertasBorrador] = useState([]);
   const [campoPendiente, setCampoPendiente] = useState(null);
   // Guardar en edición se queda EN la misma ficha (no vuelve al catálogo):
@@ -1444,15 +1540,50 @@ export default function ProductForm() {
     <div className={`prod-page ${tabActiva === 'marketing' ? 'product-view-page' : ''}`}>
 
       <div className="prod-header">
-        <div className="prod-header-left">
-          <button className="btn-back" onClick={() => navigate('/mi-catalogo')}
-            type="button" aria-label="Volver al listado">
-            <ChevronLeft size={18} />
-          </button>
-          <div className="prod-icon-wrap"><Package size={22} /></div>
-          <div>
-            <h1 className="prod-title">{esEdicion ? 'Editar producto' : 'Nuevo producto'}</h1>
-            {esEdicion && <p className="prod-subtitle">ID #{id}</p>}
+        <div className="prod-header-left" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button className="btn-back" onClick={() => navigate('/mi-catalogo')}
+              type="button" aria-label="Volver al listado">
+              <ChevronLeft size={18} />
+            </button>
+            <div className="prod-icon-wrap"><Package size={22} /></div>
+            <div>
+              <h1 className="prod-title">{esEdicion ? 'Editar producto' : 'Nuevo producto'}</h1>
+              {esEdicion && <p className="prod-subtitle">ID #{id}</p>}
+            </div>
+          </div>
+          
+          <div className="ia-import-block" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '1rem', background: 'var(--color-surface, #fff)', padding: '4px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <button 
+              type="button" 
+              className="btn-secondary" 
+              onClick={() => {
+                navigator.clipboard.writeText(PROMPT_IA);
+                setAviso('Prompt copiado al portapapeles. Pégalo en tu IA favorita.');
+              }}
+              style={{ padding: '0.3rem 0.6rem', fontSize: '12px', height: '30px', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+              title="Copiar instrucciones para la IA"
+            >
+              <Bot size={14} /> Instrucciones para tu IA
+            </button>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <FileJson size={14} style={{ position: 'absolute', left: '8px', color: 'var(--color-text-muted, #666)' }} />
+              <input 
+                type="text" 
+                placeholder="Pegar JSON aquí..." 
+                onChange={handleImportarJSON}
+                style={{
+                  padding: '0.3rem 0.6rem 0.3rem 28px',
+                  fontSize: '12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--color-border, #ddd)',
+                  background: 'var(--color-background, #fafafa)',
+                  width: '180px',
+                  height: '30px',
+                  outline: 'none'
+                }}
+              />
+            </div>
           </div>
         </div>
         <button
@@ -2184,6 +2315,8 @@ export default function ProductForm() {
                       <input
                         type="number"
                         min="0"
+                        className="form-control"
+                        style={{ background: 'var(--color-surface, #fff)', border: '1px solid var(--color-border, #ccc)', padding: '0.4rem', textAlign: 'center', borderRadius: '6px' }}
                         value={stockPorDeposito.producto?.[String(dep.id)] ?? ''}
                         onChange={(e) => cambiarStockDeposito('producto', dep.id, e.target.value)}
                       />
@@ -2242,6 +2375,8 @@ export default function ProductForm() {
                                   <input
                                     type="number"
                                     min="0"
+                                    className="form-control"
+                                    style={{ background: 'var(--color-surface, #fff)', border: '1px solid var(--color-border, #ccc)', padding: '0.4rem', textAlign: 'center', borderRadius: '6px' }}
                                     value={stockPorDeposito[key]?.[String(dep.id)] ?? ''}
                                     disabled={!variante.id || totalVariante <= 0}
                                     onChange={(e) => cambiarStockDeposito(key, dep.id, e.target.value)}

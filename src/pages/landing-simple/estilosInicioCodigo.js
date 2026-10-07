@@ -224,8 +224,29 @@ h1, h2, h3, p { margin-top: 0; }
 .brand-badges { display: flex; flex-wrap: wrap; gap: 12px; }
 .brand-badge { border: 1px solid var(--line); border-radius: 999px; padding: 10px 17px; background: #fff; font-size: 14px; font-weight: 800; color: var(--navy); }
 .site-footer { background: #fff; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
-.site-footer .footer-row { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; padding-top: 28px; padding-bottom: 28px; }
-.footer-links, .footer-redes { display: flex; flex-wrap: wrap; gap: 12px; }
+.site-footer .footer-top { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 28px; align-items: start; padding-top: 32px; padding-bottom: 28px; }
+.site-footer .footer-brand { display: flex; flex-direction: column; gap: 14px; }
+.site-footer .footer-brand-name { color: var(--navy); font-size: clamp(20px, 2.4vw, 26px); font-weight: 800; line-height: 1.1; }
+.site-footer .footer-col { display: flex; flex-direction: column; gap: 12px; }
+.site-footer .footer-col > strong { color: var(--navy); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.footer-links { display: flex; flex-direction: column; gap: 8px; }
+.footer-links a:hover { color: var(--navy); }
+.footer-datos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.footer-datos li[data-gesicomm-tienda] { display: none; }
+.footer-datos li[data-gesicomm-tienda]:not(:empty) { display: block; }
+.footer-datos a:hover { color: var(--navy); }
+.footer-dato-nombre::before { content: "Atiende: "; font-weight: 800; color: var(--navy); }
+.footer-dato-whatsapp::before { content: "WhatsApp: "; font-weight: 800; color: var(--navy); }
+.footer-dato-tel::before { content: "Tel: "; font-weight: 800; color: var(--navy); }
+.footer-dato-email::before { content: "Email: "; font-weight: 800; color: var(--navy); }
+.footer-dato-direccion::before { content: "Dirección: "; font-weight: 800; color: var(--navy); }
+.footer-dato-horario::before { content: "Horario: "; font-weight: 800; color: var(--navy); }
+.footer-redes { display: flex; flex-wrap: wrap; gap: 8px; }
+.site-footer .footer-bottom { border-top: 1px solid var(--line); padding: 14px 0 20px; text-align: center; }
+.site-footer .footer-bottom a { color: var(--navy); font-weight: 800; }
+@media (max-width: 760px) {
+  .site-footer .footer-top { grid-template-columns: 1fr; gap: 22px; }
+}
 @media (max-width: 900px) {
   .header-nav { gap: 16px; }
   .nav-links { gap: 16px; }

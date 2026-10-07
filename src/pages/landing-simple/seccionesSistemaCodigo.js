@@ -116,17 +116,52 @@ function contactoHtml(contacto) {
     + `</div></section>`;
 }
 
-function footerHtml(nombreComercio, basePath) {
-  const enlaces = [
+/**
+ * Estructura fija: marca + redes arriba a la izquierda, columna "Políticas"
+ * y columna "Contactos" (datos de Mi Tienda) al centro/derecha, y abajo del
+ * todo una barra separada con el nombre del comercio y "Tecnología de
+ * Gesicom" — esa barra no es un dato de Mi Tienda ni el comercio puede
+ * editarla desde el código: solo se agrega cuando el código NO trae su
+ * propio <footer> (ver codigoTieneFooter), así que la única forma de
+ * sacarla es que el comercio escriba la suya propia.
+ */
+function footerHtml(nombreComercio, basePath, contacto) {
+  const redesIconos = REDES
+    .filter(r => String(contacto?.[r.key] || '').trim())
+    .map(r => {
+      const href = hrefSeguro(r.href(String(contacto[r.key]).trim()));
+      return href ? `<a class="gcx-footer-social" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${esc(r.label)}" title="${esc(r.label)}">${iconoRedSvg(r)}</a>` : '';
+    })
+    .join('');
+
+  const enlacesPoliticas = [
+    ['contacto', 'Contacto'],
     ['politica-privacidad', 'Política de Privacidad'],
     ['politica-reembolso', 'Política de Reembolso'],
     ['terminos-servicio', 'Términos del Servicio'],
     ['politica-envio', 'Política de Envío'],
-    ['contacto', 'Información de Contacto'],
     ['aviso-legal', 'Aviso Legal'],
-  ].map(([to, label]) => `<a href="${esc(`${basePath}/${to}`)}">${label}</a>`).join('');
-  return `<footer class="gcx-footer"><nav>${enlaces}</nav>`
-    + `<p>© ${new Date().getFullYear()} ${esc(nombreComercio)} · Tecnología de <a href="https://gesicomm.com" target="_blank" rel="noopener noreferrer">Gesicom</a></p></footer>`;
+  ].map(([to, label]) => `<li><a href="${esc(`${basePath}/${to}`)}">${label}</a></li>`).join('');
+
+  const datosContacto = [
+    contacto?.nombre_contacto && `<li><span>Atiende:</span> ${esc(contacto.nombre_contacto)}</li>`,
+    contacto?.whatsapp && `<li><span>WhatsApp:</span> <a href="https://wa.me/${esc(String(contacto.whatsapp).replace(/\D/g, '').replace(/^0/, '595'))}" target="_blank" rel="noopener noreferrer">${esc(contacto.whatsapp)}</a></li>`,
+    contacto?.telefono && `<li><span>Tel:</span> <a href="tel:${esc(String(contacto.telefono).replace(/[^\d+]/g, ''))}">${esc(contacto.telefono)}</a></li>`,
+    contacto?.email && `<li><span>Email:</span> <a href="mailto:${esc(contacto.email)}">${esc(contacto.email)}</a></li>`,
+    (contacto?.direccion || contacto?.ciudad) && `<li><span>Dirección:</span> ${esc([contacto?.direccion, contacto?.ciudad, contacto?.pais].filter(Boolean).join(', '))}</li>`,
+    contacto?.horarios && `<li><span>Horario:</span> ${esc(contacto.horarios)}</li>`,
+  ].filter(Boolean).join('');
+
+  return `<footer class="gcx-footer">`
+    + `<div class="gcx-footer-top">`
+    + `<div class="gcx-footer-brand"><strong class="gcx-footer-name">${esc(nombreComercio)}</strong>`
+    + (redesIconos ? `<div class="gcx-footer-social-row">${redesIconos}</div>` : '')
+    + `</div>`
+    + `<div class="gcx-footer-col"><h3>Políticas</h3><ul>${enlacesPoliticas}</ul></div>`
+    + (datosContacto ? `<div class="gcx-footer-col"><h3>Contactos</h3><ul class="gcx-footer-datos">${datosContacto}</ul></div>` : '')
+    + `</div>`
+    + `<div class="gcx-footer-bottom"><p>${esc(nombreComercio)} · Tecnología de <a href="https://gesicomm.com" target="_blank" rel="noopener noreferrer">Gesicom</a></p></div>`
+    + `</footer>`;
 }
 
 /**
@@ -160,12 +195,25 @@ function css(acentoFallback) {
 .gcx-chip span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .gcx-chip-icon { display: block; }
 .gcx-chip:hover { transform: translateY(-1px); color: ${acento}; border-color: color-mix(in srgb, ${acento} 72%, currentColor 28%); background: color-mix(in srgb, ${acento} 12%, transparent); }
-.gcx-footer { padding: 28px 20px 32px; text-align: center; font-size: 13px; }
-.gcx-footer nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; margin-bottom: 12px; }
-.gcx-footer a { color: inherit; opacity: .78; text-decoration: none; }
+.gcx-footer { padding: 40px 20px 0; font-size: 13px; }
+.gcx-footer a { color: inherit; text-decoration: none; }
 .gcx-footer a:hover { opacity: 1; text-decoration: underline; }
-.gcx-footer p { margin: 0; opacity: .7; }
-@media (max-width: 640px) { .gcx-contacto { grid-template-columns: 1fr; gap: 16px; } .gcx-section { padding: 40px 16px; } }
+.gcx-footer-top { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 28px; align-items: start; padding-bottom: 32px; }
+.gcx-footer-brand { display: flex; flex-direction: column; gap: 16px; }
+.gcx-footer-name { font-size: clamp(22px, 2.6vw, 30px); font-weight: 900; line-height: 1.1; }
+.gcx-footer-social-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.gcx-footer-social { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; border: 1.5px solid color-mix(in srgb, currentColor 24%, transparent); color: inherit; transition: transform .16s ease, border-color .16s ease, background .16s ease; }
+.gcx-footer-social:hover { transform: translateY(-1px); text-decoration: none; opacity: 1; border-color: currentColor; }
+.gcx-footer-col h3 { margin: 0 0 14px; font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; opacity: .85; }
+.gcx-footer-col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.gcx-footer-col a { opacity: .78; }
+.gcx-footer-datos li { display: flex; gap: 6px; flex-wrap: wrap; opacity: .78; }
+.gcx-footer-datos span { font-weight: 700; opacity: .9; }
+.gcx-footer-datos a { opacity: 1; }
+.gcx-footer-bottom { border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); padding: 18px 0 22px; text-align: center; }
+.gcx-footer-bottom p { margin: 0; opacity: .65; }
+.gcx-footer-bottom a { opacity: 1; font-weight: 600; }
+@media (max-width: 640px) { .gcx-contacto { grid-template-columns: 1fr; gap: 16px; } .gcx-section { padding: 40px 16px; } .gcx-footer-top { grid-template-columns: 1fr; gap: 24px; text-align: left; } }
 `;
 }
 
@@ -185,7 +233,7 @@ export function armarSeccionesSistema({
   const html = [
     mostrarProductos ? productosHtml(productos) : '',
     mostrarContacto ? contactoHtml(contacto) : '',
-    mostrarFooter ? footerHtml(nombreComercio, basePath) : '',
+    mostrarFooter ? footerHtml(nombreComercio, basePath, contacto) : '',
   ].filter(Boolean).join('\n');
   return { html, css: html ? css(acento) : '' };
 }

@@ -295,10 +295,13 @@ describe('runtime del lienzo en blanco — inicio', () => {
   });
 
   it('un link #ancla scrollea adentro en vez de navegar la ventana de afuera', () => {
-    const { window, click } = montar(PLANTILLA_INICIO, datos);
+    const { window, click } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: { inicio: { menu_links: [{ texto: 'Productos seleccionados', destino: '#productos-categoria' }] } },
+    });
     let scrollPedido = null;
     window.scrollTo = (opts) => { scrollPedido = opts; };
-    click('a[href="#colecciones"]');
+    click('a[href="#productos-categoria"]');
     // scrollIntoView se propaga al editor que contiene el iframe: no se usa.
     expect(window.__scrolleado).toBeUndefined();
     expect(scrollPedido).toEqual(expect.objectContaining({ behavior: 'smooth' }));
@@ -862,6 +865,32 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     expect(link.className).toBe('active');
     click('#nav-links a');
     expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'checkout', filtro: {} });
+  });
+
+  it('el menú principal marca Productos en catálogo y oculta anchors internos fuera de Inicio', () => {
+    const plantilla = {
+      html: '<main class="lv-shop-page"></main><nav id="nav-links"></nav>',
+      css: '',
+      js: '',
+    };
+    const { document } = montar(plantilla, {
+      ...datos,
+      vista: 'catalogo',
+      venta: {
+        inicio: {
+          menu_links: [
+            { texto: 'Inicio', destino: '#inicio' },
+            { texto: 'Productos', destino: '/catalogo' },
+            { texto: 'Colecciones', destino: '#colecciones' },
+          ],
+        },
+      },
+    });
+
+    const links = [...document.querySelectorAll('#nav-links a')];
+    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos']);
+    expect(links.find(link => link.textContent === 'Productos').className).toBe('active');
+    expect(links.find(link => link.textContent === 'Inicio').className).toBe('');
   });
 
   it('el buscador del header abre catálogo con la búsqueda aplicada cuando no hay grilla en la vista', () => {

@@ -192,13 +192,28 @@ h1, h2, h3, p { margin-top: 0; }
 .gc-product-shipping { color: rgba(255,255,255,.72); }
 .gc-commercial-details { width: fit-content; margin-top: 10px; padding: 0; color: #fff; background: transparent; border: 0; font-size: .82rem; font-weight: 850; cursor: pointer; }
 
-.site-footer { padding: 28px 0; color: #94a3b1; background: #0a1520; font-size: .78rem; }
-.footer-row { display: flex; align-items: center; justify-content: space-between; gap: 22px; }
-.footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
+.site-footer { padding: 40px 0 0; color: #94a3b1; background: #0a1520; font-size: .78rem; }
+.footer-top { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 28px; align-items: start; padding-bottom: 30px; }
+.footer-brand { display: flex; flex-direction: column; gap: 16px; }
+.footer-brand-name { color: var(--white); font-size: clamp(22px, 2.6vw, 28px); font-weight: 900; line-height: 1.1; }
+.footer-col { display: flex; flex-direction: column; gap: 14px; }
+.footer-col > strong { color: var(--white); font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.footer-links { display: flex; flex-direction: column; gap: 10px; }
 .footer-links a:hover { color: var(--white); }
+.footer-datos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.footer-datos li[data-gesicomm-tienda] { display: none; }
+.footer-datos li[data-gesicomm-tienda]:not(:empty) { display: block; }
+.footer-dato-nombre::before { content: "Atiende: "; font-weight: 700; color: var(--white); opacity: .85; }
+.footer-dato-whatsapp::before { content: "WhatsApp: "; font-weight: 700; color: var(--white); opacity: .85; }
+.footer-dato-tel::before { content: "Tel: "; font-weight: 700; color: var(--white); opacity: .85; }
+.footer-dato-email::before { content: "Email: "; font-weight: 700; color: var(--white); opacity: .85; }
+.footer-dato-direccion::before { content: "Dirección: "; font-weight: 700; color: var(--white); opacity: .85; }
+.footer-dato-horario::before { content: "Horario: "; font-weight: 700; color: var(--white); opacity: .85; }
 .footer-redes { display: flex; flex-wrap: wrap; gap: 8px; }
 .footer-redes .gc-red { padding: 6px 12px; color: #dbe4ec; border: 1px solid rgba(255, 255, 255, .18); border-radius: 999px; font-weight: 700; transition: border-color .2s ease, color .2s ease; }
 .footer-redes .gc-red:hover { color: var(--white); border-color: var(--brand); }
+.footer-bottom { border-top: 1px solid rgba(255, 255, 255, .1); padding: 16px 0 20px; text-align: center; }
+.footer-bottom a { color: var(--white); font-weight: 700; }
 
 .reveal { opacity: 1; transform: none; transition: transform .2s ease, box-shadow .2s ease; }
 .reveal.is-visible { opacity: 1; transform: none; }
@@ -222,7 +237,7 @@ h1, h2, h3, p { margin-top: 0; }
   .countdown-box { flex: 1; min-width: 0; }
   .limited-offer .button-primary { width: 100%; }
   .product-grid { grid-template-columns: 1fr; }
-  .footer-row { align-items: start; flex-direction: column; }
+  .footer-top { grid-template-columns: 1fr; gap: 24px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
@@ -295,20 +310,47 @@ const LIMITED_OFFER_HTML = `<section id="ofertas" class="limited-offer" data-ges
 
 // Las políticas son obligatorias para PagoPar y para aprobar anuncios en
 // Meta: van en las dos vistas aunque el diseño cambie.
+//
+// Estructura fija (nombre de la tienda + redes / Políticas / Contactos +
+// barra inferior): el nombre, las redes y los datos de contacto salen de
+// Mi Tienda (el runtime los llena vía data-gesicomm-tienda/-redes, ver
+// runtimeGesicomm.js). La barra inferior ("Tecnología de Gesicom") es
+// texto fijo de este archivo, no un dato de Mi Tienda ni un bloque que el
+// panel "Bloques del Inicio" pueda ocultar: la única forma de sacarla es
+// que el comercio reescriba el footer entero en Código avanzado.
 const FOOTER_HTML = `<footer class="site-footer">
-  <div class="container footer-row">
-    <div>© 2026 <span data-gesicomm-tienda="nombre">Tu tienda</span>. Todos los derechos reservados.</div>
-    <!-- Redes cargadas en Mi Tienda: el runtime pone un link por red y
-         oculta el bloque si la tienda no tiene ninguna. -->
-    <div class="footer-redes" data-gesicomm-redes aria-label="Redes sociales"></div>
-    <nav class="footer-links" aria-label="Información de la tienda">
-      <a href="/contacto" data-gesicomm-link="contacto">Contacto</a>
-      <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">Privacidad</a>
-      <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">Términos</a>
-      <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">Reembolsos</a>
-      <a href="/politica-envio" data-gesicomm-link="politica-envio">Envíos</a>
-      <a href="/aviso-legal" data-gesicomm-link="aviso-legal">Aviso legal</a>
-    </nav>
+  <div class="container footer-top">
+    <div class="footer-brand">
+      <strong class="footer-brand-name" data-gesicomm-tienda="nombre">Tu tienda</strong>
+      <!-- Redes cargadas en Mi Tienda: el runtime pone un link por red y
+           oculta el bloque si la tienda no tiene ninguna. -->
+      <div class="footer-redes" data-gesicomm-redes aria-label="Redes sociales"></div>
+    </div>
+    <div class="footer-col">
+      <strong>Políticas</strong>
+      <nav class="footer-links" aria-label="Políticas de la tienda">
+        <a href="/contacto" data-gesicomm-link="contacto">Contacto</a>
+        <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">Política de Privacidad</a>
+        <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">Política de Reembolso</a>
+        <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">Términos del Servicio</a>
+        <a href="/politica-envio" data-gesicomm-link="politica-envio">Política de Envío</a>
+        <a href="/aviso-legal" data-gesicomm-link="aviso-legal">Aviso Legal</a>
+      </nav>
+    </div>
+    <div class="footer-col">
+      <strong>Contactos</strong>
+      <ul class="footer-datos">
+        <li class="footer-dato footer-dato-nombre" data-gesicomm-tienda="nombre_contacto"></li>
+        <li class="footer-dato footer-dato-whatsapp" data-gesicomm-tienda="whatsapp"></li>
+        <li class="footer-dato footer-dato-tel" data-gesicomm-tienda="telefono"></li>
+        <li class="footer-dato footer-dato-email" data-gesicomm-tienda="email"></li>
+        <li class="footer-dato footer-dato-direccion" data-gesicomm-tienda="direccion"></li>
+        <li class="footer-dato footer-dato-horario" data-gesicomm-tienda="horarios"></li>
+      </ul>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <span data-gesicomm-tienda="nombre">Tu tienda</span> · Tecnología de <a href="https://gesicomm.com" target="_blank" rel="noopener noreferrer">Gesicom</a>
   </div>
 </footer>`;
 
@@ -869,8 +911,7 @@ const INICIO_HTML = `<div class="trust-bar" aria-label="Beneficios de compra" da
 </div>
 
 ${HEADER_HTML.replace('__LINKS__', `<a class="active" href="#inicio">Inicio</a>
-      <a href="/catalogo" data-gesicomm-link="catalogo">Productos</a>
-      <a href="#colecciones">Colecciones</a>`)}
+      <a href="/catalogo" data-gesicomm-link="catalogo">Productos</a>`)}
 
 <main class="storefront" data-gesicomm-base="catalogo">
   <div class="page-content">

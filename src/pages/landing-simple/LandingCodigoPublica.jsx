@@ -36,6 +36,7 @@ function contactoDesdeData(data) {
     ciudad: data?.contacto_landing?.ciudad || '',
     pais: data?.contacto_landing?.pais || '',
     horarios: data?.contacto_landing?.horarios || '',
+    nombre_contacto: data?.contacto_landing?.nombre || '',
     instagram: data?.contacto_instagram || data?.contacto_landing?.instagram || '',
     facebook: data?.contacto_facebook || data?.contacto_landing?.facebook || '',
     tiktok: data?.contacto_tiktok || data?.contacto_landing?.tiktok || '',

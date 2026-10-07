@@ -1339,11 +1339,56 @@ export function runtimeGesicomm() {
     });
   }
 
+  function vistaHeaderActual() {
+    var vista = String(datos.vista || '').toLowerCase();
+    var ruta = '';
+    try { ruta = String(window.location && window.location.pathname || '').toLowerCase(); } catch (e) { ruta = ''; }
+    if (vista === 'checkout' || document.querySelector('.lv-checkout-page') || /\/checkout\/?$/.test(ruta)) return 'checkout';
+    if (vista === 'catalogo' || vista === 'categoria' || vista === 'productos' || document.querySelector('.lv-shop-page') || /\/(catalogo|productos|categoria)(\/|$)/.test(ruta)) return 'catalogo';
+    if (vista === 'producto' || document.querySelector('[data-gesicomm-producto-detalle]')) return 'catalogo';
+    return 'inicio';
+  }
+
+  function linkMenuActivo(item, vista) {
+    var destino = String(item && item.destino || '');
+    if (vista === 'checkout') return destino === '/checkout';
+    if (vista === 'catalogo') return destino === '/catalogo' || destino === '/productos';
+    return destino === '#inicio' || destino === '/' || destino === '';
+  }
+
+  function hrefMenuActivo(a, vista) {
+    if (!a) return false;
+    var href = String(a.getAttribute('href') || '');
+    if (a.hasAttribute('data-gesicomm-link')) {
+      var link = a.getAttribute('data-gesicomm-link');
+      if (vista === 'checkout') return link === 'checkout';
+      if (vista === 'catalogo') return link === 'catalogo';
+    }
+    if (vista === 'checkout') return /\/checkout\/?$/.test(href);
+    if (vista === 'catalogo') return /\/(catalogo|productos)(\/|$)/.test(href);
+    return href === '#inicio' || href === '/' || a.hasAttribute('data-gesicomm-inicio');
+  }
+
   function prepararMenuPrincipalHeader() {
     var contenedores = document.querySelectorAll('#nav-links, [data-gesicomm-menu-principal]');
     if (!contenedores.length) return;
     var links = menuPrincipal();
-    if (!links) return;
+    var vista = vistaHeaderActual();
+    if (!links) {
+      for (var x = 0; x < contenedores.length; x++) {
+        var anchors = contenedores[x].querySelectorAll('a');
+        for (var y = 0; y < anchors.length; y++) {
+          anchors[y].classList.toggle('active', hrefMenuActivo(anchors[y], vista));
+        }
+      }
+      return;
+    }
+    if (vista !== 'inicio') {
+      links = links.filter(function (item) {
+        var destino = String(item.destino || '');
+        return !destino || destino.charAt(0) !== '#' || destino === '#inicio';
+      });
+    }
     for (var c = 0; c < contenedores.length; c++) {
       var cont = contenedores[c];
       cont.textContent = '';
@@ -1354,10 +1399,7 @@ export function runtimeGesicomm() {
         a.textContent = item.texto;
         if (item.destino === '/catalogo') a.setAttribute('data-gesicomm-link', 'catalogo');
         if (item.destino === '/checkout') a.setAttribute('data-gesicomm-link', 'checkout');
-        if ((datos.vista === 'inicio' && item.destino === '#inicio')
-          || (datos.vista === 'catalogo' && item.destino === '/catalogo')
-          || (datos.vista === 'categoria' && item.destino.indexOf('/categoria/') === 0)
-          || (datos.vista === 'checkout' && item.destino === '/checkout')) {
+        if (linkMenuActivo(item, vista)) {
           a.className = 'active';
         }
         cont.appendChild(a);
