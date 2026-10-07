@@ -931,6 +931,7 @@ export function runtimeGesicomm() {
     var headers = document.querySelectorAll('.commerce-header');
     for (var i = 0; i < headers.length; i++) {
       headers[i].style.setProperty('--gc-logo-tamano', cfg.logo_tamano + 'px');
+      headers[i].style.setProperty('--gc-logo-escala', String(cfg.logo_tamano / 46));
       headers[i].style.setProperty('--gc-logo-rotacion', cfg.logo_rotacion + 'deg');
       headers[i].classList.toggle('logo-centrado', cfg.logo_posicion === 'centro');
     }

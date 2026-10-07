@@ -234,7 +234,8 @@ body {
 }
 :where(.commerce-header .brand, .commerce-header .brand-mark) {
   gap: clamp(8px, 1vw, 12px) !important;
-  min-height: calc(var(--gc-logo-tamano, 46px) + 10px) !important;
+  min-height: 46px !important;
+  overflow: visible !important;
 }
 :where(.commerce-header.logo-centrado .brand, .commerce-header.logo-centrado .brand-mark) {
   flex-direction: column !important;
@@ -243,16 +244,17 @@ body {
   text-align: center !important;
 }
 :where(.commerce-header .brand-logo, .commerce-header [data-gesicomm-tienda="logo"]) {
-  width: calc(var(--gc-logo-tamano, 46px) * .72) !important;
-  height: var(--gc-logo-tamano, 46px) !important;
+  width: 34px !important;
+  height: 46px !important;
   max-width: none !important;
   max-height: none !important;
   object-fit: contain !important;
-  transform: rotate(var(--gc-logo-rotacion, 0deg)) !important;
+  transform: rotate(var(--gc-logo-rotacion, 0deg)) scale(var(--gc-logo-escala, 1)) !important;
   transform-origin: center !important;
+  will-change: transform !important;
 }
 :where(.commerce-header [data-gesicomm-tienda="nombre"]) {
-  font-size: clamp(17px, calc(var(--gc-logo-tamano, 46px) * .42), 24px) !important;
+  font-size: 20px !important;
   font-weight: 900 !important;
   line-height: 1 !important;
 }

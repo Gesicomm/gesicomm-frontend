@@ -431,10 +431,12 @@ test('encabezado permite logo mas grande junto al nombre de la tienda', async ({
     const brand = document.querySelector('.brand-mark');
     const logo = document.querySelector('.brand-logo');
     const nombre = document.querySelector('[data-gesicomm-tienda="nombre"]');
+    const header = document.querySelector('.commerce-header');
     return {
       direction: c(brand).flexDirection,
       logoWidth: logo.getBoundingClientRect().width,
       logoHeight: logo.getBoundingClientRect().height,
+      headerHeight: header.getBoundingClientRect().height,
       nombreHeight: nombre.getBoundingClientRect().height,
       transform: c(logo).transform,
     };
@@ -444,6 +446,7 @@ test('encabezado permite logo mas grande junto al nombre de la tienda', async ({
   expect(estilos.logoHeight).toBeGreaterThanOrEqual(55);
   expect(estilos.logoWidth).toBeGreaterThan(35);
   expect(estilos.logoHeight).toBeGreaterThan(estilos.nombreHeight);
+  expect(estilos.headerHeight).toBeLessThanOrEqual(80);
   expect(estilos.transform).not.toBe('none');
 });
 
