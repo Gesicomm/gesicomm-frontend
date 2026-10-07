@@ -915,10 +915,13 @@ export function runtimeGesicomm() {
       var icono = (claveIcono && EMOJI_CONFIANZA[claveIcono]) || ICONOS_ANUNCIOS_DEFAULT[i % ICONOS_ANUNCIOS_DEFAULT.length];
       return { texto: texto, icono: icono };
     });
-    // El track se duplica una vez para el loop sin cortes (transform
-    // translateX(-50%), ver .trust-track) — repetir el ciclo entero, no
-    // completar a un número fijo, para que no quede media vuelta pegada.
-    return items.concat(items);
+    // El track se mueve hasta -50% (ver .trust-track). Con solo dos ciclos,
+    // tres anuncios cortos no alcanzan a cubrir pantallas anchas y queda un
+    // hueco visible. Se repiten ciclos completos en cantidad par para que la
+    // mitad izquierda y la derecha sigan siendo idénticas.
+    var salida = [];
+    for (var r = 0; r < 6; r++) salida = salida.concat(items);
+    return salida;
   }
 
   function confianzaInicio() {
@@ -2013,6 +2016,35 @@ export function runtimeGesicomm() {
       objetivo.style.display = configuracion[campo] === false ? 'none' : '';
     }
   }
+
+  function cerrarBuscadorHeader() {
+    var panel = document.querySelector('#gesicomm-search-panel, .commerce-header .search-box');
+    var toggle = document.querySelector('[data-gesicomm-search-toggle]');
+    if (!panel) return;
+    panel.hidden = true;
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  function prepararBuscadorHeader() {
+    var toggle = document.querySelector('[data-gesicomm-search-toggle]');
+    var panel = document.querySelector('#gesicomm-search-panel, .commerce-header .search-box');
+    if (!toggle || !panel || toggle.getAttribute('data-gesicomm-search-ready') === 'true') return;
+    toggle.setAttribute('data-gesicomm-search-ready', 'true');
+    panel.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var abrir = panel.hidden === true;
+      panel.hidden = !abrir;
+      toggle.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+      if (abrir) {
+        var input = panel.querySelector('[data-gesicomm-buscar], input[type="search"]');
+        if (input && input.focus) input.focus();
+      }
+    });
+  }
+
   function categoriaFiltroEfectiva() {
     return filtros.categoria || '';
   }
@@ -2560,6 +2592,7 @@ export function runtimeGesicomm() {
       return;
     }
     if (!t.closest('.category-menu-wrap')) cerrarMenuCategorias();
+    if (!t.closest('.search-wrap')) cerrarBuscadorHeader();
     if (t.closest('#nav-links a')) {
       var headerNavAbierto = document.querySelector('.header-nav');
       var toggleHeader = document.querySelector('.menu-toggle');
@@ -2874,6 +2907,7 @@ export function runtimeGesicomm() {
   prepararHeroBanners();
   pintarVenta();
   prepararEnlacesTienda();
+  prepararBuscadorHeader();
   prepararMenuPrincipalHeader();
   prepararMenuCategoriasHeader();
   pintarProductosCategoria();

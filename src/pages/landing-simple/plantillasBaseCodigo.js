@@ -237,13 +237,6 @@ const HEADER_HTML = `<header class="commerce-header">
         <img class="brand-logo" data-gesicomm-tienda="logo" alt="">
         <span data-gesicomm-tienda="nombre">Tu tienda</span>
       </a>
-      <div class="category-menu-wrap">
-        <button class="category-menu" type="button" data-gesicomm-categorias-toggle aria-expanded="false" aria-controls="gesicomm-menu-categorias">☰ Todas las categorías</button>
-        <div id="gesicomm-menu-categorias" class="category-menu-panel" data-gesicomm-menu-categorias hidden>
-          <p class="category-menu-title">Categorías</p>
-          <div class="category-menu-list"></div>
-        </div>
-      </div>
     </div>
 
     <nav class="header-nav" aria-label="Navegación comercial">
@@ -349,19 +342,22 @@ const JS_COMUN = `(() => {
   // search-toggle en HEADER_HTML) en vez de ocupar lugar siempre.
   const searchToggle = document.querySelector('[data-gesicomm-search-toggle]');
   const searchBox = document.querySelector('#gesicomm-search-panel');
-  searchToggle?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const abrir = searchBox.hidden;
-    searchBox.hidden = !abrir;
-    searchToggle.setAttribute('aria-expanded', String(abrir));
-    if (abrir) searchBox.querySelector('input')?.focus();
-  });
-  document.addEventListener('click', (e) => {
-    if (searchBox && !searchBox.hidden && !e.target.closest('.search-wrap')) {
-      searchBox.hidden = true;
-      searchToggle?.setAttribute('aria-expanded', 'false');
-    }
-  });
+  if (searchToggle && searchBox && searchToggle.getAttribute('data-gesicomm-search-ready') !== 'true') {
+    searchBox.hidden = true;
+    searchToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const abrir = searchBox.hidden;
+      searchBox.hidden = !abrir;
+      searchToggle.setAttribute('aria-expanded', String(abrir));
+      if (abrir) searchBox.querySelector('input')?.focus();
+    });
+    document.addEventListener('click', (e) => {
+      if (searchBox && !searchBox.hidden && !e.target.closest('.search-wrap')) {
+        searchBox.hidden = true;
+        searchToggle?.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
 
   document.querySelectorAll('.featured-carousel').forEach((carousel) => {
     const slides = Array.from(carousel.querySelectorAll('.hero-card'));

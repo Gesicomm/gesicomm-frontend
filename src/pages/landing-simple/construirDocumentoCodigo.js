@@ -788,6 +788,49 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   filter: saturate(1.05);
 }
 
+/* Header publico: el buscador solo se abre al tocar la lupa y el acceso
+   "Todas las categorias" se retira tambien en landings ya guardadas. */
+:where(.commerce-header .category-menu-wrap) {
+  display: none !important;
+}
+:where(.commerce-header .search-wrap) {
+  position: relative !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+:where(.commerce-header .search-box[hidden], .commerce-header form.search-box[hidden]) {
+  display: none !important;
+}
+:where(.commerce-header .search-box:not([hidden]), .commerce-header form.search-box:not([hidden])) {
+  position: absolute !important;
+  top: calc(100% + 10px) !important;
+  right: 0 !important;
+  z-index: 70 !important;
+  width: min(320px, calc(100vw - 36px)) !important;
+  min-height: 42px !important;
+  display: flex !important;
+  overflow: hidden !important;
+  background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
+  border: 1px solid var(--tienda-linea, #e4eaf0) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 18px 45px rgba(8, 41, 71, .16) !important;
+}
+:where(.commerce-header .search-box input) {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+:where(.commerce-header .search-box button) {
+  flex: 0 0 50px !important;
+}
+:where(.trust-track, .announcement-track) {
+  width: max-content !important;
+  min-width: max-content !important;
+}
+:where(.trust-item, .announcement span) {
+  flex: 0 0 auto !important;
+}
+
 [data-gesicomm-tienda="logo"] {
   max-width: 160px !important;
   max-height: 52px !important;

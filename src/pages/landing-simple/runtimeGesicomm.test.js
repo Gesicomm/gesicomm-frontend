@@ -360,8 +360,12 @@ describe('runtime del lienzo en blanco — inicio', () => {
   it('anuncios y zona de confianza traen contenido de ejemplo sin configurar nada', () => {
     const { document } = montar(PLANTILLA_INICIO, datos);
     const anuncios = [...document.querySelectorAll('.trust-bar .trust-item strong')].map(el => el.textContent);
-    expect(anuncios).toEqual(['Envío a todo Paraguay', 'Pago seguro', 'Atención personalizada', 'Cambios y devoluciones',
-      'Envío a todo Paraguay', 'Pago seguro', 'Atención personalizada', 'Cambios y devoluciones']);
+    expect(anuncios).toEqual(Array.from({ length: 6 }).flatMap(() => [
+      'Envío a todo Paraguay',
+      'Pago seguro',
+      'Atención personalizada',
+      'Cambios y devoluciones',
+    ]));
     const confianza = [...document.querySelectorAll('.trust-card h3')].map(el => el.textContent);
     expect(confianza).toEqual(['Opciones de pago', 'Cambios y devoluciones', 'Envíos a tu zona']);
   });
@@ -376,7 +380,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
         },
       },
     });
-    expect([...document.querySelectorAll('.trust-bar .trust-item strong')].map(el => el.textContent)).toEqual(['Hecho en Paraguay', 'Hecho en Paraguay']);
+    expect([...document.querySelectorAll('.trust-bar .trust-item strong')].map(el => el.textContent)).toEqual(Array(6).fill('Hecho en Paraguay'));
     const tarjetas = document.querySelectorAll('.trust-card');
     expect(tarjetas).toHaveLength(1);
     expect(tarjetas[0].querySelector('h3').textContent).toBe('Envío rápido');
