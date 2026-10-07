@@ -48,6 +48,22 @@ describe('Branding de Mi Tienda en la landing HTML', () => {
     dom.window.close();
   });
 
+  it('el buscador publico del header usa la paleta de Mi Tienda con contraste en resultados', () => {
+    const datos = datosRuntimePublico({
+      tienda: { nombre: 'sommix', colores: { primario: '#7c3aed', secundario: '#f59e0b', fondo: '#06111f' } },
+      catalogo_items: [],
+    }, 'promo', null);
+    const html = construirDocumentoCodigo(PLANTILLA_INICIO, { datos });
+    expect(html).toContain('--tienda-primario: #7c3aed;');
+    expect(html).toContain('--tienda-primario-texto:');
+    expect(html).toContain('--tienda-destacado:');
+    expect(html).toContain('background: var(--gc-primario, var(--tienda-primario, #0d6efd)) !important;');
+    expect(html).toContain('color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;');
+    expect(html).toContain('color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #0d6efd)) 11%');
+    expect(html).toContain('color: var(--tienda-primario-texto, var(--gc-texto, #071a33)) !important;');
+    expect(html).toContain('color: var(--tienda-destacado, var(--tienda-primario-texto, var(--gc-texto-suave, #64748b))) !important;');
+  });
+
   it('sin logo no agrega ningun logo inventado y el nombre no tiene fondo', () => {
     const datos = datosRuntimePublico({
       tienda: { nombre: 'sommix', logo_imagen: null, colores: { primario: '#7c3aed', secundario: null, fondo: null } },
