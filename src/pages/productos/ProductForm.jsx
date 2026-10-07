@@ -322,46 +322,89 @@ const PROMPT_IA = `Actúa como un asistente especializado en creación y publica
 Tu objetivo es ayudarme a crear la ficha completa de un producto haciendo el menor número posible de preguntas y terminar generando un archivo JSON compatible con Gesicom.
 
 ## REGLA PRINCIPAL
-No me hagas llenar manualmente información que puedas deducir razonablemente a partir de: fotografías del producto, packaging, etiquetas, características visibles. Nunca inventes: precio, costo, stock, SKU, proveedor, descuentos, garantías o especificaciones técnicas no demostradas.
+No me hagas llenar manualmente información que puedas deducir razonablemente a partir de: fotografías del producto, packaging, etiquetas, características visibles.
+Nunca inventes: precio, costo, stock, SKU, proveedor, descuentos, garantías o especificaciones técnicas no demostradas.
 Sí puedes crear: propuesta de valor, descripción, beneficios, puntos destacados, preguntas frecuentes, textos comerciales.
 
 ## PASO 1 — FOTOGRAFÍAS
-Pedime que suba fotos del producto/packaging y analizalas antes de hacer preguntas. Identificá marca, modelo, presentación, etc.
+Pedime que suba fotos del producto/packaging y analizalas antes de hacer preguntas.
 
-## PASO 2 — PREGUNTAS ESENCIALES
-Hacé únicamente las preguntas necesarias agrupadas: 
-1. Nombre
-2. Categoría sugerida
+## PASO 2 — PREGUNTAS ESENCIALES (en un solo bloque agrupado)
+1. Nombre del producto
+2. Categoría (sugerí la más adecuada)
 3. Precio de venta
-4. Precio ancla (precio tachado anterior, si aplica)
-5. Descuento (porcentaje y fechas de vigencia inicio/fin, si aplica)
-6. Costo de compra (y aclarame si es en Dólares o Moneda local)
-7. Stock disponible (Salón y Depósito)
-8. SKU (o inventá uno si no hay)
-9. Proveedor, Ofertas, Variantes.
+4. Precio ancla o tachado (precio anterior, si aplica)
+5. Descuento: porcentaje y fechas de vigencia inicio/fin (si aplica)
+6. Costo de compra — aclará si es en Dólares (USD) o Guaraníes (LOCAL)
+7. Stock disponible: cuántas unidades hay en el Salón y en el Depósito
+8. SKU (si no tiene, generá uno corto y legible)
+9. Proveedor (o "Sin proveedor")
+10. ¿Tiene variantes? (color, talle, tamaño, etc.)
+11. ¿Tiene testimonios de clientes para incluir?
 
 ## PASO 3 — INVENTARIO
-Construye el inventario usando stock de salón y depósito.
+Usá stock de salón y depósito. No inventes cantidades.
 
-## PASO 4 — SECCIÓN COMERCIAL (LIENZO EN BLANCO)
-Genera contenido comercial persuasivo.
+## PASO 4 — CONTENIDO DEL LIENZO EN BLANCO
+Generá el contenido para la ficha de producto del lienzo en blanco:
+
+- **badge**: etiqueta corta visible sobre la imagen (ej: "OFERTA", "MÁS VENDIDO")
+- **tagline**: frase principal de propuesta de valor (1 oración, máx. 15 palabras)
+- **description**: descripción comercial clara y objetiva (2-4 oraciones)
+- **highlights**: entre 3 y 6 puntos concretos con checkmarks (los beneficios principales)
+- **cta**: texto del botón de compra (ej: "Comprar ahora", "Quiero el mío")
+- **faqs**: entre 4 y 8 preguntas frecuentes reales del comprador con respuestas
+- **testimonials**: si el usuario proporcionó testimonios, incluilos (name, rating 1-5, comment)
 
 ## PASO 5 — REVISIÓN Y JSON
-Mostrame un resumen. Si apruebo, generá UN SOLO JSON válido ajustado a este esquema:
+Mostrame un resumen y esperá mi aprobación. Luego generá UN SOLO JSON válido con este esquema exacto:
 
 {
   "schema_version": "1.1",
   "product": {
-    "identity": { "name": "", "sku": "", "category": { "name": "", "id": null }, "provider": { "name": null, "id": null }, "tags": [] },
-    "pricing": { "purchase_cost": 0, "purchase_currency": "LOCAL", "sale_price": 0, "anchor_price": null, "discount": { "percentage": 0, "valid_from": null, "valid_until": null } },
-    "inventory": { "stock_store": 0, "stock_warehouse": 0, "minimum_total_stock": 0 },
-    "publication": { "sale_status": "en_venta", "active": true, "featured": false },
+    "identity": {
+      "name": "",
+      "sku": "",
+      "category": { "name": "", "id": null },
+      "provider": { "name": null, "id": null },
+      "tags": []
+    },
+    "pricing": {
+      "purchase_cost": 0,
+      "purchase_currency": "LOCAL",
+      "sale_price": 0,
+      "anchor_price": null,
+      "discount": { "percentage": 0, "valid_from": null, "valid_until": null }
+    },
+    "inventory": {
+      "stock_store": 0,
+      "stock_warehouse": 0,
+      "minimum_total_stock": 0
+    },
+    "publication": {
+      "sale_status": "en_venta",
+      "active": true,
+      "featured": false
+    },
     "landing_blocks": {
-      "product_showcase": { "badge": "", "tagline": "", "description": "", "highlights": [], "cta": "" },
-      "faqs": [ { "question": "", "answer": "" } ]
+      "product_showcase": {
+        "badge": "",
+        "tagline": "",
+        "description": "",
+        "highlights": [],
+        "cta": ""
+      },
+      "faqs": [
+        { "question": "", "answer": "" }
+      ],
+      "testimonials": [
+        { "name": "", "rating": 5, "comment": "", "photo": null }
+      ]
     }
   }
 }
+
+REGLAS DEL JSON: sin comentarios, sin markdown dentro, null para opcionales vacíos, [] para colecciones vacías, números reales (no texto), booleanos, fechas ISO YYYY-MM-DD.
 `;
 
 export default function ProductForm() {
@@ -403,38 +446,83 @@ export default function ProductForm() {
       const data = JSON.parse(raw);
       const p = data.product;
       if (!p) return;
-      
-      if (p.identity?.name) setValue('nombre', p.identity.name, { shouldDirty: true });
-      if (p.identity?.sku) setValue('sku', p.identity.sku, { shouldDirty: true });
-      if (p.identity?.tags) setValue('tags', p.identity.tags.join(', '), { shouldDirty: true });
-      
-      if (p.pricing?.sale_price) setValue('precio_base', p.pricing.sale_price, { shouldDirty: true });
+
+      // ── Identidad ─────────────────────────────────────────────
+      if (p.identity?.name)  setValue('nombre', p.identity.name, { shouldDirty: true });
+      if (p.identity?.sku)   setValue('sku',    p.identity.sku,  { shouldDirty: true });
+      if (Array.isArray(p.identity?.tags) && p.identity.tags.length)
+        setValue('tags', p.identity.tags.join(', '), { shouldDirty: true });
+
+      // ── Precios ────────────────────────────────────────────────
+      if (p.pricing?.sale_price)    setValue('precio_base',  p.pricing.sale_price,    { shouldDirty: true });
       if (p.pricing?.purchase_cost) setValue('precio_costo', p.pricing.purchase_cost, { shouldDirty: true });
       if (p.pricing?.purchase_currency === 'USD') setValue('es_dolar', true, { shouldDirty: true });
-      if (p.pricing?.anchor_price) setValue('precio_ancla', p.pricing.anchor_price, { shouldDirty: true });
-      if (p.pricing?.discount?.percentage) setValue('descuento_porcentaje', p.pricing.discount.percentage, { shouldDirty: true });
-      if (p.pricing?.discount?.valid_from) setValue('descuento_inicio', p.pricing.discount.valid_from, { shouldDirty: true });
-      if (p.pricing?.discount?.valid_until) setValue('descuento_fin', p.pricing.discount.valid_until, { shouldDirty: true });
-      
+      if (p.pricing?.anchor_price)  setValue('precio_ancla', p.pricing.anchor_price,  { shouldDirty: true });
+      if (p.pricing?.discount?.percentage)  setValue('descuento_porcentaje', p.pricing.discount.percentage, { shouldDirty: true });
+      if (p.pricing?.discount?.valid_from)  setValue('descuento_inicio', p.pricing.discount.valid_from,  { shouldDirty: true });
+      if (p.pricing?.discount?.valid_until) setValue('descuento_fin',    p.pricing.discount.valid_until, { shouldDirty: true });
+
+      // ── Inventario ─────────────────────────────────────────────
       if (p.inventory) {
-        if (p.inventory.stock_store !== undefined) setValue('stock_salon', p.inventory.stock_store, { shouldDirty: true });
-        if (p.inventory.stock_warehouse !== undefined) setValue('stock_deposito', p.inventory.stock_warehouse, { shouldDirty: true });
-        if (p.inventory.minimum_total_stock !== undefined) setValue('stock_minimo', p.inventory.minimum_total_stock, { shouldDirty: true });
-        setValue('cantidad_disponible', (p.inventory.stock_store || 0) + (p.inventory.stock_warehouse || 0), { shouldDirty: true });
-      }
-      
-      if (p.publication) {
-        if (p.publication.sale_status) setValue('estado_venta', p.publication.sale_status, { shouldDirty: true });
-        if (p.publication.active !== undefined) setValue('activo', p.publication.active, { shouldDirty: true });
-        if (p.publication.featured !== undefined) setValue('destacado', p.publication.featured, { shouldDirty: true });
-      }
-      
-      if (p.landing_blocks?.product_showcase) {
-         setValue('propuesta_valor', p.landing_blocks.product_showcase.tagline, { shouldDirty: true });
-         setValue('descripcion_larga', p.landing_blocks.product_showcase.description, { shouldDirty: true });
+        const salon    = p.inventory.stock_store     ?? 0;
+        const deposito = p.inventory.stock_warehouse ?? 0;
+        setValue('stock_salon',         salon,          { shouldDirty: true });
+        setValue('stock_deposito',      deposito,       { shouldDirty: true });
+        setValue('cantidad_disponible', salon + deposito, { shouldDirty: true });
+        if (p.inventory.minimum_total_stock !== undefined)
+          setValue('stock_minimo', p.inventory.minimum_total_stock, { shouldDirty: true });
       }
 
-      setAviso('JSON importado correctamente. Revisa los campos y guarda.');
+      // ── Publicación ────────────────────────────────────────────
+      if (p.publication) {
+        if (p.publication.sale_status)           setValue('estado_venta', p.publication.sale_status, { shouldDirty: true });
+        if (p.publication.active     !== undefined) setValue('activo',    p.publication.active,    { shouldDirty: true });
+        if (p.publication.featured   !== undefined) setValue('destacado', p.publication.featured,  { shouldDirty: true });
+      }
+
+      // ── Lienzo en Blanco — ProductShowcaseBlock ────────────────
+      // badge, tagline → propuesta_valor, description → descripcion_larga,
+      // highlights[] → ficha_datos.beneficios_rapidos, cta → ficha_datos.cta_principal_texto
+      const showcase = p.landing_blocks?.product_showcase;
+      if (showcase) {
+        if (showcase.tagline)     setValue('propuesta_valor',   showcase.tagline,     { shouldDirty: true });
+        if (showcase.description) setValue('descripcion_larga', showcase.description, { shouldDirty: true });
+        if (showcase.badge)       setValue('descripcion_corta', showcase.badge,       { shouldDirty: true });
+
+        const fichaActual = getValues('ficha_datos') || {};
+        const fichaPatch  = { ...fichaActual };
+        if (Array.isArray(showcase.highlights) && showcase.highlights.length)
+          fichaPatch.beneficios_rapidos = showcase.highlights;
+        if (showcase.cta)
+          fichaPatch.cta_principal_texto = showcase.cta;
+        if (Object.keys(fichaPatch).length > Object.keys(fichaActual).length)
+          setValue('ficha_datos', fichaPatch, { shouldDirty: true });
+      }
+
+      // ── FAQs ───────────────────────────────────────────────────
+      if (Array.isArray(p.landing_blocks?.faqs) && p.landing_blocks.faqs.length) {
+        setFaq(p.landing_blocks.faqs.map(f => ({
+          pregunta: f.question || '',
+          respuesta: f.answer  || '',
+        })));
+      }
+
+      // ── Testimonios ────────────────────────────────────────────
+      const testimonios = p.landing_blocks?.testimonials;
+      if (Array.isArray(testimonios) && testimonios.length) {
+        const fichaActual2 = getValues('ficha_datos') || {};
+        setValue('ficha_datos', {
+          ...fichaActual2,
+          fitness_opiniones: testimonios.map(t => ({
+            nombre:       t.name    || '',
+            calificacion: t.rating  || 5,
+            comentario:   t.comment || '',
+            foto:         t.photo   || '',
+          })),
+        }, { shouldDirty: true });
+      }
+
+      setAviso('JSON importado. Revisá los campos, distribuí el stock por ubicación y guardá.');
       e.target.value = '';
     } catch (err) {
       console.error(err);
