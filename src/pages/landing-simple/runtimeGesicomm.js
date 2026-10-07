@@ -2035,6 +2035,7 @@ export function runtimeGesicomm() {
     toggle.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
       var abrir = panel.hidden === true;
       panel.hidden = !abrir;
       toggle.setAttribute('aria-expanded', abrir ? 'true' : 'false');
@@ -2042,7 +2043,7 @@ export function runtimeGesicomm() {
         var input = panel.querySelector('[data-gesicomm-buscar], input[type="search"]');
         if (input && input.focus) input.focus();
       }
-    });
+    }, true);
   }
 
   function categoriaFiltroEfectiva() {

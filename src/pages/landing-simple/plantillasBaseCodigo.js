@@ -343,9 +343,12 @@ const JS_COMUN = `(() => {
   const searchToggle = document.querySelector('[data-gesicomm-search-toggle]');
   const searchBox = document.querySelector('#gesicomm-search-panel');
   if (searchToggle && searchBox && searchToggle.getAttribute('data-gesicomm-search-ready') !== 'true') {
+    searchToggle.setAttribute('data-gesicomm-search-ready', 'true');
     searchBox.hidden = true;
     searchToggle.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation?.();
       const abrir = searchBox.hidden;
       searchBox.hidden = !abrir;
       searchToggle.setAttribute('aria-expanded', String(abrir));

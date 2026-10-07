@@ -833,6 +833,20 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
       filtro: { busqueda: 'cafetera' },
     });
   });
+
+  it('la lupa del header despliega el buscador y deja escribir', () => {
+    const { document, click } = montar(PLANTILLA_INICIO, datos);
+    const toggle = document.querySelector('[data-gesicomm-search-toggle]');
+    const panel = document.querySelector('#gesicomm-search-panel');
+    const input = panel.querySelector('[data-gesicomm-buscar]');
+
+    expect(panel.hidden).toBe(true);
+    click('[data-gesicomm-search-toggle]');
+
+    expect(panel.hidden).toBe(false);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement).toBe(input);
+  });
 });
 
 describe('ficha: imágenes y descripciones legibles', () => {
