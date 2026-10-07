@@ -198,3 +198,71 @@ test('textos de productos y Nuestra marca mantienen contraste con fondo oscuro',
   expect(contraste(estilos.marcaTitulo, estilos.marcaFondo)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(estilos.marcaTexto, estilos.marcaFondo)).toBeGreaterThanOrEqual(4.5);
 });
+
+test('el fondo oscuro de la tienda cubre la seccion de productos seleccionados', async ({ page }) => {
+  const html = construirDocumentoCodigo({
+    html: `
+      <main class="storefront" data-gesicomm-base="catalogo">
+        <div class="page-content">
+          <section id="productos-categoria" class="section pc-section">
+            <div class="section-heading pc-head">
+              <div>
+                <h2>Productos seleccionados</h2>
+                <p>Elegí por categoría y buscá rápido.</p>
+              </div>
+              <label class="pc-search">
+                <span>Buscar</span>
+                <input type="search" placeholder="Buscar en esta selección">
+              </label>
+            </div>
+            <div class="pc-tabs">
+              <button class="is-active" type="button">Todos</button>
+              <button type="button">Climatización</button>
+              <button type="button">Automotor y movilidad</button>
+            </div>
+          </section>
+        </div>
+      </main>
+    `,
+    css: `
+      .storefront { min-height: 100vh; background: #f6fafc; color: var(--navy); }
+      .section-heading h2 { color: var(--navy); }
+      .section-heading p, .pc-search span { color: var(--muted); }
+      .pc-tabs button { color: var(--navy); background: #fff; border: 1px solid var(--line); border-radius: 999px; }
+      .pc-tabs button.is-active { color: #fff; background: var(--blue); }
+      .pc-search input { color: var(--navy); background: #fff; border: 1px solid var(--line); }
+    `,
+    js: '',
+  }, { datos: { tienda: { nombre: 'sommix', colores: coloresTienda } } });
+
+  await page.setContent(html);
+  await expect(page.locator('#productos-categoria h2')).toHaveText('Productos seleccionados');
+
+  const estilos = await page.evaluate(() => {
+    const c = el => getComputedStyle(el);
+    const page = document.querySelector('.storefront');
+    const titulo = document.querySelector('#productos-categoria h2');
+    const subtitulo = document.querySelector('#productos-categoria .section-heading p');
+    const tab = document.querySelector('.pc-tabs button:not(.is-active)');
+    const active = document.querySelector('.pc-tabs button.is-active');
+    const input = document.querySelector('.pc-search input');
+    return {
+      pageBackground: c(page).backgroundColor,
+      titleColor: c(titulo).color,
+      subtitleColor: c(subtitulo).color,
+      tabColor: c(tab).color,
+      tabBackground: c(tab).backgroundColor,
+      activeColor: c(active).color,
+      activeBackground: c(active).backgroundColor,
+      inputColor: c(input).color,
+      inputBackground: c(input).backgroundColor,
+    };
+  });
+
+  expect(estilos.pageBackground).toBe('rgb(16, 26, 33)');
+  expect(contraste(estilos.titleColor, estilos.pageBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.subtitleColor, estilos.pageBackground)).toBeGreaterThanOrEqual(3);
+  expect(contraste(estilos.tabColor, estilos.tabBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.activeColor, estilos.activeBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.inputColor, estilos.inputBackground)).toBeGreaterThanOrEqual(4.5);
+});

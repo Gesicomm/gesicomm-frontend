@@ -157,6 +157,40 @@ body {
   color: var(--gc-texto, var(--tienda-texto, #10202f));
 }
 
+:where(.storefront, main[data-gesicomm-base]) {
+  background: var(--gc-fondo, var(--tienda-fondo, #ffffff)) !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.storefront .page-content, .page-content) {
+  background: transparent !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.section-heading h1, .section-heading h2, .section-title h1, .section-title h2, .dynamic-head h1, .dynamic-head h2, .pc-head h1, .pc-head h2) {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.section-heading p, .section-title p, .dynamic-head p, .pc-head p, .pc-search span) {
+  color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
+}
+:where(.pc-tabs button, .pc-tabs [role="tab"], .pc-tab, .category-filter, .category-chip) {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+  background: var(--gc-superficie, var(--tienda-superficie, #ffffff)) !important;
+  border-color: var(--tienda-linea, var(--line, #d7e6ef)) !important;
+}
+:where(.pc-tabs button.is-active, .pc-tabs button[aria-selected="true"], .pc-tab.is-active, .category-filter.is-active, .category-chip.is-active) {
+  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
+  background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  border-color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+}
+:where(.pc-search input, .storefront input[type="search"]) {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+  background: var(--gc-superficie, var(--tienda-superficie, #ffffff)) !important;
+  border-color: var(--tienda-linea, var(--line, #d7e6ef)) !important;
+  caret-color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+}
+:where(.pc-search input::placeholder, .storefront input[type="search"]::placeholder) {
+  color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
+}
+
 :where(.trust-bar, .announcement, .site-footer, footer) {
   background: var(--tienda-banda, var(--gc-primario, var(--tienda-primario, #062b4f))) !important;
   color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
