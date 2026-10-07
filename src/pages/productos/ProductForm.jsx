@@ -36,6 +36,9 @@ function fmt(n, decimals = 0) {
 function fmtGs(n)  { return n !== null && n !== undefined ? 'Gs ' + fmt(n) : '—'; }
 function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
 
+const MAX_IMAGEN_MB = 5;
+const MAX_IMAGEN_BYTES = MAX_IMAGEN_MB * 1024 * 1024;
+
 function prepararImagenFormData(img) {
   const fd = new FormData();
   fd.append('imagen', img.file);
@@ -349,6 +352,7 @@ Usá stock de salón y depósito. No inventes cantidades.
 Generá el contenido para la ficha de producto del lienzo en blanco:
 
 - **badge**: etiqueta corta visible sobre la imagen (ej: "OFERTA", "MÁS VENDIDO")
+- **short_description**: descripción corta para el catálogo público (1-2 oraciones breves)
 - **tagline**: frase principal de propuesta de valor (1 oración, máx. 15 palabras)
 - **description**: descripción comercial clara y objetiva (2-4 oraciones)
 - **highlights**: entre 3 y 6 puntos concretos con checkmarks (los beneficios principales)
@@ -1258,6 +1262,15 @@ export default function ProductForm() {
     const totalActual = imagenes.length + imagenesNuevas.length;
     if (totalActual + files.length > 6) {
       setError(`Solo se permiten hasta 6 imágenes por producto. Tienes ${totalActual} y estás intentando subir ${files.length} más.`);
+      e.target.value = '';
+      return;
+    }
+
+    const pesadas = files.filter(file => file.size > MAX_IMAGEN_BYTES);
+    if (pesadas.length) {
+      setError(
+        pesadas.map(f => `"${f.name}" pesa ${(f.size / (1024 * 1024)).toFixed(1)} MB. El máximo permitido es ${MAX_IMAGEN_MB} MB por imagen.`).join('\n')
+      );
       e.target.value = '';
       return;
     }
@@ -2863,6 +2876,7 @@ export default function ProductForm() {
           </div>
           <p className="field-hint">
             JPG, PNG o WEBP. Se conserva el original y se genera una versión optimizada para la galería.
+            Tamaño recomendado: hasta 1-2 MB. Máximo permitido: {MAX_IMAGEN_MB} MB por imagen.
           </p>
         </div>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ImageOff, Pencil } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ImageOff, Pencil, ShoppingCart } from 'lucide-react';
 import { hexToRgba } from './themeUtils';
 import { ImagenProductoHover, textoOMuestra } from './sections';
 
@@ -12,6 +12,12 @@ const OPCIONES_ORDEN = [
 ];
 
 const fmtPrecio = (num) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(num || 0);
+const pctDescuento = (antes, ahora) => {
+  const precioAntes = Number(antes);
+  const precioActual = Number(ahora);
+  if (!(precioAntes > precioActual && precioActual > 0)) return null;
+  return Math.round(((precioAntes - precioActual) / precioAntes) * 100);
+};
 
 /**
  * Cuerpo de la página de Catálogo completo (título + barra de filtros +
@@ -215,33 +221,37 @@ export default function CatalogoView({
           )}
         </div>
       ) : (
-        <div className={`grid gap-4 md:gap-6 ${gridClassName}`} style={cargando ? { opacity: 0.5, pointerEvents: 'none' } : undefined}>
+        <div className={`grid gap-4 md:gap-5 ${gridClassName}`} style={cargando ? { opacity: 0.5, pointerEvents: 'none' } : undefined}>
           {filteredAndSortedProducts.map((p) => {
             const agotado = p.stock != null && p.stock <= 0;
             const enOferta = p.precioAntes != null && p.precio != null && Number(p.precioAntes) > Number(p.precio);
+            const descuento = pctDescuento(p.precioAntes, p.precio);
+            const descripcion = p.descripcion || p.mensajeComercial || '';
+            const categoria = p.marca || p.categoria || '';
             return (
               <div
                 key={p.id}
                 onClick={() => onClickProducto(p)}
-                className="group rounded-2xl overflow-hidden shadow-sm cursor-pointer transition-opacity hover:opacity-90"
+                className="group flex min-h-full cursor-pointer flex-col overflow-hidden rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
                 style={{ backgroundColor: tema.fondo, border: `1px solid ${bordeSuave}` }}
               >
-                <div className="aspect-square relative flex items-center justify-center" style={{ backgroundColor: hexToRgba(tema.texto, 0.05) }}>
+                <div className="aspect-[4/3] relative flex items-center justify-center" style={{ backgroundColor: hexToRgba(tema.texto, 0.045) }}>
                   <ImagenProductoHover
                     imagenes={p.imagenes}
                     imagen={p.imagen}
                     alt={p.nombre}
                     fallback={<ImageOff size={28} style={{ color: hexToRgba(tema.texto, 0.2) }} />}
+                    imgClassName="w-full h-full object-contain p-5 transition-opacity duration-500 ease-out"
                   />
                   <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
                     {agotado && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: tema.texto, color: tema.fondo }}>Agotado</span>
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" style={{ backgroundColor: tema.texto, color: tema.fondo }}>Agotado</span>
                     )}
                     {enOferta && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: tema.acento, color: tema.fondo }}>Oferta</span>
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" style={{ backgroundColor: tema.acento, color: tema.fondo }}>-{descuento}%</span>
                     )}
-                    {p.etiqueta && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: hexToRgba(tema.texto, 0.85), color: tema.fondo }}>{p.etiqueta}</span>
+                    {p.etiqueta && !enOferta && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" style={{ backgroundColor: hexToRgba(tema.texto, 0.85), color: tema.fondo }}>{p.etiqueta}</span>
                     )}
                   </div>
                   {previewMode && (
@@ -255,13 +265,30 @@ export default function CatalogoView({
                     </span>
                   )}
                 </div>
-                <div className="p-3">
-                  <h3 className="font-semibold text-sm leading-tight mb-1 truncate">{p.nombre}</h3>
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <span className="font-bold">{fmtPrecio(p.precio)}</span>
-                    {enOferta && (
-                      <span className="text-xs line-through opacity-50">{fmtPrecio(p.precioAntes)}</span>
-                    )}
+                <div className="flex flex-1 flex-col p-4">
+                  {categoria && <div className="mb-2 text-[11px] font-bold uppercase" style={{ color: hexToRgba(tema.texto, 0.55) }}>{categoria}</div>}
+                  <h3 className="min-h-[2.6em] text-[15px] font-extrabold leading-snug">{p.nombre}</h3>
+                  {descripcion && <p className="mt-2 line-clamp-2 min-h-[2.8em] text-sm leading-snug" style={{ color: hexToRgba(tema.texto, 0.62) }}>{descripcion}</p>}
+                  <div className="mt-4 flex flex-wrap items-end gap-x-2 gap-y-1">
+                    {enOferta && <span className="basis-full text-xs line-through" style={{ color: hexToRgba(tema.texto, 0.45) }}>{fmtPrecio(p.precioAntes)}</span>}
+                    <span className="text-xl font-black leading-none" style={{ color: tema.texto }}>{fmtPrecio(p.precio)}</span>
+                    {enOferta && <span className="rounded-full px-2 py-0.5 text-[11px] font-extrabold" style={{ backgroundColor: hexToRgba(tema.acento, 0.13), color: tema.acento }}>Oferta</span>}
+                  </div>
+                  <div className="mt-3 flex items-center gap-1.5 text-xs font-bold" style={{ color: agotado ? hexToRgba(tema.texto, 0.48) : '#0f9f6e' }}>
+                    <CheckCircle2 size={14} />
+                    <span>{agotado ? 'Sin stock por ahora' : 'Disponible'}</span>
+                  </div>
+                  <div className="mt-auto pt-4">
+                    <button
+                      type="button"
+                      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 text-sm font-extrabold transition-transform group-hover:-translate-y-0.5"
+                      style={{ backgroundColor: tema.acento, color: tema.fondo }}
+                      onClick={(e) => { e.stopPropagation(); onClickProducto(p); }}
+                    >
+                      <ShoppingCart size={16} />
+                      Comprar ahora
+                      <ArrowRight size={15} />
+                    </button>
                   </div>
                 </div>
               </div>

@@ -101,6 +101,9 @@ export default function CatalogoPublico() {
     imagenes: galeriaTarjetaDeItem(i),
     categoria: i.categoria || null,
     etiqueta: i.etiqueta || null,
+    descripcion: i.descripcion || i.descripcion_corta || i.mensaje_comercial || null,
+    mensajeComercial: i.mensaje_comercial || null,
+    marca: i.marca || i.proveedor || null,
     stock: i.stock,
   })), [data?.catalogo_items]);
 

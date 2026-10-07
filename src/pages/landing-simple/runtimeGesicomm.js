@@ -649,6 +649,14 @@ export function runtimeGesicomm() {
       envio.textContent = 'Envío gratis';
       contenido.appendChild(envio);
     }
+    if (contenido && !contenido.querySelector('.gc-product-availability')) {
+      var disponibilidad = document.createElement('p');
+      disponibilidad.className = 'gc-product-availability';
+      disponibilidad.textContent = item.stock !== null && item.stock !== undefined && Number(item.stock) <= 0 ? 'Sin stock por ahora' : 'Disponible';
+      var footerDisponibilidad = contenido.querySelector('.product-footer');
+      if (footerDisponibilidad) footerDisponibilidad.insertAdjacentElement('beforebegin', disponibilidad);
+      else contenido.appendChild(disponibilidad);
+    }
     if (raiz.hasAttribute('data-gesicomm-ver')) raiz.style.cursor = 'pointer';
     var imgs = imagenesDeProducto(item);
     if (imgs.length < 2) return;

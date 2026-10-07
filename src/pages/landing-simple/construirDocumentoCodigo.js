@@ -858,7 +858,8 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   overflow: hidden !important;
   background: var(--gc-superficie, var(--tienda-superficie, #ffffff)) !important;
   border-color: var(--tienda-linea, var(--line, #d7e6ef)) !important;
-  box-shadow: 0 18px 42px color-mix(in srgb, var(--gc-fondo, #0f172a) 64%, transparent) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--gc-fondo, #0f172a) 52%, transparent) !important;
   transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease !important;
 }
 :where([data-gesicomm-lista] .product-card:hover) {
@@ -869,15 +870,17 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 :where([data-gesicomm-lista] .product-card > .product-image) {
   display: grid !important;
   place-items: center !important;
+  min-height: 190px !important;
+  background: color-mix(in srgb, var(--gc-texto, var(--tienda-texto, #10202f)) 4%, var(--gc-superficie, #ffffff)) !important;
   border-bottom: 1px solid color-mix(in srgb, var(--tienda-linea, var(--line, #d7e6ef)) 72%, transparent) !important;
 }
 [data-gesicomm-lista] .product-card > .product-content {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
   min-width: 0;
-  padding: 14px !important;
+  padding: 16px !important;
   overflow-wrap: anywhere;
   position: relative;
   isolation: isolate;
@@ -885,7 +888,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
 [data-gesicomm-lista] .product-card > .product-content h3 {
-  min-height: 2.7em;
+  min-height: 2.65em;
   margin: 0 !important;
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
   line-height: 1.35;
@@ -895,6 +898,22 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   margin: 0 !important;
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
   line-height: 1.45;
+}
+:where([data-gesicomm-lista] .product-card .gc-product-availability) {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  color: #0f9f6e !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+:where([data-gesicomm-lista] .product-card .gc-product-availability)::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
 }
 [data-gesicomm-lista] .product-card .product-footer {
   flex-wrap: wrap;
@@ -908,15 +927,16 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 :where([data-gesicomm-lista] .product-card .product-footer) {
   margin-top: auto !important;
   padding: 0 !important;
-  gap: 12px !important;
+  gap: 13px !important;
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
   background: transparent !important;
 }
 :where([data-gesicomm-lista] .product-card .product-prices) {
   display: flex !important;
   width: 100% !important;
+  flex-direction: row !important;
   flex-wrap: wrap !important;
-  align-items: center !important;
+  align-items: baseline !important;
   gap: 8px !important;
   margin: 0 !important;
 }
@@ -924,22 +944,26 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   display: inline-flex !important;
   width: fit-content !important;
   max-width: 100% !important;
-  min-height: 34px !important;
+  min-height: 0 !important;
   align-items: center !important;
-  padding: 6px 11px !important;
-  border: 1px solid color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 24%, transparent) !important;
-  border-radius: 10px !important;
-  color: var(--tienda-destacado, var(--gc-primario, #075da0)) !important;
-  background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 14%, var(--gc-superficie, #ffffff)) !important;
-  font-size: 15px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+  background: transparent !important;
+  font-size: clamp(18px, 1.45vw, 24px) !important;
+  line-height: 1 !important;
   font-weight: 900 !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .price-old) {
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
+  font-size: 12px !important;
+  order: -1 !important;
+  flex-basis: 100% !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .button-primary) {
   width: 100% !important;
-  min-height: 42px !important;
+  min-height: 44px !important;
   border-radius: 10px !important;
   color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
   background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
