@@ -683,6 +683,29 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   min-width: 0;
   max-width: 100%;
 }
+/* Tarjetas de producto en Inicio/Ficha: algunas bases viejas dejaron la
+   banda de precio en rojo fijo (#b00f3f/#b80f45). Esa zona es una CTA de
+   compra, por lo tanto debe seguir Mi Tienda siempre. */
+:where([data-gesicomm-lista] .product-card .product-footer) {
+  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
+  background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+}
+:where([data-gesicomm-lista] .product-card .product-footer .price) {
+  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
+}
+:where([data-gesicomm-lista] .product-card .product-footer .price-old) {
+  color: color-mix(in srgb, var(--gc-texto-sobre-primario, #fff) 72%, transparent) !important;
+}
+:where([data-gesicomm-lista] .product-card .product-footer .button-primary) {
+  color: var(--tienda-primario-texto, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
+  background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
+  border-color: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
+}
+:where([data-gesicomm-lista] .product-card .product-footer .button-primary:hover) {
+  color: var(--tienda-primario-texto, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
+  background: color-mix(in srgb, var(--gc-superficie, #fff) 92%, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
+  border-color: color-mix(in srgb, var(--gc-superficie, #fff) 92%, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
+}
 /* Un solo combo relacionado aprovecha el ancho de la ficha. Con varios
    combos se conserva la grilla; en celular sigue la tarjeta vertical. */
 @media (min-width: 701px) {

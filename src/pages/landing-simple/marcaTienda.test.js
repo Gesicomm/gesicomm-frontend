@@ -64,6 +64,19 @@ describe('Branding de Mi Tienda en la landing HTML', () => {
     expect(html).toContain('color: var(--tienda-destacado, var(--tienda-primario-texto, var(--gc-texto-suave, #64748b))) !important;');
   });
 
+  it('las tarjetas de producto reemplazan la banda roja fija por el primario de Mi Tienda', () => {
+    const datos = datosRuntimePublico({
+      tienda: { nombre: 'sommix', colores: { primario: '#1f3f8b', secundario: '#f59e0b', fondo: '#ffffff' } },
+      catalogo_items: [{ id: 1, slug: 'radio', nombre: 'Radio', precio_efectivo: 150000, imagen: 'https://cdn.test/radio.png' }],
+    }, 'promo', null);
+    const html = construirDocumentoCodigo(PLANTILLA_INICIO, { datos });
+    expect(html).toContain('--tienda-primario: #1f3f8b;');
+    expect(html).toContain(':where([data-gesicomm-lista] .product-card .product-footer)');
+    expect(html).toContain('background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;');
+    expect(html).toContain('color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;');
+    expect(html).toContain('color: var(--tienda-primario-texto, var(--gc-primario, var(--tienda-primario, #075da0))) !important;');
+  });
+
   it('sin logo no agrega ningun logo inventado y el nombre no tiene fondo', () => {
     const datos = datosRuntimePublico({
       tienda: { nombre: 'sommix', logo_imagen: null, colores: { primario: '#7c3aed', secundario: null, fondo: null } },
