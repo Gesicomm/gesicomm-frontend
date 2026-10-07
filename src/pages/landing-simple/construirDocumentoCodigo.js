@@ -123,7 +123,7 @@ const SYSTEM_CSS = `
 /* Contrato de marca: las landings IA usan --gc-* y Mi Tienda inyecta
    --tienda-*. Esta capa se aplica al final para que la marca configurada
    gane aunque el CSS generado haya dejado defaults fijos. */
-:where(:root) {
+:root {
   --gc-primario: var(--tienda-primario, #18a66b);
   --gc-secundario: var(--tienda-secundario, #ffb547);
   --gc-fondo: var(--tienda-fondo, #ffffff);
@@ -131,6 +131,14 @@ const SYSTEM_CSS = `
   --gc-texto-suave: var(--tienda-texto-suave, #506172);
   --gc-superficie: var(--tienda-superficie, #ffffff);
   --gc-texto-sobre-primario: var(--tienda-texto-sobre-primario, #ffffff);
+  --navy: var(--tienda-banda, var(--tienda-primario, #062b4f));
+  --navy-deep: color-mix(in srgb, var(--navy) 78%, #000);
+  --blue: var(--tienda-primario, #075da0);
+  --blue-bright: color-mix(in srgb, var(--blue) 82%, #fff);
+  --orange: var(--tienda-secundario, #ef5b3f);
+  --line: var(--tienda-linea, #d7e6ef);
+  --muted: var(--tienda-texto-suave, #5f7890);
+  --sky: color-mix(in srgb, var(--tienda-primario, #075da0) 8%, var(--tienda-superficie, #fff));
 }
 
 /* El HTML generado por IA a veces deja body o un wrapper raiz con ancho fijo
@@ -147,6 +155,21 @@ body {
   overflow-anchor: none;
   background: var(--gc-fondo, var(--tienda-fondo, #ffffff));
   color: var(--gc-texto, var(--tienda-texto, #10202f));
+}
+
+:where(.trust-bar, .announcement, .site-footer, footer) {
+  background: var(--tienda-banda, var(--gc-primario, var(--tienda-primario, #062b4f))) !important;
+  color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
+}
+:where(.trust-item span, .footer-brand p, .footer-note, footer a, .site-footer, .footer-links a) {
+  color: color-mix(in srgb, var(--tienda-banda-texto, #fff) 74%, transparent) !important;
+}
+:where(.trust-item strong, .announcement strong, .trust-icon, .trust-item svg) {
+  color: var(--tienda-secundario, var(--gc-secundario, #93c5fd)) !important;
+}
+:where(.site-header, .commerce-header) {
+  background: color-mix(in srgb, var(--gc-superficie, var(--tienda-superficie, #fff)) 92%, transparent) !important;
+  border-color: var(--tienda-linea, var(--gc-primario, #d7e6ef)) !important;
 }
 body > :where(header, main, footer, section, article, aside, nav, div):not(.container) {
   min-width: 100% !important;
