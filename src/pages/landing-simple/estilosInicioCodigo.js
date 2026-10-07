@@ -30,6 +30,7 @@ h1, h2, h3, p { margin-top: 0; }
 /* Fila única: logo a la izquierda, nav (categorías + links) centrado en TODO
    el header, buscador (ícono con desplegable) + carrito a la derecha. */
 .header-main { position: relative; min-height: 76px; display: flex; align-items: center; gap: 20px; }
+.brand-column { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; }
 .brand.brand-mark, .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--navy); font-size: 20px; font-weight: 800; white-space: nowrap; background: transparent !important; border: none !important; box-shadow: none !important; }
 .brand-mark span[data-gesicomm-tienda], .brand span[data-gesicomm-tienda] { background: transparent !important; }
 .brand-mark::before, .brand::before { display: none !important; }
