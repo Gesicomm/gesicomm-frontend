@@ -137,7 +137,7 @@ h1, h2, h3, p { margin-top: 0; }
 .mid-banner p:not(.eyebrow) { margin: 0 0 12px; color: rgba(255,255,255,.92); font-size: 12px; }
 .mid-banner .button-secondary { min-height: 30px; color: var(--navy); background: #fff; border: 0; border-radius: 5px; font-size: 10px; }
 .collection-card { position: relative; isolation: isolate; min-height: 150px; padding: 18px; display: flex; flex-direction: column; justify-content: end; border-radius: 7px; background-color: var(--navy); background-size: cover; background-position: center; color: #fff; overflow: hidden; }
-.collection-card::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(3,24,42,.76), transparent 70%); }
+.collection-card::before { content: ''; position: absolute; inset: 0; z-index: -1; }
 .collection-card h3 { margin: 0 0 6px; font-size: 14px; }
 .collection-card p { margin: 0; font-size: 10px; }
 .limited-offer { margin-top: 28px; }

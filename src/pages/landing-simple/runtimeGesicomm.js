@@ -687,6 +687,34 @@ export function runtimeGesicomm() {
     }, false);
   }
 
+  // Tarjeta de colección (.collection-card): al pasar el mouse, va mostrando
+  // la imagen de cada producto de esa categoría, una por una.
+  function prepararTarjetaColeccion(raiz, item) {
+    if (!raiz || !item) return;
+    var imgs = Array.isArray(item.imagenes) ? item.imagenes : [];
+    if (imgs.length < 2) return;
+    var idx = 0;
+    var timer = null;
+    function mostrar(n) {
+      idx = n % imgs.length;
+      raiz.style.backgroundImage = 'url("' + imgs[idx].replace(/"/g, '%22') + '")';
+    }
+    function iniciar() {
+      if (timer) return;
+      timer = setInterval(function () { mostrar(idx + 1); }, 900);
+    }
+    function parar() {
+      if (timer) clearInterval(timer);
+      timer = null;
+      idx = 0;
+      mostrar(0);
+    }
+    raiz.addEventListener('mouseenter', iniciar);
+    raiz.addEventListener('mouseleave', parar);
+    raiz.addEventListener('focusin', iniciar);
+    raiz.addEventListener('focusout', parar);
+  }
+
   // Countdown de oferta (data-gesicomm-countdown): el HTML trae la estructura,
   // no fechas ni JS propio. Si hay fecha real del producto, se usa esa; si no,
   // se muestra un countdown generado para mantener la estructura comercial de
@@ -1171,9 +1199,11 @@ export function runtimeGesicomm() {
       if (datos.vista === 'inicio' && p.mostrar_en_inicio === false) return;
       var nombre = String(p.categoria || '').trim();
       if (!nombre) return;
-      if (!porNombre[nombre]) porNombre[nombre] = { nombre: nombre, categoria: nombre, cantidad: 0, imagen: '', etiqueta: 'Categoria' };
+      if (!porNombre[nombre]) porNombre[nombre] = { nombre: nombre, categoria: nombre, cantidad: 0, imagen: '', imagenes: [], etiqueta: 'Categoria' };
       porNombre[nombre].cantidad += 1;
       if (!porNombre[nombre].imagen && (p.imagen || p.url_imagen)) porNombre[nombre].imagen = p.imagen || p.url_imagen;
+      var imgSegura = urlSegura(p.imagen || p.url_imagen);
+      if (imgSegura && porNombre[nombre].imagenes.indexOf(imgSegura) === -1) porNombre[nombre].imagenes.push(imgSegura);
     });
     return Object.keys(porNombre).sort(function (a, b) { return a.localeCompare(b, 'es'); }).map(function (k) {
       var cat = porNombre[k];
@@ -1567,6 +1597,7 @@ export function runtimeGesicomm() {
           if (nombre === 'categorias') h.setAttribute('data-gesicomm-categoria-ir', elemento.nombre);
           if (nombre === 'menu_categorias') h.setAttribute('data-gesicomm-categoria-ir', elemento.nombre);
           if (nombre === 'secciones_inicio') h.setAttribute('data-gesicomm-seccion-id', elemento.id);
+          if (nombre === 'categorias') prepararTarjetaColeccion(h, elemento);
           if (nombre === 'botones_pago_producto') {
             h.setAttribute('data-gesicomm-accion-pago', elemento.tipo || 'checkout');
             h.setAttribute('data-gesicomm-valor-pago', elemento.valor || '');

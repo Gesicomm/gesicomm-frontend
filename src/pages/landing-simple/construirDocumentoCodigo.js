@@ -1183,10 +1183,11 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   gap: clamp(16px, 2vw, 24px) !important;
 }
 :where(.storefront .collection-card, .collection-card, .collection) {
-  min-height: clamp(190px, 18vw, 260px) !important;
+  min-height: clamp(260px, 26vw, 360px) !important;
   padding: clamp(18px, 2.2vw, 28px) !important;
   overflow: hidden !important;
   border-radius: 10px !important;
+  background-color: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #0d1b2a)) 85%, #000) !important;
   background-size: cover !important;
   background-position: center !important;
   box-shadow:
