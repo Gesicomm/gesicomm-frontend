@@ -622,6 +622,15 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
 /** Sentinel para "todas las categorías" en el preview del panel de categorías. */
 export const TODAS_CATEGORIAS = '__todas__';
 
+function coloresTiendaPreview(tienda) {
+  const colores = tienda?.colores || {};
+  return {
+    primario: tienda?.color_primario || colores.primario || null,
+    secundario: tienda?.color_secundario || colores.secundario || colores.texto || null,
+    fondo: tienda?.color_fondo || colores.fondo || null,
+  };
+}
+
 /** Datos del runtime para el preview del editor, con el catálogo del panel. */
 export function datosRuntimePreview({ productos = [], tienda, venta, vista, productoId, categoria = null, ofertas = [], geografia = [] }) {
   // Ofertas de la tienda (panel) agrupadas por su producto, ya filtradas
@@ -649,11 +658,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     tienda: {
       nombre: tienda?.nombre || '',
       logo: media(tienda?.logo_imagen),
-      colores: {
-        primario: tienda?.color_primario || null,
-        secundario: tienda?.color_secundario || null,
-        fondo: tienda?.color_fondo || null,
-      },
+      colores: coloresTiendaPreview(tienda),
       whatsapp: tienda?.whatsapp || tienda?.telefono || '',
       mensaje: tienda?.mensaje_contacto || '',
       canal_contacto: tienda?.canal_contacto || 'whatsapp',

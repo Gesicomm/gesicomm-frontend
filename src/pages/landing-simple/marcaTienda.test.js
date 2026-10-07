@@ -99,6 +99,18 @@ describe('Branding de Mi Tienda en la landing HTML', () => {
     expect(datos.tienda.colores).toEqual({ primario: '#0f5132', secundario: '#ffc107', fondo: '#ffffff' });
   });
 
+  it('el preview del editor tambien respeta colores guardados en tienda.colores', () => {
+    const datos = datosRuntimePreview({
+      productos: [],
+      tienda: {
+        nombre: 'sommix',
+        colores: { primario: '#155E63', secundario: '#D8A862', fondo: '#101A21' },
+      },
+    });
+
+    expect(datos.tienda.colores).toEqual({ primario: '#155E63', secundario: '#D8A862', fondo: '#101A21' });
+  });
+
   it('el inicio rígido hereda los colores guardados en tienda.colores', () => {
     const datos = mapEditorDraftToTemplateData(
       { titulo: 'Mi tienda', items: [] },
