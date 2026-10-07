@@ -432,3 +432,68 @@ test('vista de categoria usa fondo y superficies de Mi tienda', async ({ page })
   expect(estilos.buttonBackground).toBe('rgb(21, 94, 99)');
   expect(contraste(estilos.buttonColor, estilos.buttonBackground)).toBeGreaterThanOrEqual(4.5);
 });
+
+test('tarjetas de productos no dejan franja blanca ni banda de precio pesada', async ({ page }) => {
+  const html = construirDocumentoCodigo({
+    html: `
+      <main class="storefront" data-gesicomm-base="catalogo">
+        <section data-gesicomm-lista="productos_categoria">
+          <article class="product-card">
+            <div class="product-image"><img data-gesicomm-bind="imagen" src="${producto.imagen}" alt=""></div>
+            <div class="product-content">
+              <h3>${producto.nombre}</h3>
+              <p class="product-description">Equipo para climatizar ambientes.</p>
+              <div class="product-footer">
+                <span class="price">Gs 138.859</span>
+                <button class="button-primary" type="button">Comprar con pago anticipado</button>
+              </div>
+            </div>
+          </article>
+        </section>
+      </main>
+    `,
+    css: `
+      .product-card { width: 310px; min-height: 380px; background: #fff; border: 1px solid #dbe8ef; border-radius: 7px; overflow: hidden; }
+      .product-image { height: 190px; background: #fff; }
+      .product-content { padding: 12px; background: #26333a; color: var(--navy); }
+      .product-content h3 { color: var(--navy); }
+      .product-description { color: var(--muted); }
+      .product-footer { margin-top: 10px; padding: 0; background: #b80f45; }
+      .price { display: block; color: #fff; background: #b80f45; }
+      .button-primary { width: 100%; color: #b80f45; background: #fff; border: 0; }
+    `,
+    js: '',
+  }, { datos: { tienda: { nombre: 'sommix', colores: coloresTienda } } });
+
+  await page.setContent(html);
+  await expect(page.locator('.product-card h3')).toHaveText(producto.nombre);
+
+  const estilos = await page.evaluate(() => {
+    const c = el => getComputedStyle(el);
+    const card = document.querySelector('.product-card');
+    const content = document.querySelector('.product-content');
+    const footer = document.querySelector('.product-footer');
+    const price = document.querySelector('.price');
+    const button = document.querySelector('.button-primary');
+    return {
+      cardBackground: c(card).backgroundColor,
+      cardDisplay: c(card).display,
+      contentDisplay: c(content).display,
+      contentBackground: c(content).backgroundColor,
+      footerBackground: c(footer).backgroundColor,
+      priceColor: c(price).color,
+      priceBackground: c(price).backgroundColor,
+      buttonColor: c(button).color,
+      buttonBackground: c(button).backgroundColor,
+    };
+  });
+
+  expect(estilos.cardBackground).not.toBe('rgb(255, 255, 255)');
+  expect(estilos.cardDisplay).toBe('flex');
+  expect(estilos.contentDisplay).toBe('flex');
+  expect(estilos.footerBackground).toBe('rgba(0, 0, 0, 0)');
+  expect(contraste(estilos.priceColor, estilos.priceBackground)).toBeGreaterThanOrEqual(3);
+  expect(estilos.buttonBackground).toBe('rgb(21, 94, 99)');
+  expect(contraste(estilos.buttonColor, estilos.buttonBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.priceColor, estilos.contentBackground)).toBeGreaterThanOrEqual(3);
+});

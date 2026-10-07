@@ -44,11 +44,15 @@ const PLANTILLA_CATALOGO_TEST = {
     <div data-gesicomm-total></div>
     <div data-gesicomm-lista="catalogo" data-gesicomm-si-vacio="mostrar">
       <template>
-        <article>
-          <img data-gesicomm-bind="imagen" alt="">
-          <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
-          <span data-gesicomm-bind="precio"></span>
-          <button type="button" data-gesicomm-comprar>Comprar</button>
+        <article class="product-card">
+          <div class="product-image"><img data-gesicomm-bind="imagen" alt=""></div>
+          <div class="product-content">
+            <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+            <div class="product-footer">
+              <span class="price" data-gesicomm-bind="precio"></span>
+              <button type="button" data-gesicomm-comprar>Comprar</button>
+            </div>
+          </div>
         </article>
       </template>
     </div>
@@ -273,10 +277,14 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(conCombo.document.querySelector('#combos [data-gesicomm-bind="incluye"]').textContent).toBe('A, B');
   });
 
-  it('"Comprar ahora" manda el producto de la tarjeta al carrito', () => {
-    const { mensajes, click } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo' });
+  it('"Comprar" en una tarjeta agrega al carrito y lleva a la ficha', () => {
+    const { document, mensajes, click } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo' });
+    const boton = document.querySelector('#productos [data-gesicomm-item="air-fryer-26l"] [data-gesicomm-comprar]');
+    expect(boton.textContent).toBe('Comprar');
+    expect(boton.hasAttribute('data-gesicomm-comprar-ver')).toBe(true);
     click('#productos [data-gesicomm-item="air-fryer-26l"] [data-gesicomm-comprar]');
-    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'air-fryer-26l', cantidad: 1, abrir: true }));
+    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'air-fryer-26l', cantidad: 1, abrir: false }));
+    expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'producto', producto: 'air-fryer-26l' });
   });
 
   it('un producto con variantes comprado desde la grilla lleva a su ficha', () => {
@@ -434,9 +442,10 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(css).toContain('main[data-gesicomm-base="catalogo"] > .page-content > .brand-section > .brand-layout');
   });
 
-  it('productos por categoría: oculto sin items, filtra por tab y respeta el límite', () => {
+  it('productos por categoría: sin selección usa catálogo visible, filtra por tab y respeta el límite', () => {
     const sinItems = montar(PLANTILLA_INICIO, datos);
-    expect(sinItems.document.querySelector('#productos-categoria').hidden).toBe(true);
+    expect(sinItems.document.querySelector('#productos-categoria').hidden).toBe(false);
+    expect([...sinItems.document.querySelectorAll('#productos-categoria [data-gesicomm-bind="nombre"]')].map(el => el.textContent)).toEqual(['Air Fryer 2.6L', 'Remera', '<img src=x onerror="window.__xss=1"></script><b>x</b>']);
 
     const { document, click } = montar(PLANTILLA_INICIO, {
       ...datos,

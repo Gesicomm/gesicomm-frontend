@@ -19,6 +19,7 @@ import { datosRuntimePreview, contentIdPanel, PAGINAS_TIENDA } from './datosRunt
 import { PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, plantillaInicioPara, formatoDeBase, esFichaProductoBase } from './plantillasBaseCodigo';
 import { leerItemsPrefill, limpiarItemsPrefill, unirItemsPrefill } from './prefilledLandingItems';
 import { armarPromptVista } from './promptsCodigo';
+import { conGlobalesHeredados } from './globalesCodigo';
 import {
   LABEL_LEGAL_CODIGO,
   PAGINAS_LEGALES_CODIGO,
@@ -651,6 +652,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     productoId: productoPreviewId,
     ofertas: ofertasTienda,
   }), [seleccion, tienda, venta, vista, productoPreviewId, ofertasTienda]);
+  const codigoPreviewCrudo = codigosPreview[claveVista] || codigosPreview[vista];
+  const codigoInicioPreview = codigosPreview.inicio?.html ? codigosPreview.inicio : plantillaInicioPara(venta?.tipo);
+  const codigoPreviewHeredado = ['catalogo', 'categoria', 'checkout'].includes(vista)
+    ? conGlobalesHeredados(codigoPreviewCrudo, codigoInicioPreview)
+    : codigoPreviewCrudo;
 
   const nombrePorId = useMemo(
     () => new Map(seleccion.map(p => [contentIdPanel(p), p.nombre])),
@@ -1136,7 +1142,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
               <PhonePreviewShell className="p-4">
                 <CodigoPreview
                   key={`${generacion}-${viewportMode}-${claveVista}`}
-                  codigo={codigosPreview[claveVista] || codigosPreview[vista]}
+                  codigo={codigoPreviewHeredado}
                   titulo={ajustes.seo_titulo || ajustes.titulo}
                   datos={datosPreview}
                   onError={alErrorRuntime}
@@ -1150,7 +1156,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
               <div style={{ width: ANCHOS_VIEWPORT[viewportMode], maxWidth: '100%', height: '100%' }}>
                 <CodigoPreview
                   key={`${generacion}-${viewportMode}-${claveVista}`}
-                  codigo={codigosPreview[claveVista] || codigosPreview[vista]}
+                  codigo={codigoPreviewHeredado}
                   titulo={ajustes.seo_titulo || ajustes.titulo}
                   datos={datosPreview}
                   onError={alErrorRuntime}

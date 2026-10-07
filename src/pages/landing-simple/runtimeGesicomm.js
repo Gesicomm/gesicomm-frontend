@@ -630,6 +630,14 @@ export function runtimeGesicomm() {
       if (item.cta_texto) {
         contenido.querySelectorAll('[data-gesicomm-comprar]').forEach(function (btn) { btn.textContent = item.cta_texto; });
       }
+      if (raiz.classList && raiz.classList.contains('product-card')) {
+        contenido.querySelectorAll('[data-gesicomm-comprar]').forEach(function (btn) {
+          if (!btn.hasAttribute('data-gesicomm-metodo-pago')) {
+            btn.textContent = 'Comprar';
+            btn.setAttribute('data-gesicomm-comprar-ver', '');
+          }
+        });
+      }
       if ((item.titulo_comercial || item.mensaje_comercial) && !contenido.querySelector('.gc-commercial-details')) {
         var detalles = document.createElement('button'); detalles.type = 'button'; detalles.className = 'gc-commercial-details';
         detalles.setAttribute('data-gesicomm-ver', item.id || ''); detalles.textContent = 'Ver producto →'; contenido.appendChild(detalles);
@@ -941,12 +949,14 @@ export function runtimeGesicomm() {
     return inicioConfig().productos_categoria || {};
   }
 
-  // Solo los productos elegidos a mano en el editor (igual criterio que
-  // productosDestacados) — a propósito nunca "todo el catálogo": esta
-  // sección es una vidriera chica, no un segundo catálogo.
+  // Productos elegidos a mano en el editor. Si el comercio todavía no
+  // seleccionó ninguno, arranca mostrando todo el catálogo (en vez de nada)
+  // para que el bloque no se vea vacío/roto en una landing nueva.
   function productosCategoriaBase() {
     var ids = productosCategoriaConfig().items;
-    if (!Array.isArray(ids) || !ids.length) return [];
+    if (!Array.isArray(ids) || !ids.length) {
+      return productos.filter(function (p) { return p.mostrar_en_inicio !== false; });
+    }
     var salida = [];
     for (var i = 0; i < ids.length; i++) {
       var item = buscar(ids[i]);
@@ -2868,6 +2878,11 @@ export function runtimeGesicomm() {
       e.preventDefault();
       var itemComprar = itemDeContexto(el, el.getAttribute('data-gesicomm-comprar'));
       var paqC = itemComprar === productoActual ? paqueteActual() : null;
+      if (el.hasAttribute('data-gesicomm-comprar-ver') && itemComprar && itemComprar !== productoActual && !paqC) {
+        comprar(itemComprar, { cantidad: cantidadElegida(el), variante: varianteElegida, abrir: false, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null });
+        verProducto(itemComprar);
+        return;
+      }
       comprar(itemComprar, paqC
         ? { oferta: paqC, variante: varianteElegida, conBumps: true, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null }
         : { cantidad: hayPaquetes() && itemComprar === productoActual ? 1 : cantidadElegida(el), variante: varianteElegida, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null });

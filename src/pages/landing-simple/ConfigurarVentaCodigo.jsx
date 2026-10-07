@@ -16,6 +16,7 @@ import CodigoPreview from './CodigoPreview';
 import { plantillaInicioPara, formatoDeBase, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
+import { conGlobalesHeredados } from './globalesCodigo';
 
 // El MISMO editor de ofertas de la ficha de producto (precios, componentes,
 // margen, imagen): acá se abre en un panel lateral para crear o editar sin
@@ -356,7 +357,7 @@ const ETIQUETAS_BLOQUE_INICIO = {
   anuncios: 'Barra de anuncios',
   banner: 'Banner principal',
   categorias: 'Categorías visuales',
-  productos_categoria: 'Productos por categoría',
+  productos_categoria: 'Productos',
   destacados: 'Productos destacados',
   confianza: 'Zona de confianza',
   marca: 'Nuestra marca',
@@ -390,7 +391,7 @@ function normalizarBloquesInicio(bloques) {
 
 function normalizarInicioComercial(inicio = {}, categorias = []) {
   const primeraCategoria = categorias[0]?.[0] || '';
-  const banners = Array.isArray(inicio.banners)
+  const bannersGuardados = Array.isArray(inicio.banners)
     ? inicio.banners.map((b, idx) => ({
       id: b.id || `banner-${idx + 1}`,
       activo: b.activo !== false,
@@ -403,6 +404,9 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       tipo_medio: b.tipo_medio || inferirTipoMedio(b.imagen || ''),
     }))
     : [];
+  // Landing nueva sin banners guardados: arranca con uno de ejemplo en vez
+  // de vacío, para que el bloque no se vea "roto" antes de personalizarlo.
+  const banners = bannersGuardados.length ? bannersGuardados : [crearBannerInicio()];
   const bannersIntermedios = Array.isArray(inicio.banners_intermedios)
     ? inicio.banners_intermedios.map((b, idx) => ({
       id: b.id || `banner-medio-${idx + 1}`,
@@ -637,7 +641,7 @@ export default function ConfigurarVentaCodigo({
   // Countdown de oferta y estadísticas: pueden ser datos reales confirmados
   // o contenido de ejemplo/generado por IA. Si quedan sin confirmar, publicar
   // pide una aceptación explícita; no bloquea ni inventa una fecha demo.
-  const [urgenciaActiva, setUrgenciaActiva] = useState(ventaInicial.urgencia?.activo === true);
+  const [urgenciaActiva, setUrgenciaActiva] = useState(ventaInicial.urgencia?.activo !== false);
   const [urgenciaFinAt, setUrgenciaFinAt] = useState(() => isoParaInputLocal(ventaInicial.urgencia?.fin_at));
   const [urgenciaProductoId, setUrgenciaProductoId] = useState(ventaInicial.urgencia?.producto_id || '');
   const [urgenciaConfirmar, setUrgenciaConfirmar] = useState(ventaInicial.urgencia?.estado === 'confirmado');
@@ -1432,10 +1436,10 @@ export default function ConfigurarVentaCodigo({
     || !!formatoDeBase(codigos.inicio.html);
   const abreEnFicha = abrirEn === 'producto';
   const codigoInicioPreview = inicioEsBase ? plantillaInicioPara(tipo) : codigos.inicio;
-  const codigoCatalogoPreview = codigos?.catalogo?.html ? codigos.catalogo : PLANTILLA_CATALOGO;
-  const codigoCategoriaPreview = codigos?.categoria?.html ? codigos.categoria : PLANTILLA_CATEGORIA;
+  const codigoCatalogoPreview = conGlobalesHeredados(codigos?.catalogo?.html ? codigos.catalogo : PLANTILLA_CATALOGO, codigoInicioPreview);
+  const codigoCategoriaPreview = conGlobalesHeredados(codigos?.categoria?.html ? codigos.categoria : PLANTILLA_CATEGORIA, codigoInicioPreview);
   const codigoFichaPreview = esFichaProductoBase(codigos?.producto?.html) ? PLANTILLA_PRODUCTO : codigos.producto;
-  const codigoCheckoutPreview = codigos?.checkout?.html ? codigos.checkout : PLANTILLA_CHECKOUT;
+  const codigoCheckoutPreview = conGlobalesHeredados(codigos?.checkout?.html ? codigos.checkout : PLANTILLA_CHECKOUT, codigoInicioPreview);
   const codigoPreviewActual = abreEnFicha || vistaPreview === 'producto'
     ? codigoFichaPreview
     : vistaPreview === 'catalogo'
@@ -3290,7 +3294,7 @@ function FilaBloqueInicio({ numero, etiqueta, visible, primero, ultimo, onMover,
   const tienePanel = !!panel;
   const puedeMoverse = !!onMover;
   return (
-    <div className={`rounded-xl border ${visible === false ? 'border-border bg-surface-2/40 opacity-70' : 'border-border'}`}>
+    <div className={`rounded-xl border ${abierto ? 'border-primary ring-2 ring-primary/30' : visible === false ? 'border-border bg-surface-2/40 opacity-70' : 'border-border'}`}>
       <div className="flex items-center gap-2 p-2.5">
         <span className="w-5 shrink-0 text-center text-xs font-mono text-fg-muted">{numero}</span>
         <button
@@ -3450,7 +3454,7 @@ function EditorMarcaInicio({ marca, onCambiar, onCambiarBadge, onAgregarBadge, o
 function EditorProductosCategoria({ config, candidatos, onCambiar, onAlternarItem }) {
   return (
     <div className="space-y-3">
-      <p className="text-xs text-fg-muted">Se muestra sola apenas elijas al menos un producto abajo. Sin productos, queda oculta aunque "Mostrar" esté tildado arriba.</p>
+      <p className="text-xs text-fg-muted">Por defecto se muestran todos los productos, agrupados por categoría. Elegí productos abajo solo si querés mostrar una selección puntual en vez de todo el catálogo.</p>
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_110px] gap-3">
         <CampoTexto label="Rótulo (kicker)" value={config.kicker} onChange={v => onCambiar({ kicker: v })} placeholder="PRODUCTOS" maxLength={40} />
         <CampoTexto label="Título" value={config.titulo} onChange={v => onCambiar({ titulo: v })} placeholder="Productos seleccionados" maxLength={100} />

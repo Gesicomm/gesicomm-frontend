@@ -10,6 +10,7 @@ import CartDrawer from '../landing/CartDrawer';
 import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
 import { getMediaUrl } from '../../services/api';
 import { useStoreCart } from '../landing/useStoreCart';
+import { codigoConGlobales, conGlobalesHeredados } from './globalesCodigo';
 
 /**
  * La landing pública de una tienda que eligió "Lienzo en blanco": el
@@ -117,62 +118,6 @@ function resolverItemCheckout(items, pedido) {
     return items.find(i => i.tipo === tipo && Number(i.referencia_id) === Number(id));
   }
   return items.find(i => i.content_id === raw || `${i.tipo}-${i.referencia_id}` === raw);
-}
-
-function unirPartesUnicas(partes = []) {
-  const vistas = [];
-  const vistasSet = new Set();
-  partes.forEach(parte => {
-    const valor = String(parte || '').trim();
-    if (!valor || vistasSet.has(valor)) return;
-    vistasSet.add(valor);
-    vistas.push(parte);
-  });
-  return vistas.join('\n\n');
-}
-
-function extraerGlobalesTienda(html = '') {
-  const header = /<header\b[^>]*>/i.exec(html);
-  if (!header) return null;
-  const finHeader = html.indexOf('</header>', header.index);
-  if (finHeader < 0) return null;
-
-  let inicio = header.index;
-  const antes = html.slice(0, header.index);
-  const barras = [...antes.matchAll(/<(?:div|section|aside)\b[^>]*>/gi)]
-    .filter(match => {
-      const tag = match[0];
-      return /data-gesicomm-bloque=(["'])anuncios\1/i.test(tag)
-        || /class=(["'])(?=[^"']*(?:announcement|trust(?:-bar)?|top-?bar|promo|promocion|promociones|anuncio|anuncios|benefit|beneficios|shipping|envio|envios|aviso|avisos))[^"']*\1/i.test(tag);
-    });
-  const barra = barras[barras.length - 1];
-  if (barra) inicio = barra.index;
-
-  return {
-    inicio,
-    fin: finHeader + '</header>'.length,
-    html: html.slice(inicio, finHeader + '</header>'.length),
-  };
-}
-
-function conGlobalesHeredados(codigoVista, codigoInicio) {
-  if (!codigoVista?.html || !codigoInicio?.html || codigoVista === codigoInicio) return codigoVista;
-  const globalInicio = extraerGlobalesTienda(codigoInicio.html);
-  const globalVista = extraerGlobalesTienda(codigoVista.html);
-  if (!globalInicio) return codigoVista;
-  const html = globalVista
-    ? `${codigoVista.html.slice(0, globalVista.inicio)}${globalInicio.html}${codigoVista.html.slice(globalVista.fin)}`
-    : `${globalInicio.html}\n${codigoVista.html}`;
-  return {
-    ...codigoVista,
-    html,
-    css: unirPartesUnicas([codigoInicio.css, codigoVista.css]),
-    js: unirPartesUnicas([codigoInicio.js, codigoVista.js]),
-  };
-}
-
-function codigoConGlobales(codigos = []) {
-  return codigos.find(c => c?.html && extraerGlobalesTienda(c.html)) || null;
 }
 
 export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, data = null, slug, productId = null, modoLegal = false, vistaCodigo = null, categorySlug = null }) {

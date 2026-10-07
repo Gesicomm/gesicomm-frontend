@@ -793,12 +793,26 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   max-height: 100% !important;
   mix-blend-mode: normal !important;
 }
+:where([data-gesicomm-lista] .product-card) {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  background: var(--gc-superficie, var(--tienda-superficie, #ffffff)) !important;
+  border-color: var(--tienda-linea, var(--line, #d7e6ef)) !important;
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--gc-fondo, #0f172a) 72%, transparent) !important;
+}
+:where([data-gesicomm-lista] .product-card > .product-image) {
+  border-bottom: 1px solid color-mix(in srgb, var(--tienda-linea, var(--line, #d7e6ef)) 72%, transparent) !important;
+}
 [data-gesicomm-lista] .product-card > .product-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-width: 0;
   overflow-wrap: anywhere;
   position: relative;
   isolation: isolate;
-  background: var(--gc-superficie);
+  background: var(--gc-superficie, var(--tienda-superficie, #ffffff));
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
 [data-gesicomm-lista] .product-card > .product-content h3 {
@@ -815,28 +829,43 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   min-width: 0;
   max-width: 100%;
 }
-/* Tarjetas de producto en Inicio/Ficha: algunas bases viejas dejaron la
-   banda de precio en rojo fijo (#b00f3f/#b80f45). Esa zona es una CTA de
-   compra, por lo tanto debe seguir Mi Tienda siempre. */
+/* Tarjetas de producto en Inicio/Ficha: el precio y la CTA siguen Mi Tienda,
+   pero sin bandas duras que rompan la superficie de la card. */
 :where([data-gesicomm-lista] .product-card .product-footer) {
-  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
-  background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  margin-top: auto !important;
+  padding: 0 !important;
+  gap: 10px !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+  background: transparent !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .price) {
-  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
+  display: inline-flex !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  min-height: 30px !important;
+  align-items: center !important;
+  padding: 5px 10px !important;
+  border-radius: 8px !important;
+  color: var(--tienda-destacado, var(--gc-primario, #075da0)) !important;
+  background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 14%, var(--gc-superficie, #ffffff)) !important;
+  font-weight: 900 !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .price-old) {
-  color: color-mix(in srgb, var(--gc-texto-sobre-primario, #fff) 72%, transparent) !important;
+  color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .button-primary) {
-  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
-  background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
-  border-color: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
+  min-height: 40px !important;
+  border-radius: 8px !important;
+  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
+  background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  border-color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 22%, transparent) !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .button-primary:hover) {
-  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
-  background: color-mix(in srgb, var(--gc-superficie, #fff) 92%, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
-  border-color: color-mix(in srgb, var(--gc-superficie, #fff) 92%, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
+  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
+  background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 84%, #ffffff) !important;
+  border-color: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 84%, #ffffff) !important;
+  transform: translateY(-1px);
 }
 /* Un solo combo relacionado aprovecha el ancho de la ficha. Con varios
    combos se conserva la grilla; en celular sigue la tarjeta vertical. */
