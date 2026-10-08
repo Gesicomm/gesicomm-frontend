@@ -7,10 +7,11 @@ import {
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { comboAdminService } from '../../services/comboAdminService';
+import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import PresentacionProducto from './PresentacionProducto';
-import { contentIdPanel, datosRuntimePreview, slugCategoria, TODAS_CATEGORIAS } from './datosRuntime';
+import { contentIdPanel, datosRuntimePreview, slugCategoria, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
 import { plantillaInicioPara, formatoDeBase, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
@@ -692,17 +693,35 @@ export default function ConfigurarVentaCodigo({
     etiqueta: i.etiqueta || '', mostrar_en_inicio: i.mostrar_en_inicio !== false, envio_incluido: i.envio_incluido === true,
   }])), ...ventaInicial.presentacion_productos }));
   const [filtrosCatalogo, setFiltrosCatalogo] = useState(() => ventaInicial.catalogo_filtros || {});
-  // Logos de medios de pago en la ficha: de la tienda entera (no por
-  // producto), el comercio elige cuáles mostrar. `!== false` porque una
-  // landing vieja sin este campo tiene que seguir mostrando los tres.
-  const [pagoLogos, setPagoLogos] = useState(() => ({
-    tarjetas: ventaInicial.pago_logos?.tarjetas !== false,
-    bocas: ventaInicial.pago_logos?.bocas !== false,
-    billetera: ventaInicial.pago_logos?.billetera !== false,
-  }));
+  const [paymentLogosCatalogo, setPaymentLogosCatalogo] = useState(PAYMENT_LOGOS_DEFAULT);
+  const [pagoLogos, setPagoLogos] = useState(() => {
+    if (Array.isArray(ventaInicial.payment_logos)) {
+      return Object.fromEntries(ventaInicial.payment_logos.map(logo => [logo.clave, logo.activo !== false]));
+    }
+    const legacy = ventaInicial.pago_logos || {};
+    const tieneLegacy = legacy && typeof legacy === 'object' && Object.keys(legacy).length > 0;
+    return Object.fromEntries(PAYMENT_LOGOS_DEFAULT.map(logo => [
+      logo.clave,
+      tieneLegacy ? (Object.prototype.hasOwnProperty.call(legacy, logo.grupo) && legacy[logo.grupo] !== false) : true,
+    ]));
+  });
   function alternarPagoLogo(clave) {
     setPagoLogos(prev => ({ ...prev, [clave]: !prev[clave] }));
   }
+  useEffect(() => {
+    let vivo = true;
+    landingSimpleService.listarPaymentLogos()
+      .then(logos => {
+        if (!vivo || !Array.isArray(logos) || !logos.length) return;
+        setPaymentLogosCatalogo(logos);
+        setPagoLogos(prev => ({
+          ...Object.fromEntries(logos.map(logo => [logo.clave, prev[logo.clave] !== false])),
+          ...prev,
+        }));
+      })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, []);
   const productosSoloDesdeProductos = true;
   function cambiarPresentacion(item, campo, valor) {
     setPresentacion(prev => ({ ...prev, [claveItem(item)]: { ...prev[claveItem(item)], [campo]: valor } }));
@@ -1423,6 +1442,7 @@ export default function ConfigurarVentaCodigo({
       ...(value.ficha_bloques && typeof value.ficha_bloques === 'object' ? { ficha_bloques: value.ficha_bloques } : {}),
       ...(Array.isArray(value.imagenes_landing) ? { imagenes_landing: value.imagenes_landing } : {}),
       ...(Array.isArray(value.beneficios) ? { beneficios: value.beneficios.filter(b => b && (b.titulo || b.texto)).slice(0, 8) } : {}),
+      ...(Array.isArray(value.confianza) ? { confianza: value.confianza.filter(c => c && (c.icono || c.titulo || c.texto)).slice(0, 6) } : {}),
       ...(Array.isArray(value.botones_pago) ? { botones_pago: value.botones_pago.filter(b => b && (b.label || b.tipo || b.valor)).slice(0, 4) } : {}),
       ...(Array.isArray(value.metodos_pago) ? { metodos_pago: value.metodos_pago.filter(m => m && (m.texto || m.label)).slice(0, 8) } : {}),
       ...(Array.isArray(value.incluye_pedido) ? { incluye_pedido: value.incluye_pedido.filter(i => i && (i.texto || i.titulo)).slice(0, 8) } : {}),
@@ -1458,11 +1478,21 @@ export default function ConfigurarVentaCodigo({
     },
     prueba_social: { activo: pruebaSocialActiva, producto_id: pruebaSocialProductoValido || null, items: pruebaSocialItems },
     pago_logos: pagoLogos,
+    payment_logos: paymentLogosCatalogo
+      .filter(logo => pagoLogos[logo.clave] !== false)
+      .map(logo => ({
+        clave: logo.clave,
+        grupo: logo.grupo,
+        nombre: logo.nombre,
+        logo_url: logo.logo_url || logo.imagen,
+        imagen: logo.logo_url || logo.imagen,
+        orden: logo.orden || 0,
+      })),
   }), [
     tipo, abrirEn, combosPrimero, destacadosValidos, inicioActual, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
     crossActivo, ofertasElegidas, recoActivo, recoModo, recoItemsValidos, recoMax, recoTitulo,
     urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, urgenciaProductosValidos, urgenciaConfirmar, urgenciaTitulo, urgenciaTexto, urgenciaCta, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
-    pagoLogos,
+    pagoLogos, paymentLogosCatalogo,
   ]);
 
   function alternarOferta(oferta) {
@@ -1910,6 +1940,7 @@ export default function ConfigurarVentaCodigo({
                         onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(productoConfigActual)]: v }))}
                         onCambiar={(campo, valor) => cambiarPresentacion(productoConfigActual, campo, valor)}
                         pagoLogos={pagoLogos}
+                        paymentLogosCatalogo={paymentLogosCatalogo}
                         onPagoLogosChange={(clave, activo) => setPagoLogos(prev => ({ ...prev, [clave]: activo }))}
                         destacado={destacadosValidos.includes(productoConfigActual.content_id)} onDestacar={() => alternarDestacado(productoConfigActual.content_id)}
                         tienda={tienda} onSubirImagen={onSubirImagen ? subirImagenLanding : null} {...propsOfertaProducto(productoConfigActual)} inicialmenteAbierto />
@@ -2328,17 +2359,13 @@ export default function ConfigurarVentaCodigo({
                       <p className="text-sm font-semibold text-fg">Logos de medios de pago en la ficha</p>
                       <p className="mt-1 text-[13px] text-fg-muted">Se muestran junto al botón de compra, antes de confirmar. Elegí cuáles mostrar.</p>
                       <div className="mt-3 space-y-2.5">
-                        {[
-                          ['tarjetas', 'Tarjetas de crédito', 'Visa, Mastercard, Pago Móvil'],
-                          ['bocas', 'Bocas de cobranza', 'Aquí Pago, Pago Express, Practipago, Infonet Cobranzas'],
-                          ['billetera', 'Billetera electrónica', 'Tigo Money, Billetera Personal'],
-                        ].map(([clave, label, detalle]) => (
-                          <div key={clave} className="flex items-center justify-between gap-3">
+                        {paymentLogosCatalogo.map(logo => (
+                          <div key={logo.clave} className="flex items-center justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="text-[13px] font-medium text-fg">{label}</p>
-                              <p className="text-xs text-fg-muted truncate">{detalle}</p>
+                              <p className="text-[13px] font-medium text-fg">{logo.nombre}</p>
+                              <p className="text-xs text-fg-muted truncate">{logo.grupo}</p>
                             </div>
-                            <Interruptor activo={pagoLogos[clave]} onChange={() => alternarPagoLogo(clave)} etiqueta={`Mostrar ${label}`} />
+                            <Interruptor activo={pagoLogos[logo.clave] !== false} onChange={() => alternarPagoLogo(logo.clave)} etiqueta={`Mostrar ${logo.nombre}`} />
                           </div>
                         ))}
                       </div>

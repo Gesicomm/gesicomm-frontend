@@ -46,6 +46,21 @@ export const PAGINAS_TIENDA = {
   'aviso-legal': 'Aviso legal',
 };
 
+export const PAYMENT_LOGOS_DEFAULT = [
+  { clave: 'deposito_bancario', grupo: 'bancario', nombre: 'Deposito bancario', logo_url: '/payment-logos/deposito-bancario.webp', orden: 10 },
+  { clave: 'transferencia_bancaria', grupo: 'bancario', nombre: 'Transferencia bancaria', logo_url: '/payment-logos/transferencia-bancaria.webp', orden: 20 },
+  { clave: 'visa', grupo: 'tarjetas', nombre: 'Visa', logo_url: '/payment-logos/visa.webp', orden: 100 },
+  { clave: 'mastercard', grupo: 'tarjetas', nombre: 'Mastercard', logo_url: '/payment-logos/mastercard.webp', orden: 110 },
+  { clave: 'american_express', grupo: 'tarjetas', nombre: 'American Express', logo_url: '/payment-logos/american-express.webp', orden: 120 },
+  { clave: 'diners_club', grupo: 'tarjetas', nombre: 'Diners Club', logo_url: '/payment-logos/diners-club.webp', orden: 130 },
+  { clave: 'bancard', grupo: 'tarjetas', nombre: 'Bancard', logo_url: '/payment-logos/bancard.webp', orden: 140 },
+  { clave: 'credicheck', grupo: 'bocas', nombre: 'Credicheck', logo_url: '/payment-logos/credicheck.webp', orden: 200 },
+  { clave: 'cabal', grupo: 'tarjetas', nombre: 'Cabal', logo_url: '/payment-logos/cabal.webp', orden: 210 },
+  { clave: 'panal', grupo: 'bocas', nombre: 'Panal', logo_url: '/payment-logos/panal.webp', orden: 220 },
+  { clave: 'discover', grupo: 'tarjetas', nombre: 'Discover', logo_url: '/payment-logos/discover.webp', orden: 230 },
+  { clave: 'jcb', grupo: 'tarjetas', nombre: 'JCB', logo_url: '/payment-logos/jcb.webp', orden: 240 },
+];
+
 /**
  * URL de una página de la tienda (legales, contacto, catálogo). Mismo
  * criterio que usan esas páginas para sus propios links: en el subdominio
@@ -105,6 +120,7 @@ const FICHA_BLOQUES_DEFAULT = {
   info_compra: true,
   urgencia: true,
   beneficios: true,
+  confianza: true,
   compra: true,
   promociones_pago: true,
   contacto_pago: true,
@@ -120,6 +136,7 @@ const FICHA_ORDEN_MOBILE_DEFAULT = [
   'precio',
   'descripcion',
   'beneficios',
+  'confianza',
   'compra',
   'contacto_pago',
   'promociones_pago',
@@ -238,6 +255,17 @@ function normalizarBeneficio(b) {
   };
 }
 
+function normalizarConfianza(c) {
+  if (typeof c === 'string') return { icono: '', titulo: textoLimpio(c), texto: '' };
+  const titulo = textoLimpio(c?.titulo || c?.title || c?.texto || c?.text);
+  const texto = textoLimpio(c?.texto || c?.text || c?.subtitulo || c?.subtitle || c?.descripcion || c?.description);
+  return {
+    icono: textoLimpio(c?.icono || c?.icon),
+    titulo,
+    texto: texto && texto !== titulo ? texto : '',
+  };
+}
+
 function normalizarPregunta(f) {
   return {
     pregunta: textoLimpio(f?.pregunta || f?.question),
@@ -265,6 +293,35 @@ function opinionesDeFichaDatos(fichaDatos = {}) {
   );
 }
 
+function normalizarPaymentLogo(logo) {
+  if (!logo || typeof logo !== 'object' || logo.activo === false) return null;
+  const logoUrl = logo.logo_url || logo.imagen || '';
+  if (!logoUrl) return null;
+  return {
+    clave: String(logo.clave || logo.nombre || '').trim(),
+    grupo: String(logo.grupo || 'otros').trim(),
+    nombre: String(logo.nombre || logo.clave || 'Metodo de pago').trim(),
+    logo_url: logoUrl,
+    imagen: logoUrl,
+    orden: Number.isFinite(Number(logo.orden)) ? Number(logo.orden) : 0,
+  };
+}
+
+function logosPagoDesdeVenta(venta) {
+  if (Array.isArray(venta?.payment_logos)) {
+    return venta.payment_logos
+      .map(normalizarPaymentLogo)
+      .filter(Boolean)
+      .sort((a, b) => a.orden - b.orden);
+  }
+  const legacy = venta?.pago_logos || {};
+  const tieneLegacy = legacy && typeof legacy === 'object' && Object.keys(legacy).length > 0;
+  return PAYMENT_LOGOS_DEFAULT
+    .filter(logo => (tieneLegacy ? (Object.prototype.hasOwnProperty.call(legacy, logo.grupo) && legacy[logo.grupo] !== false) : true))
+    .map(normalizarPaymentLogo)
+    .filter(Boolean);
+}
+
 export function presentacionComercial(item, venta) {
   const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
   const fuente = venta?.presentacion_productos?.[key] || item;
@@ -275,6 +332,9 @@ export function presentacionComercial(item, venta) {
   const beneficios = (beneficiosFuente.length ? beneficiosFuente : PRESENTACION_PRODUCTO_DEFAULT.beneficios)
     .map(normalizarBeneficio)
     .filter(b => b.titulo || b.texto);
+  const confianza = primeraListaConDatos(fuente.confianza, item.confianza, fichaDatos.confianza, fichaDatos.trust_items)
+    .map(normalizarConfianza)
+    .filter(c => c.titulo || c.texto);
   const preguntasFuente = primeraListaConDatos(
     fuente.preguntas,
     fuente.faq,
@@ -291,15 +351,16 @@ export function presentacionComercial(item, venta) {
   const opinionesFuente = Array.isArray(fuente.opiniones)
     ? fuente.opiniones
     : primeraListaConDatos(item.opiniones, opinionesDeFichaDatos(fichaDatos));
-  const opiniones = opinionesFuente.map(normalizarOpinion).filter(o => o.comentario);
-  // Logos de medios de pago (Tarjetas / Bocas de cobranza / Billetera
-  // electrónica) de la ficha genérica: el comercio elige cuáles mostrar
-  // desde Configurar venta → Checkout (nunca por producto, es de la tienda
-  // entera). `undefined` = todavía no lo tocó = se muestra, por eso el
-  // chequeo es `!== false` y no `=== true`.
-  const pagoLogoTarjetas = venta?.pago_logos?.tarjetas !== false;
-  const pagoLogoBocas = venta?.pago_logos?.bocas !== false;
-  const pagoLogoBilletera = venta?.pago_logos?.billetera !== false;
+  const opinionesBase = Array.isArray(fuente.opiniones)
+    ? opinionesFuente
+    : (opinionesFuente.length ? opinionesFuente : PRESENTACION_PRODUCTO_DEFAULT.opiniones);
+  const opiniones = opinionesBase
+    .map(normalizarOpinion)
+    .filter(o => o.comentario);
+  const paymentLogos = logosPagoDesdeVenta(venta);
+  const pagoLogoTarjetas = paymentLogos.some(logo => logo.grupo === 'tarjetas');
+  const pagoLogoBocas = paymentLogos.some(logo => logo.grupo === 'bocas');
+  const pagoLogoBilletera = paymentLogos.some(logo => logo.grupo === 'billetera');
   const bloquesCrudos = fuente.ficha_bloques || {};
   const bloquesCompatibles = { ...FICHA_BLOQUES_DEFAULT, ...bloquesCrudos };
   if (bloquesCrudos.portada === false && bloquesCrudos.galeria === undefined) bloquesCompatibles.galeria = false;
@@ -320,6 +381,7 @@ export function presentacionComercial(item, venta) {
     ficha_bloques: bloquesCompatibles,
     ficha_orden_mobile: normalizarOrdenMobileFicha(fuente.ficha_orden_mobile),
     beneficios,
+    confianza,
     botones_pago: lista('botones_pago'),
     // Vacía = el comercio desmarcó todos los métodos: no se rellena con ejemplos.
     metodos_pago: Array.isArray(fuente.metodos_pago) ? fuente.metodos_pago : PRESENTACION_PRODUCTO_DEFAULT.metodos_pago,
@@ -330,7 +392,8 @@ export function presentacionComercial(item, venta) {
     pago_logo_tarjetas: pagoLogoTarjetas,
     pago_logo_bocas: pagoLogoBocas,
     pago_logo_billetera: pagoLogoBilletera,
-    pago_logos_activo: pagoLogoTarjetas || pagoLogoBocas || pagoLogoBilletera,
+    pago_logos_activo: paymentLogos.length > 0,
+    payment_logos: paymentLogos,
   };
 }
 
@@ -437,9 +500,9 @@ export function contenidoFicha(item) {
   const beneficios = primeraListaConDatos(item.beneficios, fichaDatos.beneficios_rapidos)
     .map(normalizarBeneficio)
     .filter(b => b.titulo || b.texto);
-  const confianza = (Array.isArray(item.confianza) ? item.confianza : [])
-    .map(c => ({ texto: String(c?.texto || c?.titulo || '').trim(), icono: c?.icono || null }))
-    .filter(c => c.texto);
+  const confianza = primeraListaConDatos(item.confianza, fichaDatos.confianza, fichaDatos.trust_items)
+    .map(normalizarConfianza)
+    .filter(c => c.titulo || c.texto);
   const preguntas = primeraListaConDatos(item.preguntas, item.faq, item.faqs, item.preguntas_frecuentes)
     .map(normalizarPregunta)
     .filter(f => f.pregunta && f.respuesta);

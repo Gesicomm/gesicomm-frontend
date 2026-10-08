@@ -588,10 +588,11 @@ export default function ProductForm() {
         if (Array.isArray(productPage.trust_items) && productPage.trust_items.length) {
           const confianza = productPage.trust_items
             .map(item => ({
-              texto: limpiar(item?.text || item?.description || item?.title || item?.titulo),
-              icono: item?.icono || 'shield',
+              titulo: limpiar(item?.title || item?.titulo || item?.text || item?.description),
+              texto: limpiar(item?.text || item?.description || item?.subtitle || item?.subtitulo),
+              icono: limpiar(item?.icono || item?.icon),
             }))
-            .filter(item => item.texto);
+            .filter(item => item.titulo || item.texto);
           if (confianza.length) setValue('confianza', confianza, { shouldDirty: true });
         }
 
@@ -1690,10 +1691,10 @@ export default function ProductForm() {
     }
     if (!hayContenido(valoresProducto.confianza)) {
       replaceConfianza([
-        { texto: 'Envío a todo el país', icono: 'truck' },
-        { texto: 'Pago seguro', icono: 'shield-check' },
-        { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' },
-        { texto: 'Soporte 24/7', icono: 'headphones' },
+        { titulo: 'Envío a todo el país', texto: 'Coordinamos la entrega según tu ciudad.', icono: 'truck' },
+        { titulo: 'Pago seguro', texto: 'Tu pago y tus datos quedan protegidos.', icono: 'shield-check' },
+        { titulo: 'Cambios y devoluciones', texto: 'Te acompañamos si necesitás revisar la compra.', icono: 'rotate-ccw' },
+        { titulo: 'Soporte cercano', texto: 'Respondemos tus dudas antes y después del pedido.', icono: 'headphones' },
       ]);
     }
     if (!hayContenido(faq)) {
@@ -3312,25 +3313,19 @@ export default function ProductForm() {
 
               <div className="form-group full">
                 <div className="inline-section-head">
-                  <label>Confianza (Garantías) <span className="req">*mínimo 4 recomendados</span></label>
-                  <button type="button" className="btn-secondary btn-small" onClick={() => appendConfianza({ texto: '', icono: 'ShieldCheck' })}>
+                  <label>Confianza (Garantías) <span className="req">*mínimo 3 recomendados</span></label>
+                  <button type="button" className="btn-secondary btn-small" onClick={() => appendConfianza({ icono: '', titulo: '', texto: '' })}>
                     <Plus size={14} /> Agregar
                   </button>
                 </div>
                 <div className="repeat-stack">
                   {confianzaFields.map((field, index) => (
                     <div key={field._rhfKey} className="repeat-card repeat-card--compact">
-                      <Controller
-                        control={control}
-                        name={`confianza.${index}.icono`}
-                        render={({ field: controllerField }) => (
-                          <SelectorIcono
-                            valor={controllerField.value || 'shield-check'}
-                            onChange={controllerField.onChange}
-                          />
-                        )}
-                      />
-                      <input {...register(`confianza.${index}.texto`)} placeholder="Ej: Envío gratis" />
+                      <input {...register(`confianza.${index}.icono`)} placeholder="Ícono libre: ♡, 🚚 o shield-check" />
+                      <div className="repeat-fields">
+                        <input {...register(`confianza.${index}.titulo`)} placeholder="Título, ej: Compra protegida" />
+                        <input {...register(`confianza.${index}.texto`)} placeholder="Subtítulo, ej: Tu pago y tus datos están seguros." />
+                      </div>
                       <button type="button" className="btn-icon" onClick={() => removeConfianza(index)} style={{ color: 'var(--text-muted)' }}>
                         <Trash2 size={16} />
                       </button>

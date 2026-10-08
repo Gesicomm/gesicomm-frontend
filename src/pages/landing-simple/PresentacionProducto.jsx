@@ -16,6 +16,7 @@ export const FICHA_BLOQUES_DEFAULT = {
   info_compra: true,
   urgencia: true,
   beneficios: true,
+  confianza: true,
   compra: true,
   promociones_pago: true,
   contacto_pago: true,
@@ -32,12 +33,13 @@ export const FICHA_BLOQUES_ORDEN = [
   { clave: 'precio', numero: 3, titulo: 'Precio y oferta' },
   { clave: 'descripcion', numero: 4, titulo: 'Descripción breve' },
   { clave: 'beneficios', numero: 5, titulo: 'Beneficios principales' },
-  { clave: 'compra', numero: 6, titulo: 'Compra' },
-  { clave: 'contacto_pago', numero: 7, titulo: 'Botones de pago y contacto' },
-  { clave: 'promociones_pago', numero: 8, titulo: 'Disponibilidad y medios de pago' },
-  { clave: 'incluye', numero: 9, titulo: 'Qué incluye tu pedido' },
-  { clave: 'opiniones', numero: 10, titulo: 'Opiniones' },
-  { clave: 'preguntas', numero: 11, titulo: 'Preguntas frecuentes' },
+  { clave: 'confianza', numero: 6, titulo: 'Zona de confianza' },
+  { clave: 'compra', numero: 7, titulo: 'Compra' },
+  { clave: 'contacto_pago', numero: 8, titulo: 'Botones de pago y contacto' },
+  { clave: 'promociones_pago', numero: 9, titulo: 'Disponibilidad y medios de pago' },
+  { clave: 'incluye', numero: 10, titulo: 'Qué incluye tu pedido' },
+  { clave: 'opiniones', numero: 11, titulo: 'Opiniones' },
+  { clave: 'preguntas', numero: 12, titulo: 'Preguntas frecuentes' },
 ];
 const FICHA_BLOQUES_CLAVES = FICHA_BLOQUES_ORDEN.map(b => b.clave);
 const DEFAULTS_PRESENTACION = {
@@ -91,6 +93,9 @@ const DEFAULTS_PRESENTACION = {
     { pregunta: '¿Puedo pagar contra entrega o pedir un cambio?', respuesta: 'Las opciones disponibles dependen de tu ciudad y de las políticas de la tienda. Podés consultarnos antes de comprar.' },
   ],
 };
+const valorConfigurable = (obj, campo, fallback) => (
+  Object.prototype.hasOwnProperty.call(obj || {}, campo) ? (obj[campo] || '') : fallback
+);
 
 const gs = n => `Gs ${Math.round(Number(n) || 0).toLocaleString('es-PY')}`;
 const limpiarNumero = valor => Number(String(valor ?? '').replace(/\D/g, '')) || 0;
@@ -208,6 +213,31 @@ function ListaBeneficios({ items, onCambiar }) {
   );
 }
 
+function ListaConfianzaProducto({ items, onCambiar }) {
+  const base = Array.isArray(items) ? items : [];
+  const cambiar = (idx, campoItem, valor) => onCambiar('confianza', base.map((it, i) => (i === idx ? { ...it, [campoItem]: valor } : it)));
+  const agregar = () => onCambiar('confianza', [...base, { icono: '', titulo: '', texto: '' }].slice(0, 6));
+  const quitar = idx => onCambiar('confianza', base.filter((_, i) => i !== idx));
+  return (
+    <fieldset className="space-y-2 rounded-lg border border-border bg-surface px-3 py-3">
+      <legend className="px-1 text-sm font-semibold text-fg">Tarjetas de confianza</legend>
+      <p className="text-xs leading-relaxed text-fg-muted">El ícono es texto libre: podés pegar un símbolo, emoji o clase de ícono. No hay lista fija.</p>
+      {base.length === 0 && <p className="text-xs text-fg-muted">Todavía no agregaste tarjetas de confianza.</p>}
+      {base.map((item, idx) => (
+        <div key={idx} className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-surface-2/70 p-2 sm:grid-cols-[82px_1fr_auto]">
+          <input className={campo} value={item.icono || ''} maxLength={40} placeholder="Ícono" aria-label={`Ícono ${idx + 1}`} onChange={e => cambiar(idx, 'icono', e.target.value)} />
+          <div className="grid grid-cols-1 gap-2">
+            <input className={campo} value={item.titulo || ''} maxLength={70} placeholder="Título, ej: Compra protegida" onChange={e => cambiar(idx, 'titulo', e.target.value)} />
+            <input className={campo} value={item.texto || ''} maxLength={120} placeholder="Subtítulo, ej: Tu pago y tus datos están seguros." onChange={e => cambiar(idx, 'texto', e.target.value)} />
+          </div>
+          <button type="button" onClick={() => quitar(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button>
+        </div>
+      ))}
+      {base.length < 6 && <button type="button" onClick={agregar} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Agregar tarjeta</button>}
+    </fieldset>
+  );
+}
+
 function ListaPreguntas({ items, onCambiar }) {
   const base = Array.isArray(items) ? items : [];
   const cambiar = (idx, campoItem, valor) => onCambiar('preguntas', base.map((it, i) => (i === idx ? { ...it, [campoItem]: valor } : it)));
@@ -265,27 +295,22 @@ const METODOS_CHIP = [
   ['contra_entrega', 'Pago contra entrega', 'Efectivo al recibir el pedido', ['pago contra entrega', 'contra entrega', 'pago al recibir']],
   ['transferencia', 'Transferencia bancaria', 'Te pasa el comprobante por WhatsApp', ['transferencia bancaria', 'transferencia']],
 ];
-const OPCIONES_LOGOS_PAGO = [
-  ['tarjetas', 'Tarjetas de crédito', 'Visa, Mastercard, Pago Móvil'],
-  ['bocas', 'Bocas de cobranza', 'Aquí Pago, Pago Express, Practipago, Infonet Cobranzas'],
-  ['billetera', 'Billetera electrónica', 'Tigo Money, Billetera Personal'],
-];
 const normalizar = t => String(t || '').trim().toLowerCase();
 const metodoChipDe = texto => METODOS_CHIP.find(([, , , alias]) => alias.includes(normalizar(texto)));
 
-function FilaMetodo({ label, detalle, checked, onChange }) {
+function FilaMetodo({ label, detalle, checked, onChange, ariaLabel = label }) {
   return (
     <label className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface-2/60 px-3 py-2">
       <span className="min-w-0">
         <span className="block text-sm font-medium text-fg">{label}</span>
         <span className="block truncate text-xs text-fg-muted">{detalle}</span>
       </span>
-      <input type="checkbox" className="mt-1 accent-primary" checked={checked} onChange={e => onChange(e.target.checked)} aria-label={label} />
+      <input type="checkbox" className="mt-1 accent-primary" checked={checked} onChange={e => onChange(e.target.checked)} aria-label={ariaLabel} />
     </label>
   );
 }
 
-function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, onPagoLogosChange }) {
+function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosCatalogo = [], onPagoLogosChange }) {
   const base = Array.isArray(metodos) ? metodos : [];
   const otros = base.filter(m => !metodoChipDe(m?.texto || m?.label));
   const activo = clave => base.some(m => metodoChipDe(m?.texto || m?.label)?.[0] === clave);
@@ -307,8 +332,8 @@ function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, onPagoLogosChange })
       {METODOS_CHIP.map(([clave, label, detalle]) => (
         <FilaMetodo key={clave} label={label} detalle={detalle} checked={activo(clave)} onChange={si => alternar(clave, si)} />
       ))}
-      {conLogos && OPCIONES_LOGOS_PAGO.map(([clave, label, detalle]) => (
-        <FilaMetodo key={clave} label={label} detalle={`${detalle} · igual en todas las fichas`} checked={pagoLogos[clave] !== false} onChange={si => onPagoLogosChange(clave, si)} />
+      {conLogos && paymentLogosCatalogo.map(logo => (
+        <FilaMetodo key={logo.clave} label={logo.nombre} detalle={`${logo.grupo || 'medio de pago'} · igual en todas las fichas`} checked={pagoLogos[logo.clave] !== false} onChange={si => onPagoLogosChange(logo.clave, si)} ariaLabel={`Mostrar logo ${logo.nombre}`} />
       ))}
       {otros.length > 0 && <p className="pt-1 text-xs font-semibold text-fg">Otros métodos</p>}
       {otros.map((m, idx) => (
@@ -322,7 +347,7 @@ function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, onPagoLogosChange })
   );
 }
 
-export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, onSubirImagen, pagoLogos = null, onPagoLogosChange = null, inicialmenteAbierto = false }) {
+export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, onSubirImagen, pagoLogos = null, paymentLogosCatalogo = [], onPagoLogosChange = null, inicialmenteAbierto = false }) {
   const precio = Number(precioDeVenta(item)) || 0;
   const descuento = descuentoDesdeAncla(precio, ancla);
   const src = imagenPrincipal(item);
@@ -330,12 +355,13 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
   const insigniasListId = `insignias-comerciales-${claveItem(item).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
   const porcentaje = useMemo(() => descuento || '', [descuento]);
   const beneficios = Array.isArray(item.beneficios) && item.beneficios.length ? item.beneficios : DEFAULTS_PRESENTACION.beneficios;
+  const confianza = Array.isArray(item.confianza) ? item.confianza : [];
   const botonesPago = Array.isArray(item.botones_pago) && item.botones_pago.length ? item.botones_pago : DEFAULTS_PRESENTACION.botones_pago;
   // Lista vacía = el comercio desmarcó todo; solo sin dato se usan los ejemplos.
   const metodosPago = Array.isArray(item.metodos_pago) ? item.metodos_pago : DEFAULTS_PRESENTACION.metodos_pago;
   const incluyePedido = Array.isArray(item.incluye_pedido) && item.incluye_pedido.length ? item.incluye_pedido : DEFAULTS_PRESENTACION.incluye_pedido;
   const botonesContacto = Array.isArray(item.botones_contacto) ? item.botones_contacto : DEFAULTS_PRESENTACION.botones_contacto;
-  const opiniones = Array.isArray(item.opiniones) && item.opiniones.length ? item.opiniones : DEFAULTS_PRESENTACION.opiniones;
+  const opiniones = Array.isArray(item.opiniones) ? item.opiniones : DEFAULTS_PRESENTACION.opiniones;
   const preguntas = Array.isArray(item.preguntas) && item.preguntas.length ? item.preguntas : DEFAULTS_PRESENTACION.preguntas;
   const bloquesGuardados = item.ficha_bloques || {};
   const bloquesFicha = { ...FICHA_BLOQUES_DEFAULT, ...bloquesGuardados };
@@ -403,6 +429,7 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
   const resumenPrecio = `${gs(precio)}${descuento ? ` · -${descuento}%` : ''}`;
   const resumenDescripcion = item.mensaje_comercial || item.descripcion || 'Texto debajo del precio';
   const resumenBeneficios = beneficios.length ? `${beneficios.length} beneficio${beneficios.length === 1 ? '' : 's'}` : 'Sin beneficios cargados';
+  const resumenConfianza = confianza.length ? `${confianza.length} tarjeta${confianza.length === 1 ? '' : 's'}` : 'Sin tarjetas cargadas';
   const resumenCompra = item.cta_texto || DEFAULTS_PRESENTACION.cta_texto;
   const resumenPagos = `${metodosPago.length} método${metodosPago.length === 1 ? '' : 's'}`;
   const resumenContacto = `${botonesPago.length + botonesContacto.length} acceso${botonesPago.length + botonesContacto.length === 1 ? '' : 's'}`;
@@ -457,27 +484,30 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
         <BloqueFicha numero="5" titulo="Beneficios principales" resumen={resumenBeneficios} visible={visibleBloque('beneficios')} onVisible={v => cambiarBloque('beneficios', v)} bloqueClave="beneficios" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('beneficios')}>
           <ListaBeneficios items={beneficios} onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="6" titulo="Compra" resumen={resumenCompra} visible={visibleBloque('compra')} onVisible={v => cambiarBloque('compra', v)} bloqueClave="compra" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('compra')}>
+        <BloqueFicha numero="6" titulo="Zona de confianza" resumen={resumenConfianza} visible={visibleBloque('confianza')} onVisible={v => cambiarBloque('confianza', v)} bloqueClave="confianza" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('confianza')}>
+          <ListaConfianzaProducto items={confianza} onCambiar={onCambiar} />
+        </BloqueFicha>
+        <BloqueFicha numero="7" titulo="Compra" resumen={resumenCompra} visible={visibleBloque('compra')} onVisible={v => cambiarBloque('compra', v)} bloqueClave="compra" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('compra')}>
           <div className="grid grid-cols-1 gap-3">
             <label className="block text-xs text-fg-muted">Botón principal de compra<input className={campo} value={item.cta_texto || ''} maxLength={42} placeholder="Comprar con pago anticipado" onChange={e => onCambiar('cta_texto', e.target.value)} /></label>
           </div>
         </BloqueFicha>
-        <BloqueFicha numero="7" titulo="Botones de pago y contacto" resumen={resumenContacto} visible={visibleBloque('contacto_pago')} onVisible={v => cambiarBloque('contacto_pago', v)} bloqueClave="contacto_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('contacto_pago')}>
+        <BloqueFicha numero="8" titulo="Botones de pago y contacto" resumen={resumenContacto} visible={visibleBloque('contacto_pago')} onVisible={v => cambiarBloque('contacto_pago', v)} bloqueClave="contacto_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('contacto_pago')}>
           <ListaBotones titulo="Botones de pago" ayuda="Botones secundarios como Pago contra entrega, Comprar por WhatsApp o un link de pago." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} />
           <ListaBotones titulo="Botones configurables de contacto" ayuda="Caminos de contacto adicionales de esta ficha." items={botonesContacto} campoLista="botones_contacto" onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="8" titulo="Disponibilidad y medios de pago" resumen={resumenPagos} visible={visibleBloque('promociones_pago')} onVisible={v => cambiarBloque('promociones_pago', v)} bloqueClave="promociones_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('promociones_pago')}>
+        <BloqueFicha numero="9" titulo="Disponibilidad y medios de pago" resumen={resumenPagos} visible={visibleBloque('promociones_pago')} onVisible={v => cambiarBloque('promociones_pago', v)} bloqueClave="promociones_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('promociones_pago')}>
           <p className="text-xs leading-relaxed text-fg-muted">Esta zona aparece después de los botones: disponibilidad, cobertura y medios de pago antes de confirmar.</p>
-          <MetodosPagoEditor metodos={metodosPago} onCambiar={onCambiar} pagoLogos={pagoLogos} onPagoLogosChange={onPagoLogosChange} />
+          <MetodosPagoEditor metodos={metodosPago} onCambiar={onCambiar} pagoLogos={pagoLogos} paymentLogosCatalogo={paymentLogosCatalogo} onPagoLogosChange={onPagoLogosChange} />
         </BloqueFicha>
-        <BloqueFicha numero="9" titulo="Qué incluye tu pedido" resumen={resumenIncluye} visible={visibleBloque('incluye')} onVisible={v => cambiarBloque('incluye', v)} bloqueClave="incluye" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('incluye')}>
+        <BloqueFicha numero="10" titulo="Qué incluye tu pedido" resumen={resumenIncluye} visible={visibleBloque('incluye')} onVisible={v => cambiarBloque('incluye', v)} bloqueClave="incluye" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('incluye')}>
           <ListaSimple titulo="Ítems incluidos" ayuda="Cada línea aparece como checklist dentro de la ficha." items={incluyePedido} campoLista="incluye_pedido" placeholder="Ej: 1 unidad del producto seleccionado" onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="10" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('opiniones')}>
+        <BloqueFicha numero="11" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('opiniones')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={item.opiniones_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.opiniones_kicker} onChange={e => onCambiar('opiniones_kicker', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={item.opiniones_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.opiniones_titulo} onChange={e => onCambiar('opiniones_titulo', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted sm:col-span-2">Subtítulo de sección<textarea className={area} rows={2} value={item.opiniones_subtitulo || ''} maxLength={180} placeholder={DEFAULTS_PRESENTACION.opiniones_subtitulo} onChange={e => onCambiar('opiniones_subtitulo', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={valorConfigurable(item, 'opiniones_kicker', DEFAULTS_PRESENTACION.opiniones_kicker)} maxLength={60} placeholder={DEFAULTS_PRESENTACION.opiniones_kicker} onChange={e => onCambiar('opiniones_kicker', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={valorConfigurable(item, 'opiniones_titulo', DEFAULTS_PRESENTACION.opiniones_titulo)} maxLength={90} placeholder={DEFAULTS_PRESENTACION.opiniones_titulo} onChange={e => onCambiar('opiniones_titulo', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted sm:col-span-2">Subtítulo de sección<textarea className={area} rows={2} value={valorConfigurable(item, 'opiniones_subtitulo', DEFAULTS_PRESENTACION.opiniones_subtitulo)} maxLength={180} placeholder={DEFAULTS_PRESENTACION.opiniones_subtitulo} onChange={e => onCambiar('opiniones_subtitulo', e.target.value)} /></label>
           </div>
           <fieldset className="space-y-3 rounded-lg border border-border bg-surface px-3 py-3">
             <legend className="px-1 text-sm font-semibold text-fg">Opiniones reales</legend>
@@ -504,7 +534,7 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
             {opiniones.length < 6 && <button type="button" onClick={agregarOpinion} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Agregar opinión</button>}
           </fieldset>
         </BloqueFicha>
-        <BloqueFicha numero="11" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('preguntas')}>
+        <BloqueFicha numero="12" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('preguntas')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={item.preguntas_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.preguntas_kicker} onChange={e => onCambiar('preguntas_kicker', e.target.value)} /></label>
             <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={item.preguntas_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.preguntas_titulo} onChange={e => onCambiar('preguntas_titulo', e.target.value)} /></label>

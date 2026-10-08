@@ -140,19 +140,33 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
   // el suyo por separado (no tiene sentido mezclar pedidos de vidrieras
   // distintas). Se recarga desde localStorage cada vez que cambia el slug,
   // y se persiste en cada cambio del carrito mismo.
-  useEffect(() => { setCarrito(cargarCarritoGuardado(slug)); }, [slug]);
+  // "Lienzo en blanco" (data?.template?.kind === 'codigo') tiene su PROPIO
+  // carrito (useStoreCart, dentro de LandingCodigoPublica más abajo) que usa
+  // la misma clave de localStorage. El `carrito`/`wishlist` de acá arriba
+  // nunca se usan para ese modo (el componente corta con un return antes de
+  // llegar a pintarlos) — pero por las reglas de hooks estos efectos SÍ
+  // corren igual en cada montaje. Sin esta guarda, el efecto de guardado
+  // pisaba la clave compartida con un carrito vacío (el Map local recién
+  // inicializado) antes de que el `setCarrito` de la línea de arriba
+  // terminara de cargar el guardado — el checkout de Lienzo en blanco
+  // aparecía con el carrito vacío aunque el cliente ya había agregado
+  // productos.
+  const esLienzoEnBlanco = data?.template?.kind === 'codigo';
+  useEffect(() => { if (!esLienzoEnBlanco) setCarrito(cargarCarritoGuardado(slug)); }, [slug, esLienzoEnBlanco]);
   useEffect(() => {
+    if (esLienzoEnBlanco) return;
     try {
       localStorage.setItem(`gesicomm-carrito-${slug || 'home'}`, JSON.stringify(Array.from(carrito.entries())));
     } catch { /* modo privado / storage lleno — el carrito sigue funcionando solo en memoria */ }
-  }, [carrito, slug]);
+  }, [carrito, slug, esLienzoEnBlanco]);
 
-  useEffect(() => { setWishlist(cargarWishlistGuardada(slug)); }, [slug]);
+  useEffect(() => { if (!esLienzoEnBlanco) setWishlist(cargarWishlistGuardada(slug)); }, [slug, esLienzoEnBlanco]);
   useEffect(() => {
+    if (esLienzoEnBlanco) return;
     try {
       localStorage.setItem(`gesicomm-wishlist-${slug || 'home'}`, JSON.stringify(Array.from(wishlist)));
     } catch { /* modo privado / storage lleno — la wishlist sigue funcionando solo en memoria */ }
-  }, [wishlist, slug]);
+  }, [wishlist, slug, esLienzoEnBlanco]);
 
 
   function toggleWishlist(e, contentId) {

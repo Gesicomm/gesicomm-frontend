@@ -51,6 +51,7 @@ describe('ficha: bloques editables de Vista producto', () => {
       beneficios_titulo: 'Lo que mejora tu compra',
       beneficios_subtitulo: 'Probado antes de publicar.',
       beneficios: [{ titulo: 'Costura reforzada', texto: 'Soporta más uso diario.' }],
+      confianza: [{ icono: '♡', titulo: 'Compra protegida', texto: 'Tu pago y tus datos están seguros.' }],
       cta_texto: 'Comprar esta remera',
       agregar_carrito_texto: 'Sumar al carrito',
       botones_pago: [{ label: 'Pagar por WhatsApp', tipo: 'whatsapp', valor: 'Hola' }],
@@ -80,11 +81,14 @@ describe('ficha: bloques editables de Vista producto', () => {
     expect(doc.querySelector('[data-gesicomm-ficha-bloque="precio"] [data-gesicomm-bind="urgencia_kicker"]').textContent).toBe('Solo hasta hoy');
     expect(doc.querySelector('[data-gesicomm-ficha-bloque="precio"] [data-gesicomm-bind="urgencia_titulo"]').textContent).toBe('Reservá el precio antes de medianoche');
     expect(doc.querySelector('.highlights [data-gesicomm-bind="titulo"]').textContent).toBe('Costura reforzada');
+    expect(doc.querySelector('#confianza-producto .pdp-trust-icon').textContent).toBe('♡');
+    expect(doc.querySelector('#confianza-producto [data-gesicomm-bind="titulo"]').textContent).toBe('Compra protegida');
+    expect(doc.querySelector('#confianza-producto [data-gesicomm-bind="texto"]').textContent).toBe('Tu pago y tus datos están seguros.');
     expect(doc.querySelector('[data-gesicomm-comprar] [data-gesicomm-bind="cta_texto"]').textContent).toBe('Comprar esta remera');
     expect(doc.querySelector('.payment-action [data-gesicomm-bind="label"]').textContent).toBe('Pagar por WhatsApp');
     expect(doc.querySelector('.payment-methods [data-gesicomm-generado]').textContent).toBe('Transferencia bancaria');
     expect(doc.querySelector('.order-includes [data-gesicomm-generado]').textContent).toBe('1 remera premium');
-    expect([...doc.querySelectorAll('.payment-brands-row')].filter(el => el.style.display !== 'none').map(el => el.textContent.trim())).toEqual(['Bocas de cobranza']);
+    expect([...doc.querySelectorAll('.payment-brand-name')].map(el => el.textContent.trim())).toEqual(['Credicheck', 'Panal']);
     expect(doc.querySelector('#opiniones [data-gesicomm-bind="opiniones_titulo"]').textContent).toBe('Lo que cuentan');
     expect(doc.querySelector('#opiniones .opinion-card [data-gesicomm-bind="comentario"]').textContent).toBe('La tela se siente muy bien.');
     expect(doc.querySelector('#preguntas [data-gesicomm-bind="preguntas_titulo"]').textContent).toBe('Preguntas clave');
@@ -100,6 +104,7 @@ describe('ficha: bloques editables de Vista producto', () => {
     expect(doc.querySelector('.highlights [data-gesicomm-bind="titulo"]').textContent).toBe('Compra segura');
     expect(doc.querySelector('[data-gesicomm-bind="opiniones_kicker"]').textContent).toBe('Clientes');
     expect(doc.querySelector('[data-gesicomm-bind="opiniones_titulo"]').textContent).toBe('Lo que dicen en Luque');
+    expect(doc.querySelectorAll('#opiniones .opinion-card')).toHaveLength(2);
     expect(doc.querySelector('[data-gesicomm-bind="preguntas_kicker"]').textContent).toBe('Dudas');
     expect(doc.querySelector('[data-gesicomm-bind="preguntas_titulo"]').textContent).toBe('Antes de pedir');
   });

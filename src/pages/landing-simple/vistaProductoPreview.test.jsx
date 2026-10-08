@@ -15,6 +15,7 @@ import { construirDocumentoCodigo } from './construirDocumentoCodigo';
 const capturado = { props: null };
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]) } }));
+vi.mock('../../services/landingSimpleService', () => ({ landingSimpleService: { listarPaymentLogos: vi.fn().mockResolvedValue([]) } }));
 vi.mock('./CodigoPreview', () => ({ default: props => { capturado.props = props; return <output data-testid="preview" />; } }));
 
 const catalogo = { productos: [
@@ -144,16 +145,16 @@ describe('Vista producto: cada campo llega a la preview', () => {
     fireEvent.click(within(metodos).getByLabelText('Transferencia bancaria'));
     fireEvent.click(within(metodos).getByRole('button', { name: '+ Otro método' }));
     escribir(within(metodos).getByLabelText('Otro método 1'), 'Giros Tigo');
-    fireEvent.click(within(metodos).getByLabelText('Tarjetas de crédito'));
+    fireEvent.click(within(metodos).getByLabelText('Mostrar logo Visa'));
     f = ficha();
     expect(f.lista('.payment-methods')).toEqual(['Pago contra entrega', 'Giros Tigo']);
-    expect(f.oculto('.payment-brands [data-gesicomm-si="pago_logo_tarjetas"]')).toBe(true);
-    expect(f.oculto('.payment-brands [data-gesicomm-si="pago_logo_bocas"]')).toBe(false);
+    expect(f.lista('.payment-brands')).not.toContain('Visa');
+    expect(f.lista('.payment-brands')).toContain('Mastercard');
 
     fireEvent.click(within(metodos).getByLabelText('Pago contra entrega'));
     fireEvent.click(within(metodos).getByRole('button', { name: 'Quitar' }));
-    fireEvent.click(within(metodos).getByLabelText('Bocas de cobranza'));
-    fireEvent.click(within(metodos).getByLabelText('Billetera electrónica'));
+    ['Mastercard', 'American Express', 'Diners Club', 'Bancard', 'Credicheck', 'Cabal', 'Panal', 'Discover', 'JCB', 'Deposito bancario', 'Transferencia bancaria']
+      .forEach(label => fireEvent.click(within(metodos).getByLabelText(`Mostrar logo ${label}`)));
     f = ficha();
     expect(f.lista('.payment-methods')).toEqual([]);
     expect(f.oculto('.payment-methods')).toBe(true);

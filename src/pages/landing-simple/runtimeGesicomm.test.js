@@ -1481,7 +1481,8 @@ describe('ficha que vende: contenido real del producto', () => {
     const { document } = montar(PLANTILLA_PRODUCTO, datos);
     expect(document.querySelector('.pdp-promesa').textContent).toBe('Controlá el apetito.');
     expect([...document.querySelectorAll('.highlights li')].map(l => l.textContent)).toEqual(['Menos ansiedad', 'Más energía']);
-    expect(document.querySelectorAll('.garantias li')).toHaveLength(1);
+    expect(document.querySelectorAll('#confianza-producto .pdp-trust-card')).toHaveLength(1);
+    expect(document.querySelector('#confianza-producto [data-gesicomm-bind="titulo"]').textContent).toBe('Registro sanitario');
     expect([...document.querySelectorAll('.faq-item summary')].some(l => l.textContent.includes('Dosis'))).toBe(true);
     expect(document.querySelector('.pdp-prices .badge-off').textContent).toBe('Ahorrás 20%');
     // No es combo: lo propio de un combo no se ve.

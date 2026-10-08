@@ -954,7 +954,7 @@ export function runtimeGesicomm() {
     categorias: 1, menu_categorias: 1, banners_inicio: 1, banners_intermedios: 1, secciones_inicio: 1,
     beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1, estadisticas: 1, checkout_items: 1,
     botones_pago_producto: 1, metodos_pago_producto: 1, incluye_pedido_producto: 1,
-    anuncios: 1, confianza_inicio: 1, marca_badges: 1, marca_medios: 1, testimonios_inicio: 1,
+    payment_logos: 1, anuncios: 1, confianza_inicio: 1, marca_badges: 1, marca_medios: 1, testimonios_inicio: 1,
   };
   var LISTA_PAQUETES = 'paquetes';
 
@@ -1688,6 +1688,7 @@ export function runtimeGesicomm() {
       case 'imagenes': base = productoActual ? (productoActual.imagenes_url || []) : []; break;
       case 'botones_pago_producto': base = botonesPagoProducto(); break;
       case 'metodos_pago_producto': base = metodosPagoProducto(); break;
+      case 'payment_logos': base = productoActual ? (productoActual.payment_logos || []) : []; break;
       case 'incluye_pedido_producto': base = incluyePedidoProducto(); break;
       case 'botones_contacto_producto': base = contactosProducto(); break;
       case 'opiniones_producto': base = opinionesProducto(); break;

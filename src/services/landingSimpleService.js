@@ -8,6 +8,7 @@ export const landingSimpleService = {
   listarTemplates: () => API.get('/landing-templates', { params: { kind: 'rigido' } }).then(r => r.data),
 
   listar: () => API.get('/mis-landings-simples').then(r => r.data),
+  listarPaymentLogos: () => API.get('/mis-landings-simples/payment-logos').then(r => r.data),
   crear: (templateId, colores = null, items = []) => API.post('/mis-landings-simples', { template_id: templateId, items, ...(colores ? { colores } : {}) }).then(r => r.data),
   // `venta` es lo que se armó en el panel de ofertas del wizard (qué
   // ofertas se muestran, combos, recomendados, tipo de venta): viaja junto

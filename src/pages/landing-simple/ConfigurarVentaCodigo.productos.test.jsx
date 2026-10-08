@@ -5,6 +5,7 @@ import ConfigurarVentaCodigo from './ConfigurarVentaCodigo';
 
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]) } }));
+vi.mock('../../services/landingSimpleService', () => ({ landingSimpleService: { listarPaymentLogos: vi.fn().mockResolvedValue([]) } }));
 vi.mock('./CodigoPreview', () => ({ default: ({ datos }) => <output data-testid="preview-datos">{JSON.stringify(datos)}</output> }));
 
 const catalogo = { productos: [
@@ -89,9 +90,8 @@ describe('Presentación de los productos del lienzo', () => {
     const bloqueCompra = compraTitulo.closest('details');
     const metodos = within(bloqueCompra).getByRole('group', { name: 'Métodos de pago' });
     fireEvent.click(within(metodos).getByLabelText('Transferencia bancaria'));
-    fireEvent.click(within(bloqueCompra).getByLabelText('Tarjetas de crédito'));
-    fireEvent.click(within(bloqueCompra).getByLabelText('Bocas de cobranza'));
-    fireEvent.click(within(bloqueCompra).getByLabelText('Billetera electrónica'));
+    ['Deposito bancario', 'Transferencia bancaria', 'Visa', 'Mastercard', 'American Express', 'Diners Club', 'Bancard', 'Credicheck', 'Cabal', 'Panal', 'Discover', 'JCB']
+      .forEach(label => fireEvent.click(within(bloqueCompra).getByLabelText(`Mostrar logo ${label}`)));
 
     fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
 
@@ -106,7 +106,7 @@ describe('Presentación de los productos del lienzo', () => {
     expect(payload.venta.presentacion_productos['producto:1'].beneficios).toEqual(
       expect.arrayContaining([expect.objectContaining({ titulo: 'Probado en tienda' })]),
     );
-    expect(payload.venta.pago_logos).toEqual({ tarjetas: false, bocas: false, billetera: false });
+    expect(payload.venta.payment_logos).toEqual([]);
   });
 
   it('permite quitar el ancla guardada y ocultar del inicio desde la ficha', () => {
