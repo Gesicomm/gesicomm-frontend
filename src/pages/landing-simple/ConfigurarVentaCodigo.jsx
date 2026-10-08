@@ -1391,14 +1391,13 @@ export default function ConfigurarVentaCodigo({
     // real, mismo criterio que los banners de arriba — así no hay dos
     // controles (el "Mostrar" del bloque + uno adentro) para lo mismo.
     marca: { ...inicioComercial.marca, activo: !!(inicioComercial.marca.titulo || inicioComercial.marca.texto || inicioComercial.marca.medios?.length) },
+    // A diferencia de "marca" (arriba), acá no se apaga sin contenido: el
+    // encabezado por defecto ("Opiniones" / "Clientes que ya compraron.")
+    // tiene que verse siempre que el bloque esté en "Mostrar", vacío, para
+    // que el comercio sepa que ahí va a cargar sus testimonios.
     testimonios: {
       ...inicioComercial.testimonios,
-      activo: !!(
-        (inicioComercial.testimonios?.kicker || '').trim() && inicioComercial.testimonios?.kicker !== TESTIMONIOS_INICIO_DEFAULT.kicker
-        || (inicioComercial.testimonios?.titulo || '').trim() && inicioComercial.testimonios?.titulo !== TESTIMONIOS_INICIO_DEFAULT.titulo
-        || (inicioComercial.testimonios?.subtitulo || '').trim()
-        || (inicioComercial.testimonios?.items || []).some(it => it && (it.nombre || it.comentario || it.foto))
-      ),
+      activo: true,
       items: (inicioComercial.testimonios?.items || [])
         .filter(it => it && (it.nombre || it.comentario || it.foto))
         .slice(0, 8),
@@ -1584,7 +1583,10 @@ export default function ConfigurarVentaCodigo({
   const codigoInicioPreview = inicioEsBase ? plantillaInicioPara(tipo) : codigos.inicio;
   const codigoCatalogoPreview = conGlobalesHeredados(codigos?.catalogo?.html ? codigos.catalogo : PLANTILLA_CATALOGO, codigoInicioPreview);
   const codigoCategoriaPreview = conGlobalesHeredados(codigos?.categoria?.html ? codigos.categoria : PLANTILLA_CATEGORIA, codigoInicioPreview);
-  const codigoFichaPreview = esFichaProductoBase(codigos?.producto?.html) ? PLANTILLA_PRODUCTO : codigos.producto;
+  const codigoFichaPreview = conGlobalesHeredados(
+    esFichaProductoBase(codigos?.producto?.html) ? PLANTILLA_PRODUCTO : codigos.producto,
+    codigoInicioPreview,
+  );
   const codigoCheckoutPreview = conGlobalesHeredados(codigos?.checkout?.html ? codigos.checkout : PLANTILLA_CHECKOUT, codigoInicioPreview);
   const codigoPreviewActual = abreEnFicha || vistaPreview === 'producto'
     ? codigoFichaPreview
@@ -3048,6 +3050,7 @@ function VistaPrevia({
       codigo={codigo}
       titulo="Vista previa"
       datos={datos}
+      previewDevice={dispositivo === 'movil' ? 'mobile' : 'desktop'}
       resaltar={resaltado}
       onNavegar={onNavegar}
       onCheckout={onComprar}
@@ -3738,7 +3741,7 @@ function EditorCodigoSeccion({ tipo, codigoInicio, onCambiarCodigo, tienda, vent
         >
           {copiado ? <Check size={13} /> : <FileCode2 size={13} />} {copiado ? 'Prompt copiado' : 'Copiar prompt para IA'}
         </button>
-        <span className="text-[11px] text-fg-muted">Pegalo en ChatGPT, Claude o Gemini, pedile el rediseño y traé la respuesta acá abajo.</span>
+        <span className="text-[11px] text-fg-muted">Pegalo en ChatGPT, Claude o Gemini. La IA te va a preguntar qué querés cambiar y cómo lo querés ver antes de generar nada — respondele ahí (podés subir una imagen de referencia) y después traé el resultado acá abajo.</span>
       </div>
 
       <div className="space-y-1.5">

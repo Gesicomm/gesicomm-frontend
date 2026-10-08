@@ -23,6 +23,7 @@
 
 import { runtimeGesicomm } from './runtimeGesicomm';
 import { conMarcaTienda, cssMarcaTienda } from './marcaTiendaCodigo';
+import { typographyCss } from '../../lib/typography';
 
 // El sandbox del iframe. allow-same-origin NO va acá y no debe agregarse:
 // combinado con allow-scripts anula el aislamiento por completo.
@@ -159,6 +160,9 @@ body {
   background: var(--gc-fondo, var(--tienda-fondo, #ffffff));
   color: var(--gc-texto, var(--tienda-texto, #10202f));
 }
+html[data-gesicomm-preview-device="mobile"] {
+  scrollbar-gutter: stable;
+}
 
 :where(.storefront, main[data-gesicomm-base]) {
   background: var(--gc-fondo, var(--tienda-fondo, #ffffff)) !important;
@@ -222,6 +226,9 @@ body {
   background: var(--tienda-banda, var(--gc-primario, var(--tienda-primario, #062b4f))) !important;
   color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
 }
+:where(.trust-bar, .announcement) {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+}
 :where(.trust-item span, .footer-brand p, .footer-note, footer a, .site-footer, .footer-links a) {
   color: color-mix(in srgb, var(--tienda-banda-texto, #fff) 74%, transparent) !important;
 }
@@ -238,6 +245,7 @@ body {
 :where(.commerce-header[data-variante="embebido"]) {
   background: transparent !important;
   border-color: transparent !important;
+  top: var(--gc-trust-bar-alto, 38px) !important;
 }
 :where(.commerce-header[data-variante="embebido"] .brand, .commerce-header[data-variante="embebido"] .brand-mark, .commerce-header[data-variante="embebido"] [data-gesicomm-tienda="nombre"], .commerce-header[data-variante="embebido"] .cart-button, .commerce-header[data-variante="embebido"] .cart-button strong, .commerce-header[data-variante="embebido"] .menu-toggle) {
   color: #fff !important;
@@ -510,10 +518,16 @@ main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"
    La especificidad (section.limited-offer[...]) le gana a las reglas
    .storefront ... .has-commercial-presentation de las bases sin !important. */
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] {
-  --flash-ink: var(--gc-texto, #082947);
-  --flash-red: #e11d3a;
-  --flash-line: #e3eaf0;
-  --flash-muted: #5d7285;
+  --flash-bg: var(--tienda-banda, color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #082947)) 38%, var(--gc-fondo, var(--tienda-fondo, #082947))));
+  --flash-on-bg: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff));
+  --flash-card: var(--gc-superficie, var(--tienda-superficie, #fff));
+  --flash-ink: var(--gc-texto, var(--tienda-texto, #082947));
+  --flash-accent: var(--tienda-secundario, var(--gc-primario, var(--tienda-primario, #e11d3a)));
+  --flash-accent-text: var(--tienda-destacado, var(--flash-accent));
+  --flash-on-accent: var(--tienda-texto-sobre-secundario, var(--gc-texto-sobre-primario, #fff));
+  --flash-line: var(--tienda-linea, var(--line, #e3eaf0));
+  --flash-muted: var(--gc-texto-suave, var(--tienda-texto-suave, #5d7285));
+  --flash-soft: color-mix(in srgb, var(--flash-accent) 12%, var(--flash-card));
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-card {
   display: grid;
@@ -523,13 +537,13 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-ca
   align-items: stretch;
   gap: 14px 26px;
   padding: 22px;
-  color: #fff;
+  color: var(--flash-on-bg);
   background:
-    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--flash-red) 22%, transparent), transparent 60%),
-    var(--flash-ink);
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--flash-accent) 22%, transparent), transparent 60%),
+    var(--flash-bg);
   border: 0;
   border-radius: 18px;
-  box-shadow: 0 18px 40px rgba(8, 20, 40, .18);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--flash-bg) 36%, transparent);
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-summary {
   grid-area: summary;
@@ -544,7 +558,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-su
   align-items: flex-start;
   gap: 10px;
   margin: 0;
-  color: #fff;
+  color: var(--flash-on-bg);
   font-size: clamp(21px, 2vw, 26px);
   font-weight: 900;
   line-height: 1.1;
@@ -557,12 +571,13 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-su
   width: 34px;
   height: 34px;
   font-size: 17px;
-  background: color-mix(in srgb, var(--flash-red) 30%, transparent);
+  color: var(--flash-on-accent);
+  background: color-mix(in srgb, var(--flash-accent) 52%, transparent);
   border-radius: 10px;
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-summary p {
   margin: 10px 0 0;
-  color: rgba(255, 255, 255, .72);
+  color: color-mix(in srgb, var(--flash-on-bg) 72%, transparent);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -583,15 +598,16 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .countdown-box {
   min-width: 62px;
   min-height: 0;
   padding: 10px 8px 8px;
-  color: #fff;
-  background: rgba(255, 255, 255, .08);
-  border: 1px solid rgba(255, 255, 255, .14);
+  color: var(--flash-on-bg);
+  background: color-mix(in srgb, var(--flash-on-bg) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--flash-on-bg) 14%, transparent);
   border-radius: 12px;
 }
-/* Los segundos van en rojo: es el número que se mueve y el que da urgencia. */
+/* Los segundos llevan el acento de la tienda: es el número que se mueve y da urgencia. */
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .countdown-box:last-child {
-  background: var(--flash-red);
-  border-color: var(--flash-red);
+  color: var(--flash-on-accent);
+  background: var(--flash-accent);
+  border-color: var(--flash-accent);
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .countdown-box b {
   font-size: 28px;
@@ -602,7 +618,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .countdown-box b 
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .countdown-box small {
   margin-top: 5px;
-  color: rgba(255, 255, 255, .7);
+  color: color-mix(in srgb, currentColor 70%, transparent);
   font-size: 10px;
   font-weight: 800;
   line-height: 1;
@@ -612,7 +628,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .countdown-box sm
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .countdown-separator {
   align-self: center;
   margin-top: -14px;
-  color: rgba(255, 255, 255, .45);
+  color: color-mix(in srgb, var(--flash-on-bg) 45%, transparent);
   font-size: 20px;
   font-weight: 900;
 }
@@ -626,9 +642,9 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-se
   gap: 6px;
   min-height: 40px;
   padding: 9px 16px;
-  color: #fff;
+  color: var(--flash-on-bg);
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, .3);
+  border: 1px solid color-mix(in srgb, var(--flash-on-bg) 30%, transparent);
   border-radius: 999px;
   font-size: 13px;
   font-weight: 800;
@@ -636,8 +652,8 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-se
   transition: background .15s ease, border-color .15s ease;
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-see-all:hover {
-  background: rgba(255, 255, 255, .1);
-  border-color: rgba(255, 255, 255, .6);
+  background: color-mix(in srgb, var(--flash-on-bg) 10%, transparent);
+  border-color: color-mix(in srgb, var(--flash-on-bg) 60%, transparent);
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-products {
   grid-area: products;
@@ -659,7 +675,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-pr
   min-height: 0;
   padding: 14px;
   color: var(--flash-ink);
-  background: #fff;
+  background: var(--flash-card);
   border: 0;
   border-radius: 14px;
   box-shadow: none;
@@ -684,8 +700,8 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-pr
   max-width: 100%;
   padding: 4px 7px;
   overflow: hidden;
-  color: #fff;
-  background: var(--flash-red);
+  color: var(--flash-on-accent);
+  background: var(--flash-accent);
   border: 0;
   border-radius: 6px;
   box-shadow: none;
@@ -713,7 +729,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-pr
   aspect-ratio: 1;
   min-height: 0;
   overflow: hidden;
-  background: #fff;
+  background: color-mix(in srgb, var(--flash-ink) 4%, var(--flash-card));
   border: 1px solid var(--flash-line);
   border-radius: 10px;
   cursor: pointer;
@@ -768,7 +784,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-pr
   border-radius: 0;
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-product .limited-offer-prices span {
-  color: var(--flash-red);
+  color: var(--flash-accent-text);
   font-size: 19px;
   font-weight: 900;
   line-height: 1.1;
@@ -776,7 +792,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-pr
   font-variant-numeric: tabular-nums;
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-product .limited-offer-prices s {
-  color: #8a9bab;
+  color: var(--flash-muted);
   font-size: 12px;
   font-weight: 600;
 }
@@ -788,8 +804,8 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-pr
   width: fit-content;
   margin: 2px 0 0;
   padding: 3px 8px;
-  color: #b3122d;
-  background: #ffe9ec;
+  color: var(--flash-accent-text);
+  background: var(--flash-soft);
   border-radius: 6px;
   font: 800 11px/1.3 system-ui, sans-serif;
 }
@@ -799,7 +815,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-pr
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-product .gc-product-shipping {
   margin: 0;
-  color: #0f7a4a;
+  color: var(--flash-accent-text);
   font-size: 11px;
   font-weight: 800;
   opacity: 1;
@@ -847,7 +863,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-pr
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-product:only-child .gc-commercial-details { align-self: flex-start; }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-product:only-child .gc-commercial-badges { max-width: 176px; }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offer-see-all, .button-primary, .gc-commercial-details):focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--flash-red) 70%, #fff);
+  outline: 3px solid color-mix(in srgb, var(--flash-accent) 70%, var(--flash-on-bg));
   outline-offset: 2px;
 }
 @media (max-width: 820px) {
@@ -1173,6 +1189,25 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 :where(.commerce-header .category-menu-wrap) {
   display: none !important;
 }
+:where(.commerce-header .header-actions) {
+  align-items: center !important;
+}
+:where(.commerce-header .search-toggle, .commerce-header .cart-button) {
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+}
+/* El hamburguesa es mobile-only (ver @media 600px más abajo, donde recibe su
+   propio tamaño + el ícono dibujado con ::before) — a diferencia de la lupa
+   y el carrito, acá no se fuerza "display" para todos los anchos: si no,
+   queda visible (aunque vacío) también en escritorio. */
+:where(.commerce-header .menu-toggle) {
+  display: none !important;
+}
 :where(.commerce-header .search-wrap) {
   position: relative !important;
   display: inline-flex !important;
@@ -1181,14 +1216,14 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   align-items: center !important;
 }
 :where(.commerce-header .search-toggle) {
-  color: var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, currentColor))) !important;
-  background: color-mix(in srgb, var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, currentColor))) 12%, var(--gc-superficie, #fff)) !important;
-  border: 1px solid color-mix(in srgb, var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, currentColor))) 22%, transparent) !important;
+  color: currentColor !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 10px !important;
 }
 :where(.commerce-header .search-toggle:hover, .commerce-header .search-toggle[aria-expanded="true"]) {
-  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
-  background: var(--gc-primario, var(--tienda-primario, currentColor)) !important;
-  border-color: var(--gc-primario, var(--tienda-primario, currentColor)) !important;
+  color: var(--tienda-destacado, var(--gc-primario, currentColor)) !important;
+  background: color-mix(in srgb, currentColor 10%, transparent) !important;
 }
 /* Oculto por defecto sin depender del atributo [hidden] del HTML guardado:
    landings ya publicadas antes de este cambio pueden no tenerlo, y eso
@@ -1225,6 +1260,9 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   flex: 0 0 50px !important;
   color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
   background: var(--gc-primario, var(--tienda-primario, #0d6efd)) !important;
+}
+:where(.commerce-header [data-gesicomm-search-close]) {
+  display: none !important;
 }
 :where(.commerce-header .search-wrap.is-open) {
   z-index: 80 !important;
@@ -1293,6 +1331,316 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   font-size: 12px !important;
   font-weight: 800 !important;
 }
+:where(.commerce-header .cart-button) {
+  position: relative !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+:where(.commerce-header [data-gesicomm-cart-badge]) {
+  position: absolute !important;
+  top: 4px !important;
+  right: 2px !important;
+  display: grid !important;
+  min-width: 17px !important;
+  height: 17px !important;
+  padding: 0 5px !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  color: var(--gc-texto-sobre-primario, #fff) !important;
+  background: var(--tienda-destacado, var(--gc-secundario, var(--gc-primario, #0d6efd))) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+:where(.commerce-header [data-gesicomm-cart-badge][hidden]) {
+  display: none !important;
+}
+
+@media (max-width: 920px) {
+  .commerce-header.menu-open::before {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 990 !important;
+    background: rgba(2, 6, 23, .46) !important;
+    content: "" !important;
+  }
+  .commerce-header .header-nav {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    right: auto !important;
+    width: min(84vw, 320px) !important;
+    max-width: calc(100vw - 54px) !important;
+    max-height: none !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    flex-basis: auto !important;
+    order: initial !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    overflow-y: auto !important;
+    padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 22px !important;
+    background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
+    border: 0 !important;
+    border-right: 1px solid var(--tienda-linea, var(--line, #e4eaf0)) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 24px 60px rgba(8, 41, 71, .24) !important;
+    transform: translateX(-105%) !important;
+    transition: transform .22s ease !important;
+    z-index: 1000 !important;
+  }
+  .commerce-header .header-nav.is-open {
+    transform: translateX(0) !important;
+  }
+  .commerce-header .header-nav .nav-links,
+  .commerce-header .header-nav #nav-links {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+  }
+  .commerce-header .header-nav .nav-links a,
+  .commerce-header .header-nav #nav-links a {
+    width: 100% !important;
+    padding: 14px 12px !important;
+    border-bottom: 1px solid var(--tienda-linea, var(--line, #e4eaf0)) !important;
+    white-space: normal !important;
+  }
+  .commerce-header[data-variante="embebido"] .header-nav {
+    background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
+  }
+  .commerce-header[data-variante="embebido"] .header-nav a,
+  .commerce-header[data-variante="embebido"] .header-nav .nav-links a,
+  .commerce-header[data-variante="embebido"] .header-nav #nav-links a {
+    color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  :where(.commerce-header .header-main) {
+    height: 64px !important;
+    min-height: 64px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  :where(.commerce-header .brand-column) {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    align-self: center !important;
+    padding: 0 !important;
+  }
+  :where(.commerce-header .brand, .commerce-header .brand-mark) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    align-items: center !important;
+  }
+  :where(.commerce-header [data-gesicomm-tienda="nombre"]) {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  :where(.commerce-header .header-actions) {
+    flex: 0 0 auto !important;
+    height: 44px !important;
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: 44px !important;
+    gap: 4px !important;
+    margin-left: auto !important;
+    align-items: center !important;
+    justify-items: center !important;
+    align-self: center !important;
+  }
+  :where(.commerce-header .search-wrap) {
+    position: relative !important;
+    width: 44px !important;
+    height: 44px !important;
+    display: grid !important;
+    place-items: center !important;
+    align-self: center !important;
+  }
+  :where(.commerce-header .search-toggle, .commerce-header .cart-button, .commerce-header .menu-toggle) {
+    flex: 0 0 44px !important;
+    align-self: center !important;
+    display: grid !important;
+    place-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    vertical-align: middle !important;
+    line-height: 1 !important;
+    overflow: visible !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+  }
+  :where(.commerce-header .search-toggle) {
+    font-size: 0 !important;
+  }
+  :where(.commerce-header .search-toggle)::before {
+    display: block !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 20px !important;
+    height: 20px !important;
+    background: currentColor !important;
+    content: "" !important;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M20 20l-4.5-4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M20 20l-4.5-4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+  }
+  :where(.commerce-header .cart-button) {
+    gap: 0 !important;
+    font-size: 0 !important;
+  }
+  :where(.commerce-header .cart-button > span[aria-hidden="true"]) {
+    display: none !important;
+  }
+  :where(.commerce-header .cart-button)::before {
+    display: block !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 22px !important;
+    height: 22px !important;
+    background: currentColor !important;
+    content: "" !important;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6h15l-1.5 8.5H8L6 3H3' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='9' cy='20' r='1.7'/%3E%3Ccircle cx='18' cy='20' r='1.7'/%3E%3C/svg%3E") center / contain no-repeat !important;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6h15l-1.5 8.5H8L6 3H3' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='9' cy='20' r='1.7'/%3E%3Ccircle cx='18' cy='20' r='1.7'/%3E%3C/svg%3E") center / contain no-repeat !important;
+  }
+  :where(.commerce-header .cart-button strong) {
+    display: none !important;
+  }
+  :where(.commerce-header .menu-toggle) {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    color: currentColor !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+  }
+  :where(.commerce-header .menu-toggle)::before {
+    display: block !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 22px !important;
+    height: 22px !important;
+    background: currentColor !important;
+    box-shadow: none !important;
+    content: "" !important;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h16M4 12h16M4 17h16' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h16M4 12h16M4 17h16' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+  }
+  :where(.commerce-header .menu-toggle[aria-expanded="true"])::before {
+    width: 20px !important;
+    height: 20px !important;
+    background: linear-gradient(45deg, transparent calc(50% - 1px), currentColor 0 calc(50% + 1px), transparent 0), linear-gradient(-45deg, transparent calc(50% - 1px), currentColor 0 calc(50% + 1px), transparent 0) !important;
+    box-shadow: none !important;
+    -webkit-mask: none !important;
+    mask: none !important;
+  }
+  :where(.commerce-header.menu-open)::before {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 990 !important;
+    background: rgba(2, 6, 23, .46) !important;
+    content: "" !important;
+  }
+  :where(.commerce-header .header-nav) {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    right: auto !important;
+    width: min(86vw, 340px) !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    overflow-y: auto !important;
+    padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 22px !important;
+    background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
+    border: 0 !important;
+    border-right: 1px solid var(--tienda-linea, var(--line, #e4eaf0)) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 24px 60px rgba(8, 41, 71, .22) !important;
+    transform: translateX(-105%) !important;
+    transition: transform .22s ease !important;
+    z-index: 1000 !important;
+  }
+  :where(.commerce-header .header-nav.is-open) {
+    transform: translateX(0) !important;
+  }
+  :where(.commerce-header .search-wrap.is-open .search-box, .commerce-header .search-wrap.is-open form.search-box) {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + var(--gc-trust-bar-alto, 0px) + var(--gc-header-alto, 64px) + 8px) !important;
+    right: 12px !important;
+    bottom: auto !important;
+    left: 12px !important;
+    width: auto !important;
+    min-height: 52px !important;
+    z-index: 95 !important;
+    border-radius: 14px !important;
+  }
+  :where(.commerce-header .search-wrap.is-open)::before {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 90 !important;
+    background: rgba(2, 6, 23, .48) !important;
+    content: "" !important;
+  }
+  :where(.commerce-header [data-gesicomm-search-close]) {
+    display: grid !important;
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    place-items: center !important;
+    color: var(--gc-texto, #10202f) !important;
+    background: transparent !important;
+    border: 0 !important;
+  }
+  :where(.commerce-header .search-wrap.is-open [data-gesicomm-search-results]) {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: calc(env(safe-area-inset-top, 0px) + var(--gc-trust-bar-alto, 0px) + var(--gc-header-alto, 64px) + 70px) !important;
+    width: auto !important;
+    max-height: min(56vh, 430px) !important;
+    z-index: 94 !important;
+    border-radius: 14px !important;
+  }
+}
 
 /* Colecciones: tarjetas mas altas y con lectura clara sobre imagen. */
 :where(.storefront .collection-grid, .collection-grid) {
@@ -1321,12 +1669,76 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   font-weight: 800 !important;
   text-shadow: 0 2px 12px rgba(0,0,0,.45) !important;
 }
+/* En una sola columna (mobile real, viewport angosto) la tarjeta queda muy
+   ancha y baja en proporcion a su alto: "cover" la usa para tapar todo el
+   ancho y termina recortando la foto en un primer plano feo. Subiendo el
+   alto minimo (mas vertical, como ya se ve en el preview del editor) el
+   recorte de "cover" es mucho mas suave y el producto entra casi entero. */
+@media (max-width: 720px) {
+  :where(.storefront .collection-card, .collection-card, .collection) {
+    min-height: min(88vw, 340px) !important;
+  }
+}
 :where(.trust-track, .announcement-track) {
   width: max-content !important;
   min-width: max-content !important;
 }
 :where(.trust-item, .announcement span) {
   flex: 0 0 auto !important;
+}
+
+@media (max-width: 720px) {
+  html[data-gesicomm-preview-device="mobile"] body:has(main[data-gesicomm-base="producto"]) {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="producto"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 16px !important;
+    overflow-x: clip !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="producto"] .pdp {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 22px !important;
+    padding: 16px 0 34px !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="producto"] .gallery {
+    position: static !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 10px !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="producto"] .gallery-main {
+    width: 100% !important;
+    min-height: 220px !important;
+    max-height: 340px !important;
+    aspect-ratio: 1 / 1 !important;
+    padding: 14px !important;
+    background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
+    border: 1px solid var(--tienda-linea, var(--line, #e4eaf0)) !important;
+    border-radius: 14px !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="producto"] .gallery-main img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="producto"] .pdp-info {
+    min-width: 0 !important;
+    color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="producto"] .buy-row {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] .sticky-compra {
+    z-index: 80 !important;
+  }
 }
 
 [data-gesicomm-tienda="logo"] {
@@ -1413,6 +1825,27 @@ main[data-gesicomm-base="catalogo"] .brand-badge {
 @media (max-width: 600px) {
   main[data-gesicomm-base="catalogo"] > .page-content > .brand-section > .brand-layout {
     padding-inline: 16px !important;
+  }
+}
+/* El simulador móvil corre en un iframe de escritorio con scrollbar clásica:
+   ese gutter existe en preview pero no en un teléfono real. La compensación
+   evita que el bloque de imagen de "Nuestra marca" quede debajo de la barra
+   o parezca salirse del recuadro en el editor. */
+@media (max-width: 600px) {
+  html[data-gesicomm-preview-device="mobile"] :where(.storefront .page-content, .page-content) {
+    padding-right: calc(16px + 12px) !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="catalogo"] > .page-content > .brand-section {
+    overflow-x: clip !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="catalogo"] > .page-content > .brand-section > .brand-layout {
+    max-width: 100% !important;
+    padding-inline: 16px !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="catalogo"] .brand-media {
+    width: 100% !important;
+    max-width: 100% !important;
+    justify-self: stretch !important;
   }
 }
 
@@ -1622,6 +2055,7 @@ export { cssMarcaTienda };
 export function construirDocumentoCodigo(codigo, opciones = {}) {
   const { html = '', css = '', js = '', fonts = [] } = codigo || {};
   const { titulo = '', reportarErrores = false, datos = null, extras = null } = opciones;
+  const previewDevice = ['mobile', 'tablet', 'desktop'].includes(opciones.previewDevice) ? opciones.previewDevice : '';
 
   // El puente de errores lo inyectamos nosotros, no el comercio: por eso
   // puede usar postMessage aunque el JS del comercio lo tenga prohibido.
@@ -1701,7 +2135,7 @@ window.addEventListener('unhandledrejection', function (e) {
 </script>`;
 
   return `<!doctype html>
-<html lang="es">
+<html lang="es"${previewDevice ? ` data-gesicomm-preview-device="${previewDevice}"` : ''}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1713,6 +2147,7 @@ window.addEventListener('unhandledrejection', function (e) {
 ${linksFuentes(fonts)}
 <style>
 html, body { margin: 0; padding: 0; }
+${typographyCss(opciones.typography || datos?.typography)}
 ${cssMarcaTienda(datos?.tienda?.colores)}
 </style>
 <style>

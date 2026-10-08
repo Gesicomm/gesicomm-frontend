@@ -23,7 +23,7 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * (contacto/footer, order bump de la landing — ver seccionesSistemaCodigo.js
  * y el order bump del runtime); `onTema` recibe los colores reales del carrito.
  */
-export default function CodigoPreview({ codigo, titulo, datos, extras = null, onError, onCheckout, onConfirmarCheckout, onNavegar, onEvento, onCatalogo, onTema, onCarrito, resaltar, className = '', style }) {
+export default function CodigoPreview({ codigo, titulo, datos, extras = null, typography = null, previewDevice = null, onError, onCheckout, onConfirmarCheckout, onNavegar, onEvento, onCatalogo, onTema, onCarrito, resaltar, className = '', style }) {
   const ref = useRef(null);
 
   // resaltar = { lista, n }: pide al runtime que muestre y marque una zona.
@@ -43,13 +43,13 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, on
   // iframe (se reiniciaría el JS del comercio y el scroll del visitante).
   const datosJson = useMemo(() => JSON.stringify(datos ?? null), [datos]);
   const doc = useMemo(
-    () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, datos: JSON.parse(datosJson), extras }),
+    () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, datos: JSON.parse(datosJson), extras, typography, previewDevice }),
     // Si cambia el generador durante una actualización de estilos/runtime,
     // no conservar un srcDoc anterior con fotos que invaden el contenido.
     // `datos` viaja por postMessage para no reiniciar el iframe y perder scroll
     // mientras el comercio escribe títulos, badges o CTAs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [construirDocumentoCodigo, codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css, extras?.script],
+    [construirDocumentoCodigo, codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css, extras?.script, typography?.headingFont, typography?.bodyFont, previewDevice],
   );
 
   function enviarDatos() {

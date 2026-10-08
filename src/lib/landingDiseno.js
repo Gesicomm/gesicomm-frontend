@@ -1,3 +1,5 @@
+import { typographyStyle } from './typography';
+
 /**
  * Mapea tema/diseño de una landing (tema_modo, color_primario/fondo,
  * radio_bordes, fuente) a variables CSS. Un solo lugar para esta tabla:
@@ -143,7 +145,7 @@ function sanitizarColorSolido(color, fallback) {
 }
 
 /** @returns {object} variables CSS listas para pasar como `style` de un contenedor. */
-export function calcularEstiloLanding({ tema, diseno }) {
+export function calcularEstiloLanding({ tema, diseno, typography }) {
   const modo = MODOS[tema?.modo] || MODOS.oscuro;
   const radios = RADIOS[diseno?.radio_bordes] || RADIOS.mediano;
   const fuente = FUENTES[diseno?.fuente] || FUENTES.outfit;
@@ -165,5 +167,7 @@ export function calcularEstiloLanding({ tema, diseno }) {
     '--l-radius': radios.radius,
     '--l-radius-sm': radios.radiusSm,
     '--l-font': fuente,
+    ...typographyStyle(typography),
+    fontFamily: 'var(--store-font-body)',
   };
 }

@@ -1000,6 +1000,17 @@ export function runtimeGesicomm() {
   function aplicarEncabezadoInicio() {
     var cfg = encabezadoConfig();
     var headers = document.querySelectorAll('.commerce-header');
+    var trust = document.querySelector('.trust-bar:not([hidden]), .announcement:not([hidden])');
+    if (trust) {
+      var altoTrust = trust.getBoundingClientRect().height;
+      if (altoTrust > 0) document.documentElement.style.setProperty('--gc-trust-bar-alto', altoTrust + 'px');
+    } else {
+      document.documentElement.style.setProperty('--gc-trust-bar-alto', '0px');
+    }
+    if (headers.length) {
+      var altoHeaderBase = headers[0].getBoundingClientRect().height;
+      if (altoHeaderBase > 0) document.documentElement.style.setProperty('--gc-header-alto', altoHeaderBase + 'px');
+    }
     for (var i = 0; i < headers.length; i++) {
       headers[i].style.setProperty('--gc-logo-tamano', cfg.logo_tamano + 'px');
       headers[i].style.setProperty('--gc-logo-escala', String(cfg.logo_tamano / 46));
@@ -1092,19 +1103,16 @@ export function runtimeGesicomm() {
   }
 
   function testimoniosInicioConfig() {
+    // El "Mostrar" del bloque (ver aplicarBloquesInicio) ya decide si esta
+    // sección aparece. Antes acá se la volvía a apagar si no había ningún
+    // testimonio con nombre cargado — quedaba escondida aunque el comercio
+    // la hubiera prendido, y solo reaparecía al cargar el primer testimonio.
+    // El título/kicker por defecto ("Opiniones" / "Clientes que ya
+    // compraron.") tiene que verse siempre, vacío, para que el comercio
+    // sepa que ahí va a cargar sus testimonios.
     var cfg = inicioConfig().testimonios || null;
     if (!cfg) return null;
-    if (cfg.activo !== true) {
-      var tieneContenido = Array.isArray(cfg.items) && cfg.items.some(function (o) {
-        return o && String(o.nombre || o.comentario || o.texto || o.foto || o.imagen || '').trim();
-      });
-      var tieneEncabezado = (String(cfg.kicker || '').trim() && cfg.kicker !== 'Opiniones')
-        || (String(cfg.titulo || '').trim() && cfg.titulo !== 'Clientes que ya compraron.')
-        || String(cfg.subtitulo || '').trim();
-      cfg = Object.assign({}, cfg, { activo: tieneContenido });
-      if (tieneEncabezado) cfg.activo = true;
-    }
-    return cfg;
+    return Object.assign({}, cfg, { activo: true });
   }
 
   function testimoniosInicio() {
@@ -2019,6 +2027,8 @@ export function runtimeGesicomm() {
     aplicarEncabezadoInicio();
     prepararMenuPrincipalHeader();
     prepararMenuCategoriasHeader();
+    prepararMenuMovilHeader();
+    pintarCarritoHeader();
   }
 
   function actualizarDatos(nuevosDatos) {
@@ -2295,12 +2305,39 @@ export function runtimeGesicomm() {
     if (toggle) toggle.setAttribute('aria-expanded', 'false');
   }
 
+  function cerrarMenuMovilHeader() {
+    var nav = document.querySelector('.commerce-header .header-nav');
+    var toggle = document.querySelector('.commerce-header .menu-toggle');
+    var header = document.querySelector('.commerce-header');
+    if (nav) nav.classList.remove('is-open');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    if (header) header.classList.remove('menu-open');
+  }
+
+  function prepararMenuMovilHeader() {
+    var header = document.querySelector('.commerce-header');
+    var toggle = header && header.querySelector('.menu-toggle');
+    var nav = header && header.querySelector('.header-nav');
+    if (!header || !toggle || !nav || toggle.getAttribute('data-gesicomm-menu-ready') === 'true') return;
+    toggle.setAttribute('data-gesicomm-menu-ready', 'true');
+    toggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      var abierto = !nav.classList.contains('is-open');
+      nav.classList.toggle('is-open', abierto);
+      header.classList.toggle('menu-open', abierto);
+      toggle.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    }, true);
+  }
+
   function panelResultadosHeader(wrap) {
     var panel = wrap && wrap.querySelector('[data-gesicomm-search-results]');
     if (!panel && wrap) {
       panel = document.createElement('div');
       panel.className = 'search-results';
       panel.setAttribute('data-gesicomm-search-results', '');
+      panel.setAttribute('role', 'listbox');
       panel.hidden = true;
       wrap.appendChild(panel);
     }
@@ -2309,7 +2346,6 @@ export function runtimeGesicomm() {
 
   function resultadosBusquedaHeader(q) {
     var termino = normalizar(q).trim();
-    if (termino.length < 2) return [];
     var vistos = {};
     var base = conocidos.concat(productos);
     var salida = [];
@@ -2317,8 +2353,10 @@ export function runtimeGesicomm() {
       var p = base[i];
       if (!p || !p.id || vistos[p.id]) continue;
       vistos[p.id] = true;
-      var texto = normalizar((p.nombre || '') + ' ' + (p.categoria || '') + ' ' + (p.marca || '') + ' ' + (p.etiqueta || ''));
-      if (texto.indexOf(termino) === -1) continue;
+      if (termino.length >= 2) {
+        var texto = normalizar((p.nombre || '') + ' ' + (p.categoria || '') + ' ' + (p.marca || '') + ' ' + (p.etiqueta || ''));
+        if (texto.indexOf(termino) === -1) continue;
+      }
       salida.push(p);
       if (salida.length >= 6) break;
     }
@@ -2365,6 +2403,14 @@ export function runtimeGesicomm() {
     var panel = wrap && (wrap.querySelector('#gesicomm-search-panel') || wrap.querySelector('.search-box'));
     if (!toggle || !panel || toggle.getAttribute('data-gesicomm-search-ready') === 'true') return;
     toggle.setAttribute('data-gesicomm-search-ready', 'true');
+    if (!panel.querySelector('[data-gesicomm-search-close]')) {
+      var cerrar = document.createElement('button');
+      cerrar.type = 'button';
+      cerrar.setAttribute('data-gesicomm-search-close', '');
+      cerrar.setAttribute('aria-label', 'Cerrar búsqueda');
+      cerrar.textContent = '×';
+      panel.appendChild(cerrar);
+    }
     var resultadosIniciales = panelResultadosHeader(wrap);
     if (wrap) wrap.classList.remove('is-open');
     panel.hidden = true;
@@ -2387,6 +2433,23 @@ export function runtimeGesicomm() {
         if (resultados) resultados.hidden = true;
       }
     }, true);
+  }
+
+  function pintarCarritoHeader() {
+    var resumen = datos.carrito || { cantidad: 0 };
+    var cantidad = Math.max(0, Number(resumen.cantidad) || 0);
+    var botones = document.querySelectorAll('.commerce-header [data-gesicomm-carrito]');
+    for (var i = 0; i < botones.length; i++) {
+      var badge = botones[i].querySelector('[data-gesicomm-cart-badge]');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.setAttribute('data-gesicomm-cart-badge', '');
+        botones[i].appendChild(badge);
+      }
+      badge.textContent = cantidad > 99 ? '99+' : String(cantidad);
+      badge.hidden = cantidad <= 0;
+      botones[i].setAttribute('aria-label', cantidad > 0 ? 'Abrir carrito, ' + cantidad + ' productos' : 'Abrir carrito');
+    }
   }
 
   function categoriaFiltroEfectiva() {
@@ -2759,6 +2822,8 @@ export function runtimeGesicomm() {
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
+      cerrarBuscadorHeader();
+      cerrarMenuMovilHeader();
       cerrarMenuCategorias();
       var menusSelect = document.querySelectorAll('.gc-select-ui-menu');
       for (var i = 0; i < menusSelect.length; i++) menusSelect[i].hidden = true;
@@ -2910,6 +2975,11 @@ export function runtimeGesicomm() {
       enviar({ tipo: 'gesicomm:carrito' });
       return;
     }
+    if ((el = t.closest('[data-gesicomm-search-close]'))) {
+      e.preventDefault();
+      cerrarBuscadorHeader();
+      return;
+    }
     if ((el = t.closest('[data-gesicomm-checkout-ir]'))) {
       e.preventDefault();
       enviar({ tipo: 'gesicomm:navegar', destino: 'checkout' });
@@ -2947,11 +3017,14 @@ export function runtimeGesicomm() {
     }
     if (!t.closest('.category-menu-wrap')) cerrarMenuCategorias();
     if (!t.closest('.search-wrap')) cerrarBuscadorHeader();
+    if (t.closest('.commerce-header.menu-open') && !t.closest('.header-nav') && !t.closest('.menu-toggle')) cerrarMenuMovilHeader();
     if (t.closest('#nav-links a')) {
       var headerNavAbierto = document.querySelector('.header-nav');
       var toggleHeader = document.querySelector('.menu-toggle');
       if (headerNavAbierto) headerNavAbierto.classList.remove('is-open');
       if (toggleHeader) toggleHeader.setAttribute('aria-expanded', 'false');
+      var headerAbierto = document.querySelector('.commerce-header');
+      if (headerAbierto) headerAbierto.classList.remove('menu-open');
     }
 
     if ((el = t.closest('[data-gesicomm-select-ui] .gc-select-ui-button'))) {

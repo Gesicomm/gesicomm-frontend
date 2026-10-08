@@ -38,6 +38,60 @@
   transition: background-color 0.15s, color 0.15s;
 }
 
+.lp-page {
+  --store-font-heading: var(--l-font, 'Outfit', system-ui, sans-serif);
+  --store-font-body: var(--l-font, 'Outfit', system-ui, sans-serif);
+  font-family: var(--store-font-body);
+}
+
+.lp-page :where(h1, h2, h3, h4, h5, h6, .section-title, .section-heading, .hero-title, .lp-title) {
+  font-family: var(--store-font-heading);
+}
+
+.lp-page :where(button, input, textarea, select) {
+  font-family: inherit;
+}
+
+.lp-typography-scope {
+  font-family: var(--store-font-body);
+}
+
+.lp-typography-scope :where(.font-sans, .fpp-root, .bpp-root, .hpg-root, .mpg-root, .tpp-root, .bsc-root, .cmb-root, .fashion-store) {
+  font-family: var(--store-font-body) !important;
+}
+
+.lp-typography-scope :where(h1, h2, h3, h4, h5, h6, .font-serif, .font-mono) {
+  font-family: var(--store-font-heading) !important;
+}
+
+.lp-typography-scope :where(
+  .hpg-precio strong,
+  .hpg-beneficios-grid span,
+  .hpg-materiales-grid b,
+  .hpg-pasos b,
+  .hpg-resenas-grid p,
+  .hpg-pie b,
+  .bpp-precio strong,
+  .bpp-beneficios-grid span,
+  .bpp-ingredientes-grid b,
+  .bpp-pasos b,
+  .bpp-resenas-grid p,
+  .bpp-pie b,
+  .mpg-precio strong,
+  .mpg-beneficios-grid span,
+  .mpg-materiales-grid b,
+  .mpg-pasos b,
+  .mpg-resenas-grid p,
+  .mpg-pie b,
+  .fashion-store-name
+) {
+  font-family: var(--store-font-heading) !important;
+}
+
+.lp-typography-scope :where(button, input, textarea, select) {
+  font-family: inherit;
+}
+
 /* Contenedor único: header, filtros, grilla y pie comparten esta medida. */
 .lp-shell {
   width: 100%;

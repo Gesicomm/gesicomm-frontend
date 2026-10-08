@@ -11,6 +11,12 @@ export const tiendaService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
   eliminarLogo: () => API.delete('/mi-tienda/logo').then(r => r.data),
+  guardarTipografia: (payload) => API.put('/mi-tienda/typography', payload).then(r => r.data),
+  subirFuente: (formData) =>
+    API.post('/mi-tienda/typography/fonts', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+  eliminarFuente: (fontId) => API.delete(`/mi-tienda/typography/fonts/${fontId}`).then(r => r.data),
   disponibilidadSubdominio: (sub) => API.get('/mi-tienda/subdominio/disponibilidad', { params: { sub } }).then(r => r.data),
 
   // Cómo entrega el comercio lo que vende (modalidad de fulfillment).

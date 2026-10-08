@@ -747,8 +747,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         onGuardarRapido={venta?.configurado ? () => guardar() : null}
         sinGuardar={sinGuardar}
         // Editor de código crudo (HTML/CSS/JS, Secciones, Footer, Prompt IA):
-        // ya no es la pantalla de entrada, pero sigue accesible desde acá.
-        onAbrirCodigo={venta?.configurado ? () => setPaso('codigo') : null}
+        // pantalla vieja, dejada de usar a pedido del comercio — se oculta
+        // el único acceso (el botón "Código avanzado" de acá abajo) pero el
+        // componente y la ruta siguen en el repo por si hace falta volver.
+        onAbrirCodigo={null}
         codigos={codigos}
         onCambiarCodigo={(vistaCodigo, parte, valor) => {
           const valorSeguro = parte === 'html' ? limpiarAvisosIaHtml(valor) : valor;
@@ -1145,6 +1147,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   codigo={codigoPreviewHeredado}
                   titulo={ajustes.seo_titulo || ajustes.titulo}
                   datos={datosPreview}
+                  typography={landing?.typography?.resolved || tienda?.typography}
+                  previewDevice="mobile"
                   onError={alErrorRuntime}
                   onCheckout={alCheckoutPreview}
                   onCarrito={alCarritoPreview}
@@ -1159,6 +1163,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   codigo={codigoPreviewHeredado}
                   titulo={ajustes.seo_titulo || ajustes.titulo}
                   datos={datosPreview}
+                  typography={landing?.typography?.resolved || tienda?.typography}
+                  previewDevice={viewportMode}
                   onError={alErrorRuntime}
                   onCheckout={alCheckoutPreview}
                   onCarrito={alCarritoPreview}

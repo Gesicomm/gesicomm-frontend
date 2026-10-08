@@ -68,6 +68,7 @@ export default function ComboCodigoPreview({ landing, device, onDeviceChange, ..
         <ComboOfferDraftPreview item={item} datos={datos} device={device} />
       ) : codigoInicio?.html?.trim() ? <div style={{ width: anchoDispositivo * escala, height: 600, margin: '0 auto', overflow: 'hidden' }}>
         <CodigoPreview codigo={codigoInicio} datos={datos} titulo="Combo en el HTML de esta landing" onError={setError} onNavegar={navegar}
+          previewDevice={device}
           onCheckout={() => setAviso('Es una vista previa: no se crean pedidos desde el armador.')}
           style={{ width: anchoDispositivo, height: 600 / escala, transform: `scale(${escala})`, transformOrigin: 'top left', border: 0 }} />
       </div> : <p role="status" style={{ padding: '2rem' }}>Esta landing todavía no tiene HTML para el inicio. Configurá esa vista en el editor para previsualizar tu diseño aquí.</p>}

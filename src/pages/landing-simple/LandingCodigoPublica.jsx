@@ -411,6 +411,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         titulo={esFicha ? productoPublico.nombre : titulo}
         datos={datosRuntime}
         extras={seccionesSistema}
+        typography={data?.typography}
         onCheckout={abrirCheckout}
         onConfirmarCheckout={confirmarCheckoutIframe}
         onCarrito={() => cartState.setCarritoAbierto(true)}

@@ -107,6 +107,7 @@ function SectionWrapper({ id, name, selected, style, children, onSelect, onReord
 
 export default function LandingPreview({
   titulo, descripcion, filtros, items, tema, diseno, contacto, banner, urlPublica,
+  typography,
   // Logo heredado (landing propia || tienda), igual que page.logo_imagen
   // del DTO público: el Header lo usa si no tiene logo propio.
   logoImagen,
@@ -270,7 +271,7 @@ export default function LandingPreview({
         <PreviewFrame className="lb-live-preview-iframe" style={{ flex: 1 }}>
           <div
             className={`lp-page lb-live-preview-page ${tema?.modo === 'claro' ? 'claro' : ''}`}
-            style={{ ...calcularEstiloLanding({ tema, diseno }), display: 'flex', flexDirection: 'column', minHeight: '100vh' }}
+            style={{ ...calcularEstiloLanding({ tema, diseno, typography }), display: 'flex', flexDirection: 'column', minHeight: '100vh' }}
             onClick={() => onSelectSeccion(null)}
           >
             <PageRenderer 

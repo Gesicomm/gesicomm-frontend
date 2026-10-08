@@ -1107,6 +1107,60 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     resultados[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'producto', producto: 'air-fryer-26l' });
   });
+
+  it('el header móvil abre/cierra búsqueda completa y menú lateral', () => {
+    const { document, click } = montar(PLANTILLA_INICIO, datos);
+    const estilos = [...document.querySelectorAll('style')].map(el => el.textContent).join('\n');
+
+    expect(estilos).toContain('height: 64px !important;');
+    expect(estilos).toContain('height: 44px !important;');
+    expect(estilos).toContain('top: calc(env(safe-area-inset-top, 0px) + var(--gc-trust-bar-alto, 0px) + var(--gc-header-alto, 64px) + 8px) !important;');
+    expect(estilos).toContain('top: calc(env(safe-area-inset-top, 0px) + var(--gc-trust-bar-alto, 0px) + var(--gc-header-alto, 64px) + 70px) !important;');
+    click('[data-gesicomm-search-toggle]');
+
+    expect(document.querySelector('[data-gesicomm-search-result]')).toBeTruthy();
+    expect(document.querySelector('[data-gesicomm-search-close]')).toBeTruthy();
+
+    click('[data-gesicomm-search-close]');
+    expect(document.querySelector('#gesicomm-search-panel').hidden).toBe(true);
+
+    click('.menu-toggle');
+    expect(document.querySelector('.commerce-header').classList.contains('menu-open')).toBe(true);
+    expect(document.querySelector('.header-nav').classList.contains('is-open')).toBe(true);
+    expect(document.querySelector('.menu-toggle').getAttribute('aria-expanded')).toBe('true');
+
+    document.dispatchEvent(new document.defaultView.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelector('.commerce-header').classList.contains('menu-open')).toBe(false);
+    expect(document.querySelector('.header-nav').classList.contains('is-open')).toBe(false);
+  });
+
+  it('el carrito del header muestra badge solo cuando hay productos', () => {
+    const conCarrito = montar(PLANTILLA_INICIO, { ...datos, carrito: { cantidad: 3, items: [{ id: 'x' }] } });
+    const estilos = [...conCarrito.document.querySelectorAll('style')].map(el => el.textContent).join('\n');
+
+    expect(estilos).toContain(':where(.commerce-header .cart-button)::before');
+    expect(estilos).toContain(':where(.commerce-header .menu-toggle)::before');
+    expect(estilos).toContain('flex: 0 0 44px !important;');
+    expect(conCarrito.document.querySelector('[data-gesicomm-cart-badge]').textContent).toBe('3');
+    expect(conCarrito.document.querySelector('[data-gesicomm-cart-badge]').hidden).toBe(false);
+    expect(conCarrito.document.querySelector('[data-gesicomm-carrito]').getAttribute('aria-label')).toContain('3 productos');
+    conCarrito.dom.window.close();
+
+    const vacio = montar(PLANTILLA_INICIO, { ...datos, carrito: { cantidad: 0, items: [] } });
+    expect(vacio.document.querySelector('[data-gesicomm-cart-badge]').hidden).toBe(true);
+    vacio.dom.window.close();
+  });
+
+  it('el preview móvil compensa el scrollbar del iframe sin cambiar la publicación', () => {
+    const publico = construirDocumentoCodigo(PLANTILLA_INICIO, { datos });
+    expect(publico).toContain('<html lang="es">');
+    expect(publico).not.toContain('<html lang="es" data-gesicomm-preview-device="mobile">');
+
+    const preview = construirDocumentoCodigo(PLANTILLA_INICIO, { datos, previewDevice: 'mobile' });
+    expect(preview).toContain('<html lang="es" data-gesicomm-preview-device="mobile">');
+    expect(preview).toContain('html[data-gesicomm-preview-device="mobile"]');
+    expect(preview).toContain('padding-right: calc(16px + 12px) !important;');
+  });
 });
 
 describe('ficha: imágenes y descripciones legibles', () => {

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Dumbbell, Store, Sparkles, Monitor, Menu, X } from 'lucide-react';
 import { contraste, hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import { CartButton } from './sections';
@@ -127,7 +128,9 @@ export default function StoreHeader({
   const viewportCompacto = useViewportCompacto();
   const compacto = isMobile || viewportCompacto;
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [menuRect, setMenuRect] = useState(null);
   const headerRef = useRef(null);
+  const menuRef = useRef(null);
 
   // Al volver a escritorio (o al salir del modo móvil del editor) el panel
   // desplegado quedaría flotando sobre la landing: se cierra solo.
@@ -137,15 +140,30 @@ export default function StoreHeader({
 
   useEffect(() => {
     if (!menuAbierto) return undefined;
+    const recalcularMenu = () => {
+      const rect = headerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMenuRect({
+        top: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
     const onKeyDown = (e) => { if (e.key === 'Escape') setMenuAbierto(false); };
     const onPointerDown = (e) => {
-      if (!headerRef.current?.contains(e.target)) setMenuAbierto(false);
+      if (headerRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) return;
+      setMenuAbierto(false);
     };
+    recalcularMenu();
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('resize', recalcularMenu);
+    window.addEventListener('scroll', recalcularMenu, true);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('resize', recalcularMenu);
+      window.removeEventListener('scroll', recalcularMenu, true);
     };
   }, [menuAbierto]);
 
@@ -165,6 +183,52 @@ export default function StoreHeader({
     { texto: 'Catálogo', href: linkCatalogo, onClick: onClickCatalogo },
     { texto: 'Contacto', href: linkContacto, onClick: onClickContacto }
   ];
+
+  const menuMovil = compacto && menuAbierto && menuRect && typeof document !== 'undefined'
+    ? createPortal(
+      <nav
+        id="header-menu-movil"
+        ref={menuRef}
+        className="fixed flex flex-col px-4 py-3 gap-1 shadow-lg"
+        // Opaco a propósito: con el fondo translúcido del header se leía
+        // el contenido de la landing por debajo de los links.
+        style={{
+          top: `${menuRect.top}px`,
+          left: `${menuRect.left}px`,
+          width: `${menuRect.width}px`,
+          zIndex: 9999,
+          borderBottom: `1px solid ${bordeSuave}`,
+          backgroundColor: t.fondo,
+          color: t.texto,
+        }}
+      >
+        {links.map(l => (
+          <a
+            key={l.texto}
+            href={l.href}
+            target={target}
+            rel="noreferrer"
+            className={`py-3 text-base ${styles.navClass}`}
+            style={{ borderBottom: `1px solid ${bordeSuave}` }}
+            {...linkProps(l.onClick)}
+          >
+            {l.texto}
+          </a>
+        ))}
+        <a
+          href={linkCatalogo}
+          target={target}
+          rel="noreferrer"
+          className={`mt-3 text-center ${styles.btnClass}`}
+          style={styles.btnStyle(t)}
+          {...linkProps(onClickCatalogo)}
+        >
+          Ver catálogo
+        </a>
+      </nav>,
+      document.body
+    )
+    : null;
 
   return (
     <header
@@ -219,39 +283,7 @@ export default function StoreHeader({
         )}
       </div>
 
-      {compacto && menuAbierto && (
-        <nav
-          id="header-menu-movil"
-          className="absolute left-0 right-0 top-full flex flex-col px-4 py-3 gap-1 shadow-lg"
-          // Opaco a propósito: con el fondo translúcido del header se leía
-          // el contenido de la landing por debajo de los links.
-          style={{ borderBottom: `1px solid ${bordeSuave}`, backgroundColor: t.fondo, color: t.texto }}
-        >
-          {links.map(l => (
-            <a
-              key={l.texto}
-              href={l.href}
-              target={target}
-              rel="noreferrer"
-              className={`py-3 text-base ${styles.navClass}`}
-              style={{ borderBottom: `1px solid ${bordeSuave}` }}
-              {...linkProps(l.onClick)}
-            >
-              {l.texto}
-            </a>
-          ))}
-          <a
-            href={linkCatalogo}
-            target={target}
-            rel="noreferrer"
-            className={`mt-3 text-center ${styles.btnClass}`}
-            style={styles.btnStyle(t)}
-            {...linkProps(onClickCatalogo)}
-          >
-            Ver catálogo
-          </a>
-        </nav>
-      )}
+      {menuMovil}
     </header>
   );
 }

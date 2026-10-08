@@ -153,27 +153,12 @@ export const HeaderBlock = ({ content, settings }) => {
                 type="button"
                 onClick={irABuscar}
                 aria-label="Buscar productos"
-                className="hidden h-10 w-10 items-center justify-center rounded-full text-[var(--l-text)] opacity-80 transition-all hover:bg-[var(--l-bg-muted)] hover:opacity-100 hover:text-[var(--l-primary)] sm:flex"
+                className="hidden h-10 w-10 items-center justify-center rounded-full text-[var(--l-text)] opacity-80 transition-all hover:bg-[var(--l-bg-muted)] hover:opacity-100 hover:text-[var(--l-primary)] md:flex"
               >
                 <Search size={18} />
               </button>
             )}
-            <button
-              type="button"
-              onClick={actions.abrirCarrito}
-              aria-label={`Ver carrito`}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full text-[var(--l-text)] opacity-80 transition-all hover:bg-[var(--l-bg-muted)] hover:opacity-100 hover:text-[var(--l-primary)]"
-            >
-              <ShoppingCart size={18} />
-              {cantidadCarrito > 0 && (
-                <span
-                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[0.62rem] font-bold text-[var(--l-on-primary)]"
-                  style={{ background: 'var(--l-primary)' }}
-                >
-                  {cantidadCarrito}
-                </span>
-              )}
-            </button>
+            <button type="button" onClick={actions.abrirCarrito} aria-label="Ver carrito" className="flex h-9 items-center justify-center gap-2 rounded-full border px-3 text-[var(--l-text)] transition-all hover:bg-[var(--l-bg-muted)] hover:text-[var(--l-primary)]" style={{ borderColor: 'var(--l-card-border)' }}> <ShoppingCart size={16} /> <span className="text-xs font-bold">{cantidadCarrito || 0}</span> </button>
             <button
               type="button"
               onClick={() => setMenuAbierto((v) => !v)}
@@ -210,6 +195,17 @@ export const HeaderBlock = ({ content, settings }) => {
               <Search size={15} /> Buscar
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => {
+              setMenuAbierto(false);
+              if (actions.abrirCarrito) actions.abrirCarrito();
+            }}
+            className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-left text-sm font-semibold text-[var(--l-text)] transition-colors hover:bg-[var(--l-surface)]"
+          >
+            <ShoppingCart size={15} /> Carrito 
+            {cantidadCarrito > 0 && <span className="ml-1 rounded-full bg-[var(--l-primary)] px-2 py-0.5 text-xs text-[var(--l-on-primary)]">{cantidadCarrito}</span>}
+          </button>
           
           <div className="mt-4 flex gap-4 px-2 pt-4 border-t border-[var(--l-card-border)]">
              {redes.instagram && <a href={redes.instagram} target="_blank" rel="noreferrer" className="text-[var(--l-text-muted)]"><Instagram size={20} /></a>}
@@ -221,3 +217,5 @@ export const HeaderBlock = ({ content, settings }) => {
     </header>
   );
 };
+
+

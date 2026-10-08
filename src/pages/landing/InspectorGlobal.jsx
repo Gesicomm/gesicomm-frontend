@@ -1,7 +1,15 @@
 import React from 'react';
 import { Settings, Palette, Type, Search, Store, Globe, ToggleLeft } from 'lucide-react';
+import { listaFuentes, resolverFuente } from '../../lib/typography';
 
-export default function InspectorGlobal({ form, onChange, onBack }) {
+export default function InspectorGlobal({ form, onChange, onBack, typography }) {
+  const fuentes = listaFuentes(typography);
+  const landingTypography = form.typography || { mode: 'inherit' };
+  const resolved = typography || {};
+  const headingActual = resolverFuente(resolved, resolved.headingFont);
+  const bodyActual = resolverFuente(resolved, resolved.bodyFont);
+  const setTypography = (patch) => onChange('typography', { ...landingTypography, ...patch });
+
   return (
     <div className="flex h-full flex-col bg-[var(--vit-card-bg)]">
       <div className="flex items-center gap-3 border-b border-[var(--vit-border)] p-4 shrink-0">
@@ -29,6 +37,54 @@ export default function InspectorGlobal({ form, onChange, onBack }) {
               <span className="text-xs text-[var(--vit-muted)]">Solo lo ves vos.</span>
             </label>
 
+            <div className="rounded-md border border-[var(--vit-border)] bg-[var(--vit-surface)] p-3">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--vit-text)]">
+                <Type size={15} className="text-[var(--vit-muted)]" />
+                Tipografía
+              </div>
+              <label className="mb-3 flex items-center justify-between gap-3 text-sm">
+                <span>Heredar de la tienda</span>
+                <input
+                  type="checkbox"
+                  className="toggle"
+                  checked={landingTypography.mode !== 'custom'}
+                  onChange={e => setTypography(e.target.checked ? { mode: 'inherit' } : {
+                    mode: 'custom',
+                    headingFont: resolved.headingFont || 'outfit',
+                    bodyFont: resolved.bodyFont || 'outfit',
+                  })}
+                />
+              </label>
+              {landingTypography.mode === 'custom' ? (
+                <div className="grid gap-3">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-[var(--vit-muted)]">Títulos</span>
+                    <select
+                      className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-card-bg)] p-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none"
+                      value={landingTypography.headingFont || resolved.headingFont || 'outfit'}
+                      onChange={e => setTypography({ mode: 'custom', headingFont: e.target.value })}
+                    >
+                      {fuentes.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-[var(--vit-muted)]">Textos</span>
+                    <select
+                      className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-card-bg)] p-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none"
+                      value={landingTypography.bodyFont || resolved.bodyFont || 'outfit'}
+                      onChange={e => setTypography({ mode: 'custom', bodyFont: e.target.value })}
+                    >
+                      {fuentes.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                    </select>
+                  </label>
+                </div>
+              ) : (
+                <p className="m-0 text-xs leading-relaxed text-[var(--vit-muted)]">
+                  Usa {headingActual?.label || 'la fuente de tienda'} para títulos y {bodyActual?.label || 'la fuente de tienda'} para textos.
+                </p>
+              )}
+            </div>
+            
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-medium text-[var(--vit-text)]">Título público</span>
               <input

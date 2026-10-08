@@ -793,6 +793,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
           : 'oscuro',
       },
       diseno: {},
+      typography: data.typography,
     });
 
     if (isProductView) {
@@ -843,7 +844,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
       // entidad. Esta rama va ANTES de las de template.slug a propósito.
       if (itemSeleccionado?.tipo === 'combo') {
         return (
-          <div style={cssVarsRigido}>
+          <div className="lp-typography-scope" style={cssVarsRigido}>
             <StoreHeader {...headerProps} />
             <ComboProductPagePublica
               item={itemSeleccionado}
@@ -870,7 +871,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
 
       if (data.template.slug === 'fitness-suplementos') {
         return (
-          <div style={cssVarsRigido}>
+          <div className="lp-typography-scope" style={cssVarsRigido}>
             <StoreHeader {...headerProps} />
             <FitnessProductPagePublica
               item={itemSeleccionado}
@@ -895,7 +896,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
 
       if (data.template.slug === 'tech-electronica') {
         return (
-          <div style={cssVarsRigido}>
+          <div className="lp-typography-scope" style={cssVarsRigido}>
             <StoreHeader {...headerProps} />
             <TechProductPagePublica
               item={itemSeleccionado}
@@ -923,7 +924,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
 
       if (data.template.slug === 'beauty-skincare') {
         return (
-          <div style={cssVarsRigido}>
+          <div className="lp-typography-scope" style={cssVarsRigido}>
             <StoreHeader {...headerProps} />
             <BeautyProductPagePublica
               item={itemSeleccionado}
@@ -951,7 +952,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
 
       if (data.template.slug === 'bazar-hogar') {
         return (
-          <div style={cssVarsRigido}>
+          <div className="lp-typography-scope" style={cssVarsRigido}>
             <StoreHeader {...headerProps} />
             <BazarProductPagePublica
               item={itemSeleccionado}
@@ -979,7 +980,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
 
       if (data.template.slug === 'moda-indumentaria') {
         return (
-          <div style={cssVarsRigido}>
+          <div className="lp-typography-scope" style={cssVarsRigido}>
             <StoreHeader {...headerProps} />
             <ModaProductPagePublica
               item={itemSeleccionado}
@@ -1007,7 +1008,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
 
       if (data.template.slug === 'basico') {
         return (
-          <div style={cssVarsRigido}>
+          <div className="lp-typography-scope" style={cssVarsRigido}>
             <StoreHeader {...headerProps} />
             <BasicoProductPagePublica
               item={itemSeleccionado}
@@ -1033,7 +1034,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
       }
 
       return (
-        <div style={cssVarsRigido}>
+        <div className="lp-typography-scope" style={cssVarsRigido}>
           <StoreHeader {...headerProps} />
           <ProductPagePublica
             item={itemSeleccionado}
@@ -1070,7 +1071,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
     const itemPorContentId = (contentId) => catalogoCompleto.find(i => i.content_id === contentId);
 
     return (
-      <div style={cssVarsRigido}>
+      <div className="lp-typography-scope" style={cssVarsRigido}>
         <ComponenteRigido
           data={datosRigidos}
           onClickProducto={(p) => navigate(slug ? `/l/${slug}/${p.id}` : `/${p.id}`)}
@@ -1156,7 +1157,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
   return (
     <div
       className={`lp-page ${data.tema.modo === 'claro' ? 'claro' : ''}`}
-      style={{ ...calcularEstiloLanding({ tema: data.tema, diseno: data.diseno }), display: 'flex', flexDirection: 'column' }}
+      style={{ ...calcularEstiloLanding({ tema: data.tema, diseno: data.diseno, typography: data.typography }), display: 'flex', flexDirection: 'column' }}
     >
       <PageRenderer context={renderContext} />
 

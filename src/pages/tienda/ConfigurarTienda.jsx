@@ -6,7 +6,7 @@ import {
   ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, CheckCircle2, Info,
   Store, MessageCircle, BarChart3, MousePointerClick, CreditCard, Coins,
   ArrowRight, Palette, ImagePlus, Mail, MapPin, Share2,
-  AtSign, Link2, User, Phone, Video
+  AtSign, Link2, User, Phone, Video, Type
 } from 'lucide-react';
 
 
@@ -15,6 +15,7 @@ import { planesService } from '../../services/planesService';
 import { useDebounce } from '../../hooks/useDebounce';
 import { getMediaUrl } from '../../services/api';
 import { generarPreviewMensaje } from '../../lib/mensajeWhatsapp';
+import { listaFuentes, typographyStyle } from '../../lib/typography';
 import PagoParConfig from './PagoParConfig';
 import SpeedboxConfig from './SpeedboxConfig';
 import RahaConexion from './RahaConexion';
@@ -66,6 +67,7 @@ const FORM_INICIAL = {
   meta_capi_activo: false,
   google_analytics_id: '',
   tiktok_pixel_id: '',
+  typography: { headingFont: 'outfit', bodyFont: 'outfit' },
 };
 
 
@@ -154,8 +156,11 @@ export default function ConfigurarTienda() {
   // El logo va por su propio endpoint (multipart) y se guarda al instante,
   // independiente de "Guardar cambios".
   const logoInputRef = useRef(null);
+  const fuenteInputRef = useRef(null);
   const [subiendoLogo, setSubiendoLogo] = useState(false);
   const [errorLogo, setErrorLogo] = useState(null);
+  const [subiendoFuente, setSubiendoFuente] = useState(false);
+  const [errorFuente, setErrorFuente] = useState(null);
 
   // El access token nunca vuelve del backend (ni cifrado) — solo un flag
   // de si ya hay uno guardado (tienda.meta_access_token_configurado).
@@ -220,6 +225,10 @@ export default function ConfigurarTienda() {
           meta_capi_activo: !!data.meta_capi_activo,
           google_analytics_id: data.google_analytics_id || '',
           tiktok_pixel_id: data.tiktok_pixel_id || '',
+          typography: {
+            headingFont: data.typography?.headingFont || FORM_INICIAL.typography.headingFont,
+            bodyFont: data.typography?.bodyFont || FORM_INICIAL.typography.bodyFont,
+          },
         });
       }
 
@@ -300,8 +309,65 @@ export default function ConfigurarTienda() {
     }
   }
 
+  async function subirFuente(e) {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!archivo) return;
+    if (!/\.(woff2|woff|ttf|otf)$/i.test(archivo.name)) {
+      return setErrorFuente('Solo se permiten fuentes .woff2, .woff, .ttf u .otf.');
+    }
+    if (archivo.size > 4 * 1024 * 1024) {
+      return setErrorFuente('La fuente no puede pesar más de 4 MB.');
+    }
+    setErrorFuente(null);
+    setSubiendoFuente(true);
+    try {
+      const fd = new FormData();
+      fd.append('fuente', archivo);
+      fd.append('nombre', archivo.name.replace(/\.[^.]+$/, ''));
+      const nueva = await tiendaService.subirFuente(fd);
+      setTienda(prev => {
+        const typography = prev?.typography || {};
+        return {
+          ...prev,
+          typography: {
+            ...typography,
+            customFonts: [nueva, ...(typography.customFonts || [])],
+          },
+        };
+      });
+    } catch (err) {
+      setErrorFuente(err.response?.data?.message || 'No se pudo subir la fuente.');
+    } finally {
+      setSubiendoFuente(false);
+    }
+  }
+
+  async function eliminarFuente(font) {
+    setErrorFuente(null);
+    setSubiendoFuente(true);
+    try {
+      await tiendaService.eliminarFuente(font.custom_id);
+      setTienda(prev => ({
+        ...prev,
+        typography: {
+          ...(prev?.typography || {}),
+          customFonts: (prev?.typography?.customFonts || []).filter(f => f.id !== font.id),
+        },
+      }));
+    } catch (err) {
+      setErrorFuente(err.response?.data?.message || 'No se pudo eliminar la fuente.');
+    } finally {
+      setSubiendoFuente(false);
+    }
+  }
+
   function handleChange(campo, valor) {
     setForm(prev => ({ ...prev, [campo]: valor }));
+  }
+
+  function cambiarTipografia(campo, valor) {
+    setForm(prev => ({ ...prev, typography: { ...(prev.typography || {}), [campo]: valor } }));
   }
 
   function insertarVariable(variable) {
@@ -366,6 +432,8 @@ export default function ConfigurarTienda() {
       } else {
         actualizada = await tiendaService.crear(payload);
       }
+      const typographyRes = await tiendaService.guardarTipografia(form.typography || FORM_INICIAL.typography);
+      actualizada = { ...actualizada, typography: typographyRes.typography };
       setTienda(actualizada);
       setEstadoCuenta(actualizada.estado_cuenta || actualizada.estadoCuenta || estadoCuenta);
       setMetaTokenNuevo('');
@@ -408,6 +476,14 @@ export default function ConfigurarTienda() {
   const estadoMeta = form.meta_pixel_id
     ? { tono: 'ok', texto: 'Píxel cargado' }
     : { tono: 'neutro', texto: 'Sin configurar' };
+
+  const typographyCatalogo = tienda?.typography || { ...FORM_INICIAL.typography, customFonts: [] };
+  const fuentesDisponibles = listaFuentes(typographyCatalogo);
+  const previewTypography = {
+    ...typographyCatalogo,
+    headingFont: form.typography?.headingFont || typographyCatalogo.headingFont,
+    bodyFont: form.typography?.bodyFont || typographyCatalogo.bodyFont,
+  };
 
   if (cargando) {
     return (
@@ -703,6 +779,99 @@ export default function ConfigurarTienda() {
                           <span className="tn-field-hint">Base visual para landings en modo oscuro.</span>
                         </label>
                       </div>
+                    </div>
+                  </section>
+
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3><Type size={16} /> Tipografía</h3>
+                      <p>Definí la fuente de títulos y textos generales para tu tienda, landings y páginas publicadas.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-fields">
+                        <label className="tn-field">
+                          <span className="tn-field-label">Fuente para títulos</span>
+                          <select
+                            value={form.typography?.headingFont || FORM_INICIAL.typography.headingFont}
+                            onChange={e => cambiarTipografia('headingFont', e.target.value)}
+                          >
+                            {fuentesDisponibles.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                          </select>
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Fuente para textos</span>
+                          <select
+                            value={form.typography?.bodyFont || FORM_INICIAL.typography.bodyFont}
+                            onChange={e => cambiarTipografia('bodyFont', e.target.value)}
+                          >
+                            {fuentesDisponibles.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                          </select>
+                        </label>
+                      </div>
+
+                      <div
+                        className="tn-typography-preview"
+                        style={{
+                          ...typographyStyle(previewTypography),
+                          marginTop: '1rem',
+                          border: '1px solid var(--vit-border)',
+                          borderRadius: '0.75rem',
+                          padding: '1rem',
+                          background: 'var(--vit-surface)',
+                        }}
+                      >
+                        <h4 style={{ margin: '0 0 .35rem', fontFamily: 'var(--store-font-heading)' }}>Vista previa de títulos</h4>
+                        <p style={{ margin: '0 0 .85rem', fontFamily: 'var(--store-font-body)', color: 'var(--vit-muted)' }}>
+                          Así se verán los textos generales en tus páginas.
+                        </p>
+                        <button type="button" className="land-btn-primary" style={{ fontFamily: 'var(--store-font-body)' }}>
+                          Botón de ejemplo
+                        </button>
+                      </div>
+
+                      <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+                        <div className="tn-logo-buttons">
+                          <button type="button" className="btn-secondary" onClick={() => fuenteInputRef.current?.click()} disabled={subiendoFuente}>
+                            {subiendoFuente ? <Loader size={14} className="spin-icon" /> : <ImagePlus size={14} />}
+                            Subir tipografía
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => setForm(prev => ({ ...prev, typography: FORM_INICIAL.typography }))}
+                          >
+                            Restaurar predeterminadas
+                          </button>
+                        </div>
+                        <input
+                          ref={fuenteInputRef}
+                          type="file"
+                          accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf"
+                          onChange={subirFuente}
+                          hidden
+                        />
+                        <span className="tn-field-hint">WOFF2 recomendado. También se aceptan WOFF, TTF y OTF hasta 4 MB.</span>
+                        {errorFuente && <span className="tn-logo-error"><AlertCircle size={12} /> {errorFuente}</span>}
+                      </div>
+
+                      {(typographyCatalogo.customFonts || []).length > 0 && (
+                        <div style={{ marginTop: '1rem', display: 'grid', gap: '.5rem' }}>
+                          {(typographyCatalogo.customFonts || []).map(font => {
+                            const enUso = form.typography?.headingFont === font.id || form.typography?.bodyFont === font.id;
+                            return (
+                              <div key={font.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.75rem', padding: '.65rem .75rem', border: '1px solid var(--vit-border)', borderRadius: '.6rem' }}>
+                                <div>
+                                  <strong style={{ fontFamily: font.cssFamily }}>{font.label}</strong>
+                                  <div className="tn-field-hint">Pesos: {(font.weights || [400]).join(', ')} · {Math.round((font.size || 0) / 1024)} KB</div>
+                                </div>
+                                <button type="button" className="btn-secondary" onClick={() => eliminarFuente(font)} disabled={subiendoFuente || enUso} title={enUso ? 'Está en uso' : 'Eliminar fuente'}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </section>
 

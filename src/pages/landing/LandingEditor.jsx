@@ -96,6 +96,7 @@ const FORM_INICIAL = {
   color_tarjeta: '',
   radio_bordes: 'mediano',
   fuente: 'outfit',
+  typography: { mode: 'inherit' },
   mostrar_whatsapp: true,
   whatsapp_incluir_precio: false,
   whatsapp_incluir_url: false,
@@ -571,6 +572,7 @@ export default function LandingEditor() {
               color_tarjeta: detalleInicio.color_tarjeta || '',
               radio_bordes: detalleInicio.radio_bordes || prev.radio_bordes,
               fuente: detalleInicio.fuente || prev.fuente,
+              typography: detalleInicio.typography || prev.typography,
             }));
           }
         } catch { /* no crítico: la preview cae a los defaults del form */ }
@@ -621,6 +623,7 @@ export default function LandingEditor() {
           color_tarjeta: guardada.color_tarjeta || '',
           radio_bordes: guardada.radio_bordes || 'mediano',
           fuente: guardada.fuente || 'outfit',
+          typography: guardada.typography || { mode: 'inherit' },
           mostrar_whatsapp: guardada.mostrar_whatsapp !== false,
           whatsapp_incluir_precio: !!guardada.whatsapp_incluir_precio,
           whatsapp_incluir_url: !!guardada.whatsapp_incluir_url,
@@ -1734,6 +1737,7 @@ export default function LandingEditor() {
                           tarjeta: form.color_tarjeta || undefined,
                         }}
                         diseno={{ radio_bordes: form.radio_bordes, fuente: form.fuente }}
+                        typography={form.typography?.mode === 'custom' ? form.typography : (landing?.typography?.resolved || tienda?.typography)}
                         contacto={{ whatsapp: form.mostrar_whatsapp ? tienda?.whatsapp : null }}
                         logoImagen={landing?.logo_imagen || tienda?.logo_imagen}
                         banner={form.mostrar_banner && bannerTieneContenido ? {
@@ -1792,6 +1796,7 @@ export default function LandingEditor() {
                     <InspectorGlobal
                       form={form}
                       onChange={handleChange}
+                      typography={landing?.typography?.resolved || tienda?.typography}
                     />
                   )}
                 </aside>

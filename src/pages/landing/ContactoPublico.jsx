@@ -98,6 +98,7 @@ export default function ContactoPublico() {
   const cssVarsCarrito = calcularEstiloLanding({
     tema: { primario: tema.acento, fondo: tema.fondo, texto: tema.texto, modo: modoOscuro ? 'oscuro' : 'claro' },
     diseno: {},
+    typography: data?.typography,
   });
 
   return (

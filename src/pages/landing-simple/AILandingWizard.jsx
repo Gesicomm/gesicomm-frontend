@@ -1917,6 +1917,7 @@ function PreviewPanel({ paso, landingGenerada, productosSeleccionados, ofertasSe
                   productos: Array.from(productosSeleccionados.values()),
                   venta: landingGenerada.content?.venta,
                 })}
+                previewDevice={previewModo}
               />
             </div>
           </div>

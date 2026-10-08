@@ -283,6 +283,7 @@
 }
 
 .tn-field > input,
+.tn-field > select,
 .tn-token-input-group > input,
 .dp-form input {
   width: 100%;
@@ -303,6 +304,7 @@
 .dp-form input::placeholder { color: var(--vit-muted-2); }
 
 .tn-field > input:focus,
+.tn-field > select:focus,
 .tn-token-input-group > input:focus,
 .dp-form input:focus,
 .tn-msg-textarea:focus {
