@@ -108,10 +108,11 @@ export function armarLinkWhatsappCarrito(contacto, items, pedido = {}) {
  * Usado por el builder en /mi-tienda para mostrar cómo se va a ver.
  */
 export function generarPreviewMensaje(plantilla, opciones = {}) {
+  const url = opciones.url || 'tu-tienda.gesicomm.com';
   const datos = {
     nombre: 'Chomba Lacoste Clásica',
     precio: 150000,
-    url: 'sommix.gesicomm.com',
+    url,
   };
   let msg = aplicarPlantilla(plantilla || 'Hola, me interesa {producto}', datos);
 

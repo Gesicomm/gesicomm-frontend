@@ -2189,6 +2189,13 @@ export function runtimeGesicomm() {
     }
     actual.className = 'gc-contact-float gc-contact-float--' + canal[0];
     actual.href = canal[2] || '#contacto';
+    if (canal[2]) {
+      actual.target = '_blank';
+      actual.rel = 'noopener noreferrer';
+    } else {
+      actual.removeAttribute('target');
+      actual.removeAttribute('rel');
+    }
     actual.title = canal[1];
     actual.setAttribute('aria-label', canal[1]);
     actual.innerHTML = '<svg class="gc-contact-float__icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONOS_RED[canal[0]] || ICONOS_RED.whatsapp) + '</svg><span class="gc-contact-float__label">' + canal[1] + '</span>';
@@ -2989,9 +2996,12 @@ export function runtimeGesicomm() {
     if ((el = t.closest('[data-gesicomm-contacto-flotante]'))) {
       var seccionContacto = document.getElementById('contacto') || document.querySelector('[data-gesicomm-bloque="contacto"]');
       enviar({ tipo: 'gesicomm:evento', nombre: 'Contact', datos: { canal: (datos.tienda && datos.tienda.canal_contacto) || 'whatsapp' } });
-      if (seccionContacto) {
+      var hrefContacto = el.getAttribute('href') || '';
+      if (!hrefContacto || hrefContacto === '#contacto') {
         e.preventDefault();
-        try { seccionContacto.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { seccionContacto.scrollIntoView(); }
+        if (seccionContacto) {
+          try { seccionContacto.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { seccionContacto.scrollIntoView(); }
+        }
         return;
       }
     }

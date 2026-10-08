@@ -126,7 +126,7 @@ const TABS_CON_GUARDADO_PROPIO = ['economica', 'pasarelas', 'speedbox'];
 const VARIABLES_MENSAJE = [
   { variable: '{producto}', desc: 'Nombre del producto', ejemplo: 'Chomba Lacoste Clásica' },
   { variable: '{precio}', desc: 'Precio formateado', ejemplo: '150.000 Gs' },
-  { variable: '{url}', desc: 'URL de tu landing', ejemplo: 'sommix.gesicomm.com' },
+  { variable: '{url}', desc: 'URL de tu landing' },
 ];
 
 // La creación de la tienda vive en /onboarding (nombre + plan, primer paso
@@ -390,8 +390,8 @@ export default function ConfigurarTienda() {
   }
 
   const previewMensaje = useMemo(() =>
-    generarPreviewMensaje(form.mensaje_contacto),
-  [form.mensaje_contacto]);
+    generarPreviewMensaje(form.mensaje_contacto, { url: urlPublica }),
+  [form.mensaje_contacto, urlPublica]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -1160,7 +1160,7 @@ export default function ConfigurarTienda() {
                                 type="button"
                                 className="tn-msg-var-chip"
                                 onClick={() => insertarVariable(v.variable)}
-                                title={`${v.desc} — ej: ${v.ejemplo}`}
+                                title={`${v.desc} — ej: ${v.ejemplo || urlPublica}`}
                               >
                                 {v.variable}
                                 <span className="tn-var-desc">— {v.desc}</span>
