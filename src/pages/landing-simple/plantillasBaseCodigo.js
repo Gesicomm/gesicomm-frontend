@@ -192,15 +192,15 @@ h1, h2, h3, p { margin-top: 0; }
 .gc-product-shipping { color: rgba(255,255,255,.72); }
 .gc-commercial-details { width: fit-content; margin-top: 10px; padding: 0; color: #fff; background: transparent; border: 0; font-size: .82rem; font-weight: 850; cursor: pointer; }
 
-.site-footer { padding: 40px 0 0; color: #94a3b1; background: #0a1520; font-size: .78rem; }
-.footer-top { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 28px; align-items: start; padding-bottom: 30px; }
-.footer-brand { display: flex; flex-direction: column; gap: 16px; }
-.footer-brand-name { color: var(--white); font-size: clamp(22px, 2.6vw, 28px); font-weight: 900; line-height: 1.1; }
-.footer-col { display: flex; flex-direction: column; gap: 14px; }
-.footer-col > strong { color: var(--white); font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
-.footer-links { display: flex; flex-direction: column; gap: 10px; }
+.site-footer { padding: 56px 0 0; color: #94a3b1; background: #0a1520; font-size: .78rem; }
+.footer-top { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 36px; align-items: start; padding-bottom: 40px; }
+.footer-brand { display: flex; flex-direction: column; gap: 20px; }
+.footer-brand-name { color: var(--white); font-size: clamp(24px, 2.8vw, 32px); font-weight: 900; line-height: 1.1; }
+.footer-col { display: flex; flex-direction: column; gap: 16px; }
+.footer-col > strong { color: var(--white); font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.footer-links { display: flex; flex-direction: column; gap: 12px; }
 .footer-links a:hover { color: var(--white); }
-.footer-datos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.footer-datos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .footer-datos li[data-gesicomm-tienda] { display: none; }
 .footer-datos li[data-gesicomm-tienda]:not(:empty) { display: block; }
 .footer-dato-nombre::before { content: "Atiende: "; font-weight: 700; color: var(--white); opacity: .85; }
@@ -209,10 +209,10 @@ h1, h2, h3, p { margin-top: 0; }
 .footer-dato-email::before { content: "Email: "; font-weight: 700; color: var(--white); opacity: .85; }
 .footer-dato-direccion::before { content: "Dirección: "; font-weight: 700; color: var(--white); opacity: .85; }
 .footer-dato-horario::before { content: "Horario: "; font-weight: 700; color: var(--white); opacity: .85; }
-.footer-redes { display: flex; flex-wrap: wrap; gap: 8px; }
+.footer-redes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
 .footer-redes .gc-red { padding: 6px 12px; color: #dbe4ec; border: 1px solid rgba(255, 255, 255, .18); border-radius: 999px; font-weight: 700; transition: border-color .2s ease, color .2s ease; }
 .footer-redes .gc-red:hover { color: var(--white); border-color: var(--brand); }
-.footer-bottom { border-top: 1px solid rgba(255, 255, 255, .1); padding: 16px 0 20px; text-align: center; }
+.footer-bottom { border-top: 1px solid rgba(255, 255, 255, .1); padding: 20px 0 26px; text-align: center; }
 .footer-bottom a { color: var(--white); font-weight: 700; }
 
 .reveal { opacity: 1; transform: none; transition: transform .2s ease, box-shadow .2s ease; }
@@ -2165,14 +2165,14 @@ a{color:inherit;text-decoration:none}
 .lv-empty-checkout h1{margin:0;color:var(--gc-texto);font-size:32px}.lv-empty-checkout p{color:var(--lv-muted);line-height:1.6}
 .site-footer{border-top:1px solid var(--lv-line);background:var(--lv-surface);color:var(--lv-muted);font-size:13px}
 .site-footer .container{max-width:1180px;margin:0 auto;padding:0 18px}
-.footer-top{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:28px;align-items:start;padding:32px 0 28px}
-.footer-brand{display:flex;flex-direction:column;gap:14px}
-.footer-brand-name{color:var(--gc-texto);font-size:clamp(20px,2.4vw,26px);font-weight:800;line-height:1.1}
-.footer-col{display:flex;flex-direction:column;gap:12px}
-.footer-col>strong{color:var(--gc-texto);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
-.footer-links{display:flex;flex-direction:column;gap:8px}
+.footer-top{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:36px;align-items:start;padding:56px 0 40px}
+.footer-brand{display:flex;flex-direction:column;gap:20px}
+.footer-brand-name{color:var(--gc-texto);font-size:clamp(24px,2.8vw,32px);font-weight:800;line-height:1.1}
+.footer-col{display:flex;flex-direction:column;gap:16px}
+.footer-col>strong{color:var(--gc-texto);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.footer-links{display:flex;flex-direction:column;gap:12px}
 .footer-links a:hover,.footer-datos a:hover{color:var(--gc-texto)}
-.footer-datos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.footer-datos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
 .footer-datos li[data-gesicomm-tienda]{display:none}
 .footer-datos li[data-gesicomm-tienda]:not(:empty){display:block}
 .footer-dato-nombre::before{content:"Atiende: ";font-weight:800;color:var(--gc-texto)}
@@ -2181,10 +2181,10 @@ a{color:inherit;text-decoration:none}
 .footer-dato-email::before{content:"Email: ";font-weight:800;color:var(--gc-texto)}
 .footer-dato-direccion::before{content:"Dirección: ";font-weight:800;color:var(--gc-texto)}
 .footer-dato-horario::before{content:"Horario: ";font-weight:800;color:var(--gc-texto)}
-.footer-redes{display:flex;flex-wrap:wrap;gap:8px}
-.footer-bottom{border-top:1px solid var(--lv-line);padding:14px 0 20px;text-align:center}
+.footer-redes{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
+.footer-bottom{border-top:1px solid var(--lv-line);padding:20px 0 26px;text-align:center}
 .footer-bottom a{color:var(--gc-texto);font-weight:800}
-@media(max-width:760px){.footer-top{grid-template-columns:1fr;gap:22px}}
+@media(max-width:760px){.footer-top{grid-template-columns:1fr;gap:30px;padding:44px 0 32px}}
 .lv-shell:has(.lv-shop-page){background:#fff}
 .lv-shop-page{--shop-text:#10201d;--shop-muted:#62706b;--shop-soft:#f6f8f4;--shop-surface:#ffffff;--shop-line:#dfe5dc;--shop-accent:var(--gc-primario,#143f3a);background:#fff;color:var(--shop-text)}
 .lv-shop-page,.lv-shop-page *{letter-spacing:0}

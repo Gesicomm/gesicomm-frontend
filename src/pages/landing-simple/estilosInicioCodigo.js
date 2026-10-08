@@ -15,10 +15,14 @@ export const ESTILOS_INICIO_CODIGO = `/* @gc-seccion:__global */
   --home-fondo: #f6fafc; --home-superficie: #fff;
   --gc-primario: var(--blue); --gc-fondo: var(--home-fondo);
   --gc-texto: var(--navy); --gc-superficie: var(--home-superficie); --gc-texto-sobre-primario: var(--home-superficie);
+  /* Alto reservado del encabezado embebido dentro del banner — el runtime
+     (aplicarEncabezadoInicio) lo mide y lo pisa con el alto real apenas
+     carga; este valor es solo el instante antes de que corra el JS. */
+  --gc-header-embebido-alto: 80px;
 }
 * { box-sizing: border-box; letter-spacing: 0; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: #f6fafc; color: var(--navy); font-family: Arial, Helvetica, sans-serif; line-height: 1.5; }
+body { position: relative; margin: 0; overflow-x: hidden; background: #f6fafc; color: var(--navy); font-family: Arial, Helvetica, sans-serif; line-height: 1.5; }
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 a { color: inherit; text-decoration: none; }
@@ -41,7 +45,12 @@ h1, h2, h3, p { margin-top: 0; }
 /* Fila única: logo a la izquierda, nav (categorías + links) centrado en TODO
    el header, buscador (ícono con desplegable) + carrito a la derecha. */
 .header-main { position: relative; min-height: 76px; display: flex; align-items: center; gap: 20px; }
-.brand-column { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; }
+/* gap de 8px (antes 4px): algunas tiendas agregan una bajada/eslogan propio
+   debajo del nombre (contenido custom del comercio, no un campo nuestro) —
+   con 4px quedaba pegado al nombre. No afecta el "top" del header embebido
+   (fijo en 38px, el alto de la barra de anuncios), así que esto no puede
+   empujarlo a chocar contra esa barra en celular ni en escritorio. */
+.brand-column { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 0; }
 .brand.brand-mark, .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--navy); font-size: 20px; font-weight: 800; white-space: nowrap; background: transparent !important; border: none !important; box-shadow: none !important; }
 .brand-mark span[data-gesicomm-tienda], .brand span[data-gesicomm-tienda] { background: transparent !important; }
 .brand-mark::before, .brand::before { display: none !important; }
@@ -71,11 +80,21 @@ h1, h2, h3, p { margin-top: 0; }
 .category-menu-item:hover { background: #eef7fc; color: var(--blue); }
 .category-menu-item small { color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
 /* Variante "embebido" (RF-GEN-01, Variante B): el encabezado se vuelve
-   transparente y se superpone al banner. El header sigue siendo hermano de
-   <main> en el DOM (no hijo del hero), así que el solapamiento se logra con
-   margin-bottom negativo + z-index, sin tocar la estructura. El alto (96px)
-   tiene que coincidir con header-main (min-height) + brand-column (padding). */
-.commerce-header[data-variante="embebido"] { position: relative; z-index: 20; margin-bottom: -96px; background: transparent; border-bottom: 0; }
+   transparente y se superpone al banner. Antes esto se lograba con un
+   margin-bottom negativo igual al alto fijo del header (96px) — rompía en
+   cualquier tienda con un header más alto (logo grande, nombre en dos
+   líneas con bajada). Ahora el header sale del flujo con position:absolute
+   anclado a "body" (position:relative, ver arriba) y un "top" que depende
+   SOLO del alto de la barra de anuncios (38px, fijo porque la definimos
+   nosotros, a diferencia del header que depende de la marca de cada
+   tienda) — por eso es robusto sin importar cuánto mida el header real. */
+.commerce-header[data-variante="embebido"] { position: absolute; top: 38px; left: 0; right: 0; z-index: 20; background: transparent; border-bottom: 0; }
+/* Más aire entre la barra de anuncios (justo arriba, en "top: 38px") y el
+   nombre/bajada de la tienda — en el header normal no hace falta porque el
+   fondo blanco ya separa visualmente, pero acá el texto queda flotando
+   directo sobre la foto y sin espacio se siente pegado al filo de arriba. */
+.commerce-header[data-variante="embebido"] .header-main { padding-top: 16px; }
+body:has(.trust-bar[hidden]) .commerce-header[data-variante="embebido"] { top: 0; }
 .commerce-header[data-variante="embebido"] .brand,
 .commerce-header[data-variante="embebido"] .nav-links a,
 .commerce-header[data-variante="embebido"] .cart-button,
@@ -85,19 +104,46 @@ h1, h2, h3, p { margin-top: 0; }
 .commerce-header[data-variante="embebido"] .search-box button { background: var(--navy); }
 /* @gc-seccion:__global */
 .storefront { min-height: 100vh; background: #f6fafc; color: var(--navy); }
-.page-content { max-width: 1240px; margin: auto; padding: 20px 28px 50px; }
+.page-content { max-width: 1240px; margin: auto; padding: 0px 0px 33px; }
 .storefront section { margin-top: 30px; }
 .storefront .hero { margin-top: 0; padding: 0; }
 /* @gc-seccion:banner */
+/* Foto a sangre (RF-GEN-01: "banner fotográfico de gran formato" en las dos
+   variantes) — .hero vive dentro de .page-content (max-width: 1240px) para
+   que el editor lo pueda reordenar entre los demás bloques del Inicio
+   (aplicarBloquesInicio solo reinserta bloques que YA están adentro de
+   .page-content), así que el ancho completo se logra con el truco de
+   "full-bleed" (ancho de ventana + márgenes negativos) en vez de sacarlo
+   del contenedor. Funciona igual adentro de un iframe: 100vw es el ancho
+   propio del iframe, no el de la ventana que lo achica con transform:scale
+   en el editor. */
+.storefront .hero { width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); }
 /* El encabezado embebido (@gc-seccion:encabezado) ya se superpone con
-   margin-bottom negativo; acá sacamos el padding superior de page-content
-   para que la foto arranque pegada a la barra de anuncios, sin el hueco de
-   20px normal, y perdemos el borde redondeado para que sea foto a sangre. */
+   position:absolute; acá sacamos el padding superior de page-content para
+   que la foto arranque pegada a la barra de anuncios, sin el hueco de 20px
+   normal. */
 .storefront:has(.commerce-header[data-variante="embebido"]) .page-content { padding-top: 0; }
-.hero[data-variante="embebido"] .hero-shell { border-radius: 0; }
-.hero-shell { position: relative; min-height: 310px; overflow: hidden; border-radius: 8px; background: transparent; color: var(--navy); }
+/* El contenido del banner (título/subtítulo/CTA) arranca SIEMPRE debajo del
+   área reservada al encabezado embebido — nunca atrás, nunca pisado. El
+   alto es el real medido por JS (--gc-header-embebido-alto, ver
+   aplicarEncabezadoInicio en runtimeGesicomm.js), no un número fijo: un
+   nombre de una línea o de dos necesitan distinto espacio y adivinarlo se
+   rompe apenas cambia el contenido de la tienda. +28px de aire extra antes
+   del texto, en vez de quedar pegado al borde inferior del encabezado. */
+.hero[data-variante="embebido"] .hero-text { margin-top: calc(var(--gc-header-embebido-alto, 80px) + 28px); }
+.hero-shell { position: relative; min-height: 310px; overflow: hidden; border-radius: 0; background: transparent; color: var(--navy); }
 .hero-banners { display: grid; }
 .hero-banner { position: relative; grid-area: 1 / 1; min-height: 310px; display: flex; visibility: hidden; align-items: center; padding: 40px 70px; background: transparent; }
+/* Tamaño del banner (selector "Pequeño/Mediano/Grande" — ver TAMANOS_BANNER
+   en ConfigurarVentaCodigo.jsx, misma fuente de medidas). Sin [data-tamano]
+   (landing vieja que nunca tocó el selector) queda el alto fijo de arriba,
+   sin cambios — no se le asume "mediano" a nadie. aspect-ratio controla el
+   alto real según el ancho de pantalla, pero con min/max-height como piso y
+   techo: en un monitor ultrawide la sola proporción daría un banner
+   altísimo, y en una ventana angosta uno casi plano. */
+.hero[data-tamano="pequeno"] .hero-banner { aspect-ratio: 1920 / 450; min-height: 260px; max-height: 520px; }
+.hero[data-tamano="mediano"] .hero-banner { aspect-ratio: 1920 / 650; min-height: 420px; max-height: 760px; }
+.hero[data-tamano="grande"] .hero-banner { aspect-ratio: 1920 / 850; min-height: 560px; max-height: 920px; }
 .hero-banner.is-active { visibility: visible; }
 .hero-banner::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(5,20,34,.78), rgba(5,20,34,.34) 42%, rgba(5,20,34,.04) 76%); }
 .hero-banner.is-media-only::before, .hero-banner::after { display: none; }
@@ -287,14 +333,14 @@ h1, h2, h3, p { margin-top: 0; }
 .brand-badge { border: 1px solid var(--line); border-radius: 999px; padding: 10px 17px; background: #fff; font-size: 14px; font-weight: 800; color: var(--navy); }
 /* @gc-seccion:__global (footer es fijo, no es un bloque editable de Inicio; los @media de abajo tocan varios bloques a la vez y quedan acá) */
 .site-footer { background: #fff; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
-.site-footer .footer-top { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 28px; align-items: start; padding-top: 32px; padding-bottom: 28px; }
-.site-footer .footer-brand { display: flex; flex-direction: column; gap: 14px; }
-.site-footer .footer-brand-name { color: var(--navy); font-size: clamp(20px, 2.4vw, 26px); font-weight: 800; line-height: 1.1; }
-.site-footer .footer-col { display: flex; flex-direction: column; gap: 12px; }
-.site-footer .footer-col > strong { color: var(--navy); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-.footer-links { display: flex; flex-direction: column; gap: 8px; }
+.site-footer .footer-top { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 36px; align-items: start; padding-top: 56px; padding-bottom: 40px; }
+.site-footer .footer-brand { display: flex; flex-direction: column; gap: 20px; }
+.site-footer .footer-brand-name { color: var(--navy); font-size: clamp(24px, 2.8vw, 32px); font-weight: 800; line-height: 1.1; }
+.site-footer .footer-col { display: flex; flex-direction: column; gap: 16px; }
+.site-footer .footer-col > strong { color: var(--navy); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.footer-links { display: flex; flex-direction: column; gap: 12px; }
 .footer-links a:hover { color: var(--navy); }
-.footer-datos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.footer-datos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .footer-datos li[data-gesicomm-tienda] { display: none; }
 .footer-datos li[data-gesicomm-tienda]:not(:empty) { display: block; }
 .footer-datos a:hover { color: var(--navy); }
@@ -304,11 +350,11 @@ h1, h2, h3, p { margin-top: 0; }
 .footer-dato-email::before { content: "Email: "; font-weight: 800; color: var(--navy); }
 .footer-dato-direccion::before { content: "Dirección: "; font-weight: 800; color: var(--navy); }
 .footer-dato-horario::before { content: "Horario: "; font-weight: 800; color: var(--navy); }
-.footer-redes { display: flex; flex-wrap: wrap; gap: 8px; }
-.site-footer .footer-bottom { border-top: 1px solid var(--line); padding: 14px 0 20px; text-align: center; }
+.footer-redes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
+.site-footer .footer-bottom { border-top: 1px solid var(--line); padding: 20px 0 26px; text-align: center; }
 .site-footer .footer-bottom a { color: var(--navy); font-weight: 800; }
 @media (max-width: 760px) {
-  .site-footer .footer-top { grid-template-columns: 1fr; gap: 22px; }
+  .site-footer .footer-top { grid-template-columns: 1fr; gap: 30px; padding: 44px 0 32px; }
 }
 @media (max-width: 900px) {
   .header-nav { gap: 16px; }
@@ -328,10 +374,29 @@ h1, h2, h3, p { margin-top: 0; }
      logo/acciones) y scrollea horizontal en vez de quedar centrado-absoluto,
      que a este ancho se superpondría con todo lo demás. */
   .header-nav { position: static; left: auto; top: auto; transform: none; order: 3; flex-basis: 100%; overflow-x: auto; justify-content: flex-start; }
+  /* Embebido en celular (RF-GEN-02: "composición móvil independiente"): acá
+     el nav ya pasa a su propia fila (regla de arriba) en vez de quedar
+     centrado-absoluto sobre la foto — pero sigue siendo texto blanco sobre
+     una foto variable, así que necesita su propio fondo para no perder
+     legibilidad con fotos claras. */
+  .commerce-header[data-variante="embebido"] .header-nav { background: rgba(5, 20, 34, .45); border-radius: 10px; padding: 6px 10px; }
   .search-box { left: auto; right: 0; width: min(280px, calc(100vw - 32px)); }
   .nav-links { gap: 20px; }
   .page-content { padding: 12px 16px 30px; }
   .hero-shell, .hero-banner { min-height: 290px; }
+  /* Medidas de celular del selector de tamaño (ver TAMANOS_BANNER) — son
+     proporciones distintas a las de escritorio, no la misma imagen achicada:
+     una foto puede necesitar otro recorte en vertical (ver imagen_mobile). */
+  .hero[data-tamano="pequeno"] .hero-banner { aspect-ratio: 750 / 500; min-height: 320px; max-height: 560px; }
+  .hero[data-tamano="mediano"] .hero-banner { aspect-ratio: 750 / 800; min-height: 460px; max-height: 820px; }
+  .hero[data-tamano="grande"] .hero-banner { aspect-ratio: 750 / 1050; min-height: 600px; max-height: 1100px; }
+  /* Banner pequeño + encabezado embebido en celular: el header mide más que
+     el banner chico puede absorber cómodamente — se achica el padding y la
+     tipografía para dejarle más aire al título/CTA (ver aviso del editor). */
+  .hero[data-tamano="pequeno"][data-variante="embebido"] .hero-banner { padding-top: 16px; padding-bottom: 16px; }
+  .hero[data-tamano="pequeno"][data-variante="embebido"] .hero-text h1,
+  .hero[data-tamano="pequeno"][data-variante="embebido"] .hero-text h2 { font-size: 22px; }
+  .hero[data-tamano="pequeno"][data-variante="embebido"] .hero-text p { margin-bottom: 10px; }
   .hero-banner { padding: 24px 40px; }
   .mid-banner { min-height: 150px; padding: 22px; }
   .mid-banner h2 { font-size: 22px; }

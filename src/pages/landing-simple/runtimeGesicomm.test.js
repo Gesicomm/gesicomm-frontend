@@ -319,7 +319,18 @@ describe('runtime del lienzo en blanco — inicio', () => {
   });
 
   it('"Comprar ahora" en una tarjeta agrega al carrito y lleva a la ficha', () => {
-    const { document, mensajes, click } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo' });
+    const plantillaConDescripcion = {
+      ...PLANTILLA_CATALOGO_TEST,
+      html: PLANTILLA_CATALOGO_TEST.html.replace(
+        '<div class="product-footer">',
+        '<p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer">',
+      ),
+    };
+    const { document, mensajes, click } = montar(plantillaConDescripcion, {
+      ...datos,
+      vista: 'catalogo',
+      productos: [{ ...airFryer, mensaje_comercial: 'Copy interno de la ficha' }, remera, malicioso],
+    });
     const tarjeta = document.querySelector('#productos [data-gesicomm-item="air-fryer-26l"]');
     const boton = document.querySelector('#productos [data-gesicomm-item="air-fryer-26l"] [data-gesicomm-comprar]');
     expect(boton.textContent).toBe('Comprar ahora');
@@ -329,6 +340,10 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(tarjeta.querySelector('.gc-product-availability').textContent).toBe('Disponible');
     expect(tarjeta.querySelector('.gc-card-media-badges').textContent).toBe('-19%');
     expect(document.defaultView.getComputedStyle(boton).display).toBe('flex');
+    expect(tarjeta.querySelector('.product-description').textContent).toBe('Copy interno de la ficha');
+    expect(tarjeta.querySelector('.product-description').style.display).not.toBe('none');
+    expect(tarjeta.querySelector('.gc-commercial-copy')).toBeNull();
+    expect(tarjeta.querySelector('.gc-commercial-details')).toBeNull();
     expect(tarjeta.querySelector('.gc-commercial-saving').compareDocumentPosition(boton) & document.defaultView.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     click('#productos [data-gesicomm-item="air-fryer-26l"] [data-gesicomm-comprar]');
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'air-fryer-26l', cantidad: 1, abrir: false }));
@@ -925,8 +940,8 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     const { document, mensajes, click } = montar(PLANTILLA_INICIO, datos);
     const links = Array.from(document.querySelectorAll('.footer-links a'));
     expect(links.map(a => a.getAttribute('href'))).toEqual([
-      '/l/mi-promo/contacto', '/l/mi-promo/politica-privacidad', '/l/mi-promo/terminos-servicio',
-      '/l/mi-promo/politica-reembolso', '/l/mi-promo/politica-envio', '/l/mi-promo/aviso-legal',
+      '/l/mi-promo/contacto', '/l/mi-promo/politica-privacidad', '/l/mi-promo/politica-reembolso',
+      '/l/mi-promo/terminos-servicio', '/l/mi-promo/politica-envio', '/l/mi-promo/aviso-legal',
     ]);
     click('.footer-links a[data-gesicomm-link="politica-privacidad"]');
     expect(mensajes).toEqual(expect.arrayContaining([
@@ -965,6 +980,23 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     expect(link.className).toBe('active');
     click('#nav-links a');
     expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'checkout', filtro: {} });
+  });
+
+  it('el menú principal generado puede apuntar a la sección de ofertas flash', () => {
+    const plantilla = {
+      html: '<section id="ofertas"></section><nav id="nav-links"></nav>',
+      css: '',
+      js: '',
+    };
+    const { document } = montar(plantilla, {
+      ...datos,
+      vista: 'inicio',
+      venta: { inicio: { menu_links: [{ texto: 'Ofertas', destino: '#ofertas' }] } },
+    });
+    const link = document.querySelector('#nav-links a');
+    expect(link.textContent).toBe('Ofertas');
+    expect(link.getAttribute('href')).toBe('#ofertas');
+    expect(link.className).toBe('');
   });
 
   it('el menú principal marca Productos en catálogo y oculta anchors internos fuera de Inicio', () => {

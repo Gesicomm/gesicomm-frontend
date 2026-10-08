@@ -484,10 +484,17 @@ export function runtimeGesicomm() {
       var src = urlSegura(valor);
       if (el.tagName === 'IMG') {
         if (item.tipo_medio === 'video') { el.style.display = 'none'; return; }
-        if (src) { el.src = src; if (!el.alt) el.alt = item.nombre || ''; }
-        else el.style.display = 'none';
+        if (src) {
+          el.src = src;
+          if (!el.alt) el.alt = item.nombre || '';
+          // Posición de recorte configurable (RF-GEN-02/banner): hoy solo la
+          // trae el banner del Inicio; el resto de los "imagen" (producto,
+          // catálogo) no tiene item.posicion y el estilo por defecto no cambia.
+          if (item.posicion) el.style.objectPosition = item.posicion;
+        } else el.style.display = 'none';
       } else if (src) {
         el.style.backgroundImage = 'url("' + src.replace(/"/g, '%22') + '")';
+        if (item.posicion) el.style.backgroundPosition = item.posicion;
       }
       return;
     }
@@ -497,6 +504,7 @@ export function runtimeGesicomm() {
         if (videoSrc && item.tipo_medio === 'video') {
           el.src = videoSrc;
           el.style.display = '';
+          if (item.posicion) el.style.objectPosition = item.posicion;
           el.muted = true;
           el.setAttribute('muted', '');
           el.setAttribute('playsinline', '');
@@ -577,6 +585,7 @@ export function runtimeGesicomm() {
   function prepararTarjetaProducto(raiz, item) {
     if (!raiz || !item) return;
     var contenido = raiz.querySelector('.product-content, .limited-offer-copy, .hero-card-copy');
+    var esProductCard = !!(raiz.classList && raiz.classList.contains('product-card'));
     if (item.titulo_comercial || item.mensaje_comercial || item.insignia_principal || item.insignia_secundaria || item.cta_texto) {
       raiz.classList.add('has-commercial-presentation');
     }
@@ -593,7 +602,7 @@ export function runtimeGesicomm() {
       }
       var tieneDescripcionPropia = !!contenido.querySelector('[data-gesicomm-bind="descripcion"], .product-description');
       var textoComercial = item.mensaje_comercial || item.propuesta_valor || (!tieneDescripcionPropia ? item.descripcion : '');
-      if (textoComercial && !contenido.querySelector('.gc-commercial-copy')) {
+      if (!esProductCard && textoComercial && !contenido.querySelector('.gc-commercial-copy')) {
         if (item.mensaje_comercial) {
           contenido.querySelectorAll('[data-gesicomm-bind="descripcion"]').forEach(function (el) { el.style.setProperty('display', 'none', 'important'); });
         }
@@ -663,7 +672,7 @@ export function runtimeGesicomm() {
       if (item.cta_texto) {
         contenido.querySelectorAll('[data-gesicomm-comprar]').forEach(function (btn) { btn.textContent = item.cta_texto; });
       }
-      if (raiz.classList && raiz.classList.contains('product-card')) {
+      if (esProductCard) {
         contenido.querySelectorAll('[data-gesicomm-comprar]').forEach(function (btn) {
           if (!btn.hasAttribute('data-gesicomm-metodo-pago')) {
             btn.textContent = 'Comprar ahora';
@@ -672,7 +681,7 @@ export function runtimeGesicomm() {
           }
         });
       }
-      if ((item.titulo_comercial || item.mensaje_comercial) && !contenido.querySelector('.gc-commercial-details')) {
+      if (!esProductCard && (item.titulo_comercial || item.mensaje_comercial) && !contenido.querySelector('.gc-commercial-details')) {
         var detalles = document.createElement('button'); detalles.type = 'button'; detalles.className = 'gc-commercial-details';
         detalles.setAttribute('data-gesicomm-ver', item.id || ''); detalles.textContent = 'Ver producto →'; contenido.appendChild(detalles);
       }
@@ -966,10 +975,16 @@ export function runtimeGesicomm() {
     var e = inicioConfig().encabezado || {};
     var tamano = Number(e.logo_tamano);
     var rotacion = Number(e.logo_rotacion);
+    // "embebido" superpone el header a la FOTO del banner del Inicio — fuera
+    // de esa página (categoría, producto, checkout) no hay banner detrás, así
+    // que el header siempre va "normal" ahí, sin importar lo que se haya
+    // elegido para el Inicio (si no, queda transparente flotando sobre
+    // cualquier fondo, como vio el comercio al navegar a Categorías).
+    var enInicio = datos.vista === 'inicio';
     // variante_mobile es un override opcional (RF-GEN-02): sin elegir nada
     // ahí, el mobile hereda la misma variante que escritorio.
-    var variante = e.variante === 'embebido' ? 'embebido' : 'normal';
-    var varianteMobile = esMobile() && (e.variante_mobile === 'embebido' || e.variante_mobile === 'normal') ? e.variante_mobile : variante;
+    var variante = enInicio && e.variante === 'embebido' ? 'embebido' : 'normal';
+    var varianteMobile = enInicio && esMobile() && (e.variante_mobile === 'embebido' || e.variante_mobile === 'normal') ? e.variante_mobile : variante;
     return {
       logo_tamano: isFinite(tamano) ? Math.max(28, Math.min(96, tamano)) : 46,
       logo_rotacion: isFinite(rotacion) ? Math.max(-180, Math.min(180, rotacion)) : 0,
@@ -995,6 +1010,27 @@ export function runtimeGesicomm() {
     var otrosBloques = document.querySelectorAll('.trust-bar, .hero');
     for (var j = 0; j < otrosBloques.length; j++) {
       otrosBloques[j].setAttribute('data-variante', cfg.variante);
+    }
+    // Tamaño del banner (selector Pequeño/Mediano/Grande, ver TAMANOS_BANNER
+    // en ConfigurarVentaCodigo.jsx). Sin elegir nada (null/valor viejo
+    // inválido) NO se pone el atributo — así una landing vieja conserva su
+    // alto fijo de siempre en vez de que le asumamos "mediano".
+    var tamanoBanner = inicioConfig().banner_tamano;
+    var tamanosValidos = { pequeno: 1, mediano: 1, grande: 1 };
+    var heros = document.querySelectorAll('.hero');
+    for (var h = 0; h < heros.length; h++) {
+      if (tamanosValidos[tamanoBanner]) heros[h].setAttribute('data-tamano', tamanoBanner);
+      else heros[h].removeAttribute('data-tamano');
+    }
+    // El embebido reserva, en el banner, el alto REAL del header (medido,
+    // no un número fijo) — una tienda con nombre en una línea o en dos
+    // necesita distinto espacio, y adivinarlo rompe apenas cambia el
+    // contenido (ver el bug del header con bajada propia). Se mide después
+    // de aplicar data-variante porque recién ahí el header pasa a
+    // position:absolute y su alto real queda definido por su contenido.
+    if (cfg.variante === 'embebido' && headers.length) {
+      var altoHeader = headers[0].getBoundingClientRect().height;
+      if (altoHeader > 0) document.documentElement.style.setProperty('--gc-header-embebido-alto', altoHeader + 'px');
     }
   }
 
@@ -1480,6 +1516,9 @@ export function runtimeGesicomm() {
       // imagen_mobile es un override opcional (RF-GEN-02): el resto del
       // contenido del banner (texto, enlace, CTA) es el mismo en los dos anchos.
       var imagen = (mobile && b.imagen_mobile) || b.imagen || '';
+      // Igual que la imagen: sin posicion_mobile propia, hereda la de
+      // escritorio (fallback explícito, no un valor fijo "center center").
+      var posicion = (mobile && b.posicion_mobile) || b.posicion_desktop || 'center center';
       return {
         id: b.id || b.titulo,
         titulo: b.titulo || '',
@@ -1488,6 +1527,7 @@ export function runtimeGesicomm() {
         cta_texto: b.cta_texto || '',
         enlace: b.enlace || '#productos',
         imagen: imagen,
+        posicion: posicion,
         tipo_medio: b.tipo_medio || (/(\.mp4|\.webm|\.ogg|\.mov|\.m4v)(\?|$)/i.test(imagen) ? 'video' : 'imagen'),
       };
     });
@@ -3200,6 +3240,11 @@ export function runtimeGesicomm() {
       aplicarEncabezadoInicio();
       var listasBanner = document.querySelectorAll('[data-gesicomm-lista="banners_inicio"]');
       for (var i = 0; i < listasBanner.length; i++) renderizarLista(listasBanner[i]);
+      // renderizarLista reemplaza los nodos .hero-banner por otros nuevos sin
+      // is-active (ver pintar() en prepararHeroBanners) — sin esto el slide
+      // quedaba con visibility:hidden para siempre después de cruzar el
+      // breakpoint una vez.
+      if (listasBanner.length) prepararHeroBanners();
     }, 120);
   });
 

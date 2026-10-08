@@ -10,7 +10,7 @@ import { comboAdminService } from '../../services/comboAdminService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import PresentacionProducto from './PresentacionProducto';
-import { contentIdPanel, datosRuntimePreview, slugCategoria } from './datosRuntime';
+import { contentIdPanel, datosRuntimePreview, slugCategoria, TODAS_CATEGORIAS } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
 import { plantillaInicioPara, formatoDeBase, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
@@ -162,6 +162,7 @@ const VARIANTES_ENCABEZADO = ['normal', 'embebido'];
 const DESTINOS_MENU_PRINCIPAL = [
   ['#inicio', 'Inicio'],
   ['/catalogo', 'Productos'],
+  ['#ofertas', 'Ofertas'],
   ['#colecciones', 'Colecciones'],
   ['#productos-categoria', 'Productos por categoría'],
   ['#confianza', 'Zona de confianza'],
@@ -304,6 +305,23 @@ const normalizarTexto = valor => String(valor || '')
 
 const uidComercial = prefijo => `${prefijo}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
+// Medidas recomendadas por tamaño de banner (RF-GEN-01/02) — el aspect-ratio
+// real que usa el CSS (estilosInicioCodigo.js) sale de estos mismos pares,
+// para no tener los números duplicados y desincronizados entre editor y CSS.
+// `null` ("sin elegir") es el tamaño LEGADO: una landing vieja que nunca tocó
+// este selector sigue con su alto fijo de siempre (310px) — no se le asume
+// "mediano" ni se le cambia el aspecto sin que el comercio lo elija.
+const TAMANOS_BANNER = {
+  pequeno: { etiqueta: 'Pequeño', ayuda: 'Compacto — promociones puntuales', desktop: { w: 1920, h: 450 }, mobile: { w: 750, h: 500 } },
+  mediano: { etiqueta: 'Mediano', ayuda: 'Equilibrado — el recomendado para la mayoría', desktop: { w: 1920, h: 650 }, mobile: { w: 750, h: 800 } },
+  grande: { etiqueta: 'Grande', ayuda: 'Impactante — campañas y lanzamientos', desktop: { w: 1920, h: 850 }, mobile: { w: 750, h: 1050 } },
+};
+const POSICIONES_IMAGEN = [
+  ['left top', 'Arriba izq.'], ['center top', 'Arriba centro'], ['right top', 'Arriba der.'],
+  ['left center', 'Centro izq.'], ['center center', 'Centro'], ['right center', 'Centro der.'],
+  ['left bottom', 'Abajo izq.'], ['center bottom', 'Abajo centro'], ['right bottom', 'Abajo der.'],
+];
+
 function crearBannerInicio() {
   return {
     id: uidComercial('banner'),
@@ -315,6 +333,8 @@ function crearBannerInicio() {
     enlace: '/catalogo',
     imagen: '',
     tipo_medio: 'imagen',
+    posicion_desktop: 'center center',
+    posicion_mobile: 'center center',
   };
 }
 function crearBannerIntermedio() {
@@ -447,6 +467,10 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       // visibilidad de escritorio, no se duplica el resto del contenido.
       imagen_mobile: b.imagen_mobile || '',
       activo_mobile: b.activo_mobile !== false,
+      // Posición independiente por dispositivo: una foto puede necesitar el
+      // rostro a la derecha en escritorio y centrado en celular.
+      posicion_desktop: POSICIONES_IMAGEN.some(([v]) => v === b.posicion_desktop) ? b.posicion_desktop : 'center center',
+      posicion_mobile: POSICIONES_IMAGEN.some(([v]) => v === b.posicion_mobile) ? b.posicion_mobile : 'center center',
     }))
     : [];
   // Landing nueva sin banners guardados: arranca con uno de ejemplo en vez
@@ -505,6 +529,9 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     menu_categorias: inicio.menu_categorias !== false,
     categorias: Array.isArray(inicio.categorias) ? inicio.categorias : [],
     banners,
+    // null = tamaño legado (alto fijo de siempre) — ver TAMANOS_BANNER. No
+    // se le asume "mediano" a una landing vieja que nunca tocó el selector.
+    banner_tamano: Object.prototype.hasOwnProperty.call(TAMANOS_BANNER, inicio.banner_tamano) ? inicio.banner_tamano : null,
     banners_intermedios: bannersIntermedios,
     secciones: secciones.length ? secciones : [
       crearSeccionInicio('categoria', primeraCategoria),
@@ -1029,6 +1056,9 @@ export default function ConfigurarVentaCodigo({
       ...prev,
       banners: prev.banners.map(b => (b.id === id ? { ...b, ...cambio } : b)),
     }));
+  }
+  function cambiarBannerTamano(tamano) {
+    setInicioComercial(prev => ({ ...prev, banner_tamano: tamano }));
   }
   function agregarBanner() {
     setInicioComercial(prev => ({ ...prev, banners: [...prev.banners, crearBannerInicio()] }));
@@ -1578,7 +1608,7 @@ export default function ConfigurarVentaCodigo({
     tienda,
     venta: ventaActual,
     vista: abreEnFicha ? 'producto' : vistaPreview,
-    categoria: vistaPreview === 'categoria' ? categoriaPreviewValida : null,
+    categoria: vistaPreview === 'categoria' ? (categoriaPreview ? categoriaPreviewValida : TODAS_CATEGORIAS) : null,
     productoId: abreEnFicha && vistaPreview === 'inicio' && seleccion[0]
       ? contentIdPanel(seleccion[0])
       : (productoFicha ? contentIdPanel(productoFicha) : null),
@@ -1630,13 +1660,14 @@ export default function ConfigurarVentaCodigo({
       setResaltado(null);
     }
     else if (p?.destino === 'inicio') { setVistaPreview('inicio'); setSeccionConfig('inicio'); setResaltado(null); }
-    else if (p?.destino === 'categoria') { setVistaPreview('categoria'); setSeccionConfig('categorias'); if (p.categoria) setCategoriaPreview(p.categoria); setResaltado(null); }
-    else if (p?.destino === 'catalogo') { setVistaPreview('categoria'); setSeccionConfig('categorias'); setResaltado(null); }
+    else if (p?.destino === 'categoria') { setVistaPreview('categoria'); setSeccionConfig('categorias'); setCategoriaPreview(p.categoria || ''); setResaltado(null); }
+    else if (p?.destino === 'catalogo') { setVistaPreview('categoria'); setSeccionConfig('categorias'); setCategoriaPreview(''); setResaltado(null); }
     else if (p?.destino === 'checkout') { setVistaPreview('checkout'); setSeccionConfig('checkout'); setResaltado(null); }
     else if (p?.destino === 'pagina' && p.pagina === 'catalogo') {
       setVistaPreview(p?.filtro?.etiqueta ? 'catalogo' : 'categoria');
       setSeccionConfig('categorias');
       setResaltado(null);
+      setCategoriaPreview('');
       if (p?.filtro?.etiqueta) setAvisoPreview(`En la tienda publicada abre el catálogo filtrado por ${p.filtro.etiqueta}.`);
     }
     else if (p?.destino === 'pagina' && p.pagina === 'checkout') { setVistaPreview('checkout'); setSeccionConfig('checkout'); setResaltado(null); }
@@ -1709,7 +1740,7 @@ export default function ConfigurarVentaCodigo({
 
   const propsVistaPrevia = {
     vista: vistaPreview,
-    onVista: v => { setVistaPreview(v); setSeccionConfig(seccionConfigDeVista(v)); setResaltado(null); setAvisoPreview(''); },
+    onVista: v => { setVistaPreview(v); setSeccionConfig(seccionConfigDeVista(v)); if (v === 'categoria') setCategoriaPreview(''); setResaltado(null); setAvisoPreview(''); },
     productos: productosPreview,
     productoFicha,
     onProducto: id => { setProductoPreview(id); setResaltado(null); },
@@ -1808,7 +1839,7 @@ export default function ConfigurarVentaCodigo({
                     aria-selected={seccionConfig === key}
                     onClick={() => {
                       setSeccionConfig(key);
-                      if (key === 'categorias' && categoriaPreviewValida) setCategoriaPreview(categoriaPreviewValida);
+                      if (key === 'categorias') setCategoriaPreview('');
                       if (key === 'fichas') {
                         const primero = productoEditando || candidatosDatosProducto[0]?.content_id || null;
                         if (primero) { seleccionarProductoConfig(primero); }
@@ -1966,6 +1997,8 @@ export default function ConfigurarVentaCodigo({
                         banners={inicioComercial.banners}
                         categorias={categoriasInicioDisponibles}
                         variante={normalizarEncabezadoInicio(inicioComercial.encabezado).variante}
+                        tamano={inicioComercial.banner_tamano}
+                        onCambiarTamano={cambiarBannerTamano}
                         dispositivo={dispositivo}
                         onAgregar={agregarBanner}
                         onCambiar={cambiarBanner}
@@ -2205,7 +2238,7 @@ export default function ConfigurarVentaCodigo({
                             key={cat}
                             type="button"
                             onClick={() => { setCategoriaPreview(cat); setVistaPreview('categoria'); setAvisoPreview(`Preview de categoría: ${cat}.`); setResaltado(null); }}
-                            className={`rounded-lg border px-3 py-2.5 text-left hover:border-border-strong ${categoriaPreviewValida === cat ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface'}`}
+                            className={`rounded-lg border px-3 py-2.5 text-left hover:border-border-strong ${categoriaPreview === cat ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface'}`}
                           >
                             <span className="block text-sm font-semibold text-fg truncate">{cat}</span>
                             <span className="block text-xs text-fg-muted">{count} producto{count === 1 ? '' : 's'}</span>
@@ -3206,14 +3239,22 @@ function BotonesOrden({ primero, ultimo, onSubir, onBajar, onQuitar, labelQuitar
   );
 }
 
-function EditorMedioBanner({ banner, onCambiar, onSubir }) {
+function EditorMedioBanner({ banner, tamano = 'mediano', dispositivo = 'escritorio', onCambiar, onSubir }) {
   const inputRef = useRef(null);
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState('');
-  const medio = banner.imagen || '';
+  const [avisoProporcion, setAvisoProporcion] = useState('');
+  const esMovil = dispositivo === 'movil';
+  const campoImagen = esMovil ? 'imagen_mobile' : 'imagen';
+  const campoPosicion = esMovil ? 'posicion_mobile' : 'posicion_desktop';
+  // Sin imagen propia de celular, el campo queda vacío a propósito (hereda
+  // la de escritorio en el runtime) — mostramos esa herencia acá también.
+  const medio = esMovil ? (banner.imagen_mobile || banner.imagen || '') : (banner.imagen || '');
+  const heredaDeEscritorio = esMovil && !banner.imagen_mobile;
   const tipo = banner.tipo_medio || inferirTipoMedio(medio);
   const esVideo = tipo === 'video';
   const esGif = tipo === 'gif';
+  const recomendado = (TAMANOS_BANNER[tamano] || TAMANOS_BANNER.mediano)[esMovil ? 'mobile' : 'desktop'];
   const accept = esVideo ? 'video/mp4,video/webm,video/ogg' : esGif ? 'image/gif' : 'image/jpeg,image/png,image/webp';
   const ayudaMedio = esVideo
     ? 'Subí un MP4/WEBM liviano o pegá una URL directa al video.'
@@ -3221,6 +3262,25 @@ function EditorMedioBanner({ banner, onCambiar, onSubir }) {
       ? 'Subí un GIF optimizado o pegá una URL pública.'
       : 'Subí JPG, PNG o WEBP, o pegá una URL pública.';
   const uploadLabel = subiendo ? 'Subiendo...' : esVideo ? 'Subir video' : esGif ? 'Subir GIF' : 'Subir imagen';
+
+  // Validación no bloqueante: si la proporción de la imagen se aleja mucho
+  // de la recomendada para este tamaño/dispositivo, avisa pero no impide
+  // guardar — la decisión final es del comercio.
+  useEffect(() => {
+    setAvisoProporcion('');
+    if (esVideo || esGif || !medio) return;
+    const img = new window.Image();
+    img.onload = () => {
+      if (!img.naturalWidth || !img.naturalHeight) return;
+      const real = img.naturalWidth / img.naturalHeight;
+      const ideal = recomendado.w / recomendado.h;
+      if (Math.abs(real / ideal - 1) > 0.18) {
+        setAvisoProporcion(`La imagen es ${img.naturalWidth}×${img.naturalHeight}px — bastante distinta a lo recomendado (${recomendado.w}×${recomendado.h}). Puede recortarse más de lo esperado.`);
+      }
+    };
+    img.src = getMediaUrl(medio);
+    return () => { img.onload = null; };
+  }, [medio, recomendado.w, recomendado.h, esVideo, esGif]);
 
   async function alElegir(event) {
     const archivo = event.target.files?.[0];
@@ -3230,7 +3290,7 @@ function EditorMedioBanner({ banner, onCambiar, onSubir }) {
     setSubiendo(true);
     try {
       const url = await onSubir(archivo);
-      onCambiar({ imagen: url, tipo_medio: tipoMedioDeArchivo(archivo) });
+      onCambiar({ [campoImagen]: url, tipo_medio: tipoMedioDeArchivo(archivo) });
     } catch {
       setError('No se pudo subir el archivo. Probá con JPG, PNG, WEBP, GIF, MP4 o WEBM.');
     } finally {
@@ -3242,8 +3302,8 @@ function EditorMedioBanner({ banner, onCambiar, onSubir }) {
     <div className="sm:col-span-2 rounded-xl border border-border bg-surface p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold text-fg">Medio del banner</p>
-          <p className="text-[11px] text-fg-muted">{ayudaMedio}</p>
+          <p className="text-xs font-semibold text-fg">Medio del banner{esMovil ? ' (celular)' : ''}</p>
+          <p className="text-[11px] text-fg-muted">{heredaDeEscritorio ? 'Sin imagen propia: usa la de escritorio.' : ayudaMedio}</p>
         </div>
         <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-fg hover:border-border-strong">
           {subiendo ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
@@ -3259,35 +3319,62 @@ function EditorMedioBanner({ banner, onCambiar, onSubir }) {
         </label>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[150px_1fr]">
-        <label className="block">
-          <span className="block text-xs font-medium text-fg-muted mb-1">Tipo</span>
-          <select
-            value={tipo}
-            onChange={e => onCambiar({ tipo_medio: e.target.value })}
-            className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
-          >
-            <option value="imagen">Imagen</option>
-            <option value="gif">GIF</option>
-            <option value="video">Video</option>
-          </select>
-        </label>
-        <CampoTexto
-          label="URL del medio"
-          value={medio}
-          onChange={v => onCambiar({ imagen: v, tipo_medio: inferirTipoMedio(v) || tipo })}
-          placeholder={tipo === 'video' ? 'https://.../banner.mp4 o https://.../banner.webm' : 'https://... o /uploads/banner.gif'}
-          maxLength={320}
-        />
+        {!esMovil && (
+          <label className="block">
+            <span className="block text-xs font-medium text-fg-muted mb-1">Tipo</span>
+            <select
+              value={tipo}
+              onChange={e => onCambiar({ tipo_medio: e.target.value })}
+              className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
+            >
+              <option value="imagen">Imagen</option>
+              <option value="gif">GIF</option>
+              <option value="video">Video</option>
+            </select>
+          </label>
+        )}
+        <div className={esMovil ? 'sm:col-span-2' : ''}>
+          <CampoTexto
+            label={esMovil ? 'URL de la imagen en celular' : 'URL del medio'}
+            value={esMovil ? (banner.imagen_mobile || '') : medio}
+            onChange={v => onCambiar({ [campoImagen]: v, ...(esMovil ? {} : { tipo_medio: inferirTipoMedio(v) || tipo }) })}
+            placeholder={esMovil ? 'Vacío = usa la misma imagen que escritorio' : (tipo === 'video' ? 'https://.../banner.mp4 o https://.../banner.webm' : 'https://... o /uploads/banner.gif')}
+            maxLength={320}
+          />
+        </div>
       </div>
       <div className="mt-3 rounded-lg bg-primary/[0.06] px-3 py-2 text-[11px] leading-relaxed text-fg-muted">
-        Tamaño recomendado: <strong className="text-fg">1660 × 720 px</strong>. Mantené el texto importante centrado y evitá ponerlo muy cerca de los bordes, porque en móvil puede recortarse.
+        Imagen recomendada: <strong className="text-fg">{recomendado.w} × {recomendado.h} px</strong> ({TAMANOS_BANNER[tamano]?.etiqueta || 'Mediano'}, {esMovil ? 'celular' : 'escritorio'}). Mantené el texto importante centrado y evitá ponerlo muy cerca de los bordes.
       </div>
+      {avisoProporcion && (
+        <p className="mt-2 flex items-start gap-1.5 text-[11px] font-medium text-warning">
+          <AlertTriangle size={13} className="mt-px shrink-0" /> {avisoProporcion}
+        </p>
+      )}
       {medio && (
-        <div className="mt-3 overflow-hidden rounded-lg border border-border bg-surface-2">
-          {tipo === 'video'
-            ? <video src={getMediaUrl(medio)} className="h-28 w-full object-cover" muted playsInline loop controls />
-            : <img src={getMediaUrl(medio)} alt="" className="h-28 w-full object-cover" />}
-        </div>
+        <>
+          <div className="mt-3 overflow-hidden rounded-lg border border-border bg-surface-2">
+            {tipo === 'video'
+              ? <video src={getMediaUrl(medio)} className="h-28 w-full object-cover" style={{ objectPosition: banner[campoPosicion] }} muted playsInline loop controls />
+              : <img src={getMediaUrl(medio)} alt="" className="h-28 w-full object-cover" style={{ objectPosition: banner[campoPosicion] }} />}
+          </div>
+          <div className="mt-2">
+            <span className="block text-[11px] font-medium text-fg-muted mb-1">Posición de la imagen ({esMovil ? 'celular' : 'escritorio'})</span>
+            <div className="grid w-24 grid-cols-3 gap-1">
+              {POSICIONES_IMAGEN.map(([valor, etiqueta]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  title={etiqueta}
+                  aria-label={etiqueta}
+                  aria-pressed={banner[campoPosicion] === valor}
+                  onClick={() => onCambiar({ [campoPosicion]: valor })}
+                  className={`h-7 w-7 rounded border ${banner[campoPosicion] === valor ? 'border-primary bg-primary' : 'border-border bg-surface hover:border-border-strong'}`}
+                />
+              ))}
+            </div>
+          </div>
+        </>
       )}
       {!onSubir && <p className="mt-2 text-[11px] text-fg-muted">La subida directa no está disponible en esta vista; pegá una URL pública.</p>}
       {error && <p className="mt-2 text-[11px] font-medium text-danger">{error}</p>}
@@ -3351,7 +3438,7 @@ function SelectorEnlaceBanner({ value, onChange, categorias = [] }) {
   );
 }
 
-function EditorBannersInicio({ banners, categorias = [], variante, dispositivo = 'escritorio', onAgregar, onCambiar, onQuitar, onMover, onSubir }) {
+function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCambiarTamano, dispositivo = 'escritorio', onAgregar, onCambiar, onQuitar, onMover, onSubir }) {
   const [colapsados, setColapsados] = useState({});
   const esMovil = dispositivo === 'movil';
   function alternar(id) {
@@ -3361,6 +3448,39 @@ function EditorBannersInicio({ banners, categorias = [], variante, dispositivo =
     <div className="space-y-3">
       {variante === 'embebido' && (
         <p className="text-xs text-fg-muted">Estilo: <strong>Encabezado embebido</strong> — se cambia en el panel de Encabezado.</p>
+      )}
+      {onCambiarTamano && (
+      <div className="rounded-xl border border-border bg-surface-2/50 p-3">
+        <p className="text-sm font-semibold text-fg">Tamaño del banner principal</p>
+        <p className="mt-1 text-xs leading-relaxed text-fg-muted">Elegí cuánto espacio ocupa el banner en tu tienda.</p>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {Object.entries(TAMANOS_BANNER).map(([valor, info]) => (
+            <button
+              key={valor}
+              type="button"
+              onClick={() => onCambiarTamano(valor)}
+              aria-pressed={tamano === valor}
+              className={`rounded-lg border p-3 text-left transition-colors ${tamano === valor ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface hover:border-border-strong'}`}
+            >
+              {/* Miniatura proporcional al aspect-ratio de escritorio de cada tamaño. */}
+              <div className="mb-2 w-full rounded border border-border bg-surface-2" style={{ aspectRatio: `${info.desktop.w} / ${info.desktop.h}` }} />
+              <span className="block text-sm font-semibold text-fg">
+                {info.etiqueta}
+                {valor === 'mediano' && <span className="ml-1 text-[10px] font-normal text-fg-muted">(recomendado)</span>}
+              </span>
+              <span className="mt-0.5 block text-xs text-fg-muted">{info.ayuda}</span>
+            </button>
+          ))}
+        </div>
+        {!tamano && (
+          <p className="mt-2 text-[11px] text-fg-muted">Sin elegir, el banner mantiene el alto de siempre (no se le cambia el aspecto solo).</p>
+        )}
+        {variante === 'embebido' && tamano === 'pequeno' && (
+          <p className="mt-2 flex items-start gap-1.5 text-[11px] font-medium text-warning">
+            <AlertTriangle size={13} className="mt-px shrink-0" /> Banner pequeño + encabezado embebido puede quedar justo de espacio en pantallas chicas — revisá la vista previa en celular.
+          </p>
+        )}
+      </div>
       )}
       {banners.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border-strong px-4 py-5 text-center">
@@ -3411,30 +3531,17 @@ function EditorBannersInicio({ banners, categorias = [], variante, dispositivo =
               <div className="sm:col-span-2"><CampoTexto label="Título" value={banner.titulo} onChange={v => onCambiar(banner.id, { titulo: v })} placeholder="Renová tu cocina" maxLength={90} /></div>
               <div className="sm:col-span-2"><CampoTexto label="Subtítulo" value={banner.subtitulo} onChange={v => onCambiar(banner.id, { subtitulo: v })} placeholder="Productos seleccionados con precios especiales" maxLength={160} /></div>
               <SelectorEnlaceBanner value={banner.enlace} categorias={categorias} onChange={v => onCambiar(banner.id, { enlace: v })} />
-              <EditorMedioBanner banner={banner} onCambiar={cambio => onCambiar(banner.id, cambio)} onSubir={onSubir} />
+              <EditorMedioBanner banner={banner} tamano={tamano} dispositivo={dispositivo} onCambiar={cambio => onCambiar(banner.id, cambio)} onSubir={onSubir} />
               {esMovil && (
-                <div className="sm:col-span-2 rounded-xl border border-dashed border-border-strong bg-surface p-3 space-y-3">
-                  <div>
-                    <p className="text-xs font-semibold text-fg">Imagen para celular (opcional)</p>
-                    <p className="text-[11px] text-fg-muted">El texto, el link y el CTA son los mismos que en escritorio — acá solo se puede cambiar la foto (recorte distinto) u ocultar el banner en celular.</p>
-                  </div>
-                  <CampoTexto
-                    label="URL de la imagen en celular"
-                    value={banner.imagen_mobile}
-                    onChange={v => onCambiar(banner.id, { imagen_mobile: v })}
-                    placeholder="Vacío = usa la misma imagen que escritorio"
-                    maxLength={320}
+                <label className="sm:col-span-2 flex items-center gap-2 text-xs font-medium text-fg">
+                  <input
+                    type="checkbox"
+                    checked={banner.activo_mobile !== false}
+                    onChange={e => onCambiar(banner.id, { activo_mobile: e.target.checked })}
+                    className="accent-primary"
                   />
-                  <label className="flex items-center gap-2 text-xs font-medium text-fg">
-                    <input
-                      type="checkbox"
-                      checked={banner.activo_mobile !== false}
-                      onChange={e => onCambiar(banner.id, { activo_mobile: e.target.checked })}
-                      className="accent-primary"
-                    />
-                    Mostrar este banner en celular
-                  </label>
-                </div>
+                  Mostrar este banner en celular
+                </label>
               )}
             </div>
           )}
