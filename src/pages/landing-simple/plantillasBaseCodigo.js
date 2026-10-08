@@ -1476,9 +1476,9 @@ const PRODUCTO_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesi
     <div class="pdp-info">
       <p class="eyebrow" data-gesicomm-bind="insignia_principal" data-gesicomm-ficha-bloque="encabezado"></p>
       <h1 data-gesicomm-bind="nombre" data-gesicomm-ficha-bloque="encabezado"></h1>
-      <div class="pdp-reviews" data-gesicomm-ficha-bloque="encabezado"><span class="stars">★★★★★</span><span data-gesicomm-bind="resenas_texto"></span></div>
       <!-- Propuesta de valor: el porqué en una frase (Productos → Vista del producto). -->
       <p class="pdp-promesa" data-gesicomm-bind="propuesta_valor" data-gesicomm-ficha-bloque="descripcion"></p>
+      <div class="pdp-reviews" data-gesicomm-ficha-bloque="encabezado" data-gesicomm-si="resenas_texto"><span class="stars">★★★★★</span><span data-gesicomm-bind="resenas_texto"></span></div>
       <div class="pdp-prices" data-gesicomm-ficha-bloque="precio">
         <span class="price" data-gesicomm-bind="precio"></span>
         <span class="price-old" data-gesicomm-bind="precio_antes"></span>

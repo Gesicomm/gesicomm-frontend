@@ -64,11 +64,17 @@ describe('ficha: bloques editables de Vista producto', () => {
       preguntas_titulo: 'Preguntas clave',
       preguntas_subtitulo: 'Respuestas breves.',
       preguntas: [{ pregunta: '¿Tiene cambio?', respuesta: 'Sí, según política de la tienda.' }],
-    }, { pago_logos: { tarjetas: false, bocas: true, billetera: false } }, { imagen: 'https://cdn.test/remera.webp' });
+    }, { pago_logos: { tarjetas: false, bocas: true, billetera: false } }, { imagen: 'https://cdn.test/remera.webp', propuesta_valor: 'Descripción corta bajo el nombre.' });
 
     expect(doc.querySelector('.gallery img[data-gesicomm-imagen-principal]').getAttribute('src')).toContain('remera.webp');
     expect(doc.querySelector('.pdp-info [data-gesicomm-bind="insignia_principal"]').textContent).toBe('Hot sale');
     expect(doc.querySelector('.pdp-info [data-gesicomm-bind="nombre"]').textContent).toBe('Remera premium test');
+    const titulo = doc.querySelector('.pdp-info [data-gesicomm-bind="nombre"]');
+    const descripcion = doc.querySelector('.pdp-promesa');
+    const resenas = doc.querySelector('.pdp-reviews');
+    expect(descripcion.textContent).toBe('Descripción corta bajo el nombre.');
+    expect(titulo.compareDocumentPosition(descripcion) & doc.defaultView.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(descripcion.compareDocumentPosition(resenas) & doc.defaultView.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(doc.querySelector('.pdp-reviews [data-gesicomm-bind="resenas_texto"]').textContent).toBe('4.8 · 88 reseñas reales');
     expect(doc.querySelector('.pdp-lead').textContent).toBe('Tela liviana para todos los días.');
     expect(doc.querySelector('[data-gesicomm-ficha-bloque="precio"] [data-gesicomm-bind="urgencia_kicker"]').textContent).toBe('Solo hasta hoy');

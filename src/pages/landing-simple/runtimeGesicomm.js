@@ -435,7 +435,7 @@ export function runtimeGesicomm() {
       case 'nombre': valor = item.titulo_comercial || item.nombre; break;
       case 'descripcion': valor = item.mensaje_comercial || item.descripcion; break;
       case 'insignia_principal': valor = item.insignia_principal || item.categoria || ''; break;
-      case 'resenas_texto': valor = item.resenas_texto || 'Sin reseñas todavía'; break;
+      case 'resenas_texto': valor = item.resenas_texto || ''; break;
       case 'cta_texto': valor = item.cta_texto || 'Comprar ahora'; break;
       case 'agregar_carrito_texto': valor = item.agregar_carrito_texto || 'Agregar al carrito'; break;
       case 'beneficios_kicker': valor = item.beneficios_kicker || 'Por qué elegirlo'; break;
