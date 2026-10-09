@@ -82,7 +82,7 @@ describe('prompts por vista', () => {
     expect(p).toContain('"productos_destacados"');
     expect(p).toContain('Código base (resumen)');
     expect(p).not.toContain('.product-grid');
-    expect(p.length).toBeLessThan(35000);
+    expect(p.length).toBeLessThan(36000);
   });
 });
 

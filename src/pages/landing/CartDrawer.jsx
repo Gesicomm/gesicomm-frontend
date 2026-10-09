@@ -385,7 +385,9 @@ export default function CartDrawer({
     if (opcion) {
       setForm(prev => ({ ...prev, ciudad: opcion.ciudad, departamento: opcion.departamento || '' }));
     } else {
-      setForm(prev => ({ ...prev, ciudad: '', departamento: '' }));
+      // Sin delivery configurado para esa ciudad igual se puede comprar: el
+      // envío queda a coordinar con la tienda.
+      setForm(prev => ({ ...prev, ciudad: valor.trim(), departamento: '' }));
     }
   }
 

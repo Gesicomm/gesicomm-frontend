@@ -4,6 +4,7 @@ import {
   Eye, EyeOff, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
   ChevronsUpDown, ChevronsDownUp,
   Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, Trash2, ExternalLink, Save, Settings2,
+  GripVertical, Lock,
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { comboAdminService } from '../../services/comboAdminService';
@@ -14,7 +15,7 @@ import PresentacionProducto from './PresentacionProducto';
 import { contentIdPanel, datosRuntimePreview, slugCategoria, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
-import { plantillaInicioPara, formatoDeBase, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
+import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
 import { conGlobalesHeredados } from './globalesCodigo';
@@ -445,6 +446,11 @@ const BLOQUES_INICIO_DEFAULT = [
   'anuncios', 'banner', 'productos_categoria', 'ofertas_urgencia', 'confianza', 'testimonios', 'marca', 'colecciones',
 ].map(tipo => ({ tipo, visible: true }));
 
+// La barra de anuncios va siempre arriba de todo (junto al encabezado, que
+// tampoco se mueve): no se arrastra y se ordena primera aunque una landing
+// vieja la haya guardado más abajo.
+const BLOQUE_INICIO_FIJO = 'anuncios';
+
 function normalizarBloquesInicio(bloques) {
   const guardados = Array.isArray(bloques) ? bloques.filter(b => b && TIPOS_BLOQUE_INICIO.includes(b.tipo)) : [];
   if (!guardados.length) return BLOQUES_INICIO_DEFAULT;
@@ -452,7 +458,8 @@ function normalizarBloquesInicio(bloques) {
   // Si la base agregó un tipo de bloque nuevo después de que esta landing ya
   // guardó su lista, aparece al final (visible) en vez de desaparecer.
   const faltantes = TIPOS_BLOQUE_INICIO.filter(t => !vistos.has(t)).map(tipo => ({ tipo, visible: true }));
-  return [...guardados.map(b => ({ tipo: b.tipo, visible: b.visible !== false })), ...faltantes];
+  const todos = [...guardados.map(b => ({ tipo: b.tipo, visible: b.visible !== false })), ...faltantes];
+  return [...todos.filter(b => b.tipo === BLOQUE_INICIO_FIJO), ...todos.filter(b => b.tipo !== BLOQUE_INICIO_FIJO)];
 }
 
 function normalizarInicioComercial(inicio = {}, categorias = []) {
@@ -752,6 +759,25 @@ export default function ConfigurarVentaCodigo({
   const [recoCta, setRecoCta] = useState(ventaInicial.recomendados?.cta_texto || '');
   const [recoBusqueda, setRecoBusqueda] = useState('');
   const [recoCategoria, setRecoCategoria] = useState('');
+  const checkoutRecoInicial = ventaInicial.checkout_recomendados || {};
+  const [checkoutRecoActivo, setCheckoutRecoActivo] = useState(checkoutRecoInicial.activo !== false);
+  const [checkoutRecoItems, setCheckoutRecoItems] = useState(() => (
+    Array.isArray(checkoutRecoInicial.items)
+      ? checkoutRecoInicial.items.map(item => (typeof item === 'object' ? (item.id || item.content_id || item.contentId) : item)).filter(Boolean)
+      : []
+  ));
+  const [checkoutRecoMax, setCheckoutRecoMax] = useState(checkoutRecoInicial.max || 4);
+  const [checkoutRecoTitulo, setCheckoutRecoTitulo] = useState(checkoutRecoInicial.titulo || '');
+  const [checkoutRecoKicker, setCheckoutRecoKicker] = useState(checkoutRecoInicial.kicker || '');
+  const [checkoutRecoSubtitulo, setCheckoutRecoSubtitulo] = useState(checkoutRecoInicial.subtitulo || '');
+  const [checkoutRecoCta, setCheckoutRecoCta] = useState(checkoutRecoInicial.cta_texto || '');
+  const [checkoutRecoPreciosAntes, setCheckoutRecoPreciosAntes] = useState(() => (
+    checkoutRecoInicial.precio_antes && typeof checkoutRecoInicial.precio_antes === 'object'
+      ? checkoutRecoInicial.precio_antes
+      : {}
+  ));
+  const [checkoutRecoBusqueda, setCheckoutRecoBusqueda] = useState('');
+  const [checkoutRecoCategoria, setCheckoutRecoCategoria] = useState('');
 
   // Countdown de oferta y estadísticas: pueden ser datos reales confirmados
   // o contenido de ejemplo/generado por IA. Si quedan sin confirmar, publicar
@@ -1170,14 +1196,17 @@ export default function ConfigurarVentaCodigo({
   }
 
   // ─── Bloques del Inicio (orden + mostrar/ocultar) ──────────────────────
-  function moverBloqueInicio(tipo, dir) {
+  // Arrastrar y soltar: `desde`/`hasta` son posiciones dentro de los bloques
+  // MOVIBLES. La barra de anuncios queda siempre primera (y el encabezado y
+  // el footer no están en esta lista: son fijos).
+  function reordenarBloqueInicio(desde, hasta) {
     setInicioComercial(prev => {
-      const bloques = [...prev.bloques];
-      const idx = bloques.findIndex(b => b.tipo === tipo);
-      const next = idx + dir;
-      if (idx < 0 || next < 0 || next >= bloques.length) return prev;
-      [bloques[idx], bloques[next]] = [bloques[next], bloques[idx]];
-      return { ...prev, bloques };
+      const fijos = prev.bloques.filter(b => b.tipo === BLOQUE_INICIO_FIJO);
+      const movibles = prev.bloques.filter(b => b.tipo !== BLOQUE_INICIO_FIJO);
+      if (desde === hasta || desde < 0 || hasta < 0 || desde >= movibles.length || hasta >= movibles.length) return prev;
+      const [movido] = movibles.splice(desde, 1);
+      movibles.splice(hasta, 0, movido);
+      return { ...prev, bloques: [...fijos, ...movibles] };
     });
   }
   function alternarBloqueInicio(tipo) {
@@ -1365,6 +1394,50 @@ export default function ConfigurarVentaCodigo({
   useEffect(() => {
     if (recoItemsValidos.length !== recoItems.length) setRecoItems(recoItemsValidos);
   }, [recoItems, recoItemsValidos]);
+  const checkoutRecoItemsValidos = useMemo(
+    () => checkoutRecoItems.filter(id => idsCandidatosReco.has(id)).slice(0, 12),
+    [checkoutRecoItems, idsCandidatosReco],
+  );
+  useEffect(() => {
+    if (checkoutRecoItemsValidos.length !== checkoutRecoItems.length) setCheckoutRecoItems(checkoutRecoItemsValidos);
+  }, [checkoutRecoItems, checkoutRecoItemsValidos]);
+  const checkoutRecoElegidos = useMemo(() => {
+    const porId = new Map(candidatosReco.map(i => [i.content_id, i]));
+    return checkoutRecoItemsValidos.map(id => porId.get(id)).filter(Boolean);
+  }, [candidatosReco, checkoutRecoItemsValidos]);
+  const candidatosCheckoutRecoFiltrados = useMemo(() => {
+    const q = checkoutRecoBusqueda.trim().toLowerCase();
+    const filtrados = candidatosReco.filter(i => {
+      if (i.tipo !== 'producto') return false;
+      if (checkoutRecoCategoria && i.categoria !== checkoutRecoCategoria) return false;
+      if (!q) return true;
+      return [
+        i.nombre,
+        i.titulo_comercial,
+        i.categoria,
+        i.marca,
+        i.sku,
+        i.codigo,
+      ].filter(Boolean).join(' ').toLowerCase().includes(q);
+    });
+    return filtrados.slice(0, 80);
+  }, [candidatosReco, checkoutRecoBusqueda, checkoutRecoCategoria]);
+  const totalCandidatosCheckoutRecoFiltrados = useMemo(() => {
+    const q = checkoutRecoBusqueda.trim().toLowerCase();
+    return candidatosReco.filter(i => {
+      if (i.tipo !== 'producto') return false;
+      if (checkoutRecoCategoria && i.categoria !== checkoutRecoCategoria) return false;
+      if (!q) return true;
+      return [
+        i.nombre,
+        i.titulo_comercial,
+        i.categoria,
+        i.marca,
+        i.sku,
+        i.codigo,
+      ].filter(Boolean).join(' ').toLowerCase().includes(q);
+    }).length;
+  }, [candidatosReco, checkoutRecoBusqueda, checkoutRecoCategoria]);
   const candidatosOfertaLimitada = useMemo(
     () => candidatosReco.filter(i => i.mostrar_en_inicio !== false),
     [candidatosReco],
@@ -1470,6 +1543,20 @@ export default function ConfigurarVentaCodigo({
       subtitulo: recoSubtitulo,
       cta_texto: recoCta,
     },
+    checkout_recomendados: {
+      activo: checkoutRecoActivo,
+      items: checkoutRecoItemsValidos,
+      max: checkoutRecoMax,
+      titulo: checkoutRecoTitulo,
+      kicker: checkoutRecoKicker,
+      subtitulo: checkoutRecoSubtitulo,
+      cta_texto: checkoutRecoCta,
+      precio_antes: Object.fromEntries(
+        Object.entries(checkoutRecoPreciosAntes || {})
+          .filter(([id, valor]) => checkoutRecoItemsValidos.includes(id) && (Number(String(valor).replace(/\D/g, '')) || 0) > 0)
+          .map(([id, valor]) => [id, Number(String(valor).replace(/\D/g, '')) || 0]),
+      ),
+    },
     urgencia: {
       activo: urgenciaActiva,
       fin_at: inputLocalAIso(urgenciaFinAt),
@@ -1494,7 +1581,8 @@ export default function ConfigurarVentaCodigo({
       })),
   }), [
     tipo, abrirEn, combosPrimero, destacadosValidos, inicioActual, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
-    crossActivo, ofertasElegidas, recoActivo, recoModo, recoItemsValidos, recoMax, recoTitulo,
+    crossActivo, ofertasElegidas, recoActivo, recoModo, recoItemsValidos, recoMax, recoTitulo, recoKicker, recoSubtitulo, recoCta,
+    checkoutRecoActivo, checkoutRecoItemsValidos, checkoutRecoMax, checkoutRecoTitulo, checkoutRecoKicker, checkoutRecoSubtitulo, checkoutRecoCta, checkoutRecoPreciosAntes,
     urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, urgenciaProductosValidos, urgenciaConfirmar, urgenciaTitulo, urgenciaTexto, urgenciaCta, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
     pagoLogos, paymentLogosCatalogo,
   ]);
@@ -1612,7 +1700,7 @@ export default function ConfigurarVentaCodigo({
   // la página. Si ya tiene diseño propio, se muestra ese diseño.
   const inicioEsBase = !codigos?.inicio?.html?.trim()
     || codigos.inicio.html.includes(MARCA_CODIGO_INICIAL)
-    || !!formatoDeBase(codigos.inicio.html);
+    || esBaseIntacta(codigos.inicio.html);
   const abreEnFicha = abrirEn === 'producto';
   const codigoInicioPreview = inicioEsBase ? plantillaInicioPara(tipo) : codigos.inicio;
   const codigoCatalogoPreview = conGlobalesHeredados(codigos?.catalogo?.html ? codigos.catalogo : PLANTILLA_CATALOGO, codigoInicioPreview);
@@ -1742,6 +1830,7 @@ export default function ConfigurarVentaCodigo({
         // Solo productos de la landing: uno de afuera se vería en la ficha
         // pero el checkout lo rechazaría.
         recomendados: { ...ventaActual.recomendados, items: recoItems.filter(id => idsSeleccion.has(id)) },
+        checkout_recomendados: { ...ventaActual.checkout_recomendados, items: checkoutRecoItems.filter(id => idsSeleccion.has(id)) },
       },
       seleccion,
       // En una regla estos items son ajustes de presentación, no una lista
@@ -1999,7 +2088,7 @@ export default function ConfigurarVentaCodigo({
               >
                 <EditorBloquesInicio
                   bloques={inicioComercial.bloques}
-                  onMover={moverBloqueInicio}
+                  onReordenar={reordenarBloqueInicio}
                   onAlternar={alternarBloqueInicio}
                   codigoInicio={codigoInicioPreview}
                   onCambiarCodigo={onCambiarCodigo}
@@ -2165,33 +2254,6 @@ export default function ConfigurarVentaCodigo({
                 />
               </Bloque>
 
-              <Bloque
-                titulo="Presentación de productos en inicio"
-                ayuda="Resumen rápido. Si necesitás editar un producto, abrís su ficha dedicada."
-              >
-                {seleccion.length === 0 ? (
-                  <p className="text-sm text-fg-muted">Agregá productos desde Productos para verlos acá.</p>
-                ) : (
-                  <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
-                    {seleccion.slice(0, 10).map(item => (
-                      <div key={claveItem(item)} className="flex items-center gap-3 bg-surface-2/40 px-3 py-2.5">
-                        <Miniatura item={item} />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">{item.titulo_comercial || item.nombre}</p>
-                          <p className="text-xs text-fg-muted tabular-nums">{formatearGs(precioDeVenta(item)) || 'Sin precio'}{item.insignia_principal ? ` · ${item.insignia_principal}` : ''}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => seleccionarProductoConfig(contentIdPanel(item))}
-                          className="shrink-0 text-xs font-semibold text-primary-text hover:underline"
-                        >
-                          Editar →
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Bloque>
                 </>
               )}
 
@@ -2336,11 +2398,19 @@ export default function ConfigurarVentaCodigo({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <button
                         type="button"
-                        onClick={() => abrirNuevaOferta('order_bump')}
+                        onClick={() => {
+                          setCheckoutRecoActivo(true);
+                          verDonde('checkout', 'checkout_recomendados');
+                        }}
                         className="rounded-xl border border-border bg-surface-2/60 px-4 py-3 text-left hover:border-border-strong"
                       >
-                        <span className="block text-sm font-semibold text-fg">Agregar producto recomendado</span>
-                        <span className="mt-1 block text-xs text-fg-muted">Un order bump: elegís el producto y armás la oferta que se ofrece antes de pagar.</span>
+                        <span className="block text-sm font-semibold text-fg">Productos recomendados</span>
+                        <span className="mt-1 block text-xs text-fg-muted">
+                          Elegí uno o varios productos para ofrecerlos en el checkout.
+                        </span>
+                        <span className="mt-2 inline-flex rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary-text">
+                          {checkoutRecoItemsValidos.length || 'Auto'} seleccionado{checkoutRecoItemsValidos.length === 1 ? '' : 's'}
+                        </span>
                       </button>
                       <button
                         type="button"
@@ -2358,6 +2428,230 @@ export default function ConfigurarVentaCodigo({
                         <span className="block text-sm font-semibold text-fg">Vista de pago</span>
                         <span className="mt-1 block text-xs text-fg-muted">Previsualizá la pantalla completa antes de guardar.</span>
                       </button>
+                    </div>
+
+                    <div className="mt-4 rounded-xl border border-border bg-surface-2/60 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-fg">Recomendados del checkout</p>
+                          <p className="mt-1 text-[13px] text-fg-muted">
+                            Esta selección solo afecta el carrusel “También te puede interesar” del checkout.
+                          </p>
+                        </div>
+                        <Interruptor
+                          activo={checkoutRecoActivo}
+                          onChange={setCheckoutRecoActivo}
+                          etiqueta="Mostrar recomendados en checkout"
+                        />
+                      </div>
+
+                      {checkoutRecoActivo && (
+                        <div className="mt-4 space-y-4">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <label>
+                              <span className="block text-sm font-medium text-fg mb-1.5">Rótulo superior</span>
+                              <input
+                                value={checkoutRecoKicker}
+                                onChange={e => setCheckoutRecoKicker(e.target.value)}
+                                maxLength={50}
+                                placeholder="Antes de cerrar"
+                                className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                              />
+                            </label>
+                            <label>
+                              <span className="block text-sm font-medium text-fg mb-1.5">Título</span>
+                              <input
+                                value={checkoutRecoTitulo}
+                                onChange={e => setCheckoutRecoTitulo(e.target.value)}
+                                maxLength={80}
+                                placeholder="También te puede interesar"
+                                className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                              />
+                            </label>
+                            <label className="sm:col-span-2">
+                              <span className="block text-sm font-medium text-fg mb-1.5">Subtítulo</span>
+                              <textarea
+                                value={checkoutRecoSubtitulo}
+                                onChange={e => setCheckoutRecoSubtitulo(e.target.value)}
+                                maxLength={180}
+                                rows={2}
+                                placeholder="Complementos que el cliente puede sumar antes de confirmar."
+                                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                              />
+                            </label>
+                            <label>
+                              <span className="block text-sm font-medium text-fg mb-1.5">Texto del botón</span>
+                              <input
+                                value={checkoutRecoCta}
+                                onChange={e => setCheckoutRecoCta(e.target.value)}
+                                maxLength={40}
+                                placeholder="Agregar"
+                                className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                              />
+                            </label>
+                            <div>
+                              <span id="checkout-reco-cantidad" className="block text-sm font-medium text-fg mb-1.5">Cuántos mostrar</span>
+                              <div role="radiogroup" aria-labelledby="checkout-reco-cantidad" className="inline-flex rounded-lg bg-surface p-1">
+                                {CANTIDADES_RECO.map(n => (
+                                  <button
+                                    key={n}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={checkoutRecoMax === n}
+                                    onClick={() => setCheckoutRecoMax(n)}
+                                    className={`w-9 h-8 rounded-md font-mono text-sm transition-colors ${checkoutRecoMax === n ? 'bg-surface-2 text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+                                  >
+                                    {n}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {candidatosReco.length === 0 ? (
+                            <p className="rounded-lg border border-dashed border-border-strong px-4 py-6 text-center text-sm text-fg-muted">
+                              Primero agregá productos a la landing.
+                            </p>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="flex flex-col gap-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-xs text-fg-muted">
+                                    Tocá los productos que querés mostrar ({checkoutRecoItemsValidos.length} de hasta 12).
+                                  </p>
+                                  {checkoutRecoItemsValidos.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setCheckoutRecoItems([]);
+                                        setCheckoutRecoPreciosAntes({});
+                                        verDonde('checkout', 'checkout_recomendados');
+                                      }}
+                                      className="shrink-0 text-xs font-medium text-fg-muted hover:text-fg"
+                                    >
+                                      Limpiar selección
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
+                                  <label className="relative block">
+                                    <span className="sr-only">Buscar recomendados del checkout</span>
+                                    <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
+                                    <input
+                                      value={checkoutRecoBusqueda}
+                                      onChange={e => setCheckoutRecoBusqueda(e.target.value)}
+                                      placeholder="Buscar producto para el checkout"
+                                      className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                                    />
+                                  </label>
+                                  <label className="block">
+                                    <span className="sr-only">Filtrar por categoría</span>
+                                    <select
+                                      value={checkoutRecoCategoria}
+                                      onChange={e => setCheckoutRecoCategoria(e.target.value)}
+                                      className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+                                    >
+                                      <option value="">Todas las categorías</option>
+                                      {categoriasRecoDisponibles.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                    </select>
+                                  </label>
+                                </div>
+                                {(checkoutRecoBusqueda || checkoutRecoCategoria) && (
+                                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-fg-muted">
+                                    <span>
+                                      {totalCandidatosCheckoutRecoFiltrados.toLocaleString('es-PY')} resultado{totalCandidatosCheckoutRecoFiltrados === 1 ? '' : 's'}
+                                      {totalCandidatosCheckoutRecoFiltrados > candidatosCheckoutRecoFiltrados.length ? ` · mostrando primeros ${candidatosCheckoutRecoFiltrados.length}` : ''}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => { setCheckoutRecoBusqueda(''); setCheckoutRecoCategoria(''); }}
+                                      className="font-medium text-primary-text hover:underline"
+                                    >
+                                      Limpiar filtros
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="grid max-h-[420px] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                                {candidatosCheckoutRecoFiltrados.length === 0 ? (
+                                  <div className="rounded-xl border border-dashed border-border-strong px-4 py-6 text-center text-sm text-fg-muted sm:col-span-2">
+                                    No encontramos productos con esos filtros.
+                                  </div>
+                                ) : candidatosCheckoutRecoFiltrados.map(i => {
+                                  const elegido = checkoutRecoItemsValidos.includes(i.content_id);
+                                  const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
+                                  const img = imagenPanel(i);
+                                  return (
+                                    <div
+                                      key={i.content_id}
+                                      className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : 'border-border bg-surface hover:border-border-strong'}`}
+                                    >
+                                      <button
+                                        type="button"
+                                        aria-pressed={elegido}
+                                        onClick={() => {
+                                          setCheckoutRecoItems(prev => (elegido ? prev.filter(x => x !== i.content_id) : [...prev, i.content_id].slice(0, 12)));
+                                          setVistaPreview('checkout');
+                                          setAvisoPreview('');
+                                          setResaltado({ lista: 'checkout_recomendados', n: Date.now() });
+                                        }}
+                                        className="flex w-full items-start gap-3 text-left"
+                                      >
+                                        <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
+                                          {img
+                                            ? <img src={img} alt="" className="h-full w-full object-contain" loading="lazy" />
+                                            : <ShoppingBag size={20} className="text-fg-subtle" />}
+                                          <span className={`absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full border text-[11px] ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border bg-surface text-fg-subtle'}`}>
+                                            {elegido ? <Check size={13} /> : null}
+                                          </span>
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                          <span className="line-clamp-2 text-sm font-semibold leading-snug text-fg">{i.titulo_comercial || i.nombre}</span>
+                                          <span className="mt-1 block font-mono text-[12px] font-semibold text-fg">{formatearGs(precio) || 'Sin precio'}</span>
+                                          <span className="mt-1 block truncate text-[11px] text-fg-muted">{i.categoria || 'Producto'}</span>
+                                        </span>
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {checkoutRecoElegidos.length > 0 && (
+                                <div className="rounded-xl border border-border bg-surface">
+                                  <div className="px-3 py-2.5 border-b border-border">
+                                    <p className="text-sm font-semibold text-fg">Descuento visible en checkout</p>
+                                    <p className="mt-0.5 text-xs text-fg-muted">Opcional. Se muestra como precio tachado solo en este carrusel.</p>
+                                  </div>
+                                  <ul className="divide-y divide-border">
+                                    {checkoutRecoElegidos.map(item => (
+                                      <li key={item.content_id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5">
+                                        <span className="flex min-w-0 items-center gap-2.5">
+                                          <Miniatura item={item} />
+                                          <span className="min-w-0">
+                                            <span className="block truncate text-sm text-fg">{item.nombre}</span>
+                                            <span className="block text-xs text-fg-muted tabular-nums">{formatearGs(precioDeVenta(item))}</span>
+                                          </span>
+                                        </span>
+                                        <PrecioAncla
+                                          id={`checkout-reco-ancla-${item.content_id}`}
+                                          venta={precioDeVenta(item)}
+                                          valor={checkoutRecoPreciosAntes[item.content_id] ?? ''}
+                                          onCambiar={v => {
+                                            setCheckoutRecoPreciosAntes(prev => ({ ...prev, [item.content_id]: v }));
+                                            setVistaPreview('checkout');
+                                            setResaltado({ lista: 'checkout_recomendados', n: Date.now() });
+                                          }}
+                                        />
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 rounded-xl border border-border bg-surface-2/60 px-4 py-3.5">
@@ -3598,12 +3892,32 @@ function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCam
 // existía para eso (Categorías visuales, Productos destacados, etc.).
 // Fila de un bloque — con o sin control de orden/visibilidad (el Menú no
 // tiene ninguno de los dos: vive fijo en el header).
-function FilaBloqueInicio({ numero, etiqueta, visible, primero, ultimo, onMover, onAlternar, panel, abierto, onAbrir }) {
+function FilaBloqueInicio({ numero, etiqueta, visible, fijo = false, arrastre = null, onAlternar, panel, abierto, onAbrir }) {
   const tienePanel = !!panel;
-  const puedeMoverse = !!onMover;
+  // arrastre: { filaProps, manijaProps, arrastrando, destino } — drag & drop
+  // nativo (HTML5). Solo la manija arranca el arrastre, así los inputs del
+  // panel abierto siguen seleccionando texto normalmente.
+  const { filaProps, manijaProps, arrastrando, destino } = arrastre || {};
   return (
-    <div className={`rounded-xl border ${abierto ? 'border-primary ring-2 ring-primary/30' : visible === false ? 'border-border bg-surface-2/40 opacity-70' : 'border-border'}`}>
+    <div
+      {...(filaProps || {})}
+      className={`rounded-xl border bg-surface transition-shadow ${arrastrando ? 'border-primary opacity-50' : destino ? 'border-primary shadow-lg ring-2 ring-primary/40' : abierto ? 'border-primary ring-2 ring-primary/30' : visible === false ? 'border-border bg-surface-2/40 opacity-70' : 'border-border'}`}
+    >
       <div className="flex items-center gap-2 p-2.5">
+        {arrastre ? (
+          <span
+            {...(manijaProps || {})}
+            className="inline-flex h-8 w-6 shrink-0 cursor-grab items-center justify-center rounded text-fg-muted hover:text-fg active:cursor-grabbing"
+            aria-label={`Arrastrar ${etiqueta} para cambiar su lugar`}
+            title="Arrastrá para mover"
+          >
+            <GripVertical size={15} />
+          </span>
+        ) : (
+          <span className="inline-flex h-8 w-6 shrink-0 items-center justify-center text-fg-muted/60" title={fijo ? 'Fijo: no se mueve' : undefined}>
+            {fijo && <Lock size={13} />}
+          </span>
+        )}
         <span className="w-5 shrink-0 text-center text-xs font-mono text-fg-muted">{numero}</span>
         <button
           type="button"
@@ -3620,16 +3934,7 @@ function FilaBloqueInicio({ numero, etiqueta, visible, primero, ultimo, onMover,
           </label>
         )}
         <div className="flex items-center gap-1">
-          {puedeMoverse && (
-            <>
-              <button type="button" onClick={() => onMover(-1)} disabled={primero} className="h-8 w-8 rounded-lg border border-border text-fg-muted hover:text-fg disabled:opacity-35" aria-label="Subir bloque">
-                <ChevronUp size={14} className="mx-auto" />
-              </button>
-              <button type="button" onClick={() => onMover(1)} disabled={ultimo} className="h-8 w-8 rounded-lg border border-border text-fg-muted hover:text-fg disabled:opacity-35" aria-label="Bajar bloque">
-                <ChevronDown size={14} className="mx-auto" />
-              </button>
-            </>
-          )}
+          {fijo && <span className="text-[11px] font-medium text-fg-muted">Fijo</span>}
           {tienePanel && (
             <button type="button" onClick={() => onAbrir(abierto ? null : numero)} className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2 text-xs font-semibold text-fg-muted hover:text-fg" aria-expanded={abierto}>
               {abierto ? <ChevronsDownUp size={13} /> : <ChevronsUpDown size={13} />}
@@ -3646,15 +3951,23 @@ function FilaBloqueInicio({ numero, etiqueta, visible, primero, ultimo, onMover,
 // duplicado en paneles sueltos más abajo. El Menú entra como bloque 2, fijo
 // (vive en el header: no se reordena ni se oculta), el resto sale de
 // `bloques` (venta.inicio.bloques) con su orden y su "Mostrar".
-function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {}, menuPanel, codigoInicio, onCambiarCodigo, tienda, venta, productos }) {
+export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles = {}, menuPanel, codigoInicio, onCambiarCodigo, tienda, venta, productos }) {
+  // El bloque abierto se recuerda por tipo, no por posición: al arrastrar
+  // otro bloque, el que está abierto sigue abierto.
   const [abierto, setAbierto] = useState(null);
-  const filas = [bloques[0], { tipo: '__menu__' }, ...bloques.slice(1)];
-  return (
-    <div className="space-y-2">
-      {filas.map((b, idx) => {
-        const esMenu = b.tipo === '__menu__';
-        const idxReal = esMenu ? -1 : (idx === 0 ? 0 : idx - 1);
-        const tipoSeccion = esMenu ? 'encabezado' : b.tipo;
+  // Arrastre en curso: índice (dentro de los movibles) del que se arrastra
+  // y del lugar donde caería.
+  const [arrastrando, setArrastrando] = useState(null);
+  const [destino, setDestino] = useState(null);
+  const anuncios = bloques.find(b => b.tipo === BLOQUE_INICIO_FIJO) || null;
+  const movibles = bloques.filter(b => b.tipo !== BLOQUE_INICIO_FIJO);
+  // Arriba, fijos: barra de anuncios y encabezado. Después, los que se
+  // arrastran. Al final, fijo, el footer.
+  const fijosArriba = [...(anuncios ? [anuncios] : []), { tipo: '__menu__' }];
+
+  function renderFila(b, numero, arrastre = null) {
+    const esMenu = b.tipo === '__menu__';
+    const tipoSeccion = esMenu ? 'encabezado' : b.tipo;
         const panelCompleto = codigoInicio ? (
           <div className="space-y-3">
             {esMenu ? menuPanel : paneles[b.tipo]}
@@ -3668,22 +3981,57 @@ function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {}, menuP
             />
           </div>
         ) : (esMenu ? menuPanel : paneles[b.tipo]);
-        return (
-          <FilaBloqueInicio
-            key={b.tipo}
-            numero={idx + 1}
-            etiqueta={esMenu ? 'Encabezado' : (ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo)}
-            visible={esMenu ? undefined : b.visible}
-            primero={idxReal === 0}
-            ultimo={idxReal === bloques.length - 1}
-            onMover={esMenu ? null : dir => onMover(b.tipo, dir)}
-            onAlternar={esMenu ? null : () => onAlternar(b.tipo)}
-            panel={panelCompleto}
-            abierto={abierto === idx + 1}
-            onAbrir={setAbierto}
-          />
-        );
-      })}
+    return (
+      <FilaBloqueInicio
+        key={b.tipo}
+        numero={numero}
+        etiqueta={esMenu ? 'Encabezado' : (ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo)}
+        visible={esMenu ? undefined : b.visible}
+        fijo={!arrastre}
+        arrastre={arrastre}
+        onAlternar={esMenu ? null : () => onAlternar(b.tipo)}
+        panel={panelCompleto}
+        abierto={abierto === b.tipo}
+        onAbrir={valor => setAbierto(valor === null ? null : b.tipo)}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {fijosArriba.map((b, idx) => renderFila(b, idx + 1))}
+      {movibles.map((b, idx) => renderFila(b, fijosArriba.length + idx + 1, {
+        arrastrando: arrastrando === idx,
+        destino: arrastrando !== null && destino === idx && destino !== arrastrando,
+        manijaProps: {
+          draggable: true,
+          onDragStart: e => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', b.tipo);
+            // Se arrastra la fila entera, no solo el ícono de la manija.
+            const fila = e.currentTarget.closest('[data-bloque-inicio]');
+            if (fila) e.dataTransfer.setDragImage(fila, 24, 20);
+            setArrastrando(idx);
+          },
+          onDragEnd: () => { setArrastrando(null); setDestino(null); },
+        },
+        filaProps: {
+          'data-bloque-inicio': b.tipo,
+          onDragOver: e => {
+            if (arrastrando === null) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (destino !== idx) setDestino(idx);
+          },
+          onDrop: e => {
+            e.preventDefault();
+            if (arrastrando !== null) onReordenar(arrastrando, idx);
+            setArrastrando(null);
+            setDestino(null);
+          },
+        },
+      }))}
+      <FilaBloqueInicio numero={fijosArriba.length + movibles.length + 1} etiqueta="Footer" fijo />
     </div>
   );
 }
@@ -3718,8 +4066,15 @@ function EditorCodigoSeccion({ tipo, codigoInicio, onCambiarCodigo, tienda, vent
       return false;
     }
     setError('');
-    onCambiarCodigo?.('inicio', 'html', reemplazarFragmentoHtml(codigoInicio.html, tipo, nuevoHtmlFrag));
+    // Marcado como personalizado: sin esto el inicio seguía contando como
+    // "base", la vista previa mostraba la plantilla limpia y al guardar se
+    // pisaba lo que devolvió la IA.
+    onCambiarCodigo?.('inicio', 'html', marcarPersonalizado(reemplazarFragmentoHtml(codigoInicio.html, tipo, nuevoHtmlFrag)));
     onCambiarCodigo?.('inicio', 'css', reemplazarSeccionCss(codigoInicio.css, tipo, nuevoCssFrag));
+    // El JS que se estaba viendo (el de la base, si el inicio era base) pasa
+    // a ser el del inicio guardado: si no, al dejar de ser "base" perdía los
+    // carruseles y contadores de la plantilla.
+    onCambiarCodigo?.('inicio', 'js', codigoInicio.js || '');
     return true;
   }
 

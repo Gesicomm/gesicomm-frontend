@@ -1443,6 +1443,49 @@ describe('preview del editor con ofertas del panel', () => {
     expect(upsell.precio_efectivo).toBe(55000);
     expect(upsell.imagen).toBe('https://cdn.test/air.jpg');
   });
+
+  it('alimenta el carrusel de recomendados en el checkout del preview', () => {
+    const productos = [
+      { id: 10, tipo: 'producto', slug: 'air', nombre: 'Air', categoria: 'Tech', precio_efectivo: 145000, imagen: 'https://cdn.test/air.jpg' },
+      { id: 20, tipo: 'producto', slug: 'teclado', nombre: 'Teclado', categoria: 'Tech', precio_efectivo: 120000, imagen: 'https://cdn.test/t.jpg' },
+      { id: 30, tipo: 'producto', slug: 'sarten', nombre: 'Sartén', categoria: 'Cocina', precio_efectivo: 90000, imagen: 'https://cdn.test/s.jpg' },
+    ];
+    const datos = datosRuntimePreview({ productos, venta: {}, vista: 'checkout' });
+    expect(datos.checkout_recomendados.map(p => p.nombre)).toEqual(['Teclado', 'Sartén']);
+    const { document, dom } = montar(PLANTILLA_CHECKOUT, datos);
+    expect(document.querySelectorAll('[data-gesicomm-reco-carrusel] .lv-reco-card')).toHaveLength(2);
+    dom.window.close();
+  });
+
+  it('permite elegir recomendados manuales y textos propios solo para checkout', () => {
+    const productos = [
+      { id: 10, tipo: 'producto', slug: 'air', nombre: 'Air', categoria: 'Tech', precio_efectivo: 145000, imagen: 'https://cdn.test/air.jpg' },
+      { id: 20, tipo: 'producto', slug: 'teclado', nombre: 'Teclado', categoria: 'Tech', precio_efectivo: 120000, imagen: 'https://cdn.test/t.jpg' },
+      { id: 30, tipo: 'producto', slug: 'sarten', nombre: 'Sartén', categoria: 'Cocina', precio_efectivo: 90000, imagen: 'https://cdn.test/s.jpg' },
+    ];
+    const datos = datosRuntimePreview({
+      productos,
+      venta: {
+        checkout_recomendados: {
+          items: ['sarten'],
+          precio_antes: { sarten: 120000 },
+          kicker: 'Oferta final',
+          titulo: 'Sumá esto antes de pagar',
+          subtitulo: 'Solo en este checkout.',
+          cta_texto: 'Sumar',
+        },
+      },
+      vista: 'checkout',
+    });
+    expect(datos.checkout_recomendados.map(p => [p.id, p.precio_antes, p.descuento_pct])).toEqual([['sarten', 120000, 25]]);
+    const { document, dom } = montar(PLANTILLA_CHECKOUT, datos);
+    expect(document.querySelector('.lv-reco-kicker').textContent).toBe('Oferta final');
+    expect(document.querySelector('.lv-checkout-reco h2').textContent).toBe('Sumá esto antes de pagar');
+    expect(document.querySelector('.lv-reco-subtitle').textContent).toBe('Solo en este checkout.');
+    expect(document.querySelector('.lv-reco-card .lv-primary').textContent).toBe('Sumar');
+    expect(document.querySelector('.lv-reco-title').textContent).toBe('Sartén');
+    dom.window.close();
+  });
 });
 
 describe('redes de la tienda (data-gesicomm-redes)', () => {
@@ -1844,12 +1887,13 @@ describe('checkout propio — order bumps, recomendados y resumen', () => {
     expect(datos.carrito.items[0].imagen).toMatch(/^https?:\/\/.+products\/1503\/a\.webp$/);
   });
 
-  it('con el bump ya en el pedido sigue en la lista, marcado', () => {
+  it('con el bump ya en el pedido no duplica la oferta grande', () => {
     const datos = datosRuntimePublico(data, 'tienda', null, {
       vista: 'checkout',
       carrito: [...carritoMouse, { clave: 'b', tipo: 'producto', contentId: 'mouse-qa', ofertaId: 501, nombre: 'Sumá el adaptador', precio: 18217, cantidad: 1 }],
     });
-    expect(datos.checkout_bumps[0].en_pedido).toBe(true);
+    expect(datos.checkout_bumps).toEqual([]);
+    expect(datos.carrito.items.map(i => i.nombre)).toEqual(['Mouse QA', 'Sumá el adaptador']);
   });
 
   it('la tarjeta del bump es la misma de la ficha: marcarla suma la oferta y desmarcarla la quita', () => {
@@ -1868,13 +1912,30 @@ describe('checkout propio — order bumps, recomendados y resumen', () => {
     dom.window.close();
   });
 
-  it('los recomendados usan la tarjeta del catálogo y "Agregar" suma sin salir del checkout', () => {
+  it('los recomendados usan filas compactas y "Agregar" suma sin salir del checkout', () => {
     const datos = datosRuntimePublico(data, 'tienda', null, { vista: 'checkout', carrito: carritoMouse });
     const { document, mensajes, click, dom } = montar(PLANTILLA_CHECKOUT, datos);
-    const tarjetas = document.querySelectorAll('[data-gesicomm-lista="checkout_recomendados"] .lv-shop-card');
-    expect([...tarjetas].map(t => t.querySelector('.lv-shop-title').textContent)).toEqual(['Teclado', 'Sartén']);
-    click('[data-gesicomm-lista="checkout_recomendados"] .lv-shop-card [data-gesicomm-agregar]');
+    const tarjetas = document.querySelectorAll('[data-gesicomm-lista="checkout_recomendados"] .lv-reco-card');
+    expect([...tarjetas].map(t => t.querySelector('.lv-reco-title').textContent)).toEqual(['Teclado', 'Sartén']);
+    expect(document.querySelector('[data-gesicomm-reco-carrusel]')).toBeTruthy();
+    expect(document.querySelector('[data-gesicomm-reco-prev]')).toBeTruthy();
+    expect(document.querySelector('[data-gesicomm-reco-next]')).toBeTruthy();
+    click('[data-gesicomm-lista="checkout_recomendados"] .lv-reco-card [data-gesicomm-agregar]');
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'teclado', abrir: false }));
+    dom.window.close();
+  });
+
+  it('los recomendados con imagen faltante muestran un fallback estable', () => {
+    const datos = datosRuntimePublico(
+      { catalogo_items: [mouse, { ...sarten, imagen: null }], content: {} },
+      'tienda',
+      null,
+      { vista: 'checkout', carrito: carritoMouse },
+    );
+    const { document, dom } = montar(PLANTILLA_CHECKOUT, datos);
+    const media = document.querySelector('[data-gesicomm-lista="checkout_recomendados"] .lv-reco-media');
+    expect(media.classList.contains('is-missing-image')).toBe(true);
+    expect(media.querySelector('img').style.display).toBe('none');
     dom.window.close();
   });
 
@@ -1883,6 +1944,31 @@ describe('checkout propio — order bumps, recomendados y resumen', () => {
     const { document, dom } = montar(PLANTILLA_CHECKOUT, datos);
     expect(document.querySelector('.lv-item .lv-item-qty').textContent.replace(/\s+/g, ' ').trim()).toMatch(/89\.000 x 1$/);
     expect(PLANTILLA_CHECKOUT.css).toContain('.lv-item-qty span{display:inline}');
+    dom.window.close();
+  });
+});
+
+describe('checkout propio — pedido confirmado', () => {
+  it('con el pedido creado muestra la confirmación con el número, no "carrito vacío"', () => {
+    const { document, dom } = montar(PLANTILLA_CHECKOUT, {
+      vista: 'checkout', tienda: { nombre: 'Mi Tienda' }, productos: [], producto: null, recomendados: [],
+      carrito: { cantidad: 0, subtotal: 0, total: 0, items: [] },
+      checkout_estado: { estado: 'confirmado', mensaje: 'Pedido 1234 confirmado.' },
+    });
+    expect(document.querySelector('[data-gesicomm-checkout-vacio]').style.display).toBe('none');
+    const ok = document.querySelector('[data-gesicomm-checkout-confirmado]');
+    expect(ok.style.display).toBe('');
+    expect(ok.querySelector('[data-gesicomm-checkout="mensaje"]').textContent).toBe('Pedido 1234 confirmado.');
+    dom.window.close();
+  });
+
+  it('sin pedido y sin productos sigue mostrando "carrito vacío"', () => {
+    const { document, dom } = montar(PLANTILLA_CHECKOUT, {
+      vista: 'checkout', tienda: {}, productos: [], producto: null, recomendados: [],
+      carrito: { cantidad: 0, subtotal: 0, total: 0, items: [] },
+    });
+    expect(document.querySelector('[data-gesicomm-checkout-vacio]').style.display).toBe('');
+    expect(document.querySelector('[data-gesicomm-checkout-confirmado]').style.display).toBe('none');
     dom.window.close();
   });
 });

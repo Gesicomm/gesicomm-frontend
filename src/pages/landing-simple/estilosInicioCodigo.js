@@ -337,24 +337,24 @@ body:has(.trust-bar[hidden]) .commerce-header[data-variante="embebido"] { top: 0
 .brand-badges { display: flex; flex-wrap: wrap; gap: 12px; }
 .brand-badge { border: 1px solid var(--line); border-radius: 999px; padding: 10px 17px; background: #fff; font-size: 14px; font-weight: 800; color: var(--navy); }
 /* @gc-seccion:__global (footer es fijo, no es un bloque editable de Inicio; los @media de abajo tocan varios bloques a la vez y quedan acá) */
-.site-footer { background: #fff; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+.site-footer { background: #fff; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 .site-footer .footer-top { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 36px; align-items: start; padding-top: 56px; padding-bottom: 40px; }
 .site-footer .footer-brand { display: flex; flex-direction: column; gap: 20px; }
 .site-footer .footer-brand-name { color: var(--navy); font-size: clamp(24px, 2.8vw, 32px); font-weight: 800; line-height: 1.1; }
 .site-footer .footer-col { display: flex; flex-direction: column; gap: 16px; }
-.site-footer .footer-col > strong { color: var(--navy); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.site-footer .footer-col > strong { color: var(--tienda-banda-texto, var(--gc-texto, var(--navy))); font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .footer-links { display: flex; flex-direction: column; gap: 12px; }
 .footer-links a:hover { color: var(--navy); }
 .footer-datos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .footer-datos li[data-gesicomm-tienda] { display: none; }
 .footer-datos li[data-gesicomm-tienda]:not(:empty) { display: block; }
-.footer-datos a:hover { color: var(--navy); }
-.footer-dato-nombre::before { content: "Atiende: "; font-weight: 800; color: var(--navy); }
-.footer-dato-whatsapp::before { content: "WhatsApp: "; font-weight: 800; color: var(--navy); }
-.footer-dato-tel::before { content: "Tel: "; font-weight: 800; color: var(--navy); }
-.footer-dato-email::before { content: "Email: "; font-weight: 800; color: var(--navy); }
-.footer-dato-direccion::before { content: "Dirección: "; font-weight: 800; color: var(--navy); }
-.footer-dato-horario::before { content: "Horario: "; font-weight: 800; color: var(--navy); }
+.footer-datos a:hover { color: inherit; opacity: 1; }
+.footer-dato-nombre::before { content: "Atiende: "; font-weight: 600; color: inherit; }
+.footer-dato-whatsapp::before { content: "WhatsApp: "; font-weight: 600; color: inherit; }
+.footer-dato-tel::before { content: "Tel: "; font-weight: 600; color: inherit; }
+.footer-dato-email::before { content: "Email: "; font-weight: 600; color: inherit; }
+.footer-dato-direccion::before { content: "Dirección: "; font-weight: 600; color: inherit; }
+.footer-dato-horario::before { content: "Horario: "; font-weight: 600; color: inherit; }
 .footer-redes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
 .site-footer .footer-bottom { border-top: 1px solid var(--line); padding: 20px 0 26px; text-align: center; }
 .site-footer .footer-bottom a { color: var(--navy); font-weight: 800; }

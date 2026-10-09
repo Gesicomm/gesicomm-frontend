@@ -691,6 +691,7 @@ function ventaRuntime(venta, catalogo = [], productoPreferido = null) {
     recomendados_titulo: venta.recomendados?.titulo || '',
     recomendados_subtitulo: venta.recomendados?.subtitulo || '',
     recomendados_cta: venta.recomendados?.cta_texto || '',
+    checkout_recomendados: venta.checkout_recomendados || {},
     paquetes: venta.paquetes || {},
     catalogo_filtros: venta.catalogo_filtros || {},
     urgencia,
@@ -733,13 +734,13 @@ function resumenCarritoRuntime(carrito = []) {
  * lateral (useStoreCart): el bump sale de las ofertas del producto que se
  * está comprando, nunca de uno que no está en el pedido.
  */
-function extrasCheckoutRuntime(catalogo, carrito = []) {
+function extrasCheckoutRuntime(catalogo, carrito = [], venta = null) {
   const items = Array.isArray(carrito) ? carrito : [];
   if (!items.length) return { bumps: [], recomendados: [] };
   const enCarrito = new Set(items.map(it => it.contentId));
   const ofertasEnCarrito = new Set(items.map(it => it.ofertaId).filter(Boolean).map(Number));
-  // Los que ya están en el pedido siguen en la lista, marcados: la casilla
-  // es la misma de la ficha y desmarcarla los quita.
+  // Si el bump ya está en el pedido, el resumen lo confirma. Repetirlo como
+  // oferta grande en el checkout duplicaba información y ensuciaba la compra.
   const bumps = [];
   items.forEach(it => {
     const producto = catalogo.find(p => p.id === it.contentId);
@@ -747,15 +748,41 @@ function extrasCheckoutRuntime(catalogo, carrito = []) {
       .filter(o => o.estrategia === 'order_bump')
       .forEach(o => {
         if (bumps.length >= 2 || bumps.some(b => b.id === o.id)) return;
+        if (ofertasEnCarrito.has(Number(o.id))) return;
         bumps.push({ ...o, content_id: producto.id, precio_antes: o.precio_normal || null, en_pedido: ofertasEnCarrito.has(Number(o.id)) });
       });
   });
+  const checkoutReco = venta?.checkout_recomendados || {};
+  if (checkoutReco.activo === false) return { bumps, recomendados: [] };
+  const max = Math.max(1, Math.min(12, Number(checkoutReco.max) || 4));
+  const itemsManuales = Array.isArray(checkoutReco.items) ? checkoutReco.items : [];
+  const idsManuales = itemsManuales
+    .map(item => (typeof item === 'object' ? (item.id || item.content_id || item.contentId) : item))
+    .filter(Boolean)
+    .map(String);
+  const preciosAntes = checkoutReco.precio_antes && typeof checkoutReco.precio_antes === 'object' ? checkoutReco.precio_antes : {};
+  if (idsManuales.length) {
+    const porId = new Map(catalogo.map(p => [String(p.id), p]));
+    const recomendados = idsManuales
+      .map(id => porId.get(String(id)))
+      .filter(p => p && p.tipo === 'producto' && !enCarrito.has(p.id) && !p.agotado)
+      .map(p => {
+        const precioAntes = Number(preciosAntes[p.id]) || Number(p.precio_antes) || null;
+        const precio = Number(p.precio) || 0;
+        return precioAntes && precioAntes > precio
+          ? { ...p, precio_antes: precioAntes, descuento_pct: Math.round((1 - precio / precioAntes) * 100) }
+          : p;
+      })
+      .slice(0, max);
+    return { bumps, recomendados };
+  }
+
   const categorias = new Set(items.map(it => catalogo.find(p => p.id === it.contentId)?.categoria).filter(Boolean));
   const candidatos = catalogo.filter(p => p.tipo === 'producto' && !enCarrito.has(p.id) && !p.agotado);
   const recomendados = [
     ...candidatos.filter(p => categorias.has(p.categoria)),
     ...candidatos.filter(p => !categorias.has(p.categoria)),
-  ].slice(0, 4);
+  ].slice(0, max);
   return { bumps, recomendados };
 }
 
@@ -772,7 +799,7 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
   const porPaginaCatalogo = paginacion.porPagina ?? paginacion.por_pagina ?? meta.porPagina ?? meta.por_pagina ?? 20;
   const totalPaginasCatalogo = paginacion.totalPaginas ?? paginacion.total_paginas ?? meta.totalPaginas ?? meta.total_paginas ?? 1;
   const extrasCheckout = opciones.vista === 'checkout'
-    ? extrasCheckoutRuntime(catalogo, opciones.carrito)
+    ? extrasCheckoutRuntime(catalogo, opciones.carrito, venta)
     : { bumps: [], recomendados: [] };
   return {
     vista: opciones.vista || (producto ? 'producto' : (categoriaActual ? 'categoria' : 'inicio')),
@@ -830,6 +857,18 @@ export function datosRuntimePreview({ productos = [], tienda, landing = null, ve
   const producto = vista === 'producto'
     ? (catalogo.find(i => i.id === productoId) || catalogo[0] || null)
     : null;
+  const carritoPreview = catalogo[0] ? [{
+    clave: 'preview',
+    tipo: catalogo[0].tipo,
+    contentId: catalogo[0].id,
+    nombre: catalogo[0].nombre,
+    precio: catalogo[0].precio,
+    cantidad: 1,
+    imagen: catalogo[0].imagen,
+  }] : [];
+  const extrasCheckout = vista === 'checkout'
+    ? extrasCheckoutRuntime(catalogo, carritoPreview, venta)
+    : { bumps: [], recomendados: [] };
   return {
     vista: producto ? 'producto' : vista || 'inicio',
     categoria: vista === 'categoria'
@@ -862,16 +901,10 @@ export function datosRuntimePreview({ productos = [], tienda, landing = null, ve
     paginas: { checkout: '#' },
     productos: catalogo,
     producto,
-    carrito: resumenCarritoRuntime(catalogo[0] ? [{
-      clave: 'preview',
-      tipo: catalogo[0].tipo,
-      contentId: catalogo[0].id,
-      nombre: catalogo[0].nombre,
-      precio: catalogo[0].precio,
-      cantidad: 1,
-      imagen: catalogo[0].imagen,
-    }] : []),
+    carrito: resumenCarritoRuntime(carritoPreview),
     checkout_estado: null,
+    checkout_bumps: extrasCheckout.bumps,
+    checkout_recomendados: extrasCheckout.recomendados,
     recomendados: recomendadosVista(catalogo, producto, venta),
     geografia: Array.isArray(geografia) ? geografia : [],
   };

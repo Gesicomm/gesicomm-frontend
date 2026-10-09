@@ -57,7 +57,7 @@ footer { background:var(--navy); color:#fff; padding:35px max(28px, calc((100% -
 .storefront .collection-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.storefront .collection-card{min-height:135px;border:0;border-radius:7px;color:#fff;display:flex;flex-direction:column;justify-content:end;padding:13px;background:linear-gradient(0deg,rgba(3,24,42,.76),rgba(3,24,42,.08)),var(--blue);background-size:cover;background-position:center}.storefront .collection-card h3{font-size:13px;margin:0}.storefront .collection-card p{font-size:10px;margin:4px 0 0;color:#fff}
 .storefront .combos-section{background:transparent}.storefront .faq-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 16px;max-width:none;border:0}.storefront .faq-item{background:#fff;border:1px solid var(--line);border-radius:7px;padding:0 14px}.storefront .faq-question{padding:15px 0;font-size:12px}.storefront .faq-answer p{font-size:11px}.storefront .contact-section{background:#fff;border:1px solid var(--line);border-radius:9px;padding:24px}.storefront .contact-layout{display:grid;grid-template-columns:.8fr 1.2fr;gap:40px}.storefront .contact-form{box-shadow:none;border-radius:8px}.storefront .benefit-strip{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px;gap:20px}.storefront .benefit-strip div{display:grid;grid-template-columns:26px 1fr;column-gap:10px;align-items:center}.storefront .benefit-strip strong{font-size:12px}.storefront .benefit-strip span{color:var(--muted);font-size:10px}
 .storefront .products-section{padding-top:30px}.catalog-toolbar{display:grid;grid-template-columns:1fr auto auto;gap:10px;margin-bottom:16px}.catalog-search,.catalog-select{height:41px;border:1px solid var(--line);border-radius:7px;background:#fff;padding:0 12px;color:var(--navy);font-size:11px}.pagination{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:24px}.button-secondary{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:5px;padding:8px 12px;font-size:10px;font-weight:700}
-.site-footer{background:var(--navy);color:#fff;padding:35px max(28px,calc((100% - 1184px)/2));font-size:11px}.site-footer .footer-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:32px}.site-footer .footer-links{display:flex;flex-direction:column;gap:9px}.site-footer a{color:#a9bdc9}.site-footer .footer-redes{align-content:start}.site-footer .footer-redes .gc-red{font-size:10px}
+.site-footer{background:var(--navy);color:#fff;padding:35px max(28px,calc((100% - 1184px)/2));font-size:14px}.site-footer .footer-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:32px}.site-footer .footer-links{display:flex;flex-direction:column;gap:9px}.site-footer a{color:#a9bdc9}.site-footer .footer-redes{align-content:start}.site-footer .footer-redes .gc-red{font-size:12px}
 @media(max-width:760px){.commerce-header .header-main{height:auto;padding:16px;gap:14px;flex-wrap:wrap}.search-box{order:3;flex-basis:100%}.commerce-header .main-nav{overflow:auto;padding:0 16px;gap:22px;white-space:nowrap}.commerce-header .nav-links{display:flex;gap:22px}.commerce-header .category-menu{display:none}.storefront .page-content{padding:12px 14px 35px}.storefront .hero{height:260px}.hero-banner{padding:25px 35px}.hero-text h2{font-size:30px}.storefront .category-grid{grid-template-columns:repeat(4,1fr)}.storefront .category-card:nth-child(n+5){display:none}.storefront .spotlight-grid,.storefront .product-grid,.storefront .compact-grid{grid-template-columns:repeat(2,1fr);gap:10px}.storefront .compact-grid .product-card{grid-template-columns:1fr}.storefront .product-image{height:135px}.storefront .faq-list{grid-template-columns:1fr}.storefront .collection-grid{grid-template-columns:repeat(2,1fr)}.storefront .limited-offer-card{display:grid}.storefront .countdown{margin-left:0}.storefront .contact-layout{grid-template-columns:1fr}.catalog-toolbar{grid-template-columns:1fr}.site-footer .footer-row{grid-template-columns:1fr}.storefront .benefit-strip{grid-template-columns:1fr}}
 @media(max-width:420px){.hero-text h2{font-size:25px}.storefront .product-image{height:120px}}
 `;
@@ -192,23 +192,23 @@ h1, h2, h3, p { margin-top: 0; }
 .gc-product-shipping { color: rgba(255,255,255,.72); }
 .gc-commercial-details { width: fit-content; margin-top: 10px; padding: 0; color: #fff; background: transparent; border: 0; font-size: .82rem; font-weight: 850; cursor: pointer; }
 
-.site-footer { padding: 56px 0 0; color: #94a3b1; background: #0a1520; font-size: .78rem; }
+.site-footer { padding: 56px 0 0; color: #94a3b1; background: #0a1520; font-size: .9rem; }
 .footer-top { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 36px; align-items: start; padding-bottom: 40px; }
 .footer-brand { display: flex; flex-direction: column; gap: 20px; }
 .footer-brand-name { color: var(--white); font-size: clamp(24px, 2.8vw, 32px); font-weight: 900; line-height: 1.1; }
 .footer-col { display: flex; flex-direction: column; gap: 16px; }
-.footer-col > strong { color: var(--white); font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.footer-col > strong { color: var(--white); font-size: .82rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .footer-links { display: flex; flex-direction: column; gap: 12px; }
 .footer-links a:hover { color: var(--white); }
 .footer-datos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .footer-datos li[data-gesicomm-tienda] { display: none; }
 .footer-datos li[data-gesicomm-tienda]:not(:empty) { display: block; }
-.footer-dato-nombre::before { content: "Atiende: "; font-weight: 700; color: var(--white); opacity: .85; }
-.footer-dato-whatsapp::before { content: "WhatsApp: "; font-weight: 700; color: var(--white); opacity: .85; }
-.footer-dato-tel::before { content: "Tel: "; font-weight: 700; color: var(--white); opacity: .85; }
-.footer-dato-email::before { content: "Email: "; font-weight: 700; color: var(--white); opacity: .85; }
-.footer-dato-direccion::before { content: "Dirección: "; font-weight: 700; color: var(--white); opacity: .85; }
-.footer-dato-horario::before { content: "Horario: "; font-weight: 700; color: var(--white); opacity: .85; }
+.footer-dato-nombre::before { content: "Atiende: "; font-weight: 600; color: inherit; opacity: 1; }
+.footer-dato-whatsapp::before { content: "WhatsApp: "; font-weight: 600; color: inherit; opacity: 1; }
+.footer-dato-tel::before { content: "Tel: "; font-weight: 600; color: inherit; opacity: 1; }
+.footer-dato-email::before { content: "Email: "; font-weight: 600; color: inherit; opacity: 1; }
+.footer-dato-direccion::before { content: "Dirección: "; font-weight: 600; color: inherit; opacity: 1; }
+.footer-dato-horario::before { content: "Horario: "; font-weight: 600; color: inherit; opacity: 1; }
 .footer-redes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
 .footer-redes .gc-red { padding: 6px 12px; color: #dbe4ec; border: 1px solid rgba(255, 255, 255, .18); border-radius: 999px; font-weight: 700; transition: border-color .2s ease, color .2s ease; }
 .footer-redes .gc-red:hover { color: var(--white); border-color: var(--brand); }
@@ -2248,23 +2248,40 @@ a{color:inherit;text-decoration:none}
 .lv-pages{display:flex;justify-content:center;align-items:center;gap:10px}
 .lv-pages button{border:1px solid var(--lv-line);background:var(--lv-surface);border-radius:7px;padding:10px 12px;font-weight:800}
 .lv-pages button:disabled{opacity:.45;cursor:not-allowed}
-.lv-checkout-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:14px}
+.lv-checkout-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}
 .lv-steps{display:flex;align-items:center;gap:8px;color:var(--lv-muted);font-size:12px;font-weight:800;white-space:nowrap}
 .lv-dot{width:8px;height:8px;border-radius:99px;background:var(--gc-primario)}
-.lv-checkout-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:24px;align-items:start}
-.lv-shell[data-gesicomm-base="checkout"] .commerce-header .container,.lv-shell[data-gesicomm-base="checkout"] .lv-page{max-width:1440px}
-.lv-shell[data-gesicomm-base="checkout"] .lv-page{padding:20px 18px 40px}
+.lv-checkout-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+.lv-shell[data-gesicomm-base="checkout"]{--max:1120px;background:color-mix(in srgb,var(--gc-fondo,#071015) 96%,#000)}
+.lv-shell[data-gesicomm-base="checkout"] .commerce-header .container,
+.lv-shell[data-gesicomm-base="checkout"] .lv-page{width:min(calc(100% - 36px),1120px);max-width:1120px}
+.lv-shell[data-gesicomm-base="checkout"] .commerce-header .container{padding-left:0;padding-right:0}
+.lv-shell[data-gesicomm-base="checkout"] .lv-page{padding:16px 0 32px}
 .lv-panel{background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);box-shadow:0 16px 38px rgba(16,32,29,.07)}
+.lv-shell[data-gesicomm-base="checkout"] .lv-panel{background:color-mix(in srgb,var(--lv-surface) 88%,transparent);border-color:color-mix(in srgb,var(--lv-line) 60%,transparent);border-radius:8px;box-shadow:0 18px 44px rgba(0,0,0,.13)}
 .lv-form{padding:16px;display:grid;gap:12px}
 .lv-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .lv-form .lv-wide{grid-column:1/-1}
-.lv-form textarea{min-height:86px;resize:vertical}
+.lv-form textarea{min-height:54px;resize:vertical}
+.lv-shell[data-gesicomm-base="checkout"] .lv-field{gap:5px}
+.lv-shell[data-gesicomm-base="checkout"] .lv-field span{font-size:12px;letter-spacing:.01em}
+.lv-shell[data-gesicomm-base="checkout"] .lv-field input,.lv-shell[data-gesicomm-base="checkout"] .lv-field select,.lv-shell[data-gesicomm-base="checkout"] .lv-field textarea{min-height:46px;padding:10px 12px;background:color-mix(in srgb,var(--lv-soft) 52%,var(--lv-surface));border-color:color-mix(in srgb,var(--lv-line) 72%,transparent)}
+.lv-shell[data-gesicomm-base="checkout"] .lv-pay-options{grid-template-columns:1fr 1fr;gap:8px}
+.lv-shell[data-gesicomm-base="checkout"] .lv-pay-option{padding:11px 12px;border-width:1px;border-radius:8px;background:color-mix(in srgb,var(--lv-soft) 38%,var(--lv-surface));box-shadow:none}
+.lv-shell[data-gesicomm-base="checkout"] .lv-pay-option-copy strong{font-size:14px}
+.lv-shell[data-gesicomm-base="checkout"] .lv-pay-option-copy small{font-size:12px}
 .lv-message{min-height:18px;margin:0;color:var(--tienda-destacado,var(--gc-primario));font-size:13px;font-weight:750}
-.lv-summary{position:sticky;top:86px;padding:14px}
-.lv-summary h2{margin:0 0 8px;font-size:19px}
-.lv-items{display:grid;gap:6px}
-.lv-item{display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--lv-line)}
-.lv-item img{grid-column:1;width:50px;height:50px;object-fit:cover;border-radius:7px;background:var(--lv-soft)}
+.lv-submit{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;margin-top:2px;border-radius:8px;font-size:15px;font-weight:950;box-shadow:0 14px 26px color-mix(in srgb,var(--gc-primario) 24%,transparent)}
+.lv-submit strong{font-size:15px;color:inherit}
+.lv-submit-label--contra,.lv-submit-note--contra{display:none}
+.lv-form:has(input[name="payment_method"][value="contra_entrega"]:checked) .lv-submit-label--online,.lv-form:has(input[name="payment_method"][value="contra_entrega"]:checked) .lv-submit-note--online{display:none}
+.lv-form:has(input[name="payment_method"][value="contra_entrega"]:checked) .lv-submit-label--contra,.lv-form:has(input[name="payment_method"][value="contra_entrega"]:checked) .lv-submit-note--contra{display:inline}
+.lv-submit-note{margin:-2px 0 0;color:var(--lv-muted);font-size:12px;text-align:center}
+.lv-summary{position:sticky;top:86px;padding:16px}
+.lv-summary h2{margin:0 0 14px;font-size:21px}
+.lv-items{display:grid;gap:8px}
+.lv-item{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid color-mix(in srgb,var(--lv-line) 62%,transparent)}
+.lv-item img{grid-column:1;width:48px;height:48px;object-fit:cover;border-radius:7px;background:var(--lv-soft)}
 /* Columnas fijas: si una fila no tiene imagen (el runtime oculta el <img>),
    el texto sigue en su columna en vez de correrse a la de 50px. */
 .lv-item-info{grid-column:2;min-width:0}
@@ -2272,48 +2289,84 @@ a{color:inherit;text-decoration:none}
 .lv-item strong{display:block;font-size:13px;line-height:1.25;overflow-wrap:anywhere}
 .lv-item small{display:block;color:var(--lv-muted);font-size:12px;margin-top:3px}
 .lv-item-qty span{display:inline}
-.lv-item b{font-size:13px;white-space:nowrap}
+.lv-item b{font-size:13px;white-space:nowrap;color:var(--gc-texto)}
 ${BUMP_CSS}
 .lv-checkout-bumps{margin:10px 0 0}
-.lv-checkout-bumps .bump-body{padding:10px}
-.lv-cupon{margin-top:10px}
+.lv-checkout-bumps .bump{min-width:0;box-shadow:none;border-radius:8px;border-color:color-mix(in srgb,var(--gc-primario) 38%,var(--lv-line));background:color-mix(in srgb,var(--gc-primario) 8%,var(--lv-surface))}
+.lv-checkout-bumps .bump-flag{padding:6px 10px;font-size:.62rem;letter-spacing:.03em;background:transparent;color:var(--gc-primario)}
+.lv-checkout-bumps .bump-body{grid-template-columns:22px 48px minmax(0,1fr);gap:8px;padding:9px 10px 11px}
+.lv-checkout-bumps .bump-control{width:22px;height:22px}
+.lv-checkout-bumps .bump-img{width:48px;height:48px;border-radius:8px}
+.lv-checkout-bumps .bump-sub{font-size:.7rem}
+.lv-checkout-bumps .bump-title{font-size:.78rem;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lv-checkout-bumps .bump-prices b{font-size:.86rem}
+.lv-checkout-bumps .bump-prices s{font-size:.72rem}
+.lv-checkout-bumps .bump-action{min-height:30px;padding:7px 10px;font-size:.72rem}
+.lv-cupon{margin-top:16px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--lv-line) 48%,transparent)}
 .lv-cupon-form{display:flex;gap:8px}
-.lv-cupon-input{flex:1;min-width:0;min-height:38px;padding:0 12px;border:1px solid var(--lv-line);border-radius:8px;background:var(--lv-surface);color:var(--gc-texto);font-size:13px;outline:none}
+.lv-cupon-input{flex:1;min-width:0;min-height:38px;padding:0 12px;border:1px solid color-mix(in srgb,var(--lv-line) 72%,transparent);border-radius:8px;background:color-mix(in srgb,var(--lv-soft) 48%,var(--lv-surface));color:var(--gc-texto);font-size:13px;outline:none}
 .lv-cupon-input:focus{border-color:var(--gc-primario)}
-.lv-cupon-aplicar{flex:none;min-height:38px;padding:0 14px;border:0;border-radius:8px;background:var(--gc-primario);color:var(--gc-texto-sobre-primario);font-size:12px;font-weight:850;white-space:nowrap}
+.lv-cupon-aplicar{flex:none;min-height:38px;padding:0 14px;border:0;border-radius:8px;background:color-mix(in srgb,var(--gc-primario) 84%,#0f172a);color:var(--gc-texto-sobre-primario);font-size:12px;font-weight:850;white-space:nowrap}
 .lv-cupon-aplicar:disabled{opacity:.6}
 .lv-cupon-aplicado{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px dashed color-mix(in srgb,var(--gc-primario) 45%,var(--lv-line));border-radius:8px;background:color-mix(in srgb,var(--gc-primario) 9%,var(--lv-surface));font-size:12px;color:var(--lv-muted)}
 .lv-cupon-aplicado strong{color:var(--gc-texto)}
 .lv-cupon-quitar{flex:none;border:0;background:transparent;color:var(--gc-primario);font-size:12px;font-weight:800;text-decoration:underline;cursor:pointer}
 .lv-cupon-error{min-height:0;margin:6px 0 0;color:#b42318;font-size:12px;display:none}
-.lv-checkout-reco{--shop-text:#10201d;--shop-muted:#62706b;--shop-soft:#f6f8f4;--shop-accent:var(--gc-primario,#143f3a);margin-top:18px}
-.lv-checkout-reco h2{margin:0 0 10px;font-size:18px}
-.lv-checkout-reco .lv-shop-grid{gap:16px 14px}
-.lv-checkout-reco .lv-shop-card-body{padding-top:9px;gap:5px}
-.lv-total{display:grid;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--lv-line)}
+.lv-checkout-reco{margin-top:22px;min-width:0;max-width:100%;overflow:hidden}
+.lv-checkout-reco-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px;min-width:0}
+.lv-reco-kicker{margin:0 0 4px;color:var(--tienda-destacado,var(--gc-primario));font-size:11px;font-weight:950;text-transform:uppercase}
+.lv-checkout-reco h2{margin:0;color:var(--gc-texto);font-size:clamp(30px,3.2vw,42px);line-height:1.03;font-weight:950;letter-spacing:0}
+.lv-reco-subtitle{max-width:620px;margin:8px 0 0;color:var(--lv-muted);font-size:14px;line-height:1.45}
+.lv-reco-controls{display:flex;gap:8px;align-items:center;flex:none}
+.lv-reco-controls[hidden]{display:none!important}
+.lv-reco-arrow{display:inline-grid;place-items:center;width:38px;height:38px;border:1px solid color-mix(in srgb,var(--lv-line) 68%,transparent);border-radius:999px;background:color-mix(in srgb,var(--lv-surface) 88%,transparent);color:var(--gc-texto);font-size:25px;line-height:1;cursor:pointer;box-shadow:0 10px 22px rgba(0,0,0,.1);transition:transform .18s ease,border-color .18s ease,background .18s ease}
+.lv-reco-arrow:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--gc-primario) 55%,var(--lv-line));background:color-mix(in srgb,var(--gc-primario) 10%,var(--lv-surface))}
+.lv-reco-arrow:disabled{opacity:.42;cursor:default;transform:none;box-shadow:none}
+.lv-reco-arrow:disabled:hover{transform:none;border-color:color-mix(in srgb,var(--lv-line) 68%,transparent);background:color-mix(in srgb,var(--lv-surface) 88%,transparent)}
+.lv-reco-list{display:flex;width:100%;max-width:100%;min-width:0;gap:14px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;padding:0;margin:0}
+.lv-reco-list::-webkit-scrollbar{display:none}
+.lv-reco-card{display:grid;grid-template-rows:auto 1fr;gap:12px;flex:0 0 calc((100% - 42px)/4);max-width:calc((100% - 42px)/4);min-width:0;padding:10px;background:color-mix(in srgb,var(--lv-surface) 90%,transparent);border:1px solid color-mix(in srgb,var(--lv-line) 58%,transparent);border-radius:8px;box-shadow:0 12px 28px rgba(0,0,0,.09);scroll-snap-align:start;scroll-snap-stop:always}
+.lv-reco-media{position:relative;display:grid;place-items:center;aspect-ratio:1/1;width:100%;background:color-mix(in srgb,var(--lv-soft) 78%,var(--lv-surface));border-radius:8px;overflow:hidden;cursor:pointer}
+.lv-reco-media img{width:100%;height:100%;object-fit:contain;padding:14px}
+.lv-reco-media.is-missing-image{border:1px dashed color-mix(in srgb,var(--lv-line) 75%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--lv-soft) 84%,var(--lv-surface)),color-mix(in srgb,var(--lv-surface) 92%,var(--gc-primario)))}
+.lv-reco-media.is-missing-image img{display:none!important}
+.lv-reco-media.is-missing-image::before{content:"Sin imagen";display:grid;place-items:center;width:calc(100% - 28px);height:calc(100% - 28px);border-radius:7px;color:var(--lv-muted);font-size:12px;font-weight:850;text-transform:uppercase;background:color-mix(in srgb,var(--lv-surface) 62%,transparent)}
+.lv-reco-badge{position:absolute;left:8px;top:8px;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:5px;background:var(--gc-primario);color:var(--gc-texto-sobre-primario);padding:4px 6px;font-size:9px;font-weight:900}
+.lv-reco-body{display:grid;grid-template-rows:auto minmax(42px,auto) auto auto;gap:6px;min-width:0}
+.lv-reco-category{min-height:0;color:var(--lv-muted);font-size:10px;font-weight:850;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lv-reco-title{margin:0;color:var(--gc-texto);font-size:14px;line-height:1.25;font-weight:850;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+.lv-reco-prices{display:flex;align-items:baseline;gap:6px;min-width:0}
+.lv-reco-price{color:var(--gc-texto);font-size:17px;font-weight:950;white-space:nowrap}
+.lv-reco-old{color:var(--lv-muted);font-size:10px;text-decoration:line-through;white-space:nowrap}
+.lv-reco-card .lv-primary{justify-self:stretch;width:100%;min-height:40px;margin-top:4px;border-radius:7px;padding:10px 14px;font-size:12px;box-shadow:none}
+@media(max-width:1100px){.lv-reco-card{flex-basis:calc((100% - 28px)/3);max-width:calc((100% - 28px)/3)}}
+@media(max-width:760px){.lv-checkout-reco-head{align-items:start}.lv-reco-card{flex-basis:calc((100% - 14px)/2);max-width:calc((100% - 14px)/2)}}
+@media(max-width:560px){.lv-checkout-reco-head{gap:12px}.lv-checkout-reco h2{font-size:clamp(28px,9vw,36px)}.lv-reco-card{flex-basis:82%;max-width:82%}}
+.lv-total{display:grid;gap:9px;margin-top:16px;padding-top:16px;border-top:1px solid color-mix(in srgb,var(--lv-line) 64%,transparent)}
 .lv-total-row{display:flex;align-items:center;justify-content:space-between;gap:14px;color:var(--lv-muted)}
 .lv-total-row--descuento b{color:#1c7a4d}
-.lv-total-row strong{color:var(--gc-texto);font-size:22px}
+.lv-total-row:last-child{margin-top:4px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--lv-line) 64%,transparent);color:var(--gc-texto)}
+.lv-total-row strong{color:var(--gc-texto);font-size:28px;line-height:1}
 .lv-empty-checkout{max-width:620px;margin:42px auto;text-align:center;background:var(--lv-surface);border:1px dashed var(--lv-line);border-radius:var(--lv-radius);padding:34px;box-shadow:0 16px 38px rgba(16,32,29,.06)}
 .lv-empty-checkout h1{margin:0;color:var(--gc-texto);font-size:32px}.lv-empty-checkout p{color:var(--lv-muted);line-height:1.6}
-.site-footer{border-top:1px solid var(--lv-line);background:var(--lv-surface);color:var(--lv-muted);font-size:13px}
+.site-footer{border-top:1px solid var(--lv-line);background:var(--lv-surface);color:var(--lv-muted);font-size:14px}
 .site-footer .container{max-width:1180px;margin:0 auto;padding:0 18px}
 .footer-top{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:36px;align-items:start;padding:56px 0 40px}
 .footer-brand{display:flex;flex-direction:column;gap:20px}
 .footer-brand-name{color:var(--gc-texto);font-size:clamp(24px,2.8vw,32px);font-weight:800;line-height:1.1}
 .footer-col{display:flex;flex-direction:column;gap:16px}
-.footer-col>strong{color:var(--gc-texto);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.footer-col>strong{color:var(--gc-texto);font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .footer-links{display:flex;flex-direction:column;gap:12px}
 .footer-links a:hover,.footer-datos a:hover{color:var(--gc-texto)}
 .footer-datos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
 .footer-datos li[data-gesicomm-tienda]{display:none}
 .footer-datos li[data-gesicomm-tienda]:not(:empty){display:block}
-.footer-dato-nombre::before{content:"Atiende: ";font-weight:800;color:var(--gc-texto)}
-.footer-dato-whatsapp::before{content:"WhatsApp: ";font-weight:800;color:var(--gc-texto)}
-.footer-dato-tel::before{content:"Tel: ";font-weight:800;color:var(--gc-texto)}
-.footer-dato-email::before{content:"Email: ";font-weight:800;color:var(--gc-texto)}
-.footer-dato-direccion::before{content:"Dirección: ";font-weight:800;color:var(--gc-texto)}
-.footer-dato-horario::before{content:"Horario: ";font-weight:800;color:var(--gc-texto)}
+.footer-dato-nombre::before{content:"Atiende: ";font-weight:600;color:inherit}
+.footer-dato-whatsapp::before{content:"WhatsApp: ";font-weight:600;color:inherit}
+.footer-dato-tel::before{content:"Tel: ";font-weight:600;color:inherit}
+.footer-dato-email::before{content:"Email: ";font-weight:600;color:inherit}
+.footer-dato-direccion::before{content:"Dirección: ";font-weight:600;color:inherit}
+.footer-dato-horario::before{content:"Horario: ";font-weight:600;color:inherit}
 .footer-redes{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
 .footer-bottom{border-top:1px solid var(--lv-line);padding:20px 0 26px;text-align:center}
 .footer-bottom a{color:var(--gc-texto);font-weight:800}
@@ -2373,7 +2426,7 @@ ${BUMP_CSS}
 .lv-shop-old{color:var(--shop-muted);font-size:12px;text-decoration:line-through}
 .lv-shop-card .lv-primary{width:100%;min-height:46px;margin-top:8px;border-radius:8px;background:var(--shop-accent);color:#fff;box-shadow:none}
 .lv-stock-note{color:var(--shop-muted);font-size:11px}
-@media(max-width:920px){.commerce-header .header-main{align-items:flex-start;flex-wrap:wrap;padding:14px 0}.commerce-header .brand-column{flex:1 1 auto}.commerce-header .header-nav{display:none;position:absolute;left:20px;right:20px;top:calc(100% + 1px);z-index:75;order:3;flex-basis:100%;justify-content:flex-start;flex-direction:column;align-items:stretch;gap:0;padding:10px;background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 45px rgba(8,41,71,.16)}.commerce-header .header-nav.is-open{display:flex}.commerce-header .nav-links{display:flex;flex-direction:column;align-items:stretch;gap:0}.commerce-header .nav-links a{padding:11px 12px}.commerce-header .menu-toggle{display:inline-flex}.lv-hero,.lv-checkout-head{display:grid}.lv-metrics{grid-template-columns:1fr 1fr}.lv-toolbar,.lv-checkout-grid{grid-template-columns:1fr}.lv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lv-summary{position:static}.lv-form-grid{grid-template-columns:1fr}.lv-shop-layout{grid-template-columns:1fr}.lv-filters{position:static}.lv-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:920px){.commerce-header .header-main{align-items:flex-start;flex-wrap:wrap;padding:14px 0}.commerce-header .brand-column{flex:1 1 auto}.commerce-header .header-nav{display:none;position:absolute;left:20px;right:20px;top:calc(100% + 1px);z-index:75;order:3;flex-basis:100%;justify-content:flex-start;flex-direction:column;align-items:stretch;gap:0;padding:10px;background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 45px rgba(8,41,71,.16)}.commerce-header .header-nav.is-open{display:flex}.commerce-header .nav-links{display:flex;flex-direction:column;align-items:stretch;gap:0}.commerce-header .nav-links a{padding:11px 12px}.commerce-header .menu-toggle{display:inline-flex}.lv-hero,.lv-checkout-head{display:grid}.lv-metrics{grid-template-columns:1fr 1fr}.lv-toolbar,.lv-checkout-grid{grid-template-columns:1fr}.lv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lv-summary{position:static}.lv-form-grid{grid-template-columns:1fr}.lv-shell[data-gesicomm-base="checkout"] .lv-pay-options{grid-template-columns:1fr}.lv-shop-layout{grid-template-columns:1fr}.lv-filters{position:static}.lv-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:920px){.commerce-header.menu-open:before{position:fixed;inset:0;z-index:990;background:rgba(2,6,23,.46);content:""}.commerce-header .header-nav{position:fixed;left:0;top:0;bottom:0;right:auto;width:min(84vw,320px);max-width:calc(100vw - 54px);min-height:100vh;display:flex;flex-basis:auto;order:initial;justify-content:flex-start;flex-direction:column;align-items:stretch;gap:0;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 22px;background:var(--white);border:0;border-right:1px solid var(--line);border-radius:0;box-shadow:0 24px 60px rgba(8,41,71,.24);transform:translateX(-105%);transition:transform .22s ease;z-index:1000}.commerce-header .header-nav.is-open{transform:translateX(0)}.commerce-header .header-nav .nav-links{width:100%;display:flex;flex-direction:column;align-items:stretch;gap:0}.commerce-header .header-nav .nav-links a{width:100%;padding:14px 12px;border-bottom:1px solid var(--line);white-space:normal}.commerce-header .menu-toggle{display:inline-flex}}
 @media(max-width:560px){.commerce-header .container{width:min(calc(100% - 28px),1180px)}.commerce-header .category-menu-wrap{display:none}.commerce-header .cart-button strong{display:none}.lv-header-inner{align-items:flex-start}.lv-nav{width:100%;justify-content:flex-start}.lv-grid,.lv-shop-grid{grid-template-columns:1fr}.lv-metrics{grid-template-columns:1fr}.lv-title{font-size:34px}.lv-page{padding-top:24px}.lv-topbar-inner{justify-content:flex-start}.lv-results-head{grid-template-columns:1fr}.lv-filter-row{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.announcement-track{animation:none;transform:none}}
@@ -2546,7 +2599,7 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
             <span>Documento</span>
             <input name="documento" autocomplete="off">
           </label>
-          <label class="lv-field lv-wide">
+          <label class="lv-field">
             <span>Direccion</span>
             <input name="direccion" autocomplete="street-address" required>
           </label>
@@ -2574,7 +2627,15 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
             <textarea name="notas" rows="3" placeholder="Referencia de entrega, horario preferido u otra aclaracion"></textarea>
           </label>
         </div>
-        <button class="lv-primary" type="submit">Confirmar pedido - <span data-gesicomm-checkout="total"></span></button>
+        <button class="lv-primary lv-submit" type="submit">
+          <span class="lv-submit-label lv-submit-label--online">Continuar al pago</span>
+          <span class="lv-submit-label lv-submit-label--contra">Confirmar pedido</span>
+          <strong data-gesicomm-checkout="total"></strong>
+        </button>
+        <p class="lv-submit-note">
+          <span class="lv-submit-note--online">Despues de completar tus datos, vas al medio de pago seguro.</span>
+          <span class="lv-submit-note--contra">La tienda recibe tu pedido y coordina la entrega.</span>
+        </p>
         <p class="lv-message" data-gesicomm-checkout="mensaje"></p>
       </form>
 
@@ -2641,22 +2702,32 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
     </section>
 
     <section class="lv-checkout-reco" data-gesicomm-lista="checkout_recomendados">
-      <h2>También te puede interesar</h2>
-      <div class="lv-shop-grid">
+      <div class="lv-checkout-reco-head">
+        <div>
+          <p class="lv-reco-kicker" data-gesicomm-venta="checkout_recomendados_kicker">Antes de cerrar</p>
+          <h2 data-gesicomm-venta="checkout_recomendados_titulo">También te puede interesar</h2>
+          <p class="lv-reco-subtitle" data-gesicomm-venta="checkout_recomendados_subtitulo"></p>
+        </div>
+        <div class="lv-reco-controls" aria-label="Mover productos recomendados">
+          <button class="lv-reco-arrow" type="button" data-gesicomm-reco-prev aria-label="Producto recomendado anterior">‹</button>
+          <button class="lv-reco-arrow" type="button" data-gesicomm-reco-next aria-label="Siguiente producto recomendado">›</button>
+        </div>
+      </div>
+      <div class="lv-reco-list" data-gesicomm-reco-carrusel>
         <template>
-          <article class="lv-shop-card">
-            <div class="lv-shop-media" data-gesicomm-ver>
-              <span class="lv-shop-badge" data-gesicomm-bind="descuento"></span>
+          <article class="lv-reco-card">
+            <div class="lv-reco-media" data-gesicomm-ver>
+              <span class="lv-reco-badge" data-gesicomm-bind="descuento"></span>
               <img data-gesicomm-bind="imagen" alt="" loading="lazy">
             </div>
-            <div class="lv-shop-card-body">
-              <div class="lv-shop-category" data-gesicomm-bind="categoria"></div>
-              <h3 class="lv-shop-title" data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
-              <div class="lv-shop-prices">
-                <strong class="lv-shop-price" data-gesicomm-bind="precio"></strong>
-                <span class="lv-shop-old" data-gesicomm-bind="precio_antes"></span>
+            <div class="lv-reco-body">
+              <div class="lv-reco-category" data-gesicomm-bind="categoria"></div>
+              <h3 class="lv-reco-title" data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+              <div class="lv-reco-prices">
+                <strong class="lv-reco-price" data-gesicomm-bind="precio"></strong>
+                <span class="lv-reco-old" data-gesicomm-bind="precio_antes"></span>
               </div>
-              <button class="lv-primary" type="button" data-gesicomm-agregar>Agregar al pedido</button>
+              <button class="lv-primary" type="button" data-gesicomm-agregar data-gesicomm-venta="checkout_recomendados_cta">Agregar</button>
             </div>
           </article>
         </template>
@@ -2668,6 +2739,16 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
       <h1>Tu pedido todavia no tiene productos</h1>
       <p>Volve al catalogo, elegi lo que queres comprar y despues finaliza el checkout desde esta vista.</p>
       <a class="lv-primary" href="/catalogo" data-gesicomm-link="catalogo">Ver catalogo</a>
+    </section>
+
+    <!-- Pedido creado: el carrito ya quedó vacío, así que sin esto se veía
+         "Tu pedido todavia no tiene productos" en vez de la confirmación. -->
+    <section class="lv-empty-checkout" data-gesicomm-checkout-confirmado style="display:none">
+      <p class="lv-kicker">Pedido confirmado</p>
+      <h1>¡Gracias por tu compra!</h1>
+      <p data-gesicomm-checkout="mensaje"></p>
+      <p>La tienda se va a comunicar con vos para coordinar la entrega.</p>
+      <a class="lv-primary" href="/catalogo" data-gesicomm-link="catalogo">Seguir comprando</a>
     </section>
   </main>
 
@@ -2691,6 +2772,25 @@ export function plantillaInicioPara(tipo) {
 export function formatoDeBase(html) {
   const m = String(html || '').match(/data-gesicomm-base="([a-z_]+)"/);
   return m ? m[1] : null;
+}
+
+/**
+ * Un inicio base que el comercio ya retocó (p. ej. una sección rediseñada
+ * con "Diseño (código) de esta sección") sigue llevando data-gesicomm-base
+ * — de esa marca cuelgan estilos —, pero ya no es "la base": la vista previa
+ * no lo puede cambiar por la plantilla limpia ni el guardado pisarlo.
+ */
+export const MARCA_PERSONALIZADO = 'data-gesicomm-personalizado';
+
+export function marcarPersonalizado(html) {
+  const texto = String(html || '');
+  if (texto.includes(MARCA_PERSONALIZADO) || !formatoDeBase(texto)) return texto;
+  return texto.replace('data-gesicomm-base="', `${MARCA_PERSONALIZADO} data-gesicomm-base="`);
+}
+
+/** Base de Gesicomm tal cual salió de la plantilla (sin retoques del comercio). */
+export function esBaseIntacta(html) {
+  return !!formatoDeBase(html) && !String(html || '').includes(MARCA_PERSONALIZADO);
 }
 
 /** Detecta fichas PDP base de Gesicomm guardadas antes de la base nueva. */
@@ -2745,8 +2845,6 @@ const PRODUCTO_CSS_GENERICO = PRODUCTO_CSS
 
 export const PLANTILLA_PRODUCTO = { html: PRODUCTO_HTML_GENERICO, css: PRODUCTO_CSS_GENERICO, js: JS_COMUN };
 export const PLANTILLA_PRODUCTO_SUPLEMENTOS = { html: PRODUCTO_HTML, css: PRODUCTO_CSS, js: JS_COMUN };
-
-
 
 
 

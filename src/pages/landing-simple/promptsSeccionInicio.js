@@ -34,6 +34,14 @@ El logo va con <img data-gesicomm-tienda="logo" alt=""> y el nombre con <span da
 const REGLAS_CALIDAD = `## Calidad
 Mobile first (la mayoría entra desde Instagram/Facebook en el celular). Español de Paraguay con voseo ("elegí", "comprá"), moneda en guaraníes ("Gs 145.735", sin decimales — el runtime ya formatea los precios, vos no escribas el número). Accesible: contraste AA, botones reales (<button>), foco visible. No inventes testimonios, cifras, garantías ni certificaciones que no estén en los datos reales de abajo.`;
 
+// Las clases de la plantilla base (.trust-card, .product-card, .hero-banner…)
+// tienen estilos de tema globales con !important (construirDocumentoCodigo):
+// si la IA las conserva, sus colores nunca se ven. Lo que conecta con los
+// datos son los atributos data-gesicomm-*, no las clases.
+const REGLAS_CLASES = `## Clases CSS (obligatorio)
+Renombrá TODAS las clases del código base con un prefijo propio de este bloque (por ejemplo .blq-seccion__tarjeta) y escribí tu CSS solo para esas clases nuevas. Las clases originales (.trust-card, .product-card, .hero-banner, .section, etc.) tienen estilos de tema globales con !important: si las dejás, tus colores y fondos no se van a ver. Lo que conecta el bloque con los datos son los atributos data-gesicomm-*, no las clases: esos sí, mantenelos tal cual.
+El CSS base puede usar variables viejas (--navy, --sky, --muted, --home-superficie): reemplazalas por las de la sección "Colores".`;
+
 const FORMATO_RESPUESTA = `## Formato de tu respuesta (recién cuando ya tengas la respuesta del comercio)
 Devolvé el HTML de este bloque nomás (el mismo elemento raíz, con su data-gesicomm-bloque) y su CSS, en dos bloques de código: \`\`\`html y \`\`\`css. Si hace falta JavaScript propio de este bloque (poco común), agregalo en un tercer bloque \`\`\`js. Sin explicaciones entre medio.`;
 
@@ -115,6 +123,8 @@ ${def.queConstruir}
 ${def.listas}
 
 ${REGLAS_COLOR}
+
+${REGLAS_CLASES}
 
 ${REGLAS_CALIDAD}
 

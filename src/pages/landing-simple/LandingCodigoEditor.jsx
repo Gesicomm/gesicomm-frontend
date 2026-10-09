@@ -16,7 +16,7 @@ import PhonePreviewShell from './PhonePreviewShell';
 import ConfigurarVentaCodigo, { aplicarReglaVenta } from './ConfigurarVentaCodigo';
 import { urlPublicaLanding } from './urlPublicaLanding';
 import { datosRuntimePreview, contentIdPanel, PAGINAS_TIENDA } from './datosRuntime';
-import { PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, plantillaInicioPara, formatoDeBase, esFichaProductoBase } from './plantillasBaseCodigo';
+import { PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, plantillaInicioPara, esBaseIntacta, esFichaProductoBase } from './plantillasBaseCodigo';
 import { leerItemsPrefill, limpiarItemsPrefill, unirItemsPrefill } from './prefilledLandingItems';
 import { armarPromptVista } from './promptsCodigo';
 import { conGlobalesHeredados } from './globalesCodigo';
@@ -455,7 +455,9 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     // base de OTRO formato, se cambia también, pero preguntando: puede tener
     // retoques del comercio.
     const htmlInicioActual = codigos.inicio?.html || '';
-    const baseActual = formatoDeBase(htmlInicioActual);
+    // Una base retocada por el comercio (data-gesicomm-personalizado) ya no
+    // se reemplaza: es su diseño.
+    const baseActual = esBaseIntacta(htmlInicioActual);
     const codigoInicialIntacto = !htmlInicioActual.trim() || htmlInicioActual.includes(MARCA_CODIGO_INICIAL);
     const inicioConfigurado = nuevaVenta.inicio || nuevaVenta.inicio_comercial || {};
     const faltanSlotsBanners =

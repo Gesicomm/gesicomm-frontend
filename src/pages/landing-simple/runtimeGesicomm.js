@@ -497,15 +497,34 @@ export function runtimeGesicomm() {
     if (campo === 'imagen') {
       var src = urlSegura(valor);
       if (el.tagName === 'IMG') {
+        var mediaReco = el.closest && el.closest('.lv-reco-media');
+        if (mediaReco) mediaReco.classList.remove('is-missing-image');
         if (item.tipo_medio === 'video') { el.style.display = 'none'; return; }
         if (src) {
+          el.style.display = '';
           el.src = src;
           if (!el.alt) el.alt = item.nombre || '';
+          if (mediaReco && !el.getAttribute('data-gesicomm-img-fallback')) {
+            el.setAttribute('data-gesicomm-img-fallback', '1');
+            el.addEventListener('error', function () {
+              var wrap = this.closest && this.closest('.lv-reco-media');
+              if (wrap) wrap.classList.add('is-missing-image');
+              this.style.display = 'none';
+            });
+            el.addEventListener('load', function () {
+              var wrap = this.closest && this.closest('.lv-reco-media');
+              if (wrap) wrap.classList.remove('is-missing-image');
+              this.style.display = '';
+            });
+          }
           // Posición de recorte configurable (RF-GEN-02/banner): hoy solo la
           // trae el banner del Inicio; el resto de los "imagen" (producto,
           // catálogo) no tiene item.posicion y el estilo por defecto no cambia.
           if (item.posicion) el.style.objectPosition = item.posicion;
-        } else el.style.display = 'none';
+        } else {
+          el.style.display = 'none';
+          if (mediaReco) mediaReco.classList.add('is-missing-image');
+        }
       } else if (src) {
         el.style.backgroundImage = 'url("' + src.replace(/"/g, '%22') + '")';
         if (item.posicion) el.style.backgroundPosition = item.posicion;
@@ -915,11 +934,16 @@ export function runtimeGesicomm() {
     var urg = venta.urgencia || {};
     var marca = (venta.inicio && venta.inicio.marca) || (venta.inicio_comercial && venta.inicio_comercial.marca) || {};
     var testimonios = (venta.inicio && venta.inicio.testimonios) || (venta.inicio_comercial && venta.inicio_comercial.testimonios) || {};
+    var checkoutReco = venta.checkout_recomendados || {};
     switch (campo) {
       case 'recomendados_kicker': return venta.recomendados_kicker || 'Te puede gustar';
       case 'recomendados_titulo': return venta.recomendados_titulo || 'Te puede gustar';
       case 'recomendados_subtitulo': return venta.recomendados_subtitulo || '';
       case 'recomendados_cta': return venta.recomendados_cta || 'Agregar';
+      case 'checkout_recomendados_kicker': return checkoutReco.kicker || 'Antes de cerrar';
+      case 'checkout_recomendados_titulo': return checkoutReco.titulo || 'También te puede interesar';
+      case 'checkout_recomendados_subtitulo': return checkoutReco.subtitulo || '';
+      case 'checkout_recomendados_cta': return checkoutReco.cta_texto || 'Agregar';
       case 'urgencia_titulo': return urg.titulo || 'Ofertas que terminan pronto';
       case 'urgencia_texto': return urg.texto || 'Aprovechá antes de que se agoten';
       case 'urgencia_cta': return urg.cta_texto || 'Ver todos';
@@ -1906,6 +1930,10 @@ export function runtimeGesicomm() {
     tpl.parentNode.insertBefore(frag, tpl);
     var anidadas = el.querySelectorAll('[data-gesicomm-generado] [data-gesicomm-lista]');
     for (var n = 0; n < anidadas.length; n++) renderizarLista(anidadas[n]);
+    if (nombre === 'checkout_recomendados') {
+      el.scrollLeft = 0;
+      prepararCarruselRecomendados(el);
+    }
   }
 
   // Una lista vacía se oculta sola, pero su título vive AFUERA del elemento
@@ -2093,6 +2121,7 @@ export function runtimeGesicomm() {
     prepararMenuCategoriasHeader();
     prepararMenuMovilHeader();
     pintarCarritoHeader();
+    prepararCarruselRecomendados(document.querySelector('[data-gesicomm-reco-carrusel]'));
   }
 
   function actualizarDatos(nuevosDatos) {
@@ -2759,8 +2788,11 @@ export function runtimeGesicomm() {
       campos[i].style.display = valor ? '' : 'none';
     }
     pintarCupon();
+    var confirmado = !!(estado && estado.estado === 'confirmado');
     var vacios = document.querySelectorAll('[data-gesicomm-checkout-vacio]');
-    for (i = 0; i < vacios.length; i++) vacios[i].style.display = resumen.items && resumen.items.length ? 'none' : '';
+    for (i = 0; i < vacios.length; i++) vacios[i].style.display = confirmado || (resumen.items && resumen.items.length) ? 'none' : '';
+    var confirmados = document.querySelectorAll('[data-gesicomm-checkout-confirmado]');
+    for (i = 0; i < confirmados.length; i++) confirmados[i].style.display = confirmado ? '' : 'none';
     var llenos = document.querySelectorAll('[data-gesicomm-checkout-con-items]');
     for (i = 0; i < llenos.length; i++) llenos[i].style.display = resumen.items && resumen.items.length ? '' : 'none';
     var forms = document.querySelectorAll('form[data-gesicomm-checkout-form]');
@@ -3116,6 +3148,96 @@ export function runtimeGesicomm() {
     window.open('https://wa.me/' + numero + (texto ? '?text=' + encodeURIComponent(texto) : ''), '_blank', 'noopener');
   }
 
+  function controlesCarruselRecomendados(carrusel) {
+    var seccion = carrusel && carrusel.closest ? carrusel.closest('.lv-checkout-reco') : null;
+    return {
+      grupo: seccion ? seccion.querySelector('.lv-reco-controls') : null,
+      prev: seccion ? seccion.querySelector('[data-gesicomm-reco-prev]') : null,
+      next: seccion ? seccion.querySelector('[data-gesicomm-reco-next]') : null,
+    };
+  }
+
+  function posicionesCarruselRecomendados(carrusel) {
+    if (!carrusel) return [];
+    var maxScroll = Math.max(0, carrusel.scrollWidth - carrusel.clientWidth);
+    var tarjetas = Array.prototype.slice.call(carrusel.querySelectorAll('.lv-reco-card'));
+    var base = tarjetas.length ? tarjetas[0].offsetLeft : 0;
+    var posiciones = [];
+    tarjetas.forEach(function (tarjeta) {
+      var pos = Math.max(0, Math.round(tarjeta.offsetLeft - base));
+      if (pos <= maxScroll + 1 && posiciones.indexOf(pos) === -1) posiciones.push(pos);
+    });
+    if (!posiciones.length) posiciones.push(0);
+    posiciones.sort(function (a, b) { return a - b; });
+    return posiciones;
+  }
+
+  function indiceCarruselRecomendados(carrusel, posiciones) {
+    var actual = carrusel ? carrusel.scrollLeft : 0;
+    var indice = 0;
+    var distancia = Infinity;
+    for (var i = 0; i < posiciones.length; i++) {
+      var d = Math.abs(posiciones[i] - actual);
+      if (d < distancia) { distancia = d; indice = i; }
+    }
+    return indice;
+  }
+
+  function actualizarCarruselRecomendados(carrusel) {
+    carrusel = carrusel || document.querySelector('[data-gesicomm-reco-carrusel]');
+    if (!carrusel) return;
+    var controles = controlesCarruselRecomendados(carrusel);
+    var maxScroll = Math.max(0, carrusel.scrollWidth - carrusel.clientWidth);
+    var posiciones = posicionesCarruselRecomendados(carrusel);
+    var indice = indiceCarruselRecomendados(carrusel, posiciones);
+    var puedeMoverse = maxScroll > 1 && posiciones.length > 1;
+    if (controles.grupo) controles.grupo.hidden = !puedeMoverse;
+    if (!puedeMoverse) {
+      if (controles.prev) controles.prev.disabled = true;
+      if (controles.next) controles.next.disabled = true;
+      return;
+    }
+    var alInicio = indice <= 0 || carrusel.scrollLeft <= 1;
+    var alFinal = indice >= posiciones.length - 1 || carrusel.scrollLeft >= maxScroll - 1;
+    if (controles.prev) controles.prev.disabled = alInicio;
+    if (controles.next) controles.next.disabled = alFinal;
+  }
+
+  function prepararCarruselRecomendados(carrusel) {
+    if (!carrusel) return;
+    if (!carrusel.__gesicommRecoCarrusel) {
+      carrusel.__gesicommRecoCarrusel = { raf: 0 };
+      carrusel.addEventListener('scroll', function () {
+        if (carrusel.__gesicommRecoCarrusel.raf) window.cancelAnimationFrame(carrusel.__gesicommRecoCarrusel.raf);
+        carrusel.__gesicommRecoCarrusel.raf = window.requestAnimationFrame(function () {
+          actualizarCarruselRecomendados(carrusel);
+        });
+      }, { passive: true });
+      window.addEventListener('resize', function () {
+        window.requestAnimationFrame(function () {
+          var posiciones = posicionesCarruselRecomendados(carrusel);
+          var indice = indiceCarruselRecomendados(carrusel, posiciones);
+          carrusel.scrollLeft = posiciones[indice] || 0;
+          actualizarCarruselRecomendados(carrusel);
+        });
+      });
+    }
+    window.requestAnimationFrame(function () { actualizarCarruselRecomendados(carrusel); });
+    window.setTimeout(function () { actualizarCarruselRecomendados(carrusel); }, 80);
+    window.setTimeout(function () { actualizarCarruselRecomendados(carrusel); }, 320);
+  }
+
+  function moverCarruselRecomendados(direccion) {
+    var carrusel = document.querySelector('[data-gesicomm-reco-carrusel]');
+    if (!carrusel) return;
+    var posiciones = posicionesCarruselRecomendados(carrusel);
+    if (posiciones.length <= 1) { actualizarCarruselRecomendados(carrusel); return; }
+    var indice = indiceCarruselRecomendados(carrusel, posiciones);
+    var destino = Math.max(0, Math.min(posiciones.length - 1, indice + direccion));
+    carrusel.scrollTo({ left: posiciones[destino], behavior: 'smooth' });
+    window.setTimeout(function () { actualizarCarruselRecomendados(carrusel); }, 260);
+  }
+
   document.addEventListener('click', function (e) {
     var t = e.target && e.target.closest ? e.target : null;
     if (!t) return;
@@ -3134,6 +3256,16 @@ export function runtimeGesicomm() {
     if ((el = t.closest('[data-gesicomm-checkout-ir]'))) {
       e.preventDefault();
       enviar({ tipo: 'gesicomm:navegar', destino: 'checkout' });
+      return;
+    }
+    if ((el = t.closest('[data-gesicomm-reco-prev]'))) {
+      e.preventDefault();
+      moverCarruselRecomendados(-1);
+      return;
+    }
+    if ((el = t.closest('[data-gesicomm-reco-next]'))) {
+      e.preventDefault();
+      moverCarruselRecomendados(1);
       return;
     }
     if ((el = t.closest('[data-gesicomm-cupon-aplicar]'))) {
