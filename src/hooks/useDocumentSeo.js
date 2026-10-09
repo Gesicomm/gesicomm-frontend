@@ -23,6 +23,34 @@ function setLink(rel, href) {
   el.setAttribute('href', href);
 }
 
+const SELECTOR_ICONOS_ESTATICOS = 'link[rel="icon"], link[rel="shortcut icon"]';
+
+/**
+ * Reemplaza los <link rel="icon"> de Gesicom (index.html trae varios: svg +
+ * png en distintos tamaños + ico) por uno solo apuntando al logo de la
+ * tienda, y devuelve una función para restaurar los originales al
+ * desmontar. Pisa el set entero en vez del href de uno solo porque el
+ * navegador elige entre TODOS los <link rel="icon"> presentes (prefiere el
+ * svg); dejar los png/ico estáticos al lado hacía que algunos navegadores
+ * siguieran mostrando el logo de Gesicom.
+ */
+function setFavicon(href) {
+  if (!href) return null;
+  const existentes = Array.from(document.querySelectorAll(SELECTOR_ICONOS_ESTATICOS));
+  const originales = existentes.map((el) => el.cloneNode(true));
+  existentes.forEach((el) => el.remove());
+
+  const nuevo = document.createElement('link');
+  nuevo.setAttribute('rel', 'icon');
+  nuevo.setAttribute('href', href);
+  document.head.appendChild(nuevo);
+
+  return () => {
+    nuevo.remove();
+    originales.forEach((el) => document.head.appendChild(el));
+  };
+}
+
 /**
  * Setea title/meta/OG/Twitter del documento para la landing pública
  * actual, y los deshace al desmontar (para no dejar metadata de una
@@ -53,7 +81,11 @@ export function useDocumentSeo(seo, urlActual) {
     setMeta('name', 'twitter:title', seo.titulo);
     setMeta('name', 'twitter:description', seo.descripcion);
     setLink('canonical', urlActual);
+    const restaurarFavicon = seo.favicon ? setFavicon(getMediaUrl(seo.favicon)) : null;
 
-    return () => { document.title = tituloAnterior; };
+    return () => {
+      document.title = tituloAnterior;
+      if (restaurarFavicon) restaurarFavicon();
+    };
   }, [seo, urlActual]);
 }

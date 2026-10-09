@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, registrarVisitaLanding } from '../../services/landingPublicaService';
 import { generarEventId, inicializarPixel, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
@@ -75,7 +75,16 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
     return () => { activo = false; };
   }, [slug, productId]);
 
-  useDocumentSeo(data?.seo, typeof window !== 'undefined' ? window.location.href : undefined);
+  // La pestaña del navegador mostraba el favicon estático de Gesicom
+  // (index.html) en TODAS las páginas publicadas, logo de la tienda
+  // incluido. El logo propio de la landing manda sobre el de "Mi Tienda" —
+  // mismo orden de prioridad que `logo_imagen` en landing.service.js.
+  const seoConFavicon = useMemo(() => {
+    if (!data?.seo) return data?.seo;
+    const favicon = data.logo_imagen || data.tienda?.logo_imagen || null;
+    return favicon ? { ...data.seo, favicon } : data.seo;
+  }, [data]);
+  useDocumentSeo(seoConFavicon, typeof window !== 'undefined' ? window.location.href : undefined);
 
   if (estado === 'cargando') {
     return <div className="lp-status-page"><div className="lp-spinner" /></div>;
