@@ -106,6 +106,13 @@ export function runtimeGesicomm() {
   // tiene que encontrar el producto aunque no esté en la primera.
   var conocidos = productos.slice();
 
+  // Cupón del checkout: `cuponAplicado` es lo que ya validó el contenedor
+  // (código + descuento), se manda como campo oculto del form al confirmar.
+  var pedidoCupon = 0;
+  var cuponAplicado = null;
+  var cuponError = '';
+  var cuponValidando = false;
+
   var MARCAS_DIACRITICAS = null;
   try { MARCAS_DIACRITICAS = new RegExp('\\p{M}', 'gu'); } catch (e) { /* navegador viejo: sin quitar tildes */ }
   function normalizar(texto) {
@@ -2733,18 +2740,25 @@ export function runtimeGesicomm() {
   function pintarCheckout() {
     var resumen = datos.carrito || { cantidad: 0, subtotal: 0, total: 0, items: [] };
     var estado = datos.checkout_estado || null;
+    // El descuento del cupón es una validación client-side (preview); el
+    // backend vuelve a aplicarlo recién al confirmar el pedido con el mismo
+    // código, igual que en el carrito de CartDrawer.
+    var totalConCupon = Number(resumen.total) || 0;
+    if (cuponAplicado) totalConCupon = Math.max(0, totalConCupon - (Number(cuponAplicado.descuento) || 0));
     var campos = document.querySelectorAll('[data-gesicomm-checkout]');
     var i;
     for (i = 0; i < campos.length; i++) {
       var campo = campos[i].getAttribute('data-gesicomm-checkout');
       var valor = '';
       if (campo === 'cantidad') valor = String(resumen.cantidad || 0);
-      else if (campo === 'subtotal' || campo === 'total') valor = formatoPrecio(resumen[campo]);
+      else if (campo === 'subtotal') valor = formatoPrecio(resumen.subtotal);
+      else if (campo === 'total') valor = formatoPrecio(totalConCupon);
       else if (campo === 'estado') valor = estado ? estado.estado || '' : '';
       else if (campo === 'mensaje') valor = estado ? estado.mensaje || '' : '';
       campos[i].textContent = valor;
       campos[i].style.display = valor ? '' : 'none';
     }
+    pintarCupon();
     var vacios = document.querySelectorAll('[data-gesicomm-checkout-vacio]');
     for (i = 0; i < vacios.length; i++) vacios[i].style.display = resumen.items && resumen.items.length ? 'none' : '';
     var llenos = document.querySelectorAll('[data-gesicomm-checkout-con-items]');
@@ -2754,6 +2768,52 @@ export function runtimeGesicomm() {
       var botones = forms[i].querySelectorAll('button, input[type="submit"]');
       for (var b = 0; b < botones.length; b++) botones[b].disabled = !!(estado && estado.estado === 'enviando') || !(resumen.items && resumen.items.length);
     }
+  }
+
+  function pintarCupon() {
+    var hiddenInput = document.querySelector('form[data-gesicomm-checkout-form] input[name="cupon_codigo"]');
+    if (hiddenInput) hiddenInput.value = cuponAplicado ? cuponAplicado.codigo : '';
+    var bloqueAplicado = document.querySelector('[data-gesicomm-cupon-aplicado]');
+    var bloqueForm = document.querySelector('[data-gesicomm-cupon-form]');
+    if (bloqueAplicado) bloqueAplicado.hidden = !cuponAplicado;
+    if (bloqueForm) bloqueForm.hidden = !!cuponAplicado;
+    if (cuponAplicado) {
+      var bindCodigo = document.querySelector('[data-gesicomm-cupon-bind="codigo"]');
+      var bindPorcentaje = document.querySelector('[data-gesicomm-cupon-bind="porcentaje"]');
+      if (bindCodigo) bindCodigo.textContent = cuponAplicado.codigo;
+      if (bindPorcentaje) bindPorcentaje.textContent = String(cuponAplicado.descuento_porcentaje || 0);
+    }
+    var filaDescuento = document.querySelector('[data-gesicomm-cupon-descuento]');
+    if (filaDescuento) {
+      filaDescuento.hidden = !cuponAplicado;
+      if (cuponAplicado) {
+        var bindMonto = filaDescuento.querySelector('[data-gesicomm-cupon-bind="monto"]');
+        if (bindMonto) bindMonto.textContent = '− ' + formatoPrecio(cuponAplicado.descuento);
+      }
+    }
+    var errorEl = document.querySelector('[data-gesicomm-cupon-error]');
+    if (errorEl) { errorEl.textContent = cuponError || ''; errorEl.style.display = cuponError ? '' : 'none'; }
+    var botonAplicar = document.querySelector('[data-gesicomm-cupon-aplicar]');
+    if (botonAplicar) { botonAplicar.disabled = cuponValidando; botonAplicar.textContent = cuponValidando ? 'Validando...' : 'Aplicar'; }
+  }
+
+  function aplicarCupon() {
+    var input = document.querySelector('[data-gesicomm-cupon-input]');
+    var codigo = input ? String(input.value || '').trim() : '';
+    if (!codigo || cuponValidando) return;
+    cuponValidando = true;
+    cuponError = '';
+    pintarCupon();
+    pedidoCupon += 1;
+    enviar({ tipo: 'gesicomm:cupon', id: pedidoCupon, codigo: codigo });
+  }
+
+  function quitarCupon() {
+    cuponAplicado = null;
+    cuponError = '';
+    var input = document.querySelector('[data-gesicomm-cupon-input]');
+    if (input) input.value = '';
+    pintarCheckout();
   }
 
   // Departamento + Ciudad del checkout propio: <select data-gesicomm-geografia="departamento">
@@ -2852,6 +2912,19 @@ export function runtimeGesicomm() {
     var d = e.data || {};
     if (d.tipo === 'gesicomm:resaltar') { resaltar(d.lista); return; }
     if (d.tipo === 'gesicomm:datos') { actualizarDatos(d.datos); return; }
+    if (d.tipo === 'gesicomm:cupon-respuesta') {
+      if (d.id !== pedidoCupon) return;
+      cuponValidando = false;
+      if (d.error) {
+        cuponAplicado = null;
+        cuponError = d.mensaje || 'No pudimos aplicar ese cupón.';
+      } else {
+        cuponAplicado = { codigo: d.codigo || '', descuento: Number(d.descuento) || 0, descuento_porcentaje: Number(d.descuento_porcentaje) || 0 };
+        cuponError = '';
+      }
+      pintarCheckout();
+      return;
+    }
     if (d.tipo !== 'gesicomm:catalogo-respuesta' || d.id !== pedidoCatalogo) return;
     catalogoVista.cargando = false;
     if (d.error) {
@@ -2893,6 +2966,10 @@ export function runtimeGesicomm() {
       for (var i = 0; i < menusSelect.length; i++) menusSelect[i].hidden = true;
       var botonesSelect = document.querySelectorAll('.gc-select-ui-button');
       for (var b = 0; b < botonesSelect.length; b++) botonesSelect[b].setAttribute('aria-expanded', 'false');
+    }
+    if (e.key === 'Enter' && e.target && e.target.matches && e.target.matches('[data-gesicomm-cupon-input]')) {
+      e.preventDefault();
+      aplicarCupon();
     }
   });
 
@@ -3057,6 +3134,16 @@ export function runtimeGesicomm() {
     if ((el = t.closest('[data-gesicomm-checkout-ir]'))) {
       e.preventDefault();
       enviar({ tipo: 'gesicomm:navegar', destino: 'checkout' });
+      return;
+    }
+    if ((el = t.closest('[data-gesicomm-cupon-aplicar]'))) {
+      e.preventDefault();
+      aplicarCupon();
+      return;
+    }
+    if ((el = t.closest('[data-gesicomm-cupon-quitar]'))) {
+      e.preventDefault();
+      quitarCupon();
       return;
     }
     if ((el = t.closest('[data-gesicomm-contacto-flotante]'))) {

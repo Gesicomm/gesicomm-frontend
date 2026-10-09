@@ -445,6 +445,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         onNavegar={navegar}
         onEvento={registrarEvento}
         onCatalogo={pedirCatalogo}
+        onValidarCupon={cartState.validarCupon}
         onTema={onTema}
       />
 

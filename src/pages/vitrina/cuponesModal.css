@@ -1,0 +1,49 @@
+/* CuponesModal: .btn-primary/.btn-icon/.spin-icon ya llegan globales (ver
+   components/dashboard.css y vitrina.css). Acá solo lo que falta: el form
+   de alta y la tabla de cupones creados. */
+
+.form-group { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.form-label { font-size: 0.78rem; font-weight: 600; color: var(--color-fg-muted); letter-spacing: 0.02em; }
+
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--color-surface-2, color-mix(in srgb, var(--color-fg) 5%, transparent));
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+  color: var(--color-fg);
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color-scheme: inherit;
+}
+.form-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent); }
+.form-input::placeholder { color: var(--color-fg-subtle, var(--color-fg-muted)); }
+
+.field-hint { display: flex; align-items: center; gap: 0.35rem; color: var(--color-fg-subtle, var(--color-fg-muted)); font-size: 0.78rem; margin: 0; }
+
+.md-table { width: 100%; border-collapse: collapse; }
+.md-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-fg-subtle, var(--color-fg-muted));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+}
+.md-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  color: var(--color-fg);
+  text-align: center;
+}
+.md-table td:first-child { text-align: left; }
+.md-table tbody tr:hover td { background: color-mix(in srgb, var(--color-fg) 3%, transparent); }
+
+.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-fg) 18%, transparent); border-radius: 999px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--color-fg) 28%, transparent); }

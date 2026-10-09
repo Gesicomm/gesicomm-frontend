@@ -23,7 +23,7 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * (contacto/footer, order bump de la landing — ver seccionesSistemaCodigo.js
  * y el order bump del runtime); `onTema` recibe los colores reales del carrito.
  */
-export default function CodigoPreview({ codigo, titulo, datos, extras = null, typography = null, previewDevice = null, onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onTema, onCarrito, resaltar, className = '', style }) {
+export default function CodigoPreview({ codigo, titulo, datos, extras = null, typography = null, previewDevice = null, onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito, resaltar, className = '', style }) {
   const ref = useRef(null);
 
   // resaltar = { lista, n }: pide al runtime que muestre y marque una zona.
@@ -61,7 +61,7 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
   // Refs para los handlers: se registran una sola vez y siempre llaman a
   // la versión más nueva, sin re-suscribir el listener en cada render.
   const handlers = useRef({});
-  handlers.current = { onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onTema, onCarrito };
+  handlers.current = { onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito };
 
   useEffect(() => {
     function alMensaje(e) {
@@ -92,6 +92,19 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
           .catch(() => ({ error: true }))
           .then(res => {
             try { ventana.postMessage({ tipo: 'gesicomm:catalogo-respuesta', id: pedido.id, modo: pedido.modo, ...res }, '*'); } catch { /* iframe desmontado */ }
+          });
+      }
+      // Cupón del checkout: el iframe no tiene red, el contenedor valida
+      // contra el backend (mismo endpoint que el carrito de CartDrawer) y
+      // devuelve el descuento con el mismo id para descartar respuestas viejas.
+      if (tipo === 'gesicomm:cupon' && h.onValidarCupon) {
+        const pedido = e.data;
+        const ventana = e.source;
+        Promise.resolve(h.onValidarCupon(pedido.codigo))
+          .then(res => ({ ...res, error: false }))
+          .catch(err => ({ error: true, mensaje: err?.message }))
+          .then(res => {
+            try { ventana.postMessage({ tipo: 'gesicomm:cupon-respuesta', id: pedido.id, ...res }, '*'); } catch { /* iframe desmontado */ }
           });
       }
     }

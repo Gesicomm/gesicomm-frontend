@@ -1359,7 +1359,10 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 :where(.gc-contact-float) {
   position: fixed;
   right: max(18px, env(safe-area-inset-right));
-  bottom: max(18px, env(safe-area-inset-bottom));
+  /* +78px: deja lugar al botón flotante del carrito (.lp-cart-fab, 58px de
+     alto a 28px del borde), que vive fuera del iframe y pisaba este botón
+     al compartir la misma esquina. */
+  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 78px);
   z-index: 2147483000;
   width: 54px;
   height: 54px;

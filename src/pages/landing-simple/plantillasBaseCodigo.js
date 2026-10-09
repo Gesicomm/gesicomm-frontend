@@ -1119,6 +1119,7 @@ const BUMP_CSS = `/* Order bump moderno: mini oferta clickeable, no formulario a
 .bump-img { width: 68px; aspect-ratio: 1 / 1; object-fit: contain; background: var(--white); border: 1px solid rgba(15, 23, 42, .08); border-radius: 10px; }
 .bump-copy { display: grid; gap: 4px; min-width: 0; }
 .bump-sub { color: var(--brand); font-size: .76rem; font-weight: 900; }
+.bump.is-checked .bump-sub, .bump:has(.bump-check:checked) .bump-sub { display: none; }
 .bump-title { color: var(--ink); font-weight: 850; line-height: 1.22; }
 .bump-prices { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
 .bump-prices b { color: var(--ink); font-size: 1.05rem; font-weight: 950; }
@@ -2247,23 +2248,25 @@ a{color:inherit;text-decoration:none}
 .lv-pages{display:flex;justify-content:center;align-items:center;gap:10px}
 .lv-pages button{border:1px solid var(--lv-line);background:var(--lv-surface);border-radius:7px;padding:10px 12px;font-weight:800}
 .lv-pages button:disabled{opacity:.45;cursor:not-allowed}
-.lv-checkout-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:22px}
+.lv-checkout-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:14px}
 .lv-steps{display:flex;align-items:center;gap:8px;color:var(--lv-muted);font-size:12px;font-weight:800;white-space:nowrap}
 .lv-dot{width:8px;height:8px;border-radius:99px;background:var(--gc-primario)}
-.lv-checkout-grid{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:22px;align-items:start}
+.lv-checkout-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:24px;align-items:start}
+.lv-shell[data-gesicomm-base="checkout"] .commerce-header .container,.lv-shell[data-gesicomm-base="checkout"] .lv-page{max-width:1440px}
+.lv-shell[data-gesicomm-base="checkout"] .lv-page{padding:20px 18px 40px}
 .lv-panel{background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);box-shadow:0 16px 38px rgba(16,32,29,.07)}
-.lv-form{padding:20px;display:grid;gap:16px}
-.lv-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lv-form{padding:16px;display:grid;gap:12px}
+.lv-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .lv-form .lv-wide{grid-column:1/-1}
 .lv-form textarea{min-height:86px;resize:vertical}
 .lv-message{min-height:18px;margin:0;color:var(--tienda-destacado,var(--gc-primario));font-size:13px;font-weight:750}
-.lv-summary{position:sticky;top:86px;padding:18px}
-.lv-summary h2{margin:0 0 12px;font-size:22px}
-.lv-items{display:grid;gap:10px}
-.lv-item{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px 0;border-bottom:1px solid var(--lv-line)}
-.lv-item img{grid-column:1;width:58px;height:58px;object-fit:cover;border-radius:7px;background:var(--lv-soft)}
+.lv-summary{position:sticky;top:86px;padding:14px}
+.lv-summary h2{margin:0 0 8px;font-size:19px}
+.lv-items{display:grid;gap:6px}
+.lv-item{display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--lv-line)}
+.lv-item img{grid-column:1;width:50px;height:50px;object-fit:cover;border-radius:7px;background:var(--lv-soft)}
 /* Columnas fijas: si una fila no tiene imagen (el runtime oculta el <img>),
-   el texto sigue en su columna en vez de correrse a la de 58px. */
+   el texto sigue en su columna en vez de correrse a la de 50px. */
 .lv-item-info{grid-column:2;min-width:0}
 .lv-item>b{grid-column:3}
 .lv-item strong{display:block;font-size:13px;line-height:1.25;overflow-wrap:anywhere}
@@ -2271,11 +2274,25 @@ a{color:inherit;text-decoration:none}
 .lv-item-qty span{display:inline}
 .lv-item b{font-size:13px;white-space:nowrap}
 ${BUMP_CSS}
-.lv-checkout-bumps{margin:14px 0 0}
-.lv-checkout-reco{margin-top:28px}
-.lv-checkout-reco h2{margin:0 0 14px;font-size:20px}
-.lv-total{display:grid;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--lv-line)}
+.lv-checkout-bumps{margin:10px 0 0}
+.lv-checkout-bumps .bump-body{padding:10px}
+.lv-cupon{margin-top:10px}
+.lv-cupon-form{display:flex;gap:8px}
+.lv-cupon-input{flex:1;min-width:0;min-height:38px;padding:0 12px;border:1px solid var(--lv-line);border-radius:8px;background:var(--lv-surface);color:var(--gc-texto);font-size:13px;outline:none}
+.lv-cupon-input:focus{border-color:var(--gc-primario)}
+.lv-cupon-aplicar{flex:none;min-height:38px;padding:0 14px;border:0;border-radius:8px;background:var(--gc-primario);color:var(--gc-texto-sobre-primario);font-size:12px;font-weight:850;white-space:nowrap}
+.lv-cupon-aplicar:disabled{opacity:.6}
+.lv-cupon-aplicado{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px dashed color-mix(in srgb,var(--gc-primario) 45%,var(--lv-line));border-radius:8px;background:color-mix(in srgb,var(--gc-primario) 9%,var(--lv-surface));font-size:12px;color:var(--lv-muted)}
+.lv-cupon-aplicado strong{color:var(--gc-texto)}
+.lv-cupon-quitar{flex:none;border:0;background:transparent;color:var(--gc-primario);font-size:12px;font-weight:800;text-decoration:underline;cursor:pointer}
+.lv-cupon-error{min-height:0;margin:6px 0 0;color:#b42318;font-size:12px;display:none}
+.lv-checkout-reco{--shop-text:#10201d;--shop-muted:#62706b;--shop-soft:#f6f8f4;--shop-accent:var(--gc-primario,#143f3a);margin-top:18px}
+.lv-checkout-reco h2{margin:0 0 10px;font-size:18px}
+.lv-checkout-reco .lv-shop-grid{gap:16px 14px}
+.lv-checkout-reco .lv-shop-card-body{padding-top:9px;gap:5px}
+.lv-total{display:grid;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--lv-line)}
 .lv-total-row{display:flex;align-items:center;justify-content:space-between;gap:14px;color:var(--lv-muted)}
+.lv-total-row--descuento b{color:#1c7a4d}
 .lv-total-row strong{color:var(--gc-texto);font-size:22px}
 .lv-empty-checkout{max-width:620px;margin:42px auto;text-align:center;background:var(--lv-surface);border:1px dashed var(--lv-line);border-radius:var(--lv-radius);padding:34px;box-shadow:0 16px 38px rgba(16,32,29,.06)}
 .lv-empty-checkout h1{margin:0;color:var(--gc-texto);font-size:32px}.lv-empty-checkout p{color:var(--lv-muted);line-height:1.6}
@@ -2503,6 +2520,7 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
 
     <section class="lv-checkout-grid" data-gesicomm-checkout-con-items>
       <form class="lv-panel lv-form" data-gesicomm-checkout-form>
+        <input type="hidden" name="cupon_codigo" data-gesicomm-cupon-hidden>
         <div class="lv-form-grid">
           <label class="lv-field">
             <span>Nombre y apellido</span>
@@ -2602,9 +2620,21 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
           </label>
           </template>
         </div>
+        <div class="lv-cupon" data-gesicomm-cupon>
+          <div class="lv-cupon-aplicado" data-gesicomm-cupon-aplicado hidden>
+            <span>Cupón <strong data-gesicomm-cupon-bind="codigo"></strong> aplicado · <span data-gesicomm-cupon-bind="porcentaje"></span>% off</span>
+            <button type="button" class="lv-cupon-quitar" data-gesicomm-cupon-quitar>Quitar</button>
+          </div>
+          <div class="lv-cupon-form" data-gesicomm-cupon-form>
+            <input type="text" class="lv-cupon-input" placeholder="Código de descuento" data-gesicomm-cupon-input autocomplete="off">
+            <button type="button" class="lv-cupon-aplicar" data-gesicomm-cupon-aplicar>Aplicar</button>
+          </div>
+          <p class="lv-cupon-error" data-gesicomm-cupon-error></p>
+        </div>
         <div class="lv-total">
           <div class="lv-total-row"><span>Subtotal</span><b data-gesicomm-checkout="subtotal"></b></div>
           <div class="lv-total-row"><span>Items</span><b data-gesicomm-checkout="cantidad"></b></div>
+          <div class="lv-total-row lv-total-row--descuento" data-gesicomm-cupon-descuento hidden><span>Descuento</span><b data-gesicomm-cupon-bind="monto"></b></div>
           <div class="lv-total-row"><span>Total</span><strong data-gesicomm-checkout="total"></strong></div>
         </div>
       </aside>
