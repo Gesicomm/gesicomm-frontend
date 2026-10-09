@@ -11,6 +11,13 @@ export const tiendaService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
   eliminarLogo: () => API.delete('/mi-tienda/logo').then(r => r.data),
+  // Favicon (ícono de la pestaña): aparte del logo. Sin favicon, la pestaña
+  // sigue usando el logo. Mismo guardado inmediato que el logo.
+  subirFavicon: (formData) =>
+    API.post('/mi-tienda/favicon', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+  eliminarFavicon: () => API.delete('/mi-tienda/favicon').then(r => r.data),
   guardarTipografia: (payload) => API.put('/mi-tienda/typography', payload).then(r => r.data),
   subirFuente: (formData) =>
     API.post('/mi-tienda/typography/fonts', formData, {

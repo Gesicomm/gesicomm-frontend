@@ -52,6 +52,16 @@ function setFavicon(href) {
 }
 
 /**
+ * Ícono de la pestaña para una página pública de la tienda: el favicon
+ * cargado en Mi Tienda manda; sin favicon, el logo de la landing y después
+ * el de la tienda (lo que se usaba antes). Mismo orden en el HTML para bots
+ * (routes/landingHtml.js del backend).
+ */
+export function faviconDeLanding(data) {
+  return data?.tienda?.favicon_imagen || data?.logo_imagen || data?.tienda?.logo_imagen || null;
+}
+
+/**
  * Setea title/meta/OG/Twitter del documento para la landing pública
  * actual, y los deshace al desmontar (para no dejar metadata de una
  * landing pegada si el usuario navega a otra ruta de la SPA sin recargar).

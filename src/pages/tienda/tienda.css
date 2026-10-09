@@ -434,6 +434,65 @@
   color: #ef4444;
 }
 
+/* Favicon: mismo recuadro que el logo, el ícono ocupa todo (ya viene
+   cuadrado y sin márgenes del backend). */
+.tn-favicon-preview { padding: 14px; }
+.tn-favicon-aviso {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #b45309;
+}
+.tn-favicon-aviso svg { flex-shrink: 0; margin-top: 2px; }
+
+/* Imitación de una pestaña de Chrome con el ícono a su tamaño real (16 px). */
+.tn-favicon-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.tn-favicon-tab-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vit-muted);
+}
+.tn-favicon-tab-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 200px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px 8px 0 0;
+  background: var(--vit-bg);
+  border: 1px solid var(--vit-border);
+  border-bottom: none;
+  font-size: 0.75rem;
+  color: var(--color-fg);
+}
+.tn-favicon-tab-chip img { width: 16px; height: 16px; object-fit: contain; flex-shrink: 0; }
+.tn-favicon-tab-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Dos plantillas de WhatsApp apiladas, cada una con su "para qué es". */
+.tn-msg-plantillas { gap: 1.75rem; }
+.tn-msg-plantilla { display: flex; flex-direction: column; gap: 0.85rem; }
+.tn-msg-plantilla + .tn-msg-plantilla { padding-top: 1.75rem; border-top: 1px solid var(--vit-border); }
+.tn-msg-plantilla-head { display: flex; flex-direction: column; gap: 0.3rem; }
+.tn-msg-plantilla-titulo { font-size: 0.92rem; font-weight: 700; color: var(--color-fg); }
+.tn-msg-plantilla-uso {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--vit-muted);
+}
+.tn-msg-plantilla-uso svg { flex-shrink: 0; margin-top: 3px; }
+
 /* Esta pantalla carga landing.css para reutilizar piezas del constructor.
    Aislamos el botón primario para que en modo oscuro no herede texto negro
    de una landing o template. */

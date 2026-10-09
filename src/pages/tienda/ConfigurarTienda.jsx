@@ -14,7 +14,7 @@ import { tiendaService } from '../../services/tiendaService';
 import { planesService } from '../../services/planesService';
 import { useDebounce } from '../../hooks/useDebounce';
 import { getMediaUrl } from '../../services/api';
-import { generarPreviewMensaje } from '../../lib/mensajeWhatsapp';
+import { generarPreviewMensaje, generarPreviewMensajeGeneral } from '../../lib/mensajeWhatsapp';
 import { listaFuentes, typographyStyle } from '../../lib/typography';
 import PagoParConfig from './PagoParConfig';
 import SpeedboxConfig from './SpeedboxConfig';
@@ -47,6 +47,8 @@ const FORM_INICIAL = {
   whatsapp: '',
   telefono: '',
   mensaje_contacto: 'Hola, me interesa {producto}',
+  // Vacío = el lienzo manda "Hola, quiero hacer una consulta."
+  mensaje_consulta_general: '',
   nombre_contacto: '',
   canal_contacto: 'whatsapp',
   email: '',
@@ -126,9 +128,83 @@ const TABS_CON_GUARDADO_PROPIO = ['economica', 'pasarelas', 'speedbox'];
 
 const VARIABLES_MENSAJE = [
   { variable: '{producto}', desc: 'Nombre del producto', ejemplo: 'Chomba Lacoste Clásica' },
-  { variable: '{precio}', desc: 'Precio formateado', ejemplo: '150.000 Gs' },
+  { variable: '{precio}', desc: 'Precio formateado', ejemplo: 'Gs 150.000' },
   { variable: '{url}', desc: 'URL de tu landing' },
 ];
+
+// La consulta general no tiene un producto atrás: solo la URL.
+const VARIABLES_MENSAJE_GENERAL = [
+  { variable: '{url}', desc: 'URL de la página donde está el cliente' },
+];
+
+const MENSAJE_GENERAL_PLACEHOLDER = 'Hola, quiero hacer una consulta.';
+
+/**
+ * Una plantilla de WhatsApp (textarea + variables + burbuja de preview).
+ * `uso` dice en qué botones de la tienda se envía: es lo que distingue la
+ * consulta de producto de la general.
+ */
+function PlantillaWhatsapp({ titulo, uso, textareaRef, valor, onChange, placeholder, variables, onInsertar, urlPublica, preview, ayudaVacio }) {
+  return (
+    <div className="tn-msg-plantilla">
+      <div className="tn-msg-plantilla-head">
+        <span className="tn-msg-plantilla-titulo">{titulo}</span>
+        <span className="tn-msg-plantilla-uso"><Info size={12} /> {uso}</span>
+      </div>
+      <div className="tn-msg-grid">
+        <div className="tn-msg-builder">
+          <span className="tn-field-label">Texto del mensaje</span>
+          <textarea
+            ref={textareaRef}
+            className="tn-msg-textarea"
+            value={valor}
+            onChange={e => onChange(e.target.value)}
+            placeholder={placeholder}
+            maxLength={300}
+            rows={3}
+          />
+          {ayudaVacio && !valor && <span className="tn-field-hint">{ayudaVacio}</span>}
+
+          <div className="tn-msg-vars-header">
+            <MousePointerClick size={12} />
+            <span>Hacé clic para insertar una variable</span>
+          </div>
+          <div className="tn-msg-vars">
+            {variables.map(v => (
+              <button
+                key={v.variable}
+                type="button"
+                className="tn-msg-var-chip"
+                onClick={() => onInsertar(v.variable)}
+                title={`${v.desc} — ej: ${v.ejemplo || urlPublica}`}
+              >
+                {v.variable}
+                <span className="tn-var-desc">— {v.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="tn-msg-preview-wrap">
+          <div className="tn-msg-preview-label">
+            <Eye size={12} />
+            <span>Preview — así se ve en WhatsApp</span>
+          </div>
+          <div className="tn-msg-preview-bg">
+            {preview ? (
+              <div className="tn-msg-preview-bubble">
+                {preview}
+                <span className="tn-preview-time">10:30 a.m.</span>
+              </div>
+            ) : (
+              <div className="tn-msg-preview-empty">Escribí un mensaje arriba para ver el preview.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // La creación de la tienda vive en /onboarding (nombre + plan, primer paso
 // de una cuenta nueva) — a esta pantalla solo se llega ya con una tienda
@@ -153,6 +229,7 @@ export default function ConfigurarTienda() {
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
   const ultimaConsulta = useRef(0);
   const textareaRef = useRef(null);
+  const textareaGeneralRef = useRef(null);
 
   // El logo va por su propio endpoint (multipart) y se guarda al instante,
   // independiente de "Guardar cambios".
@@ -160,6 +237,11 @@ export default function ConfigurarTienda() {
   const fuenteInputRef = useRef(null);
   const [subiendoLogo, setSubiendoLogo] = useState(false);
   const [errorLogo, setErrorLogo] = useState(null);
+  // Favicon: mismo circuito que el logo, endpoint propio.
+  const faviconInputRef = useRef(null);
+  const [subiendoFavicon, setSubiendoFavicon] = useState(false);
+  const [errorFavicon, setErrorFavicon] = useState(null);
+  const [avisoFavicon, setAvisoFavicon] = useState(null);
   const [subiendoFuente, setSubiendoFuente] = useState(false);
   const [errorFuente, setErrorFuente] = useState(null);
 
@@ -205,6 +287,7 @@ export default function ConfigurarTienda() {
           whatsapp: data.whatsapp || '',
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
+          mensaje_consulta_general: data.mensaje_consulta_general || '',
           nombre_contacto: data.nombre_contacto || '',
           canal_contacto: data.canal_contacto || 'whatsapp',
           email: data.email || data.email_contacto || '',
@@ -310,6 +393,65 @@ export default function ConfigurarTienda() {
     }
   }
 
+  /** Ancho/alto reales del archivo, para avisar si no es cuadrado o es chico. */
+  function medirImagen(archivo) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(archivo);
+      const img = new Image();
+      img.onload = () => { resolve({ ancho: img.naturalWidth, alto: img.naturalHeight }); URL.revokeObjectURL(url); };
+      img.onerror = () => { resolve(null); URL.revokeObjectURL(url); };
+      img.src = url;
+    });
+  }
+
+  async function subirFavicon(e) {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!archivo) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type)) {
+      return setErrorFavicon('Solo se permiten imágenes PNG, JPG o WebP.');
+    }
+    if (archivo.size > 5 * 1024 * 1024) {
+      return setErrorFavicon('El favicon no puede pesar más de 5 MB.');
+    }
+    setErrorFavicon(null);
+    // No se bloquea: el backend recorta márgenes y centra en un cuadrado.
+    // Solo se avisa para que entienda por qué se ve más chico.
+    const medidas = await medirImagen(archivo);
+    if (medidas && medidas.ancho !== medidas.alto) {
+      setAvisoFavicon(`Tu imagen mide ${medidas.ancho}×${medidas.alto} px. Como no es cuadrada, la centramos con bordes transparentes y el ícono se ve más chico.`);
+    } else if (medidas && medidas.ancho < 192) {
+      setAvisoFavicon(`Tu imagen mide ${medidas.ancho}×${medidas.alto} px. En pantallas de alta definición puede verse borrosa: lo ideal es 512×512 px.`);
+    } else {
+      setAvisoFavicon(null);
+    }
+    setSubiendoFavicon(true);
+    try {
+      const formData = new FormData();
+      formData.append('imagen', archivo);
+      const actualizada = await tiendaService.subirFavicon(formData);
+      setTienda(prev => ({ ...prev, favicon_imagen: actualizada.favicon_imagen }));
+    } catch (err) {
+      setErrorFavicon(err.response?.data?.message || 'No se pudo subir el favicon.');
+    } finally {
+      setSubiendoFavicon(false);
+    }
+  }
+
+  async function quitarFavicon() {
+    setErrorFavicon(null);
+    setAvisoFavicon(null);
+    setSubiendoFavicon(true);
+    try {
+      await tiendaService.eliminarFavicon();
+      setTienda(prev => ({ ...prev, favicon_imagen: null }));
+    } catch (err) {
+      setErrorFavicon(err.response?.data?.message || 'No se pudo quitar el favicon.');
+    } finally {
+      setSubiendoFavicon(false);
+    }
+  }
+
   async function subirFuente(e) {
     const archivo = e.target.files?.[0];
     e.target.value = '';
@@ -371,17 +513,17 @@ export default function ConfigurarTienda() {
     setForm(prev => ({ ...prev, typography: { ...(prev.typography || {}), [campo]: valor } }));
   }
 
-  function insertarVariable(variable) {
-    const ta = textareaRef.current;
+  function insertarVariable(variable, campo = 'mensaje_contacto', ref = textareaRef) {
+    const ta = ref.current;
+    const texto = form[campo] || '';
     if (!ta) {
-      handleChange('mensaje_contacto', form.mensaje_contacto + variable);
+      handleChange(campo, texto + variable);
       return;
     }
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
-    const texto = form.mensaje_contacto;
     const nuevo = texto.slice(0, start) + variable + texto.slice(end);
-    handleChange('mensaje_contacto', nuevo);
+    handleChange(campo, nuevo);
     // Re-focus and position cursor after inserted variable
     requestAnimationFrame(() => {
       ta.focus();
@@ -393,6 +535,10 @@ export default function ConfigurarTienda() {
   const previewMensaje = useMemo(() =>
     generarPreviewMensaje(form.mensaje_contacto, { url: urlPublica }),
   [form.mensaje_contacto, urlPublica]);
+
+  const previewMensajeGeneral = useMemo(() =>
+    generarPreviewMensajeGeneral(form.mensaje_consulta_general, { url: urlPublica }),
+  [form.mensaje_consulta_general, urlPublica]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -718,6 +864,58 @@ export default function ConfigurarTienda() {
                             type="file"
                             accept="image/png,image/jpeg,image/webp"
                             onChange={subirLogo}
+                            hidden
+                          />
+                        </div>
+                      </div>
+                      <div className="tn-logo-field">
+                        <span className="tn-field-label">Favicon <em>(ícono de la pestaña)</em></span>
+                        <div className="tn-logo-row">
+                          <button
+                            type="button"
+                            className={`tn-logo-preview tn-favicon-preview ${tienda?.favicon_imagen ? 'con-logo' : ''}`}
+                            onClick={() => faviconInputRef.current?.click()}
+                            disabled={subiendoFavicon}
+                            aria-label={tienda?.favicon_imagen ? 'Cambiar favicon' : 'Subir favicon'}
+                          >
+                            {subiendoFavicon
+                              ? <Loader size={18} className="spin-icon" />
+                              : tienda?.favicon_imagen
+                                ? <img src={getMediaUrl(tienda.favicon_imagen)} alt="Favicon de la tienda" />
+                                : <ImagePlus size={20} />}
+                          </button>
+                          <div className="tn-logo-actions">
+                            <div className="tn-logo-buttons">
+                              <button type="button" className="btn-secondary" onClick={() => faviconInputRef.current?.click()} disabled={subiendoFavicon}>
+                                {tienda?.favicon_imagen ? 'Cambiar favicon' : 'Subir favicon'}
+                              </button>
+                              {tienda?.favicon_imagen && (
+                                <button type="button" className="btn-secondary" onClick={quitarFavicon} disabled={subiendoFavicon}>
+                                  <Trash2 size={14} /> Quitar
+                                </button>
+                              )}
+                            </div>
+                            <span className="tn-field-hint">
+                              Imagen <strong>cuadrada de 512×512 px</strong> (mínimo 192×192), PNG con fondo transparente, máx. 5 MB. Usá solo el símbolo o la inicial de tu marca, sin textos: en la pestaña se ve a 16–32 px y las letras chicas no se leen. Recortamos los márgenes vacíos solos. Sin favicon, la pestaña usa tu logo.
+                            </span>
+                            {avisoFavicon && <span className="tn-favicon-aviso"><Info size={12} /> {avisoFavicon}</span>}
+                            {errorFavicon && <span className="tn-logo-error"><AlertCircle size={12} /> {errorFavicon}</span>}
+                          </div>
+                          {(tienda?.favicon_imagen || tienda?.logo_imagen) && (
+                            <div className="tn-favicon-tab" aria-hidden="true">
+                              <span className="tn-favicon-tab-label">Así se ve en la pestaña</span>
+                              <span className="tn-favicon-tab-chip">
+                                <img src={getMediaUrl(tienda.favicon_imagen || tienda.logo_imagen)} alt="" />
+                                <span>{form.nombre || 'Mi tienda'}</span>
+                              </span>
+                              {!tienda?.favicon_imagen && <span className="tn-field-hint">Ahora usa tu logo.</span>}
+                            </div>
+                          )}
+                          <input
+                            ref={faviconInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            onChange={subirFavicon}
                             hidden
                           />
                         </div>
@@ -1127,64 +1325,39 @@ export default function ConfigurarTienda() {
                     </div>
                   </section>
 
-                  {/* Mensaje de WhatsApp */}
+                  {/* Mensajes de WhatsApp: consulta de producto y consulta general */}
 
                   <section className="tn-group">
                     <div className="tn-group-head">
-                      <h3>Mensaje de WhatsApp para consultas</h3>
-                      <p>El texto editable que se envía cuando un cliente toca "Consultar" o un botón de WhatsApp en tus landings. Los pedidos usan otro mensaje con número, productos y total.</p>
+                      <h3>Mensajes de WhatsApp para consultas</h3>
+                      <p>Dos textos editables según desde dónde te escribe el cliente. Los pedidos usan otro mensaje con número, productos y total.</p>
                     </div>
-                    <div className="tn-group-body">
-                      <div className="tn-msg-grid">
-                        <div className="tn-msg-builder">
-                          <span className="tn-field-label">Plantilla de consulta</span>
-                          <textarea
-                            ref={textareaRef}
-                            className="tn-msg-textarea"
-                            value={form.mensaje_contacto}
-                            onChange={e => handleChange('mensaje_contacto', e.target.value)}
-                            placeholder="Ej: Hola, me interesa {producto}"
-                            maxLength={300}
-                            rows={3}
-                          />
-
-                          <div className="tn-msg-vars-header">
-                            <MousePointerClick size={12} />
-                            <span>Hacé clic para insertar una variable</span>
-                          </div>
-                          <div className="tn-msg-vars">
-                            {VARIABLES_MENSAJE.map(v => (
-                              <button
-                                key={v.variable}
-                                type="button"
-                                className="tn-msg-var-chip"
-                                onClick={() => insertarVariable(v.variable)}
-                                title={`${v.desc} — ej: ${v.ejemplo || urlPublica}`}
-                              >
-                                {v.variable}
-                                <span className="tn-var-desc">— {v.desc}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="tn-msg-preview-wrap">
-                          <div className="tn-msg-preview-label">
-                            <Eye size={12} />
-                            <span>Preview — así se ve en WhatsApp</span>
-                          </div>
-                          <div className="tn-msg-preview-bg">
-                            {previewMensaje ? (
-                              <div className="tn-msg-preview-bubble">
-                                {previewMensaje}
-                                <span className="tn-preview-time">10:30 a.m.</span>
-                              </div>
-                            ) : (
-                              <div className="tn-msg-preview-empty">Escribí un mensaje arriba para ver el preview.</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                    <div className="tn-group-body tn-msg-plantillas">
+                      <PlantillaWhatsapp
+                        titulo="Consulta de producto"
+                        uso="Se envía cuando el cliente consulta un producto: el botón “Consultar por WhatsApp” de la ficha del producto y el ícono flotante mientras mira esa ficha."
+                        textareaRef={textareaRef}
+                        valor={form.mensaje_contacto}
+                        onChange={v => handleChange('mensaje_contacto', v)}
+                        placeholder="Ej: Hola, me interesa {producto}"
+                        variables={VARIABLES_MENSAJE}
+                        onInsertar={v => insertarVariable(v, 'mensaje_contacto', textareaRef)}
+                        urlPublica={urlPublica}
+                        preview={previewMensaje}
+                      />
+                      <PlantillaWhatsapp
+                        titulo="Consulta general"
+                        uso="Se envía cuando el cliente te escribe sin estar mirando un producto: en la página de inicio, en las categorías, el botón “Escribinos por WhatsApp” y el ícono flotante fuera de la ficha."
+                        textareaRef={textareaGeneralRef}
+                        valor={form.mensaje_consulta_general}
+                        onChange={v => handleChange('mensaje_consulta_general', v)}
+                        placeholder={`Ej: ${MENSAJE_GENERAL_PLACEHOLDER}`}
+                        variables={VARIABLES_MENSAJE_GENERAL}
+                        onInsertar={v => insertarVariable(v, 'mensaje_consulta_general', textareaGeneralRef)}
+                        urlPublica={urlPublica}
+                        preview={previewMensajeGeneral}
+                        ayudaVacio={`Si lo dejás vacío se envía “${MENSAJE_GENERAL_PLACEHOLDER}”`}
+                      />
                     </div>
                   </section>
                 </div>

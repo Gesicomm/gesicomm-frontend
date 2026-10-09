@@ -1,10 +1,13 @@
 /**
  * Construcción del link de WhatsApp.
  *
- * La plantilla editable de Mi tienda (Tienda.mensaje_contacto) se usa para
- * consultas comerciales desde la landing: botones "Consultar", ficha de
- * producto y CTAs de contacto. El checkout/pedido arma su propio mensaje con
- * contexto de pedido para no mezclarlo con textos de seguimiento o courier.
+ * Mi tienda tiene dos plantillas editables:
+ * - Tienda.mensaje_contacto: consulta de PRODUCTO (botón "Consultar" de la
+ *   ficha o de la tarjeta). Variables {producto}, {precio}, {url}.
+ * - Tienda.mensaje_consulta_general: consulta sin producto (inicio,
+ *   categorías, contacto). Solo {url}.
+ * El checkout/pedido arma su propio mensaje con contexto de pedido para no
+ * mezclarlo con textos de seguimiento o courier.
  */
 
 function formatPrecio(n) {
@@ -61,20 +64,36 @@ export function armarLinkWhatsapp(contacto, item) {
   return `https://wa.me/${soloDigitos(contacto.whatsapp)}?text=${encodeURIComponent(mensaje)}`;
 }
 
+const MENSAJE_GENERAL_DEFAULT = 'Hola, quiero hacer una consulta.';
+
 /**
- * Mensaje de contacto genérico para botones de WhatsApp que no están atados
- * a un producto puntual. Usa la plantilla editable, pero si esa plantilla
- * pide {producto} cae a una consulta neutral para no dejar variables raras.
+ * Consulta general (inicio, categorías, contacto): plantilla
+ * Tienda.mensaje_consulta_general, que solo admite {url}. Si igual trae
+ * {producto}/{precio} no quedan variables sueltas en el chat. Misma regla
+ * que mensajeConsultaGeneral() en runtimeGesicomm.js (lienzo HTML).
+ */
+function aplicarPlantillaGeneral(plantilla, url) {
+  return String(plantilla || MENSAJE_GENERAL_DEFAULT)
+    .replace(/\{producto\}/gi, 'sus productos')
+    .replace(/\{precio\}/gi, '')
+    .replace(/\{url\}/gi, url)
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
+}
+
+/**
+ * Link de WhatsApp para botones que no están atados a un producto puntual.
+ * `texto` = texto propio del botón, si el comercio le cargó uno.
  */
 export function armarLinkWhatsappContacto(contacto, texto = '') {
   if (!contacto?.whatsapp) return null;
-  const plantilla = texto || contacto.mensaje || 'Hola, quiero hacer una consulta.';
-  const mensaje = aplicarPlantilla(plantilla, {
-    nombre: 'este producto',
-    precio: null,
-    url: urlActual(),
-  }).replace(/\{precio\}/gi, '').trim();
+  const mensaje = aplicarPlantillaGeneral(texto || contacto.mensaje_general, urlActual());
   return `https://wa.me/${soloDigitos(contacto.whatsapp)}?text=${encodeURIComponent(mensaje)}`;
+}
+
+/** Preview de la consulta general en /mi-tienda. */
+export function generarPreviewMensajeGeneral(plantilla, opciones = {}) {
+  return aplicarPlantillaGeneral(plantilla, opciones.url || 'tu-tienda.gesicomm.com');
 }
 
 /**
@@ -114,7 +133,13 @@ export function generarPreviewMensaje(plantilla, opciones = {}) {
     precio: 150000,
     url,
   };
-  let msg = aplicarPlantilla(plantilla || 'Hola, me interesa {producto}', datos);
+  // El lienzo (runtimeGesicomm.js → formatoPrecio) manda el precio como
+  // "Gs 150.000": el preview lo muestra igual, no con formatPrecio.
+  const precioComoEnWhatsapp = 'Gs ' + datos.precio.toLocaleString('es-PY', { maximumFractionDigits: 0 });
+  let msg = aplicarPlantilla(
+    (plantilla || 'Hola, me interesa {producto}').replace(/\{precio\}/gi, precioComoEnWhatsapp),
+    datos,
+  );
 
   const tieneInlinePrecio = /\{precio\}/i.test(plantilla || '');
   const tieneInlineUrl = /\{url\}/i.test(plantilla || '');

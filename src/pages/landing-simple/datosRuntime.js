@@ -639,6 +639,8 @@ function tiendaRuntime(data) {
     },
     whatsapp: c.whatsapp || t.whatsapp || data?.contacto_whatsapp || '',
     mensaje: t.mensaje || data?.tienda?.mensaje_contacto || '',
+    // Consultas sin producto (inicio, categorías) — ver mensajeConsultaGeneral.
+    mensaje_general: t.mensaje_general || data?.tienda?.mensaje_consulta_general || '',
     canal_contacto: c.canal_contacto || t.canal_contacto || data?.tienda?.canal_contacto || data?.canal_contacto || 'whatsapp',
     incluir_precio: !!t.incluir_precio,
     incluir_url: !!t.incluir_url,
@@ -882,6 +884,7 @@ export function datosRuntimePreview({ productos = [], tienda, landing = null, ve
       colores: coloresTiendaPreview(tienda, landing),
       whatsapp: tienda?.whatsapp || tienda?.telefono || '',
       mensaje: tienda?.mensaje_contacto || '',
+      mensaje_general: tienda?.mensaje_consulta_general || '',
       canal_contacto: tienda?.canal_contacto || 'whatsapp',
       telefono: tienda?.telefono || '',
       email: tienda?.email || '',

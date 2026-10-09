@@ -201,9 +201,25 @@ export function runtimeGesicomm() {
     return msg.replace(/[ \t]+\n/g, '\n').trim();
   }
 
+  // Consulta sin producto (inicio, categorías, contacto del pie): plantilla
+  // general de Mi Tienda, solo con {url}. Antes caía a la de producto y el
+  // cliente mandaba "me interesa este producto" desde el inicio.
+  function mensajeConsultaGeneral() {
+    var tienda = datos.tienda || {};
+    var plantilla = tienda.mensaje_general || 'Hola, quiero hacer una consulta.';
+    var msg = String(plantilla)
+      .replace(/\{producto\}/gi, 'sus productos')
+      .replace(/\{precio\}/gi, '')
+      .replace(/\{url\}/gi, window.location.href)
+      .replace(/[ \t]+\n/g, '\n').trim();
+    if (tienda.incluir_url && !/\{url\}/i.test(plantilla)) msg += '\n' + window.location.href;
+    return msg;
+  }
+
   function mensajeWhatsapp(texto) {
     var tienda = datos.tienda || {};
-    var plantilla = texto || tienda.mensaje || (productoActual ? 'Hola, me interesa {producto}' : 'Hola, quiero hacer una consulta.');
+    if (!texto && !productoActual) return mensajeConsultaGeneral();
+    var plantilla = texto || tienda.mensaje || 'Hola, me interesa {producto}';
     var msg = aplicarPlantillaWhatsapp(plantilla, productoActual);
     var tienePrecioInline = /\{precio\}/i.test(plantilla);
     var tieneUrlInline = /\{url\}/i.test(plantilla);
@@ -991,7 +1007,10 @@ export function runtimeGesicomm() {
   var LISTAS_DE_DATOS = {
     categorias: 1, menu_categorias: 1, banners_inicio: 1, banners_intermedios: 1, secciones_inicio: 1,
     beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1, estadisticas: 1, checkout_items: 1, checkout_bumps: 1,
-    botones_pago_producto: 1, metodos_pago_producto: 1, incluye_pedido_producto: 1,
+    // botones_contacto_producto faltaba: el botón "Consultar por WhatsApp"
+    // de la ficha se pintaba como tarjeta de producto (data-gesicomm-ver,
+    // item "undefined") y al tocarlo navegaba en vez de abrir WhatsApp.
+    botones_pago_producto: 1, botones_contacto_producto: 1, metodos_pago_producto: 1, incluye_pedido_producto: 1,
     payment_logos: 1, anuncios: 1, confianza_inicio: 1, marca_badges: 1, marca_medios: 1, testimonios_inicio: 1,
   };
   var LISTA_PAQUETES = 'paquetes';
@@ -1223,9 +1242,14 @@ export function runtimeGesicomm() {
     return 'https://wa.me/' + numero + '?text=' + encodeURIComponent(mensaje);
   }
 
+  // Textos que las plantillas base traen escritos en el HTML. No los eligió
+  // el comercio: cuentan como vacío para que mande la plantilla de Mi Tienda
+  // (de producto en la ficha, general en el inicio).
+  var TEXTOS_WHATSAPP_DE_FABRICA = ['Hola! Quiero consultar por este producto.', 'Hola! Tengo una consulta'];
+
   function valorWhatsappEditable(valor) {
     var limpio = String(valor || '').trim();
-    return limpio === 'Hola! Quiero consultar por este producto.' ? '' : limpio;
+    return TEXTOS_WHATSAPP_DE_FABRICA.indexOf(limpio) !== -1 ? '' : limpio;
   }
 
   function contactosProducto() {
@@ -3542,7 +3566,7 @@ export function runtimeGesicomm() {
     }
     if ((el = t.closest('[data-gesicomm-whatsapp]'))) {
       e.preventDefault();
-      var texto = el.getAttribute('data-gesicomm-whatsapp');
+      var texto = valorWhatsappEditable(el.getAttribute('data-gesicomm-whatsapp'));
       whatsapp(mensajeWhatsapp(texto));
       return;
     }

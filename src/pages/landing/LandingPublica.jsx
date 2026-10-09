@@ -5,7 +5,7 @@ import { generarEventId, inicializarPixel, leerCookiesFacebook, trackearEvento }
 import { inicializarGA } from '../../lib/googleAnalytics';
 import { inicializarTikTokPixel } from '../../lib/tiktokPixel';
 import { cargarFuenteGoogle } from '../../lib/landingDiseno';
-import { useDocumentSeo } from '../../hooks/useDocumentSeo';
+import { useDocumentSeo, faviconDeLanding } from '../../hooks/useDocumentSeo';
 import FunnelView from './FunnelView';
 import TiendaPaginaView from './TiendaPaginaView';
 import LandingCodigoPublica from '../landing-simple/LandingCodigoPublica';
@@ -76,12 +76,11 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
   }, [slug, productId]);
 
   // La pestaña del navegador mostraba el favicon estático de Gesicom
-  // (index.html) en TODAS las páginas publicadas, logo de la tienda
-  // incluido. El logo propio de la landing manda sobre el de "Mi Tienda" —
-  // mismo orden de prioridad que `logo_imagen` en landing.service.js.
+  // (index.html) en TODAS las páginas publicadas. Ver faviconDeLanding:
+  // favicon de Mi Tienda > logo de la landing > logo de la tienda.
   const seoConFavicon = useMemo(() => {
     if (!data?.seo) return data?.seo;
-    const favicon = data.logo_imagen || data.tienda?.logo_imagen || null;
+    const favicon = faviconDeLanding(data);
     return favicon ? { ...data.seo, favicon } : data.seo;
   }, [data]);
   useDocumentSeo(seoConFavicon, typeof window !== 'undefined' ? window.location.href : undefined);
