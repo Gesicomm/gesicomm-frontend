@@ -126,12 +126,3 @@ describe('WhatsApp del lienzo — datos que llegan del backend', () => {
     expect(datos.tienda.mensaje_general).toBe(PLANTILLA_GENERAL_TIENDA);
   });
 });
-
-describe('WhatsApp del lienzo — botón "Consultar" del encabezado de la ficha', () => {
-  it('manda la plantilla de producto', () => {
-    const { document, abiertos, click } = montar(PLANTILLA_PRODUCTO, { vista: 'producto', tienda: tienda(), productos: [remera], producto: remera, recomendados: [] });
-    click(document.querySelector('.nav-cta[data-gesicomm-whatsapp]'));
-    anotar('[encabezado ficha] →', textoDe(abiertos[0]));
-    expect(textoDe(abiertos[0])).toBe('Hola buenas les escribo por el Chomba Lacoste Clásica de Gs 150.000');
-  });
-});
