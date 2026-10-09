@@ -647,11 +647,12 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const datosPreview = useMemo(() => datosRuntimePreview({
     productos: seleccion,
     tienda,
+    landing,
     venta,
     vista,
     productoId: productoPreviewId,
     ofertas: ofertasTienda,
-  }), [seleccion, tienda, venta, vista, productoPreviewId, ofertasTienda]);
+  }), [seleccion, tienda, landing, venta, vista, productoPreviewId, ofertasTienda]);
   const codigoPreviewCrudo = codigosPreview[claveVista] || codigosPreview[vista];
   const codigoInicioPreview = codigosPreview.inicio?.html ? codigosPreview.inicio : plantillaInicioPara(venta?.tipo);
   const codigoPreviewHeredado = ['catalogo', 'categoria', 'checkout', 'producto'].includes(vista)
@@ -737,6 +738,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         errorGuardado={error ? { mensaje: error, detalles: erroresDetalle } : null}
         onCambiarModo={venta?.configurado ? null : () => cambiarDeModo()}
         tienda={tienda}
+        landing={landing}
         // Acciones de la landing ya guardada: solo tienen sentido una vez
         // configurada (recién creada, "Publicar"/"Eliminar" todavía no
         // aplican a nada guardado).

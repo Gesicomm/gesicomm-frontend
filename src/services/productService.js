@@ -3,6 +3,10 @@ import API from './api';
 export const productService = {
   buscar: (filtros) => API.post('/productos/buscar', filtros).then(r => r.data),
   crear: (data) => API.post('/productos', data).then(r => r.data),
+  importarShopify: (formData) =>
+    API.post('/productos/importar-shopify', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
   detalle: (id) => API.get(`/productos/${id}`).then(r => r.data),
   variantes: (id) => API.get(`/productos/${id}/variantes`).then(r => r.data),
   opciones: (id) => API.get(`/productos/${id}/opciones`).then(r => r.data),

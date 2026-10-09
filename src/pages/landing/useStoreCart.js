@@ -69,9 +69,11 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     const idsConfigurados = new Set(configOfertas.map(Number));
     const ofertaIdsEnCarrito = new Set(itemsCarrito.map(it => it.ofertaId).filter(Boolean).map(Number));
     const sugerencias = [];
+    // El tope es por tipo de oferta: con uno solo, dos order bumps llenaban
+    // los dos lugares y el upsell del producto no se ofrecía nunca.
     const maxOfertas = 2;
+    const lleno = estrategia => sugerencias.filter(s => s.oferta.estrategia === estrategia).length >= maxOfertas;
     for (const itemC of itemsCarrito) {
-      if (sugerencias.length >= maxOfertas) break;
       const productoDict = catalogoCompleto.find(i => i.content_id === itemC.contentId);
       if (!productoDict || !productoDict.ofertas?.length) continue;
       const ofertasAptas = ordenarOfertasCheckout(
@@ -79,7 +81,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         idsConfigurados
       );
       for (const o of ofertasAptas) {
-        if (sugerencias.length >= maxOfertas) break;
+        if (lleno(o.estrategia)) continue;
         const claveOferta = claveCarrito(productoDict, itemC.varianteId, o.id);
         if (!carrito.has(claveOferta) && !sugerencias.some(s => s.oferta.id === o.id)) {
           sugerencias.push({ item: productoDict, oferta: o });

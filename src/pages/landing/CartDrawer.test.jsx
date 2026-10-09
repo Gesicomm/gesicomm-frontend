@@ -89,3 +89,53 @@ describe('CartDrawer upsell', () => {
     expect(await screen.findByText(/Pedido recibido/i)).toBeInTheDocument();
   });
 });
+
+// Lienzo en blanco: el formulario es la página /checkout (iframe), no este
+// drawer. Al confirmar allá, el contenedor pide el upsell con solicitudUpsell.
+function DrawerDesdeCheckout({ solicitud, sugerencias, onResuelto }) {
+  const [items, setItems] = useState([productoBase]);
+  return (
+    <CartDrawer
+      abierto={false}
+      items={items}
+      sugerencias={sugerencias}
+      onAgregarSugerencia={(_item, oferta) => setItems(prev => [...prev, { clave: `oferta:${oferta.id}`, contentId: 'adel', nombre: 'Articumina', ofertaId: oferta.id, cantidad: 1, precio: 120000 }])}
+      onConfirmarPedido={vi.fn()}
+      onCerrar={vi.fn()}
+      onCantidad={vi.fn()}
+      onQuitar={vi.fn()}
+      onIrACheckout={vi.fn()}
+      solicitudUpsell={solicitud}
+      onUpsellResuelto={() => onResuelto(items)}
+    />
+  );
+}
+
+describe('CartDrawer upsell pedido por la página de checkout', () => {
+  it('muestra el pop-up aunque el drawer esté cerrado y avisa recién con el upsell ya en el carrito', async () => {
+    const resuelto = vi.fn();
+    render(<DrawerDesdeCheckout solicitud={{ pedidoEn: 1 }} sugerencias={[{ item: productoBase, oferta: ofertaUpsell }]} onResuelto={resuelto} />);
+
+    expect(await screen.findByText(/Esperá, tenemos una oferta para vos/i)).toBeInTheDocument();
+    expect(resuelto).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Sí, agregar por 120\.000 Gs/i }));
+
+    await waitFor(() => expect(resuelto).toHaveBeenCalledTimes(1));
+    expect(resuelto.mock.calls[0][0].map(i => i.ofertaId)).toEqual([undefined, 77]);
+  });
+
+  it('"No gracias" sigue con el pedido sin agregar nada', async () => {
+    const resuelto = vi.fn();
+    render(<DrawerDesdeCheckout solicitud={{ pedidoEn: 1 }} sugerencias={[{ item: productoBase, oferta: ofertaUpsell }]} onResuelto={resuelto} />);
+    fireEvent.click(await screen.findByRole('button', { name: /No gracias/i }));
+    expect(resuelto).toHaveBeenCalledTimes(1);
+    expect(resuelto.mock.calls[0][0].map(i => i.ofertaId)).toEqual([undefined]);
+  });
+
+  it('sin upsells el pedido sigue de inmediato', async () => {
+    const resuelto = vi.fn();
+    render(<DrawerDesdeCheckout solicitud={{ pedidoEn: 1 }} sugerencias={[]} onResuelto={resuelto} />);
+    await waitFor(() => expect(resuelto).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/Esperá, tenemos una oferta para vos/i)).not.toBeInTheDocument();
+  });
+});

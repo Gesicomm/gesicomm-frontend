@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CodigoPreview from './CodigoPreview';
-import { PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, PLANTILLA_INICIO, esFichaProductoBase, esCheckoutBase } from './plantillasBaseCodigo';
+import { PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esCheckoutBase } from './plantillasBaseCodigo';
 import { datosRuntimePublico, urlProducto, itemPublicoARuntime, urlPaginaTienda, PAGINAS_TIENDA, ofertaCruzadaVisible } from './datosRuntime';
 import { generarEventId, leerCookiesFacebook, trackearEvento, trackearEventoPersonalizado } from '../../lib/metaPixel';
 import { trackearEventoGA } from '../../lib/googleAnalytics';
@@ -10,7 +10,8 @@ import CartDrawer from '../landing/CartDrawer';
 import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
 import { getMediaUrl } from '../../services/api';
 import { useStoreCart } from '../landing/useStoreCart';
-import { codigoConGlobales, conGlobalesHeredados } from './globalesCodigo';
+import { conGlobalesHeredados } from './globalesCodigo';
+import { codigoFichaProducto, codigoInicioHeredable as inicioHeredableDe } from './fichaCodigoLanding';
 
 /**
  * La landing pública de una tienda que eligió "Lienzo en blanco": el
@@ -140,22 +141,14 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   const esFicha = !!productoPublico;
   const vistaActual = vistaCodigo || (esFicha ? 'producto' : 'inicio');
   // Ficha propia de ESTE producto (si el comercio le armó una) → la general
-  // → la base.
-  const fichaPropia = esFicha ? data?.content?.vistas?.productos?.[productoPublico.content_id] : null;
-  const fichaGeneral = data?.content?.vistas?.producto;
+  // → la base. Misma regla que la vista previa de Productos (fichaCodigoLanding).
   const codigoCatalogo = data?.content?.vistas?.catalogo;
   const codigoCategoria = data?.content?.vistas?.categoria;
   const codigoCheckout = data?.content?.vistas?.checkout;
-  const codigoInicioHeredable = codigoConGlobales([
-    data?.content?.codigo,
-    data?.content?.vistas?.inicio,
-    codigoInicio,
-    PLANTILLA_INICIO,
-  ]) || codigoInicio || PLANTILLA_INICIO;
-  const codigoFicha = fichaPropia?.html && !esFichaProductoBase(fichaPropia.html)
-    ? fichaPropia
-    : (fichaGeneral?.html && !esFichaProductoBase(fichaGeneral.html) ? fichaGeneral : PLANTILLA_PRODUCTO);
-  const codigoFichaConGlobales = conGlobalesHeredados(codigoFicha, codigoInicioHeredable);
+  const codigoInicioHeredable = inicioHeredableDe(data?.content, codigoInicio);
+  const codigoFichaConGlobales = esFicha
+    ? codigoFichaProducto(data?.content, productoPublico.content_id, codigoInicio)
+    : null;
   const codigoCatalogoConGlobales = conGlobalesHeredados(codigoCatalogo?.html ? codigoCatalogo : PLANTILLA_CATALOGO, codigoInicioHeredable);
   const codigoCategoriaConGlobales = conGlobalesHeredados(codigoCategoria?.html ? codigoCategoria : PLANTILLA_CATEGORIA, codigoInicioHeredable);
   const codigoCheckoutConGlobales = conGlobalesHeredados(
@@ -184,6 +177,10 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   }, [data, extras]);
   const cartState = useStoreCart(slug, data, productos);
   const [checkoutEstado, setCheckoutEstado] = useState(null);
+  // Confirmar en la página de checkout: primero el upsell (lo pregunta el
+  // CartDrawer, que es donde vive ese popup) y recién después el pedido.
+  const [solicitudUpsell, setSolicitudUpsell] = useState(null);
+  const camposCheckoutPendientes = useRef(null);
   const [paymentMethodInicial, setPaymentMethodInicial] = useState(null);
   // Departamentos/ciudades de Paraguay para el <select> de dirección del
   // checkout propio (ver data-gesicomm-geografia). Catálogo compartido, no
@@ -300,10 +297,34 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     if (pedido?.abrir !== false) cartState.setCarritoAbierto(true);
   }
 
-  async function confirmarCheckoutIframe(pedido) {
+  function confirmarCheckoutIframe(pedido) {
+    camposCheckoutPendientes.current = pedido?.campos || {};
+    setCheckoutEstado({ estado: 'enviando', mensaje: 'Revisando tu pedido...' });
+    setSolicitudUpsell({ pedidoEn: Date.now() });
+  }
+
+  async function enviarPedidoCheckout() {
+    setSolicitudUpsell(null);
     setCheckoutEstado({ estado: 'enviando', mensaje: 'Enviando pedido...' });
     try {
-      const res = await cartState.confirmarPedido(pedido?.campos || {});
+      const res = await cartState.confirmarPedido(camposCheckoutPendientes.current || {});
+      // Pago anticipado: el pedido ya existe y PagoPar devolvió dónde
+      // pagar. Sin esta redirección el cliente veía "confirmado" y nunca
+      // llegaba a pagar.
+      if (res?.payment_data?.payment_url) {
+        setCheckoutEstado({ estado: 'enviando', mensaje: 'Te llevamos a PagoPar para completar el pago...' });
+        window.location.href = res.payment_data.payment_url;
+        return;
+      }
+      if (res?.payment_data?.error) {
+        setCheckoutEstado({
+          estado: 'error',
+          mensaje: `Tu pedido ${res?.numero_pedido || ''} quedó registrado, pero no pudimos abrir el pago online. La tienda te va a contactar para coordinar el pago.`,
+          pedido_id: res?.pedido_id,
+          numero_pedido: res?.numero_pedido,
+        });
+        return;
+      }
       setCheckoutEstado({
         estado: 'confirmado',
         mensaje: `Pedido ${res?.numero_pedido || res?.pedido_id || ''} confirmado.`,
@@ -414,6 +435,12 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         typography={data?.typography}
         onCheckout={abrirCheckout}
         onConfirmarCheckout={confirmarCheckoutIframe}
+        onQuitarOferta={pedido => {
+          // Desmarcar un order bump en el checkout: sale del pedido.
+          Array.from(cartState.carrito.values())
+            .filter(it => Number(it.ofertaId) === Number(pedido?.oferta))
+            .forEach(it => cartState.quitarDelCarrito(it.clave));
+        }}
         onCarrito={() => cartState.setCarritoAbierto(true)}
         onNavegar={navegar}
         onEvento={registrarEvento}
@@ -442,6 +469,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
           apariencia={cartApariencia}
           paymentMethodInicial={paymentMethodInicial}
           onIrACheckout={() => navegar({ destino: 'checkout' })}
+          solicitudUpsell={solicitudUpsell}
+          onUpsellResuelto={enviarPedidoCheckout}
         />
       )}
     </div>

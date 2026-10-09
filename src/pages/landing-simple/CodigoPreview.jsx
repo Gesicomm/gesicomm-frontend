@@ -23,7 +23,7 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * (contacto/footer, order bump de la landing — ver seccionesSistemaCodigo.js
  * y el order bump del runtime); `onTema` recibe los colores reales del carrito.
  */
-export default function CodigoPreview({ codigo, titulo, datos, extras = null, typography = null, previewDevice = null, onError, onCheckout, onConfirmarCheckout, onNavegar, onEvento, onCatalogo, onTema, onCarrito, resaltar, className = '', style }) {
+export default function CodigoPreview({ codigo, titulo, datos, extras = null, typography = null, previewDevice = null, onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onTema, onCarrito, resaltar, className = '', style }) {
   const ref = useRef(null);
 
   // resaltar = { lista, n }: pide al runtime que muestre y marque una zona.
@@ -61,7 +61,7 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
   // Refs para los handlers: se registran una sola vez y siempre llaman a
   // la versión más nueva, sin re-suscribir el listener en cada render.
   const handlers = useRef({});
-  handlers.current = { onError, onCheckout, onConfirmarCheckout, onNavegar, onEvento, onCatalogo, onTema, onCarrito };
+  handlers.current = { onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onTema, onCarrito };
 
   useEffect(() => {
     function alMensaje(e) {
@@ -74,6 +74,7 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
       if (tipo === 'gesicomm:error-codigo') h.onError?.(e.data.mensaje);
       if (tipo === 'gesicomm:checkout') h.onCheckout?.(e.data);
       if (tipo === 'gesicomm:confirmar-checkout') h.onConfirmarCheckout?.(e.data);
+      if (tipo === 'gesicomm:quitar-oferta') h.onQuitarOferta?.(e.data);
       if (tipo === 'gesicomm:carrito') h.onCarrito?.(e.data);
       if (tipo === 'gesicomm:navegar') h.onNavegar?.(e.data);
       if (tipo === 'gesicomm:evento') h.onEvento?.(e.data);

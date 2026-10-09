@@ -81,20 +81,6 @@ function aplicarPrecioVenta(item, precio) {
     : item;
 }
 
-function esPropio(item) {
-  return item?.origen_catalogo === 'PROPIO';
-}
-
-function coincideOrigen(item, origen) {
-  if (origen === 'todos') return true;
-  if (origen === 'mios') return esPropio(item);
-  if (origen === 'producto-propio') return item.tipo === 'producto' && esPropio(item);
-  if (origen === 'producto-gcom') return item.tipo === 'producto' && !esPropio(item);
-  if (origen === 'combo-propio') return item.tipo === 'combo' && esPropio(item);
-  if (origen === 'combo-gcom') return item.tipo === 'combo' && !esPropio(item);
-  return true;
-}
-
 function fusionarSeleccionConCatalogo(item, seleccionData, preciosLocales) {
   const precioLocal = preciosLocales.get(claveItem(item));
   const precioCatalogo = precioDesdeCatalogo(item);
@@ -378,7 +364,7 @@ export default function ProductPicker({
   mostrarEtiquetas = true,
 }) {
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [catalogoFresco, setCatalogoFresco] = useState(null);
+  const [catalogoBackend, setCatalogoBackend] = useState(null);
   const [cargandoCatalogoFresco, setCargandoCatalogoFresco] = useState(false);
   const [errorCatalogoFresco, setErrorCatalogoFresco] = useState('');
   const [busqueda, setBusqueda] = useState('');
@@ -391,16 +377,42 @@ export default function ProductPicker({
   const [soloSeleccionados, setSoloSeleccionados] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [preciosLocales, setPreciosLocales] = useState(() => new Map());
-  const catalogoActivo = catalogoFresco || catalogo;
+  const catalogoBase = catalogo || { productos: [], combos: [] };
+
+  function filtrosBackend(overrides = {}) {
+    let tipoQuery = tipo;
+    let solamenteMios = origen === 'mios';
+    let origenCatalogo = null;
+
+    if (origen === 'producto-propio') { tipoQuery = 'producto'; solamenteMios = true; }
+    if (origen === 'producto-gcom') { tipoQuery = 'producto'; origenCatalogo = 'GESICOMM'; }
+    if (origen === 'combo-propio') { tipoQuery = 'combo'; solamenteMios = true; }
+    if (origen === 'combo-gcom') { tipoQuery = 'combo'; origenCatalogo = 'GESICOMM'; }
+    if (!permitirCombos && tipoQuery === 'todos') tipoQuery = 'producto';
+
+    return {
+      page: pagina,
+      limit: 10,
+      busqueda,
+      filtroCategoria: categoria,
+      filtroMarca: marca,
+      filtroStock: stock === 'todos' ? '' : stock,
+      orden,
+      tipo: tipoQuery,
+      solamenteMios,
+      origenCatalogo,
+      ...overrides,
+    };
+  }
 
   React.useEffect(() => {
-    if (!modalAbierto || !refrescarCatalogoAlAbrir) return;
+    if (!modalAbierto) return;
     let activo = true;
     setCargandoCatalogoFresco(true);
     setErrorCatalogoFresco('');
-    vitrinaService.catalogo()
+    vitrinaService.catalogoPaginado(filtrosBackend())
       .then(data => {
-        if (activo) setCatalogoFresco(data);
+        if (activo) setCatalogoBackend(data);
       })
       .catch(() => {
         if (activo) setErrorCatalogoFresco('No se pudo refrescar el catálogo.');
@@ -409,15 +421,16 @@ export default function ProductPicker({
         if (activo) setCargandoCatalogoFresco(false);
       });
     return () => { activo = false; };
-  }, [modalAbierto, refrescarCatalogoAlAbrir]);
+  }, [modalAbierto, busqueda, tipo, origen, categoria, marca, stock, orden, pagina, permitirCombos]);
 
   React.useEffect(() => {
     const proximos = new Map(preciosLocales);
     let cambio = false;
 
     [
-      ...(catalogoActivo?.productos || []).map(item => ({ ...item, tipo: 'producto' })),
-      ...(permitirCombos ? (catalogoActivo?.combos || []).map(item => ({ ...item, tipo: 'combo' })) : []),
+      ...(catalogoBase?.productos || []).map(item => ({ ...item, tipo: 'producto' })),
+      ...(permitirCombos ? (catalogoBase?.combos || []).map(item => ({ ...item, tipo: 'combo' })) : []),
+      ...(catalogoBackend?.items || []),
     ].forEach(item => {
       const clave = claveItem(item);
       const precio = precioDesdeCatalogo(item);
@@ -430,72 +443,48 @@ export default function ProductPicker({
 
     if (!cambio) return;
     setPreciosLocales(proximos);
-  }, [catalogoActivo, permitirCombos]);
+  }, [catalogoBase, catalogoBackend, permitirCombos]);
 
-  const todos = useMemo(() => [
-    ...(catalogoActivo?.productos || []).map(p => {
+  const todosBase = useMemo(() => [
+    ...(catalogoBase?.productos || []).map(p => {
       const precioLocal = preciosLocales.get(`producto:${p.id}`);
       return aplicarPrecioVenta({ ...p, tipo: 'producto' }, primerNumero(precioLocal, precioDesdeCatalogo(p)));
     }),
-    ...(permitirCombos ? (catalogoActivo?.combos || []) : []).map(c => {
+    ...(permitirCombos ? (catalogoBase?.combos || []) : []).map(c => {
       const precioLocal = preciosLocales.get(`combo:${c.id}`);
       return aplicarPrecioVenta({ ...c, tipo: 'combo' }, primerNumero(precioLocal, precioDesdeCatalogo(c)));
     }),
-  ], [catalogoActivo, preciosLocales, permitirCombos]);
-
-  const categorias = useMemo(() => [...new Set(todos.map(i => i.categoria).filter(Boolean))].sort(), [todos]);
-  const marcas = useMemo(() => [...new Set(todos.map(i => i.marca).filter(Boolean))].sort(), [todos]);
+  ], [catalogoBase, preciosLocales, permitirCombos]);
 
   const visibles = useMemo(() => {
-    let lista = todos;
-    const precioOrdenable = (item) => precioVentaItem(fusionarSeleccionConCatalogo(item, seleccion.get(claveItem(item)), preciosLocales));
-
-    if (tipo !== 'todos') lista = lista.filter(i => i.tipo === tipo);
-    if (origen !== 'todos') lista = lista.filter(i => coincideOrigen(i, origen));
-    if (categoria) lista = lista.filter(i => i.categoria === categoria);
-    if (marca) lista = lista.filter(i => i.marca === marca);
-    if (stock === 'con') lista = lista.filter(i => (i.stock ?? 0) > 0);
-    if (stock === 'sin') lista = lista.filter(i => (i.stock ?? 0) === 0);
-    if (soloSeleccionados) lista = lista.filter(i => seleccion.has(claveItem(i)));
-
-    if (busqueda.trim()) {
-      const q = busqueda.trim().toLowerCase();
-      lista = lista.filter(i =>
-        i.nombre?.toLowerCase().includes(q) ||
-        i.descripcion?.toLowerCase().includes(q) ||
-        i.categoria?.toLowerCase().includes(q) ||
-        i.marca?.toLowerCase().includes(q)
-      );
+    if (soloSeleccionados) {
+      return Array.from(seleccion.values()).map(item => {
+        const base = todosBase.find(actual => claveItem(actual) === claveItem(item));
+        return base ? fusionarSeleccionConCatalogo(base, item, preciosLocales) : item;
+      });
     }
+    return (catalogoBackend?.items || []).map(item => {
+      const precioLocal = preciosLocales.get(claveItem(item));
+      return aplicarPrecioVenta(item, primerNumero(precioLocal, precioDesdeCatalogo(item)));
+    });
+  }, [catalogoBackend, preciosLocales, seleccion, soloSeleccionados, todosBase]);
 
-    switch (orden) {
-      case 'precio-asc':
-        return [...lista].sort((a, b) => (precioOrdenable(a) ?? 0) - (precioOrdenable(b) ?? 0));
-      case 'precio-desc':
-        return [...lista].sort((a, b) => (precioOrdenable(b) ?? 0) - (precioOrdenable(a) ?? 0));
-      case 'recientes':
-        return [...lista].sort((a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0));
-      default:
-        return [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre));
-    }
-  }, [todos, tipo, origen, categoria, marca, stock, soloSeleccionados, busqueda, orden, seleccion, preciosLocales]);
+  const categorias = catalogoBackend?.categorias || [];
+  const marcas = catalogoBackend?.marcas || [];
 
   React.useEffect(() => {
     setPagina(1);
   }, [busqueda, tipo, origen, categoria, marca, stock, orden, soloSeleccionados]);
 
-  const TAMANO_PAGINA = 10;
-  const totalPaginas = Math.ceil(visibles.length / TAMANO_PAGINA) || 1;
-  const visiblesPaginados = useMemo(() => {
-    const inicio = (pagina - 1) * TAMANO_PAGINA;
-    return visibles.slice(inicio, inicio + TAMANO_PAGINA);
-  }, [visibles, pagina]);
+  const totalItems = soloSeleccionados ? visibles.length : (catalogoBackend?.total || 0);
+  const totalPaginas = soloSeleccionados ? 1 : (catalogoBackend?.totalPages || 1);
+  const visiblesPaginados = visibles;
 
   const cantidad = seleccion.size;
   const lleno = cantidad >= max;
   const hayFiltroActivo = !!(busqueda || categoria || marca || tipo !== 'todos' || origen !== 'todos' || stock !== 'todos' || soloSeleccionados);
-  const esperandoCatalogoFresco = refrescarCatalogoAlAbrir && modalAbierto && cargandoCatalogoFresco && !catalogoFresco;
-  const falloCatalogoFrescoSinDatos = refrescarCatalogoAlAbrir && modalAbierto && !!errorCatalogoFresco && !catalogoFresco;
+  const esperandoCatalogoFresco = modalAbierto && cargandoCatalogoFresco && !catalogoBackend;
+  const falloCatalogoFrescoSinDatos = modalAbierto && !!errorCatalogoFresco && !catalogoBackend;
 
   function limpiarFiltros() {
     setBusqueda(''); setTipo('todos'); setOrigen('todos'); setCategoria(''); setMarca(''); setStock('todos'); setSoloSeleccionados(false); setPagina(1);
@@ -521,12 +510,11 @@ export default function ProductPicker({
       copia.set(claveItem(item), precio);
       return copia;
     });
-    setCatalogoFresco(prev => {
+    setCatalogoBackend(prev => {
       if (!prev) return prev;
-      const campo = item.tipo === 'combo' ? 'combos' : 'productos';
       return {
         ...prev,
-        [campo]: (prev[campo] || []).map(actual =>
+        items: (prev.items || []).map(actual =>
           String(actual.id) === String(item.id)
             ? { ...actual, precio_usuario: precio, precio_efectivo: precio }
             : actual
@@ -536,12 +524,12 @@ export default function ProductPicker({
   }
 
   const itemsOrdenadosEnriquecidos = useMemo(() => {
-    const porClave = new Map(todos.map(item => [claveItem(item), item]));
+    const porClave = new Map(todosBase.map(item => [claveItem(item), item]));
     return (itemsOrdenados || []).map(item => {
       const base = porClave.get(claveItem(item));
       return base ? fusionarSeleccionConCatalogo(base, item, preciosLocales) : item;
     });
-  }, [itemsOrdenados, todos, preciosLocales]);
+  }, [itemsOrdenados, todosBase, preciosLocales]);
 
   return (
     <div className={`lb-picker ${themeScopeClassName}`}>
@@ -655,7 +643,7 @@ export default function ProductPicker({
               {/* var(--color-fg-muted) y no un blanco fijo: con el blanco
                   hardcodeado este texto quedaba invisible en modo claro. */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.2rem', fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>
-                <span>Mostrando {visiblesPaginados.length} de {visibles.length}</span>
+                <span>Mostrando {visiblesPaginados.length} de {totalItems}</span>
                 {totalPaginas > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     <button

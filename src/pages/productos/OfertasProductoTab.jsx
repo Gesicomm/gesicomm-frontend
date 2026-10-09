@@ -857,6 +857,11 @@ export default function OfertasProductoTab({
               || Number(oferta.precio_order_bump) === precioOferta)
               ? null : Number(oferta.precio_order_bump);
             const ahorroPct = precioNormal > 0 ? Math.round((1 - precioOferta / precioNormal) * 100) : null;
+            // Con promo en checkout, lo que se cobra es la promo: el margen que
+            // importa es ese (puede quedar por debajo del costo sin que se note).
+            const margenMostrado = promoCheckout !== null && oferta.margen_order_bump_pct != null
+              ? Number(oferta.margen_order_bump_pct)
+              : Number(oferta.margen_pct);
 
             return (
             <div key={oferta.id} className={`combo-list-card ${!oferta.activo ? 'inactivo' : ''}`}>
@@ -909,8 +914,8 @@ export default function OfertasProductoTab({
                 )}
                 <div className="combo-list-card-metric">
                   <span className="combo-list-card-metric-label">Margen</span>
-                  <span className="combo-list-card-metric-value" style={{ color: oferta.margen_pct >= 30 ? '#10b981' : oferta.margen_pct > 0 ? '#f59e0b' : '#ef4444' }}>
-                    {oferta.margen_pct}%
+                  <span className="combo-list-card-metric-value" style={{ color: margenMostrado >= 30 ? '#10b981' : margenMostrado > 0 ? '#f59e0b' : '#ef4444' }}>
+                    {margenMostrado}%
                   </span>
                 </div>
               </div>
@@ -1284,7 +1289,7 @@ export default function OfertasProductoTab({
                   ofertaId={modoBorrador ? null : editando?.id || null}
                   imagenUrl={form.imagen_url || null}
                   archivo={form.imagen_archivo}
-                  respaldoUrl={productoBase.imagen}
+                  respaldoUrl={productoExtraPreview?.imagen || productoBase.imagen}
                   onChange={({ imagen_url, archivo }) => setForm(f => ({ ...f, imagen_url: imagen_url || '', imagen_archivo: archivo }))}
                 />
               </div>

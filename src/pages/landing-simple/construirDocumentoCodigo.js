@@ -151,9 +151,14 @@ body {
   min-width: 100% !important;
   max-width: none !important;
 }
+/* clip y no hidden: hidden en html+body convierte al body en contenedor de
+   scroll y rompe todo position:sticky de la página (la galería de la ficha
+   no acompañaba el scroll de la columna de compra). hidden queda de respaldo
+   para navegadores sin overflow:clip. */
 html,
 body {
   overflow-x: hidden;
+  overflow-x: clip;
 }
 body {
   overflow-anchor: none;
@@ -161,7 +166,15 @@ body {
   color: var(--gc-texto, var(--tienda-texto, #10202f));
 }
 html[data-gesicomm-preview-device="mobile"] {
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
+  scrollbar-width: none;
+}
+html[data-gesicomm-preview-device="mobile"]::-webkit-scrollbar,
+html[data-gesicomm-preview-device="mobile"] body::-webkit-scrollbar,
+html[data-gesicomm-preview-device="mobile"] *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
 }
 
 :where(.storefront, main[data-gesicomm-base]) {
@@ -1914,8 +1927,8 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   html[data-gesicomm-preview-device="mobile"] .commerce-header .header-nav {
     position: fixed !important;
     inset: 0 auto 0 0 !important;
-    width: min(78vw, 300px) !important;
-    max-width: calc(100vw - 64px) !important;
+    width: min(84vw, 328px) !important;
+    max-width: calc(100vw - 40px) !important;
     min-height: 100dvh !important;
     height: 100dvh !important;
     display: flex !important;
@@ -1930,8 +1943,14 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
     border-radius: 0 !important;
     box-shadow: 16px 0 42px color-mix(in srgb, var(--gc-texto, #10202f) 20%, transparent) !important;
     overflow-y: auto !important;
+    scrollbar-width: none !important;
     transform: translateX(-105%) !important;
     z-index: 1000 !important;
+  }
+  html[data-gesicomm-preview-device="mobile"] .commerce-header .header-nav::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
   }
   html[data-gesicomm-preview-device="mobile"] .commerce-header .header-nav.is-open {
     transform: translateX(0) !important;
@@ -1942,11 +1961,19 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   }
   html[data-gesicomm-preview-device="mobile"] .commerce-header .header-nav .nav-links,
   html[data-gesicomm-preview-device="mobile"] .commerce-header .header-nav #nav-links {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 0 !important;
     width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
   }
   html[data-gesicomm-preview-device="mobile"] .commerce-header .header-nav a,
   html[data-gesicomm-preview-device="mobile"] .commerce-header .header-nav button,
@@ -1978,7 +2005,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   html[data-gesicomm-preview-device="mobile"] .commerce-header .menu-toggle[aria-expanded="true"] {
     position: fixed !important;
     top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
-    left: min(calc(78vw - 50px), 248px) !important;
+    left: min(calc(84vw - 50px), 278px) !important;
     z-index: 1001 !important;
     display: inline-flex !important;
     align-items: center !important;

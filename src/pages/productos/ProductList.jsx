@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
@@ -8,7 +8,8 @@ import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
-  ToggleLeft, ToggleRight, Loader, Tag, Layers, Warehouse, Truck
+  ToggleLeft, ToggleRight, Loader, Tag, Layers, Warehouse, Truck,
+  FileSpreadsheet, UploadCloud, X, CheckCircle2
 } from 'lucide-react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import LogisticaAbastecimientoModal from '../../components/depositos/LogisticaAbastecimientoModal';
@@ -48,6 +49,12 @@ export default function ProductList() {
   const [productoAbastecer, setProductoAbastecer] = useState(null);
   const [dandoBaja, setDandoBaja] = useState(false);
   const [usuarioActual, setUsuarioActual] = useState(null);
+  const [modalImportacion, setModalImportacion] = useState(false);
+  const [archivoImportacion, setArchivoImportacion] = useState(null);
+  const [importando, setImportando] = useState(false);
+  const [resultadoImportacion, setResultadoImportacion] = useState(null);
+  const [errorImportacion, setErrorImportacion] = useState('');
+  const inputImportacionRef = useRef(null);
 
   // ── Filtros (todos controlados) ───────────────────────────
   const [texto, setTexto] = useState('');
@@ -140,6 +147,40 @@ export default function ProductList() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const abrirImportacion = () => {
+    setArchivoImportacion(null);
+    setResultadoImportacion(null);
+    setErrorImportacion('');
+    setModalImportacion(true);
+  };
+
+  const cerrarImportacion = () => {
+    if (importando) return;
+    setModalImportacion(false);
+  };
+
+  const importarArchivoShopify = async () => {
+    if (!archivoImportacion) {
+      setErrorImportacion('Elegí un archivo CSV o Excel exportado desde Shopify.');
+      return;
+    }
+    setImportando(true);
+    setErrorImportacion('');
+    setResultadoImportacion(null);
+    try {
+      const formData = new FormData();
+      formData.append('archivo', archivoImportacion);
+      const resultado = await productService.importarShopify(formData);
+      setResultadoImportacion(resultado);
+      setPagina(1);
+      await buscar(1);
+    } catch (err) {
+      setErrorImportacion(err.response?.data?.message || 'No se pudo importar el archivo.');
+    } finally {
+      setImportando(false);
+    }
+  };
+
   const abrirOfertas = (producto) => {
     sessionStorage.setItem('gesicomm:tabInicial', 'ofertas');
     navigate(`/products/${producto.id}/editar`);
@@ -170,9 +211,14 @@ export default function ProductList() {
             </p>
           </div>
         </div>
-        <button className="btn-primary" onClick={() => navigate('/products/nuevo')}>
-          <Plus size={16} /> Nuevo producto
-        </button>
+        <div className="prod-header-actions">
+          <button className="btn-secondary" onClick={abrirImportacion}>
+            <FileSpreadsheet size={16} /> Importar Excel/CSV
+          </button>
+          <button className="btn-primary" onClick={() => navigate('/products/nuevo')}>
+            <Plus size={16} /> Nuevo producto
+          </button>
+        </div>
       </div>
 
       {/* Filtros — todos disparan búsqueda automática */}
@@ -509,6 +555,98 @@ export default function ProductList() {
         onConfirm={confirmarDarDeBaja}
         onCancel={() => setProductoABajar(null)}
       />
+
+      {modalImportacion && (
+        <div className="import-modal-overlay" role="dialog" aria-modal="true" aria-label="Importar productos desde Shopify">
+          <div className="import-modal">
+            <div className="import-modal-header">
+              <div>
+                <h2>Importar productos desde Shopify</h2>
+                <p>Subí el CSV o Excel exportado desde Shopify. Gesicom crea productos, variantes básicas e imágenes por URL.</p>
+              </div>
+              <button type="button" className="btn-icon" onClick={cerrarImportacion} aria-label="Cerrar" disabled={importando}>
+                <X size={17} />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className={`import-dropzone ${archivoImportacion ? 'has-file' : ''}`}
+              onClick={() => inputImportacionRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (!file) return;
+                setArchivoImportacion(file);
+                setErrorImportacion('');
+                setResultadoImportacion(null);
+              }}
+              disabled={importando}
+            >
+              <UploadCloud size={24} />
+              <span>{archivoImportacion ? archivoImportacion.name : 'Elegir archivo CSV, XLS o XLSX'}</span>
+              <small>Usá el archivo de exportación de productos de Shopify.</small>
+            </button>
+            <input
+              ref={inputImportacionRef}
+              type="file"
+              accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              hidden
+              onChange={(e) => {
+                setArchivoImportacion(e.target.files?.[0] || null);
+                setErrorImportacion('');
+                setResultadoImportacion(null);
+              }}
+            />
+
+            {errorImportacion && (
+              <div className="import-alert error">
+                <AlertTriangle size={15} />
+                <span>{errorImportacion}</span>
+              </div>
+            )}
+
+            {resultadoImportacion && (
+              <div className="import-result">
+                <div className="import-alert success">
+                  <CheckCircle2 size={15} />
+                  <span>
+                    {resultadoImportacion.creados} de {resultadoImportacion.total_leidos} productos importados.
+                    {' '}{resultadoImportacion.imagenes} imágenes y {resultadoImportacion.variantes} variantes agregadas.
+                  </span>
+                </div>
+                {resultadoImportacion.errores_total > 0 && (
+                  <div className="import-errors">
+                    <strong>{resultadoImportacion.errores_total} producto(s) no se importaron</strong>
+                    <ul>
+                      {resultadoImportacion.errores.map((err, idx) => (
+                        <li key={`${err.handle}-${idx}`}>
+                          <span>{err.handle || `Fila ${err.fila}`}</span>
+                          <small>{err.error}</small>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="import-modal-actions">
+              <button type="button" className="btn-secondary" onClick={cerrarImportacion} disabled={importando}>
+                {resultadoImportacion ? 'Cerrar' : 'Cancelar'}
+              </button>
+              <button type="button" className="btn-primary" onClick={importarArchivoShopify} disabled={importando || !archivoImportacion}>
+                {importando ? <Loader size={15} className="spin-icon" /> : <UploadCloud size={15} />}
+                {importando ? 'Importando...' : 'Importar productos'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

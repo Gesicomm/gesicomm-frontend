@@ -1082,6 +1082,60 @@ ${FOOTER_HTML}`;
 
 // ─── FICHA DE PRODUCTO ───────────────────────────────────────────────────
 
+// Tarjeta de order bump: la misma en la ficha y en el checkout de la tienda.
+const BUMP_CSS = `/* Order bump moderno: mini oferta clickeable, no formulario amarillo. */
+.bumps { display: grid; gap: 12px; margin-bottom: 12px; }
+.bump {
+  display: block; overflow: hidden; position: relative; cursor: pointer;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent 62%), var(--white);
+  border: 1.5px solid color-mix(in srgb, var(--brand) 38%, var(--line));
+  border-radius: 14px;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, .08);
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.bump:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: 0 18px 34px rgba(15, 23, 42, .12); }
+.bump:has(.bump-check:focus-visible) { outline: 3px solid var(--brand-soft); outline-offset: 2px; }
+.bump.is-checked, .bump:has(.bump-check:checked) { border-color: var(--brand); background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent 62%), var(--white); }
+.bump-check { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.bump-flag {
+  display: flex; align-items: center; gap: 7px; padding: 8px 14px;
+  color: var(--brand); background: color-mix(in srgb, var(--brand) 14%, var(--white));
+  font-size: .72rem; font-weight: 900; letter-spacing: .05em; line-height: 1.2; text-transform: uppercase;
+}
+.bump-flag-on { display: none; }
+.bump.is-checked .bump-flag, .bump:has(.bump-check:checked) .bump-flag { color: var(--gc-texto-sobre-primario); background: var(--brand); }
+.bump.is-checked .bump-flag-off, .bump:has(.bump-check:checked) .bump-flag-off { display: none; }
+.bump.is-checked .bump-flag-on, .bump:has(.bump-check:checked) .bump-flag-on { display: inline; }
+.bump-body { display: grid; grid-template-columns: 28px 68px minmax(0, 1fr); gap: 12px; align-items: center; padding: 14px; }
+.bump-control {
+  display: grid; place-items: center; width: 28px; height: 28px;
+  border: 2px solid color-mix(in srgb, var(--brand) 64%, var(--line));
+  border-radius: 999px; color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, var(--white));
+  font-size: 0; font-weight: 950; line-height: 1;
+}
+.bump-control::before { content: "+"; font-size: 1.05rem; }
+.bump.is-checked .bump-control, .bump:has(.bump-check:checked) .bump-control { border-color: var(--brand); background: var(--brand); color: var(--white); }
+.bump.is-checked .bump-control::before, .bump:has(.bump-check:checked) .bump-control::before { content: "✓"; font-size: .85rem; }
+.bump-img { width: 68px; aspect-ratio: 1 / 1; object-fit: contain; background: var(--white); border: 1px solid rgba(15, 23, 42, .08); border-radius: 10px; }
+.bump-copy { display: grid; gap: 4px; min-width: 0; }
+.bump-sub { color: var(--brand); font-size: .76rem; font-weight: 900; }
+.bump-title { color: var(--ink); font-weight: 850; line-height: 1.22; }
+.bump-prices { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.bump-prices b { color: var(--ink); font-size: 1.05rem; font-weight: 950; }
+.bump-prices s { color: var(--ink-soft); font-size: .85rem; }
+.bump-prices em, .offer-save { color: #b42318; font-size: .82rem; font-style: normal; font-weight: 800; }
+.bump-action {
+  grid-column: 1 / -1; padding: 10px 14px; color: var(--gc-texto-sobre-primario); background: var(--brand);
+  border-radius: 999px; font-size: .8rem; font-weight: 900; text-align: center; white-space: nowrap;
+}
+.bump.is-checked .bump-action, .bump:has(.bump-check:checked) .bump-action { color: var(--gc-texto-sobre-primario); background: color-mix(in srgb, var(--brand) 78%, #0f172a); border: 1px solid color-mix(in srgb, var(--brand) 72%, transparent); }
+.bump-action-on { display: none; }
+.bump.is-checked .bump-action-off, .bump:has(.bump-check:checked) .bump-action-off { display: none; }
+.bump.is-checked .bump-action-on, .bump:has(.bump-check:checked) .bump-action-on { display: inline; }
+.bump-incluye { display: none; margin: -2px 2px 14px; color: var(--ink-soft); font-size: .85rem; }
+.bumps:has(.bump-check:checked) + .bump-incluye { display: block; }
+`;
+
 const PRODUCTO_CSS = `${TOKENS_CSS}
 
 .commerce-header { position: sticky; top: 0; z-index: 50; background: var(--white); border-bottom: 1px solid var(--line); box-shadow: 0 8px 22px rgba(8, 41, 71, .05); }
@@ -1135,7 +1189,7 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .pdp-reviews a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .pdp-prices { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
 .pdp-prices .price { font-size: 2rem; }
-.pdp-lead { margin-bottom: 18px; color: var(--ink-soft); font-size: 1.02rem; }
+.pdp-lead { margin-bottom: 14px; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
 
 .block-title { margin-bottom: 10px; font-size: .8rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
 .variants { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
@@ -1167,57 +1221,7 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .opinion-card small { color: var(--ink-soft); font-weight: 750; }
 
  .offers { display: grid; gap: 12px; margin-bottom: 26px; }
-/* Order bump moderno: mini oferta clickeable, no formulario amarillo. */
-.bumps { display: grid; gap: 12px; margin-bottom: 12px; }
-.bump {
-  display: block; overflow: hidden; position: relative; cursor: pointer;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent 62%), var(--white);
-  border: 1.5px solid color-mix(in srgb, var(--brand) 38%, var(--line));
-  border-radius: 14px;
-  box-shadow: 0 14px 28px rgba(15, 23, 42, .08);
-  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease, background .18s ease;
-}
-.bump:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: 0 18px 34px rgba(15, 23, 42, .12); }
-.bump:has(.bump-check:focus-visible) { outline: 3px solid var(--brand-soft); outline-offset: 2px; }
-.bump.is-checked, .bump:has(.bump-check:checked) { border-color: var(--brand); background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent 62%), var(--white); }
-.bump-check { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.bump-flag {
-  display: flex; align-items: center; gap: 7px; padding: 8px 14px;
-  color: var(--brand); background: color-mix(in srgb, var(--brand) 14%, var(--white));
-  font-size: .72rem; font-weight: 900; letter-spacing: .05em; line-height: 1.2; text-transform: uppercase;
-}
-.bump-flag-on { display: none; }
-.bump.is-checked .bump-flag, .bump:has(.bump-check:checked) .bump-flag { color: var(--gc-texto-sobre-primario); background: var(--brand); }
-.bump.is-checked .bump-flag-off, .bump:has(.bump-check:checked) .bump-flag-off { display: none; }
-.bump.is-checked .bump-flag-on, .bump:has(.bump-check:checked) .bump-flag-on { display: inline; }
-.bump-body { display: grid; grid-template-columns: 28px 68px minmax(0, 1fr); gap: 12px; align-items: center; padding: 14px; }
-.bump-control {
-  display: grid; place-items: center; width: 28px; height: 28px;
-  border: 2px solid color-mix(in srgb, var(--brand) 64%, var(--line));
-  border-radius: 999px; color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, var(--white));
-  font-size: 0; font-weight: 950; line-height: 1;
-}
-.bump-control::before { content: "+"; font-size: 1.05rem; }
-.bump.is-checked .bump-control, .bump:has(.bump-check:checked) .bump-control { border-color: var(--brand); background: var(--brand); color: var(--white); }
-.bump.is-checked .bump-control::before, .bump:has(.bump-check:checked) .bump-control::before { content: "✓"; font-size: .85rem; }
-.bump-img { width: 68px; aspect-ratio: 1 / 1; object-fit: contain; background: var(--white); border: 1px solid rgba(15, 23, 42, .08); border-radius: 10px; }
-.bump-copy { display: grid; gap: 4px; min-width: 0; }
-.bump-sub { color: var(--brand); font-size: .76rem; font-weight: 900; }
-.bump-title { color: var(--ink); font-weight: 850; line-height: 1.22; }
-.bump-prices { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
-.bump-prices b { color: var(--ink); font-size: 1.05rem; font-weight: 950; }
-.bump-prices s { color: var(--ink-soft); font-size: .85rem; }
-.bump-prices em, .offer-save { color: #b42318; font-size: .82rem; font-style: normal; font-weight: 800; }
-.bump-action {
-  grid-column: 1 / -1; padding: 10px 14px; color: var(--gc-texto-sobre-primario); background: var(--brand);
-  border-radius: 999px; font-size: .8rem; font-weight: 900; text-align: center; white-space: nowrap;
-}
-.bump.is-checked .bump-action, .bump:has(.bump-check:checked) .bump-action { color: var(--gc-texto-sobre-primario); background: color-mix(in srgb, var(--brand) 78%, #0f172a); border: 1px solid color-mix(in srgb, var(--brand) 72%, transparent); }
-.bump-action-on { display: none; }
-.bump.is-checked .bump-action-off, .bump:has(.bump-check:checked) .bump-action-off { display: none; }
-.bump.is-checked .bump-action-on, .bump:has(.bump-check:checked) .bump-action-on { display: inline; }
-.bump-incluye { display: none; margin: -2px 2px 14px; color: var(--ink-soft); font-size: .85rem; }
-.bumps:has(.bump-check:checked) + .bump-incluye { display: block; }
+${BUMP_CSS}
 .upsell { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 14px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; }
 .upsell img { flex: 0 0 64px; width: 64px; height: 64px; object-fit: contain; background: #f3f2ee; border-radius: 12px; }
 .upsell > div { flex: 1 1 160px; min-width: 0; }
@@ -1470,6 +1474,8 @@ const PRODUCTO_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesi
       <h1 data-gesicomm-bind="nombre" data-gesicomm-ficha-bloque="encabezado"></h1>
       <!-- Propuesta de valor: el porqué en una frase (Productos → Vista del producto). -->
       <p class="pdp-promesa" data-gesicomm-bind="propuesta_valor" data-gesicomm-ficha-bloque="descripcion"></p>
+      <!-- Descripción del producto: debajo del nombre y antes de las reseñas. -->
+      <p class="pdp-lead" data-gesicomm-bind="descripcion_ficha" data-gesicomm-ficha-bloque="descripcion"></p>
       <div class="pdp-reviews" data-gesicomm-ficha-bloque="encabezado" data-gesicomm-si="resenas_texto"><span class="stars">★★★★★</span><span data-gesicomm-bind="resenas_texto"></span></div>
       <div class="pdp-prices" data-gesicomm-ficha-bloque="precio">
         <span class="price" data-gesicomm-bind="precio"></span>
@@ -1477,7 +1483,6 @@ const PRODUCTO_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesi
         <!-- % en productos baratos, Gs en caros ("regla del 100"). -->
         <span class="badge-off" data-gesicomm-bind="ahorro_texto"></span>
       </div>
-      <p class="pdp-lead" data-gesicomm-bind="descripcion" data-gesicomm-ficha-bloque="descripcion"></p>
       <!-- Combo: el ancla del ahorro, cuánto costaría por separado. -->
       <p class="pdp-separado" data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p>
 
@@ -1779,11 +1784,12 @@ const PRODUCTO_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesi
   </div>
 </section>
 
-<section id="descripcion" class="description">
+<section id="descripcion" class="description" data-gesicomm-si="sobre">
   <div class="container">
     <div class="section-heading"><p class="eyebrow">Detalles</p><h2>Todo lo que tenés que saber.</h2></div>
+    <!-- "Sobre este producto" (Productos → Vista del producto). La
+         descripción principal ya va arriba, junto al nombre. -->
     <p class="description-body" data-gesicomm-bind="sobre"></p>
-    <p class="description-body" data-gesicomm-bind="descripcion_larga"></p>
   </div>
 </section>
 
@@ -2255,10 +2261,19 @@ a{color:inherit;text-decoration:none}
 .lv-summary h2{margin:0 0 12px;font-size:22px}
 .lv-items{display:grid;gap:10px}
 .lv-item{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px 0;border-bottom:1px solid var(--lv-line)}
-.lv-item img{width:58px;height:58px;object-fit:cover;border-radius:7px;background:var(--lv-soft)}
-.lv-item strong{display:block;font-size:13px;line-height:1.25}
-.lv-item small,.lv-item span{display:block;color:var(--lv-muted);font-size:12px;margin-top:3px}
+.lv-item img{grid-column:1;width:58px;height:58px;object-fit:cover;border-radius:7px;background:var(--lv-soft)}
+/* Columnas fijas: si una fila no tiene imagen (el runtime oculta el <img>),
+   el texto sigue en su columna en vez de correrse a la de 58px. */
+.lv-item-info{grid-column:2;min-width:0}
+.lv-item>b{grid-column:3}
+.lv-item strong{display:block;font-size:13px;line-height:1.25;overflow-wrap:anywhere}
+.lv-item small{display:block;color:var(--lv-muted);font-size:12px;margin-top:3px}
+.lv-item-qty span{display:inline}
 .lv-item b{font-size:13px;white-space:nowrap}
+${BUMP_CSS}
+.lv-checkout-bumps{margin:14px 0 0}
+.lv-checkout-reco{margin-top:28px}
+.lv-checkout-reco h2{margin:0 0 14px;font-size:20px}
 .lv-total{display:grid;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--lv-line)}
 .lv-total-row{display:flex;align-items:center;justify-content:space-between;gap:14px;color:var(--lv-muted)}
 .lv-total-row strong{color:var(--gc-texto);font-size:22px}
@@ -2551,13 +2566,40 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
           <template>
             <article class="lv-item">
               <img data-gesicomm-bind="imagen" alt="">
-              <div>
+              <div class="lv-item-info">
                 <strong data-gesicomm-bind="nombre"></strong>
                 <small data-gesicomm-bind="variante"></small>
-                <span><span data-gesicomm-bind="precio_unitario"></span> x <span data-gesicomm-bind="cantidad"></span></span>
+                <small class="lv-item-qty"><span data-gesicomm-bind="precio_unitario"></span> x <span data-gesicomm-bind="cantidad"></span></small>
               </div>
               <b data-gesicomm-bind="subtotal"></b>
             </article>
+          </template>
+        </div>
+        <div class="bumps lv-checkout-bumps" data-gesicomm-lista="checkout_bumps">
+          <template>
+          <label class="bump">
+            <input class="bump-check" type="checkbox" data-gesicomm-bump>
+            <span class="bump-flag">
+              <span class="bump-flag-off">Oferta exclusiva · <span data-gesicomm-bind="ahorro"></span></span>
+              <span class="bump-flag-on">✓ Oferta agregada a tu pedido</span>
+            </span>
+            <span class="bump-body">
+              <span class="bump-control" aria-hidden="true"></span>
+              <img class="bump-img" data-gesicomm-bind="imagen" alt="">
+              <span class="bump-copy">
+                <span class="bump-sub">Sumalo a tu pedido por solo <b data-gesicomm-bind="precio"></b></span>
+                <span class="bump-title" data-gesicomm-bind="nombre"></span>
+                <span class="bump-prices">
+                  <b data-gesicomm-bind="precio"></b>
+                  <s data-gesicomm-bind="precio_antes"></s>
+                </span>
+              </span>
+              <span class="bump-action">
+                <span class="bump-action-off">Agregar a mi pedido</span>
+                <span class="bump-action-on">Quitar de mi pedido</span>
+              </span>
+            </span>
+          </label>
           </template>
         </div>
         <div class="lv-total">
@@ -2566,6 +2608,29 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
           <div class="lv-total-row"><span>Total</span><strong data-gesicomm-checkout="total"></strong></div>
         </div>
       </aside>
+    </section>
+
+    <section class="lv-checkout-reco" data-gesicomm-lista="checkout_recomendados">
+      <h2>También te puede interesar</h2>
+      <div class="lv-shop-grid">
+        <template>
+          <article class="lv-shop-card">
+            <div class="lv-shop-media" data-gesicomm-ver>
+              <span class="lv-shop-badge" data-gesicomm-bind="descuento"></span>
+              <img data-gesicomm-bind="imagen" alt="" loading="lazy">
+            </div>
+            <div class="lv-shop-card-body">
+              <div class="lv-shop-category" data-gesicomm-bind="categoria"></div>
+              <h3 class="lv-shop-title" data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+              <div class="lv-shop-prices">
+                <strong class="lv-shop-price" data-gesicomm-bind="precio"></strong>
+                <span class="lv-shop-old" data-gesicomm-bind="precio_antes"></span>
+              </div>
+              <button class="lv-primary" type="button" data-gesicomm-agregar>Agregar al pedido</button>
+            </div>
+          </article>
+        </template>
+      </div>
     </section>
 
     <section class="lv-empty-checkout" data-gesicomm-checkout-vacio>

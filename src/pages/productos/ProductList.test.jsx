@@ -7,6 +7,7 @@ import { productService } from '../../services/productService';
 
 vi.mock('../../services/productService', () => ({ productService: {
   buscar: vi.fn(),
+  importarShopify: vi.fn(),
   actualizar: vi.fn(),
   eliminar: vi.fn(),
 } }));
@@ -70,5 +71,21 @@ describe('ProductList', () => {
     await screen.findByText('Destino producto');
     expect(screen.getByText('/products/101/editar')).toBeInTheDocument();
     expect(screen.getByText('ofertas')).toBeInTheDocument();
+  });
+
+  it('permite abrir el modal para importar CSV o Excel de Shopify', async () => {
+    render(
+      <MemoryRouter initialEntries={['/mi-catalogo']}>
+        <Routes>
+          <Route path="/mi-catalogo" element={<ProductList />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Calefactor QA');
+    fireEvent.click(screen.getByText('Importar Excel/CSV'));
+
+    expect(screen.getByRole('dialog', { name: 'Importar productos desde Shopify' })).toBeInTheDocument();
+    expect(screen.getByText('Elegir archivo CSV, XLS o XLSX')).toBeInTheDocument();
   });
 });

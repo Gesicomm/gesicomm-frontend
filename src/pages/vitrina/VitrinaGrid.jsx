@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
@@ -9,7 +9,6 @@ import {
 import { productService } from '../../services/productService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
-import { landingService } from '../../services/landingService';
 import CuponesModal from './CuponesModal';
 import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
@@ -21,8 +20,8 @@ import './vitrina.css';
 /* ─── Constantes ─────────────────────────────────────────────────────── */
 const FILTROS = [
   { valor: 'producto', label: 'Productos Gesicom' },
-  { valor: 'mios',     label: 'Mis productos' },
   { valor: 'combo',    label: 'Combos Gesicom' },
+  { valor: 'mios',     label: 'Mis productos' },
   { valor: 'mis-combos', label: 'Mis combos' },
   { valor: 'landing', label: 'En mi landing' },
   { valor: 'todos',    label: 'Todos' },
@@ -51,40 +50,6 @@ function getBadgeConfig(item) {
 
 function getItemKey(item) {
   return `${item.tipo}:${item.id}`;
-}
-
-function extraerSeleccionLanding(landing) {
-  return Array.isArray(landing?.items)
-    ? landing.items
-      .slice()
-      .sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0))
-      .map(item => ({
-        tipo: item.tipo,
-        id: item.referencia_id ?? item.id,
-      }))
-      .filter(item => item.tipo && item.id != null)
-    : [];
-}
-
-function filtrarYOrdenarItemsLanding(items, { busqueda, filtroCategoria, filtroProveedor, orden }) {
-  const q = busqueda.trim().toLowerCase();
-  const filtrados = items.filter(item => {
-    const coincideBusqueda = !q
-      || item.nombre?.toLowerCase().includes(q)
-      || item.descripcion?.toLowerCase().includes(q)
-      || item.categoria?.toLowerCase().includes(q)
-      || item.marca?.toLowerCase().includes(q);
-    const coincideCategoria = !filtroCategoria || item.categoria === filtroCategoria;
-    const coincideProveedor = !filtroProveedor || item.proveedor === filtroProveedor;
-    return coincideBusqueda && coincideCategoria && coincideProveedor;
-  });
-
-  return filtrados.slice().sort((a, b) => {
-    if (orden === 'precio-asc') return Number(a.precio_efectivo || 0) - Number(b.precio_efectivo || 0);
-    if (orden === 'precio-desc') return Number(b.precio_efectivo || 0) - Number(a.precio_efectivo || 0);
-    if (orden === 'recientes') return new Date(b.creado_en || 0) - new Date(a.creado_en || 0);
-    return String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es');
-  });
 }
 
 /* ─── Componente: editor de precio ───────────────────────────────────── */
@@ -430,7 +395,10 @@ export default function VitrinaGrid() {
 
   const [searchParams] = useSearchParams();
   const enOnboarding = searchParams.get('onboarding') === 'productos';
-  const [filtro, setFiltro] = useState(() => searchParams.get('filtro') === 'mios' ? 'mios' : 'todos');
+  // El filtro inicial llega por router state (ej. al guardar un producto),
+  // nunca por la URL: el estado de la pantalla no va en query params.
+  const location = useLocation();
+  const [filtro, setFiltro] = useState(() => location.state?.filtro === 'mios' ? 'mios' : 'todos');
   const esVistaLanding = filtro === 'landing';
   
   const [page, setPage] = useState(1);
@@ -473,7 +441,7 @@ export default function VitrinaGrid() {
     let tipoQuery = filtro;
     if (filtro === 'mios') tipoQuery = 'producto';
     if (filtro === 'mis-combos') tipoQuery = 'combo';
-    if (filtro === 'landing') tipoQuery = 'todos';
+    if (filtro === 'landing') tipoQuery = 'landing';
 
     return {
       page,
@@ -685,51 +653,28 @@ export default function VitrinaGrid() {
     }
   }
 
+  // Cada carga lleva un número: si el usuario cambia de filtro mientras la
+  // anterior sigue en vuelo, la respuesta vieja se descarta. Sin esto, tocar
+  // "Mis productos" apenas entrar dejaba la pestaña marcada con los 354
+  // productos de Gesicom en la grilla (llegaba última la carga inicial).
+  const ultimaCarga = useRef(0);
   const cargar = useCallback(async () => {
+    const numero = ++ultimaCarga.current;
+    const vigente = () => numero === ultimaCarga.current;
     setCargando(true);
     setError(null);
     try {
-      if (filtro === 'landing') {
-        const [landingsSimples, catalogo] = await Promise.all([
-          landingSimpleService.listar().catch(() => []),
-          vitrinaService.catalogo(),
-        ]);
-        let landing = null;
-        if (landingsSimples.length > 0) {
-          landing = await landingSimpleService.obtener(landingsSimples[0].id);
-        } else {
-          const paginas = await landingService.paginas();
-          const paginaInicio = paginas.find(p => p.tipo_pagina === 'inicio') || paginas.find(p => p.tipo_pagina === 'catalogo');
-          landing = paginaInicio ? await landingService.obtener(paginaInicio.id) : null;
-        }
-        const seleccionLanding = extraerSeleccionLanding(landing);
-        const catalogoCompletoItems = [...(catalogo.productos || []), ...(catalogo.combos || [])];
-        const catalogoPorClave = new Map(catalogoCompletoItems.map(item => [getItemKey(item), item]));
-        const ordenados = seleccionLanding
-          .map(sel => catalogoPorClave.get(`${sel.tipo}:${sel.id}`))
-          .filter(Boolean);
-        const filtrados = filtrarYOrdenarItemsLanding(ordenados, { busqueda, filtroCategoria, filtroProveedor, orden });
-        const inicio = (page - 1) * 10;
-        const itemsPagina = filtrados.slice(inicio, inicio + 10);
-
-        setItems(itemsPagina);
-        setCategoriasUnicas([...new Set(ordenados.map(i => i.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')));
-        setProveedoresUnicos([...new Set(ordenados.map(i => i.proveedor).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')));
-        setTotalPages(Math.max(1, Math.ceil(filtrados.length / 10)));
-        setTotalItems(filtrados.length);
-        return;
-      }
-
       const data = await vitrinaService.catalogoPaginado(getFiltrosCatalogo());
+      if (!vigente()) return;
       setItems(data.items || []);
       setCategoriasUnicas(data.categorias || []);
       setProveedoresUnicos(data.proveedores || []);
       setTotalPages(data.totalPages || 1);
       setTotalItems(data.total || 0);
     } catch {
-      setError('No se pudo cargar el catálogo.');
+      if (vigente()) setError('No se pudo cargar el catálogo.');
     } finally {
-      setCargando(false);
+      if (vigente()) setCargando(false);
     }
   }, [filtro, page, busqueda, filtroCategoria, filtroProveedor, orden, getFiltrosCatalogo]);
 
@@ -868,7 +813,7 @@ export default function VitrinaGrid() {
             )}
             <button type="button" className="vit-seleccion-cta" onClick={generarLanding} disabled={generandoLanding}>
               {generandoLanding ? <Loader size={15} className="spin-icon" /> : null}
-              {enOnboarding ? 'Generar landing' : 'Generar mi landing'} <ChevronRight size={15} />
+              {enOnboarding ? 'Publicar productos en la web' : 'Publicar productos en la web'} <ChevronRight size={15} />
             </button>
           </div>
         </div>

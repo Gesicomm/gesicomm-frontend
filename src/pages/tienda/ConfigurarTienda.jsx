@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -22,6 +22,7 @@ import RahaConexion from './RahaConexion';
 import DominioPropio from './DominioPropio';
 import ComboConfiguracion from '../combos/ComboConfiguracion';
 import { MetodosPagoCrud } from '../courier/MetodosPagoCrud';
+import HorarioPicker from './HorarioPicker';
 import '../vitrina/vitrina.css';
 import '../landing/landing.css';
 import './tienda.css';
@@ -1117,11 +1118,9 @@ export default function ConfigurarTienda() {
                         </label>
                         <label className="tn-field">
                           <span className="tn-field-label">Horario de atención <em>(opcional)</em></span>
-                          <input
+                          <HorarioPicker 
                             value={form.horario_atencion}
-                            onChange={e => handleChange('horario_atencion', e.target.value)}
-                            placeholder="Ej: Lunes a viernes de 9 a 18 horas"
-                            maxLength={150}
+                            onChange={val => handleChange('horario_atencion', val)}
                           />
                         </label>
                       </div>
@@ -1481,3 +1480,4 @@ export default function ConfigurarTienda() {
     </div>
   );
 }
+

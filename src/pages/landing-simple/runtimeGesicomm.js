@@ -44,6 +44,10 @@
  *   data-gesicomm-bump             casilla de un order bump: marcada, la oferta se
  *                                  suma cuando se toca "Comprar" del producto
  *   listas de ofertas: "ofertas" (todas), "ofertas_bump", "ofertas_upsell", "ofertas_pack"
+ *   checkout: "checkout_items" (el pedido), "checkout_bumps" (order bumps de lo que ya está
+ *     en el pedido, con la misma tarjeta/casilla data-gesicomm-bump de la ficha: marcarla suma
+ *     la oferta al pedido y desmarcarla la quita) y "checkout_recomendados" (otros productos de
+ *     la landing; data-gesicomm-agregar los suma sin salir del checkout)
  *   bind "ahorro" → "Ahorrás Gs X" (ofertas con precio anterior)
  *   data-gesicomm-variante         (dentro de la lista "variantes") elige la variante
  *   data-gesicomm-cantidad-input   input numérico de cantidad en la ficha
@@ -434,6 +438,9 @@ export function runtimeGesicomm() {
     switch (campo) {
       case 'nombre': valor = item.titulo_comercial || item.nombre; break;
       case 'descripcion': valor = item.mensaje_comercial || item.descripcion; break;
+      // Texto principal de la ficha: el mensaje comercial de esta landing si
+      // lo hay; si no, la descripción completa del producto, o la corta.
+      case 'descripcion_ficha': valor = item.mensaje_comercial || item.descripcion_ficha || item.descripcion_larga || item.descripcion; break;
       case 'insignia_principal': valor = item.insignia_principal || item.categoria || ''; break;
       case 'resenas_texto': valor = item.resenas_texto || ''; break;
       case 'cta_texto': valor = item.cta_texto || 'Comprar ahora'; break;
@@ -952,7 +959,7 @@ export function runtimeGesicomm() {
   // de lista acá adentro para no pisarse.
   var LISTAS_DE_DATOS = {
     categorias: 1, menu_categorias: 1, banners_inicio: 1, banners_intermedios: 1, secciones_inicio: 1,
-    beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1, estadisticas: 1, checkout_items: 1,
+    beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1, estadisticas: 1, checkout_items: 1, checkout_bumps: 1,
     botones_pago_producto: 1, metodos_pago_producto: 1, incluye_pedido_producto: 1,
     payment_logos: 1, anuncios: 1, confianza_inicio: 1, marca_badges: 1, marca_medios: 1, testimonios_inicio: 1,
   };
@@ -986,6 +993,8 @@ export function runtimeGesicomm() {
     var variante = enInicio && e.variante === 'embebido' ? 'embebido' : 'normal';
     var varianteMobile = enInicio && esMobile() && (e.variante_mobile === 'embebido' || e.variante_mobile === 'normal') ? e.variante_mobile : variante;
     return {
+      mostrar_logo: e.mostrar_logo !== false,
+      mostrar_nombre: e.mostrar_nombre !== false,
       logo_tamano: isFinite(tamano) ? Math.max(28, Math.min(96, tamano)) : 46,
       logo_rotacion: isFinite(rotacion) ? Math.max(-180, Math.min(180, rotacion)) : 0,
       logo_posicion: e.logo_posicion === 'centro' ? 'centro' : 'izquierda',
@@ -1017,6 +1026,10 @@ export function runtimeGesicomm() {
       headers[i].style.setProperty('--gc-logo-rotacion', cfg.logo_rotacion + 'deg');
       headers[i].classList.toggle('logo-centrado', cfg.logo_posicion === 'centro');
       headers[i].setAttribute('data-variante', cfg.variante);
+      var logos = headers[i].querySelectorAll('[data-gesicomm-tienda="logo"]');
+      for (var l = 0; l < logos.length; l++) logos[l].style.display = cfg.mostrar_logo ? '' : 'none';
+      var nombres = headers[i].querySelectorAll('[data-gesicomm-tienda="nombre"]');
+      for (var n = 0; n < nombres.length; n++) nombres[n].style.display = cfg.mostrar_nombre ? '' : 'none';
     }
     var otrosBloques = document.querySelectorAll('.trust-bar, .hero');
     for (var j = 0; j < otrosBloques.length; j++) {
@@ -1461,6 +1474,35 @@ export function runtimeGesicomm() {
     return destino === '#inicio' || destino === '/' || destino === '';
   }
 
+  function linksNavegacionBase() {
+    return [
+      { texto: 'Inicio', destino: '/' },
+      { texto: 'Productos', destino: '/catalogo' },
+      { texto: 'Checkout', destino: '/checkout' },
+    ];
+  }
+
+  function completarLinksDeVista(links, vista) {
+    var lista = Array.isArray(links) ? links.slice() : [];
+    if (vista === 'inicio') return lista;
+    var tieneInicio = lista.some(function (item) {
+      var destino = String(item && item.destino || '');
+      return destino === '/' || destino === '#inicio' || destino === '';
+    });
+    var tieneCatalogo = lista.some(function (item) {
+      var destino = String(item && item.destino || '');
+      return destino === '/catalogo' || destino === '/productos';
+    });
+    var tieneCheckout = lista.some(function (item) {
+      return String(item && item.destino || '') === '/checkout';
+    });
+    var base = linksNavegacionBase();
+    if (!tieneInicio) lista.unshift(base[0]);
+    if (!tieneCatalogo) lista.push(base[1]);
+    if (!tieneCheckout) lista.push(base[2]);
+    return lista;
+  }
+
   function hrefMenuActivo(a, vista) {
     if (!a) return false;
     var href = String(a.getAttribute('href') || '');
@@ -1493,6 +1535,7 @@ export function runtimeGesicomm() {
         var destino = String(item.destino || '');
         return !destino || destino.charAt(0) !== '#' || destino === '#inicio';
       });
+      links = completarLinksDeVista(links, vista);
     }
     for (var c = 0; c < contenedores.length; c++) {
       var cont = contenedores[c];
@@ -1502,7 +1545,9 @@ export function runtimeGesicomm() {
         var a = document.createElement('a');
         a.href = urlSegura(item.destino) || '#inicio';
         a.textContent = item.texto;
+        if (item.destino === '/' || item.destino === '#inicio' || item.destino === '') a.setAttribute('data-gesicomm-inicio', '');
         if (item.destino === '/catalogo') a.setAttribute('data-gesicomm-link', 'catalogo');
+        if (item.destino === '/productos') a.setAttribute('data-gesicomm-link', 'catalogo');
         if (item.destino === '/checkout') a.setAttribute('data-gesicomm-link', 'checkout');
         if (linkMenuActivo(item, vista)) {
           a.className = 'active';
@@ -1623,6 +1668,8 @@ export function runtimeGesicomm() {
     switch (nombre) {
       case 'catalogo': return catalogoVista.items;
       case 'checkout_items': base = (datos.carrito && datos.carrito.items) || []; break;
+      case 'checkout_bumps': base = datos.checkout_bumps || []; break;
+      case 'checkout_recomendados': base = datos.checkout_recomendados || []; break;
       case 'categorias': base = categoriasCuradasDe(el) || categoriasDeProductos(); break;
       case 'menu_categorias': base = categoriasMenu(); break;
       case 'banners_inicio': base = bannersInicio(); break;
@@ -1811,6 +1858,15 @@ export function runtimeGesicomm() {
           if (nombre === 'categorias') h.setAttribute('data-gesicomm-categoria-ir', elemento.nombre);
           if (nombre === 'menu_categorias') h.setAttribute('data-gesicomm-categoria-ir', elemento.nombre);
           if (nombre === 'secciones_inicio') h.setAttribute('data-gesicomm-seccion-id', elemento.id);
+          if (nombre === 'checkout_bumps') {
+            // Misma tarjeta que el bump de la ficha; acá la casilla refleja
+            // si la oferta ya está en el pedido.
+            h.setAttribute('data-gesicomm-oferta-id', elemento.id);
+            h.setAttribute('data-gesicomm-bump-producto', elemento.content_id || '');
+            var casillaCheckout = h.matches && h.matches('input[data-gesicomm-bump]') ? h : h.querySelector('input[data-gesicomm-bump]');
+            if (casillaCheckout) casillaCheckout.checked = !!elemento.en_pedido;
+            h.classList.toggle('is-checked', !!elemento.en_pedido);
+          }
           if (nombre === 'categorias') prepararTarjetaColeccion(h, elemento);
           if (nombre === 'botones_pago_producto') {
             h.setAttribute('data-gesicomm-accion-pago', elemento.tipo || 'checkout');
@@ -2864,6 +2920,16 @@ export function runtimeGesicomm() {
       var cont = bump.closest('[data-gesicomm-oferta-id]');
       var idBump = cont ? cont.getAttribute('data-gesicomm-oferta-id') : null;
       if (!idBump) return;
+      // En el checkout no hay "Comprar" después: la casilla suma o quita la
+      // oferta del pedido en el momento, y el contenedor repinta el resumen.
+      if (cont.hasAttribute('data-gesicomm-bump-producto')) {
+        cont.classList.toggle('is-checked', bump.checked);
+        enviar(bump.checked
+          ? { tipo: 'gesicomm:checkout', producto: cont.getAttribute('data-gesicomm-bump-producto') || '', cantidad: 1, variante: null, oferta: idBump, abrir: false }
+          : { tipo: 'gesicomm:quitar-oferta', oferta: idBump });
+        enviar({ tipo: 'gesicomm:evento', nombre: bump.checked ? 'OrderBumpMarcado' : 'OrderBumpDesmarcado', datos: { oferta: idBump } });
+        return;
+      }
       if (bump.checked) bumpsElegidos[idBump] = true; else delete bumpsElegidos[idBump];
       cont.classList.toggle('is-checked', bump.checked);
       pintarTotal();

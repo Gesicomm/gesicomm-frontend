@@ -357,6 +357,15 @@ export function presentacionComercial(item, venta) {
   const opiniones = opinionesBase
     .map(normalizarOpinion)
     .filter(o => o.comentario);
+  // Reseñas debajo del título: si el comercio no escribió el texto a mano,
+  // se arma con las opiniones REALES del producto (nunca con las de ejemplo).
+  const opinionesReales = opinionesFuente.map(normalizarOpinion).filter(o => o.comentario);
+  const promedio = opinionesReales.length
+    ? opinionesReales.reduce((s, o) => s + (Number(o.calificacion) || 5), 0) / opinionesReales.length
+    : 0;
+  const resenasAuto = opinionesReales.length
+    ? `${promedio.toLocaleString('es-PY', { maximumFractionDigits: 1 })} de 5 · ${opinionesReales.length} ${opinionesReales.length === 1 ? 'opinión' : 'opiniones'}`
+    : '';
   const paymentLogos = logosPagoDesdeVenta(venta);
   const pagoLogoTarjetas = paymentLogos.some(logo => logo.grupo === 'tarjetas');
   const pagoLogoBocas = paymentLogos.some(logo => logo.grupo === 'bocas');
@@ -377,7 +386,8 @@ export function presentacionComercial(item, venta) {
   }
 
   return {
-    ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, texto(campo)])),
+    ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, texto(campo)])),
+    resenas_texto: texto('resenas_texto') || resenasAuto,
     ficha_bloques: bloquesCompatibles,
     ficha_orden_mobile: normalizarOrdenMobileFicha(fuente.ficha_orden_mobile),
     beneficios,
@@ -424,7 +434,9 @@ export function itemPublicoARuntime(item, slug, venta = null) {
     categoria: item.categoria || null,
     categoria_url: item.categoria ? urlCategoria(slug, item.categoria) : '',
     marca: typeof item.marca === 'object' ? item.marca?.nombre || null : item.marca || null,
-    etiqueta: item.etiqueta || null,
+    // La etiqueta de la landing manda; si no hay, el badge del producto
+    // (ficha_datos.insignia, el "badge" del JSON de la IA).
+    etiqueta: item.etiqueta || String(item.ficha_datos?.insignia || '').trim() || null,
     mostrar_en_inicio: item.mostrar_en_inicio !== false,
     envio_incluido: item.envio_incluido === true,
     stock: item.stock ?? null,
@@ -522,6 +534,10 @@ export function contenidoFicha(item) {
   const antes = Number(item.precio_antes) || (separado > precio ? separado : 0);
   return {
     propuesta_valor: String(item.propuesta_valor || '').trim() || null,
+    // Texto principal de la ficha, debajo del nombre y antes de las reseñas:
+    // la descripción completa, o la corta si el producto no tiene otra. Así
+    // la ficha nunca queda sin descripción.
+    descripcion_ficha: String(item.descripcion_larga || '').trim() || String(item.descripcion || '').trim() || null,
     sobre: String(item.sobre_este_producto || '').trim() || null,
     beneficios,
     confianza,
@@ -559,7 +575,9 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto, venta = 
     categoria: item.categoria || null,
     categoria_url: item.categoria ? urlCategoria(null, item.categoria) : '',
     marca: typeof item.marca === 'object' ? item.marca?.nombre || null : item.marca || null,
-    etiqueta: item.etiqueta || null,
+    // La etiqueta de la landing manda; si no hay, el badge del producto
+    // (ficha_datos.insignia, el "badge" del JSON de la IA).
+    etiqueta: item.etiqueta || String(item.ficha_datos?.insignia || '').trim() || null,
     mostrar_en_inicio: item.mostrar_en_inicio !== false,
     envio_incluido: item.envio_incluido === true,
     stock: item.stock ?? null,
@@ -697,12 +715,48 @@ function resumenCarritoRuntime(carrito = []) {
       variante: it.componenteVarianteNombre || it.varianteNombre || '',
       precio_unitario: it.precio,
       subtotal: (Number(it.precio) || 0) * (Number(it.cantidad) || 0),
-      imagen: it.imagen || '',
+      // El carrito guarda la imagen como la trae la oferta o el producto
+      // (a veces una key relativa del bucket): sin resolverla, el <img> del
+      // resumen quedaba roto, el runtime lo ocultaba y la fila se desarmaba.
+      imagen: media(it.imagen) || '',
     })),
     cantidad: items.reduce((s, it) => s + (Number(it.cantidad) || 0), 0),
     subtotal,
     total: subtotal,
   };
+}
+
+/**
+ * Lo que el checkout propio ofrece además del carrito: los order bumps de
+ * los productos que ya están en el pedido (y que todavía no se sumaron) y
+ * otros productos de la landing para agregar. Mismo criterio que el carrito
+ * lateral (useStoreCart): el bump sale de las ofertas del producto que se
+ * está comprando, nunca de uno que no está en el pedido.
+ */
+function extrasCheckoutRuntime(catalogo, carrito = []) {
+  const items = Array.isArray(carrito) ? carrito : [];
+  if (!items.length) return { bumps: [], recomendados: [] };
+  const enCarrito = new Set(items.map(it => it.contentId));
+  const ofertasEnCarrito = new Set(items.map(it => it.ofertaId).filter(Boolean).map(Number));
+  // Los que ya están en el pedido siguen en la lista, marcados: la casilla
+  // es la misma de la ficha y desmarcarla los quita.
+  const bumps = [];
+  items.forEach(it => {
+    const producto = catalogo.find(p => p.id === it.contentId);
+    (producto?.ofertas || [])
+      .filter(o => o.estrategia === 'order_bump')
+      .forEach(o => {
+        if (bumps.length >= 2 || bumps.some(b => b.id === o.id)) return;
+        bumps.push({ ...o, content_id: producto.id, precio_antes: o.precio_normal || null, en_pedido: ofertasEnCarrito.has(Number(o.id)) });
+      });
+  });
+  const categorias = new Set(items.map(it => catalogo.find(p => p.id === it.contentId)?.categoria).filter(Boolean));
+  const candidatos = catalogo.filter(p => p.tipo === 'producto' && !enCarrito.has(p.id) && !p.agotado);
+  const recomendados = [
+    ...candidatos.filter(p => categorias.has(p.categoria)),
+    ...candidatos.filter(p => !categorias.has(p.categoria)),
+  ].slice(0, 4);
+  return { bumps, recomendados };
 }
 
 export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) {
@@ -717,6 +771,9 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
   const totalCatalogo = paginacion.total ?? meta.total ?? catalogo.length;
   const porPaginaCatalogo = paginacion.porPagina ?? paginacion.por_pagina ?? meta.porPagina ?? meta.por_pagina ?? 20;
   const totalPaginasCatalogo = paginacion.totalPaginas ?? paginacion.total_paginas ?? meta.totalPaginas ?? meta.total_paginas ?? 1;
+  const extrasCheckout = opciones.vista === 'checkout'
+    ? extrasCheckoutRuntime(catalogo, opciones.carrito)
+    : { bumps: [], recomendados: [] };
   return {
     vista: opciones.vista || (producto ? 'producto' : (categoriaActual ? 'categoria' : 'inicio')),
     categoria: categoriaActual ? { nombre: categoriaActual, slug: slugCategoria(categoriaActual), url: urlCategoria(slug, categoriaActual) } : null,
@@ -734,6 +791,8 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
     producto,
     carrito: resumenCarritoRuntime(opciones.carrito || []),
     checkout_estado: opciones.checkoutEstado || null,
+    checkout_bumps: extrasCheckout.bumps,
+    checkout_recomendados: extrasCheckout.recomendados,
     recomendados: recomendadosVista(catalogo, producto, venta),
     // Departamentos/ciudades de Paraguay para el checkout propio (ver
     // data-gesicomm-geografia). Se pide una sola vez en LandingCodigoPublica,
@@ -745,17 +804,17 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
 /** Sentinel para "todas las categorías" en el preview del panel de categorías. */
 export const TODAS_CATEGORIAS = '__todas__';
 
-function coloresTiendaPreview(tienda) {
+function coloresTiendaPreview(tienda, landing = null) {
   const colores = tienda?.colores || {};
   return {
-    primario: tienda?.color_primario || colores.primario || null,
-    secundario: tienda?.color_secundario || colores.secundario || colores.texto || null,
-    fondo: tienda?.color_fondo || colores.fondo || null,
+    primario: landing?.color_primario || tienda?.color_primario || colores.primario || null,
+    secundario: landing?.color_texto || tienda?.color_secundario || colores.secundario || colores.texto || null,
+    fondo: landing?.color_fondo || tienda?.color_fondo || colores.fondo || null,
   };
 }
 
 /** Datos del runtime para el preview del editor, con el catálogo del panel. */
-export function datosRuntimePreview({ productos = [], tienda, venta, vista, productoId, categoria = null, ofertas = [], geografia = [] }) {
+export function datosRuntimePreview({ productos = [], tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [] }) {
   // Ofertas de la tienda (panel) agrupadas por su producto, ya filtradas
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
@@ -781,7 +840,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     tienda: {
       nombre: tienda?.nombre || '',
       logo: media(tienda?.logo_imagen),
-      colores: coloresTiendaPreview(tienda),
+      colores: coloresTiendaPreview(tienda, landing),
       whatsapp: tienda?.whatsapp || tienda?.telefono || '',
       mensaje: tienda?.mensaje_contacto || '',
       canal_contacto: tienda?.canal_contacto || 'whatsapp',

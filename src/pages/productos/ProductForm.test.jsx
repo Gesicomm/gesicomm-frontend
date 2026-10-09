@@ -160,3 +160,47 @@ describe('Alta de producto por secciones', () => {
     expect(oferta.componentes.some(c => c.producto_id === 7)).toBe(true);
   });
 });
+
+describe('Importar el JSON de la IA', () => {
+  const json = {
+    schema_version: '1.1',
+    product: {
+      identity: { name: 'Mouse QA', sku: 'QA-1', category: { name: 'tecnologia', id: null }, provider: { name: null, id: null }, tags: [] },
+      pricing: { purchase_cost: 35000, purchase_currency: 'LOCAL', sale_price: 89000, anchor_price: null, discount: { percentage: 0 } },
+      inventory: { stock_store: 0, stock_warehouse: 0, minimum_total_stock: 0 },
+      publication: { sale_status: 'en_venta', active: true, featured: false },
+      landing_blocks: {
+        product_showcase: {
+          badge: 'MÁS VENDIDO',
+          tagline: 'Trabajá sin cables y sin ruido.',
+          short_description: 'Mouse inalámbrico compacto.',
+          description: 'Mouse con receptor USB. Ideal para la oficina.',
+          highlights: ['Inalámbrico'],
+          cta: 'Quiero el mío',
+        },
+        faqs: [], testimonials: [],
+      },
+    },
+  };
+
+  it('el badge no pisa la descripción corta, la categoría se resuelve por nombre y la propuesta de valor llega', async () => {
+    const { categoriaService } = await import('../../services/catalogoService');
+    categoriaService.buscar.mockResolvedValue([{ id: 28, nombre: 'Accesorios Tech' }, { id: 5, nombre: 'Tecnología' }]);
+    await montar();
+    await waitFor(() => expect(document.querySelectorAll('#prod-categoria option').length).toBe(3));
+
+    fireEvent.change(screen.getByPlaceholderText('Pegar JSON aquí...'), { target: { value: JSON.stringify(json) } });
+    expect(document.getElementById('prod-categoria').value).toBe('5');
+    guardar();
+
+    await waitFor(() => expect(productService.crear).toHaveBeenCalled());
+    const payload = productService.crear.mock.calls[0][0];
+    expect(payload).toMatchObject({
+      descripcion_corta: 'Mouse inalámbrico compacto.',
+      propuesta_valor: 'Trabajá sin cables y sin ruido.',
+      descripcion_larga: 'Mouse con receptor USB. Ideal para la oficina.',
+    });
+    expect(String(payload.categoria_id)).toBe('5');
+    expect(payload.ficha_datos).toMatchObject({ insignia: 'MÁS VENDIDO', cta_principal_texto: 'Quiero el mío' });
+  });
+});

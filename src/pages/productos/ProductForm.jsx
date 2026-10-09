@@ -351,10 +351,11 @@ Usá stock de salón y depósito. No inventes cantidades.
 ## PASO 4 — CONTENIDO DEL LIENZO EN BLANCO
 Generá el contenido para la ficha de producto del lienzo en blanco:
 
-- **badge**: etiqueta corta visible sobre la imagen (ej: "OFERTA", "MÁS VENDIDO")
-- **short_description**: descripción corta para el catálogo público (1-2 oraciones breves)
-- **tagline**: frase principal de propuesta de valor (1 oración, máx. 15 palabras)
-- **description**: descripción comercial clara y objetiva (2-4 oraciones)
+- **badge** (opcional): etiqueta corta que va SOBRE LA FOTO (ej: "OFERTA", "MÁS VENDIDO"). No es una descripción: nunca pongas acá texto descriptivo.
+- **tagline** (OBLIGATORIO): la propuesta de valor. Una oración de máx. 15 palabras que dice qué gana el cliente. Se muestra justo debajo del nombre del producto, antes de las reseñas y del precio: sin esto la ficha queda incompleta.
+- **short_description** (OBLIGATORIO): descripción corta para las tarjetas del catálogo (1-2 oraciones breves, distinta del tagline).
+- **description** (OBLIGATORIO): descripción comercial clara y objetiva (2-4 oraciones). Va debajo del tagline, antes de las reseñas y del precio: es el texto principal de la ficha.
+- **details** (opcional): información ampliada para la sección "Detalles" (qué incluye, materiales, medidas, compatibilidad, cuidados). Solo datos que se ven en las fotos/etiquetas o que te di; no repitas la description.
 - **highlights**: entre 3 y 6 puntos concretos con checkmarks (los beneficios principales)
 - **cta**: texto del botón de compra (ej: "Comprar ahora", "Quiero el mío")
 - **faqs**: entre 4 y 8 preguntas frecuentes reales del comprador con respuestas
@@ -394,6 +395,8 @@ Mostrame un resumen y esperá mi aprobación. Luego generá UN SOLO JSON válido
       "product_showcase": {
         "badge": "",
         "tagline": "",
+        "short_description": "",
+        "details": "",
         "description": "",
         "highlights": [],
         "cta": ""
@@ -409,7 +412,34 @@ Mostrame un resumen y esperá mi aprobación. Luego generá UN SOLO JSON válido
 }
 
 REGLAS DEL JSON: sin comentarios, sin markdown dentro, null para opcionales vacíos, [] para colecciones vacías, números reales (no texto), booleanos, fechas ISO YYYY-MM-DD.
+tagline, short_description y description nunca pueden quedar vacíos.
 `;
+
+const normalizarTexto = valor => String(valor ?? '')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().trim();
+
+/** El prompt con las categorías reales de la tienda, para que la IA elija una que exista. */
+function promptConCategorias(categorias = []) {
+  const nombres = categorias.map(c => c.nombre).filter(Boolean);
+  if (!nombres.length) return PROMPT_IA;
+  return `${PROMPT_IA}
+CATEGORÍAS DISPONIBLES EN MI TIENDA (en "category.name" usá exactamente una de estas):
+${nombres.join(' | ')}
+`;
+}
+
+/** Categoría del JSON → id real: por id, por nombre exacto (sin tildes) o por coincidencia parcial. */
+function resolverCategoriaImportada(categoria, categorias = []) {
+  if (!categoria) return null;
+  const id = categoria.id ?? null;
+  if (id != null && categorias.some(c => String(c.id) === String(id))) return categorias.find(c => String(c.id) === String(id));
+  const nombre = normalizarTexto(typeof categoria === 'string' ? categoria : categoria.name || categoria.nombre);
+  if (!nombre) return null;
+  return categorias.find(c => normalizarTexto(c.nombre) === nombre)
+    || categorias.find(c => normalizarTexto(c.nombre).includes(nombre) || nombre.includes(normalizarTexto(c.nombre)))
+    || null;
+}
 
 export default function ProductForm() {
   const { id } = useParams();
@@ -474,6 +504,11 @@ export default function ProductForm() {
       if (p.identity?.sku)   setValue('sku',    p.identity.sku,  { shouldDirty: true });
       if (Array.isArray(p.identity?.tags) && p.identity.tags.length)
         setValue('tags', p.identity.tags.join(', '), { shouldDirty: true });
+      // Antes la categoría del JSON se ignoraba y el producto quedaba "Sin categoría".
+      const categoriaImportada = p.identity?.category;
+      const categoriaEncontrada = resolverCategoriaImportada(categoriaImportada, categorias);
+      if (categoriaEncontrada) setValue('categoria_id', String(categoriaEncontrada.id), { shouldDirty: true });
+      const categoriaSinMatch = !categoriaEncontrada && (categoriaImportada?.name || categoriaImportada?.nombre || (typeof categoriaImportada === 'string' ? categoriaImportada : ''));
 
       // ── Precios ────────────────────────────────────────────────
       if (p.pricing?.sale_price)    setValue('precio_base',  p.pricing.sale_price,    { shouldDirty: true });
@@ -503,13 +538,18 @@ export default function ProductForm() {
       }
 
       // ── Lienzo en Blanco — ProductShowcaseBlock ────────────────
-      // badge, tagline → propuesta_valor, description → descripcion_larga,
-      // highlights[] → ficha_datos.beneficios_rapidos, cta → ficha_datos.cta_principal_texto
+      // tagline → propuesta_valor, short_description → descripcion_corta,
+      // description → descripcion_larga, badge → ficha_datos.insignia (la
+      // etiqueta sobre la foto), highlights[] → ficha_datos.beneficios_rapidos,
+      // cta → ficha_datos.cta_principal_texto.
+      // El badge iba a descripcion_corta: "MÁS VENDIDO" terminaba como
+      // descripción del producto en el catálogo y en la ficha.
       const showcase = p.landing_blocks?.product_showcase;
       if (showcase) {
-        if (showcase.tagline)     setValue('propuesta_valor',   showcase.tagline,     { shouldDirty: true });
-        if (showcase.description) setValue('descripcion_larga', showcase.description, { shouldDirty: true });
-        if (showcase.badge)       setValue('descripcion_corta', showcase.badge,       { shouldDirty: true });
+        asignarTexto('propuesta_valor', showcase.tagline || showcase.value_proposition);
+        asignarTexto('descripcion_larga', showcase.description);
+        asignarTexto('descripcion_corta', showcase.short_description);
+        asignarTexto('sobre_este_producto', showcase.details);
 
         const fichaActual = getValues('ficha_datos') || {};
         const fichaPatch  = { ...fichaActual };
@@ -517,8 +557,16 @@ export default function ProductForm() {
           fichaPatch.beneficios_rapidos = showcase.highlights;
         if (showcase.cta)
           fichaPatch.cta_principal_texto = showcase.cta;
-        if (Object.keys(fichaPatch).length > Object.keys(fichaActual).length)
-          setValue('ficha_datos', fichaPatch, { shouldDirty: true });
+        if (limpiar(showcase.badge))
+          fichaPatch.insignia = limpiar(showcase.badge);
+        setValue('ficha_datos', fichaPatch, { shouldDirty: true });
+
+        // Sin descripción corta en el JSON (formato viejo): una oración de la
+        // propuesta de valor o de la descripción, nunca el badge.
+        if (!limpiar(showcase.short_description) && !limpiar(getValues('descripcion_corta'))) {
+          const base = limpiar(showcase.tagline) || limpiar(showcase.description);
+          if (base) setValue('descripcion_corta', base.split(/(?<=[.!?])\s/)[0], { shouldDirty: true });
+        }
       }
 
       // ── FAQs ───────────────────────────────────────────────────
@@ -602,7 +650,15 @@ export default function ProductForm() {
         }
       }
 
-      setAviso('JSON importado. Revisá los campos, distribuí el stock por ubicación y guardá.');
+      const faltantes = [
+        !limpiar(getValues('propuesta_valor')) && 'propuesta de valor (tagline)',
+        !limpiar(getValues('descripcion_larga')) && 'descripción',
+      ].filter(Boolean);
+      setAviso([
+        'JSON importado. Revisá los campos, distribuí el stock por ubicación y guardá.',
+        categoriaSinMatch ? `La categoría "${categoriaSinMatch}" no existe en tu tienda: elegila o creala.` : '',
+        faltantes.length ? `Falta: ${faltantes.join(' y ')} — se muestra debajo del nombre en la ficha.` : '',
+      ].filter(Boolean).join(' '));
       e.target.value = '';
     } catch (err) {
       console.error(err);
@@ -1284,7 +1340,7 @@ export default function ProductForm() {
         // ficha después de guardar dejaba la barra "Cambios sin guardar"
         // sin limpiarse (isDirty de react-hook-form no se resetea con un
         // simple aviso), así que parecía que no había guardado aunque sí.
-        navigate('/mi-catalogo?filtro=mios');
+        navigate('/mi-catalogo', { state: { filtro: 'mios' } });
       } else {
         const nuevo = await productService.crear(payload);
         productoCreadoId = nuevo.id;
@@ -1309,7 +1365,7 @@ export default function ProductForm() {
           navigate(`/products/${nuevo.id}/editar`);
           return;
         }
-        navigate('/mi-catalogo?filtro=mios');
+        navigate('/mi-catalogo', { state: { filtro: 'mios' } });
       }
     } catch (err) {
       if (productoCreadoId) {
@@ -1735,7 +1791,7 @@ export default function ProductForm() {
               type="button" 
               className="btn-secondary" 
               onClick={() => {
-                navigator.clipboard.writeText(PROMPT_IA);
+                navigator.clipboard.writeText(promptConCategorias(categorias));
                 setAviso('Prompt copiado al portapapeles. Pégalo en tu IA favorita.');
               }}
               style={{ padding: '0.3rem 0.6rem', fontSize: '12px', height: '30px', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
@@ -3213,6 +3269,42 @@ export default function ProductForm() {
                 <p className="field-hint">Una frase: producto, beneficio principal y acción. Aparece debajo del nombre en la página pública.</p>
               </div>
 
+              <div className="form-group full">
+                <label>Descripción del producto</label>
+                <textarea
+                  {...register('descripcion_larga')}
+                  placeholder="Qué es, cómo se usa y por qué conviene, en 2 a 4 oraciones."
+                  rows={5}
+                />
+                <p className="field-hint">Va debajo de la propuesta de valor, antes de las reseñas y el precio. Es el texto principal de la ficha.</p>
+              </div>
+
+              <div className="form-group full">
+                <label>Descripción corta</label>
+                <input
+                  {...register('descripcion_corta')}
+                  placeholder="Ej: Mouse inalámbrico compacto y silencioso."
+                />
+                <p className="field-hint">Una o dos oraciones para las tarjetas del catálogo.</p>
+              </div>
+
+              <Controller
+                control={control}
+                name="ficha_datos"
+                render={({ field: campoDatos }) => (
+                  <div className="form-group full">
+                    <label>Etiqueta sobre la foto</label>
+                    <input
+                      value={campoDatos.value?.insignia || ''}
+                      onChange={e => campoDatos.onChange({ ...(campoDatos.value || {}), insignia: e.target.value })}
+                      placeholder="Ej: MÁS VENDIDO"
+                      maxLength={24}
+                    />
+                    <p className="field-hint">Badge corto en las tarjetas del producto. Vacío = no se muestra.</p>
+                  </div>
+                )}
+              />
+
               <Controller
                 control={control}
                 name="ficha_datos"
@@ -3229,10 +3321,10 @@ export default function ProductForm() {
                   <label>Sobre este producto</label>
                   <textarea
                     {...register('sobre_este_producto')}
-                    placeholder="Descripción amplia que aparece en la ficha genérica."
+                    placeholder="Información ampliada: materiales, medidas, qué incluye la caja…"
                     rows={5}
                   />
-                  <p className="field-hint">Solo aparece en el template genérico. En los otros tipos se usan sus campos dinámicos propios.</p>
+                  <p className="field-hint">Sección "Detalles" de la ficha genérica. Vacío = la sección no se muestra.</p>
                 </div>
               )}
 

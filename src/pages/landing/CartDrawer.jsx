@@ -124,6 +124,13 @@ export default function CartDrawer({
   // comportamiento de siempre sigue intacto.
   onIrACheckout = null,
   paymentMethodInicial = null,
+  // La página de checkout propia (lienzo) no tiene popup de upsell: cuando
+  // el cliente toca "Confirmar pedido" allá, el contenedor cambia
+  // solicitudUpsell y este drawer hace la misma pregunta que en su propio
+  // formulario. onUpsellResuelto avisa cuándo ya se puede crear el pedido
+  // (el upsell aceptado ya está en el carrito, o el cliente lo rechazó).
+  solicitudUpsell = null,
+  onUpsellResuelto = null,
 }) {
   const [paso, setPaso] = useState(pasoInicial); // carrito | formulario | confirmado
   // El upsell NO es un paso del drawer: tiene que interrumpir con un popup
@@ -156,6 +163,10 @@ export default function CartDrawer({
   // useEffect más abajo) antes de recién ahí mandar el pedido — mandarlo antes
   // mandaría el pedido SIN el upsell que el cliente acaba de aceptar.
   const [upsellPendiente, setUpsellPendiente] = useState(null);
+  // true mientras el popup lo pidió la página de checkout (no el formulario
+  // de este drawer): al resolverse se avisa al contenedor en vez de mandar
+  // el pedido desde acá.
+  const [upsellDesdeCheckout, setUpsellDesdeCheckout] = useState(false);
 
   // ─── Tema ─────────────────────────────────────────────────────────────
   // El drawer siempre fue oscuro fijo: sobre una landing blanca quedaba
@@ -437,6 +448,17 @@ export default function CartDrawer({
     confirmarPedidoFinal();
   }
 
+  // La página de checkout pide el upsell: si no hay ninguno, el pedido sigue.
+  useEffect(() => {
+    if (!solicitudUpsell) return;
+    if (upsells.length > 0) {
+      setUpsellDesdeCheckout(true);
+    } else {
+      onUpsellResuelto?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [solicitudUpsell]);
+
   function aceptarUpsell(item, oferta, componenteVariante = null) {
     setUpsellRevisado(true);
     setMostrarUpsellPopup(false);
@@ -450,6 +472,11 @@ export default function CartDrawer({
   function declinarUpsell() {
     setUpsellRevisado(true);
     setMostrarUpsellPopup(false);
+    if (upsellDesdeCheckout) {
+      setUpsellDesdeCheckout(false);
+      onUpsellResuelto?.();
+      return;
+    }
     confirmarPedidoFinal();
   }
 
@@ -460,6 +487,12 @@ export default function CartDrawer({
     if (upsellPendiente == null) return;
     if (items.some(it => Number(it.ofertaId) === Number(upsellPendiente))) {
       setUpsellPendiente(null);
+      if (upsellDesdeCheckout) {
+        setUpsellDesdeCheckout(false);
+        setEnviando(false);
+        onUpsellResuelto?.();
+        return;
+      }
       confirmarPedidoFinal();
     }
   }, [items, upsellPendiente]);
@@ -1057,7 +1090,7 @@ export default function CartDrawer({
       {/* Popup real, no otro paso del drawer: tapa toda la pantalla del
           cliente (por encima del propio drawer, que sigue ahí atrás) para
           que se lea como una pregunta que hay que responder antes de seguir. */}
-      {abierto && mostrarUpsellPopup && upsells.length > 0 && (
+      {((abierto && mostrarUpsellPopup) || upsellDesdeCheckout) && upsells.length > 0 && (
         <div className="lp-upsell-overlay" role="presentation">
           <div className="lp-upsell-modal" onClick={e => e.stopPropagation()}>
             {upsells.map(({ item, oferta }) => {

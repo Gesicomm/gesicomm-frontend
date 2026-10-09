@@ -50,6 +50,7 @@ const LIMITES = {
   ingredientes: 8,
   fitness_pasos: 5,
   fitness_opiniones: 9,
+  product_page_opiniones: 9,
   especificaciones: 14,
   en_la_caja: 10,
   tech_multimedia: 6,
@@ -165,7 +166,7 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
             <div className="rubro-card-header">
               <div>
                 <label>Descripción del producto</label>
-                <p>Titular y puntos destacados de la ficha básica. El texto principal se edita en “Sobre este producto”.</p>
+                <p>Titular y puntos destacados de la ficha básica. El texto principal es “Descripción del producto”.</p>
               </div>
             </div>
             <div className="rubro-row-main">
@@ -186,6 +187,25 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
               />
             </div>
           </div>
+
+          <ListaObjetos
+            label="Opiniones de clientes"
+            ayuda="Testimonios reales con nombre y estrellas. Con al menos una, la ficha muestra el promedio debajo del título."
+            items={listaDe('product_page_opiniones')}
+            max={LIMITES.product_page_opiniones}
+            nuevo={() => ({ nombre: '', comentario: '', calificacion: 5, foto: '' })}
+            onChange={l => set('product_page_opiniones', l)}
+            textoAgregar="Agregar opinión"
+            campos={[
+              { clave: 'nombre', label: 'Nombre', placeholder: 'Lucía G.' },
+              { clave: 'calificacion', label: 'Estrellas', placeholder: '5', tipo: 'number', min: 1, max: 5 },
+            ]}
+            extraCampos={[{ clave: 'foto', label: 'Foto (opcional)', tipo: 'imagen' }]}
+            onSubirImagen={onSubirImagen}
+            areaClave="comentario"
+            areaLabel="Comentario"
+            areaPlaceholder="Muy cómodo, lo uso todo el día en la oficina."
+          />
 
           <ListaObjetos
             label="Usos y aplicaciones"

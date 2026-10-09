@@ -19,6 +19,10 @@ import {
 import TechProductPage from '../landing-simple/templates/tech/TechProductPage';
 import { fichaTechDesdeProducto, resolverFichaTech } from '../landing-simple/templates/tech/fichaTech';
 import { armarItemFicha } from '../landing-simple/templates/fichaComun';
+import CodigoPreview from '../landing-simple/CodigoPreview';
+import { codigoFichaProducto } from '../landing-simple/fichaCodigoLanding';
+import { datosRuntimePublico } from '../landing-simple/datosRuntime';
+import { landingSimpleService } from '../../services/landingSimpleService';
 
 const DEVICE_OPTIONS = [
   { id: 'desktop', label: 'Desktop', icon: Monitor },
@@ -102,6 +106,20 @@ export default function ProductLandingPreview({
 }) {
   const [ofertas, setOfertas] = useState([]);
   const [tienda, setTienda] = useState(null);
+  // La landing de la tienda. Si es de lienzo (HTML), la vista previa usa la
+  // MISMA ficha y el mismo runtime que la página publicada, no las
+  // plantillas React de las landings rígidas.
+  const [landing, setLanding] = useState(null);
+
+  useEffect(() => {
+    if (!activo) return undefined;
+    let vivo = true;
+    landingSimpleService.listar()
+      .then(lista => (lista?.length ? landingSimpleService.obtener(lista[0].id) : null))
+      .then(l => { if (vivo) setLanding(l || null); })
+      .catch(() => { if (vivo) setLanding(null); });
+    return () => { vivo = false; };
+  }, [activo]);
 
   useEffect(() => {
     let vivo = true;
@@ -171,7 +189,59 @@ export default function ProductLandingPreview({
     precioAncla,
   ]);
 
+  const esLienzo = landing?.template?.kind === 'codigo';
+  const previewLienzo = useMemo(() => {
+    if (!esLienzo) return null;
+    const contentId = producto?.slug || (productoId ? `producto-${productoId}` : 'preview');
+    // Mismo formato que un item de /api/l: así pasa por itemPublicoARuntime
+    // igual que en la tienda publicada.
+    const item = {
+      content_id: contentId,
+      referencia_id: productoId || 0,
+      tipo: 'producto',
+      nombre: dto.nombre,
+      descripcion: producto?.descripcion_corta || '',
+      descripcion_larga: producto?.descripcion_larga || '',
+      propuesta_valor: dto.propuesta_valor,
+      sobre_este_producto: producto?.sobre_este_producto || '',
+      precio: dto.precio,
+      precio_antes: dto.precio_antes,
+      imagen: dto.imagenes[0]?.url || null,
+      imagenes: dto.imagenes,
+      categoria: dto.categoria,
+      stock: Number(producto?.cantidad_disponible) || null,
+      variantes: dto.variantes,
+      ofertas: dto.ofertas,
+      beneficios: dto.beneficios,
+      confianza: dto.confianza,
+      preguntas: dto.faq,
+      ficha_datos: dto.ficha_datos,
+    };
+    const data = {
+      ...landing,
+      catalogo_items: [item],
+      tienda: { nombre: tienda?.nombre || '', logo_imagen: tienda?.logo_imagen || null, colores: tienda ? { primario: tienda.color_primario || null, secundario: tienda.color_secundario || null, fondo: tienda.color_fondo || null } : undefined },
+    };
+    return {
+      codigo: codigoFichaProducto(landing?.content, contentId),
+      datos: datosRuntimePublico(data, landing?.slug || null, item, { vista: 'producto' }),
+    };
+  }, [esLienzo, landing, tienda, dto, producto, productoId]);
+
   const preview = useMemo(() => {
+    if (previewLienzo) {
+      return (
+        <div style={{ height: 'min(78vh, 900px)' }}>
+          <CodigoPreview
+            codigo={previewLienzo.codigo}
+            titulo={dto.nombre}
+            datos={previewLienzo.datos}
+            previewDevice={device}
+            style={{ width: '100%', height: '100%', border: 0 }}
+          />
+        </div>
+      );
+    }
     const rubro = producto?.ficha_rubro || '';
     const templateSlug = TEMPLATE_BY_RUBRO[rubro] || 'basico';
     const comun = {
@@ -292,7 +362,7 @@ export default function ProductLandingPreview({
       faqTitulo: dto.faq_titulo,
     });
     return <BasicoProductPage item={item} ficha={ficha} {...comun} />;
-  }, [device, dto, producto?.ficha_rubro, tienda]);
+  }, [device, dto, producto?.ficha_rubro, tienda, previewLienzo]);
 
   return (
     <section className="product-preview-panel" aria-label="Vista pública del producto">

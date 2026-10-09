@@ -392,6 +392,22 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:evento', nombre: 'Lead' }));
   });
 
+  it('el botón flotante de WhatsApp abre el enlace aunque exista sección de contacto', () => {
+    const { window, document, mensajes } = montar(PLANTILLA_INICIO, datos);
+    const flotante = document.querySelector('[data-gesicomm-contacto-flotante]');
+    const evento = new window.MouseEvent('click', { bubbles: true, cancelable: true });
+
+    expect(flotante).toBeTruthy();
+    expect(flotante.getAttribute('href')).toContain('https://wa.me/595981123');
+    expect(flotante.getAttribute('target')).toBe('_blank');
+
+    flotante.dispatchEvent(evento);
+
+    expect(evento.defaultPrevented).toBe(false);
+    expect(window.__scrolleado).toBeUndefined();
+    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:evento', nombre: 'Contact' }));
+  });
+
   it('usa la fecha real del countdown global en Inicio', () => {
     const finAt = new Date(Date.now() + (7 * 60 + 10) * 60 * 1000).toISOString();
     const { document } = montar(PLANTILLA_INICIO, {
@@ -974,11 +990,11 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
       venta: { inicio: { menu_links: [{ texto: 'Checkout', destino: '/checkout' }] } },
       paginas: { ...paginas, checkout: '/l/mi-promo/checkout' },
     });
-    const link = document.querySelector('#nav-links a');
+    const link = [...document.querySelectorAll('#nav-links a')].find(a => a.textContent === 'Checkout');
     expect(link.textContent).toBe('Checkout');
     expect(link.getAttribute('data-gesicomm-link')).toBe('checkout');
     expect(link.className).toBe('active');
-    click('#nav-links a');
+    link.click();
     expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'checkout', filtro: {} });
   });
 
@@ -999,7 +1015,7 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     expect(link.className).toBe('');
   });
 
-  it('el menú principal marca Productos en catálogo y oculta anchors internos fuera de Inicio', () => {
+  it('el menú principal marca Productos en catálogo y completa navegación fuera de Inicio', () => {
     const plantilla = {
       html: '<main class="lv-shop-page"></main><nav id="nav-links"></nav>',
       css: '',
@@ -1020,9 +1036,33 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     });
 
     const links = [...document.querySelectorAll('#nav-links a')];
-    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos']);
+    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos', 'Checkout']);
     expect(links.find(link => link.textContent === 'Productos').className).toBe('active');
     expect(links.find(link => link.textContent === 'Inicio').className).toBe('');
+  });
+
+  it('el menú de producto no queda vacío cuando Inicio solo tiene anchors internos', () => {
+    const plantilla = {
+      html: '<main data-gesicomm-producto-detalle></main><nav id="nav-links"></nav>',
+      css: '',
+      js: '',
+    };
+    const { document } = montar(plantilla, {
+      ...datos,
+      vista: 'producto',
+      venta: {
+        inicio: {
+          menu_links: [
+            { texto: 'Ofertas', destino: '#ofertas' },
+            { texto: 'Combos', destino: '#combos' },
+          ],
+        },
+      },
+    });
+
+    const links = [...document.querySelectorAll('#nav-links a')];
+    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos', 'Checkout']);
+    expect(document.querySelector('#nav-links').style.display).toBe('');
   });
 
   it('el buscador del header abre catálogo con la búsqueda aplicada cuando no hay grilla en la vista', () => {
@@ -1206,7 +1246,9 @@ describe('ficha: imágenes y descripciones legibles', () => {
     });
     expect(document.querySelector('#descripcion').style.display).toBe('');
     expect(document.querySelector('a[href="#descripcion"]').style.display).toBe('');
-    expect(document.querySelector('[data-gesicomm-bind="descripcion_larga"]').textContent).toBe(producto.descripcion_larga);
+    // La descripción principal va arriba, junto al nombre; "Detalles" muestra "Sobre este producto".
+    expect(document.querySelector('.pdp-lead').textContent).toBe(producto.descripcion_larga);
+    expect(document.querySelector('#descripcion [data-gesicomm-bind="sobre"]').textContent).toBe(producto.sobre);
     dom.window.close();
   });
 
@@ -1774,5 +1816,118 @@ describe('runtime — checkout propio, departamento y ciudad', () => {
     const confirmado = mensajes.find(m => m.tipo === 'gesicomm:confirmar-checkout');
     expect(confirmado.campos).toMatchObject({ departamento: 'Alto Paraná', ciudad: 'Ciudad del Este' });
     dom.window.close();
+  });
+});
+
+describe('checkout propio — order bumps, recomendados y resumen', () => {
+  // Item público (/api/l) con un order bump publicable, como lo arma el backend.
+  const mouse = {
+    content_id: 'mouse-qa', referencia_id: 1503, tipo: 'producto', nombre: 'Mouse QA',
+    descripcion: 'Mouse compacto', descripcion_larga: 'Mouse inalámbrico compacto. Ideal para la oficina.',
+    precio: 89000, imagen: 'https://cdn.test/mouse.jpg', categoria: 'Tech', stock: 30,
+    ficha_datos: { insignia: 'MÁS VENDIDO' },
+    ofertas: [{
+      id: 501, estrategia: 'order_bump', nombre: 'Sumá el adaptador', precio_efectivo: 18217, precio_normal: 26024,
+      imagen: 'https://cdn.test/wifi.jpg', producto_complementario: { nombre: 'Adaptador Wi-Fi', imagen: 'https://cdn.test/wifi.jpg' },
+    }],
+  };
+  const teclado = { content_id: 'teclado', referencia_id: 1504, tipo: 'producto', nombre: 'Teclado', precio: 120000, imagen: 'https://cdn.test/t.jpg', categoria: 'Tech', stock: 4, ofertas: [] };
+  const sarten = { content_id: 'sarten', referencia_id: 1505, tipo: 'producto', nombre: 'Sartén', precio: 90000, imagen: 'https://cdn.test/s.jpg', categoria: 'Cocina', stock: 4, ofertas: [] };
+  const data = { catalogo_items: [mouse, sarten, teclado], content: {} };
+  const carritoMouse = [{ clave: 'm', tipo: 'producto', contentId: 'mouse-qa', nombre: 'Mouse QA', precio: 89000, cantidad: 1, imagen: 'products/1503/a.webp' }];
+
+  it('el runtime recibe los bumps de lo que está en el pedido y recomendados de la misma categoría primero', () => {
+    const datos = datosRuntimePublico(data, 'tienda', null, { vista: 'checkout', carrito: carritoMouse });
+    expect(datos.checkout_bumps.map(b => [b.id, b.content_id, b.en_pedido])).toEqual([[501, 'mouse-qa', false]]);
+    expect(datos.checkout_recomendados.map(p => p.id)).toEqual(['teclado', 'sarten']);
+    // La imagen del pedido se resuelve: una key relativa dejaba el <img> roto y la fila desarmada.
+    expect(datos.carrito.items[0].imagen).toMatch(/^https?:\/\/.+products\/1503\/a\.webp$/);
+  });
+
+  it('con el bump ya en el pedido sigue en la lista, marcado', () => {
+    const datos = datosRuntimePublico(data, 'tienda', null, {
+      vista: 'checkout',
+      carrito: [...carritoMouse, { clave: 'b', tipo: 'producto', contentId: 'mouse-qa', ofertaId: 501, nombre: 'Sumá el adaptador', precio: 18217, cantidad: 1 }],
+    });
+    expect(datos.checkout_bumps[0].en_pedido).toBe(true);
+  });
+
+  it('la tarjeta del bump es la misma de la ficha: marcarla suma la oferta y desmarcarla la quita', () => {
+    const datos = datosRuntimePublico(data, 'tienda', null, { vista: 'checkout', carrito: carritoMouse });
+    const { document, window, mensajes, dom } = montar(PLANTILLA_CHECKOUT, datos);
+    const tarjeta = document.querySelector('[data-gesicomm-lista="checkout_bumps"] label.bump');
+    expect(tarjeta).toBeTruthy();
+    expect(tarjeta.querySelector('.bump-title').textContent).toBe('Sumá el adaptador');
+    const casilla = tarjeta.querySelector('input[data-gesicomm-bump]');
+    casilla.checked = true;
+    casilla.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'mouse-qa', oferta: '501', abrir: false }));
+    casilla.checked = false;
+    casilla.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:quitar-oferta', oferta: '501' }));
+    dom.window.close();
+  });
+
+  it('los recomendados usan la tarjeta del catálogo y "Agregar" suma sin salir del checkout', () => {
+    const datos = datosRuntimePublico(data, 'tienda', null, { vista: 'checkout', carrito: carritoMouse });
+    const { document, mensajes, click, dom } = montar(PLANTILLA_CHECKOUT, datos);
+    const tarjetas = document.querySelectorAll('[data-gesicomm-lista="checkout_recomendados"] .lv-shop-card');
+    expect([...tarjetas].map(t => t.querySelector('.lv-shop-title').textContent)).toEqual(['Teclado', 'Sartén']);
+    click('[data-gesicomm-lista="checkout_recomendados"] .lv-shop-card [data-gesicomm-agregar]');
+    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'teclado', abrir: false }));
+    dom.window.close();
+  });
+
+  it('precio unitario y cantidad del resumen van en una sola línea', () => {
+    const datos = datosRuntimePublico(data, 'tienda', null, { vista: 'checkout', carrito: carritoMouse });
+    const { document, dom } = montar(PLANTILLA_CHECKOUT, datos);
+    expect(document.querySelector('.lv-item .lv-item-qty').textContent.replace(/\s+/g, ' ').trim()).toMatch(/89\.000 x 1$/);
+    expect(PLANTILLA_CHECKOUT.css).toContain('.lv-item-qty span{display:inline}');
+    dom.window.close();
+  });
+});
+
+describe('ficha — propuesta de valor y badge del producto', () => {
+  it('la descripción completa va debajo del nombre (y la corta si no hay otra)', () => {
+    const item = { content_id: 'x', tipo: 'producto', nombre: 'X', precio: 1, descripcion: 'Corta', descripcion_larga: 'Primera oración. Segunda oración.', ofertas: [] };
+    const datos = datosRuntimePublico({ catalogo_items: [item], content: {} }, 'tienda', item, {});
+    expect(datos.producto.descripcion_ficha).toBe('Primera oración. Segunda oración.');
+    const soloCorta = datosRuntimePublico({ catalogo_items: [{ ...item, descripcion_larga: null }], content: {} }, 'tienda', { ...item, descripcion_larga: null }, {});
+    expect(soloCorta.producto.descripcion_ficha).toBe('Corta');
+  });
+
+  it('en la ficha base: nombre → propuesta → descripción → reseñas (calculadas de las opiniones reales) → precio', () => {
+    const item = {
+      content_id: 'x', tipo: 'producto', nombre: 'Mouse', precio: 89000, propuesta_valor: 'Sin cables y sin ruido.',
+      descripcion_larga: 'Mouse compacto con receptor USB.', ofertas: [],
+      ficha_datos: { product_page_opiniones: [{ nombre: 'Lucía', calificacion: 5, comentario: 'Muy cómodo' }, { nombre: 'Diego', calificacion: 4, comentario: 'Llegó rápido' }] },
+    };
+    const datos = datosRuntimePublico({ catalogo_items: [item], content: {} }, 'tienda', item, {});
+    expect(datos.producto.resenas_texto).toBe('4,5 de 5 · 2 opiniones');
+    const { document, dom } = montar(PLANTILLA_PRODUCTO, datos);
+    const info = document.querySelector('.pdp-info');
+    const orden = ['h1', '.pdp-promesa', '.pdp-lead', '.pdp-reviews', '.pdp-prices'].map(sel => info.querySelector(sel));
+    orden.forEach(el => expect(el).toBeTruthy());
+    for (let i = 1; i < orden.length; i++) {
+      expect(orden[i - 1].compareDocumentPosition(orden[i]) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    expect(info.querySelector('.pdp-lead').textContent).toBe('Mouse compacto con receptor USB.');
+    expect(info.querySelector('.pdp-reviews').style.display).not.toBe('none');
+    // Sin "Sobre este producto" la sección Detalles no se muestra (no repite la descripción).
+    expect(document.getElementById('descripcion').style.display).toBe('none');
+    dom.window.close();
+  });
+
+  it('sin opiniones reales no se inventa el texto de reseñas', () => {
+    const item = { content_id: 'x', tipo: 'producto', nombre: 'X', precio: 1, ofertas: [] };
+    const datos = datosRuntimePublico({ catalogo_items: [item], content: {} }, 'tienda', item, {});
+    expect(datos.producto.resenas_texto).toBe('');
+  });
+
+  it('el badge del producto (ficha_datos.insignia) es la etiqueta de la tarjeta, no su descripción', () => {
+    const item = { content_id: 'x', tipo: 'producto', nombre: 'X', precio: 1, descripcion: 'Corta', ficha_datos: { insignia: 'MÁS VENDIDO' }, ofertas: [] };
+    const datos = datosRuntimePublico({ catalogo_items: [item], content: {} }, 'tienda', null, {});
+    expect(datos.productos[0].etiqueta).toBe('MÁS VENDIDO');
+    expect(datos.productos[0].descripcion).toBe('Corta');
   });
 });

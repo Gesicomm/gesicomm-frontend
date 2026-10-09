@@ -149,6 +149,8 @@ const MENU_PRINCIPAL_DEFAULT = [
   { id: 'productos', texto: 'Productos', destino: '/catalogo', visible: true },
 ];
 const ENCABEZADO_INICIO_DEFAULT = {
+  mostrar_logo: true,
+  mostrar_nombre: true,
   logo_tamano: 46,
   logo_rotacion: 0,
   logo_posicion: 'izquierda',
@@ -382,6 +384,8 @@ function normalizarMenuPrincipal(menu = []) {
 
 function normalizarEncabezadoInicio(encabezado = {}) {
   return {
+    mostrar_logo: encabezado.mostrar_logo !== false,
+    mostrar_nombre: encabezado.mostrar_nombre !== false,
     logo_tamano: limitarNumero(encabezado.logo_tamano, 28, 96, ENCABEZADO_INICIO_DEFAULT.logo_tamano),
     logo_rotacion: limitarNumero(encabezado.logo_rotacion, -180, 180, ENCABEZADO_INICIO_DEFAULT.logo_rotacion),
     logo_posicion: encabezado.logo_posicion === 'centro' ? 'centro' : ENCABEZADO_INICIO_DEFAULT.logo_posicion,
@@ -620,7 +624,7 @@ const cargarOfertasTienda = () => ofertaService.listarTodas({ estrategias: ['ord
 
 export default function ConfigurarVentaCodigo({
   catalogo, inicial, onConfirmar, onVolver, onCambiarModo, guardando, cargarOfertas = cargarOfertasTienda,
-  tienda = null, codigos = null, onCambiarCodigo = null, onRestaurarCodigo = null, onSubirImagen = null,
+  tienda = null, landing = null, codigos = null, onCambiarCodigo = null, onRestaurarCodigo = null, onSubirImagen = null,
   disenoPendienteIA = false,
   // Error del guardado (viene del editor): sin esto, si el servidor
   // rechazaba el guardado, el botón "no hacía nada" a la vista.
@@ -1638,6 +1642,7 @@ export default function ConfigurarVentaCodigo({
   const datosPreview = useMemo(() => datosRuntimePreview({
     productos: productosPreview,
     tienda,
+    landing,
     venta: ventaActual,
     vista: abreEnFicha ? 'producto' : vistaPreview,
     categoria: vistaPreview === 'categoria' ? (categoriaPreview ? categoriaPreviewValida : TODAS_CATEGORIAS) : null,
@@ -1645,7 +1650,7 @@ export default function ConfigurarVentaCodigo({
       ? contentIdPanel(seleccion[0])
       : (productoFicha ? contentIdPanel(productoFicha) : null),
     ofertas: ofertasConImagen,
-  }), [productosPreview, tienda, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion]);
+  }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion]);
 
   // Dónde se ve cada tipo de oferta en la ficha (para resaltarla en la vista previa).
   function verOfertaEnFicha(oferta, producto) {
@@ -4154,7 +4159,7 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
             <p className="mt-1 text-xs leading-relaxed text-fg-muted">El logo queda junto al nombre de la tienda en la barra superior.</p>
           </div>
           <div className={`flex min-w-[150px] items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 ${cfg.logo_posicion === 'centro' ? 'flex-col text-center' : ''}`}>
-            {logo ? (
+            {cfg.mostrar_logo && (logo ? (
               <img
                 src={logo}
                 alt=""
@@ -4176,9 +4181,44 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
               >
                 {nombre.slice(0, 1).toUpperCase()}
               </span>
+            ))}
+            {cfg.mostrar_nombre && <span className="truncate text-sm font-black text-fg">{nombre}</span>}
+            {!cfg.mostrar_logo && !cfg.mostrar_nombre && (
+              <span className="text-xs font-medium text-fg-muted">Marca oculta</span>
             )}
-            <span className="truncate text-sm font-black text-fg">{nombre}</span>
           </div>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={cfg.mostrar_logo}
+            onClick={() => onCambiarEncabezado({ mostrar_logo: !cfg.mostrar_logo })}
+            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2 text-left"
+          >
+            <span>
+              <span className="block text-sm font-semibold text-fg">Mostrar logo</span>
+              <span className="block text-xs text-fg-muted">Oculta o muestra solo el logo del encabezado.</span>
+            </span>
+            <span className={`relative h-5 w-10 shrink-0 rounded-full transition-colors ${cfg.mostrar_logo ? 'bg-success' : 'bg-border-strong'}`}>
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${cfg.mostrar_logo ? 'left-[22px]' : 'left-0.5'}`} />
+            </span>
+          </button>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={cfg.mostrar_nombre}
+            onClick={() => onCambiarEncabezado({ mostrar_nombre: !cfg.mostrar_nombre })}
+            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2 text-left"
+          >
+            <span>
+              <span className="block text-sm font-semibold text-fg">Mostrar nombre</span>
+              <span className="block text-xs text-fg-muted">Oculta o muestra solo el nombre de la tienda.</span>
+            </span>
+            <span className={`relative h-5 w-10 shrink-0 rounded-full transition-colors ${cfg.mostrar_nombre ? 'bg-success' : 'bg-border-strong'}`}>
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${cfg.mostrar_nombre ? 'left-[22px]' : 'left-0.5'}`} />
+            </span>
+          </button>
         </div>
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
           <label className="block">
