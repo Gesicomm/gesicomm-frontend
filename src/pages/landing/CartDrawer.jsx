@@ -4,6 +4,7 @@ import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
 import { agruparOpciones, resolverVariante, seleccionDeVariante } from '../../lib/varianteOpciones';
+import useDeliveryCiudades from './useDeliveryCiudades';
 import { esColorClaro, normalizarColorHex, tintaSobre } from '../../lib/landingDiseno';
 
 const FORM_VACIO = {
@@ -98,7 +99,7 @@ function textoUpsell(item, oferta) {
  * en LandingPublica.jsx).
  */
 export default function CartDrawer({
-  items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, onValidarCupon, pasarelas = [], deliveryCiudades = [],
+  items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, onValidarCupon, pasarelas = [], deliveryCiudades: deliveryCiudadesRecibidas = [],
   // Solo los usa la vista previa del editor (ver LandingSimpleEditor.jsx):
   // arrancar directo en el paso donde vive lo que se está armando, en vez
   // de obligar a un click en "Finalizar pedido" + llenar el formulario
@@ -264,6 +265,9 @@ export default function CartDrawer({
     return null;
   }
 
+  // Se piden apenas hay algo en el carrito, no al abrirlo: el checkout del
+  // lienzo confirma con el drawer cerrado y valida la ciudad contra esta lista.
+  const deliveryCiudades = useDeliveryCiudades(deliveryCiudadesRecibidas, abierto || items.length > 0);
   const opcionesDelivery = useMemo(() => prepararOpcionesDelivery(deliveryCiudades), [deliveryCiudades]);
   const pedidoConEnvioIncluido = items.length > 0 && items.every(it => it.envioIncluido === true || it.envio_incluido === true);
   const opcionDeliverySeleccionada = opcionesDelivery.find(op =>

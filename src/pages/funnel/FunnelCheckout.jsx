@@ -5,6 +5,7 @@ import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { getMediaUrl } from '../../services/api';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
 import { agruparOpciones, resolverVariante, seleccionDeVariante } from '../../lib/varianteOpciones';
+import useDeliveryCiudades from '../landing/useDeliveryCiudades';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -39,7 +40,7 @@ function pctAhorro(precio, normal) {
   return Math.round((1 - precio / normal) * 100);
 }
 
-export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema, ofertasLanding = [], itemOriginal = null, pasarelas = [], deliveryCiudades = [] }) {
+export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema, ofertasLanding = [], itemOriginal = null, pasarelas = [], deliveryCiudades: deliveryCiudadesRecibidas = [] }) {
   const [form, setForm] = useState(FORM_VACIO);
   const [ciudadDeliveryInput, setCiudadDeliveryInput] = useState('');
   const [acepta, setAcepta] = useState(false);
@@ -58,6 +59,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
   const [seleccionVariantePorOferta, setSeleccionVariantePorOferta] = useState({});
 
   const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
+  const deliveryCiudades = useDeliveryCiudades(deliveryCiudadesRecibidas, abierto);
   const opcionesDelivery = useMemo(() => prepararOpcionesDelivery(deliveryCiudades), [deliveryCiudades]);
   const productoConEnvioIncluido = itemOriginal?.envio_incluido === true || itemOriginal?.envioIncluido === true;
   const opcionDeliverySeleccionada = opcionesDelivery.find(op =>

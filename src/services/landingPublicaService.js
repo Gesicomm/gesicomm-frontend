@@ -15,6 +15,7 @@
  * sirviendo todo). En dev local sin ese proxy armado, esto pega contra el
  * propio Vite dev server — ver vite.config.js para el proxy de /api.
  */
+import { esHostnameDeTienda } from '../lib/hostname';
 
 /**
  * @param {string|undefined} slug - undefined → landing es_home de la tienda actual
@@ -42,13 +43,31 @@ export async function obtenerLandingPublica(slug, opciones = {}) {
  *   que filtrar solo lo ya cargado haría que una búsqueda por categoría no
  *   encuentre productos reales que cayeron en otra página.
  */
+// La misma página del catálogo se pedía tres veces al abrir /catalogo de un
+// lienzo: CatalogoPublico la pide para montar la página, y el iframe la vuelve
+// a pedir al arrancar (quiere total, páginas y categorías) y otra vez cada vez
+// que el padre le reenvía datos. Con la caché del CDN fría eran 1,2-1,5s por
+// pedido, en serie. Acá se reusa la respuesta (o el pedido en vuelo) por URL.
+// Mismo TTL que el s-maxage del backend: no se sirve nada más viejo de lo que
+// ya serviría el CDN.
+const TTL_CATALOGO_MS = 60 * 1000;
+const POR_PAGINA_DEFAULT = 20;
+const catalogoEnMemoria = new Map();
+
+export function limpiarCacheCatalogoPublico() {
+  catalogoEnMemoria.clear();
+}
+
 export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
   const {
     pagina, porPagina, orden, disponibilidad, categoria, marca, etiqueta, precioMin, precioMax, busqueda, soloInicio, soloDescuento,
   } = opciones;
   const params = new URLSearchParams({ vista: 'catalogo' });
   if (pagina) params.set('pagina', pagina);
-  if (porPagina) params.set('porPagina', porPagina);
+  // Siempre explícito, aunque sea el default del backend: sin esto "sin
+  // porPagina" y "porPagina=20" son dos URLs distintas para la misma
+  // respuesta, y ni esta caché ni la del CDN las reconocen como una.
+  params.set('porPagina', porPagina || POR_PAGINA_DEFAULT);
   if (orden) params.set('orden', orden);
   if (disponibilidad && disponibilidad !== 'todos') params.set('disponibilidad', disponibilidad);
   if (categoria && categoria !== 'todas') params.set('categoria', categoria);
@@ -61,10 +80,53 @@ export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
   if (busqueda) params.set('q', String(busqueda).slice(0, 80));
 
   const path = slug ? `/api/l/${encodeURIComponent(slug)}?${params}` : `/api/l/?${params}`;
-  const res = await fetch(path, { credentials: 'include' });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error('No se pudo cargar el catálogo.');
-  return res.json();
+  const enMemoria = catalogoEnMemoria.get(path);
+  if (enMemoria && Date.now() - enMemoria.desde < TTL_CATALOGO_MS) return enMemoria.promesa;
+
+  const promesa = (async () => {
+    const res = await fetch(path, { credentials: 'include' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('No se pudo cargar el catálogo.');
+    return res.json();
+  })();
+  catalogoEnMemoria.set(path, { desde: Date.now(), promesa });
+  // Un error no se guarda: el próximo pedido tiene que reintentar.
+  promesa.catch(() => {
+    if (catalogoEnMemoria.get(path)?.promesa === promesa) catalogoEnMemoria.delete(path);
+  });
+  return promesa;
+}
+
+// Ciudades de envío: ya no viajan en cada GET de la landing/catálogo (eran
+// ~200 KB de los ~240 KB del catálogo, y en el servidor cuestan tres consultas
+// encadenadas). Se piden recién cuando alguien va a comprar. Una sola vez por
+// carga de página.
+let deliveryEnMemoria = null;
+
+// En el hostname de la tienda el backend la resuelve solo; en /l/:slug (dominio
+// principal, local) hace falta el slug — el mismo que usan las rutas de App.jsx.
+// Se lee de la URL porque el carrito se monta en muchas vistas que no lo reciben.
+// Fuera de una tienda (la vista previa del editor) no hay a quién preguntarle.
+function rutaDelivery() {
+  if (typeof window === 'undefined') return null;
+  const enSlug = window.location.pathname.match(/^\/l\/([^/]+)/);
+  if (enSlug) return `/api/l/${enSlug[1]}/delivery`;
+  return esHostnameDeTienda() ? '/api/l/delivery' : null;
+}
+
+export function obtenerDeliveryCiudadesPublica() {
+  const ruta = rutaDelivery();
+  if (!ruta) return Promise.resolve([]);
+  if (!deliveryEnMemoria) {
+    deliveryEnMemoria = fetch(ruta)
+      .then((res) => {
+        if (!res.ok) throw new Error('No se pudieron cargar las ciudades de envío.');
+        return res.json();
+      })
+      .then((body) => (Array.isArray(body?.delivery_ciudades) ? body.delivery_ciudades : []));
+    deliveryEnMemoria.catch(() => { deliveryEnMemoria = null; });
+  }
+  return deliveryEnMemoria;
 }
 
 export async function obtenerProductoLanding(slug, productoSlug) {
