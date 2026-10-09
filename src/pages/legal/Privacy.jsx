@@ -156,7 +156,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          A la fecha de esta política (septiembre 2026), <strong>Meta es la única plataforma externa que Gesicom integra.</strong> No hay
+          A la fecha de esta política (octubre 2026), <strong>Meta es la única plataforma externa que Gesicom integra.</strong> No hay
           integración activa con Instagram, con WhatsApp Business Platform, con Shopify ni con ninguna
           otra plataforma. Si alguna se activa en el futuro, esta política se actualizará y se
           notificará <strong>antes</strong> de que procese datos.
@@ -166,16 +166,86 @@ const SECCIONES = [
           desde Configuración, y podés revocarla en cualquier momento.
         </p>
 
-        <Subseccion titulo="4.1 Sin autenticación OAuth ni permisos de API">
+        <Subseccion titulo="4.1 Permisos que solicitamos">
           <p>
-            A la fecha actual, Gesicom <strong>no solicita ningún permiso</strong> de la plataforma de Meta mediante OAuth para consultar o gestionar datos (no usa <code>ads_management</code>, <code>business_management</code> ni ningún otro permiso).
+            Al conectar Meta desde Configuración, Gesicom te pide autorización mediante OAuth para
+            dos permisos, ambos de <strong>solo lectura</strong>:
           </p>
+          <ul>
+            <li>
+              <code>business_management</code>: para listar tus portafolios comerciales (Business
+              Managers) y las cuentas publicitarias que pertenecen a cada uno, y que puedas elegir
+              cuál mirar.
+            </li>
+            <li>
+              <code>ads_read</code>: para leer las campañas de esas cuentas y sus métricas.
+            </li>
+          </ul>
           <p>
-            Por lo tanto, no recibimos, accedemos ni tratamos datos de tus campañas de Facebook Ads, tu perfil personal, tus páginas, tus cuentas publicitarias ni tus contactos.
+            Gesicom <strong>no crea, edita, pausa ni elimina</strong> campañas, anuncios ni
+            presupuestos, y no pide permisos para hacerlo. Tampoco accede a tus páginas, a tu
+            perfil personal más allá de tu identificador de usuario, a tus mensajes ni a tus
+            contactos.
           </p>
-          <p className="mt-4 text-sm text-fg-muted">
-            Si en el futuro se agregan módulos que requieran autorización mediante OAuth, esta sección se actualizará para reflejar qué permisos se solicitan, qué datos adicionales se obtienen y para qué se usan.
+        </Subseccion>
+
+        <Subseccion titulo="4.2 Qué datos leemos y para qué">
+          <TablaLegal
+            encabezados={['Dato', 'Para qué lo usamos']}
+            filas={[
+              [
+                'Identificador y nombre de tus Business Managers',
+                'Mostrarte el selector de portafolio y nombrar la conexión en Configuración.',
+              ],
+              [
+                'Identificador, nombre, estado y moneda de las cuentas publicitarias propias de cada Business Manager',
+                'Mostrarte el selector de cuenta y expresar los montos en la moneda correcta.',
+              ],
+              [
+                'Campañas: nombre, estado, objetivo, fecha de inicio y presupuesto',
+                'Armar la tabla de campañas de la sección Ads.',
+              ],
+              [
+                'Métricas de campañas: gasto, compras, valor de conversión, ROAS, clics salientes y conversaciones iniciadas',
+                'Calcular costo por compra, tasa de conversión y tasa de cierre en la misma tabla.',
+              ],
+              [
+                'Tu identificador de usuario de Meta (asignado para Gesicom)',
+                'Encontrar tu conexión si pedís la eliminación de datos desde Facebook.',
+              ],
+            ]}
+          />
+          <p>
+            Las campañas y sus métricas se consultan a Meta <strong>en el momento</strong> en que
+            abrís la pantalla y <strong>no se guardan</strong> en nuestra base de datos. Solo vos,
+            con tu sesión iniciada, ves los datos de tus conexiones: cada consulta se filtra por tu
+            cuenta y tu usuario de Gesicom.
           </p>
+        </Subseccion>
+
+        <Subseccion titulo="4.3 Qué guardamos y cómo se elimina">
+          <p>
+            De Meta guardamos únicamente el <strong>token de acceso</strong> (cifrado con
+            AES-256-GCM), el <strong>identificador y el nombre del Business Manager</strong>{' '}
+            conectado y tu <strong>identificador de usuario de Meta</strong>. Se conservan
+            mientras la conexión esté activa. El token que entrega Meta vence a los 60 días; al
+            vencer hay que volver a conectar.
+          </p>
+          <ul>
+            <li>
+              <strong>Si desconectás desde Configuración:</strong> revocamos la autorización ante
+              Meta y borramos el token y los datos de la conexión en el acto.
+            </li>
+            <li>
+              <strong>Si quitás la aplicación desde Facebook:</strong> Meta nos avisa y borramos
+              automáticamente las conexiones asociadas a tu usuario (ver la sección{' '}
+              <a href="#datos-meta">Uso y eliminación de datos obtenidos de Meta</a>).
+            </li>
+            <li>
+              <strong>Si eliminás tu cuenta de Gesicom:</strong> las conexiones se borran junto con
+              ella, dentro del plazo de 30 días del proceso de eliminación.
+            </li>
+          </ul>
         </Subseccion>
 
         <Subseccion titulo="4.4 No usamos Facebook Login para autenticarte">
@@ -595,8 +665,8 @@ const SECCIONES = [
               'Prestación del servicio.',
             ],
             [
-              'Token de acceso de Meta',
-              'Hasta que revoques la conexión. Se elimina de inmediato al desconectar.',
+              'Conexión con Meta (token cifrado, ID y nombre del Business Manager, ID de usuario de Meta)',
+              'Mientras la conexión esté activa. Se elimina de inmediato al desconectar, al quitar la app desde Facebook o al eliminar la cuenta. Las métricas de campañas no se guardan.',
               'Consentimiento.',
             ],
             [
@@ -976,9 +1046,9 @@ const SECCIONES = [
           <strong>Eliminación iniciada desde Meta.</strong> Si quitás la aplicación desde la
           configuración de tu cuenta de Facebook, Meta nos notifica automáticamente a
           través de nuestro <em>Data Deletion Callback</em>. Al recibir esa notificación
-          verificamos criptográficamente que provenga realmente de Meta, registramos la solicitud y
-          te devolvemos un código de confirmación con una URL pública donde podés seguir el estado
-          del borrado. El proceso está descrito paso a paso en la página de{' '}
+          verificamos criptográficamente que provenga realmente de Meta, borramos en el acto las
+          conexiones asociadas a tu usuario de Meta y te devolvemos un código de confirmación con
+          una URL pública donde podés ver el estado del borrado. El proceso está descrito paso a paso en la página de{' '}
           <Link to="/data-deletion">Eliminación de Datos</Link>.
         </p>
       </>
@@ -1060,7 +1130,7 @@ export default function Privacy() {
       descripcion="Cómo Gesicom recopila, usa, comparte, protege y elimina los datos personales: qué información obtenemos de Meta al conectar Facebook Ads, con qué base legal, cuánto la conservamos y cómo ejercer tus derechos bajo el RGPD, la CCPA/CPRA y la normativa de Latinoamérica."
       resumen="Esta política explica qué datos trata Gesicom, por qué, durante cuánto tiempo y qué control tenés sobre ellos. Está escrita para que se entienda sin ser abogado, sin perder precisión jurídica."
       ruta="/privacy"
-      actualizado="2026-09-24"
+      actualizado="2026-10-09"
       vigenteDesde="2026-08-03"
       secciones={SECCIONES}
     >

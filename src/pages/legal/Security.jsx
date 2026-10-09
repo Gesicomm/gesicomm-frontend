@@ -196,8 +196,10 @@ const SECCIONES = [
         <Subseccion titulo="4.1 OAuth 2.0 para integraciones">
           <p>
             La conexión con Meta usa OAuth 2.0. Gesicom <strong>nunca recibe ni almacena tu
-            contraseña</strong> de Facebook, y solo solicita los permisos{' '}
-            <code>ads_management</code> y <code>business_management</code>.
+            contraseña</strong> de Facebook, y solo solicita los permisos de lectura{' '}
+            <code>ads_read</code> y <code>business_management</code>. El token que entrega Meta
+            se guarda cifrado con AES-256-GCM, nunca llega al navegador y, al desconectar, se
+            revoca ante Meta y se borra.
           </p>
           <p>
             El flujo incluye un <strong>parámetro <code>state</code> aleatorio</strong> generado por
@@ -588,7 +590,7 @@ export default function Security() {
       descripcion="Cómo protege Gesicom los datos: cifrado TLS en tránsito y AES-256-GCM en reposo, contraseñas con bcrypt, autenticación por cookies HttpOnly, control de acceso por roles, aislamiento entre cuentas, auditoría, copias de seguridad y respuesta a incidentes."
       resumen="Las medidas técnicas y organizativas concretas con las que protegemos tu información y la de tus clientes. Sin generalidades: qué se cifra, con qué, quién puede acceder y qué pasa si algo falla."
       ruta="/security"
-      actualizado="2026-08-03"
+      actualizado="2026-10-09"
       vigenteDesde="2026-08-03"
       secciones={SECCIONES}
     />
