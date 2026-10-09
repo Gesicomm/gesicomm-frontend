@@ -413,13 +413,13 @@ const SECCIONES = [
       <>
         <ul>
           <li>
-            <strong>Frecuencia:</strong> copias automáticas periódicas de la base de datos completa.
+            <strong>Frecuencia:</strong> copia automática diaria de la base de datos completa.
           </li>
           <li>
             <strong>Cifrado:</strong> todas las copias se almacenan cifradas.
           </li>
           <li>
-            <strong>Retención:</strong> rotación de hasta 35 días.
+            <strong>Retención:</strong> copias diarias durante 7 días y una copia mensual durante 3 meses.
           </li>
           <li>
             <strong>Verificación:</strong> se prueba la restauración, porque una copia que nunca se
@@ -432,7 +432,7 @@ const SECCIONES = [
         </ul>
         <Alert tono="advertencia" titulo="Sobre la eliminación de datos y las copias" className="mt-5">
           Cuando se elimina un dato de la base activa, puede seguir existiendo en las copias de
-          seguridad hasta que esa copia rote, en un máximo de 35 días. Durante ese lapso permanece
+          seguridad hasta que esa copia rote, en un máximo de 3 meses. Durante ese lapso permanece
           cifrado y fuera de todo uso operativo. Es una consecuencia inevitable de tener copias de
           seguridad, y está declarado en la{' '}
           <Link to="/privacy">Política de Privacidad</Link>.

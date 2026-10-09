@@ -691,7 +691,7 @@ const SECCIONES = [
             ],
             [
               'Copias de seguridad',
-              'Rotación de hasta 35 días.',
+              'Copias diarias durante 7 días y una copia mensual durante 3 meses.',
               'Continuidad del servicio.',
             ],
           ]}

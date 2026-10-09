@@ -45,9 +45,9 @@ const PASOS = [
   },
   {
     titulo: 'Rotación de las copias de seguridad',
-    plazo: 'Hasta 35 días después',
+    plazo: 'Hasta 3 meses después',
     descripcion:
-      'Las copias de seguridad existentes al momento del borrado se sobrescriben en su ciclo normal de rotación. Durante ese lapso los datos permanecen cifrados y fuera de todo uso operativo.',
+      'Las copias de seguridad existentes al momento del borrado se eliminan en su ciclo normal de rotación: las diarias a los 7 días y las mensuales a los 3 meses. Durante ese lapso los datos permanecen cifrados y fuera de todo uso operativo.',
   },
 ];
 
@@ -334,7 +334,7 @@ const SECCIONES = [
               [
                 'Copias de seguridad',
                 'Continuidad del servicio. Quedan cifradas y fuera de uso operativo hasta su rotación.',
-                'Hasta 35 días',
+                'Diarias 7 días, mensuales 3 meses',
               ],
               [
                 'Datos agregados y anonimizados',
@@ -497,7 +497,7 @@ export default function DataDeletion() {
       descripcion="Cómo solicitar la eliminación completa de tus datos personales en Gesicom: desde tu cuenta, mediante el formulario público sin iniciar sesión, o desde la configuración de Meta. Plazo máximo de 30 días, con verificación de identidad y seguimiento por código."
       resumen="Podés pedir que eliminemos todos tus datos personales en cualquier momento, sin costo y sin dar explicaciones. Acá está el cómo, el cuándo y el qué se elimina exactamente."
       ruta="/data-deletion"
-      actualizado="2026-09-24"
+      actualizado="2026-10-09"
       vigenteDesde="2026-08-03"
       secciones={SECCIONES}
     />
