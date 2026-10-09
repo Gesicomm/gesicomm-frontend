@@ -80,7 +80,7 @@ describe('Cambiar precios', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Reajustar por porcentaje' }));
     fireEvent.click(screen.getByRole('button', { name: 'Seleccionar todos 51' }));
     expect(screen.getByText('105.000 Gs')).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText('Página siguiente'));
+    fireEvent.click(screen.getAllByLabelText('Página siguiente')[0]);
     await screen.findByText('Sartén');
     fireEvent.click(screen.getByLabelText('Seleccionar Sartén'));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios (50)' }));
@@ -93,10 +93,10 @@ describe('Cambiar precios', () => {
     montar();
     await screen.findByText('Olla');
     fireEvent.change(screen.getByLabelText('Precio de venta de Olla'), { target: { value: '160000' } });
-    fireEvent.click(screen.getByLabelText('Página siguiente'));
+    fireEvent.click(screen.getAllByLabelText('Página siguiente')[0]);
     await screen.findByText('Sartén');
     fireEvent.change(screen.getByLabelText('Precio de venta de Sartén'), { target: { value: '170000' } });
-    fireEvent.click(screen.getByLabelText('Página anterior'));
+    fireEvent.click(screen.getAllByLabelText('Página anterior')[0]);
     await screen.findByText('Olla');
     expect(screen.getByLabelText('Precio de venta de Olla')).toHaveValue('160.000');
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios (2)' }));
@@ -146,6 +146,29 @@ describe('Cambiar precios', () => {
     await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith(expect.objectContaining({ busqueda: 'OL-1', page: 1 })));
   });
 
+  it('usa las mismas secciones de vitrina y las envía al backend', async () => {
+    montar();
+    await screen.findByText('Olla');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Productos Gesicom', exact: true }));
+    await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith(expect.objectContaining({ tipo: 'producto', origen: 'gesicomm', page: 1 })));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Combos Gesicom', exact: true }));
+    await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith(expect.objectContaining({ tipo: 'combo', origen: 'gesicomm', page: 1 })));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Productos propios', exact: true }));
+    await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith(expect.objectContaining({ tipo: 'producto', origen: 'propios', page: 1 })));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Combos propios', exact: true }));
+    await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith(expect.objectContaining({ tipo: 'combo', origen: 'propios', page: 1 })));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Productos en mi landing', exact: true }));
+    await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith(expect.objectContaining({ tipo: 'landing', page: 1 })));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Todos', exact: true }));
+    await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith({ orden: 'nombre', page: 1, limit: 25 }));
+  });
+
   it('valida mínimos y Enter no guarda precios por separado', async () => {
     montar();
     await screen.findByText('Olla');
@@ -167,7 +190,7 @@ describe('Cambiar precios', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Reajustar por porcentaje' }));
     fireEvent.click(screen.getByLabelText('Seleccionar página'));
     expect(screen.getByText('1 seleccionado')).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText('Página siguiente'));
+    fireEvent.click(screen.getAllByLabelText('Página siguiente')[0]);
     await screen.findByText('Sartén');
     expect(screen.getByLabelText('Seleccionar Sartén')).not.toBeChecked();
     fireEvent.click(screen.getByRole('button', { name: '10%' }));

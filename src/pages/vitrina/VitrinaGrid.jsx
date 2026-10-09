@@ -21,9 +21,9 @@ import './vitrina.css';
 const FILTROS = [
   { valor: 'producto', label: 'Productos Gesicom' },
   { valor: 'combo',    label: 'Combos Gesicom' },
-  { valor: 'mios',     label: 'Mis productos' },
-  { valor: 'mis-combos', label: 'Mis combos' },
-  { valor: 'landing', label: 'En mi landing' },
+  { valor: 'mios',     label: 'Productos propios' },
+  { valor: 'mis-combos', label: 'Combos propios' },
+  { valor: 'landing', label: 'Productos en mi landing' },
   { valor: 'todos',    label: 'Todos' },
 ];
 
@@ -655,7 +655,7 @@ export default function VitrinaGrid() {
 
   // Cada carga lleva un número: si el usuario cambia de filtro mientras la
   // anterior sigue en vuelo, la respuesta vieja se descarta. Sin esto, tocar
-  // "Mis productos" apenas entrar dejaba la pestaña marcada con los 354
+  // "Productos propios" apenas entrar dejaba la pestaña marcada con los 354
   // productos de Gesicom en la grilla (llegaba última la carga inicial).
   const ultimaCarga = useRef(0);
   const cargar = useCallback(async () => {

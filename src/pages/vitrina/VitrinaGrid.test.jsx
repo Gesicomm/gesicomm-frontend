@@ -110,7 +110,7 @@ describe('VitrinaGrid Component', () => {
     });
   });
 
-  it('renderiza la cabecera con el botón de "Agregar Mis Productos", la pestaña de landing y la pestaña de "Mis productos"', async () => {
+  it('renderiza la cabecera con el botón de "Agregar Mis Productos", la pestaña de landing y la pestaña de productos propios', async () => {
     renderWithRouter(<VitrinaGrid />);
 
     await waitFor(() => {
@@ -120,10 +120,10 @@ describe('VitrinaGrid Component', () => {
     const btnAgregar = screen.getByText('Agregar Mis Productos');
     expect(btnAgregar).toBeInTheDocument();
 
-    const btnEnLanding = screen.getByText('En mi landing');
+    const btnEnLanding = screen.getByText('Productos en mi landing');
     expect(btnEnLanding).toBeInTheDocument();
 
-    const btnMisProductos = screen.getByText('Mis productos');
+    const btnMisProductos = screen.getByText('Productos propios');
     expect(btnMisProductos).toBeInTheDocument();
   });
 
@@ -159,7 +159,7 @@ describe('VitrinaGrid Component', () => {
     renderWithRouter(<VitrinaGrid />);
     await screen.findByText('Producto inicial');
 
-    fireEvent.click(screen.getByRole('button', { name: 'En mi landing', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Productos en mi landing', exact: true }));
 
     await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -182,14 +182,14 @@ describe('VitrinaGrid Component', () => {
     expect(landingSimpleService.obtener).not.toHaveBeenCalled();
     expect(landingService.obtener).not.toHaveBeenCalled();
   });
-  it('activa solamenteMios al presionar "Mis productos" y restablece al presionar "Todos"', async () => {
+  it('activa solamenteMios al presionar "Productos propios" y restablece al presionar "Todos"', async () => {
     renderWithRouter(<VitrinaGrid />);
 
     await waitFor(() => {
       expect(screen.getByText('Producto de Prueba')).toBeInTheDocument();
     });
 
-    const btnMisProductos = screen.getByText('Mis productos');
+    const btnMisProductos = screen.getByText('Productos propios');
     fireEvent.click(btnMisProductos);
 
     await waitFor(() => {
@@ -213,7 +213,7 @@ describe('VitrinaGrid Component', () => {
     });
   });
 
-  it('muestra el botón de Editar en las tarjetas de productos propios o en Mis productos', async () => {
+  it('muestra el botón de Editar en las tarjetas de productos propios', async () => {
     renderWithRouter(<VitrinaGrid />);
 
     await waitFor(() => {
@@ -224,14 +224,14 @@ describe('VitrinaGrid Component', () => {
     expect(btnEditar).toBeInTheDocument();
   });
 
-  it('separa Combos Gesicom de Mis combos y mantiene ambos en Todos', async () => {
+  it('separa Combos Gesicom de Combos propios y mantiene ambos en Todos', async () => {
     renderWithRouter(<VitrinaGrid />);
     await screen.findByText('Producto de Prueba');
     fireEvent.click(screen.getByRole('button', { name: 'Combos Gesicom', exact: true }));
     await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
       expect.objectContaining({ tipo: 'combo', solamenteMios: false, origenCatalogo: 'GESICOMM' }),
     ));
-    fireEvent.click(screen.getByRole('button', { name: 'Mis combos', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Combos propios', exact: true }));
     await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
       expect.objectContaining({ tipo: 'combo', solamenteMios: true, origenCatalogo: null }),
     ));

@@ -26,9 +26,9 @@ const TIPOS = [
 const ORIGENES = [
   { valor: 'todos', label: 'Origen: todos', tipo: 'todos' },
   { valor: 'mios', label: 'Solo míos', tipo: 'todos' },
-  { valor: 'producto-propio', label: 'Mis productos', tipo: 'producto' },
+  { valor: 'producto-propio', label: 'Productos propios', tipo: 'producto' },
   { valor: 'producto-gcom', label: 'Productos Gesicom', tipo: 'producto' },
-  { valor: 'combo-propio', label: 'Mis combos', tipo: 'combo' },
+  { valor: 'combo-propio', label: 'Combos propios', tipo: 'combo' },
   { valor: 'combo-gcom', label: 'Combos Gesicom', tipo: 'combo' },
 ];
 

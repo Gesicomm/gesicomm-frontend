@@ -3,18 +3,20 @@ import API from './api';
 const LIMITE_CATALOGO_COMPLETO = 10000;
 
 async function catalogoCompletoDesdePaginado() {
-  const data = await API.post('/vitrina/catalogo-paginado', {
+  const base = {
     page: 1,
     limit: LIMITE_CATALOGO_COMPLETO,
     orden: 'nombre',
-    tipo: 'todos',
     solamenteMios: false,
-  }).then(r => r.data);
+  };
+  const [productosData, combosData] = await Promise.all([
+    API.post('/vitrina/catalogo-paginado', { ...base, tipo: 'producto' }).then(r => r.data),
+    API.post('/vitrina/catalogo-paginado', { ...base, tipo: 'combo' }).then(r => r.data),
+  ]);
 
-  const items = data?.items || [];
   return {
-    productos: items.filter(item => item.tipo === 'producto'),
-    combos: items.filter(item => item.tipo === 'combo'),
+    productos: productosData?.items || [],
+    combos: combosData?.items || [],
   };
 }
 

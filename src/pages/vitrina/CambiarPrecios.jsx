@@ -18,8 +18,15 @@ const identidad = key => {
 };
 const gs = n => n == null ? '—' : `${Number(n).toLocaleString('es-PY', { maximumFractionDigits: 0 })} Gs`;
 const filtrosIniciales = { busqueda: '', categoria: '', proveedor: '', tipo: '', origen: '', orden: 'nombre' };
-const filtroLabels = { categoria: 'Categoría', proveedor: 'Proveedor', tipo: 'Tipo', origen: 'Origen' };
-const valorLabels = { producto: 'Productos', combo: 'Combos', propios: 'Propios', gesicomm: 'Gesicomm' };
+const filtroLabels = { categoria: 'Categoría', proveedor: 'Proveedor' };
+const secciones = [
+  { valor: 'producto-gesicom', label: 'Productos Gesicom', tipo: 'producto', origen: 'gesicomm' },
+  { valor: 'combo-gesicom', label: 'Combos Gesicom', tipo: 'combo', origen: 'gesicomm' },
+  { valor: 'producto-propio', label: 'Productos propios', tipo: 'producto', origen: 'propios' },
+  { valor: 'combo-propio', label: 'Combos propios', tipo: 'combo', origen: 'propios' },
+  { valor: 'landing', label: 'Productos en mi landing', tipo: 'landing', origen: '' },
+  { valor: 'todos', label: 'Todos', tipo: '', origen: '' },
+];
 
 function validarPrecio(item, precio) {
   if (!Number.isSafeInteger(precio) || precio <= 0 || precio > 9999999999) return 'Ingresá un precio entero mayor a cero.';
@@ -73,6 +80,7 @@ export default function CambiarPrecios() {
   const paginaSeleccionada = data.items.length > 0 && filasSeleccionadas === data.items.length;
   const filtros = useMemo(() => Object.fromEntries(Object.entries(query).filter(([key, value]) => !['page', 'limit'].includes(key) && value !== '')), [query]);
   const filtrosActivos = Object.keys(filtroLabels).filter(key => query[key]);
+  const seccionActual = secciones.find(item => item.tipo === query.tipo && item.origen === query.origen) || secciones.at(-1);
 
   const calcularReajuste = item => item.costo > 0 && porcentajeValido
     ? Math.round(item.costo * (1 + porcentajeNumero / 100)) : null;
@@ -124,6 +132,14 @@ export default function CambiarPrecios() {
   function limpiarFiltros() {
     limpiarSeleccion(); setTexto('');
     setQuery(prev => ({ ...prev, ...filtrosIniciales, orden: prev.orden, page: 1 }));
+  }
+  function cambiarSeccion(seccion) {
+    limpiarSeleccion(); setMensaje('');
+    setQuery(prev => ({ ...prev, tipo: seccion.tipo, origen: seccion.origen, page: 1 }));
+  }
+  function limpiarSeccion() {
+    const todosSeccion = secciones.at(-1);
+    cambiarSeccion(todosSeccion);
   }
   function toggleFila(item) {
     if (bloqueado) return;
@@ -206,6 +222,13 @@ export default function CambiarPrecios() {
     ? `Cada precio de venta será su costo + ${confirmacion.porcentaje}%. Revisaste la vista previa en la tabla. Si algún precio no cumple el mínimo permitido, no se guardará ninguno.`
     : confirmacion?.tipo === 'modo' ? `Tenés ${cambios.length} cambio(s) manuales sin guardar. Se descartarán para comenzar el reajuste.`
       : `Tenés ${pendientes} precio(s) sin guardar. Si continuás, se descartarán.`;
+  const renderPaginacion = (variant = '') => (
+    <div className={`precios-pagination ${variant ? `precios-pagination--${variant}` : ''}`}>
+      <label>Mostrar<select aria-label="Filas por página" value={query.limit} disabled={bloqueado} onChange={e => setQuery(prev => ({ ...prev, limit: Number(e.target.value), page: 1 }))}>{[25, 50, 100].map(n => <option key={n}>{n}</option>)}</select></label>
+      <span>{data.total ? (query.page - 1) * query.limit + 1 : 0}–{Math.min(query.page * query.limit, data.total)} de {data.total}</span>
+      <div><button aria-label="Página anterior" disabled={bloqueado || query.page <= 1} onClick={() => setQuery(prev => ({ ...prev, page: prev.page - 1 }))}><ChevronLeft size={16} /></button><span>{query.page} / {data.totalPages || 1}</span><button aria-label="Página siguiente" disabled={bloqueado || query.page >= data.totalPages} onClick={() => setQuery(prev => ({ ...prev, page: prev.page + 1 }))}><ChevronRight size={16} /></button></div>
+    </div>
+  );
 
   return (
     <div className="vit-page precios-page">
@@ -244,13 +267,29 @@ export default function CambiarPrecios() {
           <button className={`precios-filter-toggle ${filtrosAbiertos ? 'active' : ''}`} aria-expanded={filtrosAbiertos} aria-controls="precios-filter-panel" onClick={() => setFiltrosAbiertos(prev => !prev)}><SlidersHorizontal size={16} /> Filtros{filtrosActivos.length > 0 && <span>{filtrosActivos.length}</span>}</button>
           <select className="precios-sort" aria-label="Orden" value={query.orden} disabled={guardando} onChange={e => cambiarFiltro('orden', e.target.value)}><option value="nombre">Nombre A–Z</option><option value="recientes">Más recientes</option><option value="precio-asc">Menor precio</option><option value="precio-desc">Mayor precio</option></select>
         </div>
+        <div className="precios-origin-strip" aria-label="Sección del catálogo">
+          <span>Sección</span>
+          <div className="precios-origin-tabs">
+            {secciones.map(item => (
+              <button
+                key={item.valor}
+                type="button"
+                className={seccionActual.valor === item.valor ? 'active' : ''}
+                aria-pressed={seccionActual.valor === item.valor}
+                disabled={guardando}
+                onClick={() => cambiarSeccion(item)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          {seccionActual.valor !== 'todos' && <button type="button" className="precios-origin-clear" disabled={guardando} onClick={limpiarSeccion}>Ver todos</button>}
+        </div>
         {filtrosAbiertos && <div className="precios-filters" id="precios-filter-panel">
           <label>Categoría<select aria-label="Categoría" value={query.categoria} disabled={guardando} onChange={e => cambiarFiltro('categoria', e.target.value)}><option value="">Todas las categorías</option>{data.categorias.map(c => <option key={c}>{c}</option>)}</select></label>
           <label>Proveedor<select aria-label="Proveedor" value={query.proveedor} disabled={guardando} onChange={e => cambiarFiltro('proveedor', e.target.value)}><option value="">Todos los proveedores</option>{data.proveedores.map(p => <option key={p}>{p}</option>)}</select></label>
-          <label>Tipo<select aria-label="Tipo" value={query.tipo} disabled={guardando} onChange={e => cambiarFiltro('tipo', e.target.value)}><option value="">Productos y combos</option><option value="producto">Productos</option><option value="combo">Combos</option></select></label>
-          <label>Origen<select aria-label="Origen" value={query.origen} disabled={guardando} onChange={e => cambiarFiltro('origen', e.target.value)}><option value="">Todos los orígenes</option><option value="propios">Propios</option><option value="gesicomm">Gesicomm</option></select></label>
         </div>}
-        {filtrosActivos.length > 0 && <div className="precios-filter-chips">{filtrosActivos.map(key => <button key={key} disabled={guardando} aria-label={`Quitar filtro ${filtroLabels[key]}`} onClick={() => cambiarFiltro(key, '')}>{filtroLabels[key]}: {valorLabels[query[key]] || query[key]}<X size={12} /></button>)}<button disabled={guardando} onClick={limpiarFiltros}>Limpiar filtros</button></div>}
+        {(filtrosActivos.length > 0 || seccionActual.valor !== 'todos') && <div className="precios-filter-chips">{seccionActual.valor !== 'todos' && <button disabled={guardando} aria-label="Quitar filtro Sección" onClick={limpiarSeccion}>Sección: {seccionActual.label}<X size={12} /></button>}{filtrosActivos.map(key => <button key={key} disabled={guardando} aria-label={`Quitar filtro ${filtroLabels[key]}`} onClick={() => cambiarFiltro(key, '')}>{filtroLabels[key]}: {query[key]}<X size={12} /></button>)}<button disabled={guardando} onClick={limpiarFiltros}>Limpiar filtros</button></div>}
         <div className={`precios-selection ${cantidad ? 'has-selection' : ''}`}>
           <div><strong aria-live="polite">{cantidad ? `${cantidad} seleccionado${cantidad === 1 ? '' : 's'}` : 'Seleccioná con un clic en la fila'}</strong><span>{todos ? 'Incluye todas las páginas del filtro actual' : cantidad ? 'La selección se conserva entre páginas' : 'También podés usar las casillas'}</span></div>
           <div className="precios-selection-actions">
@@ -258,6 +297,7 @@ export default function CambiarPrecios() {
             {cantidad > 0 && <button className="precios-clear-selection" disabled={guardando} onClick={limpiarSeleccion}>Quitar selección</button>}
           </div>
         </div>
+        {renderPaginacion('top')}
 
         <div className="precios-table-wrap" aria-busy={cargando}>
           <table className="precios-table">
@@ -293,11 +333,7 @@ export default function CambiarPrecios() {
             </tbody>
           </table>
         </div>
-        <div className="precios-pagination">
-          <label>Mostrar<select aria-label="Filas por página" value={query.limit} disabled={bloqueado} onChange={e => setQuery(prev => ({ ...prev, limit: Number(e.target.value), page: 1 }))}>{[25, 50, 100].map(n => <option key={n}>{n}</option>)}</select></label>
-          <span>{data.total ? (query.page - 1) * query.limit + 1 : 0}–{Math.min(query.page * query.limit, data.total)} de {data.total}</span>
-          <div><button aria-label="Página anterior" disabled={bloqueado || query.page <= 1} onClick={() => setQuery(prev => ({ ...prev, page: prev.page - 1 }))}><ChevronLeft size={16} /></button><span>{query.page} / {data.totalPages || 1}</span><button aria-label="Página siguiente" disabled={bloqueado || query.page >= data.totalPages} onClick={() => setQuery(prev => ({ ...prev, page: prev.page + 1 }))}><ChevronRight size={16} /></button></div>
-        </div>
+        {renderPaginacion()}
       </section>
 
       <div className={`precios-savebar ${pendientes ? 'has-changes' : ''}`}>
