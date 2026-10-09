@@ -37,7 +37,6 @@ export default function AutomationSettings() {
   // Estado para el selector de páginas
   const [fbPages, setFbPages] = useState([]);
   const [showPageSelector, setShowPageSelector] = useState(false);
-  const [tempToken, setTempToken] = useState(null);
 
   useEffect(() => {
     const metaError = searchParams.get('meta_error');
@@ -46,13 +45,12 @@ export default function AutomationSettings() {
     const igSuccess = searchParams.get('ig_success');
     
     // Si Meta manda seleccionar página
+    // El token de Facebook queda en el servidor: acá solo llega el aviso.
     const fbSelectPages = searchParams.get('fb_select_pages');
-    const tokenParams = searchParams.get('temp_token');
 
-    if (fbSelectPages && tokenParams) {
-      setTempToken(tokenParams);
+    if (fbSelectPages) {
       setShowPageSelector(true);
-      fetchFacebookPages(tokenParams);
+      fetchFacebookPages();
       // Limpiar URL
       setSearchParams({});
     }
@@ -95,9 +93,9 @@ export default function AutomationSettings() {
     }
   };
 
-  const fetchFacebookPages = async (token) => {
+  const fetchFacebookPages = async () => {
     try {
-      const pages = await socialApi.getFacebookPages(token);
+      const pages = await socialApi.getFacebookPages();
       setFbPages(pages || []);
     } catch (err) {
       setError('No se pudieron obtener las páginas de Facebook.');
@@ -107,11 +105,7 @@ export default function AutomationSettings() {
 
   const handleSelectPage = async (page) => {
     try {
-      await socialApi.saveFacebookPage({
-        page_id: page.id,
-        page_name: page.name,
-        access_token: page.access_token
-      });
+      await socialApi.saveFacebookPage({ page_id: page.id });
       setSuccess(`Página "${page.name}" conectada.`);
       setShowPageSelector(false);
       cargarCuentas();

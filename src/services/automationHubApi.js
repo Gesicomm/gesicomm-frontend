@@ -54,7 +54,7 @@ export const socialApi = {
   },
   getAccounts: () => AutomationAPI.get('/social/accounts').then((r) => r.data),
   connectMeta: (payload) => AutomationAPI.post('/social/connect/meta', payload).then((r) => r.data),
-  getFacebookPages: (tempToken) => AutomationAPI.get('/social/auth/facebook/pages', { params: { temp_token: tempToken } }).then((r) => r.data),
+  getFacebookPages: () => AutomationAPI.get('/social/auth/facebook/pages').then((r) => r.data),
   saveFacebookPage: (payload) => AutomationAPI.post('/social/auth/facebook/save-page', payload).then((r) => r.data),
   getFacebookOAuthUrl: async () => {
     const token = await obtenerServiceToken();
