@@ -355,4 +355,28 @@ describe('VitrinaGrid Component', () => {
     expect(screen.queryByRole('region', { name: 'Productos seleccionados' })).toBeNull();
     expect(screen.getByRole('button', { name: /Seleccionar todo/i })).toHaveAttribute('aria-pressed', 'false');
   });
+
+  it('Cambiar precios lleva solo los seleccionados, por router state y sin tocar la URL', async () => {
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto de Prueba');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar Producto de Prueba' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar precios (1)' }));
+
+    expect(window.location.pathname).toBe('/mi-catalogo/precios');
+    expect(window.location.search).toBe('');
+    expect(window.history.state.usr).toEqual({ seleccion: [{ tipo: 'producto', id: 1 }] });
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('Cambiar precios sin selección abre el catálogo completo', async () => {
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto de Prueba');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar precios' }));
+
+    expect(window.location.pathname).toBe('/mi-catalogo/precios');
+    expect(window.history.state.usr ?? null).toBeNull();
+    window.history.replaceState(null, '', '/');
+  });
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import CambiarPrecios from './CambiarPrecios';
 import { vitrinaService } from '../../services/vitrinaService';
 
@@ -9,6 +9,8 @@ vi.mock('../../services/vitrinaService', () => ({ vitrinaService: { buscarPrecio
 const fila = { id: 1, tipo: 'producto', nombre: 'Olla', costo: 100000, precio_minimo: 100000, precio_actual: 150000, sku: 'OL-1', imagen: 'https://media.test/olla.webp' };
 const page = items => ({ items, total: 51, totalPages: 3, categorias: ['Hogar'], proveedores: ['Proveedor'] });
 const montar = () => render(<BrowserRouter><CambiarPrecios /></BrowserRouter>);
+const marcados = [{ tipo: 'producto', id: 1 }, { tipo: 'combo', id: 7 }];
+const montarConSeleccion = (seleccion = marcados) => render(<MemoryRouter initialEntries={[{ pathname: '/mi-catalogo/precios', state: { seleccion } }]}><CambiarPrecios /></MemoryRouter>);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -197,5 +199,40 @@ describe('Cambiar precios', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios (1)' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar guardado' }));
     await waitFor(() => expect(vitrinaService.actualizarPrecios).toHaveBeenCalledWith({ modo: 'reajuste', porcentaje: 10, seleccion: { todos: false, items: [{ tipo: 'producto', id: 1 }] } }));
+  });
+
+  it('llega desde Mi catálogo mostrando solo los seleccionados, ya tildados', async () => {
+    montarConSeleccion();
+    await screen.findByText('Olla');
+    expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith({ orden: 'nombre', items: marcados, page: 1, limit: 25 });
+    expect(screen.getByRole('button', { name: 'Seleccionados 2' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Seleccionar Olla')).toBeChecked();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Reajustar por porcentaje' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios (51)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar guardado' }));
+    await waitFor(() => expect(vitrinaService.actualizarPrecios).toHaveBeenCalledWith({ modo: 'reajuste', porcentaje: 5, seleccion: { todos: true, filtros: { orden: 'nombre', items: marcados }, excluidos: [] } }));
+  });
+
+  it('desde Seleccionados se puede buscar adentro, salir a Todos y volver', async () => {
+    montarConSeleccion();
+    await screen.findByText('Olla');
+    fireEvent.change(screen.getByLabelText('Buscar productos'), { target: { value: 'olla' } });
+    await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith(expect.objectContaining({ busqueda: 'olla', items: marcados })));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Todos', exact: true }));
+    await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith({ busqueda: 'olla', orden: 'nombre', page: 1, limit: 25 }));
+    expect(screen.getByLabelText('Seleccionar Olla')).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Seleccionados 2' }));
+    await waitFor(() => expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith(expect.objectContaining({ items: marcados })));
+  });
+
+  it('sin selección previa no ofrece la sección Seleccionados e ignora un state inválido', async () => {
+    montarConSeleccion([{ tipo: 'otro', id: 1 }, { tipo: 'producto', id: '2' }, null]);
+    await screen.findByText('Olla');
+    expect(screen.queryByRole('button', { name: /^Seleccionados/ })).not.toBeInTheDocument();
+    expect(vitrinaService.buscarPrecios).toHaveBeenLastCalledWith({ orden: 'nombre', page: 1, limit: 25 });
+    expect(screen.getByLabelText('Seleccionar Olla')).not.toBeChecked();
   });
 });

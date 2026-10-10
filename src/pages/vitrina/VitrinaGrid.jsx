@@ -576,6 +576,15 @@ export default function VitrinaGrid() {
       item => usuarioActual?.id != null && Number(item.creado_por) === Number(usuarioActual.id)
     );
 
+  // Con filas marcadas, Cambiar precios abre solo con esas (router state).
+  function irACambiarPrecios() {
+    const seleccion = Array.from(seleccionados).map(key => {
+      const [tipo, id] = key.split(':');
+      return { tipo, id: Number(id) };
+    });
+    navigate('/mi-catalogo/precios', seleccion.length ? { state: { seleccion } } : undefined);
+  }
+
   const [borrando, setBorrando] = useState(false);
   const borrarSeleccionados = async () => {
     const cantidad = productosSeleccionados.length;
@@ -735,9 +744,10 @@ export default function VitrinaGrid() {
 
         <div className="vit-header-actions" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
           {!enOnboarding && (
-            <button type="button" className="btn-secondary" onClick={() => navigate('/mi-catalogo/precios')}
+            <button type="button" className="btn-secondary" onClick={irACambiarPrecios}
+              title={seleccionados.size > 0 ? 'Cambiar el precio de los seleccionados' : 'Cambiar precios de todo el catálogo'}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}>
-              <SlidersHorizontal size={16} /> Cambiar precios
+              <SlidersHorizontal size={16} /> Cambiar precios{seleccionados.size > 0 ? ` (${seleccionados.size})` : ''}
             </button>
           )}
           <button
@@ -778,6 +788,17 @@ export default function VitrinaGrid() {
             <button type="button" className="vit-seleccion-cancelar" onClick={limpiarSeleccion}>
               Quitar selección
             </button>
+            {!enOnboarding && (
+              <button
+                type="button"
+                className="vit-seleccion-cancelar vit-seleccion-combo"
+                onClick={irACambiarPrecios}
+                title="Cambiar el precio de los seleccionados"
+              >
+                <SlidersHorizontal size={15} />
+                Cambiar precios
+              </button>
+            )}
             <button
               type="button"
               className="vit-seleccion-cancelar vit-seleccion-combo"

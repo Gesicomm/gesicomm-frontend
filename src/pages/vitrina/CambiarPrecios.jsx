@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Search, Save, Percent, ChevronLeft, ChevronRight, Loader,
   Check, CheckCheck, SlidersHorizontal, PencilLine, ImageOff, X, ArrowUpRight, ArrowDownRight,
@@ -27,6 +27,19 @@ const secciones = [
   { valor: 'landing', label: 'Productos en mi landing', tipo: 'landing', origen: '' },
   { valor: 'todos', label: 'Todos', tipo: '', origen: '' },
 ];
+// Solo existe cuando se llega desde Mi catálogo con filas marcadas.
+const seccionSeleccionados = { valor: 'seleccionados', label: 'Seleccionados', tipo: '', origen: '' };
+
+// La selección de Mi catálogo llega por router state, nunca por la URL.
+function leerPreseleccion(state) {
+  const vistos = new Set();
+  return (Array.isArray(state?.seleccion) ? state.seleccion : []).filter(item => {
+    if (!item || !['producto', 'combo'].includes(item.tipo) || !Number.isSafeInteger(item.id) || item.id <= 0) return false;
+    if (vistos.has(clave(item))) return false;
+    vistos.add(clave(item));
+    return true;
+  }).map(({ tipo, id }) => ({ tipo, id }));
+}
 
 function validarPrecio(item, precio) {
   if (!Number.isSafeInteger(precio) || precio <= 0 || precio > 9999999999) return 'Ingresá un precio entero mayor a cero.';
@@ -49,6 +62,9 @@ function FotoProducto({ item }) {
 
 export default function CambiarPrecios() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [preseleccion] = useState(() => leerPreseleccion(location.state));
+  const [soloPreseleccion, setSoloPreseleccion] = useState(preseleccion.length > 0);
   const [query, setQuery] = useState({ ...filtrosIniciales, page: 1, limit: 25 });
   const [texto, setTexto] = useState('');
   const [data, setData] = useState({ items: [], total: 0, totalPages: 0, categorias: [], proveedores: [] });
@@ -59,7 +75,9 @@ export default function CambiarPrecios() {
   const [mensaje, setMensaje] = useState('');
   const [reload, setReload] = useState(0);
   const [borradores, setBorradores] = useState({});
-  const [todos, setTodos] = useState(false);
+  // Lo marcado en Mi catálogo entra ya tildado ("todos" dentro de la sección
+  // Seleccionados): el reajuste por porcentaje queda a un clic.
+  const [todos, setTodos] = useState(preseleccion.length > 0);
   const [seleccion, setSeleccion] = useState(new Set());
   const [porcentaje, setPorcentaje] = useState('5');
   const [modo, setModo] = useState('manual');
@@ -78,9 +96,14 @@ export default function CambiarPrecios() {
   const estaSeleccionado = item => todos ? !seleccion.has(clave(item)) : seleccion.has(clave(item));
   const filasSeleccionadas = data.items.filter(estaSeleccionado).length;
   const paginaSeleccionada = data.items.length > 0 && filasSeleccionadas === data.items.length;
-  const filtros = useMemo(() => Object.fromEntries(Object.entries(query).filter(([key, value]) => !['page', 'limit'].includes(key) && value !== '')), [query]);
+  const filtros = useMemo(() => {
+    const activos = Object.fromEntries(Object.entries(query).filter(([key, value]) => !['page', 'limit'].includes(key) && value !== ''));
+    return soloPreseleccion ? { ...activos, items: preseleccion } : activos;
+  }, [query, soloPreseleccion, preseleccion]);
   const filtrosActivos = Object.keys(filtroLabels).filter(key => query[key]);
-  const seccionActual = secciones.find(item => item.tipo === query.tipo && item.origen === query.origen) || secciones.at(-1);
+  const seccionesVisibles = preseleccion.length ? [seccionSeleccionados, ...secciones] : secciones;
+  const seccionActual = soloPreseleccion ? seccionSeleccionados
+    : secciones.find(item => item.tipo === query.tipo && item.origen === query.origen) || secciones.at(-1);
 
   const calcularReajuste = item => item.costo > 0 && porcentajeValido
     ? Math.round(item.costo * (1 + porcentajeNumero / 100)) : null;
@@ -130,11 +153,12 @@ export default function CambiarPrecios() {
     setQuery(prev => ({ ...prev, [campo]: valor, page: 1 }));
   }
   function limpiarFiltros() {
-    limpiarSeleccion(); setTexto('');
+    limpiarSeleccion(); setTexto(''); setSoloPreseleccion(false);
     setQuery(prev => ({ ...prev, ...filtrosIniciales, orden: prev.orden, page: 1 }));
   }
   function cambiarSeccion(seccion) {
     limpiarSeleccion(); setMensaje('');
+    setSoloPreseleccion(seccion.valor === seccionSeleccionados.valor);
     setQuery(prev => ({ ...prev, tipo: seccion.tipo, origen: seccion.origen, page: 1 }));
   }
   function limpiarSeccion() {
@@ -270,7 +294,7 @@ export default function CambiarPrecios() {
         <div className="precios-origin-strip" aria-label="Sección del catálogo">
           <span>Sección</span>
           <div className="precios-origin-tabs">
-            {secciones.map(item => (
+            {seccionesVisibles.map(item => (
               <button
                 key={item.valor}
                 type="button"
@@ -279,7 +303,7 @@ export default function CambiarPrecios() {
                 disabled={guardando}
                 onClick={() => cambiarSeccion(item)}
               >
-                {item.label}
+                {item.label}{item.valor === seccionSeleccionados.valor && <> <span className="precios-origin-count">{preseleccion.length}</span></>}
               </button>
             ))}
           </div>
@@ -291,7 +315,7 @@ export default function CambiarPrecios() {
         </div>}
         {(filtrosActivos.length > 0 || seccionActual.valor !== 'todos') && <div className="precios-filter-chips">{seccionActual.valor !== 'todos' && <button disabled={guardando} aria-label="Quitar filtro Sección" onClick={limpiarSeccion}>Sección: {seccionActual.label}<X size={12} /></button>}{filtrosActivos.map(key => <button key={key} disabled={guardando} aria-label={`Quitar filtro ${filtroLabels[key]}`} onClick={() => cambiarFiltro(key, '')}>{filtroLabels[key]}: {query[key]}<X size={12} /></button>)}<button disabled={guardando} onClick={limpiarFiltros}>Limpiar filtros</button></div>}
         <div className={`precios-selection ${cantidad ? 'has-selection' : ''}`}>
-          <div><strong aria-live="polite">{cantidad ? `${cantidad} seleccionado${cantidad === 1 ? '' : 's'}` : 'Seleccioná con un clic en la fila'}</strong><span>{todos ? 'Incluye todas las páginas del filtro actual' : cantidad ? 'La selección se conserva entre páginas' : 'También podés usar las casillas'}</span></div>
+          <div><strong aria-live="polite">{cantidad ? `${cantidad} seleccionado${cantidad === 1 ? '' : 's'}` : 'Seleccioná con un clic en la fila'}</strong><span>{todos && soloPreseleccion ? 'Son los que marcaste en Mi catálogo' : todos ? 'Incluye todas las páginas del filtro actual' : cantidad ? 'La selección se conserva entre páginas' : 'También podés usar las casillas'}</span></div>
           <div className="precios-selection-actions">
             <button className="precios-select-all" disabled={bloqueado || !data.total || (todos && !seleccion.size)} onClick={() => { setTodos(true); setSeleccion(new Set()); }}><CheckCheck size={17} /> Seleccionar todos <span>{data.total}</span></button>
             {cantidad > 0 && <button className="precios-clear-selection" disabled={guardando} onClick={limpiarSeleccion}>Quitar selección</button>}

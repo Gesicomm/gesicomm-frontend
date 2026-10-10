@@ -64,6 +64,7 @@
 .precios-origin-tabs button { min-height: 34px; padding: 7px 13px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--precios-muted); font-size: 12px !important; font-weight: 650; }
 .precios-origin-tabs button:hover { color: var(--precios-ink); background: var(--precios-panel); }
 .precios-origin-tabs button.active { color: var(--precios-blue); background: var(--precios-panel); border-color: color-mix(in srgb, var(--color-primary) 24%, var(--precios-line)); box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 8%, transparent); }
+.precios-origin-count { margin-left: 3px; padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--color-primary) 10%, var(--precios-panel)); color: var(--precios-blue); font-size: 10px; font-variant-numeric: tabular-nums; }
 .precios-origin-clear { border: 0; background: transparent; color: var(--precios-blue); font-size: 11px !important; padding: 6px 4px; }
 .precios-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0 18px 16px; }
 .precios-filters label { display: flex; flex-direction: column; gap: 6px; font-size: 10px; color: var(--precios-muted); }
