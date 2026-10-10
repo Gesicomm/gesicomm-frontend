@@ -17,6 +17,7 @@ import FichaRubroTab from './FichaRubroTab';
 import ProductLandingPreview from './ProductLandingPreview';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
 import { estiloVisualMedio } from '../landing-simple/templates/mediaGaleria';
+import { CATALOGO_ICONOS_BENEFICIOS } from '../landing-simple/templates/iconosBeneficios';
 import { calcularRecorteInteligente } from './imagenRecorte';
 import { ImagenCardCompacta, EditorEncuadreModal } from './ImagenEncuadreCards';
 import { erroresDelProducto, PRODUCTO_NUEVO, ofertaBorradorPayload } from './productoFormValidation';
@@ -320,52 +321,84 @@ function EncabezadoProductoFields({ datos, onDatos }) {
 
 
 
+// Claves del selector de íconos de "Beneficios": la IA elige de acá y el
+// importador descarta cualquier otra, así el prompt nunca queda desfasado.
+const ICONOS_BENEFICIO = CATALOGO_ICONOS_BENEFICIOS.map(i => i.key);
+const MAX_OPINIONES_IMPORTADAS = 6; // tope del bloque "Opiniones" de la ficha (Configurar venta)
+
 const PROMPT_IA = `Actúa como un asistente especializado en creación y publicación de productos de e-commerce para Gesicom.
 
 Tu objetivo es ayudarme a crear la ficha completa de un producto haciendo el menor número posible de preguntas y terminar generando un archivo JSON compatible con Gesicom.
 
 ## REGLA PRINCIPAL
-No me hagas llenar manualmente información que puedas deducir razonablemente a partir de: fotografías del producto, packaging, etiquetas, características visibles.
-Nunca inventes: precio, costo, stock, SKU, proveedor, descuentos, garantías o especificaciones técnicas no demostradas.
-Sí puedes crear: propuesta de valor, descripción, beneficios, puntos destacados, preguntas frecuentes, textos comerciales.
+No me hagas llenar manualmente información que puedas deducir de las fotografías, el packaging, las etiquetas o lo que encuentres en internet sobre el producto.
+Nunca inventes: precio de venta, costo, stock, SKU, proveedor, descuentos, garantías, especificaciones técnicas ni reseñas de clientes.
+Sí podés redactar vos: propuesta de valor, descripción, beneficios, puntos destacados, preguntas frecuentes y textos comerciales, siempre apoyados en datos reales del producto.
+No me preguntes por productos recomendados o relacionados ni los generes: eso lo configuro a mano en Gesicom.
 
 ## PASO 1 — FOTOGRAFÍAS
 Pedime que suba fotos del producto/packaging y analizalas antes de hacer preguntas.
 
 ## PASO 2 — PREGUNTAS ESENCIALES (en un solo bloque agrupado)
-1. Nombre del producto
+1. Nombre del producto, con marca y modelo si tiene
 2. Categoría (sugerí la más adecuada)
 3. Precio de venta
-4. Precio ancla o tachado (precio anterior, si aplica)
+4. Precio ancla o tachado: si no te doy uno, lo calculás vos (ver PASO 4)
 5. Descuento: porcentaje y fechas de vigencia inicio/fin (si aplica)
 6. Costo de compra — aclará si es en Dólares (USD) o Guaraníes (LOCAL)
 7. Stock disponible: cuántas unidades hay en el Salón y en el Depósito
 8. SKU (si no tiene, generá uno corto y legible)
 9. Proveedor (o "Sin proveedor")
-10. ¿Tiene variantes? (color, talle, tamaño, etc.)
-11. ¿Tiene testimonios de clientes para incluir?
+10. ¿Tiene variantes? (color, talle, tamaño, etc.) y qué valores tiene cada una
+11. Garantía, cambios o devoluciones que ofrezco (si aplica)
+12. ¿Tengo testimonios propios de clientes? Es opcional: si no tengo, usás las reseñas que encuentres en internet
 
-## PASO 3 — INVENTARIO
+## PASO 3 — INVESTIGACIÓN EN INTERNET (OBLIGATORIO)
+Con el nombre, la marca y el modelo, buscá el producto en internet: sitio del fabricante, tiendas online, marketplaces y páginas de reseñas. De ahí sacá:
+- Reseñas reales de compradores: qué les gustó, qué resultado tuvieron y qué critican.
+- Beneficios y usos que los compradores realmente destacan.
+- Dudas que se repiten antes de comprar, para las preguntas frecuentes.
+- Datos objetivos: medidas, materiales, contenido de la caja, compatibilidad y modo de uso.
+Si no tenés acceso a internet o no encontrás el producto exacto, decímelo sin vueltas y pedime links o que te pegue las reseñas. Nunca completes con datos inventados.
+
+## PASO 4 — PRECIO ANCLA
+Si no te di un precio ancla, recomendá uno aproximadamente 30% por encima del precio de venta: precio de venta × 1,30, redondeado al millar más cercano. Ejemplos: 100.000 → 130.000; 89.000 → 116.000.
+Mostrámelo en el resumen para que pueda cambiarlo. Dejá "anchor_price" en null solo si te digo que no quiero precio ancla.
+
+## PASO 5 — INVENTARIO Y VARIANTES
 Usá stock de salón y depósito. No inventes cantidades.
+Si el producto tiene variantes, cargá cada opción con sus valores en "variants.options" (ej: name "Color", values ["Negro", "Blanco"]). Sin variantes: "options": [].
 
-## PASO 4 — CONTENIDO DEL LIENZO EN BLANCO
-Generá el contenido para la ficha de producto del lienzo en blanco:
+## PASO 6 — CONTENIDO DE LA FICHA, BLOQUE POR BLOQUE
+La ficha del producto se arma con bloques. Completá solo lo que esos bloques muestran, usando lo que investigaste. No agregues secciones ni campos que no estén en esta lista. Las fotos, los botones y medios de pago y los productos recomendados los configuro yo en Gesicom.
 
-- **badge** (opcional): etiqueta corta que va SOBRE LA FOTO (ej: "OFERTA", "MÁS VENDIDO"). No es una descripción: nunca pongas acá texto descriptivo.
-- **tagline** (OBLIGATORIO): la propuesta de valor. Una oración de máx. 15 palabras que dice qué gana el cliente. Se muestra justo debajo del nombre del producto, antes de las reseñas y del precio: sin esto la ficha queda incompleta.
-- **short_description** (OBLIGATORIO): descripción corta para las tarjetas del catálogo (1-2 oraciones breves, distinta del tagline).
-- **description** (OBLIGATORIO): descripción comercial clara y objetiva (2-4 oraciones). Va debajo del tagline, antes de las reseñas y del precio: es el texto principal de la ficha.
-- **details** (opcional): información ampliada para la sección "Detalles" (qué incluye, materiales, medidas, compatibilidad, cuidados). Solo datos que se ven en las fotos/etiquetas o que te di; no repitas la description.
-- **highlights**: entre 3 y 6 puntos concretos con checkmarks (los beneficios principales)
-- **cta**: texto del botón de compra (ej: "Comprar ahora", "Quiero el mío")
-- **faqs**: entre 4 y 8 preguntas frecuentes reales del comprador con respuestas
-- **testimonials**: si el usuario proporcionó testimonios, incluilos (name, rating 1-5, comment)
+- **Encabezado** → "header_label": rótulo corto arriba del nombre (ej: "Más vendido", "Nuevo", "Envío gratis"), máx. 40 caracteres. Si no hay nada cierto para destacar, dejalo vacío y se muestra la categoría.
+- **Nombre comercial** → "commercial_name": cómo se lee el nombre en la ficha, máx. 100 caracteres. Solo si el nombre del producto es muy técnico o largo; si no, dejalo vacío.
+- **Reseñas comerciales**: no cargues nada, las estrellas y el texto salen solos de las opiniones.
+- **Precio y oferta** → el precio de venta y el precio ancla del PASO 4. "price_badge": badge junto al precio (ej: "Exclusivo online"), máx. 40 caracteres; vacío = se muestra el % de descuento.
+- **Oferta por tiempo limitado** → "limited_offer" con "label" (ej: "Oferta por tiempo limitado"), "title" y "text". Solo si te di un descuento con fecha de fin; si no, dejá los tres vacíos. No inventes urgencia.
+- **Descripción breve** → dos textos, debajo del nombre y antes del precio:
+  - "tagline" (OBLIGATORIO): la propuesta de valor. Una oración de máx. 15 palabras que dice qué gana el cliente.
+  - "description" (OBLIGATORIO): la descripción del producto, el texto más importante de la ficha. De 2 a 4 oraciones claras y objetivas que respondan qué es, para quién es, qué problema resuelve y cómo se usa. Nada de frases genéricas que sirvan para cualquier producto.
+- **Beneficios principales** → "benefits" (OBLIGATORIO): entre 4 y 6. Cada uno con "title" (2 a 5 palabras), "text" (una oración que explica qué gana el cliente) e "icon". La ficha muestra el "title" de los 4 primeros como checks antes del botón de compra: poné primero los más importantes y que cada título se entienda solo. En "icon" usá exactamente una de estas claves: ${ICONOS_BENEFICIO.join(', ')}.
+- **Qué incluye tu pedido** → "order_includes": entre 2 y 5 líneas con lo que recibe el cliente (ej: "1 mouse inalámbrico", "Receptor USB", "Pila AA"). Solo lo que se ve en las fotos, lo que dice la fuente oficial o lo que te confirmé.
+- **Zona de confianza** → "trust_items" (opcional): garantía, cambios y devoluciones, con "title" y "text". Solo con lo que te respondí en la pregunta 11; si no te di nada, dejá [].
+- **Opiniones** → "reviews_section" con "label" (rótulo, ej: "Opiniones"), "title" (ej: "Personas que ya lo probaron") y "subtitle" (opcional), y "testimonials" (OBLIGATORIO si encontraste reseñas o te di testimonios): entre 4 y 6. Para cada una:
+  - "name": el nombre tal como figura en la reseña (nombre e inicial del apellido).
+  - "rating": las estrellas reales de esa reseña, de 1 a 5. No las subas: si hay reseñas de 4 estrellas, incluí alguna.
+  - "comment": la reseña en español, resumida a 1-3 oraciones (máx. 220 caracteres) sin cambiarle el sentido.
+  - "source": de dónde salió (ej: "Reseña en Amazon", "Reseña en Mercado Libre"). Para mis testimonios propios: "Cliente de la tienda".
+  - "photo": null.
+  Nunca inventes nombres, comentarios ni estrellas. Si encontraste menos de 4 reseñas reales, incluí solo esas y avisame; si no encontraste ninguna, dejá [] y avisame.
+- **Preguntas frecuentes** → "faq_section" con "label" (rótulo, ej: "Resolvemos tus dudas"), "title" (ej: "Preguntas frecuentes") y "subtitle" (opcional), y "faqs" (OBLIGATORIO): entre 4 y 8 preguntas reales del comprador con sus respuestas, priorizando las dudas que encontraste en internet.
+- **Detalles** → "details" (opcional): información ampliada (materiales, medidas, compatibilidad, cuidados). Solo datos que se ven en las fotos/etiquetas, que te di o que confirmaste en la fuente oficial; no repitas la description.
+- **Tarjeta del catálogo** → "badge" (opcional): etiqueta corta SOBRE LA FOTO (ej: "OFERTA"), máx. 24 caracteres, nunca texto descriptivo. "short_description" (OBLIGATORIO): 1-2 oraciones breves, distintas del tagline.
 
-## PASO 5 — REVISIÓN Y JSON
-Mostrame un resumen y esperá mi aprobación. Luego generá UN SOLO JSON válido con este esquema exacto:
+## PASO 7 — REVISIÓN Y JSON
+Mostrame un resumen (incluí el precio ancla recomendado y de dónde salieron las reseñas) y esperá mi aprobación. Luego generá UN SOLO JSON válido con este esquema exacto:
 
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "product": {
     "identity": {
       "name": "",
@@ -378,13 +411,18 @@ Mostrame un resumen y esperá mi aprobación. Luego generá UN SOLO JSON válido
       "purchase_cost": 0,
       "purchase_currency": "LOCAL",
       "sale_price": 0,
-      "anchor_price": null,
+      "anchor_price": 0,
       "discount": { "percentage": 0, "valid_from": null, "valid_until": null }
     },
     "inventory": {
       "stock_store": 0,
       "stock_warehouse": 0,
       "minimum_total_stock": 0
+    },
+    "variants": {
+      "options": [
+        { "name": "", "values": [] }
+      ]
     },
     "publication": {
       "sale_status": "en_venta",
@@ -396,37 +434,50 @@ Mostrame un resumen y esperá mi aprobación. Luego generá UN SOLO JSON válido
         "badge": "",
         "tagline": "",
         "short_description": "",
-        "details": "",
         "description": "",
-        "highlights": [],
-        "cta": ""
+        "details": ""
       },
+      "ficha_blocks": {
+        "header_label": "",
+        "commercial_name": "",
+        "price_badge": "",
+        "limited_offer": { "label": "", "title": "", "text": "" },
+        "order_includes": [],
+        "reviews_section": { "label": "", "title": "", "subtitle": "" },
+        "faq_section": { "label": "", "title": "", "subtitle": "" }
+      },
+      "benefits": [
+        { "icon": "star", "title": "", "text": "" }
+      ],
+      "trust_items": [
+        { "title": "", "text": "" }
+      ],
       "faqs": [
         { "question": "", "answer": "" }
       ],
       "testimonials": [
-        { "name": "", "rating": 5, "comment": "", "photo": null }
+        { "name": "", "rating": 5, "comment": "", "source": "", "photo": null }
       ]
     }
   }
 }
 
 REGLAS DEL JSON: sin comentarios, sin markdown dentro, null para opcionales vacíos, [] para colecciones vacías, números reales (no texto), booleanos, fechas ISO YYYY-MM-DD.
-tagline, short_description y description nunca pueden quedar vacíos.
+tagline, short_description, description, benefits y faqs nunca pueden quedar vacíos.
 `;
 
 const normalizarTexto = valor => String(valor ?? '')
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .toLowerCase().trim();
 
-/** El prompt con las categorías reales de la tienda, para que la IA elija una que exista. */
-function promptConCategorias(categorias = []) {
-  const nombres = categorias.map(c => c.nombre).filter(Boolean);
-  if (!nombres.length) return PROMPT_IA;
-  return `${PROMPT_IA}
-CATEGORÍAS DISPONIBLES EN MI TIENDA (en "category.name" usá exactamente una de estas):
-${nombres.join(' | ')}
-`;
+/** El prompt con las categorías y proveedores reales de la tienda, para que la IA elija los que existen. */
+function promptConDatosTienda(categorias = [], proveedores = []) {
+  const nombres = lista => lista.map(x => x.nombre).filter(Boolean).join(' | ');
+  return [
+    PROMPT_IA,
+    nombres(categorias) && `CATEGORÍAS DISPONIBLES EN MI TIENDA (en "category.name" usá exactamente una de estas):\n${nombres(categorias)}\n`,
+    nombres(proveedores) && `PROVEEDORES CARGADOS EN MI TIENDA (en "provider.name" usá exactamente uno de estos, o null):\n${nombres(proveedores)}\n`,
+  ].filter(Boolean).join('\n');
 }
 
 /** Categoría del JSON → id real: por id, por nombre exacto (sin tildes) o por coincidencia parcial. */
@@ -491,9 +542,22 @@ export default function ProductForm() {
         pregunta: limpiar(faq?.pregunta || faq?.question),
         respuesta: limpiar(faq?.respuesta || faq?.answer),
       });
+      const normalizarBeneficio = b => {
+        const icono = limpiar(b?.icon || b?.icono);
+        return {
+          titulo: limpiar(typeof b === 'string' ? b : b?.title || b?.titulo),
+          texto: limpiar(b?.text || b?.texto || b?.description || b?.descripcion),
+          icono: ICONOS_BENEFICIO.includes(icono) ? icono : 'check',
+        };
+      };
+      const normalizarConfianza = c => ({
+        titulo: limpiar(typeof c === 'string' ? c : c?.title || c?.titulo),
+        texto: limpiar(c?.text || c?.texto || c?.description || c?.subtitle),
+        icono: limpiar(c?.icon || c?.icono),
+      });
       const normalizarOpinion = opinion => ({
         nombre: limpiar(opinion?.nombre || opinion?.name || opinion?.author) || 'Cliente verificado',
-        calificacion: Number(opinion?.calificacion || opinion?.rating || opinion?.stars) || 5,
+        calificacion: Math.min(5, Math.max(1, Number(opinion?.calificacion || opinion?.rating || opinion?.stars) || 5)),
         comentario: limpiar(opinion?.comentario || opinion?.comment || opinion?.text || opinion?.review),
         detalle: limpiar(opinion?.detalle || opinion?.source || opinion?.subtitle),
         foto: limpiar(opinion?.foto || opinion?.photo || opinion?.image || opinion?.avatar),
@@ -509,11 +573,28 @@ export default function ProductForm() {
       const categoriaEncontrada = resolverCategoriaImportada(categoriaImportada, categorias);
       if (categoriaEncontrada) setValue('categoria_id', String(categoriaEncontrada.id), { shouldDirty: true });
       const categoriaSinMatch = !categoriaEncontrada && (categoriaImportada?.name || categoriaImportada?.nombre || (typeof categoriaImportada === 'string' ? categoriaImportada : ''));
+      // El proveedor se pedía en el prompt pero el JSON no lo cargaba. Solo por
+      // nombre exacto: una coincidencia parcial asignaría el proveedor equivocado.
+      const proveedorImportado = p.identity?.provider;
+      const proveedorNombre = limpiar(typeof proveedorImportado === 'string' ? proveedorImportado : proveedorImportado?.name || proveedorImportado?.nombre);
+      const proveedorEncontrado = proveedorNombre
+        ? proveedores.find(pr => normalizarTexto(pr.nombre) === normalizarTexto(proveedorNombre))
+        : null;
+      if (proveedorEncontrado) setValue('proveedor_id', String(proveedorEncontrado.id), { shouldDirty: true });
+      const proveedorSinMatch = !proveedorEncontrado && normalizarTexto(proveedorNombre) !== 'sin proveedor' ? proveedorNombre : '';
 
       // ── Precios ────────────────────────────────────────────────
       if (p.pricing?.sale_price)    setValue('precio_base',  p.pricing.sale_price,    { shouldDirty: true });
-      if (p.pricing?.purchase_cost) setValue('precio_costo', p.pricing.purchase_cost, { shouldDirty: true });
-      if (p.pricing?.purchase_currency === 'USD') setValue('es_dolar', true, { shouldDirty: true });
+      // Un costo en USD va a precio_dolar: cargarlo en precio_costo lo dejaba
+      // como si fueran guaraníes (USD 14 = Gs 14). El costo en guaraníes sale
+      // de la cotización del proveedor, que solo el admin puede fijar.
+      const costoEnUsd = p.pricing?.purchase_currency === 'USD' && Number(p.pricing?.purchase_cost) > 0;
+      if (costoEnUsd && esAdmin) {
+        setValue('precio_dolar', p.pricing.purchase_cost, { shouldDirty: true });
+        setValue('es_dolar', true, { shouldDirty: true });
+      } else if (!costoEnUsd && p.pricing?.purchase_cost) {
+        setValue('precio_costo', p.pricing.purchase_cost, { shouldDirty: true });
+      }
       if (p.pricing?.anchor_price)  setValue('precio_ancla', p.pricing.anchor_price,  { shouldDirty: true });
       if (p.pricing?.discount?.percentage)  setValue('descuento_porcentaje', p.pricing.discount.percentage, { shouldDirty: true });
       if (p.pricing?.discount?.valid_from)  setValue('descuento_inicio', p.pricing.discount.valid_from,  { shouldDirty: true });
@@ -528,6 +609,21 @@ export default function ProductForm() {
         setValue('cantidad_disponible', salon + deposito, { shouldDirty: true });
         if (p.inventory.minimum_total_stock !== undefined)
           setValue('stock_minimo', p.inventory.minimum_total_stock, { shouldDirty: true });
+      }
+
+      // ── Variantes ──────────────────────────────────────────────
+      // Solo en el alta: en un producto guardado las Opciones ya tienen
+      // variantes con stock propio y pisarlas las desarmaría.
+      const opcionesImportadas = (Array.isArray(p.variants?.options) ? p.variants.options : [])
+        .map((o, idx) => ({
+          nombre: limpiar(o?.name || o?.nombre),
+          orden: idx,
+          valores: [...new Set((o?.values || o?.valores || []).map(limpiar).filter(Boolean))].map((valor, i) => ({ valor, orden: i })),
+        }))
+        .filter(o => o.nombre && o.valores.length);
+      if (!esEdicion && opcionesImportadas.length) {
+        setTieneVariantes(true);
+        setValue('opciones', opcionesImportadas, { shouldDirty: true });
       }
 
       // ── Publicación ────────────────────────────────────────────
@@ -553,12 +649,16 @@ export default function ProductForm() {
 
         const fichaActual = getValues('ficha_datos') || {};
         const fichaPatch  = { ...fichaActual };
-        if (Array.isArray(showcase.highlights) && showcase.highlights.length)
-          fichaPatch.beneficios_rapidos = showcase.highlights;
+        const destacados = (Array.isArray(showcase.highlights) ? showcase.highlights : [])
+          .map(h => limpiar(typeof h === 'string' ? h : h?.title || h?.text))
+          .filter(Boolean)
+          .slice(0, MAX_BENEFICIOS_RAPIDOS);
+        if (destacados.length)
+          fichaPatch.beneficios_rapidos = destacados;
         if (showcase.cta)
           fichaPatch.cta_principal_texto = showcase.cta;
         if (limpiar(showcase.badge))
-          fichaPatch.insignia = limpiar(showcase.badge);
+          fichaPatch.insignia = limpiar(showcase.badge).slice(0, 24);
         setValue('ficha_datos', fichaPatch, { shouldDirty: true });
 
         // Sin descripción corta en el JSON (formato viejo): una oración de la
@@ -569,20 +669,67 @@ export default function ProductForm() {
         }
       }
 
+      // ── Beneficios y garantías ─────────────────────────────────
+      // benefits[] → sección "Beneficios" (ícono, título y texto);
+      // trust_items[] → "Confianza (Garantías)". Antes el JSON solo traía
+      // highlights y estas dos secciones había que escribirlas a mano.
+      const beneficiosImportados = (Array.isArray(p.landing_blocks?.benefits) ? p.landing_blocks.benefits : [])
+        .map(normalizarBeneficio).filter(b => b.titulo || b.texto);
+      if (beneficiosImportados.length) setValue('beneficios', beneficiosImportados, { shouldDirty: true });
+      const confianzaImportada = (Array.isArray(p.landing_blocks?.trust_items) ? p.landing_blocks.trust_items : [])
+        .map(normalizarConfianza).filter(c => c.titulo || c.texto);
+      if (confianzaImportada.length) setValue('confianza', confianzaImportada, { shouldDirty: true });
+
       // ── FAQs ───────────────────────────────────────────────────
+      asignarTexto('faq_titulo', p.landing_blocks?.faq_title);
       if (Array.isArray(p.landing_blocks?.faqs) && p.landing_blocks.faqs.length) {
         setFaq(p.landing_blocks.faqs.map(normalizarFaq).filter(f => f.pregunta && f.respuesta));
       }
 
       // ── Testimonios ────────────────────────────────────────────
-      const testimonios = p.landing_blocks?.testimonials;
-      if (Array.isArray(testimonios) && testimonios.length) {
+      // Sin comentario no es una opinión: el renglón de ejemplo del esquema
+      // ("comment": "") llegaba a la ficha como "Cliente verificado" vacío.
+      const testimonios = (Array.isArray(p.landing_blocks?.testimonials) ? p.landing_blocks.testimonials : [])
+        .map(normalizarOpinion).filter(o => o.comentario).slice(0, MAX_OPINIONES_IMPORTADAS);
+      if (testimonios.length) {
         const fichaActual2 = getValues('ficha_datos') || {};
         setValue('ficha_datos', {
           ...fichaActual2,
-          fitness_opiniones: testimonios.map(normalizarOpinion),
-          product_page_opiniones: testimonios.map(normalizarOpinion),
+          fitness_opiniones: testimonios,
+          product_page_opiniones: testimonios,
         }, { shouldDirty: true });
+      }
+
+      // ── Textos de los bloques de la ficha ──────────────────────
+      // ficha_blocks → ficha_datos.presentacion, con los mismos nombres de
+      // campo que usa la landing (presentacion_productos): la ficha del
+      // lienzo los toma como punto de partida al elegir este producto y se
+      // siguen editando por bloque en Configurar tienda → Vista producto.
+      const bloques = p.landing_blocks?.ficha_blocks;
+      if (bloques && typeof bloques === 'object') {
+        const presentacion = Object.fromEntries(Object.entries({
+          insignia_principal: limpiar(bloques.header_label).slice(0, 40),
+          titulo_comercial: limpiar(bloques.commercial_name).slice(0, 100),
+          insignia_secundaria: limpiar(bloques.price_badge).slice(0, 40),
+          urgencia_kicker: limpiar(bloques.limited_offer?.label).slice(0, 60),
+          urgencia_titulo: limpiar(bloques.limited_offer?.title).slice(0, 90),
+          urgencia_texto: limpiar(bloques.limited_offer?.text).slice(0, 180),
+          opiniones_kicker: limpiar(bloques.reviews_section?.label).slice(0, 60),
+          opiniones_titulo: limpiar(bloques.reviews_section?.title).slice(0, 90),
+          opiniones_subtitulo: limpiar(bloques.reviews_section?.subtitle).slice(0, 180),
+          preguntas_kicker: limpiar(bloques.faq_section?.label).slice(0, 60),
+          preguntas_titulo: limpiar(bloques.faq_section?.title).slice(0, 90),
+          preguntas_subtitulo: limpiar(bloques.faq_section?.subtitle).slice(0, 180),
+        }).filter(([, valor]) => valor));
+        const incluye = (Array.isArray(bloques.order_includes) ? bloques.order_includes : [])
+          .map(linea => limpiar(typeof linea === 'string' ? linea : linea?.text || linea?.texto).slice(0, 120))
+          .filter(Boolean).slice(0, 8);
+        if (incluye.length) presentacion.incluye_pedido = incluye.map(texto => ({ texto }));
+        if (Object.keys(presentacion).length) {
+          const fichaActual3 = getValues('ficha_datos') || {};
+          setValue('ficha_datos', { ...fichaActual3, presentacion: { ...fichaActual3.presentacion, ...presentacion } }, { shouldDirty: true });
+        }
+        asignarTexto('faq_titulo', bloques.faq_section?.title);
       }
 
       // ── Ficha generica generada por IA ─────────────────────────
@@ -654,10 +801,20 @@ export default function ProductForm() {
         !limpiar(getValues('propuesta_valor')) && 'propuesta de valor (tagline)',
         !limpiar(getValues('descripcion_larga')) && 'descripción',
       ].filter(Boolean);
+      const sinCargar = [
+        !(getValues('beneficios') || []).length && 'beneficios',
+        !(getValues('ficha_datos')?.product_page_opiniones || []).length && 'reseñas',
+        !Number(getValues('precio_ancla')) && 'precio ancla',
+      ].filter(Boolean);
       setAviso([
         'JSON importado. Revisá los campos, distribuí el stock por ubicación y guardá.',
         categoriaSinMatch ? `La categoría "${categoriaSinMatch}" no existe en tu tienda: elegila o creala.` : '',
+        proveedorSinMatch ? `El proveedor "${proveedorSinMatch}" no existe en tu tienda: elegilo o crealo.` : '',
+        costoEnUsd ? (esAdmin
+          ? 'El costo vino en USD: elegí el proveedor para pasarlo a guaraníes con su cotización.'
+          : 'El costo vino en USD y no se cargó: escribilo en guaraníes.') : '',
         faltantes.length ? `Falta: ${faltantes.join(' y ')} — se muestra debajo del nombre en la ficha.` : '',
+        sinCargar.length ? `El JSON no trajo: ${sinCargar.join(', ')}.` : '',
       ].filter(Boolean).join(' '));
       e.target.value = '';
     } catch (err) {
@@ -674,7 +831,8 @@ export default function ProductForm() {
   const [aviso, setAviso] = useState(null);
   useEffect(() => {
     if (!aviso) return;
-    const t = setTimeout(() => setAviso(null), 4000);
+    // Los avisos largos (ej. el del JSON importado) necesitan más que 4 s para leerse.
+    const t = setTimeout(() => setAviso(null), Math.max(4000, aviso.length * 60));
     return () => clearTimeout(t);
   }, [aviso]);
   const [categorias, setCategorias] = useState([]);
@@ -1791,7 +1949,7 @@ export default function ProductForm() {
               type="button" 
               className="btn-secondary" 
               onClick={() => {
-                navigator.clipboard.writeText(promptConCategorias(categorias));
+                navigator.clipboard.writeText(promptConDatosTienda(categorias, proveedores));
                 setAviso('Prompt copiado al portapapeles. Pégalo en tu IA favorita.');
               }}
               style={{ padding: '0.3rem 0.6rem', fontSize: '12px', height: '30px', display: 'flex', alignItems: 'center', gap: '0.3rem' }}

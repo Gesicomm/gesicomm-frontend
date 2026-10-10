@@ -30,22 +30,23 @@ function abrirFichaProducto(nombre) {
 }
 
 function bloqueFicha(titulo) {
-  return screen.getByText(titulo).closest('details');
+  return screen.getAllByText(titulo).map(el => el.closest('details')).find(Boolean);
 }
 
 describe('Presentación de los productos del lienzo', () => {
   it('actualiza ancla y etiquetas en el preview y guarda los mismos valores', async () => {
     const confirmar = montar();
     abrirFichaProducto('Cacerola');
-    const encabezado = bloqueFicha('Encabezado del producto');
+    const encabezado = bloqueFicha('Encabezado');
+    const nombreComercial = bloqueFicha('Nombre comercial');
     const precio = bloqueFicha('Precio y oferta');
     const descripcion = bloqueFicha('Descripción breve');
     fireEvent.change(within(precio).getByLabelText('Precio anterior'), { target: { value: '1200000' } });
-    fireEvent.change(within(encabezado).getByLabelText('Título'), { target: { value: 'Cocina sin esfuerzo' } });
+    fireEvent.change(within(nombreComercial).getByLabelText('Nombre comercial'), { target: { value: 'Cocina sin esfuerzo' } });
     fireEvent.change(within(descripcion).getByLabelText('Texto debajo del precio'), { target: { value: 'Ideal para risottos' } });
-    fireEvent.change(within(encabezado).getByLabelText('Rótulo superior'), { target: { value: 'Oferta' } });
+    fireEvent.change(within(encabezado).getByLabelText('Encabezado'), { target: { value: 'Oferta' } });
     expect(datosPreview().productos[0]).toMatchObject({ precio: 850000, precio_antes: 1200000, descuento_pct: 29 });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(confirmar.mock.calls[0][0].venta.presentacion_productos['producto:1']).toMatchObject({ titulo_comercial: 'Cocina sin esfuerzo', mensaje_comercial: 'Ideal para risottos', insignia_principal: 'Oferta' });
     expect(datosPreview().productos[0].titulo_comercial).toBe('Cocina sin esfuerzo');
     expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: 1200000 });
@@ -54,15 +55,16 @@ describe('Presentación de los productos del lienzo', () => {
   it('marca etiquetas comerciales, badge y fecha de oferta desde la ficha', () => {
     const confirmar = montar();
     abrirFichaProducto('Cacerola');
-    const encabezado = bloqueFicha('Encabezado del producto');
+    const encabezado = bloqueFicha('Encabezado');
     const precio = bloqueFicha('Precio y oferta');
-    fireEvent.change(within(encabezado).getByLabelText('Rótulo superior'), { target: { value: 'Oferta' } });
+    fireEvent.change(within(encabezado).getByLabelText('Encabezado'), { target: { value: 'Oferta' } });
+    fireEvent.change(within(precio).getByLabelText('Badge de precio'), { target: { value: 'Exclusivo online' } });
     fireEvent.change(within(precio).getByLabelText('Precio anterior'), { target: { value: '1200000' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
     const payload = confirmar.mock.calls[0][0];
     expect(payload.items[0]).toMatchObject({ precio_ancla: 1200000 });
-    expect(payload.venta.presentacion_productos['producto:1']).toMatchObject({ insignia_principal: 'Oferta' });
+    expect(payload.venta.presentacion_productos['producto:1']).toMatchObject({ insignia_principal: 'Oferta', insignia_secundaria: 'Exclusivo online' });
   });
 
   it('edita la ficha paso a paso con portada primero, beneficios, contador y medios de pago', () => {
@@ -70,15 +72,33 @@ describe('Presentación de los productos del lienzo', () => {
     abrirFichaProducto('Cacerola');
 
     const portada = screen.getByText('Galería del producto');
-    const oferta = screen.getByText('Precio y oferta');
+    const resenasTitulo = screen.getByText('Reseñas comerciales');
+    const precio = screen.getByText('Precio y oferta');
+    const ofertaTitulo = screen.getByText('Oferta por tiempo limitado');
+    const bloqueOferta = bloqueFicha('Oferta por tiempo limitado');
+    const descripcionTitulo = screen.getByText('Descripción breve');
     const beneficiosTitulo = screen.getByText('Beneficios principales');
+    const botonesTitulo = screen.getByText('Botones de contacto y pago');
     const compraTitulo = screen.getByText('Disponibilidad y medios de pago');
-    expect(Boolean(portada.compareDocumentPosition(oferta) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
-    expect(Boolean(oferta.compareDocumentPosition(beneficiosTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
-    expect(Boolean(beneficiosTitulo.compareDocumentPosition(compraTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(portada.compareDocumentPosition(resenasTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(resenasTitulo.compareDocumentPosition(precio) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(precio.compareDocumentPosition(ofertaTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(ofertaTitulo.compareDocumentPosition(descripcionTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(descripcionTitulo.compareDocumentPosition(beneficiosTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(beneficiosTitulo.compareDocumentPosition(botonesTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(botonesTitulo.compareDocumentPosition(compraTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
 
-    const bloqueOferta = oferta.closest('details');
-    fireEvent.change(within(bloqueOferta).getByLabelText('Rótulo'), { target: { value: 'Solo hoy' } });
+    const drag = {};
+    const dataTransfer = {
+      effectAllowed: '',
+      setData: vi.fn((tipo, valor) => { drag[tipo] = valor; }),
+      getData: vi.fn(tipo => drag[tipo] || ''),
+    };
+    fireEvent.dragStart(within(bloqueOferta).getByTitle('Arrastrar para ordenar'), { dataTransfer });
+    fireEvent.dragOver(bloqueFicha('Precio y oferta'), { dataTransfer });
+    fireEvent.drop(bloqueFicha('Precio y oferta'), { dataTransfer });
+
+    fireEvent.change(within(bloqueOferta).getByLabelText('Encabezado de la oferta'), { target: { value: 'Solo hoy' } });
     fireEvent.change(within(bloqueOferta).getByLabelText('Horas'), { target: { value: '5' } });
     fireEvent.change(within(bloqueOferta).getByLabelText('Minutos'), { target: { value: '30' } });
     fireEvent.change(within(bloqueOferta).getByLabelText('Segundos'), { target: { value: '15' } });
@@ -93,7 +113,7 @@ describe('Presentación de los productos del lienzo', () => {
     ['Deposito bancario', 'Transferencia bancaria', 'Visa', 'Mastercard', 'American Express', 'Diners Club', 'Bancard', 'Credicheck', 'Cabal', 'Panal', 'Discover', 'JCB']
       .forEach(label => fireEvent.click(within(bloqueCompra).getByLabelText(`Mostrar logo ${label}`)));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
     const payload = confirmar.mock.calls[0][0];
     expect(payload.venta.presentacion_productos['producto:1']).toMatchObject({
@@ -103,6 +123,9 @@ describe('Presentación de los productos del lienzo', () => {
       urgencia_segundos: '15',
       metodos_pago: [{ texto: 'Pago contra entrega' }],
     });
+    expect(payload.venta.presentacion_productos['producto:1'].ficha_orden_mobile.indexOf('oferta')).toBeLessThan(
+      payload.venta.presentacion_productos['producto:1'].ficha_orden_mobile.indexOf('precio'),
+    );
     expect(payload.venta.presentacion_productos['producto:1'].beneficios).toEqual(
       expect.arrayContaining([expect.objectContaining({ titulo: 'Probado en tienda' })]),
     );
@@ -115,7 +138,7 @@ describe('Presentación de los productos del lienzo', () => {
     const precio = bloqueFicha('Precio y oferta');
     expect(within(precio).getByLabelText('Precio anterior')).toHaveValue('Gs 1.200.000');
     fireEvent.change(within(precio).getByLabelText('Precio anterior'), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(confirmar.mock.calls[0][0].items.map(i => i.id)).toEqual([1, 2]);
     expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: null });
     expect(datosPreview().productos[0].precio_antes).toBe(900000);
@@ -141,7 +164,7 @@ describe('Presentación de los productos del lienzo', () => {
     // del Inicio" — hay que abrirlo antes de tocar sus campos.
     fireEvent.click(screen.getByRole('button', { name: 'Banner principal' }));
     fireEvent.change(screen.getAllByLabelText('URL del medio')[0], { target: { value: 'https://cdn.test/banner-nuevo.webp' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
     const ventaGuardada = confirmar.mock.calls[0][0].venta;
     expect(ventaGuardada.inicio.banners[0]).toMatchObject({ titulo: 'Banner guardado', imagen: 'https://cdn.test/banner-nuevo.webp' });
@@ -152,7 +175,7 @@ describe('Presentación de los productos del lienzo', () => {
     abrirFichaProducto('Olla');
     const precio = bloqueFicha('Precio y oferta');
     fireEvent.change(within(precio).getByLabelText('Precio anterior'), { target: { value: '1300000' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(confirmar.mock.calls[0][0].venta.seleccion).toBe('todos');
     expect(confirmar.mock.calls[0][0].items).toHaveLength(1);
     expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ id: 2, precio_ancla: 1300000 });

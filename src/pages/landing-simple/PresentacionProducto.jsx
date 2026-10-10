@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import CurrencyInput from '../../components/CurrencyInput';
 import { getMediaUrl } from '../../services/api';
 import { claveItem, precioDeVenta } from './PrecioAnclaItem';
+import { contenidoFicha } from './datosRuntime';
 import ImagenesProductoLanding from './ImagenesProductoLanding';
 import { GripVertical, Upload } from 'lucide-react';
 
@@ -11,16 +12,25 @@ const area = 'mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2
 export const FICHA_BLOQUES_DEFAULT = {
   galeria: true,
   encabezado: true,
+  nombre_comercial: true,
+  resenas_comerciales: true,
   precio: true,
+  badge_precio: true,
   descripcion: true,
   info_compra: true,
   urgencia: true,
+  oferta: true,
+  oferta_encabezado: true,
+  oferta_nombre: true,
+  oferta_texto: true,
+  oferta_duracion: true,
   beneficios: true,
   confianza: true,
   compra: true,
   promociones_pago: true,
   contacto_pago: true,
   incluye: true,
+  recomendados: true,
   opiniones: true,
   preguntas: true,
   // Compatibilidad con landings guardadas antes de separar los bloques.
@@ -29,26 +39,39 @@ export const FICHA_BLOQUES_DEFAULT = {
 };
 export const FICHA_BLOQUES_ORDEN = [
   { clave: 'galeria', numero: 1, titulo: 'Galería del producto' },
-  { clave: 'encabezado', numero: 2, titulo: 'Encabezado del producto' },
-  { clave: 'precio', numero: 3, titulo: 'Precio y oferta' },
-  { clave: 'descripcion', numero: 4, titulo: 'Descripción breve' },
-  { clave: 'beneficios', numero: 5, titulo: 'Beneficios principales' },
-  { clave: 'confianza', numero: 6, titulo: 'Zona de confianza' },
-  { clave: 'compra', numero: 7, titulo: 'Compra' },
-  { clave: 'contacto_pago', numero: 8, titulo: 'Botones de pago y contacto' },
-  { clave: 'promociones_pago', numero: 9, titulo: 'Disponibilidad y medios de pago' },
-  { clave: 'incluye', numero: 10, titulo: 'Qué incluye tu pedido' },
-  { clave: 'opiniones', numero: 11, titulo: 'Opiniones' },
-  { clave: 'preguntas', numero: 12, titulo: 'Preguntas frecuentes' },
+  { clave: 'encabezado', numero: 2, titulo: 'Encabezado' },
+  { clave: 'nombre_comercial', numero: 3, titulo: 'Nombre comercial' },
+  { clave: 'resenas_comerciales', numero: 4, titulo: 'Reseñas comerciales' },
+  { clave: 'precio', numero: 5, titulo: 'Precio y oferta' },
+  { clave: 'badge_precio', numero: 6, titulo: 'Badge de precio' },
+  { clave: 'oferta', numero: 7, titulo: 'Oferta por tiempo limitado' },
+  { clave: 'descripcion', numero: 8, titulo: 'Descripción breve' },
+  { clave: 'beneficios', numero: 9, titulo: 'Beneficios principales' },
+  { clave: 'contacto_pago', numero: 10, titulo: 'Botones de contacto y pago' },
+  { clave: 'promociones_pago', numero: 11, titulo: 'Disponibilidad y medios de pago' },
+  { clave: 'incluye', numero: 12, titulo: 'Qué incluye tu pedido' },
+  { clave: 'confianza', numero: 13, titulo: 'Zona de confianza' },
+  { clave: 'recomendados', numero: 14, titulo: 'Productos recomendados' },
+  { clave: 'opiniones', numero: 18, titulo: 'Opiniones' },
+  { clave: 'preguntas', numero: 19, titulo: 'Preguntas frecuentes' },
 ];
 const FICHA_BLOQUES_CLAVES = FICHA_BLOQUES_ORDEN.map(b => b.clave);
+const FICHA_BLOQUES_ALIAS = {
+  urgencia: ['oferta'],
+  oferta_encabezado: ['oferta'],
+  oferta_nombre: ['oferta'],
+  oferta_texto: ['oferta'],
+  oferta_duracion: ['oferta'],
+};
 const DEFAULTS_PRESENTACION = {
   resenas_texto: '4.9 · 5 estrellas · +1.000 reseñas verificadas',
+  resenas_calificacion: 4.9,
   insignia_principal: '',
   beneficios_kicker: 'Por qué elegirlo',
   beneficios_titulo: 'Beneficios que se entienden rápido.',
   beneficios_subtitulo: 'Usá estos ejemplos como guía y ajustalos a lo que realmente ofrece tu producto.',
   cta_texto: 'Comprar con pago anticipado',
+  cta_descuento_pct: '',
   agregar_carrito_texto: 'Agregar al carrito',
   urgencia_kicker: 'Oferta por tiempo limitado',
   urgencia_titulo: 'Reservá esta condición antes de que termine.',
@@ -99,12 +122,29 @@ const valorConfigurable = (obj, campo, fallback) => (
 
 const gs = n => `Gs ${Math.round(Number(n) || 0).toLocaleString('es-PY')}`;
 const limpiarNumero = valor => Number(String(valor ?? '').replace(/\D/g, '')) || 0;
+const normalizarCalificacion = (valor, fallback = DEFAULTS_PRESENTACION.resenas_calificacion) => {
+  const crudo = String(valor ?? '').replace(',', '.').trim();
+  const n = Number(crudo);
+  const base = Number.isFinite(n) ? n : Number(fallback);
+  return Math.max(1, Math.min(5, Math.round((Number.isFinite(base) ? base : 5) * 10) / 10));
+};
+const formatearCalificacion = valor => normalizarCalificacion(valor).toLocaleString('es-PY', { maximumFractionDigits: 1 });
+const normalizarDescuentoBoton = valor => {
+  const crudo = String(valor ?? '').replace(',', '.').trim();
+  const n = Number(crudo);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return String(Math.min(95, Math.round(n * 10) / 10));
+};
 const normalizarOrdenMobile = orden => {
   const vistos = new Set();
-  const limpio = (Array.isArray(orden) ? orden : []).filter(clave => {
-    if (!FICHA_BLOQUES_CLAVES.includes(clave) || vistos.has(clave)) return false;
-    vistos.add(clave);
-    return true;
+  const limpio = [];
+  (Array.isArray(orden) ? orden : []).forEach(clave => {
+    const claves = FICHA_BLOQUES_ALIAS[clave] || [clave];
+    claves.forEach(claveReal => {
+      if (!FICHA_BLOQUES_CLAVES.includes(claveReal) || vistos.has(claveReal)) return;
+      vistos.add(claveReal);
+      limpio.push(claveReal);
+    });
   });
   return [...limpio, ...FICHA_BLOQUES_CLAVES.filter(clave => !vistos.has(clave))];
 };
@@ -260,28 +300,36 @@ function ListaPreguntas({ items, onCambiar }) {
   );
 }
 
-function ListaBotones({ titulo, ayuda, items, campoLista, max = 4, onCambiar }) {
+function ListaBotones({ titulo, ayuda, items, campoLista, max = 4, onCambiar, descuentos = false, ocultarValorWhatsapp = false }) {
   const base = Array.isArray(items) ? items : [];
   const cambiar = (idx, campoItem, valor) => onCambiar(campoLista, base.map((it, i) => (i === idx ? { ...it, [campoItem]: valor } : it)));
+  const cambiarTipo = (idx, tipo) => onCambiar(campoLista, base.map((it, i) => (
+    i === idx ? { ...it, tipo, ...(ocultarValorWhatsapp && tipo === 'whatsapp' ? { valor: '' } : {}) } : it
+  )));
   const agregar = () => onCambiar(campoLista, [...base, { label: 'Nuevo botón', tipo: 'url', valor: '' }].slice(0, max));
   const quitar = idx => onCambiar(campoLista, base.filter((_, i) => i !== idx));
   return (
     <fieldset className="space-y-2 rounded-lg border border-border bg-surface px-3 py-3">
       <legend className="px-1 text-sm font-semibold text-fg">{titulo}</legend>
       {ayuda && <p className="text-xs leading-relaxed text-fg-muted">{ayuda}</p>}
-      {base.map((boton, idx) => (
-        <div key={idx} className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-surface-2/70 p-2 sm:grid-cols-[1fr_130px_1fr_auto]">
-          <input className={campo} value={boton.label || ''} maxLength={36} placeholder="Texto del botón" onChange={e => cambiar(idx, 'label', e.target.value)} />
-          <select className={campo} value={boton.tipo || 'whatsapp'} onChange={e => cambiar(idx, 'tipo', e.target.value)}>
-            <option value="whatsapp">WhatsApp</option>
-            <option value="checkout">Checkout</option>
-            <option value="contacto">Contacto</option>
-            <option value="url">URL</option>
-          </select>
-          <input className={campo} value={boton.valor || ''} maxLength={180} placeholder={boton.tipo === 'url' ? 'https://...' : boton.tipo === 'whatsapp' ? 'Mensaje opcional' : 'Opcional'} onChange={e => cambiar(idx, 'valor', e.target.value)} />
-          <button type="button" onClick={() => quitar(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button>
-        </div>
-      ))}
+      {base.map((boton, idx) => {
+        const tipo = boton.tipo || 'whatsapp';
+        const ocultarValor = ocultarValorWhatsapp && tipo === 'whatsapp';
+        return (
+          <div key={idx} className={`grid grid-cols-1 gap-2 rounded-lg border border-border bg-surface-2/70 p-2 ${descuentos ? 'sm:grid-cols-[1fr_120px_1fr_110px_auto]' : (ocultarValor ? 'sm:grid-cols-[1fr_130px_auto]' : 'sm:grid-cols-[1fr_130px_1fr_auto]')}`}>
+            <input className={campo} value={boton.label || ''} maxLength={36} placeholder="Texto del botón" onChange={e => cambiar(idx, 'label', e.target.value)} />
+            <select className={campo} value={tipo} onChange={e => cambiarTipo(idx, e.target.value)}>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="checkout">Checkout</option>
+              <option value="contacto">Contacto</option>
+              <option value="url">URL</option>
+            </select>
+            {!ocultarValor && <input className={campo} value={boton.valor || ''} maxLength={180} placeholder={tipo === 'url' ? 'https://...' : tipo === 'whatsapp' ? 'Mensaje opcional' : 'Opcional'} onChange={e => cambiar(idx, 'valor', e.target.value)} />}
+            {descuentos && <input className={campo} type="number" min="0" max="95" step="0.1" inputMode="decimal" value={boton.descuento_pct ?? ''} placeholder="Dto. %" aria-label={`Descuento del botón ${idx + 1}`} onChange={e => cambiar(idx, 'descuento_pct', e.target.value)} onBlur={e => cambiar(idx, 'descuento_pct', normalizarDescuentoBoton(e.target.value))} />}
+            <button type="button" onClick={() => quitar(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button>
+          </div>
+        );
+      })}
       {base.length < max && <button type="button" onClick={agregar} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Agregar botón</button>}
     </fieldset>
   );
@@ -361,11 +409,31 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
   const metodosPago = Array.isArray(item.metodos_pago) ? item.metodos_pago : DEFAULTS_PRESENTACION.metodos_pago;
   const incluyePedido = Array.isArray(item.incluye_pedido) && item.incluye_pedido.length ? item.incluye_pedido : DEFAULTS_PRESENTACION.incluye_pedido;
   const botonesContacto = Array.isArray(item.botones_contacto) ? item.botones_contacto : DEFAULTS_PRESENTACION.botones_contacto;
-  const opiniones = Array.isArray(item.opiniones) ? item.opiniones : DEFAULTS_PRESENTACION.opiniones;
-  const preguntas = Array.isArray(item.preguntas) && item.preguntas.length ? item.preguntas : DEFAULTS_PRESENTACION.preguntas;
+  // Sin edición propia en esta landing, opiniones y preguntas arrancan con las
+  // del producto (las mismas que muestra la ficha publicada); los ejemplos
+  // quedan solo para el producto que no tiene ninguna.
+  const delProducto = useMemo(() => contenidoFicha(item), [item]);
+  const opiniones = Array.isArray(item.opiniones) ? item.opiniones : (delProducto.opiniones.length ? delProducto.opiniones : DEFAULTS_PRESENTACION.opiniones);
+  const preguntas = Array.isArray(item.preguntas) && item.preguntas.length ? item.preguntas : (delProducto.preguntas.length ? delProducto.preguntas : DEFAULTS_PRESENTACION.preguntas);
   const bloquesGuardados = item.ficha_bloques || {};
   const bloquesFicha = { ...FICHA_BLOQUES_DEFAULT, ...bloquesGuardados };
+  if (bloquesGuardados.encabezado === false) {
+    if (bloquesGuardados.nombre_comercial === undefined) bloquesFicha.nombre_comercial = false;
+    if (bloquesGuardados.resenas_comerciales === undefined) bloquesFicha.resenas_comerciales = false;
+  }
+  if (bloquesGuardados.precio === false && bloquesGuardados.badge_precio === undefined) bloquesFicha.badge_precio = false;
+  if (bloquesGuardados.urgencia === false) {
+    if (bloquesGuardados.oferta === undefined) bloquesFicha.oferta = false;
+    ['oferta_encabezado', 'oferta_nombre', 'oferta_texto', 'oferta_duracion'].forEach(clave => {
+      if (bloquesGuardados[clave] === undefined) bloquesFicha[clave] = false;
+    });
+  }
+  if (bloquesGuardados.compra === false) {
+    if (bloquesGuardados.contacto_pago === undefined) bloquesFicha.contacto_pago = false;
+    if (bloquesGuardados.promociones_pago === undefined) bloquesFicha.promociones_pago = false;
+  }
   const ordenMobile = useMemo(() => normalizarOrdenMobile(item.ficha_orden_mobile), [item.ficha_orden_mobile]);
+  const ratingResenas = normalizarCalificacion(item.resenas_calificacion);
   const [opinionError, setOpinionError] = useState('');
   const [opinionSubiendo, setOpinionSubiendo] = useState(null);
   const opinionInputs = useRef({});
@@ -405,6 +473,9 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
   function cambiarBloque(clave, visible) {
     onCambiar('ficha_bloques', { ...bloquesFicha, [clave]: visible });
   }
+  function cambiarBloques(pares) {
+    onCambiar('ficha_bloques', { ...bloquesFicha, ...pares });
+  }
   function moverBloqueMobile(origen, destino) {
     const actual = normalizarOrdenMobile(ordenMobile);
     const desde = actual.indexOf(origen);
@@ -418,21 +489,26 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
   function visibleBloque(clave) {
     if (bloquesFicha[clave] === false) return false;
     if (clave === 'galeria' && bloquesFicha.portada === false) return false;
-    if (clave === 'precio' && bloquesGuardados.urgencia === false && bloquesGuardados.precio === undefined) return false;
-    if (['encabezado', 'precio', 'descripcion'].includes(clave) && bloquesFicha.textos === false) return false;
-    if (['info_compra', 'compra', 'promociones_pago', 'contacto_pago'].includes(clave) && bloquesFicha.compra === false) return false;
+    if (['encabezado', 'nombre_comercial', 'resenas_comerciales', 'precio', 'descripcion'].includes(clave) && bloquesFicha.textos === false) return false;
+    if (['info_compra', 'promociones_pago', 'contacto_pago'].includes(clave) && bloquesFicha.compra === false) return false;
     return true;
   }
 
   const resumenPortada = src ? 'Imagen principal y miniaturas listas' : 'Subí o pegá la imagen principal';
-  const resumenEncabezado = titulo;
+  const resumenEncabezado = item.insignia_principal || 'Encabezado visible';
+  const resumenNombreComercial = titulo;
+  const resumenResenas = item.resenas_texto || `${formatearCalificacion(ratingResenas)} estrellas`;
   const resumenPrecio = `${gs(precio)}${descuento ? ` · -${descuento}%` : ''}`;
+  const resumenOfertaEncabezado = item.urgencia_kicker || DEFAULTS_PRESENTACION.urgencia_kicker;
+  const resumenOfertaNombre = item.urgencia_titulo || DEFAULTS_PRESENTACION.urgencia_titulo;
+  const resumenOfertaTexto = item.urgencia_texto || DEFAULTS_PRESENTACION.urgencia_texto;
+  const resumenOfertaDuracion = `${item.urgencia_horas ?? DEFAULTS_PRESENTACION.urgencia_horas}h ${item.urgencia_minutos ?? DEFAULTS_PRESENTACION.urgencia_minutos}m ${item.urgencia_segundos ?? DEFAULTS_PRESENTACION.urgencia_segundos}s`;
+  const resumenOferta = `${resumenOfertaNombre} · ${resumenOfertaDuracion}`;
   const resumenDescripcion = item.mensaje_comercial || item.descripcion || 'Texto debajo del precio';
   const resumenBeneficios = beneficios.length ? `${beneficios.length} beneficio${beneficios.length === 1 ? '' : 's'}` : 'Sin beneficios cargados';
   const resumenConfianza = confianza.length ? `${confianza.length} tarjeta${confianza.length === 1 ? '' : 's'}` : 'Sin tarjetas cargadas';
-  const resumenCompra = item.cta_texto || DEFAULTS_PRESENTACION.cta_texto;
   const resumenPagos = `${metodosPago.length} método${metodosPago.length === 1 ? '' : 's'}`;
-  const resumenContacto = `${botonesPago.length + botonesContacto.length} acceso${botonesPago.length + botonesContacto.length === 1 ? '' : 's'}`;
+  const resumenContacto = `${1 + botonesPago.length + botonesContacto.length} botón${1 + botonesPago.length + botonesContacto.length === 1 ? '' : 'es'}`;
   const resumenIncluye = incluyePedido.length ? `${incluyePedido.length} ítem${incluyePedido.length === 1 ? '' : 's'}` : 'Sin ítems cargados';
   const resumenOpiniones = opiniones.length ? `${opiniones.length} ${opiniones.length === 1 ? 'opinión' : 'opiniones'}` : 'Sin opiniones todavía';
   const resumenPreguntas = preguntas.length ? `${preguntas.length} pregunta${preguntas.length === 1 ? '' : 's'}` : 'Sin preguntas cargadas';
@@ -448,62 +524,79 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
           <datalist id={insigniasListId}>{INSIGNIAS_COMERCIALES.map(i => <option key={i} value={i} />)}</datalist>
           <ImagenesProductoLanding item={item} onCambiar={onCambiar} onSubirImagen={onSubirImagen} />
         </BloqueFicha>
-        <BloqueFicha numero="2" titulo="Encabezado del producto" resumen={resumenEncabezado} abierto={inicialmenteAbierto} visible={visibleBloque('encabezado')} onVisible={v => cambiarBloque('encabezado', v)} bloqueClave="encabezado" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('encabezado')}>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block text-xs text-fg-muted">Rótulo superior<input className={campo} value={item.insignia_principal || ''} list={insigniasListId} maxLength={40} placeholder={DEFAULTS_PRESENTACION.insignia_principal} onChange={e => onCambiar('insignia_principal', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted sm:col-span-2">Título<input className={campo} value={item.titulo_comercial || ''} maxLength={100} placeholder={item.nombre} onChange={e => onCambiar('titulo_comercial', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted sm:col-span-2">Texto de reseñas<input className={campo} value={item.resenas_texto || ''} maxLength={80} placeholder={DEFAULTS_PRESENTACION.resenas_texto} onChange={e => onCambiar('resenas_texto', e.target.value)} /></label>
+        <BloqueFicha numero="2" titulo="Encabezado" resumen={resumenEncabezado} abierto={inicialmenteAbierto} visible={visibleBloque('encabezado')} onVisible={v => cambiarBloque('encabezado', v)} bloqueClave="encabezado" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('encabezado')}>
+          <label className="block text-xs text-fg-muted">Encabezado<input className={campo} value={item.insignia_principal || ''} list={insigniasListId} maxLength={40} placeholder={DEFAULTS_PRESENTACION.insignia_principal} onChange={e => onCambiar('insignia_principal', e.target.value)} /></label>
+        </BloqueFicha>
+        <BloqueFicha numero="3" titulo="Nombre comercial" resumen={resumenNombreComercial} abierto={inicialmenteAbierto} visible={visibleBloque('nombre_comercial')} onVisible={v => cambiarBloque('nombre_comercial', v)} bloqueClave="nombre_comercial" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('nombre_comercial')}>
+          <label className="block text-xs text-fg-muted">Nombre comercial<input className={campo} value={item.titulo_comercial || ''} maxLength={100} placeholder={item.nombre} onChange={e => onCambiar('titulo_comercial', e.target.value)} /></label>
+        </BloqueFicha>
+        <BloqueFicha numero="4" titulo="Reseñas comerciales" resumen={resumenResenas} abierto={inicialmenteAbierto} visible={visibleBloque('resenas_comerciales')} onVisible={v => cambiarBloque('resenas_comerciales', v)} bloqueClave="resenas_comerciales" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('resenas_comerciales')}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_150px]">
+            <label className="block text-xs text-fg-muted">Texto de reseñas<input className={campo} value={item.resenas_texto || ''} maxLength={80} placeholder={DEFAULTS_PRESENTACION.resenas_texto} onChange={e => onCambiar('resenas_texto', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Cantidad de estrellas<input className={campo} type="number" min="1" max="5" step="0.1" inputMode="decimal" value={item.resenas_calificacion ?? DEFAULTS_PRESENTACION.resenas_calificacion} onChange={e => onCambiar('resenas_calificacion', e.target.value)} /></label>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm">
+            <span className="font-black text-amber-500" aria-hidden="true">★★★★★</span>
+            <span className="text-xs font-semibold text-fg-muted">{formatearCalificacion(ratingResenas)} de 5 estrellas</span>
           </div>
         </BloqueFicha>
-        <BloqueFicha numero="3" titulo="Precio y oferta" resumen={resumenPrecio} abierto={inicialmenteAbierto} visible={visibleBloque('precio')} onVisible={v => cambiarBloque('precio', v)} bloqueClave="precio" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('precio')}>
+        <BloqueFicha numero="5" titulo="Precio y oferta" resumen={resumenPrecio} abierto={inicialmenteAbierto} visible={visibleBloque('precio')} onVisible={v => cambiarBloques({ precio: v, badge_precio: v })} bloqueClave="precio" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('precio')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="block text-xs text-fg-muted">Precio anterior<CurrencyInput id={`ancla-${claveItem(item)}`} aria-label="Precio anterior" inputMode="numeric" value={ancla ?? ''} onChange={v => onAncla(v == null ? '' : String(v))} placeholder="Opcional" className={campo} /></label>
             <label className="block text-xs text-fg-muted">% de descuento<input inputMode="numeric" value={porcentaje} placeholder="Ej: 21" className={campo} onChange={e => onAncla(precioAnclaPorDescuento(precio, e.target.value))} /></label>
             <label className="block text-xs text-fg-muted">Badge de precio<input className={campo} value={item.insignia_secundaria || ''} list={insigniasListId} maxLength={40} placeholder={descuento ? `-${descuento}%` : 'Oferta especial'} onChange={e => onCambiar('insignia_secundaria', e.target.value)} /></label>
           </div>
-          <div className="mt-3 rounded-lg border border-border bg-surface px-3 py-3">
-            <p className="text-xs font-semibold text-fg">Oferta junto al precio</p>
-            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <label className="block text-xs text-fg-muted">Rótulo<input className={campo} value={item.urgencia_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.urgencia_kicker} onChange={e => onCambiar('urgencia_kicker', e.target.value)} /></label>
-              <label className="block text-xs text-fg-muted">Título<input className={campo} value={item.urgencia_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.urgencia_titulo} onChange={e => onCambiar('urgencia_titulo', e.target.value)} /></label>
-              <label className="block text-xs text-fg-muted sm:col-span-2">Texto<textarea className={area} rows={2} value={item.urgencia_texto || ''} maxLength={180} placeholder={DEFAULTS_PRESENTACION.urgencia_texto} onChange={e => onCambiar('urgencia_texto', e.target.value)} /></label>
+        </BloqueFicha>
+        <BloqueFicha numero="6" titulo="Oferta por tiempo limitado" resumen={resumenOferta} abierto={inicialmenteAbierto} visible={visibleBloque('oferta')} onVisible={v => cambiarBloques({ oferta: v, urgencia: v })} bloqueClave="oferta" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('oferta')}>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <label className="block text-xs text-fg-muted">Encabezado de la oferta<input className={campo} value={item.urgencia_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.urgencia_kicker} onChange={e => onCambiar('urgencia_kicker', e.target.value)} /></label>
+              <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_encabezado')} onChange={e => cambiarBloque('oferta_encabezado', e.target.checked)} /> Mostrar encabezado</label>
             </div>
-            <fieldset className="mt-3 rounded-lg border border-border bg-surface-2/70 px-3 py-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <label className="block text-xs text-fg-muted">Nombre de la oferta<input className={campo} value={item.urgencia_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.urgencia_titulo} onChange={e => onCambiar('urgencia_titulo', e.target.value)} /></label>
+              <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_nombre')} onChange={e => cambiarBloque('oferta_nombre', e.target.checked)} /> Mostrar nombre</label>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <label className="block text-xs text-fg-muted">Texto de la oferta<textarea className={area} rows={2} value={item.urgencia_texto || ''} maxLength={180} placeholder={DEFAULTS_PRESENTACION.urgencia_texto} onChange={e => onCambiar('urgencia_texto', e.target.value)} /></label>
+              <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_texto')} onChange={e => cambiarBloque('oferta_texto', e.target.checked)} /> Mostrar texto</label>
+            </div>
+            <fieldset className="rounded-lg border border-border bg-surface px-3 py-3">
               <legend className="px-1 text-sm font-semibold text-fg">Duración del contador</legend>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
                 <label className="block text-xs text-fg-muted">Horas<input className={campo} type="number" min="0" max="99" value={item.urgencia_horas ?? ''} placeholder={String(DEFAULTS_PRESENTACION.urgencia_horas)} onChange={e => onCambiar('urgencia_horas', e.target.value)} /></label>
                 <label className="block text-xs text-fg-muted">Minutos<input className={campo} type="number" min="0" max="59" value={item.urgencia_minutos ?? ''} placeholder={String(DEFAULTS_PRESENTACION.urgencia_minutos)} onChange={e => onCambiar('urgencia_minutos', e.target.value)} /></label>
                 <label className="block text-xs text-fg-muted">Segundos<input className={campo} type="number" min="0" max="59" value={item.urgencia_segundos ?? ''} placeholder={String(DEFAULTS_PRESENTACION.urgencia_segundos)} onChange={e => onCambiar('urgencia_segundos', e.target.value)} /></label>
+                <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_duracion')} onChange={e => cambiarBloque('oferta_duracion', e.target.checked)} /> Mostrar contador</label>
               </div>
             </fieldset>
           </div>
         </BloqueFicha>
-        <BloqueFicha numero="4" titulo="Descripción breve" resumen={resumenDescripcion} abierto={inicialmenteAbierto} visible={visibleBloque('descripcion')} onVisible={v => cambiarBloque('descripcion', v)} bloqueClave="descripcion" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('descripcion')}>
+        <BloqueFicha numero="7" titulo="Descripción breve" resumen={resumenDescripcion} abierto={inicialmenteAbierto} visible={visibleBloque('descripcion')} onVisible={v => cambiarBloque('descripcion', v)} bloqueClave="descripcion" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('descripcion')}>
           <label className="block text-xs text-fg-muted">Texto debajo del precio<textarea className={area} rows={2} value={item.mensaje_comercial || ''} maxLength={220} placeholder="Sonido para acompañar tu rutina." onChange={e => onCambiar('mensaje_comercial', e.target.value)} /></label>
         </BloqueFicha>
-        <BloqueFicha numero="5" titulo="Beneficios principales" resumen={resumenBeneficios} visible={visibleBloque('beneficios')} onVisible={v => cambiarBloque('beneficios', v)} bloqueClave="beneficios" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('beneficios')}>
+        <BloqueFicha numero="8" titulo="Beneficios principales" resumen={resumenBeneficios} visible={visibleBloque('beneficios')} onVisible={v => cambiarBloque('beneficios', v)} bloqueClave="beneficios" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('beneficios')}>
           <ListaBeneficios items={beneficios} onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="6" titulo="Zona de confianza" resumen={resumenConfianza} visible={visibleBloque('confianza')} onVisible={v => cambiarBloque('confianza', v)} bloqueClave="confianza" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('confianza')}>
-          <ListaConfianzaProducto items={confianza} onCambiar={onCambiar} />
-        </BloqueFicha>
-        <BloqueFicha numero="7" titulo="Compra" resumen={resumenCompra} visible={visibleBloque('compra')} onVisible={v => cambiarBloque('compra', v)} bloqueClave="compra" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('compra')}>
-          <div className="grid grid-cols-1 gap-3">
+        <BloqueFicha numero="9" titulo="Botones de contacto y pago" resumen={resumenContacto} visible={visibleBloque('contacto_pago')} onVisible={v => cambiarBloques({ contacto_pago: v, compra: v })} bloqueClave="contacto_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('contacto_pago')}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_150px]">
             <label className="block text-xs text-fg-muted">Botón principal de compra<input className={campo} value={item.cta_texto || ''} maxLength={42} placeholder="Comprar con pago anticipado" onChange={e => onCambiar('cta_texto', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Descuento pago anticipado %<input className={campo} type="number" min="0" max="95" step="0.1" inputMode="decimal" value={item.cta_descuento_pct ?? ''} placeholder="Ej: 10" onChange={e => onCambiar('cta_descuento_pct', e.target.value)} onBlur={e => onCambiar('cta_descuento_pct', normalizarDescuentoBoton(e.target.value))} /></label>
           </div>
+          <ListaBotones titulo="Botones de pago" ayuda="Botones secundarios como Pago contra entrega, Comprar por WhatsApp o un link de pago. Podés sumar un descuento por botón para incentivar el pago anticipado." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} descuentos />
+          <ListaBotones titulo="Botones configurables de contacto" ayuda="Caminos de contacto adicionales de esta ficha. WhatsApp usa el mensaje configurado en Mi tienda." items={botonesContacto} campoLista="botones_contacto" onCambiar={onCambiar} ocultarValorWhatsapp />
         </BloqueFicha>
-        <BloqueFicha numero="8" titulo="Botones de pago y contacto" resumen={resumenContacto} visible={visibleBloque('contacto_pago')} onVisible={v => cambiarBloque('contacto_pago', v)} bloqueClave="contacto_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('contacto_pago')}>
-          <ListaBotones titulo="Botones de pago" ayuda="Botones secundarios como Pago contra entrega, Comprar por WhatsApp o un link de pago." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} />
-          <ListaBotones titulo="Botones configurables de contacto" ayuda="Caminos de contacto adicionales de esta ficha." items={botonesContacto} campoLista="botones_contacto" onCambiar={onCambiar} />
-        </BloqueFicha>
-        <BloqueFicha numero="9" titulo="Disponibilidad y medios de pago" resumen={resumenPagos} visible={visibleBloque('promociones_pago')} onVisible={v => cambiarBloque('promociones_pago', v)} bloqueClave="promociones_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('promociones_pago')}>
+        <BloqueFicha numero="10" titulo="Disponibilidad y medios de pago" resumen={resumenPagos} visible={visibleBloque('promociones_pago')} onVisible={v => cambiarBloque('promociones_pago', v)} bloqueClave="promociones_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('promociones_pago')}>
           <p className="text-xs leading-relaxed text-fg-muted">Esta zona aparece después de los botones: disponibilidad, cobertura y medios de pago antes de confirmar.</p>
           <MetodosPagoEditor metodos={metodosPago} onCambiar={onCambiar} pagoLogos={pagoLogos} paymentLogosCatalogo={paymentLogosCatalogo} onPagoLogosChange={onPagoLogosChange} />
         </BloqueFicha>
-        <BloqueFicha numero="10" titulo="Qué incluye tu pedido" resumen={resumenIncluye} visible={visibleBloque('incluye')} onVisible={v => cambiarBloque('incluye', v)} bloqueClave="incluye" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('incluye')}>
+        <BloqueFicha numero="11" titulo="Qué incluye tu pedido" resumen={resumenIncluye} visible={visibleBloque('incluye')} onVisible={v => cambiarBloque('incluye', v)} bloqueClave="incluye" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('incluye')}>
           <ListaSimple titulo="Ítems incluidos" ayuda="Cada línea aparece como checklist dentro de la ficha." items={incluyePedido} campoLista="incluye_pedido" placeholder="Ej: 1 unidad del producto seleccionado" onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="11" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('opiniones')}>
+        <BloqueFicha numero="12" titulo="Zona de confianza" resumen={resumenConfianza} visible={visibleBloque('confianza')} onVisible={v => cambiarBloque('confianza', v)} bloqueClave="confianza" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('confianza')}>
+          <ListaConfianzaProducto items={confianza} onCambiar={onCambiar} />
+        </BloqueFicha>
+        <BloqueFicha numero="13" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('opiniones')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={valorConfigurable(item, 'opiniones_kicker', DEFAULTS_PRESENTACION.opiniones_kicker)} maxLength={60} placeholder={DEFAULTS_PRESENTACION.opiniones_kicker} onChange={e => onCambiar('opiniones_kicker', e.target.value)} /></label>
             <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={valorConfigurable(item, 'opiniones_titulo', DEFAULTS_PRESENTACION.opiniones_titulo)} maxLength={90} placeholder={DEFAULTS_PRESENTACION.opiniones_titulo} onChange={e => onCambiar('opiniones_titulo', e.target.value)} /></label>
@@ -516,7 +609,7 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
               <div className="space-y-2">
                 {opiniones.map((opinion, idx) => (
                   <div key={idx} className="rounded-lg border border-border bg-surface-2/70 p-2">
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_90px_auto]"><input className={campo} value={opinion.nombre || ''} maxLength={60} placeholder="Nombre" onChange={e => cambiarOpinion(idx, 'nombre', e.target.value)} /><input className={campo} type="number" min="1" max="5" value={opinion.calificacion || 5} onChange={e => cambiarOpinion(idx, 'calificacion', Math.max(1, Math.min(5, Number(e.target.value) || 5)))} /><button type="button" onClick={() => quitarOpinion(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button></div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_90px_auto]"><input className={campo} value={opinion.nombre || ''} maxLength={60} placeholder="Nombre" onChange={e => cambiarOpinion(idx, 'nombre', e.target.value)} /><input className={campo} type="number" min="1" max="5" step="0.1" inputMode="decimal" value={opinion.calificacion || 5} onChange={e => cambiarOpinion(idx, 'calificacion', e.target.value)} /><button type="button" onClick={() => quitarOpinion(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button></div>
                     <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[64px_1fr_auto] sm:items-end">
                       <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-full border border-border bg-surface text-[11px] font-semibold text-fg-muted">{opinion.foto ? <img src={getMediaUrl(opinion.foto)} alt="" className="h-full w-full object-cover" loading="lazy" /> : 'Foto'}</div>
                       <label className="block text-xs text-fg-muted">Foto de la persona<input className={campo} type="url" value={opinion.foto || ''} maxLength={500} placeholder="https://ejemplo.com/persona.webp" onChange={e => cambiarOpinion(idx, 'foto', e.target.value)} /></label>
@@ -534,7 +627,7 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
             {opiniones.length < 6 && <button type="button" onClick={agregarOpinion} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Agregar opinión</button>}
           </fieldset>
         </BloqueFicha>
-        <BloqueFicha numero="12" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('preguntas')}>
+        <BloqueFicha numero="14" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('preguntas')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={item.preguntas_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.preguntas_kicker} onChange={e => onCambiar('preguntas_kicker', e.target.value)} /></label>
             <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={item.preguntas_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.preguntas_titulo} onChange={e => onCambiar('preguntas_titulo', e.target.value)} /></label>

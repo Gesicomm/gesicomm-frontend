@@ -13,6 +13,17 @@ import { useStoreCart } from '../landing/useStoreCart';
 import { conGlobalesHeredados } from './globalesCodigo';
 import { codigoFichaProducto, codigoInicioHeredable as inicioHeredableDe } from './fichaCodigoLanding';
 
+function descuentoBotonPct(valor) {
+  const n = Number(String(valor ?? '').replace(',', '.'));
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(95, Math.round(n * 10) / 10);
+}
+
+function aplicarDescuentoBoton(precio, pct) {
+  const descuento = descuentoBotonPct(pct);
+  return descuento > 0 ? Math.max(0, Math.round((Number(precio) || 0) * (100 - descuento) / 100)) : precio;
+}
+
 /**
  * La landing pública de una tienda que eligió "Lienzo en blanco": el
  * HTML/CSS/JS del comercio ocupando toda la ventana, dentro del mismo
@@ -287,10 +298,12 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       : null;
     // El precio es solo lo que se muestra en el carrito: el backend lo
     // recalcula entero al confirmar (LandingService.resolverCarrito).
-    const precio = oferta
+    const precioBase = oferta
       ? (oferta.precio_efectivo ?? oferta.precio_normal ?? oferta.precio ?? item.precio)
       : (variante?.precio_efectivo ?? item.precio ?? 0);
-    cartState.agregarAlCarrito({ item, variante, oferta, cantidad, precio });
+    const descuentoBoton = descuentoBotonPct(pedido?.descuento_boton_pct);
+    const precio = aplicarDescuentoBoton(precioBase, descuentoBoton);
+    cartState.agregarAlCarrito({ item, variante, oferta, cantidad, precio, descuentoBotonPct: descuentoBoton, precioAntesBoton: descuentoBoton ? precioBase : null });
     if (pedido?.payment_method === 'pagopar' || pedido?.payment_method === 'efectivo') {
       setPaymentMethodInicial(pedido.payment_method);
     }

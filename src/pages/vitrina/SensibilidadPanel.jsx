@@ -83,7 +83,11 @@ function calcularAnalisisLocal(analisis, precio, comisionPagoPct) {
   const paymentPct = Number(comisionPagoPct) || 0;
   const marketingCpa = roundMoney(precioSimulado * (cpaPct / 100));
   const costoPago = roundMoney(precioSimulado * (paymentPct / 100));
-  const costoTotal = roundMoney(costoCompra + marketingCpa + costoPago + costoEnvio + costoConfirmacion + costoEmpaque);
+  // CPA y método de pago son % del precio: en cada escenario de descuento
+  // bajan junto con él. Lo fijo es compra + logística.
+  const costoFijo = costoCompra + costoEnvio + costoConfirmacion + costoEmpaque;
+  const tasaVariable = (cpaPct + paymentPct) / 100;
+  const costoTotal = roundMoney(costoFijo + marketingCpa + costoPago);
   const profit = roundMoney(precioSimulado - costoTotal);
   const margin = precioSimulado > 0 ? roundMargin(profit / precioSimulado) : 0;
   const minimumMargin = Number(parametros.margen_minimo) || 0.1;
@@ -97,7 +101,7 @@ function calcularAnalisisLocal(analisis, precio, comisionPagoPct) {
     estado: estadoRentabilidad(margin, minimumMargin),
     sensitivity: escenarios.map((pct) => {
       const price = roundMoney(precioSimulado * (1 - (Number(pct) || 0) / 100));
-      const rowProfit = roundMoney(price - costoTotal);
+      const rowProfit = roundMoney(price - costoFijo - price * tasaVariable);
       const rowMargin = price > 0 ? roundMargin(rowProfit / price) : 0;
       const estado = estadoRentabilidad(rowMargin, minimumMargin);
       return {
@@ -120,7 +124,12 @@ function calcularAnalisisLocal(analisis, precio, comisionPagoPct) {
   };
 }
 
-export default function SensibilidadPanel({ item, onClose, onAplicarPrecio }) {
+/**
+ * `datos` (opcional): el análisis ya armado, con la misma forma que devuelve
+ * /vitrina/.../sensibilidad. Lo usa el armador de combos, que todavía no
+ * tiene un combo guardado que pedirle al servidor. Sin `datos`, se pide.
+ */
+export default function SensibilidadPanel({ item, datos = null, etiquetaCostoCompra = 'Costo de compra del producto', onClose, onAplicarPrecio }) {
   const [data, setData] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -134,9 +143,11 @@ export default function SensibilidadPanel({ item, onClose, onAplicarPrecio }) {
     setOperacionActiva('propios');
     setCargando(true);
     setError(null);
-    const promesa = item.tipo === 'combo'
-      ? vitrinaService.sensibilidadCombo(item.id)
-      : vitrinaService.sensibilidadProducto(item.id);
+    const promesa = datos
+      ? Promise.resolve(datos)
+      : item.tipo === 'combo'
+        ? vitrinaService.sensibilidadCombo(item.id)
+        : vitrinaService.sensibilidadProducto(item.id);
 
     promesa
       .then((res) => {
@@ -151,7 +162,7 @@ export default function SensibilidadPanel({ item, onClose, onAplicarPrecio }) {
       .finally(() => { if (activo) setCargando(false); });
 
     return () => { activo = false; };
-  }, [item]);
+  }, [item, datos]);
 
   const entidad = data ? (data.producto || data.combo) : null;
   const operaciones = data?.operaciones || (data ? {
@@ -305,7 +316,7 @@ export default function SensibilidadPanel({ item, onClose, onAplicarPrecio }) {
 
               <div className="vit-sensib-costs">
                 <div className="vit-sensib-cost">
-                  <span>Costo de compra del producto</span>
+                  <span>{etiquetaCostoCompra}</span>
                   <strong>{formatGs(costos.costo_compra)}</strong>
                 </div>
                 <div className="vit-sensib-cost">
@@ -317,6 +328,13 @@ export default function SensibilidadPanel({ item, onClose, onAplicarPrecio }) {
                   <span>Costo de envío promedio</span>
                   <strong>{formatGs(costos.costo_envio_promedio)}</strong>
                 </div>
+                {/* También se restan de la utilidad: si no se muestran, la cuenta no cierra. */}
+                {(Number(costos.costo_confirmacion_promedio) || 0) + (Number(costos.costo_empaque_promedio) || 0) > 0 && (
+                  <div className="vit-sensib-cost">
+                    <span>Confirmación y empaque</span>
+                    <strong>{formatGs((Number(costos.costo_confirmacion_promedio) || 0) + (Number(costos.costo_empaque_promedio) || 0))}</strong>
+                  </div>
+                )}
                 {operacionActiva === 'raha' && (
                   <div className="vit-sensib-cost">
                     <span>{metodoSeleccionado?.id === 'raha-cod' ? 'Costo pago contra entrega' : 'Costo método de pago'}</span>

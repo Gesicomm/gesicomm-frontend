@@ -64,7 +64,10 @@ export function calcularUpsell(upsell) {
 
 // ─── Combo ────────────────────────────────────────────────────────────────────
 
-export function calcularCombo(principal, upsellResults, principalTotalCosts) {
+// CPA y comisión son % del precio DEL COMBO (igual que el análisis de
+// sensibilidad de productos). fixedCost = productos + logística; variableRate
+// se cobra sobre el precio elegido. A otro precio: utilidadAPrecio().
+export function calcularCombo(principal, upsellResults, costs) {
   const precioOriginalPrincipal = principal.salePrice || 0;
   const sumaOriginalUpsells = upsellResults.reduce((a, u) => a + u.originalPrice, 0);
   const sumaFinalUpsells = upsellResults.reduce((a, u) => a + u.finalPrice, 0);
@@ -74,10 +77,25 @@ export function calcularCombo(principal, upsellResults, principalTotalCosts) {
   const discountAmount = r2(originalPrice - finalPrice);
   const discountPercentage = r4(div(discountAmount, originalPrice));
   const upsellCosts = r2(sumaCostosUpsells);
-  const totalCost = r2(principalTotalCosts + upsellCosts);
+  const productCost = r2((principal.cost || 0) + sumaCostosUpsells);
+  const logisticsCost = r2((costs.shipping || 0) + (costs.confirmation || 0) + (costs.packaging || 0));
+  const fixedCost = r2(productCost + logisticsCost);
+  const variableRate = ((costs.cpaPercentage || 0) + (costs.paymentCommissionPercentage || 0)) / 100;
+  const cpa = r2(finalPrice * ((costs.cpaPercentage || 0) / 100));
+  const paymentCommissionCost = r2(finalPrice * ((costs.paymentCommissionPercentage || 0) / 100));
+  const totalCost = r2(fixedCost + cpa + paymentCommissionCost);
   const profit = r2(finalPrice - totalCost);
   const margin = r4(div(profit, finalPrice));
-  return { originalPrice, finalPrice, discountAmount, discountPercentage, upsellCosts, totalCost, profit, margin, ticket: finalPrice };
+  return { originalPrice, finalPrice, discountAmount, discountPercentage, productCost, upsellCosts, logisticsCost, cpa, paymentCommissionCost, fixedCost, variableRate, totalCost, profit, margin, ticket: finalPrice };
+}
+
+export function utilidadAPrecio(price, combo) {
+  return r2(price - combo.fixedCost - price * (combo.variableRate || 0));
+}
+
+export function precioParaMargen(margin, combo) {
+  const denominador = 1 - (combo.variableRate || 0) - margin;
+  return denominador > 0 ? r2(combo.fixedCost / denominador) : null;
 }
 
 // ─── Clasificaciones ──────────────────────────────────────────────────────────
@@ -114,21 +132,19 @@ export function calcularComparativa(standaloneProfit, comboProfit, excellentThre
 
 // ─── Recomendaciones ─────────────────────────────────────────────────────────
 
-export function calcularRecomendaciones(totalCost, targetMargins = [15, 30, 45]) {
+export function calcularRecomendaciones(combo, targetMargins = [15, 30, 45]) {
   return targetMargins.map(pct => {
-    const d = pct / 100;
-    const suggestedPrice = d < 1 ? r2(totalCost / (1 - d)) : null;
-    return { targetMargin: pct, suggestedPrice, estimatedProfit: suggestedPrice !== null ? r2(suggestedPrice - totalCost) : null };
+    const suggestedPrice = precioParaMargen(pct / 100, combo);
+    return { targetMargin: pct, suggestedPrice, estimatedProfit: suggestedPrice !== null ? utilidadAPrecio(suggestedPrice, combo) : null };
   });
 }
 
-export function calcularPrecioMinimo(totalCost) { return r2(totalCost); }
+export function calcularPrecioMinimo(combo) { return precioParaMargen(0, combo); }
 
-export function calcularDescuentoMaximo(totalCost, originalPrice, minimumMarginPct = 10) {
+export function calcularDescuentoMaximo(combo, originalPrice, minimumMarginPct = 10) {
   if (!originalPrice) return null;
-  const d = minimumMarginPct / 100;
-  if (d >= 1) return null;
-  const precioMin = r2(totalCost / (1 - d));
+  const precioMin = precioParaMargen(minimumMarginPct / 100, combo);
+  if (precioMin === null) return null;
   const maxDiscount = r4(1 - div(precioMin, originalPrice));
   return maxDiscount < 0 ? null : r4(maxDiscount * 100);
 }
@@ -136,7 +152,7 @@ export function calcularDescuentoMaximo(totalCost, originalPrice, minimumMarginP
 export function calcularSensibilidad(comboData, scenarios = [0, 5, 10, 15, 20, 25, 30, 35], thresholds = { minimumMargin: 0.10 }) {
   return scenarios.map(descPct => {
     const price = r2(comboData.finalPrice * (1 - descPct / 100));
-    const profit = r2(price - comboData.totalCost);
+    const profit = utilidadAPrecio(price, comboData);
     const margin = r4(div(profit, price));
     return { discountPercentage: descPct, price, profit, margin, status: clasificarRentabilidad(margin, thresholds.minimumMargin) };
   });
@@ -158,23 +174,23 @@ export function calcular(input) {
   const principalResult = calcularPrincipal(principal, costs);
   const discountSimulation = simularDescuentosPrincipal(principal.salePrice, principalResult.totalCosts, [0, 10, 20, 30, 40]);
   const upsellResults = upsells.map(u => calcularUpsell(u));
-  const comboResult = calcularCombo(principal, upsellResults, principalResult.totalCosts);
+  const comboResult = calcularCombo(principal, upsellResults, costs);
   const minimumMarginDecimal = minimumMargin / 100;
   const comparativaResult = calcularComparativa(principalResult.profit, comboResult.profit, excellentThreshold, minimumMarginDecimal, comboResult.margin);
 
   upsellResults.forEach((u, i) => {
-    if (u.profit < 0) warnings.push(`El upsell "${upsells[i].name}" genera pérdida (margen ${(u.margin * 100).toFixed(2)}%).`);
+    if (u.profit < 0) warnings.push(`El upsell "${upsells[i].name}" genera pérdida (margen ${(u.margin * 100).toFixed(1)}%).`);
   });
 
   if (comboResult.margin > 0 && comboResult.margin < minimumMarginDecimal) {
-    warnings.push(`El margen del combo (${(comboResult.margin * 100).toFixed(2)}%) está por debajo del objetivo mínimo (${minimumMargin}%).`);
+    warnings.push(`El margen del combo (${(comboResult.margin * 100).toFixed(1)}%) está por debajo del objetivo mínimo (${minimumMargin}%).`);
   }
   if (comboResult.margin <= 0) warnings.push('El combo no genera rentabilidad con la configuración actual.');
 
-  const recommendations = calcularRecomendaciones(comboResult.totalCost, targetMargins);
-  const minimumPrice = calcularPrecioMinimo(comboResult.totalCost);
-  const maximumDiscountPercentage = calcularDescuentoMaximo(comboResult.totalCost, comboResult.originalPrice, minimumMargin);
-  const sensitivity = calcularSensibilidad({ finalPrice: comboResult.finalPrice, totalCost: comboResult.totalCost }, discountScenarios, { minimumMargin: minimumMarginDecimal });
+  const recommendations = calcularRecomendaciones(comboResult, targetMargins);
+  const minimumPrice = calcularPrecioMinimo(comboResult);
+  const maximumDiscountPercentage = calcularDescuentoMaximo(comboResult, comboResult.originalPrice, minimumMargin);
+  const sensitivity = calcularSensibilidad(comboResult, discountScenarios, { minimumMargin: minimumMarginDecimal });
 
   return {
     principal: { ...principalResult, discountSimulation },

@@ -615,6 +615,7 @@ export default function CartDrawer({
                             <span className="lp-cart-item-nombre">{it.ofertaNombre || it.nombre}</span>
                             {it.componenteVarianteNombre && <span className="lp-cart-item-variante">{it.componenteVarianteNombre}</span>}
                             {it.varianteNombre && <span className="lp-cart-item-variante">{it.varianteNombre}</span>}
+                            {Number(it.descuentoBotonPct) > 0 && <span className="lp-cart-item-variante">Descuento pago anticipado -{Number(it.descuentoBotonPct).toLocaleString('es-PY', { maximumFractionDigits: 1 })}%</span>}
                             <span className="lp-cart-item-precio">
                               <b>{formatPrecio(it.precio * it.cantidad)}</b>
                               {antes > it.precio && <del>{formatPrecio(antes * it.cantidad)}</del>}

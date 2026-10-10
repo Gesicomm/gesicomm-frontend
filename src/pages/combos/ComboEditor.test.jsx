@@ -169,3 +169,83 @@ describe('Precios de venta durante el armado del combo', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente: complementarios/i })).toBeEnabled());
   });
 });
+
+describe('Fase 4: de dónde sale la ganancia', () => {
+  it('desglosa la pérdida del combo y avisa cuando el complemento se vende a costo', async () => {
+    verificarSesion.mockResolvedValue({ id: 7, rol: 'usuario' });
+    comboAdminService.obtenerConfiguracion.mockResolvedValue({
+      cpa_porcentaje: 20, costo_envio: 20000, costo_confirmacion: 3000, costo_empaque: 2482,
+      margen_minimo: 10, umbral_excelente: 50, pagopar_comision_porcentaje: 0,
+    });
+    // Tienda: precio_base es su costo frente al admin; precio_venta, lo que cobra.
+    // El ropero no tiene precio propio, así que se vende a costo.
+    sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify([
+      { id: 1, nombre: 'Mouse QA', precio_base: 55000, costo_tienda: 55000, precio_venta: 89000 },
+      { id: 2, nombre: 'Ropero QA', precio_base: 117183, costo_tienda: 117183, precio_venta: 117183 },
+    ]));
+    renderConPrefillCatalogo();
+    await screen.findByRole('heading', { name: '¿Cuánto descontás en cada complemento?' });
+
+    // CPA 20% sobre el combo entero: 206.183 × 20% = 41.237.
+    // 206.183 − 172.183 − 41.237 − 25.482 = −32.719
+    expect(screen.getByText('Vos perdés').nextSibling).toHaveTextContent('32.719 Gs');
+    const recibo = screen.getByText('De dónde sale lo que perdés').closest('.cw-recibo');
+    const linea = dt => within(recibo).getByText(dt).nextSibling.textContent;
+    expect(linea('Precio de venta')).toBe('206.183 Gs');
+    expect(linea('Costo de los 2 productos')).toBe('− 172.183 Gs');
+    expect(linea('Publicidad (20% del precio)')).toBe('− 41.237 Gs');
+    expect(linea('Envío, confirmación y empaque')).toBe('− 25.482 Gs');
+    expect(linea('Perdés por pedido')).toBe('32.719 Gs');
+    expect(screen.getByText(/Su precio de venta es igual a tu costo/)).toBeInTheDocument();
+  });
+
+  it('suma la comisión de cobro al recibo para que dé lo mismo que el motor', async () => {
+    comboAdminService.obtenerConfiguracion.mockResolvedValue({
+      cpa_porcentaje: 0, costo_envio: 0, costo_confirmacion: 0, costo_empaque: 0,
+      margen_minimo: 15, umbral_excelente: 30, pagopar_comision_porcentaje: 5,
+    });
+    sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify(productos));
+    renderConPrefillCatalogo();
+    await screen.findByRole('heading', { name: '¿Cuánto descontás en cada complemento?' });
+
+    const recibo = screen.getByText(/De dónde sale lo que/).closest('.cw-recibo');
+    // 5% sobre el combo entero (100.000 + 30.000), no solo sobre el principal.
+    expect(within(recibo).getByText('Comisión de cobro (5% del precio)').nextSibling).toHaveTextContent('− 6.500 Gs');
+    const total = recibo.querySelector('.total dd').textContent;
+    expect(screen.getByText(/^Vos (ganás|perdés)$/).nextSibling.textContent).toContain(total);
+  });
+
+  it('abre el mismo análisis de sensibilidad de productos con los datos del combo', async () => {
+    verificarSesion.mockResolvedValue({ id: 7, rol: 'usuario' });
+    comboAdminService.obtenerConfiguracion.mockResolvedValue({
+      cpa_porcentaje: 20, costo_envio: 25000, costo_confirmacion: 0, costo_empaque: 0,
+      raha_cpa_porcentaje: 15, raha_costo_envio: 30000, raha_costo_confirmacion: 0, raha_costo_empaque: 0,
+      margen_minimo: 10, umbral_excelente: 50, escenarios_descuento: [0, 10],
+      pagopar: { opciones_checkout: [{ id: 'tarjetas', nombre: 'Tarjetas de crédito/débito', comision_porcentaje: 5 }] },
+    });
+    sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify([
+      { id: 1, nombre: 'Mouse QA', precio_base: 55000, costo_tienda: 55000, precio_venta: 89000 },
+      { id: 2, nombre: 'Ropero QA', precio_base: 100000, costo_tienda: 100000, precio_venta: 111000 },
+    ]));
+    renderConPrefillCatalogo();
+    await screen.findByRole('heading', { name: '¿Cuánto descontás en cada complemento?' });
+    fireEvent.click(screen.getByRole('button', { name: /Analizar margen/ }));
+
+    const panel = (await screen.findByRole('heading', { name: 'Análisis de sensibilidad' })).closest('.vit-modal');
+    const tarjeta = label => within(panel).getByText(label).nextSibling.textContent;
+    expect(tarjeta('Costo de compra de los 2 productos')).toBe('155.000 Gs');
+    // Operación propia, contra entrega: 200.000 − 155.000 − 40.000 (CPA) − 25.000 = −20.000
+    expect(within(panel).getByText('Marketing (CPA)').nextSibling).toHaveTextContent('40.000 Gs');
+    expect(within(panel).getByText('Utilidad estimada').nextSibling).toHaveTextContent('-20.000 Gs');
+    // Con 10% de descuento el CPA también baja: 180.000 − 155.000 − 36.000 − 25.000 = −36.000
+    expect(within(panel).getByRole('cell', { name: '180.000 Gs' }).nextSibling).toHaveTextContent('-36.000 Gs');
+
+    fireEvent.click(within(panel).getByRole('tab', { name: 'Operación Gesicom RAHA' }));
+    // RAHA: CPA 15% = 30.000, envío 30.000, contra entrega 2% = 4.000 → −19.000
+    expect(within(panel).getByText('Costo de envío promedio').nextSibling).toHaveTextContent('30.000 Gs');
+    expect(within(panel).getByText('Utilidad estimada').nextSibling).toHaveTextContent('-19.000 Gs');
+
+    fireEvent.click(within(panel).getAllByRole('button', { name: 'Usar este precio' })[0]);
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Análisis de sensibilidad' })).toBeNull());
+  });
+});

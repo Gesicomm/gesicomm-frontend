@@ -438,16 +438,88 @@ test('encabezado permite logo mas grande junto al nombre de la tienda', async ({
       logoHeight: logo.getBoundingClientRect().height,
       headerHeight: header.getBoundingClientRect().height,
       nombreHeight: nombre.getBoundingClientRect().height,
+      separacion: nombre.getBoundingClientRect().left - logo.getBoundingClientRect().right,
       transform: c(logo).transform,
     };
   });
 
   expect(estilos.direction).toBe('row');
   expect(estilos.logoHeight).toBeGreaterThanOrEqual(55);
-  expect(estilos.logoWidth).toBeGreaterThan(35);
+  expect(estilos.logoWidth).toBeGreaterThanOrEqual(55);
   expect(estilos.logoHeight).toBeGreaterThan(estilos.nombreHeight);
+  expect(estilos.separacion).toBeGreaterThanOrEqual(14);
   expect(estilos.headerHeight).toBeLessThanOrEqual(80);
   expect(estilos.transform).not.toBe('none');
+});
+
+test('encabezado movil compacta logo y acciones sin apretar la marca', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 640 });
+  const html = construirDocumentoCodigo({
+    html: `
+      <header class="commerce-header">
+        <div class="container header-main">
+          <div class="brand-column">
+            <a class="brand brand-mark" href="#">
+              <img class="brand-logo" data-gesicomm-tienda="logo" alt="">
+              <span data-gesicomm-tienda="nombre">sommix</span>
+            </a>
+          </div>
+          <div class="header-actions">
+            <span class="search-wrap"><button class="search-toggle" type="button">Buscar</button></span>
+            <button class="cart-button" type="button"><span aria-hidden="true">🛒</span><strong>Carrito</strong><span data-gesicomm-cart-badge>1</span></button>
+            <button class="menu-toggle" type="button" aria-expanded="false">Menú</button>
+          </div>
+        </div>
+      </header>
+    `,
+    css: `
+      .commerce-header { background:#26333a; color:#f8fafc; }
+      .header-main { display:flex; align-items:center; justify-content:space-between; }
+      .brand-column, .header-actions { display:flex; align-items:center; }
+      .brand-logo { width: 76px; height: 76px; }
+      .brand-mark { color:#f8fafc; font-size: 20px; font-weight: 900; }
+    `,
+    js: '',
+  }, {
+    previewDevice: 'mobile',
+    datos: {
+      tienda: { nombre: 'sommix', logo: producto.imagen, colores: coloresTienda },
+      venta: { inicio: { encabezado: { logo_tamano: 76, logo_rotacion: 0, logo_posicion: 'izquierda' } } },
+    },
+  });
+
+  await page.setContent(html);
+  await expect(page.locator('.brand-logo')).toBeVisible();
+
+  const estilos = await page.evaluate(() => {
+    const logo = document.querySelector('.brand-logo');
+    const nombre = document.querySelector('[data-gesicomm-tienda="nombre"]');
+    const header = document.querySelector('.commerce-header');
+    const marca = document.querySelector('.brand-column');
+    const acciones = document.querySelector('.header-actions');
+    const lr = logo.getBoundingClientRect();
+    const nr = nombre.getBoundingClientRect();
+    const hr = header.getBoundingClientRect();
+    const mr = marca.getBoundingClientRect();
+    const ar = acciones.getBoundingClientRect();
+    return {
+      logoHeight: lr.height,
+      nombreWidth: nr.width,
+      headerHeight: hr.height,
+      marcaRight: mr.right,
+      accionesLeft: ar.left,
+      accionesWidth: ar.width,
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    };
+  });
+
+  expect(estilos.logoHeight).toBeLessThanOrEqual(43);
+  expect(estilos.nombreWidth).toBeGreaterThanOrEqual(52);
+  expect(estilos.headerHeight).toBeLessThanOrEqual(60);
+  expect(estilos.accionesWidth).toBeLessThanOrEqual(114);
+  expect(estilos.marcaRight).toBeLessThanOrEqual(estilos.accionesLeft + 1);
+  expect(estilos.scrollWidth).toBeLessThanOrEqual(estilos.viewportWidth + 1);
 });
 
 test('las vistas internas no muestran la franja fija de beneficios sin configurar', async ({ page }) => {

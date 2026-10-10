@@ -203,4 +203,131 @@ describe('Importar el JSON de la IA', () => {
     expect(String(payload.categoria_id)).toBe('5');
     expect(payload.ficha_datos).toMatchObject({ insignia: 'MÁS VENDIDO', cta_principal_texto: 'Quiero el mío' });
   });
+
+  it('carga beneficios, garantías, reseñas con su origen, precio ancla, proveedor y variantes del esquema 1.2', async () => {
+    const { proveedoresService } = await import('../../services/costosGastosService');
+    proveedoresService.buscar.mockResolvedValue({ proveedores: [{ id: 3, nombre: 'Importadora Sur' }] });
+    await montar();
+    await waitFor(() => expect(document.querySelectorAll('#prod-proveedor option').length).toBe(2));
+
+    const completo = {
+      schema_version: '1.2',
+      product: {
+        ...json.product,
+        identity: { ...json.product.identity, provider: { name: 'importadora sur', id: null } },
+        pricing: { ...json.product.pricing, anchor_price: 116000 },
+        variants: { options: [{ name: 'Color', values: ['Negro', 'Blanco', 'Negro'] }, { name: '', values: [] }] },
+        landing_blocks: {
+          ...json.product.landing_blocks,
+          benefits: [
+            { icon: 'battery', title: 'Batería larga', text: 'Dura semanas con una sola pila.' },
+            { icon: 'no-existe', title: 'Silencioso', text: 'Clic que no molesta en la oficina.' },
+            { icon: 'star', title: '', text: '' },
+          ],
+          trust_items: [{ title: 'Garantía de 6 meses', text: 'Cambio directo por fallas de fábrica.' }],
+          ficha_blocks: {
+            header_label: 'Más vendido',
+            commercial_name: '',
+            price_badge: 'Exclusivo online',
+            limited_offer: { label: '', title: '', text: '' },
+            order_includes: ['1 mouse inalámbrico', 'Receptor USB', ''],
+            reviews_section: { label: 'Opiniones', title: 'Quienes ya lo usan', subtitle: '' },
+            faq_section: { label: 'Dudas', title: 'Antes de comprar', subtitle: '' },
+          },
+          faqs: [{ question: '¿Trae pila?', answer: 'Sí, incluye una pila AA.' }],
+          testimonials: [
+            { name: 'Laura P.', rating: 4, comment: 'Liviano y cómodo.', source: 'Reseña en Amazon', photo: null },
+            { name: '', rating: 5, comment: '', source: '', photo: null },
+          ],
+        },
+      },
+    };
+    fireEvent.change(screen.getByPlaceholderText('Pegar JSON aquí...'), { target: { value: JSON.stringify(completo) } });
+    guardar();
+
+    await waitFor(() => expect(productService.crear).toHaveBeenCalled());
+    const payload = productService.crear.mock.calls[0][0];
+    expect(payload.precio_ancla).toBe(116000);
+    expect(String(payload.proveedor_id)).toBe('3');
+    expect(payload.faq_titulo).toBe('Antes de comprar');
+    expect(payload.faq).toEqual([{ pregunta: '¿Trae pila?', respuesta: 'Sí, incluye una pila AA.', orden: 0 }]);
+    expect(payload.beneficios).toEqual([
+      { titulo: 'Batería larga', texto: 'Dura semanas con una sola pila.', icono: 'battery' },
+      { titulo: 'Silencioso', texto: 'Clic que no molesta en la oficina.', icono: 'check' },
+    ]);
+    expect(payload.confianza).toEqual([{ titulo: 'Garantía de 6 meses', texto: 'Cambio directo por fallas de fábrica.', icono: '' }]);
+    expect(payload.ficha_datos.product_page_opiniones).toEqual([
+      { nombre: 'Laura P.', calificacion: 4, comentario: 'Liviano y cómodo.', detalle: 'Reseña en Amazon', foto: '' },
+    ]);
+    expect(payload.opciones.map(o => [o.nombre, o.valores.map(v => v.valor)])).toEqual([['Color', ['Negro', 'Blanco']]]);
+    expect(payload.variantes.map(v => v.valores[0].valor)).toEqual(['Negro', 'Blanco']);
+
+    // Solo lo que la IA completó: un texto vacío no pisa nada en la ficha.
+    expect(payload.ficha_datos.presentacion).toEqual({
+      insignia_principal: 'Más vendido',
+      insignia_secundaria: 'Exclusivo online',
+      opiniones_kicker: 'Opiniones',
+      opiniones_titulo: 'Quienes ya lo usan',
+      preguntas_kicker: 'Dudas',
+      preguntas_titulo: 'Antes de comprar',
+      incluye_pedido: [{ texto: '1 mouse inalámbrico' }, { texto: 'Receptor USB' }],
+    });
+
+    // Lo guardado es lo que leen los bloques de la ficha del lienzo.
+    const { contenidoFicha, presentacionComercial } = await import('../landing-simple/datosRuntime');
+    const item = { ...payload, tipo: 'producto', id: 42 };
+    expect(presentacionComercial(item, null)).toMatchObject({
+      insignia_principal: 'Más vendido',
+      insignia_secundaria: 'Exclusivo online',
+      opiniones_titulo: 'Quienes ya lo usan',
+      preguntas_titulo: 'Antes de comprar',
+      incluye_pedido: [{ texto: '1 mouse inalámbrico' }, { texto: 'Receptor USB' }],
+      resenas_texto: '4 de 5 · 1 opinión',
+    });
+    // Lo que la landing escribe para este producto sigue mandando.
+    const venta = { presentacion_productos: { 'producto:42': { insignia_principal: 'Oferta', opiniones_titulo: '' } } };
+    expect(presentacionComercial(item, venta)).toMatchObject({ insignia_principal: 'Oferta', opiniones_titulo: 'Quienes ya lo usan' });
+
+    const ficha = contenidoFicha(payload);
+    expect(ficha.beneficios.map(b => b.titulo)).toEqual(['Batería larga', 'Silencioso']);
+    expect(ficha.confianza.map(c => c.titulo)).toEqual(['Garantía de 6 meses']);
+    expect(ficha.preguntas).toEqual([{ pregunta: '¿Trae pila?', respuesta: 'Sí, incluye una pila AA.' }]);
+    expect(ficha.opiniones).toMatchObject([{ nombre: 'Laura P.', calificacion: 4, comentario: 'Liviano y cómodo.', detalle: 'Reseña en Amazon' }]);
+  });
+
+  it('un costo en USD no se guarda como guaraníes', async () => {
+    await montar();
+    const enUsd = { product: { ...json.product, pricing: { ...json.product.pricing, purchase_cost: 14, purchase_currency: 'USD' } } };
+    fireEvent.change(screen.getByPlaceholderText('Pegar JSON aquí...'), { target: { value: JSON.stringify(enUsd) } });
+    expect(screen.getByText(/El costo vino en USD y no se cargó/)).toBeVisible();
+    guardar();
+
+    await waitFor(() => expect(productService.crear).toHaveBeenCalled());
+    expect(productService.crear.mock.calls[0][0]).toMatchObject({ precio_costo: null, es_dolar: false });
+  });
+
+  it('las instrucciones piden investigar reseñas reales, recomiendan el ancla y listan lo que el importador carga', async () => {
+    const { categoriaService } = await import('../../services/catalogoService');
+    categoriaService.buscar.mockResolvedValue([{ id: 5, nombre: 'Tecnología' }]);
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await montar();
+    await waitFor(() => expect(document.querySelectorAll('#prod-categoria option').length).toBe(2));
+
+    fireEvent.click(screen.getByRole('button', { name: /Instrucciones para tu IA/ }));
+    const prompt = writeText.mock.calls[0][0];
+    expect(prompt).toContain('INVESTIGACIÓN EN INTERNET');
+    expect(prompt).toContain('Nunca inventes nombres, comentarios ni estrellas');
+    expect(prompt).toContain('precio de venta × 1,30');
+    expect(prompt).toContain('No me preguntes por productos recomendados');
+    expect(prompt).toContain('battery');
+    expect(prompt).toContain('CATEGORÍAS DISPONIBLES EN MI TIENDA');
+    // Lo que el esquema pide tiene que ser lo que handleImportarJSON lee.
+    const esquema = JSON.parse(prompt.slice(prompt.indexOf('{\n  "schema_version"'), prompt.indexOf('REGLAS DEL JSON')));
+    expect(Object.keys(esquema.product)).toEqual(['identity', 'pricing', 'inventory', 'variants', 'publication', 'landing_blocks']);
+    expect(Object.keys(esquema.product.landing_blocks)).toEqual(['product_showcase', 'ficha_blocks', 'benefits', 'trust_items', 'faqs', 'testimonials']);
+    expect(Object.keys(esquema.product.landing_blocks.product_showcase)).toEqual(['badge', 'tagline', 'short_description', 'description', 'details']);
+    expect(Object.keys(esquema.product.landing_blocks.ficha_blocks)).toEqual(['header_label', 'commercial_name', 'price_badge', 'limited_offer', 'order_includes', 'reviews_section', 'faq_section']);
+    expect(Object.keys(esquema.product.landing_blocks.testimonials[0])).toEqual(['name', 'rating', 'comment', 'source', 'photo']);
+  });
 });

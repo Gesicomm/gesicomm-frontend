@@ -748,8 +748,6 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         landingActiva={landing?.activo}
         onPublicar={venta?.configurado ? () => cambiarEstado(!landing?.activo) : null}
         onEliminar={venta?.configurado ? eliminar : null}
-        onGuardarRapido={venta?.configurado ? () => guardar() : null}
-        sinGuardar={sinGuardar}
         // Editor de código crudo (HTML/CSS/JS, Secciones, Footer, Prompt IA):
         // pantalla vieja, dejada de usar a pedido del comercio — se oculta
         // el único acceso (el botón "Código avanzado" de acá abajo) pero el

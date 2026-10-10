@@ -9,7 +9,7 @@ import ProductPicker from '../landing/ProductPicker';
 import '../landing/landing.css';
 import { getMediaUrl } from '../../services/api';
 import { verificarSesion } from '../../utils/auth';
-import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
+import { calcular as calcularLocal, utilidadAPrecio, precioParaMargen } from '../../utils/comboPricingLocal';
 import { formatPrecio as formatMoney } from '../../lib/mensajeWhatsapp';
 import CurrencyInput from '../../components/CurrencyInput';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -1354,8 +1354,9 @@ export default function OfertasProductoTab({
                 ) : (() => {
                   const sBase = resultadoSensibilidad.combo;
                   const targetMargin = margenMinimoDecimal;
-                  const marginBase = form.precio > 0 ? (Number(form.precio) - sBase.totalCost) / Number(form.precio) : 0;
-                  const utilityBase = form.precio > 0 ? Number(form.precio) - sBase.totalCost : 0;
+                  // CPA y comisión son % del precio: a otro precio se recalculan (utilidadAPrecio).
+                  const utilityBase = form.precio > 0 ? utilidadAPrecio(Number(form.precio), sBase) : 0;
+                  const marginBase = form.precio > 0 ? utilityBase / Number(form.precio) : 0;
                   
                   // Helper function to get margin health
                   const getHealth = (m) => {
@@ -1372,12 +1373,12 @@ export default function OfertasProductoTab({
                   // precio YA recomendado (ancla + componentes con su propio %
                   // descontado), no sobre el total de catálogo sin descontar.
                   const simulatedPrice = Math.round(precioRecomendado * (1 - (descuentoSimulado / 100)));
-                  const simulatedUtility = simulatedPrice - sBase.totalCost;
+                  const simulatedUtility = utilidadAPrecio(simulatedPrice, sBase);
                   const simulatedMargin = simulatedPrice > 0 ? simulatedUtility / simulatedPrice : 0;
                   const healthSimulated = getHealth(simulatedMargin);
 
                   // Calculate break-even discount (where margin hits target)
-                  const minPriceTarget = sBase.totalCost / (1 - targetMargin);
+                  const minPriceTarget = precioParaMargen(targetMargin, sBase) ?? Infinity;
                   const maxDiscountTarget = precioRecomendado > 0 ? Math.max(0, 1 - (minPriceTarget / precioRecomendado)) * 100 : 0;
 
                   return (
@@ -1434,7 +1435,7 @@ export default function OfertasProductoTab({
                             <tr><td>Descuento aplicado en dinero</td><td className="text-right">{formatMoney(sBase.discountAmount)}</td></tr>
                             <tr><td>Descuento aplicado en porcentaje</td><td className="text-right">{fmtPct(sBase.discountPercentage)}</td></tr>
                             <tr><td>Costo de productos complementarios</td><td className="text-right">{formatMoney(sBase.upsellCosts)}</td></tr>
-                            <tr><td>Costos totales (producto de entrada)</td><td className="text-right">{formatMoney(resultadoSensibilidad.principal.totalCosts)}</td></tr>
+                            <tr><td>Costos totales del producto de entrada vendido solo</td><td className="text-right">{formatMoney(resultadoSensibilidad.principal.totalCosts)}</td></tr>
                             <tr><td>Costo total del combo</td><td className="text-right">{formatMoney(sBase.totalCost)}</td></tr>
                             <tr><td>Utilidad bruta</td><td className="text-right" style={{ color: sBase.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>{formatMoney(sBase.profit)}</td></tr>
                             <tr><td>Margen porcentual</td><td className="text-right" style={{ color: sBase.margin >= margenMinimoDecimal ? '#10b981' : '#ef4444', fontWeight: 600 }}>{fmtPct(sBase.margin)}</td></tr>
@@ -1534,11 +1535,11 @@ export default function OfertasProductoTab({
                            <div style={{ position: 'absolute', bottom: '-20px', right: '-10px', fontSize: '0.65rem', color: 'var(--fg-muted)' }}>Desc.</div>
                            {[0, 5, 10, 15, 20, 25, 30, 35].map(d => {
                              const p = Number(form.precio) * (1 - (d / 100));
-                             const u = p - sBase.totalCost;
+                             const u = utilidadAPrecio(p, sBase);
                              const m = p > 0 ? u / p : 0;
                              
                              // Calculate Y position relative to max utility
-                             const maxU = Number(form.precio) - sBase.totalCost;
+                             const maxU = utilidadAPrecio(Number(form.precio), sBase);
                              const heightPct = maxU > 0 ? Math.max(0, (u / maxU) * 100) : 0;
                              const leftPct = (d / 35) * 100;
 
@@ -1614,7 +1615,7 @@ export default function OfertasProductoTab({
                               <tbody>
                                 {[0, 5, 10, 15, 20, 25, 30, 35].map(d => {
                                   const p = Math.round(Number(form.precio) * (1 - (d / 100)));
-                                  const u = p - sBase.totalCost;
+                                  const u = utilidadAPrecio(p, sBase);
                                   const m = p > 0 ? u / p : 0;
                                   const h = getHealth(m);
                                   return (

@@ -328,6 +328,41 @@ export function runtimeGesicomm() {
     return item.precio;
   }
 
+  function descuentoBotonPct(valor) {
+    var n = Number(String(valor == null ? '' : valor).replace(',', '.'));
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return Math.min(95, Math.round(n * 10) / 10);
+  }
+
+  function formatoPct(valor) {
+    return descuentoBotonPct(valor).toLocaleString('es-PY', { maximumFractionDigits: 1 });
+  }
+
+  function totalConDescuentoBoton(total, pct) {
+    var d = descuentoBotonPct(pct);
+    return d > 0 ? Math.max(0, Math.round((Number(total) || 0) * (100 - d) / 100)) : total;
+  }
+
+  function descuentoDeElemento(el) {
+    var cont = el && el.closest ? el.closest('[data-gesicomm-descuento-pct]') : null;
+    return descuentoBotonPct(cont && cont.getAttribute('data-gesicomm-descuento-pct'));
+  }
+
+  function prepararDescuentoBotonPrincipal() {
+    if (!productoActual) return;
+    var pct = descuentoBotonPct(productoActual.cta_descuento_pct);
+    var botones = document.querySelectorAll('[data-gesicomm-boton-principal-pago]');
+    for (var i = 0; i < botones.length; i++) {
+      if (pct > 0) botones[i].setAttribute('data-gesicomm-descuento-pct', String(pct));
+      else botones[i].removeAttribute('data-gesicomm-descuento-pct');
+      var badge = botones[i].querySelector('[data-gesicomm-cta-descuento]');
+      if (badge) {
+        badge.textContent = pct > 0 ? '-' + formatoPct(pct) + '%' : '';
+        badge.style.display = pct > 0 ? '' : 'none';
+      }
+    }
+  }
+
   // Total de la compra de la ficha: producto (con variante y cantidad) + los
   // order bumps marcados. Lo muestran los elementos data-gesicomm-total (ej.
   // dentro del botón: "Comprar ahora · Gs 160.000"), así marcar la oferta
@@ -429,14 +464,17 @@ export function runtimeGesicomm() {
     var input = document.querySelector('[data-gesicomm-cantidad-input]');
     var n = input && !hayPaquetes() ? parseInt(input.value, 10) : 1;
     var paquete = paqueteActual();
-    var total = paquete
+    var totalProducto = paquete
       ? (Number(paquete.precio_efectivo) || 0)
       : (Number(precioDe(productoActual, varianteElegida)) || 0) * (n > 0 ? Math.min(n, 99) : 1);
     var sumados = 0;
+    var totalBumps = 0;
     (productoActual.ofertas || []).forEach(function (o) {
-      if (bumpsElegidos[o.id]) { total += Number(o.precio_efectivo) || 0; sumados++; }
+      if (bumpsElegidos[o.id]) { totalBumps += Number(o.precio_efectivo) || 0; sumados++; }
     });
-    for (var i = 0; i < destinos.length; i++) destinos[i].textContent = formatoPrecio(total);
+    for (var i = 0; i < destinos.length; i++) {
+      destinos[i].textContent = formatoPrecio(totalConDescuentoBoton(totalProducto, descuentoDeElemento(destinos[i])) + totalBumps);
+    }
     // El texto del botón nombra TODO lo que se compra: "Comprar Pack x2 + 1
     // oferta". Antes decía solo el paquete y el total incluía además los
     // order bumps marcados, así que el precio de arriba (Gs 250.000) y el
@@ -454,6 +492,28 @@ export function runtimeGesicomm() {
     pintarPrecioElegido();
   }
 
+  function normalizarRating(valor, fallback) {
+    var crudo = String(valor == null ? '' : valor).replace(',', '.').trim();
+    var n = Number(crudo);
+    var base = Number.isFinite(n) ? n : Number(fallback);
+    if (!Number.isFinite(base)) base = 5;
+    return Math.max(1, Math.min(5, Math.round(base * 10) / 10));
+  }
+
+  function formatoRating(valor) {
+    return normalizarRating(valor, 5).toLocaleString('es-PY', { maximumFractionDigits: 1 });
+  }
+
+  function estrellasHtml(rating) {
+    var n = normalizarRating(rating, 5);
+    var partes = [];
+    for (var i = 1; i <= 5; i++) {
+      var fill = Math.max(0, Math.min(100, (n - (i - 1)) * 100));
+      partes.push('<span class="gc-star" style="--fill:' + fill.toFixed(2) + '%">★</span>');
+    }
+    return '<span class="gc-stars-meter" aria-hidden="true">' + partes.join('') + '</span>';
+  }
+
   function aplicarBind(el, item, extra) {
     var campo = el.getAttribute('data-gesicomm-bind');
     var valor = null;
@@ -466,7 +526,11 @@ export function runtimeGesicomm() {
       case 'descripcion_ficha': valor = item.mensaje_comercial || item.descripcion_ficha || item.descripcion_larga || item.descripcion; break;
       case 'insignia_principal': valor = item.insignia_principal || item.categoria || ''; break;
       case 'resenas_texto': valor = item.resenas_texto || ''; break;
-      case 'cta_texto': valor = item.cta_texto || 'Comprar ahora'; break;
+      case 'resenas_estrellas': valor = normalizarRating(item.resenas_calificacion, 5); break;
+      case 'estrellas': valor = normalizarRating(item.calificacion || item.estrellas, 5); break;
+      // El banner de portada no lleva botón si el comercio no le puso texto
+      // (vacío = no se muestra); el "Comprar ahora" es solo para productos.
+      case 'cta_texto': valor = item.cta_texto || (item.es_banner ? '' : 'Comprar ahora'); break;
       case 'agregar_carrito_texto': valor = item.agregar_carrito_texto || 'Agregar al carrito'; break;
       case 'beneficios_kicker': valor = item.beneficios_kicker || 'Por qué elegirlo'; break;
       case 'beneficios_titulo': valor = item.beneficios_titulo || 'Lo que vas a notar.'; break;
@@ -489,7 +553,13 @@ export function runtimeGesicomm() {
       case 'precio_antes': valor = formatoPrecio(item.precio_antes || item.precio_normal); break;
       case 'precio_separado': valor = formatoPrecio(item.precio_separado); break;
       case 'por_unidad': valor = Number(item.por_unidad) > 0 ? formatoPrecio(item.por_unidad) + ' c/u' : ''; break;
-      case 'descuento': valor = item.insignia_principal || item.insignia_secundaria || (Number(item.descuento_pct) > 0 ? '-' + item.descuento_pct + '%' : ''); break;
+      case 'badge_precio':
+        valor = item.insignia_secundaria || (!(Number(item.ahorro) > 0) ? ''
+          : (Number(item.precio_antes || 0) < 750000 && Number(item.descuento_pct) > 0
+            ? 'Ahorrás ' + item.descuento_pct + '%'
+            : 'Ahorrás ' + formatoPrecio(item.ahorro)));
+        break;
+      case 'descuento': valor = item.insignia_secundaria || item.insignia_principal || (Number(item.descuento_pct) > 0 ? '-' + item.descuento_pct + '%' : ''); break;
       case 'ahorro': valor = Number(item.ahorro) > 0 ? 'Ahorrás ' + formatoPrecio(item.ahorro) : ''; break;
       // Cómo se ve más grande el mismo ahorro ("regla del 100", J. Berger):
       // en productos baratos el %, en caros el monto. Umbral ≈ USD 100.
@@ -509,6 +579,14 @@ export function runtimeGesicomm() {
       default: valor = item[campo];
     }
     var vacio = valor === null || valor === undefined || valor === '';
+
+    if (campo === 'resenas_estrellas' || campo === 'estrellas') {
+      var rating = normalizarRating(valor, 5);
+      el.style.display = '';
+      el.setAttribute('aria-label', formatoRating(rating) + ' de 5 estrellas');
+      el.innerHTML = estrellasHtml(rating);
+      return;
+    }
 
     if (campo === 'imagen') {
       var src = urlSegura(valor);
@@ -665,6 +743,14 @@ export function runtimeGesicomm() {
       var antes = Number(item.precio_antes), precio = Number(item.precio);
       var ahorro = antes > precio && precio > 0 ? antes - precio : 0;
       if (ahorro) raiz.classList.add('has-card-offer');
+      if (ahorro && !contenido.querySelector('[data-gesicomm-bind="precio_antes"], .price-old')) {
+        var precioActual = contenido.querySelector('[data-gesicomm-bind="precio"], .price');
+        var precioAnterior = document.createElement('span');
+        precioAnterior.className = 'price-old gc-runtime-price-old';
+        precioAnterior.textContent = formatoPrecio(antes);
+        if (precioActual && precioActual.parentNode) precioActual.parentNode.insertBefore(precioAnterior, precioActual.nextSibling);
+        else contenido.appendChild(precioAnterior);
+      }
       var media = raiz.querySelector('.product-image, .product-media, .product__media, .card__media, .catalog-card__media, .media, .thumb, .image');
       if (media && !media.querySelector('.gc-card-media-badges')) {
         var textoBadge = '';
@@ -861,7 +947,7 @@ export function runtimeGesicomm() {
     var urgencia = datos.venta && datos.venta.urgencia;
     for (var i = 0; i < els.length; i++) {
       var contItem = els[i].closest('[data-gesicomm-item]');
-      var enFicha = !contItem && !!els[i].closest('[data-gesicomm-ficha-bloque="precio"]');
+      var enFicha = !contItem && !!els[i].closest('[data-gesicomm-ficha-bloque="oferta_duracion"], [data-gesicomm-ficha-bloque="urgencia"], [data-gesicomm-ficha-bloque="precio"]');
       var item = contItem ? buscar(contItem.getAttribute('data-gesicomm-item')) : (enFicha ? productoActual : null);
       var finMs = finCountdown(urgencia, item);
       // El bloque de urgencia de la ficha lo prende o apaga el comercio desde
@@ -1045,7 +1131,7 @@ export function runtimeGesicomm() {
     return {
       mostrar_logo: e.mostrar_logo !== false,
       mostrar_nombre: e.mostrar_nombre !== false,
-      logo_tamano: isFinite(tamano) ? Math.max(28, Math.min(96, tamano)) : 46,
+      logo_tamano: isFinite(tamano) ? Math.max(28, Math.min(76, tamano)) : 76,
       logo_rotacion: isFinite(rotacion) ? Math.max(-180, Math.min(180, rotacion)) : 0,
       logo_posicion: e.logo_posicion === 'centro' ? 'centro' : 'izquierda',
       variante: varianteMobile,
@@ -1072,7 +1158,7 @@ export function runtimeGesicomm() {
     }
     for (var i = 0; i < headers.length; i++) {
       headers[i].style.setProperty('--gc-logo-tamano', cfg.logo_tamano + 'px');
-      headers[i].style.setProperty('--gc-logo-escala', String(cfg.logo_tamano / 46));
+      headers[i].style.setProperty('--gc-logo-escala', String(cfg.logo_tamano / 76));
       headers[i].style.setProperty('--gc-logo-rotacion', cfg.logo_rotacion + 'deg');
       headers[i].classList.toggle('logo-centrado', cfg.logo_posicion === 'centro');
       headers[i].setAttribute('data-variante', cfg.variante);
@@ -1182,14 +1268,14 @@ export function runtimeGesicomm() {
     var cfg = testimoniosInicioConfig() || {};
     var lista = Array.isArray(cfg.items) ? cfg.items : [];
     return lista.map(function (o) {
-      var n = Math.max(1, Math.min(5, Number(o.calificacion) || 5));
+      var n = normalizarRating(o.calificacion, 5);
       return {
         nombre: String(o.nombre || '').trim(),
         detalle: String(o.detalle || '').trim(),
         comentario: String(o.comentario || o.texto || '').trim(),
         imagen: urlSegura(o.foto || o.imagen || o.avatar || '') || '',
         calificacion: n,
-        estrellas: '★★★★★'.slice(0, n),
+        estrellas: n,
       };
     }).filter(function (o) { return o.nombre || o.comentario || o.imagen; }).slice(0, 8);
   }
@@ -1255,10 +1341,11 @@ export function runtimeGesicomm() {
   function contactosProducto() {
     var lista = productoActual && Array.isArray(productoActual.botones_contacto) ? productoActual.botones_contacto : [];
     return lista.map(function (b) {
+      var tipo = b.tipo || 'whatsapp';
       return {
         label: String(b.label || '').trim() || 'Consultar',
-        tipo: b.tipo || 'whatsapp',
-        valor: valorWhatsappEditable(b.valor),
+        tipo: tipo,
+        valor: tipo === 'whatsapp' ? '' : valorWhatsappEditable(b.valor),
         url: urlContactoProducto(b),
       };
     }).filter(function (b) { return b.label; }).slice(0, 4);
@@ -1271,10 +1358,13 @@ export function runtimeGesicomm() {
       var valor = b.valor || '';
       var label = String(b.label || '').trim() || 'Pagar';
       var esContraEntrega = normalizar(valor + ' ' + label).indexOf('contra entrega') !== -1 || normalizar(valor).indexOf('efectivo') !== -1;
+      var descuento = descuentoBotonPct(b.descuento_pct);
       return {
         label: label,
         tipo: tipo,
         valor: valor,
+        descuento_pct: descuento || '',
+        descuento_label: descuento ? '-' + formatoPct(descuento) + '%' : '',
         url: urlContactoProducto(b),
         payment_method: tipo === 'checkout' && esContraEntrega ? 'efectivo' : (tipo === 'checkout' ? 'pagopar' : ''),
       };
@@ -1296,14 +1386,14 @@ export function runtimeGesicomm() {
   function opinionesProducto() {
     var lista = productoActual && Array.isArray(productoActual.opiniones) ? productoActual.opiniones : [];
     return lista.map(function (o) {
-      var n = Math.max(1, Math.min(5, Number(o.calificacion) || 5));
+      var n = normalizarRating(o.calificacion, 5);
       return {
         nombre: String(o.nombre || '').trim(),
         comentario: String(o.comentario || '').trim(),
         detalle: String(o.detalle || '').trim(),
         imagen: urlSegura(o.foto || o.imagen || o.avatar || '') || '',
         calificacion: n,
-        estrellas: '★★★★★'.slice(0, n),
+        estrellas: n,
       };
     }).filter(function (o) { return o.nombre || o.comentario; }).slice(0, 6);
   }
@@ -1533,28 +1623,38 @@ export function runtimeGesicomm() {
     return [
       { texto: 'Inicio', destino: '/' },
       { texto: 'Productos', destino: '/catalogo' },
-      { texto: 'Checkout', destino: '/checkout' },
+      { texto: 'Descuentos', destino: '/catalogo?etiqueta=Oferta' },
+      { texto: 'Nosotros', destino: '/#marca' },
+      { texto: 'Contacto', destino: '/contacto' },
     ];
   }
 
   function completarLinksDeVista(links, vista) {
     var lista = Array.isArray(links) ? links.slice() : [];
     if (vista === 'inicio') return lista;
-    var tieneInicio = lista.some(function (item) {
-      var destino = String(item && item.destino || '');
-      return destino === '/' || destino === '#inicio' || destino === '';
-    });
-    var tieneCatalogo = lista.some(function (item) {
-      var destino = String(item && item.destino || '');
-      return destino === '/catalogo' || destino === '/productos';
-    });
-    var tieneCheckout = lista.some(function (item) {
-      return String(item && item.destino || '') === '/checkout';
-    });
+    function tieneInicio() {
+      return lista.some(function (item) {
+        var destino = String(item && item.destino || '');
+        return destino === '/' || destino === '#inicio' || destino === '';
+      });
+    }
+    function tieneCatalogo() {
+      return lista.some(function (item) {
+        var destino = String(item && item.destino || '');
+        return destino === '/catalogo' || destino === '/productos';
+      });
+    }
+    function tieneDestino(destinoEsperado) {
+      return lista.some(function (item) {
+        return String(item && item.destino || '') === destinoEsperado;
+      });
+    }
     var base = linksNavegacionBase();
-    if (!tieneInicio) lista.unshift(base[0]);
-    if (!tieneCatalogo) lista.push(base[1]);
-    if (!tieneCheckout) lista.push(base[2]);
+    if (!tieneInicio()) lista.unshift(base[0]);
+    if (!tieneCatalogo()) lista.push(base[1]);
+    for (var b = 2; b < base.length; b++) {
+      if (!tieneDestino(base[b].destino)) lista.push(base[b]);
+    }
     return lista;
   }
 
@@ -1564,10 +1664,10 @@ export function runtimeGesicomm() {
     if (a.hasAttribute('data-gesicomm-link')) {
       var link = a.getAttribute('data-gesicomm-link');
       if (vista === 'checkout') return link === 'checkout';
-      if (vista === 'catalogo') return link === 'catalogo';
+      if (vista === 'catalogo') return link === 'catalogo' && !/[?&](etiqueta|badge)=/i.test(href);
     }
     if (vista === 'checkout') return /\/checkout\/?$/.test(href);
-    if (vista === 'catalogo') return /\/(catalogo|productos)(\/|$)/.test(href);
+    if (vista === 'catalogo') return /\/(catalogo|productos)(\/|$)/.test(href) && !/[?&](etiqueta|badge)=/i.test(href);
     return href === '#inicio' || href === '/' || a.hasAttribute('data-gesicomm-inicio');
   }
 
@@ -1577,17 +1677,29 @@ export function runtimeGesicomm() {
     var links = menuPrincipal();
     var vista = vistaHeaderActual();
     if (!links) {
+      links = linksNavegacionBase();
       for (var x = 0; x < contenedores.length; x++) {
-        var anchors = contenedores[x].querySelectorAll('a');
-        for (var y = 0; y < anchors.length; y++) {
-          anchors[y].classList.toggle('active', hrefMenuActivo(anchors[y], vista));
+        var contBase = contenedores[x];
+        if (!contBase.closest('.commerce-header')) continue;
+        contBase.textContent = '';
+        for (var b = 0; b < links.length; b++) {
+          var itemBase = links[b];
+          var aBase = document.createElement('a');
+          aBase.href = urlSegura(itemBase.destino) || '#inicio';
+          aBase.textContent = itemBase.texto;
+          if (itemBase.destino === '/' || itemBase.destino === '#inicio' || itemBase.destino === '') aBase.setAttribute('data-gesicomm-inicio', '');
+          if (/^\/catalogo(?:[?#]|$)/.test(itemBase.destino) || itemBase.destino === '/productos') aBase.setAttribute('data-gesicomm-link', 'catalogo');
+          if (itemBase.destino === '/contacto') aBase.setAttribute('data-gesicomm-link', 'contacto');
+          if (linkMenuActivo(itemBase, vista)) aBase.className = 'active';
+          contBase.appendChild(aBase);
         }
+        contBase.style.display = '';
       }
       return;
     }
     if (vista !== 'inicio') {
       links = links.filter(function (item) {
-        var destino = String(item.destino || '');
+        var destino = String(item && item.destino || '');
         return !destino || destino.charAt(0) !== '#' || destino === '#inicio';
       });
       links = completarLinksDeVista(links, vista);
@@ -1601,9 +1713,9 @@ export function runtimeGesicomm() {
         a.href = urlSegura(item.destino) || '#inicio';
         a.textContent = item.texto;
         if (item.destino === '/' || item.destino === '#inicio' || item.destino === '') a.setAttribute('data-gesicomm-inicio', '');
-        if (item.destino === '/catalogo') a.setAttribute('data-gesicomm-link', 'catalogo');
-        if (item.destino === '/productos') a.setAttribute('data-gesicomm-link', 'catalogo');
+        if (/^\/catalogo(?:[?#]|$)/.test(item.destino) || item.destino === '/productos') a.setAttribute('data-gesicomm-link', 'catalogo');
         if (item.destino === '/checkout') a.setAttribute('data-gesicomm-link', 'checkout');
+        if (item.destino === '/contacto') a.setAttribute('data-gesicomm-link', 'contacto');
         if (linkMenuActivo(item, vista)) {
           a.className = 'active';
         }
@@ -1633,6 +1745,7 @@ export function runtimeGesicomm() {
         subtitulo: b.subtitulo || '',
         etiqueta: b.etiqueta || '',
         cta_texto: b.cta_texto || '',
+        es_banner: true,
         enlace: b.enlace || '#productos',
         imagen: imagen,
         posicion: posicion,
@@ -1927,6 +2040,7 @@ export function runtimeGesicomm() {
             h.setAttribute('data-gesicomm-accion-pago', elemento.tipo || 'checkout');
             h.setAttribute('data-gesicomm-valor-pago', elemento.valor || '');
             if (elemento.payment_method) h.setAttribute('data-gesicomm-metodo-pago', elemento.payment_method);
+            if (elemento.descuento_pct) h.setAttribute('data-gesicomm-descuento-pct', elemento.descuento_pct);
           }
           if (nombre === 'botones_contacto_producto') {
             h.setAttribute('data-gesicomm-accion-contacto', elemento.tipo || 'whatsapp');
@@ -1936,6 +2050,10 @@ export function runtimeGesicomm() {
         } else if (nombre === 'imagenes') {
           bindDentro(h, { imagen: elemento, nombre: (productoActual && productoActual.nombre) || '' });
           h.setAttribute('data-gesicomm-imagen-idx', String(idx));
+          if (idx === 0) {
+            h.classList.add('is-selected');
+            h.setAttribute('aria-current', 'true');
+          }
         } else {
           h.setAttribute('data-gesicomm-item', elemento.id);
           if (!h.hasAttribute('data-gesicomm-ver')
@@ -2111,6 +2229,7 @@ export function runtimeGesicomm() {
     pintarControlesCatalogo();
     pintarCheckout();
     pintarGeografia();
+    prepararDescuentoBotonPrincipal();
     pintarTotal();
     var marcas = document.querySelectorAll('[data-gesicomm-tienda]');
     for (var k = 0; k < marcas.length; k++) {
@@ -3147,6 +3266,7 @@ export function runtimeGesicomm() {
       abrir: opciones.abrir !== false,
     };
     if (opciones.payment_method) mensajeCheckout.payment_method = opciones.payment_method;
+    if (descuentoBotonPct(opciones.descuento_boton_pct) > 0) mensajeCheckout.descuento_boton_pct = descuentoBotonPct(opciones.descuento_boton_pct);
     enviar(mensajeCheckout);
     if (opciones.abrir === false) toast(bumps.length ? 'Agregado al carrito, con tu oferta' : 'Agregado al carrito');
   }
@@ -3260,6 +3380,24 @@ export function runtimeGesicomm() {
     var destino = Math.max(0, Math.min(posiciones.length - 1, indice + direccion));
     carrusel.scrollTo({ left: posiciones[destino], behavior: 'smooth' });
     window.setTimeout(function () { actualizarCarruselRecomendados(carrusel); }, 260);
+  }
+
+  function seleccionarImagenGaleria(el) {
+    if (!el) return;
+    var principal = document.querySelector('[data-gesicomm-imagen-principal]');
+    var img = el.tagName === 'IMG' ? el : el.querySelector('img');
+    if (!principal || !img || !img.src) return;
+    principal.src = img.src;
+    principal.removeAttribute('srcset');
+    if (img.alt) principal.alt = img.alt;
+    var lista = el.closest('[data-gesicomm-lista="imagenes"]') || document;
+    var thumbs = lista.querySelectorAll('[data-gesicomm-imagen-idx]');
+    for (var i = 0; i < thumbs.length; i++) {
+      var activa = thumbs[i] === el;
+      thumbs[i].classList.toggle('is-selected', activa);
+      if (activa) thumbs[i].setAttribute('aria-current', 'true');
+      else thumbs[i].removeAttribute('aria-current');
+    }
   }
 
   document.addEventListener('click', function (e) {
@@ -3503,7 +3641,7 @@ export function runtimeGesicomm() {
         if (seguraPago) window.open(seguraPago, '_blank', 'noopener');
         return;
       }
-      comprar(productoActual, { cantidad: cantidadElegida(el), variante: varianteElegida, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || 'pagopar' });
+      comprar(productoActual, { cantidad: cantidadElegida(el), variante: varianteElegida, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || 'pagopar', descuento_boton_pct: descuentoDeElemento(el) });
       return;
     }
     if ((el = t.closest('[data-gesicomm-accion-contacto]'))) {
@@ -3530,13 +3668,13 @@ export function runtimeGesicomm() {
       var itemComprar = itemDeContexto(el, el.getAttribute('data-gesicomm-comprar'));
       var paqC = itemComprar === productoActual ? paqueteActual() : null;
       if (el.hasAttribute('data-gesicomm-comprar-ver') && itemComprar && itemComprar !== productoActual && !paqC) {
-        comprar(itemComprar, { cantidad: cantidadElegida(el), variante: varianteElegida, abrir: false, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null });
+        comprar(itemComprar, { cantidad: cantidadElegida(el), variante: varianteElegida, abrir: false, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null, descuento_boton_pct: descuentoDeElemento(el) });
         verProducto(itemComprar);
         return;
       }
       comprar(itemComprar, paqC
-        ? { oferta: paqC, variante: varianteElegida, conBumps: true, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null }
-        : { cantidad: hayPaquetes() && itemComprar === productoActual ? 1 : cantidadElegida(el), variante: varianteElegida, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null });
+        ? { oferta: paqC, variante: varianteElegida, conBumps: true, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null, descuento_boton_pct: descuentoDeElemento(el) }
+        : { cantidad: hayPaquetes() && itemComprar === productoActual ? 1 : cantidadElegida(el), variante: varianteElegida, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null, descuento_boton_pct: descuentoDeElemento(el) });
       return;
     }
     if ((el = t.closest('[data-gesicomm-agregar]'))) {
@@ -3559,10 +3697,9 @@ export function runtimeGesicomm() {
       return;
     }
     if ((el = t.closest('[data-gesicomm-imagen-idx]'))) {
-      // Galería: el clic en una miniatura cambia la imagen principal.
-      var principal = document.querySelector('[data-gesicomm-imagen-principal]');
-      var img = el.tagName === 'IMG' ? el : el.querySelector('img');
-      if (principal && img && img.src) principal.src = img.src;
+      e.preventDefault();
+      seleccionarImagenGaleria(el);
+      return;
     }
     if ((el = t.closest('[data-gesicomm-whatsapp]'))) {
       e.preventDefault();
@@ -3573,6 +3710,13 @@ export function runtimeGesicomm() {
     if ((el = t.closest('[data-gesicomm-evento]'))) {
       enviar({ tipo: 'gesicomm:evento', nombre: el.getAttribute('data-gesicomm-evento'), datos: { producto: productoActual ? productoActual.id : null } });
     }
+  });
+
+  document.addEventListener('pointerover', function (e) {
+    var t = e.target && e.target.closest ? e.target : null;
+    if (!t) return;
+    var el = t.closest('[data-gesicomm-imagen-idx]');
+    if (el) seleccionarImagenGaleria(el);
   });
 
   document.addEventListener('submit', function (e) {

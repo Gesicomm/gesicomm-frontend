@@ -115,16 +115,25 @@ function paqueteVisible(oferta, venta) {
 const FICHA_BLOQUES_DEFAULT = {
   galeria: true,
   encabezado: true,
+  nombre_comercial: true,
+  resenas_comerciales: true,
   precio: true,
+  badge_precio: true,
   descripcion: true,
   info_compra: true,
   urgencia: true,
+  oferta: true,
+  oferta_encabezado: true,
+  oferta_nombre: true,
+  oferta_texto: true,
+  oferta_duracion: true,
   beneficios: true,
   confianza: true,
   compra: true,
   promociones_pago: true,
   contacto_pago: true,
   incluye: true,
+  recomendados: true,
   opiniones: true,
   preguntas: true,
   portada: true,
@@ -133,31 +142,48 @@ const FICHA_BLOQUES_DEFAULT = {
 const FICHA_ORDEN_MOBILE_DEFAULT = [
   'galeria',
   'encabezado',
+  'nombre_comercial',
+  'resenas_comerciales',
   'precio',
+  'badge_precio',
+  'oferta',
   'descripcion',
   'beneficios',
-  'confianza',
-  'compra',
   'contacto_pago',
   'promociones_pago',
   'incluye',
+  'confianza',
+  'recomendados',
   'opiniones',
   'preguntas',
 ];
+const FICHA_BLOQUES_ALIAS = {
+  urgencia: ['oferta'],
+  oferta_encabezado: ['oferta'],
+  oferta_nombre: ['oferta'],
+  oferta_texto: ['oferta'],
+  oferta_duracion: ['oferta'],
+};
 function normalizarOrdenMobileFicha(orden) {
   const vistos = new Set();
-  const limpio = (Array.isArray(orden) ? orden : []).filter(clave => {
-    if (!FICHA_ORDEN_MOBILE_DEFAULT.includes(clave) || vistos.has(clave)) return false;
-    vistos.add(clave);
-    return true;
+  const limpio = [];
+  (Array.isArray(orden) ? orden : []).forEach(clave => {
+    const claves = FICHA_BLOQUES_ALIAS[clave] || [clave];
+    claves.forEach(claveReal => {
+      if (!FICHA_ORDEN_MOBILE_DEFAULT.includes(claveReal) || vistos.has(claveReal)) return;
+      vistos.add(claveReal);
+      limpio.push(claveReal);
+    });
   });
   return [...limpio, ...FICHA_ORDEN_MOBILE_DEFAULT.filter(clave => !vistos.has(clave))];
 }
 
 const PRESENTACION_PRODUCTO_DEFAULT = {
   resenas_texto: '',
+  resenas_calificacion: 4.9,
   insignia_principal: '',
   cta_texto: 'Comprar con pago anticipado',
+  cta_descuento_pct: '',
   agregar_carrito_texto: 'Agregar al carrito',
   beneficios_kicker: 'Por qué elegirlo',
   beneficios_titulo: 'Beneficios que se entienden rápido.',
@@ -242,6 +268,13 @@ function textoLimpio(valor) {
   return String(valor ?? '').trim();
 }
 
+function normalizarCalificacion(valor, fallback = 5) {
+  const crudo = String(valor ?? '').replace(',', '.').trim();
+  const n = Number(crudo);
+  const base = Number.isFinite(n) ? n : Number(fallback);
+  return Math.max(1, Math.min(5, Math.round((Number.isFinite(base) ? base : 5) * 10) / 10));
+}
+
 function primeraListaConDatos(...opciones) {
   return opciones.find(opcion => Array.isArray(opcion) && opcion.length) || [];
 }
@@ -278,7 +311,7 @@ function normalizarOpinion(o) {
     nombre: textoLimpio(o?.nombre || o?.name || o?.author) || 'Cliente verificado',
     comentario: textoLimpio(o?.comentario || o?.comment || o?.text || o?.review),
     detalle: textoLimpio(o?.detalle || o?.source || o?.subtitle),
-    calificacion: Number(o?.calificacion || o?.rating || o?.stars) || 5,
+    calificacion: normalizarCalificacion(o?.calificacion || o?.rating || o?.stars, 5),
     foto: media(o?.foto || o?.photo || o?.image || o?.avatar),
   };
 }
@@ -322,12 +355,22 @@ function logosPagoDesdeVenta(venta) {
     .filter(Boolean);
 }
 
+/** Textos de bloque propios del producto (los carga el JSON de la IA en Productos). */
+export function presentacionDelProducto(fichaDatos) {
+  const p = fichaDatos?.presentacion;
+  return p && typeof p === 'object' && !Array.isArray(p) ? p : {};
+}
+
 export function presentacionComercial(item, venta) {
   const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
   const fuente = venta?.presentacion_productos?.[key] || item;
   const fichaDatos = { ...(item.ficha_datos || {}), ...(fuente.ficha_datos || {}) };
-  const texto = campo => String(fuente[campo] || PRESENTACION_PRODUCTO_DEFAULT[campo] || '').trim();
-  const lista = (campo) => (Array.isArray(fuente[campo]) && fuente[campo].length ? fuente[campo] : PRESENTACION_PRODUCTO_DEFAULT[campo]);
+  // Textos de bloque cargados en el producto (ficha_datos.presentacion, p. ej.
+  // desde el JSON de la IA): valen en todas sus landings mientras la landing
+  // no escriba los suyos. Mismos nombres de campo que presentacion_productos.
+  const delProducto = presentacionDelProducto(fichaDatos);
+  const texto = campo => String(fuente[campo] || delProducto[campo] || PRESENTACION_PRODUCTO_DEFAULT[campo] || '').trim();
+  const lista = (campo) => [fuente[campo], delProducto[campo]].find(l => Array.isArray(l) && l.length) || PRESENTACION_PRODUCTO_DEFAULT[campo];
   const beneficiosFuente = primeraListaConDatos(fuente.beneficios, item.beneficios, fichaDatos.beneficios_rapidos) || PRESENTACION_PRODUCTO_DEFAULT.beneficios;
   const beneficios = (beneficiosFuente.length ? beneficiosFuente : PRESENTACION_PRODUCTO_DEFAULT.beneficios)
     .map(normalizarBeneficio)
@@ -366,6 +409,10 @@ export function presentacionComercial(item, venta) {
   const resenasAuto = opinionesReales.length
     ? `${promedio.toLocaleString('es-PY', { maximumFractionDigits: 1 })} de 5 · ${opinionesReales.length} ${opinionesReales.length === 1 ? 'opinión' : 'opiniones'}`
     : '';
+  const resenasCalificacion = normalizarCalificacion(
+    fuente.resenas_calificacion ?? fuente.rating_comercial ?? fuente.estrellas_comerciales,
+    promedio || PRESENTACION_PRODUCTO_DEFAULT.resenas_calificacion,
+  );
   const paymentLogos = logosPagoDesdeVenta(venta);
   const pagoLogoTarjetas = paymentLogos.some(logo => logo.grupo === 'tarjetas');
   const pagoLogoBocas = paymentLogos.some(logo => logo.grupo === 'bocas');
@@ -373,21 +420,34 @@ export function presentacionComercial(item, venta) {
   const bloquesCrudos = fuente.ficha_bloques || {};
   const bloquesCompatibles = { ...FICHA_BLOQUES_DEFAULT, ...bloquesCrudos };
   if (bloquesCrudos.portada === false && bloquesCrudos.galeria === undefined) bloquesCompatibles.galeria = false;
-  if (bloquesCrudos.urgencia === false && bloquesCrudos.precio === undefined) bloquesCompatibles.precio = false;
+  if (bloquesCrudos.encabezado === false) {
+    if (bloquesCrudos.nombre_comercial === undefined) bloquesCompatibles.nombre_comercial = false;
+    if (bloquesCrudos.resenas_comerciales === undefined) bloquesCompatibles.resenas_comerciales = false;
+  }
+  if (bloquesCrudos.precio === false && bloquesCrudos.badge_precio === undefined) bloquesCompatibles.badge_precio = false;
+  if (bloquesCrudos.urgencia === false) {
+    if (bloquesCrudos.oferta === undefined) bloquesCompatibles.oferta = false;
+    ['oferta_encabezado', 'oferta_nombre', 'oferta_texto', 'oferta_duracion'].forEach(clave => {
+      if (bloquesCrudos[clave] === undefined) bloquesCompatibles[clave] = false;
+    });
+  }
   if (bloquesCrudos.textos === false) {
     if (bloquesCrudos.encabezado === undefined) bloquesCompatibles.encabezado = false;
+    if (bloquesCrudos.nombre_comercial === undefined) bloquesCompatibles.nombre_comercial = false;
+    if (bloquesCrudos.resenas_comerciales === undefined) bloquesCompatibles.resenas_comerciales = false;
     if (bloquesCrudos.precio === undefined) bloquesCompatibles.precio = false;
     if (bloquesCrudos.descripcion === undefined) bloquesCompatibles.descripcion = false;
   }
   if (bloquesCrudos.compra === false) {
     if (bloquesCrudos.info_compra === undefined) bloquesCompatibles.info_compra = false;
-    if (bloquesCrudos.promociones_pago === undefined) bloquesCompatibles.promociones_pago = false;
     if (bloquesCrudos.contacto_pago === undefined) bloquesCompatibles.contacto_pago = false;
+    if (bloquesCrudos.promociones_pago === undefined) bloquesCompatibles.promociones_pago = false;
   }
 
   return {
-    ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, texto(campo)])),
+    ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'cta_descuento_pct', 'agregar_carrito_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, texto(campo)])),
     resenas_texto: texto('resenas_texto') || resenasAuto,
+    resenas_calificacion: resenasCalificacion,
     ficha_bloques: bloquesCompatibles,
     ficha_orden_mobile: normalizarOrdenMobileFicha(fuente.ficha_orden_mobile),
     beneficios,

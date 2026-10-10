@@ -278,6 +278,417 @@ const HEADER_HTML = `<header class="commerce-header" data-gesicomm-bloque="encab
   </div>
 </header>`;
 
+const HEADER_LINKS_PRINCIPALES = [
+  { key: 'inicio', label: 'Inicio', href: '/', attrs: 'data-gesicomm-inicio' },
+  { key: 'productos', label: 'Productos', href: '/catalogo', attrs: 'data-gesicomm-link="catalogo"' },
+  { key: 'descuentos', label: 'Descuentos', href: '/catalogo?etiqueta=Oferta', attrs: 'data-gesicomm-link="catalogo"' },
+  { key: 'nosotros', label: 'Nosotros', href: '/#marca', attrs: '' },
+  { key: 'contacto', label: 'Contacto', href: '/contacto', attrs: 'data-gesicomm-link="contacto"' },
+];
+
+function headerTiendaUnico(activo = '') {
+  const links = HEADER_LINKS_PRINCIPALES.map(({ key, label, href, attrs }) => {
+    const clase = key === activo ? ' class="active"' : '';
+    const extra = attrs ? ` ${attrs}` : '';
+    return `<a${clase} href="${href}"${extra}>${label}</a>`;
+  }).join('\n        ');
+  return HEADER_HTML.replace('__LINKS__', links);
+}
+
+const HEADER_UNIFICADO_CSS = `
+/* gesicomm-header-unificado: una sola apariencia para inicio, catalogo, producto y checkout. */
+.commerce-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #fff;
+  border-bottom: 1px solid var(--line, var(--lv-line, #dbe8ef));
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.commerce-header .container.header-main,
+.commerce-header .header-main {
+  width: 100%;
+  max-width: none;
+  min-height: 76px;
+  margin: 0;
+  padding: 0 28px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px;
+}
+.commerce-header .brand-column {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 0;
+}
+.commerce-header .brand,
+.commerce-header .brand.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--navy, var(--ink, var(--gc-texto, #082947)));
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  text-decoration: none;
+}
+.commerce-header .brand-mark span[data-gesicomm-tienda],
+.commerce-header .brand span[data-gesicomm-tienda] { background: transparent !important; }
+.commerce-header .brand-mark::before,
+.commerce-header .brand::before { display: none !important; }
+.commerce-header .brand-logo { flex: 0 0 auto; width: 32px; height: 32px; object-fit: contain; border: 0; border-radius: 0; background: transparent; }
+.commerce-header .brand-logo:not([src]),
+.commerce-header .brand-logo[src=""] { display: none; }
+.commerce-header .header-nav {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: initial;
+  min-width: 0;
+  gap: 22px;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.commerce-header .nav-links {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 22px;
+  padding: 0;
+  color: var(--muted, var(--ink-soft, #426078));
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.commerce-header .nav-links a,
+.commerce-header .nav-links .nav-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0;
+  color: var(--muted, var(--ink-soft, #426078));
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: none;
+  white-space: nowrap;
+}
+.commerce-header .nav-links a:hover,
+.commerce-header .nav-links a.active { color: var(--blue, var(--brand, var(--gc-primario, #0965a8))); }
+.commerce-header .nav-links a.active { border-bottom: 2px solid var(--blue, var(--brand, var(--gc-primario, #0965a8))); }
+.commerce-header .header-actions {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+.commerce-header .search-wrap { position: relative; display: inline-flex; }
+.commerce-header .search-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  color: var(--navy, var(--ink, var(--gc-texto, #082947)));
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 1rem;
+  line-height: 1;
+}
+.commerce-header .search-toggle:hover,
+.commerce-header .search-toggle[aria-expanded="true"] {
+  color: var(--blue, var(--brand, var(--gc-primario, #0965a8)));
+  background: var(--sky, color-mix(in srgb, var(--brand, #0965a8) 9%, #fff));
+}
+.commerce-header .search-box {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 70;
+  width: min(320px, calc(100vw - 36px));
+  display: flex;
+  height: 41px;
+  min-height: 41px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line, var(--lv-line, #dbe8ef));
+  border-radius: 8px;
+  box-shadow: 0 18px 45px rgba(8, 41, 71, .16);
+}
+.commerce-header .search-box[hidden] { display: none !important; }
+.commerce-header .search-box input { flex: 1; min-width: 0; padding: 0 14px; color: var(--navy, var(--ink, #082947)); background: #fff; border: 0; outline: 0; font-size: 12px; }
+.commerce-header .search-box button { width: 48px; color: var(--gc-texto-sobre-primario, #fff); background: var(--blue, var(--brand, var(--gc-primario, #243978))); border: 0; }
+.commerce-header .cart-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 0;
+  color: var(--navy, var(--ink, var(--gc-texto, #082947)));
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.commerce-header .cart-button:hover { color: var(--blue, var(--brand, var(--gc-primario, #0965a8))); background: transparent; border-color: transparent; }
+.commerce-header .cart-button strong { color: inherit; font-size: inherit; font-weight: 700; }
+.commerce-header .cart-button [data-gesicomm-cart-badge] {
+  position: absolute;
+  top: -2px;
+  right: -7px;
+  display: grid;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--orange, #f15d3d);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+.commerce-header .menu-toggle { display: none; width: 40px; height: 40px; color: var(--navy, var(--ink, #082947)); background: transparent; border: 0; border-radius: 10px; }
+.commerce-header .category-menu-wrap { position: relative; display: inline-flex; align-items: center; }
+.commerce-header .category-menu { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0; color: var(--navy, var(--ink, #082947)) !important; background: transparent; border: 0; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.commerce-header .category-menu-panel { position: absolute; top: calc(100% + 8px); left: 0; z-index: 70; width: min(280px, calc(100vw - 36px)); padding: 10px; background: #fff; border: 1px solid var(--line, var(--lv-line, #dbe8ef)); border-radius: 8px; box-shadow: 0 18px 45px rgba(8, 41, 71, .16); }
+.commerce-header .category-menu-panel[hidden] { display: none !important; }
+.commerce-header .category-menu-title { margin: 2px 8px 8px; color: var(--muted, var(--ink-soft, #668097)); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.commerce-header .category-menu-list { display: grid; gap: 4px; max-height: 320px; overflow: auto; }
+.commerce-header .category-menu-item,
+.commerce-header .category-menu-list button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 38px; padding: 8px 10px; color: var(--navy, var(--ink, #082947)); background: transparent; border: 0; border-radius: 7px; font-size: 12px; font-weight: 800; text-align: left; }
+.commerce-header .category-menu-item:hover,
+.commerce-header .category-menu-list button:hover { color: var(--blue, var(--brand, var(--gc-primario, #0965a8))); background: var(--sky, color-mix(in srgb, var(--brand, #0965a8) 9%, #fff)); }
+
+@media (max-width: 920px) {
+  .commerce-header .container.header-main,
+  .commerce-header .header-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+    max-width: none;
+    min-height: 64px;
+    height: 64px;
+    padding: 0 16px;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .commerce-header .brand-column { flex: 1 1 auto; min-width: 0; height: 44px; display: flex; align-items: center; justify-content: center; align-self: center; padding: 0; }
+  .commerce-header .brand,
+  .commerce-header .brand.brand-mark { min-width: 0; max-width: 100%; height: 44px; min-height: 44px; align-items: center; }
+  .commerce-header .brand-mark span[data-gesicomm-tienda],
+  .commerce-header .brand span[data-gesicomm-tienda] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .commerce-header .header-actions { flex: 0 0 auto; height: 44px; display: grid; grid-auto-flow: column; grid-auto-columns: 44px; align-items: center; justify-items: center; align-self: center; gap: 4px; }
+  .commerce-header .search-wrap { position: relative; width: 44px; height: 44px; display: grid; place-items: center; align-self: center; }
+  .commerce-header .search-toggle,
+  .commerce-header .cart-button,
+  .commerce-header .menu-toggle { position: relative; display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; margin: 0; padding: 0; border: 0; border-radius: 10px; background: transparent; color: inherit; font-size: 0; line-height: 1; overflow: visible; appearance: none; }
+  .commerce-header .cart-button strong,
+  .commerce-header .cart-button > span[aria-hidden="true"] { display: none !important; }
+  .commerce-header .search-toggle::before,
+  .commerce-header .cart-button::before,
+  .commerce-header .menu-toggle::before { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 22px; height: 22px; background: currentColor; content: ""; }
+  .commerce-header .search-toggle::before { width: 20px; height: 20px; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M20 20l-4.5-4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M20 20l-4.5-4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+  .commerce-header .cart-button::before { -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6h15l-1.5 8.5H8L6 3H3' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='9' cy='20' r='1.7'/%3E%3Ccircle cx='18' cy='20' r='1.7'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6h15l-1.5 8.5H8L6 3H3' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='9' cy='20' r='1.7'/%3E%3Ccircle cx='18' cy='20' r='1.7'/%3E%3C/svg%3E") center / contain no-repeat; }
+  .commerce-header .menu-toggle::before { -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h16M4 12h16M4 17h16' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h16M4 12h16M4 17h16' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+  .commerce-header .menu-toggle[aria-expanded="true"]::before { width: 20px; height: 20px; background: linear-gradient(45deg, transparent calc(50% - 1px), currentColor 0 calc(50% + 1px), transparent 0), linear-gradient(-45deg, transparent calc(50% - 1px), currentColor 0 calc(50% + 1px), transparent 0); -webkit-mask: none; mask: none; }
+  .commerce-header.menu-open::before { position: fixed; inset: 0; z-index: 55; background: rgba(2, 6, 23, .46); content: ""; }
+  .commerce-header .header-nav { position: fixed; left: 0; top: 0; bottom: 0; right: auto; width: min(86vw, 340px); transform: translateX(-105%); z-index: 60; display: flex; flex-direction: column; align-items: stretch; max-height: none; overflow-y: auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 22px; background: #fff; border: 0; border-right: 1px solid var(--line, #dbe8ef); border-radius: 0; box-shadow: 0 24px 60px rgba(8, 41, 71, .22); transition: transform .22s ease; }
+  .commerce-header .header-nav.is-open { transform: translateX(0); max-height: none; overflow-y: auto; }
+  .commerce-header .header-nav #nav-links,
+  .commerce-header .header-nav .nav-links { flex-direction: column; align-items: stretch; gap: 0; }
+  .commerce-header .header-nav #nav-links a,
+  .commerce-header .header-nav .nav-links a { width: 100%; padding: 14px 20px; border-bottom: 1px solid var(--line, #dbe8ef); white-space: normal; }
+  .commerce-header .category-menu-wrap { display: none; }
+  .commerce-header .search-box { left: auto; right: 0; width: min(280px, calc(100vw - 32px)); }
+}
+`;
+
+const ANCHO_COMPLETO_CSS = `
+/* gesicomm-ancho-completo: las paginas base no quedan encerradas en max-width distintos. */
+.trust-bar,
+.announcement,
+.commerce-header,
+.storefront,
+.lv-shell,
+.site-footer {
+  width: 100%;
+  max-width: none;
+}
+.storefront .page-content,
+main.container[data-gesicomm-base="producto"],
+main[data-gesicomm-base="producto_unico"],
+main[data-gesicomm-base="combos"],
+.lv-page,
+.lv-shell[data-gesicomm-base="checkout"] .lv-page,
+.site-footer .container {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+.storefront .category-strip .container {
+  width: 100%;
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+@media (max-width: 600px) {
+  .storefront .page-content,
+  main.container[data-gesicomm-base="producto"],
+  main[data-gesicomm-base="producto_unico"],
+  main[data-gesicomm-base="combos"],
+  .lv-page,
+  .lv-shell[data-gesicomm-base="checkout"] .lv-page,
+  .site-footer .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+`;
+
+const CHECKOUT_CENTRADO_CSS = `
+/* gesicomm-checkout-centrado: checkout contenido, centrado y sin overflow lateral. */
+.lv-shell[data-gesicomm-base="checkout"] .lv-page {
+  width: min(calc(100% - 48px), 1280px);
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 34px 0 58px;
+  box-sizing: border-box;
+}
+.lv-shell[data-gesicomm-base="checkout"] .lv-checkout-head,
+.lv-shell[data-gesicomm-base="checkout"] .lv-checkout-grid,
+.lv-shell[data-gesicomm-base="checkout"] .lv-checkout-reco,
+.lv-shell[data-gesicomm-base="checkout"] .lv-empty-checkout {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+.lv-shell[data-gesicomm-base="checkout"] .lv-checkout-grid {
+  grid-template-columns: minmax(0, 1.85fr) minmax(320px, .95fr);
+  gap: 24px;
+  align-items: start;
+}
+.lv-shell[data-gesicomm-base="checkout"] .lv-panel,
+.lv-shell[data-gesicomm-base="checkout"] .lv-reco-card,
+.lv-shell[data-gesicomm-base="checkout"] .lv-empty-checkout {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .07);
+  border-color: color-mix(in srgb, var(--lv-line, var(--gc-linea, #d7e6ef)) 74%, transparent);
+}
+.lv-shell[data-gesicomm-base="checkout"] .lv-checkout-reco {
+  overflow: hidden;
+}
+.lv-shell[data-gesicomm-base="checkout"] .lv-reco-list {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+}
+@media (max-width: 920px) {
+  .lv-shell[data-gesicomm-base="checkout"] .lv-page {
+    width: min(calc(100% - 32px), 1280px);
+    padding-top: 24px;
+  }
+  .lv-shell[data-gesicomm-base="checkout"] .lv-checkout-grid {
+    grid-template-columns: 1fr;
+  }
+  .lv-shell[data-gesicomm-base="checkout"] .lv-summary {
+    position: static;
+  }
+}
+`;
+
+const GALERIA_IMAGEN_FIT_CSS = `
+/* gesicomm-gallery-image-fit: la portada de producto nunca usa el tamano natural de una imagen grande. */
+[data-gesicomm-base="producto"] .pdp,
+[data-gesicomm-base="producto"] .gallery,
+[data-gesicomm-base="producto"] .gallery-main {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+[data-gesicomm-base="producto"] .gallery-main {
+  overflow: hidden !important;
+}
+[data-gesicomm-base="producto"] .gallery-main img[data-gesicomm-imagen-principal],
+[data-gesicomm-base="producto"] [data-gesicomm-imagen-principal] {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+html[data-gesicomm-preview-device="desktop"] [data-gesicomm-base="producto"] .gallery-main {
+  height: min(560px, calc(100vh - 150px)) !important;
+  min-height: 360px !important;
+  aspect-ratio: auto !important;
+}
+@media (max-width: 720px) {
+  html[data-gesicomm-preview-device="desktop"] [data-gesicomm-base="producto"] .gallery-main {
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+}
+`;
+
+const CSS_COMPARTIDO_TIENDA = `${HEADER_UNIFICADO_CSS}
+${ANCHO_COMPLETO_CSS}
+${CHECKOUT_CENTRADO_CSS}
+${GALERIA_IMAGEN_FIT_CSS}`;
+
 const LIMITED_OFFER_HTML = `<section id="ofertas" class="limited-offer" data-gesicomm-bloque="ofertas_urgencia" data-gesicomm-lista="productos_ofertas" data-gesicomm-countdown data-gesicomm-venta-configurada="urgencia">
   <div class="limited-offer-card">
     <div class="limited-offer-summary">
@@ -556,6 +967,7 @@ const JS_COMUN = `(() => {
 const INICIO_CSS_LEGACY = `${TOKENS_CSS}
 
 .commerce-header { position: sticky; top: 0; z-index: 20; background: var(--white); border-bottom: 1px solid var(--line); box-shadow: 0 8px 22px rgba(8, 41, 71, .05); }
+.commerce-header .container { width: 100%; max-width: none; padding: 0 28px; }
 .commerce-header .header-main { position: relative; min-height: 76px; display: flex; align-items: center; gap: 28px; }
 .commerce-header .brand-column { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; }
 .commerce-header .brand-mark { display: inline-flex; align-items: center; gap: 9px; min-width: max-content; color: var(--ink); font-size: 1.16rem; font-weight: 900; text-decoration: none; letter-spacing: -.03em; background: transparent; border: none; box-shadow: none; }
@@ -779,6 +1191,15 @@ h1 em { color: var(--ui-action); font-style: normal; }
 .rating-card, .review-card { padding: 26px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); }
 .rating-card strong { display: block; margin-bottom: 8px; color: var(--brand-dark); font-size: 2.4rem; letter-spacing: -.06em; }
 .stars { color: #f59e0b; font-size: 1.1rem; letter-spacing: .06em; }
+.gc-stars-meter { display: inline-flex; align-items: center; gap: .06em; color: currentColor; line-height: 1; white-space: nowrap; }
+.gc-star {
+  display: inline-block;
+  color: currentColor;
+  background: linear-gradient(90deg, currentColor var(--fill, 100%), color-mix(in srgb, currentColor 26%, transparent) var(--fill, 100%));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 .review-card p { color: var(--ink-soft); }
 .review-card b { display: block; margin-top: 18px; }
 .review-card small { color: var(--ink-soft); font-weight: 750; }
@@ -1019,8 +1440,7 @@ const INICIO_HTML = `<div class="trust-bar" aria-label="Beneficios de compra" da
   </div>
 </div>
 
-${HEADER_HTML.replace('__LINKS__', `<a class="active" href="#inicio">Inicio</a>
-      <a href="/catalogo" data-gesicomm-link="catalogo">Productos</a>`)}
+${headerTiendaUnico('inicio')}
 
 <main class="storefront" data-gesicomm-base="catalogo">
   <div class="page-content">
@@ -1140,6 +1560,7 @@ const BUMP_CSS = `/* Order bump moderno: mini oferta clickeable, no formulario a
 const PRODUCTO_CSS = `${TOKENS_CSS}
 
 .commerce-header { position: sticky; top: 0; z-index: 50; background: var(--white); border-bottom: 1px solid var(--line); box-shadow: 0 8px 22px rgba(8, 41, 71, .05); }
+.commerce-header .container { width: 100%; max-width: none; padding: 0 28px; }
 .commerce-header .header-main { position: relative; min-height: 76px; display: flex; align-items: center; gap: 28px; }
 .commerce-header .brand-column { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; }
 .commerce-header .brand, .commerce-header .brand.brand-mark { display: inline-flex; align-items: center; gap: 9px; min-width: max-content; color: var(--ink); font-size: 1.16rem; font-weight: 900; text-decoration: none; letter-spacing: -.03em; background: transparent !important; border: none !important; box-shadow: none !important; }
@@ -1176,21 +1597,30 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .breadcrumb a { color: var(--brand-dark); font-weight: 700; cursor: pointer; }
 
 .pdp { display: grid; grid-template-columns: 1.05fr .95fr; gap: 44px; padding: 24px 0 54px; align-items: start; }
-.gallery { position: sticky; top: 92px; display: grid; gap: 12px; }
+.gallery { position: sticky; top: 92px; display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; align-items: start; }
 .gallery-main { display: grid; place-items: center; aspect-ratio: 1; padding: 22px; background: transparent; border-radius: var(--radius-lg); }
 .gallery-main img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: normal; }
-.thumbs { display: flex; gap: 10px; overflow-x: auto; }
-.thumb { flex: 0 0 76px; height: 76px; padding: 6px; background: transparent; border: 2px solid transparent; border-radius: 14px; cursor: pointer; }
-.thumb:hover { border-color: var(--brand); }
+.thumbs { display: flex; flex-direction: column; gap: 10px; max-height: min(620px, calc(100vh - 128px)); overflow-x: hidden; overflow-y: auto; padding: 2px 4px 2px 0; scrollbar-width: thin; }
+.thumb { flex: 0 0 76px; width: 76px; height: 76px; padding: 6px; background: transparent; border: 2px solid transparent; border-radius: 14px; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.thumb:hover, .thumb.is-selected { border-color: var(--brand); box-shadow: 0 8px 20px rgba(15, 23, 42, .10); }
+.thumb:hover { transform: translateY(-1px); }
 .thumb img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: normal; }
 
 .pdp-info h1 { margin-bottom: 10px; font-size: clamp(1.9rem, 3.2vw, 2.85rem); line-height: 1.02; letter-spacing: -.06em; }
 .pdp-reviews { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: -2px 0 12px; color: var(--ink-soft); font-size: .9rem; }
 .pdp-reviews .stars { color: #b7791f; letter-spacing: .08em; }
+.pdp-reviews .stars, .opinion-stars, .testimonial-stars { font-variant-numeric: tabular-nums; }
 .pdp-reviews a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .pdp-prices { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
 .pdp-prices .price { font-size: 2rem; }
+.pdp-price-badge { display: inline-flex; width: fit-content; margin: -4px 0 14px; }
 .pdp-lead { margin-bottom: 14px; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
+.pdp-offer-card { margin: 0 0 18px; }
+.pdp-offer-card .limited-offer-card { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 18px; }
+.pdp-offer-card .limited-offer-kicker { margin: 0; }
+.pdp-offer-card h2 { margin: 0; }
+.pdp-offer-card p { margin: 0; }
+.pdp-offer-card .countdown { justify-content: flex-start; margin-top: 2px; }
 
 .block-title { margin-bottom: 10px; font-size: .8rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
 .variants { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
@@ -1200,9 +1630,11 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 
 .buy-row { display: flex; gap: 12px; margin-bottom: 10px; }
 .qty { width: 92px; color: color: var(--gc-texto) !important; min-height: 52px; padding: 0 12px; text-align: center; background: var(--white); border: 1.5px solid var(--line); border-radius: 999px; font-weight: 800; }
-.buy-row .button-primary { flex: 1; min-height: 52px; font-size: 1rem; }
+.buy-row .button-primary { flex: 1; min-height: 52px; font-size: 1rem; gap: 8px; }
+.buy-discount-badge { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: color-mix(in srgb, #fff 88%, var(--brand) 12%); color: var(--brand-dark); padding: 2px 8px; font-size: 11px; font-weight: 950; line-height: 1.2; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
 .contact-actions, .payment-actions { display: grid; gap: 8px; margin: 8px 0; }
-.contact-action, .payment-action { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 16px; color: var(--ink); background: var(--white); border: 1.5px solid var(--line); border-radius: 999px; text-decoration: none; font-weight: 850; }
+.contact-action, .payment-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 16px; color: var(--ink); background: var(--white); border: 1.5px solid var(--line); border-radius: 999px; text-decoration: none; font-weight: 850; }
+.payment-action small { border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); padding: 2px 7px; font-size: 11px; font-weight: 900; }
 .contact-action:hover, .payment-action:hover { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-soft); }
 .payment-methods { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
 .payment-methods span { padding: 8px 12px; color: var(--ink); background: var(--white); border: 1px solid var(--line); border-radius: 999px; font-size: .78rem; font-weight: 800; }
@@ -1320,12 +1752,23 @@ ${BUMP_CSS}
 .payment-brand-card { position: relative; display: grid; place-items: center; min-height: 42px; padding: 6px 8px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
 .payment-brand-card img { display: block; width: 100%; max-width: 88px; height: 30px; object-fit: contain; }
 .payment-brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.pdp-trust-section { padding: 20px 0 40px; }
-.pdp-trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 14px; }
-.pdp-trust-card { display: flex; align-items: center; gap: 14px; min-height: 78px; padding: 16px 18px; background: var(--white); border: 1px solid var(--line); border-radius: 0; }
-.pdp-trust-icon { flex: 0 0 auto; display: grid; place-items: center; min-width: 24px; color: var(--brand-dark); font-size: 1.35rem; line-height: 1; }
-.pdp-trust-card h3 { margin: 0 0 4px; color: var(--ink); font-size: 1rem; line-height: 1.2; }
-.pdp-trust-card p { margin: 0; color: var(--ink-soft); font-size: .84rem; line-height: 1.35; }
+/* Zona de confianza del producto: tarjetas compactas con el ícono en una
+   pastilla teñida del color de la tienda, para que se lean como beneficios
+   de compra y no como avisos genéricos. Ancho tope por tarjeta: con pocas
+   tarjetas quedan centradas en vez de estirarse a todo el contenedor. */
+.pdp-trust-section { padding: 28px 0 48px; }
+.pdp-trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 300px)); justify-content: center; gap: 16px; }
+.pdp-trust-card { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 22px; background: color-mix(in srgb, var(--brand) 6%, var(--white)); border: 1px solid color-mix(in srgb, var(--brand) 16%, var(--line)); border-radius: var(--radius-sm); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.pdp-trust-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--brand) 38%, var(--line)); box-shadow: 0 14px 30px color-mix(in srgb, var(--brand) 12%, transparent); }
+.pdp-trust-icon { flex: 0 0 auto; display: grid; place-items: center; width: 46px; height: 46px; color: var(--brand); background: color-mix(in srgb, var(--brand) 16%, transparent); border: 1px solid color-mix(in srgb, var(--brand) 22%, transparent); border-radius: 12px; font-size: 1.4rem; line-height: 1; }
+.pdp-trust-card h3 { margin: 0 0 6px; color: var(--ink); font-size: 1.05rem; font-weight: 800; line-height: 1.25; }
+.pdp-trust-card p { margin: 0; color: var(--ink-soft); font-size: .9rem; line-height: 1.45; }
+@media (max-width: 640px) {
+  .pdp-trust-grid { grid-template-columns: 1fr; gap: 12px; }
+  .pdp-trust-card { flex-direction: row; align-items: center; gap: 14px; padding: 16px; }
+  .pdp-trust-card:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .pdp-trust-card { transition: none; } .pdp-trust-card:hover { transform: none; } }
 
 main[data-gesicomm-base="producto"] ~ .section { padding: 56px 0; }
 main[data-gesicomm-base="producto"] ~ .faq-section { padding: 50px 0; }
@@ -1351,12 +1794,6 @@ main[data-gesicomm-base="producto"] ~ .faq-section { padding: 50px 0; }
 .faq-item { padding: 16px 18px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
 .faq-item summary { cursor: pointer; font-weight: 800; color: var(--ink); }
 .faq-item p { margin: 10px 0 0; color: var(--ink-soft); }
-
-.cierre { padding: 56px 0; color: var(--gc-texto-sobre-primario); background: var(--brand); }
-.cierre-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; }
-.cierre h2 { margin: 0 0 6px; color: inherit; font-size: clamp(1.4rem, 2.6vw, 2rem); }
-.cierre .price, .cierre .price-old { color: inherit; }
-.cierre .button-primary { color: var(--brand); background: var(--gc-texto-sobre-primario); min-height: 52px; padding: 0 28px; }
 
 .sticky-compra { display: none; }
 
@@ -1421,7 +1858,9 @@ main[data-gesicomm-base="producto"] ~ .faq-section { padding: 50px 0; }
 
 @media (max-width: 960px) {
   .pdp { grid-template-columns: 1fr; gap: 30px; }
-  .gallery { position: static; }
+  .gallery { position: static; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
+  .thumbs { max-height: min(420px, 72vw); }
+  .thumb { flex-basis: 64px; width: 64px; height: 64px; border-radius: 12px; }
   .result-grid, .ingredient-content, .proof, .comparison-grid { grid-template-columns: 1fr; gap: 32px; }
   .result-grid img, .proof > img { max-width: 260px; justify-self: center; }
 }
@@ -1433,6 +1872,28 @@ main[data-gesicomm-base="producto"] ~ .faq-section { padding: 50px 0; }
   .commerce-header .header-nav.is-open { display: flex; }
   .commerce-header .nav-links { flex-direction: column; align-items: stretch; gap: 0; }
   .commerce-header .nav-links a, .commerce-header .nav-links .nav-cta { justify-content: flex-start; padding: 12px; }
+  .pdp { gap: 24px; padding: 16px 0 96px; }
+  .pdp-info .eyebrow { margin-bottom: 14px; }
+  .pdp-info h1 { margin: 0 0 14px; font-size: clamp(1.62rem, 7.2vw, 2rem); line-height: 1.14; letter-spacing: -.025em; }
+  .pdp-promesa { margin: 0 0 12px; font-size: 1rem; line-height: 1.45; }
+  .pdp-lead { margin-bottom: 16px; font-size: .96rem; line-height: 1.55; }
+  .pdp-prices { gap: 8px 10px; margin: 2px 0 22px; }
+  .pdp-prices .price { font-size: 1.55rem; line-height: 1.1; }
+  .pdp-price-badge { margin: -12px 0 18px; }
+  .pdp-limited-offer { margin: 0 0 24px; }
+  .pdp-limited-offer .limited-offer-card { gap: 16px; padding: 18px 16px; border-radius: 16px; }
+  .pdp-limited-offer .limited-offer-kicker { margin-bottom: 8px; font-size: .7rem; line-height: 1.35; letter-spacing: .11em; }
+  .pdp-limited-offer h2 { margin: 0 0 8px; font-size: 1.08rem; line-height: 1.18; letter-spacing: -.025em; }
+  .pdp-limited-offer p { font-size: .85rem; line-height: 1.45; }
+  .pdp-limited-offer .countdown { gap: 8px; margin-top: 2px; }
+  .pdp-limited-offer .countdown-box { min-height: 36px; padding: 7px 8px 6px; border-radius: 12px; }
+  .pdp-limited-offer .countdown-box b { font-size: 1rem; }
+  .pdp-limited-offer .countdown-box small { font-size: .55rem; }
+  .highlights { gap: 10px; margin: 0 0 20px; }
+  .highlights li { line-height: 1.45; }
+  .buy-row { flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .buy-row .qty { width: 100%; }
+  .buy-row .button-primary { min-height: 52px; padding: 10px 18px; line-height: 1.2; white-space: normal; }
   .sticky-compra {
     position: fixed; right: 0; bottom: 0; left: 0; z-index: 60; display: flex; align-items: center; justify-content: space-between; gap: 12px;
     padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--white); border-top: 1px solid var(--line);
@@ -1442,6 +1903,9 @@ main[data-gesicomm-base="producto"] ~ .faq-section { padding: 50px 0; }
   .sticky-compra s { color: var(--ink-soft); font-size: .8rem; }
   .sticky-compra .button-primary { min-height: 46px; padding: 0 20px; }
   body { padding-bottom: 76px; }
+  .gallery { grid-template-columns: 1fr; }
+  .gallery-main { grid-row: 1; }
+  .thumbs { grid-row: 2; flex-direction: row; max-height: none; overflow-x: auto; overflow-y: hidden; padding: 2px 0 4px; }
   .mini-trust { grid-template-columns: 1fr; }
   .opiniones-grid { grid-template-columns: 1fr; }
   .offer .button-primary, .offer .button-secondary, .upsell .button-primary { flex: 1 1 100%; }
@@ -1450,10 +1914,7 @@ main[data-gesicomm-base="producto"] ~ .faq-section { padding: 50px 0; }
   .table-row > * { padding: 10px 6px; }
 }`;
 
-const PRODUCTO_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
-      <a href="#descripcion">Detalles</a>
-      <a href="#relacionados">Te puede gustar</a>
-      <button class="nav-cta" type="button" data-gesicomm-whatsapp>Consultar</button>`)}
+const PRODUCTO_HTML = `${headerTiendaUnico('productos')}
 
 <main class="container" data-gesicomm-base="producto">
   <nav class="breadcrumb" aria-label="Estás en">
@@ -1472,35 +1933,32 @@ const PRODUCTO_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesi
 
     <div class="pdp-info">
       <p class="eyebrow" data-gesicomm-bind="insignia_principal" data-gesicomm-ficha-bloque="encabezado"></p>
-      <h1 data-gesicomm-bind="nombre" data-gesicomm-ficha-bloque="encabezado"></h1>
-      <!-- Propuesta de valor: el porqué en una frase (Productos → Vista del producto). -->
-      <p class="pdp-promesa" data-gesicomm-bind="propuesta_valor" data-gesicomm-ficha-bloque="descripcion"></p>
-      <!-- Descripción del producto: debajo del nombre y antes de las reseñas. -->
-      <p class="pdp-lead" data-gesicomm-bind="descripcion_ficha" data-gesicomm-ficha-bloque="descripcion"></p>
-      <div class="pdp-reviews" data-gesicomm-ficha-bloque="encabezado" data-gesicomm-si="resenas_texto"><span class="stars">★★★★★</span><span data-gesicomm-bind="resenas_texto"></span></div>
+      <h1 data-gesicomm-bind="nombre" data-gesicomm-ficha-bloque="nombre_comercial"></h1>
+      <div class="pdp-reviews" data-gesicomm-ficha-bloque="resenas_comerciales" data-gesicomm-si="resenas_calificacion"><span class="stars" data-gesicomm-bind="resenas_estrellas">★★★★★</span><span data-gesicomm-bind="resenas_texto"></span></div>
       <div class="pdp-prices" data-gesicomm-ficha-bloque="precio">
         <span class="price" data-gesicomm-bind="precio"></span>
         <span class="price-old" data-gesicomm-bind="precio_antes"></span>
-        <!-- % en productos baratos, Gs en caros ("regla del 100"). -->
-        <span class="badge-off" data-gesicomm-bind="ahorro_texto"></span>
       </div>
+      <span class="badge-off pdp-price-badge" data-gesicomm-bind="badge_precio" data-gesicomm-ficha-bloque="badge_precio"></span>
       <!-- Combo: el ancla del ahorro, cuánto costaría por separado. -->
       <p class="pdp-separado" data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p>
 
-      <div class="limited-offer pdp-limited-offer" data-gesicomm-countdown data-gesicomm-ficha-bloque="precio">
+      <div class="limited-offer pdp-limited-offer pdp-offer-card" data-gesicomm-ficha-bloque="oferta">
         <div class="limited-offer-card">
-          <div>
-            <p class="limited-offer-kicker" data-gesicomm-bind="urgencia_kicker">Oferta por tiempo limitado</p>
-            <h2 data-gesicomm-bind="urgencia_titulo">Reservá esta condición antes de que termine.</h2>
-            <p data-gesicomm-bind="urgencia_texto">La fecha real se configura en Gesicomm; el contador se actualiza solo.</p>
-          </div>
-          <div class="countdown" aria-label="Cuenta regresiva de la oferta">
+          <p class="limited-offer-kicker" data-gesicomm-bind="urgencia_kicker" data-gesicomm-ficha-bloque="oferta_encabezado">Oferta por tiempo limitado</p>
+          <h2 data-gesicomm-bind="urgencia_titulo" data-gesicomm-ficha-bloque="oferta_nombre">Reservá esta condición antes de que termine.</h2>
+          <p data-gesicomm-bind="urgencia_texto" data-gesicomm-ficha-bloque="oferta_texto">La fecha real se configura en Gesicomm; el contador se actualiza solo.</p>
+          <div class="countdown" aria-label="Cuenta regresiva de la oferta" data-gesicomm-countdown data-gesicomm-ficha-bloque="oferta_duracion">
             <span class="countdown-box"><b data-gesicomm-countdown-parte="horas">--</b><small>horas</small></span>
             <span class="countdown-box"><b data-gesicomm-countdown-parte="minutos">--</b><small>min</small></span>
             <span class="countdown-box"><b data-gesicomm-countdown-parte="segundos">--</b><small>seg</small></span>
           </div>
         </div>
       </div>
+
+      <!-- Descripción breve: queda después del precio y la oferta. -->
+      <p class="pdp-promesa" data-gesicomm-bind="propuesta_valor" data-gesicomm-ficha-bloque="descripcion"></p>
+      <p class="pdp-lead" data-gesicomm-bind="descripcion_ficha" data-gesicomm-ficha-bloque="descripcion"></p>
 
       <!-- Combo: qué trae, con foto. -->
       <div class="trae" data-gesicomm-lista="combo_incluye">
@@ -1587,19 +2045,19 @@ const PRODUCTO_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesi
         <template><li data-gesicomm-bind="titulo"></li></template>
       </ul>
 
-      <div class="buy-row" data-gesicomm-ficha-bloque="compra">
+      <div class="buy-row" data-gesicomm-ficha-bloque="contacto_pago">
         <!-- Con paquetes, la cantidad la da el paquete elegido. -->
         <input class="qty" type="number" min="1" max="99" value="1" aria-label="Cantidad" data-gesicomm-cantidad-input data-gesicomm-sin="tiene_paquetes">
-        <button class="button-primary" type="button" data-gesicomm-comprar data-gesicomm-metodo-pago="pagopar"><span data-gesicomm-cta data-gesicomm-bind="cta_texto">Comprar con pago anticipado</span> · <span data-gesicomm-total></span></button>
+        <button class="button-primary" type="button" data-gesicomm-comprar data-gesicomm-boton-principal-pago data-gesicomm-metodo-pago="pagopar"><span data-gesicomm-cta data-gesicomm-bind="cta_texto">Comprar con pago anticipado</span><small class="buy-discount-badge" data-gesicomm-cta-descuento></small> · <span data-gesicomm-total></span></button>
       </div>
       <div class="payment-actions" data-gesicomm-lista="botones_pago_producto" data-gesicomm-ficha-bloque="contacto_pago">
-        <template><button class="payment-action" type="button"><span data-gesicomm-bind="label"></span></button></template>
-      </div>
-      <div class="payment-methods" data-gesicomm-lista="metodos_pago_producto" data-gesicomm-ficha-bloque="promociones_pago">
-        <template><span data-gesicomm-bind="texto"></span></template>
+        <template><button class="payment-action" type="button"><span data-gesicomm-bind="label"></span> <small data-gesicomm-bind="descuento_label"></small></button></template>
       </div>
       <div class="contact-actions" data-gesicomm-lista="botones_contacto_producto" data-gesicomm-ficha-bloque="contacto_pago">
         <template><button class="contact-action" type="button"><span data-gesicomm-bind="label"></span></button></template>
+      </div>
+      <div class="payment-methods" data-gesicomm-lista="metodos_pago_producto" data-gesicomm-ficha-bloque="promociones_pago">
+        <template><span data-gesicomm-bind="texto"></span></template>
       </div>
       <!-- Logos resueltos desde el catalogo de medios de pago. -->
       <div class="payment-brands" data-gesicomm-ficha-bloque="promociones_pago" data-gesicomm-si="pago_logos_activo">
@@ -1633,6 +2091,60 @@ const PRODUCTO_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesi
             <p data-gesicomm-bind="texto"></p>
           </div>
         </article>
+      </template>
+    </div>
+  </div>
+</section>
+
+<!-- Recomendados: según la configuración de venta de la landing. -->
+<section id="relacionados" class="related" data-gesicomm-lista="recomendados" data-gesicomm-ficha-bloque="recomendados">
+  <div class="container">
+    <div class="section-heading"><p class="eyebrow" data-gesicomm-venta="recomendados_kicker">Te puede gustar</p><h2 data-gesicomm-venta="recomendados_titulo">Te puede gustar</h2><p data-gesicomm-venta="recomendados_subtitulo"></p></div>
+    <div class="product-grid" data-gesicomm-lista="recomendados">
+      <template>
+        <article class="product-card">
+          <div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div>
+          <div class="product-content">
+            <div class="product-category" data-gesicomm-bind="categoria"></div>
+            <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+            <div class="product-footer">
+              <div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div>
+              <button class="button-primary" type="button" data-gesicomm-agregar data-gesicomm-venta="recomendados_cta">Agregar</button>
+            </div>
+          </div>
+        </article>
+      </template>
+    </div>
+  </div>
+</section>
+
+<!-- Opiniones reales cargadas por el comercio para este producto. -->
+<section id="opiniones" class="section opiniones-section" data-gesicomm-lista="opiniones_producto" data-gesicomm-ficha-bloque="opiniones">
+  <div class="container">
+    <div class="section-heading"><p class="eyebrow" data-gesicomm-bind="opiniones_kicker">Opiniones</p><h2 data-gesicomm-bind="opiniones_titulo">Personas que ya lo probaron.</h2><p data-gesicomm-bind="opiniones_subtitulo"></p></div>
+    <div class="opiniones-grid" data-gesicomm-lista="opiniones_producto">
+      <template>
+        <article class="opinion-card">
+          <div class="opinion-head"><img class="opinion-avatar" data-gesicomm-bind="imagen" alt="" loading="lazy"><div class="opinion-stars" data-gesicomm-bind="estrellas"></div></div>
+          <p data-gesicomm-bind="comentario"></p>
+          <b data-gesicomm-bind="nombre"></b>
+          <small data-gesicomm-bind="detalle"></small>
+        </article>
+      </template>
+    </div>
+  </div>
+</section>
+
+<!-- Preguntas frecuentes del producto: responde las dudas que frenan la compra. -->
+<section id="preguntas" class="section faq-section" data-gesicomm-lista="preguntas" data-gesicomm-ficha-bloque="preguntas">
+  <div class="container faq-container">
+    <div class="section-heading"><p class="eyebrow" data-gesicomm-bind="preguntas_kicker">Resolvemos tus dudas</p><h2 data-gesicomm-bind="preguntas_titulo">Preguntas frecuentes</h2><p data-gesicomm-bind="preguntas_subtitulo"></p></div>
+    <div class="faq-lista" data-gesicomm-lista="preguntas">
+      <template>
+        <details class="faq-item">
+          <summary data-gesicomm-bind="pregunta"></summary>
+          <p data-gesicomm-bind="respuesta"></p>
+        </details>
       </template>
     </div>
   </div>
@@ -1794,71 +2306,6 @@ const PRODUCTO_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesi
   </div>
 </section>
 
-<!-- Opiniones reales cargadas por el comercio para este producto. -->
-<section id="opiniones" class="section opiniones-section" data-gesicomm-lista="opiniones_producto" data-gesicomm-ficha-bloque="opiniones">
-  <div class="container">
-    <div class="section-heading"><p class="eyebrow" data-gesicomm-bind="opiniones_kicker">Opiniones</p><h2 data-gesicomm-bind="opiniones_titulo">Personas que ya lo probaron.</h2><p data-gesicomm-bind="opiniones_subtitulo"></p></div>
-    <div class="opiniones-grid" data-gesicomm-lista="opiniones_producto">
-      <template>
-        <article class="opinion-card">
-          <div class="opinion-head"><img class="opinion-avatar" data-gesicomm-bind="imagen" alt="" loading="lazy"><div class="opinion-stars" data-gesicomm-bind="estrellas"></div></div>
-          <p data-gesicomm-bind="comentario"></p>
-          <b data-gesicomm-bind="nombre"></b>
-          <small data-gesicomm-bind="detalle"></small>
-        </article>
-      </template>
-    </div>
-  </div>
-</section>
-
-<!-- Preguntas frecuentes del producto: responde las dudas que frenan la compra. -->
-<section id="preguntas" class="section faq-section" data-gesicomm-lista="preguntas" data-gesicomm-ficha-bloque="preguntas">
-  <div class="container faq-container">
-    <div class="section-heading"><p class="eyebrow" data-gesicomm-bind="preguntas_kicker">Resolvemos tus dudas</p><h2 data-gesicomm-bind="preguntas_titulo">Preguntas frecuentes</h2><p data-gesicomm-bind="preguntas_subtitulo"></p></div>
-    <div class="faq-lista" data-gesicomm-lista="preguntas">
-      <template>
-        <details class="faq-item">
-          <summary data-gesicomm-bind="pregunta"></summary>
-          <p data-gesicomm-bind="respuesta"></p>
-        </details>
-      </template>
-    </div>
-  </div>
-</section>
-
-<!-- Recomendados: según la configuración de venta de la landing. -->
-<section id="relacionados" class="related" data-gesicomm-lista="recomendados">
-  <div class="container">
-    <div class="section-heading"><p class="eyebrow" data-gesicomm-venta="recomendados_kicker">Te puede gustar</p><h2 data-gesicomm-venta="recomendados_titulo">Te puede gustar</h2><p data-gesicomm-venta="recomendados_subtitulo"></p></div>
-    <div class="product-grid" data-gesicomm-lista="recomendados">
-      <template>
-        <article class="product-card">
-          <div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div>
-          <div class="product-content">
-            <div class="product-category" data-gesicomm-bind="categoria"></div>
-            <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
-            <div class="product-footer">
-              <span class="price" data-gesicomm-bind="precio"></span>
-              <button class="button-primary" type="button" data-gesicomm-agregar data-gesicomm-venta="recomendados_cta">Agregar</button>
-            </div>
-          </div>
-        </article>
-      </template>
-    </div>
-  </div>
-</section>
-
-<!-- Cierre: la última pantalla vuelve a ofrecer la compra. -->
-<section class="cierre">
-  <div class="container cierre-inner">
-    <div>
-      <h2 data-gesicomm-bind="nombre"></h2>
-      <p><span class="price" data-gesicomm-bind="precio"></span> <span class="price-old" data-gesicomm-bind="precio_antes"></span></p>
-    </div>
-    <button class="button-primary" type="button" data-gesicomm-comprar>Comprar ahora</button>
-  </div>
-</section>
-
 <!-- Celular: el botón de compra siempre a mano. -->
 <div class="sticky-compra">
   <div><strong data-gesicomm-bind="precio"></strong> <s data-gesicomm-bind="precio_antes"></s></div>
@@ -1903,10 +2350,7 @@ const ESTRELLA_CSS = `${INICIO_CSS_LEGACY}
   body { padding-bottom: 76px; }
 }`;
 
-const ESTRELLA_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#detalles">Detalles</a>
-      <a href="#como-funciona">Cómo funciona</a>
-      <a href="#preguntas">Preguntas</a>
-      <button class="nav-cta" type="button" data-gesicomm-comprar="principal">Comprar</button>`)}
+const ESTRELLA_HTML = `${headerTiendaUnico('productos')}
 
 <main data-gesicomm-base="producto_unico">
   <!-- Hero: el producto estrella (el primero de la landing). -->
@@ -1930,7 +2374,7 @@ const ESTRELLA_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#detalles">D
           </ul>
           <div class="hero-actions">
             <button class="button-primary" type="button" data-gesicomm-comprar>Comprar ahora →</button>
-            <button class="button-secondary" type="button" data-gesicomm-whatsapp>Consultar por WhatsApp</button>
+            <button class="button-secondary" type="button" data-gesicomm-whatsapp>Comprar por WhatsApp</button>
           </div>
         </div>
       </div>
@@ -1973,7 +2417,7 @@ const ESTRELLA_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#detalles">D
             <div class="product-content">
               <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
               <div class="product-footer">
-                <span class="price" data-gesicomm-bind="precio"></span>
+                <div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div>
                 <button class="button-primary" type="button" data-gesicomm-agregar data-gesicomm-venta="recomendados_cta">Agregar</button>
               </div>
             </div>
@@ -2030,10 +2474,7 @@ ${FOOTER_HTML}`;
 // Los combos primero, con lo que incluye cada uno y cuánto se ahorra; los
 // productos sueltos después, para quien prefiera armarlo.
 
-const COMBOS_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#combos">Combos</a>
-      <a href="#productos">Productos sueltos</a>
-      <a href="#preguntas">Preguntas</a>
-      <a class="nav-cta" href="#combos">Ver combos</a>`)}
+const COMBOS_HTML = `${headerTiendaUnico('productos')}
 
 <main data-gesicomm-base="combos">
   <section class="hero">
@@ -2134,9 +2575,12 @@ const COMBOS_HTML = `${HEADER_HTML.replace('__LINKS__', `<a href="#combos">Combo
 
 ${FOOTER_HTML}`;
 
-export const PLANTILLA_INICIO = { html: INICIO_HTML, css: ESTILOS_INICIO_CODIGO, js: JS_COMUN };
-export const PLANTILLA_ESTRELLA = { html: ESTRELLA_HTML, css: ESTRELLA_CSS, js: JS_COMUN };
-export const PLANTILLA_COMBOS = { html: COMBOS_HTML, css: INICIO_CSS_LEGACY, js: JS_COMUN };
+export const PLANTILLA_INICIO = { html: INICIO_HTML, css: `${ESTILOS_INICIO_CODIGO}
+${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
+export const PLANTILLA_ESTRELLA = { html: ESTRELLA_HTML, css: `${ESTRELLA_CSS}
+${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
+export const PLANTILLA_COMBOS = { html: COMBOS_HTML, css: `${INICIO_CSS_LEGACY}
+${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
 
 const TIENDA_VISTA_CSS = `:root{
   --gc-primario: var(--tienda-primario, #143f3a);
@@ -2169,7 +2613,7 @@ a{color:inherit;text-decoration:none}
 .announcement strong{color:#93c5fd}
 @keyframes announcement-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .commerce-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}
-.commerce-header .container{width:min(calc(100% - 40px),1180px);margin-inline:auto}
+.commerce-header .container{width:100%;max-width:none;margin-inline:0;padding:0 28px}
 .commerce-header .header-main{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .commerce-header .brand-column{display:flex;align-items:center;gap:18px;min-width:0}
 .commerce-header .brand{display:inline-flex;align-items:center;gap:10px;min-width:0;color:var(--ink);font-size:20px;font-weight:850;letter-spacing:-.04em;background:transparent;border:0;box-shadow:none}
@@ -2251,14 +2695,12 @@ a{color:inherit;text-decoration:none}
 .lv-checkout-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}
 .lv-steps{display:flex;align-items:center;gap:8px;color:var(--lv-muted);font-size:12px;font-weight:800;white-space:nowrap}
 .lv-dot{width:8px;height:8px;border-radius:99px;background:var(--gc-primario)}
-.lv-checkout-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
-.lv-shell[data-gesicomm-base="checkout"]{--max:1120px;background:color-mix(in srgb,var(--gc-fondo,#071015) 96%,#000)}
-.lv-shell[data-gesicomm-base="checkout"] .commerce-header .container,
-.lv-shell[data-gesicomm-base="checkout"] .lv-page{width:min(calc(100% - 36px),1120px);max-width:1120px}
-.lv-shell[data-gesicomm-base="checkout"] .commerce-header .container{padding-left:0;padding-right:0}
-.lv-shell[data-gesicomm-base="checkout"] .lv-page{padding:16px 0 32px}
+.lv-checkout-grid{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(320px,.95fr);gap:24px;align-items:start}
+.lv-shell[data-gesicomm-base="checkout"]{--max:1280px;background:color-mix(in srgb,var(--gc-fondo,#071015) 96%,#000)}
+.lv-shell[data-gesicomm-base="checkout"] .lv-page{width:min(calc(100% - 48px),1280px);max-width:1280px;margin-inline:auto}
+.lv-shell[data-gesicomm-base="checkout"] .lv-page{padding:34px 0 58px}
 .lv-panel{background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);box-shadow:0 16px 38px rgba(16,32,29,.07)}
-.lv-shell[data-gesicomm-base="checkout"] .lv-panel{background:color-mix(in srgb,var(--lv-surface) 88%,transparent);border-color:color-mix(in srgb,var(--lv-line) 60%,transparent);border-radius:8px;box-shadow:0 18px 44px rgba(0,0,0,.13)}
+.lv-shell[data-gesicomm-base="checkout"] .lv-panel{background:color-mix(in srgb,var(--lv-surface) 88%,transparent);border-color:color-mix(in srgb,var(--lv-line) 74%,transparent);border-radius:8px;box-shadow:0 12px 28px rgba(15,23,42,.07)}
 .lv-form{padding:16px;display:grid;gap:12px}
 .lv-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .lv-form .lv-wide{grid-column:1/-1}
@@ -2319,13 +2761,13 @@ ${BUMP_CSS}
 .lv-reco-subtitle{max-width:620px;margin:8px 0 0;color:var(--lv-muted);font-size:14px;line-height:1.45}
 .lv-reco-controls{display:flex;gap:8px;align-items:center;flex:none}
 .lv-reco-controls[hidden]{display:none!important}
-.lv-reco-arrow{display:inline-grid;place-items:center;width:38px;height:38px;border:1px solid color-mix(in srgb,var(--lv-line) 68%,transparent);border-radius:999px;background:color-mix(in srgb,var(--lv-surface) 88%,transparent);color:var(--gc-texto);font-size:25px;line-height:1;cursor:pointer;box-shadow:0 10px 22px rgba(0,0,0,.1);transition:transform .18s ease,border-color .18s ease,background .18s ease}
+.lv-reco-arrow{display:inline-grid;place-items:center;width:38px;height:38px;border:1px solid color-mix(in srgb,var(--lv-line) 68%,transparent);border-radius:999px;background:color-mix(in srgb,var(--lv-surface) 88%,transparent);color:var(--gc-texto);font-size:25px;line-height:1;cursor:pointer;box-shadow:0 8px 18px rgba(15,23,42,.08);transition:transform .18s ease,border-color .18s ease,background .18s ease}
 .lv-reco-arrow:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--gc-primario) 55%,var(--lv-line));background:color-mix(in srgb,var(--gc-primario) 10%,var(--lv-surface))}
 .lv-reco-arrow:disabled{opacity:.42;cursor:default;transform:none;box-shadow:none}
 .lv-reco-arrow:disabled:hover{transform:none;border-color:color-mix(in srgb,var(--lv-line) 68%,transparent);background:color-mix(in srgb,var(--lv-surface) 88%,transparent)}
 .lv-reco-list{display:flex;width:100%;max-width:100%;min-width:0;gap:14px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;padding:0;margin:0}
 .lv-reco-list::-webkit-scrollbar{display:none}
-.lv-reco-card{display:grid;grid-template-rows:auto 1fr;gap:12px;flex:0 0 calc((100% - 42px)/4);max-width:calc((100% - 42px)/4);min-width:0;padding:10px;background:color-mix(in srgb,var(--lv-surface) 90%,transparent);border:1px solid color-mix(in srgb,var(--lv-line) 58%,transparent);border-radius:8px;box-shadow:0 12px 28px rgba(0,0,0,.09);scroll-snap-align:start;scroll-snap-stop:always}
+.lv-reco-card{display:grid;grid-template-rows:auto 1fr;gap:12px;flex:0 0 calc((100% - 42px)/4);max-width:calc((100% - 42px)/4);min-width:0;padding:10px;background:color-mix(in srgb,var(--lv-surface) 90%,transparent);border:1px solid color-mix(in srgb,var(--lv-line) 74%,transparent);border-radius:8px;box-shadow:0 12px 28px rgba(15,23,42,.07);scroll-snap-align:start;scroll-snap-stop:always}
 .lv-reco-media{position:relative;display:grid;place-items:center;aspect-ratio:1/1;width:100%;background:color-mix(in srgb,var(--lv-soft) 78%,var(--lv-surface));border-radius:8px;overflow:hidden;cursor:pointer}
 .lv-reco-media img{width:100%;height:100%;object-fit:contain;padding:14px}
 .lv-reco-media.is-missing-image{border:1px dashed color-mix(in srgb,var(--lv-line) 75%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--lv-soft) 84%,var(--lv-surface)),color-mix(in srgb,var(--lv-surface) 92%,var(--gc-primario)))}
@@ -2428,15 +2870,11 @@ ${BUMP_CSS}
 .lv-stock-note{color:var(--shop-muted);font-size:11px}
 @media(max-width:920px){.commerce-header .header-main{align-items:flex-start;flex-wrap:wrap;padding:14px 0}.commerce-header .brand-column{flex:1 1 auto}.commerce-header .header-nav{display:none;position:absolute;left:20px;right:20px;top:calc(100% + 1px);z-index:75;order:3;flex-basis:100%;justify-content:flex-start;flex-direction:column;align-items:stretch;gap:0;padding:10px;background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 45px rgba(8,41,71,.16)}.commerce-header .header-nav.is-open{display:flex}.commerce-header .nav-links{display:flex;flex-direction:column;align-items:stretch;gap:0}.commerce-header .nav-links a{padding:11px 12px}.commerce-header .menu-toggle{display:inline-flex}.lv-hero,.lv-checkout-head{display:grid}.lv-metrics{grid-template-columns:1fr 1fr}.lv-toolbar,.lv-checkout-grid{grid-template-columns:1fr}.lv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lv-summary{position:static}.lv-form-grid{grid-template-columns:1fr}.lv-shell[data-gesicomm-base="checkout"] .lv-pay-options{grid-template-columns:1fr}.lv-shop-layout{grid-template-columns:1fr}.lv-filters{position:static}.lv-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:920px){.commerce-header.menu-open:before{position:fixed;inset:0;z-index:990;background:rgba(2,6,23,.46);content:""}.commerce-header .header-nav{position:fixed;left:0;top:0;bottom:0;right:auto;width:min(84vw,320px);max-width:calc(100vw - 54px);min-height:100vh;display:flex;flex-basis:auto;order:initial;justify-content:flex-start;flex-direction:column;align-items:stretch;gap:0;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 22px;background:var(--white);border:0;border-right:1px solid var(--line);border-radius:0;box-shadow:0 24px 60px rgba(8,41,71,.24);transform:translateX(-105%);transition:transform .22s ease;z-index:1000}.commerce-header .header-nav.is-open{transform:translateX(0)}.commerce-header .header-nav .nav-links{width:100%;display:flex;flex-direction:column;align-items:stretch;gap:0}.commerce-header .header-nav .nav-links a{width:100%;padding:14px 12px;border-bottom:1px solid var(--line);white-space:normal}.commerce-header .menu-toggle{display:inline-flex}}
-@media(max-width:560px){.commerce-header .container{width:min(calc(100% - 28px),1180px)}.commerce-header .category-menu-wrap{display:none}.commerce-header .cart-button strong{display:none}.lv-header-inner{align-items:flex-start}.lv-nav{width:100%;justify-content:flex-start}.lv-grid,.lv-shop-grid{grid-template-columns:1fr}.lv-metrics{grid-template-columns:1fr}.lv-title{font-size:34px}.lv-page{padding-top:24px}.lv-topbar-inner{justify-content:flex-start}.lv-results-head{grid-template-columns:1fr}.lv-filter-row{grid-template-columns:1fr}}
+@media(max-width:560px){.commerce-header .container{width:100%;max-width:none;padding-left:16px;padding-right:16px}.commerce-header .category-menu-wrap{display:none}.commerce-header .cart-button strong{display:none}.lv-header-inner{align-items:flex-start}.lv-nav{width:100%;justify-content:flex-start}.lv-grid,.lv-shop-grid{grid-template-columns:1fr}.lv-metrics{grid-template-columns:1fr}.lv-title{font-size:34px}.lv-page{padding-top:24px}.lv-topbar-inner{justify-content:flex-start}.lv-results-head{grid-template-columns:1fr}.lv-filter-row{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.announcement-track{animation:none;transform:none}}
 `;
 
-const VISTA_TIENDA_HEADER = `${HEADER_HTML.replace('__LINKS__', `
-        <a href="/" data-gesicomm-inicio>Inicio</a>
-        <a href="/catalogo" data-gesicomm-link="catalogo">Productos</a>
-        <a href="/checkout" data-gesicomm-link="checkout">Checkout</a>
-      `)}`;
+const VISTA_TIENDA_HEADER = headerTiendaUnico('productos');
 
 const CATEGORIA_HTML = `<div class="lv-shell">
   ${VISTA_TIENDA_HEADER}
@@ -2755,9 +3193,12 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
   ${FOOTER_HTML}
 </div>`;
 
-export const PLANTILLA_CATALOGO = { html: CATALOGO_HTML, css: TIENDA_VISTA_CSS, js: JS_COMUN };
-export const PLANTILLA_CATEGORIA = { html: CATEGORIA_HTML, css: TIENDA_VISTA_CSS, js: JS_COMUN };
-export const PLANTILLA_CHECKOUT = { html: CHECKOUT_HTML, css: TIENDA_VISTA_CSS, js: JS_COMUN };
+export const PLANTILLA_CATALOGO = { html: CATALOGO_HTML, css: `${TIENDA_VISTA_CSS}
+${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
+export const PLANTILLA_CATEGORIA = { html: CATEGORIA_HTML, css: `${TIENDA_VISTA_CSS}
+${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
+export const PLANTILLA_CHECKOUT = { html: CHECKOUT_HTML, css: `${TIENDA_VISTA_CSS}
+${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
 
 /** La página de inicio base de cada formato de venta. */
 // Un solo inicio: la tienda. "Combos primero" es orden, no diseño, y
@@ -2843,8 +3284,10 @@ const PRODUCTO_CSS_GENERICO = PRODUCTO_CSS
   .replace(/  \.table-head, \.table-row \{ grid-template-columns: 1\.35fr \.95fr \.95fr; font-size: \.72rem; \}\n/g, '')
   .replace(/  \.table-row > \* \{ padding: 10px 6px; \}\n/g, '');
 
-export const PLANTILLA_PRODUCTO = { html: PRODUCTO_HTML_GENERICO, css: PRODUCTO_CSS_GENERICO, js: JS_COMUN };
-export const PLANTILLA_PRODUCTO_SUPLEMENTOS = { html: PRODUCTO_HTML, css: PRODUCTO_CSS, js: JS_COMUN };
+export const PLANTILLA_PRODUCTO = { html: PRODUCTO_HTML_GENERICO, css: `${PRODUCTO_CSS_GENERICO}
+${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
+export const PLANTILLA_PRODUCTO_SUPLEMENTOS = { html: PRODUCTO_HTML, css: `${PRODUCTO_CSS}
+${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
 
 
 

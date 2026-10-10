@@ -602,7 +602,9 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(document.querySelector('[data-gesicomm-venta="testimonios_kicker"]').textContent).toBe('Clientes reales');
     expect(document.querySelector('[data-gesicomm-venta="testimonios_titulo"]').textContent).toBe('Lo que dicen de la tienda');
     expect(document.querySelector('[data-gesicomm-venta="testimonios_subtitulo"]').textContent).toBe('Opiniones cargadas por el comercio.');
-    expect(document.querySelector('.testimonial-stars').textContent).toBe('★★★★');
+    expect(document.querySelector('.testimonial-stars').textContent).toBe('★★★★★');
+    expect(document.querySelectorAll('.testimonial-stars .gc-star')).toHaveLength(5);
+    expect(document.querySelector('.testimonial-stars .gc-star:nth-child(5)').getAttribute('style')).toContain('0.00');
     expect(document.querySelector('.testimonial-name').textContent).toBe('María López');
     expect(document.querySelector('.testimonial-detail').textContent).toBe('Compra verificada');
     expect(document.querySelector('.testimonial-quote').textContent).toBe('Me respondieron rápido y el producto llegó perfecto.');
@@ -751,6 +753,28 @@ describe('runtime del lienzo en blanco — ficha de producto', () => {
     // El paquete de la remera aparece en "Elegí tu oferta", junto a 1 unidad.
     expect(document.querySelectorAll('.paquete')).toHaveLength(2);
     expect(document.querySelectorAll('#relacionados [data-gesicomm-item]')).toHaveLength(1);
+  });
+
+  it('cambia la imagen principal al posar el mouse sobre una miniatura', () => {
+    const { document, dom } = montar(PLANTILLA_PRODUCTO, {
+      ...datos,
+      productos: [airFryer],
+      producto: airFryer,
+      recomendados: [],
+    });
+    const principal = document.querySelector('[data-gesicomm-imagen-principal]');
+    const thumbs = document.querySelectorAll('[data-gesicomm-lista="imagenes"] [data-gesicomm-imagen-idx]');
+
+    expect(thumbs).toHaveLength(2);
+    expect(thumbs[0].classList.contains('is-selected')).toBe(true);
+    expect(principal.getAttribute('src')).toContain('air.jpg');
+
+    thumbs[1].dispatchEvent(new dom.window.Event('pointerover', { bubbles: true, cancelable: true }));
+
+    expect(principal.getAttribute('src')).toContain('air2.jpg');
+    expect(thumbs[0].classList.contains('is-selected')).toBe(false);
+    expect(thumbs[1].classList.contains('is-selected')).toBe(true);
+    expect(thumbs[1].getAttribute('aria-current')).toBe('true');
   });
 
   it('muestra siempre el countdown y filtra las estadísticas por producto', () => {
@@ -1036,7 +1060,7 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     });
 
     const links = [...document.querySelectorAll('#nav-links a')];
-    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos', 'Checkout']);
+    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos', 'Descuentos', 'Nosotros', 'Contacto']);
     expect(links.find(link => link.textContent === 'Productos').className).toBe('active');
     expect(links.find(link => link.textContent === 'Inicio').className).toBe('');
   });
@@ -1061,7 +1085,7 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     });
 
     const links = [...document.querySelectorAll('#nav-links a')];
-    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos', 'Checkout']);
+    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos', 'Descuentos', 'Nosotros', 'Contacto']);
     expect(document.querySelector('#nav-links').style.display).toBe('');
   });
 
@@ -1235,7 +1259,7 @@ describe('ficha: imágenes y descripciones legibles', () => {
     });
     expect(window.getComputedStyle(document.querySelector('img[data-gesicomm-bind="imagen"]')).display).toBe('none');
     expect(document.querySelector('#descripcion').style.display).toBe('none');
-    expect(document.querySelector('a[href="#descripcion"]').style.display).toBe('none');
+    expect(document.querySelector('a[href="#descripcion"]')).toBeNull();
     dom.window.close();
   });
 
@@ -1245,8 +1269,8 @@ describe('ficha: imágenes y descripciones legibles', () => {
       vista: 'producto', productos: [producto], producto, tienda: {}, recomendados: [],
     });
     expect(document.querySelector('#descripcion').style.display).toBe('');
-    expect(document.querySelector('a[href="#descripcion"]').style.display).toBe('');
-    // La descripción principal va arriba, junto al nombre; "Detalles" muestra "Sobre este producto".
+    expect(document.querySelector('a[href="#descripcion"]')).toBeNull();
+    // La descripcion principal va arriba, junto al nombre; el header queda global.
     expect(document.querySelector('.pdp-lead').textContent).toBe(producto.descripcion_larga);
     expect(document.querySelector('#descripcion [data-gesicomm-bind="sobre"]').textContent).toBe(producto.sobre);
     dom.window.close();
@@ -1267,12 +1291,12 @@ describe('páginas base por formato', () => {
     expect(formatoDeBase('<h1>mío</h1>')).toBeNull();
   });
 
-  it('Producto estrella: el hero es el principal y "Comprar" (también el del header) lo compra', () => {
+  it('Producto estrella: el hero es el principal y "Comprar" lo compra', () => {
     const { document, mensajes, click } = montar(PLANTILLA_ESTRELLA, {
       vista: 'inicio', tienda: {}, productos: [airFryer, remera], producto: null, recomendados: [remera],
     });
     expect(document.querySelector('.star-hero h1').textContent).toBe('Air Fryer 2.6L');
-    click('.nav-cta[data-gesicomm-comprar="principal"]');
+    click('.star-hero [data-gesicomm-comprar]');
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'air-fryer-26l' }));
     // Complementos: el resto de la selección.
     expect(Array.from(document.querySelectorAll('[data-gesicomm-lista="recomendados"] [data-gesicomm-item]')).map(e => e.getAttribute('data-gesicomm-item'))).toEqual(['remera']);
@@ -1347,6 +1371,19 @@ describe('runtime — order bump en la ficha', () => {
     cantidad.value = '2';
     cantidad.dispatchEvent(new window.Event('input', { bubbles: true }));
     expect(total()).toBe(gs(precio * 2 + bump.precio_efectivo));
+  });
+
+  it('aplica descuento configurado por botón de pago anticipado al total y al checkout', () => {
+    const fryer = { ...datos.producto, cta_descuento_pct: '10', ofertas: [] };
+    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, productos: [fryer], producto: fryer });
+    expect(document.querySelector('.buy-row [data-gesicomm-cta-descuento]').textContent).toBe('-10%');
+    expect(document.querySelector('.buy-row [data-gesicomm-total]').textContent).toBe('Gs 131.162');
+    click('.buy-row [data-gesicomm-comprar]');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({
+      producto: 'air-fryer-26l',
+      descuento_boton_pct: 10,
+      payment_method: 'pagopar',
+    });
   });
 });
 
@@ -1569,7 +1606,7 @@ describe('ficha que vende: contenido real del producto', () => {
     expect(document.querySelectorAll('#confianza-producto .pdp-trust-card')).toHaveLength(1);
     expect(document.querySelector('#confianza-producto [data-gesicomm-bind="titulo"]').textContent).toBe('Registro sanitario');
     expect([...document.querySelectorAll('.faq-item summary')].some(l => l.textContent.includes('Dosis'))).toBe(true);
-    expect(document.querySelector('.pdp-prices .badge-off').textContent).toBe('Ahorrás 20%');
+    expect(document.querySelector('.pdp-price-badge').textContent).toBe('Ahorrás 20%');
     // No es combo: lo propio de un combo no se ve.
     expect(document.querySelector('.pdp-separado').style.display).toBe('none');
     expect(document.querySelector('#incluye').style.display).toBe('none');
@@ -1579,7 +1616,7 @@ describe('ficha que vende: contenido real del producto', () => {
     const caro = { ...producto, precio: 900000, precio_antes: 1200000 };
     const datos = datosRuntimePublico(data([caro]), 'x', caro);
     const { document } = montar(PLANTILLA_PRODUCTO, datos);
-    expect(document.querySelector('.pdp-prices .badge-off').textContent).toBe('Ahorrás Gs 300.000');
+    expect(document.querySelector('.pdp-price-badge').textContent).toBe('Ahorrás Gs 300.000');
   });
 
   it('combo: precio por separado como ancla y qué incluye cada producto', () => {
@@ -1982,7 +2019,7 @@ describe('ficha — propuesta de valor y badge del producto', () => {
     expect(soloCorta.producto.descripcion_ficha).toBe('Corta');
   });
 
-  it('en la ficha base: nombre → propuesta → descripción → reseñas (calculadas de las opiniones reales) → precio', () => {
+  it('en la ficha base: nombre → reseñas → precio → oferta → descripción', () => {
     const item = {
       content_id: 'x', tipo: 'producto', nombre: 'Mouse', precio: 89000, propuesta_valor: 'Sin cables y sin ruido.',
       descripcion_larga: 'Mouse compacto con receptor USB.', ofertas: [],
@@ -1992,7 +2029,7 @@ describe('ficha — propuesta de valor y badge del producto', () => {
     expect(datos.producto.resenas_texto).toBe('4,5 de 5 · 2 opiniones');
     const { document, dom } = montar(PLANTILLA_PRODUCTO, datos);
     const info = document.querySelector('.pdp-info');
-    const orden = ['h1', '.pdp-promesa', '.pdp-lead', '.pdp-reviews', '.pdp-prices'].map(sel => info.querySelector(sel));
+    const orden = ['h1', '.pdp-reviews', '.pdp-prices', '.pdp-price-badge', '.pdp-limited-offer[data-gesicomm-ficha-bloque="oferta"]', '.pdp-promesa', '.pdp-lead'].map(sel => info.querySelector(sel));
     orden.forEach(el => expect(el).toBeTruthy());
     for (let i = 1; i < orden.length; i++) {
       expect(orden[i - 1].compareDocumentPosition(orden[i]) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

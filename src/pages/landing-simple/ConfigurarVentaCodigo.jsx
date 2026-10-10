@@ -4,15 +4,16 @@ import {
   Eye, EyeOff, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
   ChevronsUpDown, ChevronsDownUp,
   Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, Trash2, ExternalLink, Save, Settings2,
-  GripVertical, Lock,
+  GripVertical, Lock, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
+import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import PresentacionProducto from './PresentacionProducto';
-import { contentIdPanel, datosRuntimePreview, slugCategoria, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
+import { contentIdPanel, datosRuntimePreview, presentacionDelProducto, slugCategoria, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
 import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
@@ -152,7 +153,7 @@ const MENU_PRINCIPAL_DEFAULT = [
 const ENCABEZADO_INICIO_DEFAULT = {
   mostrar_logo: true,
   mostrar_nombre: true,
-  logo_tamano: 46,
+  logo_tamano: 76,
   logo_rotacion: 0,
   logo_posicion: 'izquierda',
   variante: 'normal',
@@ -387,7 +388,7 @@ function normalizarEncabezadoInicio(encabezado = {}) {
   return {
     mostrar_logo: encabezado.mostrar_logo !== false,
     mostrar_nombre: encabezado.mostrar_nombre !== false,
-    logo_tamano: limitarNumero(encabezado.logo_tamano, 28, 96, ENCABEZADO_INICIO_DEFAULT.logo_tamano),
+    logo_tamano: limitarNumero(encabezado.logo_tamano, 28, 76, ENCABEZADO_INICIO_DEFAULT.logo_tamano),
     logo_rotacion: limitarNumero(encabezado.logo_rotacion, -180, 180, ENCABEZADO_INICIO_DEFAULT.logo_rotacion),
     logo_posicion: encabezado.logo_posicion === 'centro' ? 'centro' : ENCABEZADO_INICIO_DEFAULT.logo_posicion,
     variante: VARIANTES_ENCABEZADO.includes(encabezado.variante) ? encabezado.variante : ENCABEZADO_INICIO_DEFAULT.variante,
@@ -642,16 +643,13 @@ export default function ConfigurarVentaCodigo({
   // { "producto:12": 250000 }. Viven en landing_items, no en el producto.
   anclasIniciales = {},
   // Acciones de la landing ya guardada (null hasta que "venta" esté
-  // configurada): publicar, eliminar, guardar sin pasar por "confirmar", y
-  // abrir el editor de código crudo (HTML/CSS/JS, Secciones, Footer) para
-  // quien lo necesite — este asistente ya no es el único lugar, pero sigue
-  // siendo la puerta de entrada.
+  // configurada): publicar, eliminar, y abrir el editor de código crudo
+  // (HTML/CSS/JS, Secciones, Footer) para quien lo necesite. Guardar no
+  // viene de afuera: hay un solo botón y siempre guarda todo (confirmar).
   publicUrl = null,
   landingActiva = false,
   onPublicar = null,
   onEliminar = null,
-  onGuardarRapido = null,
-  sinGuardar = false,
   onAbrirCodigo = null,
 }) {
   const ventaInicial = inicial?.venta || {};
@@ -826,6 +824,10 @@ export default function ConfigurarVentaCodigo({
   const [dispositivo, setDispositivo] = useState('escritorio'); // 'movil' | 'escritorio'
   const [verDetalleError, setVerDetalleError] = useState(false);
   const [previewAmpliada, setPreviewAmpliada] = useState(false);
+  // Paneles ocultos: sin "Configurar tienda" ni la cabecera de la vista
+  // previa (pantallas, producto, avisos); queda solo la landing a todo el
+  // ancho para verla sin ruido. Se vuelve con el mismo botón.
+  const [panelesOcultos, setPanelesOcultos] = useState(false);
   const [seccionConfig, setSeccionConfig] = useState('inicio'); // 'inicio' | 'categorias' | 'fichas' | 'checkout' | 'ofertas' | 'combos'
   const [codigoModal, setCodigoModal] = useState(null);
   const [categoriaPreview, setCategoriaPreview] = useState('');
@@ -952,11 +954,41 @@ export default function ConfigurarVentaCodigo({
     () => destacados.filter(id => idsCandidatosDestacados.has(id)).slice(0, MAX_DESTACADOS),
     [destacados, idsCandidatosDestacados],
   );
+  // El catálogo del panel viene liviano: sin beneficios, garantías, opiniones
+  // ni preguntas del producto. Se piden a demanda para la ficha que se ve o
+  // se edita, así los bloques arrancan con lo cargado en Productos (ej. el
+  // JSON de la IA) y no con los textos de ejemplo. Van DEBAJO de lo que la
+  // landing pisa, y no entran en `seleccion`: no se guardan con la landing.
+  const [fichasProducto, setFichasProducto] = useState({});
+  const fichasPedidas = useRef(new Set());
+  const pedirFichaProducto = useCallback((item) => {
+    if (!item || item.tipo !== 'producto' || fichasPedidas.current.has(claveItem(item))) return;
+    fichasPedidas.current.add(claveItem(item));
+    Promise.resolve()
+      .then(() => Promise.all([productService.detalle(item.id), productService.faq(item.id).catch(() => [])]))
+      .then(([p, faq]) => setFichasProducto(prev => ({ ...prev, [claveItem(item)]: {
+        propuesta_valor: p?.propuesta_valor || null,
+        sobre_este_producto: p?.sobre_este_producto || null,
+        beneficios: Array.isArray(p?.beneficios) ? p.beneficios : [],
+        confianza: Array.isArray(p?.confianza) ? p.confianza : [],
+        ficha_datos: p?.ficha_datos || {},
+        faq: (Array.isArray(faq) ? faq : []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })),
+      } })))
+      .catch(() => {});
+  }, []);
   const candidatosDatosProducto = useMemo(() => {
     const productos = seleccion.filter(i => i.tipo === 'producto');
     const base = productos.length ? productos : seleccion;
-    return base.slice(0, 300).map(i => ({ ...i, ...(presentacion[claveItem(i)] || {}), content_id: contentIdPanel(i) }));
-  }, [seleccion, presentacion]);
+    return base.slice(0, 300).map(i => {
+      const ficha = fichasProducto[claveItem(i)];
+      const delProducto = { ...ficha, ...presentacionDelProducto(ficha?.ficha_datos) };
+      // Un texto que la landing guardó vacío no pisa el del producto: la
+      // ficha publicada también cae al del producto en ese caso.
+      const propio = Object.fromEntries(Object.entries({ ...i, ...presentacion[claveItem(i)] })
+        .filter(([campo, valor]) => (valor !== '' && valor != null) || !(campo in delProducto)));
+      return { ...delProducto, ...propio, content_id: contentIdPanel(i) };
+    });
+  }, [seleccion, presentacion, fichasProducto]);
   const productoConfigActual = useMemo(
     () => candidatosDatosProducto.find(i => i.content_id === productoEditando) || null,
     [candidatosDatosProducto, productoEditando],
@@ -1515,8 +1547,9 @@ export default function ConfigurarVentaCodigo({
     paquetes: confPaquetes,
     catalogo_filtros: filtrosCatalogo,
     presentacion_productos: Object.fromEntries(Object.entries(presentacion).slice(0, 500).map(([key, value]) => [key, {
-      ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, value[campo] || ''])),
+      ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'cta_descuento_pct', 'agregar_carrito_texto', 'resenas_texto', 'resenas_calificacion', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, value[campo] || ''])),
       ...(value.ficha_bloques && typeof value.ficha_bloques === 'object' ? { ficha_bloques: value.ficha_bloques } : {}),
+      ...(Array.isArray(value.ficha_orden_mobile) ? { ficha_orden_mobile: value.ficha_orden_mobile } : {}),
       ...(Array.isArray(value.imagenes_landing) ? { imagenes_landing: value.imagenes_landing } : {}),
       ...(Array.isArray(value.beneficios) ? { beneficios: value.beneficios.filter(b => b && (b.titulo || b.texto)).slice(0, 8) } : {}),
       ...(Array.isArray(value.confianza) ? { confianza: value.confianza.filter(c => c && (c.icono || c.titulo || c.texto)).slice(0, 6) } : {}),
@@ -1720,12 +1753,21 @@ export default function ConfigurarVentaCodigo({
           ? codigoCheckoutPreview
           : codigoInicioPreview;
 
-  const productosPreview = useMemo(() => seleccion.slice(0, MAX_PRODUCTOS_PREVIEW), [seleccion]);
+  const productosPreview = useMemo(
+    () => seleccion.slice(0, MAX_PRODUCTOS_PREVIEW).map(i => (fichasProducto[claveItem(i)] ? { ...fichasProducto[claveItem(i)], ...i } : i)),
+    [seleccion, fichasProducto],
+  );
   const productoFicha = useMemo(() => {
     const productosSolos = productosPreview.filter(p => p.tipo === 'producto');
     const contentId = resolverContentIdProducto(productoPreview);
     return productosPreview.find(p => contentIdPanel(p) === contentId) || productosSolos[0] || productosPreview[0] || null;
   }, [productosPreview, productoPreview, resolverContentIdProducto]);
+  const fichaEnPreview = abreEnFicha || vistaPreview === 'producto' ? productoFicha : null;
+  useEffect(() => {
+    pedirFichaProducto(productoConfigActual);
+    pedirFichaProducto(fichaEnPreview);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productoConfigActual?.id, fichaEnPreview?.id, pedirFichaProducto]);
 
   const datosPreview = useMemo(() => datosRuntimePreview({
     productos: productosPreview,
@@ -1899,6 +1941,33 @@ export default function ConfigurarVentaCodigo({
           <ArrowLeft size={15} /> Volver
         </button>
         <div className="flex items-center gap-1.5">
+          {panelesOcultos && (
+            <div role="radiogroup" aria-label="Dispositivo" className="flex rounded-lg bg-surface-2 p-0.5 border border-border">
+              {[['movil', 'Celular', Smartphone], ['escritorio', 'Escritorio', Monitor]].map(([k, label, Icono]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={dispositivo === k}
+                  onClick={() => setDispositivo(k)}
+                  title={label}
+                  className={`inline-flex items-center gap-1 h-8 px-2 rounded-md text-xs font-medium transition-colors ${dispositivo === k ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+                >
+                  <Icono size={13} /> <span className="hidden sm:inline">{label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setPanelesOcultos(v => !v)}
+            aria-pressed={panelesOcultos}
+            title={panelesOcultos ? 'Volver a mostrar la configuración y la vista previa' : 'Ocultar la configuración y ver solo la landing'}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold text-fg-muted hover:bg-surface-2 hover:text-fg"
+          >
+            {panelesOcultos ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+            <span className="hidden sm:inline">{panelesOcultos ? 'Mostrar paneles' : 'Ocultar paneles'}</span>
+          </button>
           {onAbrirCodigo && (
             <button
               type="button"
@@ -1932,26 +2001,29 @@ export default function ConfigurarVentaCodigo({
               {landingActiva ? <><EyeOff size={14} /> Despublicar</> : <><Eye size={14} /> Publicar</>}
             </button>
           )}
-          {onGuardarRapido && (
-            <button
-              type="button"
-              onClick={onGuardarRapido}
-              disabled={guardando}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold bg-fg text-canvas hover:bg-fg-muted disabled:opacity-50"
-            >
-              {guardando ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-              Guardar{sinGuardar ? ' •' : ''}
-            </button>
-          )}
+          {/* Único botón de guardar: guarda la configuración entera (venta,
+              productos, precios, código). Antes había otro abajo y este de
+              arriba guardaba solo el código, sin los cambios del formulario. */}
+          <button
+            type="button"
+            onClick={confirmar}
+            disabled={guardando || !!bloqueo || subidasPendientes > 0}
+            title={bloqueo || undefined}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold bg-primary text-primary-fg hover:bg-primary-hover disabled:opacity-45 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            {guardando ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {disenoPendienteIA ? 'Generar landing con IA' : 'Guardar'}
+          </button>
         </div>
       </div>
 
       <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex">
-        {/* Configuración */}
-        <div className="flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto overscroll-contain">
+        {/* Configuración: oculta, no desmontada, para no perder lo que se
+            está editando (formularios abiertos, borradores). */}
+        <div hidden={panelesOcultos} className="flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto overscroll-contain">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
             <header className="mb-7">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML · paso 1 de 2</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML</p>
               <h1 className="mt-2 text-[28px] md:text-[32px] leading-tight font-bold tracking-tight text-fg">Configurar tienda</h1>
               <p className="mt-2 text-[15px] text-fg-muted">
                 Ajustá qué se ve en el inicio, cómo se presentan las fichas y qué ofertas reales tendrá la tienda.
@@ -3071,14 +3143,15 @@ export default function ConfigurarVentaCodigo({
           </div>
         </div>
 
-        {/* Vista previa (escritorio ancho) */}
-        <aside className="hidden xl:flex flex-1 min-w-0 border-l border-border bg-surface-2 flex-col min-h-0" aria-label="Vista previa">
-          {vistaPrevia}
+        {/* Vista previa (escritorio ancho; con los paneles ocultos, en
+            cualquier ancho y sin su cabecera) */}
+        <aside className={`${panelesOcultos ? 'flex pt-4' : 'hidden xl:flex border-l border-border'} flex-1 min-w-0 bg-surface-2 flex-col min-h-0`} aria-label="Vista previa">
+          {panelesOcultos ? <VistaPrevia {...propsVistaPrevia} soloLienzo /> : vistaPrevia}
         </aside>
       </div>
 
-      {/* Barra de acción: resumen + seguir, siempre a la vista */}
-      <div className="shrink-0 border-t border-border bg-surface px-4 md:px-6 py-3">
+      {/* Barra de resumen: con los paneles ocultos solo aparece si hay un error */}
+      <div hidden={panelesOcultos && !errorGuardado && !error} className="shrink-0 border-t border-border bg-surface px-4 md:px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-fg truncate">
@@ -3106,23 +3179,15 @@ export default function ConfigurarVentaCodigo({
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setPreviewMovil(true)}
-            className="xl:hidden inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-border text-sm font-medium text-fg hover:border-border-strong"
-          >
-            <Eye size={15} /> Vista previa
-          </button>
-          <button
-            type="button"
-            onClick={confirmar}
-            disabled={guardando || !!bloqueo || subidasPendientes > 0}
-            className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-primary text-primary-fg text-sm font-semibold transition-colors hover:bg-primary-hover disabled:opacity-45 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            {guardando && <Loader size={15} className="animate-spin" />}
-            {disenoPendienteIA ? 'Generar landing con IA' : 'Guardar y armar el diseño'}
-            {!guardando && <ArrowRight size={15} />}
-          </button>
+          {!panelesOcultos && (
+            <button
+              type="button"
+              onClick={() => setPreviewMovil(true)}
+              className="xl:hidden inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-border text-sm font-medium text-fg hover:border-border-strong"
+            >
+              <Eye size={15} /> Vista previa
+            </button>
+          )}
         </div>
       </div>
 
@@ -3331,27 +3396,26 @@ const ANCHO_ESCRITORIO = 1280;
  * elegir "Escritorio", y un efecto de montaje ya no lo vería.
  */
 function useTamano() {
-  const observador = useRef(null);
+  const [nodo, setNodo] = useState(null);
   const [tam, setTam] = useState({ w: 0, h: 0 });
-  const ref = useCallback((nodo) => {
-    observador.current?.disconnect();
-    observador.current = null;
-    if (!nodo) return;
-    const medir = () => setTam({ w: nodo.clientWidth, h: nodo.clientHeight });
+  // El observador vive en un efecto atado al nodo y no en la ref: con
+  // StrictMode el desmontaje simulado lo desconectaba y la ref no volvía a
+  // correr, así que la vista quedaba con la medida vieja (franja en blanco
+  // al ocultar los paneles o al redimensionar).
+  useEffect(() => {
+    if (!nodo) return undefined;
+    const medir = () => setTam(prev => (
+      prev.w === nodo.clientWidth && prev.h === nodo.clientHeight ? prev : { w: nodo.clientWidth, h: nodo.clientHeight }
+    ));
     medir();
-    if (typeof ResizeObserver !== 'undefined') {
-      observador.current = new ResizeObserver(medir);
-      observador.current.observe(nodo);
-    }
+    const observador = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null;
+    observador?.observe(nodo);
     // Respaldo: al pasar de oculto (pantalla chica) a visible, no todos los
     // navegadores avisan por ResizeObserver y la vista quedaba en blanco.
-    const alRedimensionar = () => medir();
-    window.addEventListener('resize', alRedimensionar);
-    const desconectar = observador.current?.disconnect.bind(observador.current);
-    observador.current = { disconnect: () => { desconectar?.(); window.removeEventListener('resize', alRedimensionar); } };
-  }, []);
-  useEffect(() => () => observador.current?.disconnect(), []);
-  return [ref, tam];
+    window.addEventListener('resize', medir);
+    return () => { observador?.disconnect(); window.removeEventListener('resize', medir); };
+  }, [nodo]);
+  return [setNodo, tam];
 }
 
 /**
@@ -3363,6 +3427,9 @@ function useTamano() {
 function VistaPrevia({
   vista, onVista, productos, productoFicha, onProducto, codigo, datos, resaltado, aviso, inicioEsBase, onNavegar, onComprar, onCarrito,
   dispositivo, onDispositivo, onAmpliar, ampliada, onCerrar, disenoPendienteIA = false,
+  // Solo la landing, sin la cabecera (paneles ocultos): el dispositivo se
+  // elige desde la barra superior y se navega con los links de la página.
+  soloLienzo = false,
 }) {
   const productosFicha = productos.filter(p => p.tipo === 'producto' || p.tipo === 'combo');
   const [marcoRef, tam] = useTamano();
@@ -3386,6 +3453,7 @@ function VistaPrevia({
 
   return (
     <>
+      {!soloLienzo && (
       <div className={`px-4 pt-4 pb-3 space-y-3 shrink-0 ${ampliada ? 'border-b border-border bg-surface' : ''}`}>
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-fg">Vista previa</p>
@@ -3447,9 +3515,10 @@ function VistaPrevia({
             ? <><MousePointerClick size={12} className="mt-px shrink-0 text-accent-text" /> {aviso}</>
             : disenoPendienteIA
               ? 'Vista previa comercial. Al guardar, la IA genera el HTML final con esta venta.'
-              : (vista === 'inicio' && !inicioEsBase ? 'Mostrando tu diseño actual.' : 'Diseño base: en el paso 2 lo cambiás a tu gusto.')}
+              : (vista === 'inicio' && !inicioEsBase ? 'Mostrando tu diseño actual.' : 'Así se ve la tienda con lo que configuraste.')}
         </p>
       </div>
+      )}
 
       <div className={`flex-1 min-h-0 flex justify-center ${ampliada ? 'p-4 md:p-6' : 'px-4 pb-4'}`}>
         {productos.length === 0 ? (
@@ -4520,7 +4589,7 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
                 alt=""
                 className="shrink-0 object-contain"
                 style={{
-                  width: Math.round(cfg.logo_tamano * 0.72),
+                  width: cfg.logo_tamano,
                   height: cfg.logo_tamano,
                   transform: `rotate(${cfg.logo_rotacion}deg)`,
                 }}
@@ -4529,7 +4598,7 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
               <span
                 className="grid shrink-0 place-items-center rounded-xl bg-primary text-sm font-black text-primary-fg"
                 style={{
-                  width: Math.round(cfg.logo_tamano * 0.72),
+                  width: cfg.logo_tamano,
                   height: cfg.logo_tamano,
                   transform: `rotate(${cfg.logo_rotacion}deg)`,
                 }}
@@ -4581,7 +4650,7 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
             <input
               type="range"
               min="28"
-              max="96"
+              max="76"
               value={cfg.logo_tamano}
               onChange={e => onCambiarEncabezado({ logo_tamano: Number(e.target.value) })}
               className="w-full accent-primary"

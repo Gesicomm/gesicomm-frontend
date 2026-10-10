@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Layers, Search, X, Save, Power, PowerOff, ArrowLeft, ArrowRight, Check,
-  AlertTriangle, Package, Star, Upload, Plus, Eye, Loader, TrendingDown,
+  AlertTriangle, Package, Star, Upload, Plus, Eye, Loader, TrendingDown, Activity,
 } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
 import { productService } from '../../services/productService';
@@ -11,7 +11,8 @@ import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { verificarSesion } from '../../utils/auth';
-import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
+import { calcular as calcularLocal, utilidadAPrecio, precioParaMargen } from '../../utils/comboPricingLocal';
+import SensibilidadPanel from '../vitrina/SensibilidadPanel';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
 import FichaComboPanel from '../landing-simple/panels/FichaComboPanel';
 import { fichaComboDesdeProducto, resolverFichaCombo } from '../landing-simple/templates/combo/fichaCombo';
@@ -352,7 +353,7 @@ function ReglaPrecio({ precio, costo, pisoSano, precioSuelto, precioConDescuento
   const max = redondearMil(Math.max(precioSuelto, precio, pisoSano) * 1.1);
   const pos = v => `${Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100))}%`;
   const marcas = [
-    { v: costo, label: 'Costo', clase: 'neg' },
+    { v: costo, label: 'Equilibrio', clase: 'neg' },
     { v: pisoSano, label: 'Margen mínimo', clase: 'warn' },
     { v: precioConDescuentos, label: 'Con descuentos', clase: 'ref' },
     { v: precioSuelto, label: 'Precio suelto', clase: 'ref' },
@@ -397,15 +398,19 @@ function ReglaPrecio({ precio, costo, pisoSano, precioSuelto, precioConDescuento
  * queda. Envío, confirmación y empaque se pagan UNA vez por pedido, así que
  * el principal solo suele quedar en rojo y el combo los reparte.
  */
-function Recibo({ titulo, precio, costoProductos, etiquetaCostoProductos, publicidad, cpaPct, logistica }) {
-  const resultado = precio - costoProductos - publicidad - logistica;
+function Recibo({ titulo, precio, costoProductos, etiquetaCostoProductos, publicidad, cpaPct, comision = 0, comisionPct = 0, logistica }) {
+  // Mismos términos que el motor (calcularPrincipal / calcularCombo): si falta
+  // uno, el recibo no da el mismo número que "Vos ganás/perdés". Publicidad y
+  // comisión vienen ya calculadas sobre el precio de ESTE recibo.
+  const resultado = precio - costoProductos - publicidad - comision - logistica;
   return (
     <div className={`cw-recibo ${signo(resultado)}`}>
       <span className="cw-recibo-titulo">{titulo}</span>
       <dl>
         <div><dt>Precio de venta</dt><dd>{gs(precio)}</dd></div>
         <div><dt>{etiquetaCostoProductos}</dt><dd>− {gs(costoProductos)}</dd></div>
-        <div><dt>Publicidad ({cpaPct}% del principal)</dt><dd>− {gs(publicidad)}</dd></div>
+        <div><dt>Publicidad ({cpaPct}% del precio)</dt><dd>− {gs(publicidad)}</dd></div>
+        {comision > 0 && <div><dt>Comisión de cobro ({comisionPct}% del precio)</dt><dd>− {gs(comision)}</dd></div>}
         <div><dt>Envío, confirmación y empaque</dt><dd>− {gs(logistica)}</dd></div>
         <div className="total"><dt>{etiquetaGanancia(resultado, ' por pedido')}</dt><dd className={signo(resultado)}>{gsAbs(resultado)}</dd></div>
       </dl>
@@ -475,6 +480,8 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
   const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
   const [estadoAConfirmar, setEstadoAConfirmar] = useState(null);
+  // Foto del combo al abrir "Analizar margen": el panel no se resetea mientras está abierto.
+  const [analisisMargen, setAnalisisMargen] = useState(null);
   const [error, setError] = useState(null);
   const tituloFaseRef = useRef(null);
 
@@ -660,6 +667,50 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
   const aplicarPrecio = (valor) => {
     setPrecioTocado(true);
     setPrecioTotal(String(Math.max(0, Math.round(valor))));
+  };
+
+  // El mismo "Análisis de sensibilidad" de Mi catálogo, con los datos del
+  // combo: costo de compra = todos los productos, y la configuración de
+  // combos para operación propia y RAHA (igual que el backend en
+  // analizarSensibilidadProducto). La comisión del método de pago se elige
+  // adentro, como en productos.
+  const abrirAnalisisMargen = () => {
+    if (!resultado || !config) return;
+    const parametros = {
+      escenarios_descuento: config.escenarios_descuento || [0, 5, 10, 15, 20, 25, 30, 35],
+      margen_minimo: (Number(config.margen_minimo) || 10) / 100,
+    };
+    const costoCompra = resultado.combo.productCost;
+    const precioActual = Number(precioTotal) || resultado.combo.finalPrice;
+    setAnalisisMargen({
+      item: { tipo: 'combo', id: id ?? null, nombre: nombre.trim() || 'Combo sin nombre' },
+      datos: {
+        combo: { id: id ?? null, nombre, precio_efectivo: precioActual, precio_minimo: esAdmin && precioMinimo ? Number(precioMinimo) : null },
+        operaciones: {
+          propios: {
+            costos: {
+              costo_compra: costoCompra,
+              marketing_cpa_porcentaje: Number(config.cpa_porcentaje) || 0,
+              costo_envio_promedio: Number(config.costo_envio) || 0,
+              costo_confirmacion_promedio: Number(config.costo_confirmacion) || 0,
+              costo_empaque_promedio: Number(config.costo_empaque) || 0,
+            },
+            parametros,
+          },
+          raha: {
+            costos: {
+              costo_compra: costoCompra,
+              marketing_cpa_porcentaje: Number(config.raha_cpa_porcentaje ?? config.cpa_porcentaje) || 0,
+              costo_envio_promedio: Number(config.raha_costo_envio) || 0,
+              costo_confirmacion_promedio: Number(config.raha_costo_confirmacion ?? config.costo_confirmacion) || 0,
+              costo_empaque_promedio: Number(config.raha_costo_empaque) || 0,
+            },
+            parametros,
+          },
+        },
+        pagopar: config.pagopar || {},
+      },
+    });
   };
 
   // ─── Imágenes ────────────────────────────────────────────────────────────
@@ -852,21 +903,24 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
   const excluir = [principal?.id, ...upsells.map(u => u.id)].filter(Boolean);
 
   // Economía al precio elegido (no al "con descuentos" del motor).
+  // CPA y comisión son % del precio: al cambiar el precio cambian ellos
+  // también, así que "costo" acá es el punto de equilibrio, no un fijo.
   const precio = Number(precioTotal) || 0;
-  const costo = r?.combo.totalCost || 0;
-  const utilidad = precio - costo;
+  const utilidad = r ? utilidadAPrecio(precio, r.combo) : 0;
   const margen = precio > 0 ? utilidad / precio : null;
-  const pisoSano = margenMinimo < 1 ? costo / (1 - margenMinimo) : costo;
+  const costo = r ? (precioParaMargen(0, r.combo) ?? 0) : 0;
+  const pisoSano = r ? (precioParaMargen(margenMinimo, r.combo) ?? costo) : 0;
   // Lo que se le muestra al usuario, en guaraníes redondos hacia arriba.
   const pisoSanoGs = Math.ceil(pisoSano / 1000) * 1000;
   const costoGs = Math.ceil(costo / 1000) * 1000;
   const tono = margen === null ? '' : margen <= 0 ? 'neg' : margen < margenMinimo ? 'warn' : 'pos';
   const logistica = config ? Number(config.costo_envio) + Number(config.costo_confirmacion) + Number(config.costo_empaque) : 0;
+  const comisionPct = Number(config?.pagopar_comision_porcentaje) || 0;
   const costoProductosCombo = principal ? (principal.precio_costo || 0) + upsells.reduce((a, u) => a + (u.precio_costo || 0), 0) : 0;
   const diferenciaVsSolo = r ? utilidad - r.comparison.standaloneProfit : 0;
   const escenarios = (config?.escenarios_descuento || [0, 5, 10, 15, 20, 25, 30]).map(d => {
     const p = redondearMil(precio * (1 - d / 100));
-    const u = p - costo;
+    const u = r ? utilidadAPrecio(p, r.combo) : 0;
     const m = p > 0 ? u / p : 0;
     return { d, p, u, m, tono: m <= 0 ? 'neg' : m < margenMinimo ? 'warn' : 'pos' };
   });
@@ -1083,7 +1137,10 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
                 <div className="cw-descuentos">
                   <div className="cw-desc-fila principal">
                     <Miniatura src={principal.imagen} size={36} />
-                    <div className="cw-desc-nombre"><b>{principal.nombre}</b><small>Principal · precio lleno</small></div>
+                    <div className="cw-desc-nombre">
+                      <b>{principal.nombre}</b>
+                      <small>Principal · precio lleno · Costo {gs(principal.precio_costo)} · <span className={signo(principal.precio_base - principal.precio_costo)}>{etiquetaGanancia(principal.precio_base - principal.precio_costo).toLowerCase()} {gsAbs(principal.precio_base - principal.precio_costo)}</span> antes de publicidad y envío</small>
+                    </div>
                     <div className="cw-desc-precio"><b>{gs(principal.precio_base)}</b></div>
                   </div>
                   {upsells.map((u, idx) => {
@@ -1094,6 +1151,9 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
                         <div className="cw-desc-nombre">
                           <b>{u.nombre}</b>
                           <small>Costo {gs(u.precio_costo)} · <span className={ur ? signo(ur.profit) : ''}>{ur ? `${etiquetaGanancia(ur.profit).toLowerCase()} ${gsAbs(ur.profit)}` : ''}</span></small>
+                          {u.precio_base > 0 && u.precio_base <= u.precio_costo && (
+                            <small className="warn">Su precio de venta es igual a tu costo. Ponele precio en el paso anterior.</small>
+                          )}
                         </div>
                         <div className="cw-desc-control">
                           <div className="cw-chips" role="group" aria-label={`Descuento para ${u.nombre}`}>
@@ -1135,6 +1195,23 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
                     <div><dt>Tu cliente ahorra</dt><dd>{gs(r.combo.discountAmount)} <small>({pct(r.combo.discountPercentage)})</small></dd></div>
                     <div><dt>{r.combo.profit < 0 ? 'Vos perdés' : 'Vos ganás'}</dt><dd className={signo(r.combo.profit)}>{gsAbs(r.combo.profit)} <small>({pct(r.combo.margin)})</small></dd></div>
                   </dl>
+                  <div className="cw-desglose">
+                    <Recibo
+                      titulo={`De dónde sale lo que ${r.combo.profit < 0 ? 'perdés' : 'ganás'}`}
+                      precio={r.combo.finalPrice}
+                      costoProductos={costoProductosCombo}
+                      etiquetaCostoProductos={`Costo de los ${upsells.length + 1} productos`}
+                      publicidad={r.combo.cpa}
+                      cpaPct={Number(config.cpa_porcentaje)}
+                      comision={r.combo.paymentCommissionCost}
+                      comisionPct={comisionPct}
+                      logistica={logistica}
+                    />
+                    <p>Publicidad y comisión son un % del precio del combo; envío, confirmación y empaque se pagan una vez por pedido. Los valores salen de la configuración de combos.</p>
+                    <button type="button" className="btn-secondary cw-btn-analizar" onClick={abrirAnalisisMargen}>
+                      <Activity size={14} /> Analizar margen
+                    </button>
+                  </div>
                   {r.warnings.length > 0 && (
                     <ul className="cw-avisos">
                       {r.warnings.map(w => <li key={w}><AlertTriangle size={13} /> {w}</li>)}
@@ -1163,6 +1240,9 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
                       <span>Margen</span>
                       <b className={tono}>{pct(margen)}</b>
                     </div>
+                    <button type="button" className="btn-secondary cw-btn-analizar" onClick={abrirAnalisisMargen}>
+                      <Activity size={14} /> Analizar margen
+                    </button>
                   </div>
 
                   <ReglaPrecio
@@ -1203,6 +1283,8 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
                         etiquetaCostoProductos="Costo del producto"
                         publicidad={r.principal.cpaMax}
                         cpaPct={Number(config.cpa_porcentaje)}
+                        comision={r.principal.paymentCommissionCost}
+                        comisionPct={comisionPct}
                         logistica={logistica}
                       />
                       <Recibo
@@ -1210,8 +1292,10 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
                         precio={precio}
                         costoProductos={costoProductosCombo}
                         etiquetaCostoProductos={`Costo de los ${upsells.length + 1} productos`}
-                        publicidad={r.principal.cpaMax}
+                        publicidad={precio * Number(config.cpa_porcentaje) / 100}
                         cpaPct={Number(config.cpa_porcentaje)}
+                        comision={precio * comisionPct / 100}
+                        comisionPct={comisionPct}
                         logistica={logistica}
                       />
                     </div>
@@ -1219,7 +1303,7 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
                       {diferenciaVsSolo > 0
                         ? <>Con el combo ganás <b className="pos">{gs(diferenciaVsSolo)} más por pedido</b> que vendiendo el principal solo.</>
                         : <>Con el combo ganás <b className="neg">{gs(-diferenciaVsSolo)} menos por pedido</b> que vendiendo el principal solo. Revisá los descuentos o el precio.</>}
-                      {r.comparison.standaloneProfit < 0 && ' Solo, el principal no alcanza a cubrir el envío y la publicidad; el combo reparte esos costos entre más productos.'}
+                      {r.comparison.standaloneProfit < 0 && ' Solo, el principal no alcanza a cubrir el envío y la publicidad; en el combo el envío se paga una sola vez para todos los productos.'}
                     </p>
                   </div>
 
@@ -1399,6 +1483,16 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
             onDeviceChange={setPreviewDevice}
           />
         </div>
+      )}
+
+      {analisisMargen && (
+        <SensibilidadPanel
+          item={analisisMargen.item}
+          datos={analisisMargen.datos}
+          etiquetaCostoCompra={`Costo de compra de los ${upsells.length + 1} productos`}
+          onClose={() => setAnalisisMargen(null)}
+          onAplicarPrecio={(_, precioElegido) => aplicarPrecio(precioElegido)}
+        />
       )}
 
       <ConfirmDialog

@@ -6,8 +6,14 @@ import { trackearEventoTikTok } from '../../lib/tiktokPixel';
 import { registrarEventoLanding, recalcularCarritoLanding, crearCheckoutLanding, validarCuponLanding } from '../../services/landingPublicaService';
 import { calcularCrossSells, ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
 
-function claveCarrito(item, varianteId, ofertaId, componenteVarianteId) {
-  return `${item.tipo}:${item.content_id}:${varianteId || 'base'}:${ofertaId || 'individual'}:${componenteVarianteId || 'sinbump'}`;
+function claveCarrito(item, varianteId, ofertaId, componenteVarianteId, descuentoBotonPct = 0) {
+  return `${item.tipo}:${item.content_id}:${varianteId || 'base'}:${ofertaId || 'individual'}:${componenteVarianteId || 'sinbump'}:${descuentoBotonPct || 'sindescuento'}`;
+}
+
+function normalizarDescuentoBoton(valor) {
+  const n = Number(String(valor ?? '').replace(',', '.'));
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(95, Math.round(n * 10) / 10);
 }
 
 export function cargarCarritoGuardado(slug) {
@@ -108,8 +114,9 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     agregarAlCarrito({ item, variante: null, oferta, cantidad: 1, precio, componenteVariante });
   }
 
-  function agregarAlCarrito({ item, variante, oferta, cantidad, precio, componenteVariante = null }) {
-    const clave = claveCarrito(item, variante?.id, oferta?.id, componenteVariante?.id);
+  function agregarAlCarrito({ item, variante, oferta, cantidad, precio, componenteVariante = null, descuentoBotonPct = 0, precioAntesBoton = null }) {
+    const descuentoBoton = normalizarDescuentoBoton(descuentoBotonPct);
+    const clave = claveCarrito(item, variante?.id, oferta?.id, componenteVariante?.id, descuentoBoton);
     const stockMax = variante ? variante.stock : (oferta ? null : item.stock);
     setCarrito(prev => {
       const copia = new Map(prev);
@@ -129,10 +136,13 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         componenteVarianteId: componenteVariante?.id || null,
         componenteVarianteNombre: componenteVariante?.nombre || null,
         precio,
+        descuentoBotonPct: descuentoBoton || null,
         // Precio de lista, para mostrar el ahorro en el carrito: el normal de
         // la oferta (bump/upsell/pack) o el "antes" del producto. Con
         // variante no se usa: precio_antes es del producto base.
-        precioAntes: oferta
+        precioAntes: precioAntesBoton
+          ? Number(precioAntesBoton)
+          : oferta
           ? (Number(oferta.precio_normal) || null)
           : (variante ? null : (Number(item.precio_antes) || null)),
         cantidad: nuevaCantidad,
@@ -235,6 +245,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       variante_id: i.varianteId,
       oferta_id: i.ofertaId,
       componente_variante_id: i.componenteVarianteId || undefined,
+      descuento_boton_pct: i.descuentoBotonPct || undefined,
     }));
     return validarCuponLanding(slug, codigo, itemsPayload);
   }
@@ -249,6 +260,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       variante_id: i.varianteId,
       oferta_id: i.ofertaId,
       componente_variante_id: i.componenteVarianteId || undefined,
+      descuento_boton_pct: i.descuentoBotonPct || undefined,
     }));
 
     const res = await recalcularCarritoLanding(slug, itemsPayload);
