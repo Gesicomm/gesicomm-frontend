@@ -1371,10 +1371,16 @@ export function runtimeGesicomm() {
     }).filter(function (b) { return b.label; }).slice(0, 4);
   }
 
+  function metodoPagoOculto(texto) {
+    var t = normalizar(texto);
+    return t === 'pago contra entrega' || t === 'contra entrega' || t === 'pago al recibir'
+      || t === 'transferencia bancaria' || t === 'transferencia';
+  }
+
   function metodosPagoProducto() {
     var lista = productoActual && Array.isArray(productoActual.metodos_pago) ? productoActual.metodos_pago : [];
     return lista.map(function (m) { return { texto: String((m && (m.texto || m.label)) || '').trim() }; })
-      .filter(function (m) { return m.texto; }).slice(0, 8);
+      .filter(function (m) { return m.texto && !metodoPagoOculto(m.texto); }).slice(0, 8);
   }
 
   function incluyePedidoProducto() {

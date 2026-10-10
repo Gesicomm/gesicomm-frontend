@@ -2079,23 +2079,6 @@ const PRODUCTO_HTML = `${headerTiendaUnico('productos')}
   </section>
 </main>
 
-<!-- Zona de confianza propia del producto. Solo aparece si el comercio carga tarjetas. -->
-<section id="confianza-producto" class="pdp-trust-section" data-gesicomm-lista="confianza" data-gesicomm-ficha-bloque="confianza">
-  <div class="container">
-    <div class="pdp-trust-grid" data-gesicomm-lista="confianza">
-      <template>
-        <article class="pdp-trust-card">
-          <span class="pdp-trust-icon" data-gesicomm-bind="icono"></span>
-          <div>
-            <h3 data-gesicomm-bind="titulo"></h3>
-            <p data-gesicomm-bind="texto"></p>
-          </div>
-        </article>
-      </template>
-    </div>
-  </div>
-</section>
-
 <!-- Recomendados: según la configuración de venta de la landing. -->
 <section id="relacionados" class="related" data-gesicomm-lista="recomendados" data-gesicomm-ficha-bloque="recomendados">
   <div class="container">
@@ -2111,6 +2094,23 @@ const PRODUCTO_HTML = `${headerTiendaUnico('productos')}
               <div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div>
               <button class="button-primary" type="button" data-gesicomm-agregar data-gesicomm-venta="recomendados_cta">Agregar</button>
             </div>
+          </div>
+        </article>
+      </template>
+    </div>
+  </div>
+</section>
+
+<!-- Zona de confianza propia del producto. Solo aparece si el comercio carga tarjetas. -->
+<section id="confianza-producto" class="pdp-trust-section" data-gesicomm-lista="confianza" data-gesicomm-ficha-bloque="confianza">
+  <div class="container">
+    <div class="pdp-trust-grid" data-gesicomm-lista="confianza">
+      <template>
+        <article class="pdp-trust-card">
+          <span class="pdp-trust-icon" data-gesicomm-bind="icono"></span>
+          <div>
+            <h3 data-gesicomm-bind="titulo"></h3>
+            <p data-gesicomm-bind="texto"></p>
           </div>
         </article>
       </template>

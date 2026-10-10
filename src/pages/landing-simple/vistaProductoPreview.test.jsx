@@ -138,15 +138,14 @@ describe('Vista producto: cada campo llega a la preview', () => {
     montar();
     const metodos = within(bloque('Disponibilidad y medios de pago')).getByRole('group', { name: 'Métodos de pago' });
     let f = ficha();
-    expect(f.lista('.payment-methods')).toEqual(['Pago contra entrega', 'Transferencia bancaria']);
+    expect(f.lista('.payment-methods')).toEqual([]);
+    expect(f.oculto('.payment-methods')).toBe(true);
 
-    fireEvent.click(within(metodos).getByLabelText('Transferencia bancaria'));
     fireEvent.click(within(metodos).getByRole('button', { name: '+ Otro método' }));
     escribir(within(metodos).getByLabelText('Otro método 1'), 'Giros Tigo');
     f = ficha();
-    expect(f.lista('.payment-methods')).toEqual(['Pago contra entrega', 'Giros Tigo']);
+    expect(f.lista('.payment-methods')).toEqual(['Giros Tigo']);
 
-    fireEvent.click(within(metodos).getByLabelText('Pago contra entrega'));
     fireEvent.click(within(metodos).getByRole('button', { name: 'Quitar' }));
     f = ficha();
     expect(f.lista('.payment-methods')).toEqual([]);
@@ -200,6 +199,9 @@ describe('Vista producto: cada campo llega a la preview', () => {
   it('"Mostrar" de cada bloque oculta su parte de la ficha y la vuelve a mostrar', () => {
     montar();
     escribir(within(bloque('Reseñas comerciales')).getByLabelText('Texto de reseñas'), '4.9 · 120 reseñas');
+    const metodos = within(bloque('Disponibilidad y medios de pago')).getByRole('group', { name: 'Métodos de pago' });
+    fireEvent.click(within(metodos).getByRole('button', { name: '+ Otro método' }));
+    escribir(within(metodos).getByLabelText('Otro método 1'), 'Giros Tigo');
     const casos = [
       ['Galería del producto', '.gallery'],
       ['Encabezado', '.eyebrow[data-gesicomm-bind="insignia_principal"]'],

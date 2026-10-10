@@ -87,7 +87,7 @@ describe('ficha: bloques editables de Vista producto', () => {
       cta_texto: 'Comprar esta remera',
       agregar_carrito_texto: 'Sumar al carrito',
       botones_pago: [{ label: 'Pagar por WhatsApp', tipo: 'whatsapp', valor: 'Hola' }],
-      metodos_pago: [{ texto: 'Transferencia bancaria' }],
+      metodos_pago: [{ texto: 'Giros Tigo' }],
       incluye_pedido: [{ texto: '1 remera premium' }],
       opiniones_kicker: 'Clientes reales',
       opiniones_titulo: 'Lo que cuentan',
@@ -135,9 +135,9 @@ describe('ficha: bloques editables de Vista producto', () => {
     sigue(botonesPago, botonesContacto);
     sigue(botonesContacto, disponibilidad);
     sigue(disponibilidad, incluye);
-    sigue(incluye, confianza);
-    sigue(confianza, recomendados);
-    sigue(recomendados, opiniones);
+    sigue(incluye, recomendados);
+    sigue(recomendados, confianza);
+    sigue(confianza, opiniones);
     sigue(opiniones, preguntas);
     expect(doc.querySelectorAll('#opiniones')).toHaveLength(1);
     expect(doc.querySelectorAll('#preguntas')).toHaveLength(1);
@@ -157,7 +157,7 @@ describe('ficha: bloques editables de Vista producto', () => {
     expect(doc.querySelector('#confianza-producto [data-gesicomm-bind="texto"]').textContent).toBe('Tu pago y tus datos están seguros.');
     expect(doc.querySelector('[data-gesicomm-comprar] [data-gesicomm-bind="cta_texto"]').textContent).toBe('Comprar esta remera');
     expect(doc.querySelector('.payment-action [data-gesicomm-bind="label"]').textContent).toBe('Pagar por WhatsApp');
-    expect(doc.querySelector('.payment-methods [data-gesicomm-generado]').textContent).toBe('Transferencia bancaria');
+    expect(doc.querySelector('.payment-methods [data-gesicomm-generado]').textContent).toBe('Giros Tigo');
     expect(doc.querySelector('.order-includes [data-gesicomm-generado]').textContent).toBe('1 remera premium');
     expect([...doc.querySelectorAll('.payment-brand-name')].map(el => el.textContent.trim())).toEqual(['Credicheck', 'Panal']);
     expect(doc.querySelector('#opiniones [data-gesicomm-bind="opiniones_titulo"]').textContent).toBe('Lo que cuentan');
@@ -203,9 +203,9 @@ describe('ficha: bloques editables de Vista producto', () => {
     expect(bloque.querySelector('[data-gesicomm-bind="resenas_texto"]').style.display).toBe('none');
   });
 
-  it('muestra solo los métodos de pago marcados, y ninguno si se desmarcaron todos', () => {
-    const conUno = montar({ metodos_pago: [{ texto: 'Pago contra entrega' }] });
-    expect([...conUno.querySelectorAll('.payment-methods [data-gesicomm-generado]')].map(e => e.textContent.trim())).toEqual(['Pago contra entrega']);
+  it('muestra solo métodos de pago personalizados y oculta los chips viejos', () => {
+    const conUno = montar({ metodos_pago: [{ texto: 'Pago contra entrega' }, { texto: 'Giros Tigo' }, { texto: 'Transferencia bancaria' }] });
+    expect([...conUno.querySelectorAll('.payment-methods [data-gesicomm-generado]')].map(e => e.textContent.trim())).toEqual(['Giros Tigo']);
 
     const vacio = montar({ metodos_pago: [] });
     expect(vacio.querySelectorAll('.payment-methods [data-gesicomm-generado]')).toHaveLength(0);

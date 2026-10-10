@@ -109,7 +109,8 @@ describe('Presentación de los productos del lienzo', () => {
 
     const bloqueCompra = compraTitulo.closest('details');
     const metodos = within(bloqueCompra).getByRole('group', { name: 'Métodos de pago' });
-    fireEvent.click(within(metodos).getByLabelText('Transferencia bancaria'));
+    fireEvent.click(within(metodos).getByRole('button', { name: '+ Otro método' }));
+    fireEvent.change(within(metodos).getByLabelText('Otro método 1'), { target: { value: 'Giros Tigo' } });
     ['Deposito bancario', 'Transferencia bancaria', 'Visa', 'Mastercard', 'American Express', 'Diners Club', 'Bancard', 'Credicheck', 'Cabal', 'Panal', 'Discover', 'JCB']
       .forEach(label => fireEvent.click(within(bloqueCompra).getByLabelText(`Mostrar logo ${label}`)));
 
@@ -121,7 +122,7 @@ describe('Presentación de los productos del lienzo', () => {
       urgencia_horas: '5',
       urgencia_minutos: '30',
       urgencia_segundos: '15',
-      metodos_pago: [{ texto: 'Pago contra entrega' }],
+      metodos_pago: [{ texto: 'Giros Tigo' }],
     });
     expect(payload.venta.presentacion_productos['producto:1'].ficha_orden_mobile.indexOf('oferta')).toBeLessThan(
       payload.venta.presentacion_productos['producto:1'].ficha_orden_mobile.indexOf('precio'),

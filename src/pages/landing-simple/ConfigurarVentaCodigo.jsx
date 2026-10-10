@@ -1905,6 +1905,246 @@ export default function ConfigurarVentaCodigo({
     ? 'sin recomendados'
     : (recoModo === 'auto' ? 'recomendados automáticos' : `${recoItems.length} recomendado${recoItems.length === 1 ? '' : 's'} a mano`);
   const estadisticasConfirmables = pruebaSocialItems.some(it => String(it.valor || '').trim() && String(it.etiqueta || '').trim());
+  const bloqueRecomendadosFicha = recoActivo ? (
+    <div className="space-y-4">
+      <button
+        type="button"
+        onClick={verRecomendados}
+        className="text-xs font-medium text-primary-text hover:underline"
+      >
+        Ver dónde aparece
+      </button>
+      <div role="radiogroup" aria-label="Cómo elegir los recomendados" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {[
+          ['auto', 'Automático', 'En cada ficha, otros productos de su misma categoría.'],
+          ['manual', 'Elegidos por vos', 'Los mismos productos en todas las fichas.'],
+        ].map(([k, titulo, texto]) => (
+          <button
+            key={k}
+            type="button"
+            role="radio"
+            aria-checked={recoModo === k}
+            onClick={() => setRecoModo(k)}
+            className={`text-left rounded-lg border px-3.5 py-2.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${recoModo === k ? 'border-accent bg-accent/[0.07]' : 'border-border hover:border-border-strong'}`}
+          >
+            <span className="block text-sm font-medium text-fg">{titulo}</span>
+            <span className="block text-xs text-fg-muted">{texto}</span>
+          </button>
+        ))}
+      </div>
+
+      {recoModo === 'manual' && (
+        candidatosReco.length === 0 ? (
+          <p className="text-sm text-fg-muted">Primero elegí los productos de la landing.</p>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-fg-muted">Buscá y tocá los productos que querés recomendar ({recoItemsValidos.length} de hasta 12).</p>
+                {recoItemsValidos.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setRecoItems([]); verRecomendados(); }}
+                    className="shrink-0 text-xs font-medium text-fg-muted hover:text-fg"
+                  >
+                    Limpiar selección
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
+                <label className="relative block">
+                  <span className="sr-only">Buscar productos recomendados</span>
+                  <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
+                  <input
+                    value={recoBusqueda}
+                    onChange={e => setRecoBusqueda(e.target.value)}
+                    placeholder="Buscar por producto, SKU, marca o categoría"
+                    className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="block">
+                  <span className="sr-only">Filtrar por categoría</span>
+                  <select
+                    value={recoCategoria}
+                    onChange={e => setRecoCategoria(e.target.value)}
+                    className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+                  >
+                    <option value="">Todas las categorías</option>
+                    {categoriasRecoDisponibles.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </label>
+              </div>
+              {(recoBusqueda || recoCategoria) && (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface-2/60 px-3 py-2 text-xs text-fg-muted">
+                  <span>
+                    {totalCandidatosRecoFiltrados.toLocaleString('es-PY')} resultado{totalCandidatosRecoFiltrados === 1 ? '' : 's'}
+                    {totalCandidatosRecoFiltrados > candidatosRecoFiltrados.length ? ` · mostrando primeros ${candidatosRecoFiltrados.length}` : ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setRecoBusqueda(''); setRecoCategoria(''); }}
+                    className="font-medium text-primary-text hover:underline"
+                  >
+                    Limpiar filtros
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="grid max-h-[440px] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+              {candidatosRecoFiltrados.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border-strong px-4 py-6 text-center text-sm text-fg-muted sm:col-span-2">
+                  No encontramos productos con esos filtros.
+                </div>
+              ) : candidatosRecoFiltrados.map(i => {
+                const elegido = recoItems.includes(i.content_id);
+                const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
+                const anclaKey = claveItem(i);
+                const img = imagenPanel(i);
+                return (
+                  <div
+                    key={i.content_id}
+                    className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : 'border-border bg-surface hover:border-border-strong'}`}
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={elegido}
+                      onClick={() => {
+                        setRecoItems(prev => (elegido ? prev.filter(x => x !== i.content_id) : [...prev, i.content_id].slice(0, 12)));
+                        setVistaPreview('producto');
+                        setProductoPreview(i.content_id);
+                        setAvisoPreview('');
+                        setResaltado({ lista: 'recomendados', n: 0 });
+                      }}
+                      className="flex w-full items-start gap-3 text-left"
+                    >
+                      <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
+                        {img
+                          ? <img src={img} alt="" className="h-full w-full object-contain" loading="lazy" />
+                          : <ShoppingBag size={20} className="text-fg-subtle" />}
+                        <span className={`absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full border text-[11px] ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border bg-surface text-fg-subtle'}`}>
+                          {elegido ? <Check size={13} /> : null}
+                        </span>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="line-clamp-2 text-sm font-semibold leading-snug text-fg">{i.titulo_comercial || i.nombre}</span>
+                        <span className="mt-1 flex flex-wrap items-center gap-2 text-[12px]">
+                          <span className="font-mono font-semibold text-fg">{formatearGs(precio) || 'Sin precio'}</span>
+                          {Number(i.precio_ancla) > precio && <span className="font-mono text-fg-muted line-through">{formatearGs(i.precio_ancla)}</span>}
+                        </span>
+                        <span className="mt-1 block truncate text-[11px] text-fg-muted">{i.tipo === 'combo' ? 'Combo' : (i.categoria || 'Producto')}</span>
+                      </span>
+                    </button>
+                    <PrecioAncla
+                      venta={precio}
+                      valor={anclas[anclaKey] ?? ''}
+                      onCambiar={v => {
+                        setAnclas(prev => ({ ...prev, [anclaKey]: v }));
+                        setVistaPreview('producto');
+                        setProductoPreview(i.content_id);
+                        setAvisoPreview('');
+                        setResaltado({ lista: 'recomendados', n: 0 });
+                      }}
+                      id={`reco-ancla-${i.content_id}`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            {recomendadosElegidos.length > 0 && (
+              <div className="mt-4 rounded-xl border border-border bg-surface">
+                <div className="px-3 py-2.5 border-b border-border">
+                  <p className="text-sm font-semibold text-fg">Precio tachado de recomendados</p>
+                  <p className="mt-0.5 text-xs text-fg-muted">Opcional. Se guarda para ese producto en esta landing.</p>
+                </div>
+                <ul className="divide-y divide-border">
+                  {recomendadosElegidos.map(item => (
+                    <li key={item.content_id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5">
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <Miniatura item={item} />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm text-fg">{item.nombre}</span>
+                          <span className="block text-xs text-fg-muted tabular-nums">{formatearGs(precioDeVenta(item))}</span>
+                        </span>
+                      </span>
+                      <PrecioAncla
+                        id={`ancla-reco-${claveItem(item)}`}
+                        venta={precioDeVenta(item)}
+                        valor={anclas[claveItem(item)] ?? ''}
+                        onCambiar={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )
+      )}
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label>
+          <span className="block text-sm font-medium text-fg mb-1.5">Rótulo superior</span>
+          <input
+            value={recoKicker}
+            onChange={e => setRecoKicker(e.target.value)}
+            maxLength={50}
+            placeholder="Te puede gustar"
+            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+          />
+        </label>
+        <label>
+          <span className="block text-sm font-medium text-fg mb-1.5">Título de la sección</span>
+          <input
+            value={recoTitulo}
+            onChange={e => setRecoTitulo(e.target.value)}
+            maxLength={80}
+            placeholder="Productos recomendados"
+            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+          />
+        </label>
+        <label className="sm:col-span-2">
+          <span className="block text-sm font-medium text-fg mb-1.5">Subtítulo</span>
+          <textarea
+            value={recoSubtitulo}
+            onChange={e => setRecoSubtitulo(e.target.value)}
+            maxLength={180}
+            rows={2}
+            placeholder="Elegí alternativas o complementos para que el cliente siga comprando."
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+          />
+        </label>
+        <label>
+          <span className="block text-sm font-medium text-fg mb-1.5">Texto del botón</span>
+          <input
+            value={recoCta}
+            onChange={e => setRecoCta(e.target.value)}
+            maxLength={40}
+            placeholder="Agregar"
+            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+          />
+        </label>
+        <div>
+          <span id="reco-cantidad" className="block text-sm font-medium text-fg mb-1.5">Cuántos mostrar</span>
+          <div role="radiogroup" aria-labelledby="reco-cantidad" className="inline-flex rounded-lg bg-surface-2 p-1">
+            {CANTIDADES_RECO.map(n => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={recoMax === n}
+                onClick={() => setRecoMax(n)}
+                className={`w-9 h-8 rounded-md font-mono text-sm transition-colors ${recoMax === n ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <p className="text-sm text-fg-muted">Activá “Mostrar” para configurar productos recomendados en la ficha.</p>
+  );
 
   const propsVistaPrevia = {
     vista: vistaPreview,
@@ -2108,6 +2348,10 @@ export default function ConfigurarVentaCodigo({
                         pagoLogos={pagoLogos}
                         paymentLogosCatalogo={paymentLogosCatalogo}
                         onPagoLogosChange={(clave, activo) => setPagoLogos(prev => ({ ...prev, [clave]: activo }))}
+                        bloqueRecomendados={bloqueRecomendadosFicha}
+                        recomendadosActivo={recoActivo}
+                        resumenRecomendados={resumenReco}
+                        onRecomendadosVisible={setRecoActivo}
                         destacado={destacadosValidos.includes(productoConfigActual.content_id)} onDestacar={() => alternarDestacado(productoConfigActual.content_id)}
                         tienda={tienda} onSubirImagen={onSubirImagen ? subirImagenLanding : null} {...propsOfertaProducto(productoConfigActual)} inicialmenteAbierto />
                     </Bloque>
@@ -2876,7 +3120,7 @@ export default function ConfigurarVentaCodigo({
                 </>
               )}
 
-              {seccionConfig === 'fichas' && (
+              {false && seccionConfig === 'fichas' && (
                 <>
               {/* Recomendados */}
               <Bloque

@@ -152,8 +152,8 @@ const FICHA_ORDEN_MOBILE_DEFAULT = [
   'contacto_pago',
   'promociones_pago',
   'incluye',
-  'confianza',
   'recomendados',
+  'confianza',
   'opiniones',
   'preguntas',
 ];
@@ -211,10 +211,7 @@ const PRESENTACION_PRODUCTO_DEFAULT = {
   botones_contacto: [
     { label: 'Consultar por WhatsApp', tipo: 'whatsapp', valor: '' },
   ],
-  metodos_pago: [
-    { texto: 'Pago contra entrega' },
-    { texto: 'Transferencia bancaria' },
-  ],
+  metodos_pago: [],
   incluye_pedido: [
     { texto: '1 unidad del producto seleccionado' },
     { texto: 'Coordinación de entrega' },
@@ -340,6 +337,11 @@ function normalizarPaymentLogo(logo) {
   };
 }
 
+function esMetodoPagoOculto(metodo) {
+  const texto = textoLimpio(metodo?.texto || metodo?.label).toLowerCase();
+  return ['pago contra entrega', 'contra entrega', 'pago al recibir', 'transferencia bancaria', 'transferencia'].includes(texto);
+}
+
 function logosPagoDesdeVenta(venta) {
   if (Array.isArray(venta?.payment_logos)) {
     return venta.payment_logos
@@ -454,7 +456,7 @@ export function presentacionComercial(item, venta) {
     confianza,
     botones_pago: lista('botones_pago'),
     // Vacía = el comercio desmarcó todos los métodos: no se rellena con ejemplos.
-    metodos_pago: Array.isArray(fuente.metodos_pago) ? fuente.metodos_pago : PRESENTACION_PRODUCTO_DEFAULT.metodos_pago,
+    metodos_pago: Array.isArray(fuente.metodos_pago) ? fuente.metodos_pago.filter(m => !esMetodoPagoOculto(m)) : PRESENTACION_PRODUCTO_DEFAULT.metodos_pago,
     incluye_pedido: lista('incluye_pedido'),
     botones_contacto: Array.isArray(fuente.botones_contacto) ? fuente.botones_contacto : PRESENTACION_PRODUCTO_DEFAULT.botones_contacto,
     opiniones,

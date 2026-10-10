@@ -47,13 +47,13 @@ export const FICHA_BLOQUES_ORDEN = [
   { clave: 'oferta', numero: 7, titulo: 'Oferta por tiempo limitado' },
   { clave: 'descripcion', numero: 8, titulo: 'Descripción breve' },
   { clave: 'beneficios', numero: 9, titulo: 'Beneficios principales' },
-  { clave: 'contacto_pago', numero: 10, titulo: 'Botones de contacto y pago' },
-  { clave: 'promociones_pago', numero: 11, titulo: 'Disponibilidad y medios de pago' },
-  { clave: 'incluye', numero: 12, titulo: 'Qué incluye tu pedido' },
+  { clave: 'contacto_pago', numero: 9, titulo: 'Botones de contacto y pago' },
+  { clave: 'promociones_pago', numero: 10, titulo: 'Disponibilidad y medios de pago' },
+  { clave: 'incluye', numero: 11, titulo: 'Qué incluye tu pedido' },
+  { clave: 'recomendados', numero: 12, titulo: 'Productos recomendados' },
   { clave: 'confianza', numero: 13, titulo: 'Zona de confianza' },
-  { clave: 'recomendados', numero: 14, titulo: 'Productos recomendados' },
-  { clave: 'opiniones', numero: 18, titulo: 'Opiniones' },
-  { clave: 'preguntas', numero: 19, titulo: 'Preguntas frecuentes' },
+  { clave: 'opiniones', numero: 14, titulo: 'Opiniones' },
+  { clave: 'preguntas', numero: 15, titulo: 'Preguntas frecuentes' },
 ];
 const FICHA_BLOQUES_CLAVES = FICHA_BLOQUES_ORDEN.map(b => b.clave);
 const FICHA_BLOQUES_ALIAS = {
@@ -96,10 +96,7 @@ const DEFAULTS_PRESENTACION = {
   botones_contacto: [
     { label: 'Consultar por WhatsApp', tipo: 'whatsapp', valor: '' },
   ],
-  metodos_pago: [
-    { texto: 'Pago contra entrega' },
-    { texto: 'Transferencia bancaria' },
-  ],
+  metodos_pago: [],
   incluye_pedido: [
     { texto: '1 unidad del producto seleccionado' },
     { texto: 'Coordinación de entrega' },
@@ -335,16 +332,16 @@ function ListaBotones({ titulo, ayuda, items, campoLista, max = 4, onCambiar, de
   );
 }
 
-// Un solo lugar para decir qué cobra la tienda. Los dos primeros salen como
-// chip de texto (metodos_pago, por producto); los de PagoPar salen como logo
-// (pago_logos, de toda la landing). Antes eran dos editores separados y la
-// ficha mostraba "Pago online" en chip y otra vez las tarjetas en logo.
-const METODOS_CHIP = [
+// Los métodos de pago ya se comunican con botones y logos; estos chips viejos
+// se filtran para no duplicar "Pago contra entrega" / "Transferencia bancaria".
+const METODOS_OCULTOS = [
   ['contra_entrega', 'Pago contra entrega', 'Efectivo al recibir el pedido', ['pago contra entrega', 'contra entrega', 'pago al recibir']],
   ['transferencia', 'Transferencia bancaria', 'Te pasa el comprobante por WhatsApp', ['transferencia bancaria', 'transferencia']],
 ];
+const METODOS_CHIP = [];
 const normalizar = t => String(t || '').trim().toLowerCase();
 const metodoChipDe = texto => METODOS_CHIP.find(([, , , alias]) => alias.includes(normalizar(texto)));
+const metodoOcultoDe = texto => METODOS_OCULTOS.find(([, , , alias]) => alias.includes(normalizar(texto)));
 
 function FilaMetodo({ label, detalle, checked, onChange, ariaLabel = label }) {
   return (
@@ -360,7 +357,7 @@ function FilaMetodo({ label, detalle, checked, onChange, ariaLabel = label }) {
 
 function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosCatalogo = [], onPagoLogosChange }) {
   const base = Array.isArray(metodos) ? metodos : [];
-  const otros = base.filter(m => !metodoChipDe(m?.texto || m?.label));
+  const otros = base.filter(m => !metodoChipDe(m?.texto || m?.label) && !metodoOcultoDe(m?.texto || m?.label));
   const activo = clave => base.some(m => metodoChipDe(m?.texto || m?.label)?.[0] === clave);
   // Los chips conocidos van primero y en orden fijo; los "otros" detrás.
   const armar = (claves, extras) => [
@@ -395,7 +392,21 @@ function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosCatalogo
   );
 }
 
-export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, onSubirImagen, pagoLogos = null, paymentLogosCatalogo = [], onPagoLogosChange = null, inicialmenteAbierto = false }) {
+export default function PresentacionProducto({
+  item,
+  ancla,
+  onAncla,
+  onCambiar,
+  onSubirImagen,
+  pagoLogos = null,
+  paymentLogosCatalogo = [],
+  onPagoLogosChange = null,
+  inicialmenteAbierto = false,
+  bloqueRecomendados = null,
+  recomendadosActivo = true,
+  resumenRecomendados = 'Productos relacionados',
+  onRecomendadosVisible = null,
+}) {
   const precio = Number(precioDeVenta(item)) || 0;
   const descuento = descuentoDesdeAncla(precio, ancla);
   const src = imagenPrincipal(item);
@@ -492,6 +503,10 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
     if (['encabezado', 'nombre_comercial', 'resenas_comerciales', 'precio', 'descripcion'].includes(clave) && bloquesFicha.textos === false) return false;
     if (['info_compra', 'promociones_pago', 'contacto_pago'].includes(clave) && bloquesFicha.compra === false) return false;
     return true;
+  }
+  function cambiarRecomendadosVisible(visible) {
+    cambiarBloque('recomendados', visible);
+    onRecomendadosVisible?.(visible);
   }
 
   const resumenPortada = src ? 'Imagen principal y miniaturas listas' : 'Subí o pegá la imagen principal';
@@ -593,10 +608,13 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
         <BloqueFicha numero="11" titulo="Qué incluye tu pedido" resumen={resumenIncluye} visible={visibleBloque('incluye')} onVisible={v => cambiarBloque('incluye', v)} bloqueClave="incluye" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('incluye')}>
           <ListaSimple titulo="Ítems incluidos" ayuda="Cada línea aparece como checklist dentro de la ficha." items={incluyePedido} campoLista="incluye_pedido" placeholder="Ej: 1 unidad del producto seleccionado" onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="12" titulo="Zona de confianza" resumen={resumenConfianza} visible={visibleBloque('confianza')} onVisible={v => cambiarBloque('confianza', v)} bloqueClave="confianza" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('confianza')}>
+        <BloqueFicha numero="12" titulo="Productos recomendados" resumen={resumenRecomendados} visible={visibleBloque('recomendados') && recomendadosActivo !== false} onVisible={cambiarRecomendadosVisible} bloqueClave="recomendados" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('recomendados')}>
+          {bloqueRecomendados || <p className="text-xs leading-relaxed text-fg-muted">Configurá acá los productos que aparecen como recomendados en la ficha.</p>}
+        </BloqueFicha>
+        <BloqueFicha numero="13" titulo="Zona de confianza" resumen={resumenConfianza} visible={visibleBloque('confianza')} onVisible={v => cambiarBloque('confianza', v)} bloqueClave="confianza" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('confianza')}>
           <ListaConfianzaProducto items={confianza} onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="13" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('opiniones')}>
+        <BloqueFicha numero="14" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('opiniones')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={valorConfigurable(item, 'opiniones_kicker', DEFAULTS_PRESENTACION.opiniones_kicker)} maxLength={60} placeholder={DEFAULTS_PRESENTACION.opiniones_kicker} onChange={e => onCambiar('opiniones_kicker', e.target.value)} /></label>
             <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={valorConfigurable(item, 'opiniones_titulo', DEFAULTS_PRESENTACION.opiniones_titulo)} maxLength={90} placeholder={DEFAULTS_PRESENTACION.opiniones_titulo} onChange={e => onCambiar('opiniones_titulo', e.target.value)} /></label>
@@ -627,7 +645,7 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
             {opiniones.length < 6 && <button type="button" onClick={agregarOpinion} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Agregar opinión</button>}
           </fieldset>
         </BloqueFicha>
-        <BloqueFicha numero="14" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('preguntas')}>
+        <BloqueFicha numero="15" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('preguntas')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={item.preguntas_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.preguntas_kicker} onChange={e => onCambiar('preguntas_kicker', e.target.value)} /></label>
             <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={item.preguntas_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.preguntas_titulo} onChange={e => onCambiar('preguntas_titulo', e.target.value)} /></label>
