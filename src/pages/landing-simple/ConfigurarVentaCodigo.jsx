@@ -2010,8 +2010,9 @@ export default function ConfigurarVentaCodigo({
                       aria-pressed={elegido}
                       onClick={() => {
                         setRecoItems(prev => (elegido ? prev.filter(x => x !== i.content_id) : [...prev, i.content_id].slice(0, 12)));
+                        // La vista previa no cambia de producto: se queda en la ficha que
+                        // se está editando y resalta su sección de recomendados.
                         setVistaPreview('producto');
-                        setProductoPreview(i.content_id);
                         setAvisoPreview('');
                         setResaltado({ lista: 'recomendados', n: 0 });
                       }}
@@ -2039,8 +2040,9 @@ export default function ConfigurarVentaCodigo({
                       valor={anclas[anclaKey] ?? ''}
                       onCambiar={v => {
                         setAnclas(prev => ({ ...prev, [anclaKey]: v }));
+                        // La vista previa no cambia de producto: se queda en la ficha que
+                        // se está editando y resalta su sección de recomendados.
                         setVistaPreview('producto');
-                        setProductoPreview(i.content_id);
                         setAvisoPreview('');
                         setResaltado({ lista: 'recomendados', n: 0 });
                       }}
@@ -3227,8 +3229,9 @@ export default function ConfigurarVentaCodigo({
                                     aria-pressed={elegido}
                                     onClick={() => {
                                       setRecoItems(prev => (elegido ? prev.filter(x => x !== i.content_id) : [...prev, i.content_id].slice(0, 12)));
+                                      // La vista previa no cambia de producto: se queda en la ficha que
+                                      // se está editando y resalta su sección de recomendados.
                                       setVistaPreview('producto');
-                                      setProductoPreview(i.content_id);
                                       setAvisoPreview('');
                                       setResaltado({ lista: 'recomendados', n: 0 });
                                     }}
@@ -3256,8 +3259,9 @@ export default function ConfigurarVentaCodigo({
                                     valor={anclas[anclaKey] ?? ''}
                                     onCambiar={v => {
                                       setAnclas(prev => ({ ...prev, [anclaKey]: v }));
+                                      // La vista previa no cambia de producto: se queda en la ficha que
+                                      // se está editando y resalta su sección de recomendados.
                                       setVistaPreview('producto');
-                                      setProductoPreview(i.content_id);
                                       setAvisoPreview('');
                                       setResaltado({ lista: 'recomendados', n: 0 });
                                     }}
