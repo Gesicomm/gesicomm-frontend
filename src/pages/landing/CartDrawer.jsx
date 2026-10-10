@@ -624,11 +624,13 @@ export default function CartDrawer({
                             <button type="button" className="lp-cart-quitar" onClick={() => onQuitar(it.clave)} aria-label={`Quitar ${it.ofertaNombre || it.nombre}`}>
                               <Trash2 size={14} />
                             </button>
-                            <div className="lp-cart-stepper">
-                              <button type="button" onClick={() => onCantidad(it.clave, -1)} aria-label="Restar uno"><Minus size={13} /></button>
-                              <span>{it.cantidad}</span>
-                              <button type="button" onClick={() => onCantidad(it.clave, 1)} disabled={it.stockMax != null && it.cantidad >= it.stockMax} aria-label="Sumar uno"><Plus size={13} /></button>
-                            </div>
+                            {!it.cantidadFija && (
+                              <div className="lp-cart-stepper">
+                                <button type="button" onClick={() => onCantidad(it.clave, -1)} aria-label="Restar uno"><Minus size={13} /></button>
+                                <span>{it.cantidad}</span>
+                                <button type="button" onClick={() => onCantidad(it.clave, 1)} disabled={it.stockMax != null && it.cantidad >= it.stockMax} aria-label="Sumar uno"><Plus size={13} /></button>
+                              </div>
+                            )}
                           </div>
                         </div>
                         );

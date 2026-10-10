@@ -280,6 +280,10 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
         imagen: componenteVariante?.imagenes?.[0] || oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
         envioIncluido: item.envio_incluido === true,
+        // Oferta "por cantidad" (estrategia 'normal'): la cantidad la fija el
+        // paquete, igual que en la ficha (ver `conCantidad` en los templates
+        // de producto) — el carrito no debe dejar sumar/restar unidades.
+        cantidadFija: oferta?.estrategia === 'normal',
       });
       return copia;
     });

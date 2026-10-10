@@ -139,3 +139,25 @@ describe('CartDrawer upsell pedido por la página de checkout', () => {
     expect(screen.queryByText(/Esperá, tenemos una oferta para vos/i)).not.toBeInTheDocument();
   });
 });
+
+describe('CartDrawer oferta por cantidad', () => {
+  it('no muestra el selector de cantidad para un item con oferta por cantidad (cantidadFija)', () => {
+    const paquete = { ...productoBase, clave: 'producto:adel:oferta:9', ofertaId: 9, ofertaNombre: 'Paquete × 3', cantidad: 3, cantidadFija: true };
+    render(
+      <CartDrawer
+        abierto
+        items={[productoBase, paquete]}
+        sugerencias={[]}
+        onAgregarSugerencia={vi.fn()}
+        onConfirmarPedido={vi.fn()}
+        onCerrar={vi.fn()}
+        onCantidad={vi.fn()}
+        onQuitar={vi.fn()}
+      />
+    );
+
+    // El producto normal sigue con su stepper; el del paquete no aparece.
+    expect(screen.getAllByLabelText('Sumar uno')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Restar uno')).toHaveLength(1);
+  });
+});
