@@ -7,6 +7,24 @@ export const productService = {
     API.post('/productos/importar-shopify', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
+  // Carga masiva con la plantilla de Gesicom. Sin `aplicar` el backend solo
+  // revisa el archivo; con `aplicar` crea las filas sin errores.
+  formatoImportacion: () => API.get('/productos/importar-masivo/formato').then(r => r.data),
+  descargarPlantillaImportacion: async () => {
+    const { data } = await API.get('/productos/importar-masivo/plantilla', { responseType: 'blob' });
+    const url = URL.createObjectURL(data);
+    const link = document.createElement('a');
+    link.href = url; link.download = 'plantilla-productos-gesicom.xlsx'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+  importarMasivo: (archivo, { aplicar = false } = {}) => {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    formData.append('aplicar', aplicar ? 'true' : 'false');
+    return API.post('/productos/importar-masivo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data);
+  },
   detalle: (id) => API.get(`/productos/${id}`).then(r => r.data),
   variantes: (id) => API.get(`/productos/${id}/variantes`).then(r => r.data),
   opciones: (id) => API.get(`/productos/${id}/opciones`).then(r => r.data),
