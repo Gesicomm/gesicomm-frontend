@@ -22,10 +22,10 @@ const FASE_1 = { clave: "101", fase_id: 101, orden: 1, nombre: "Confirmación", 
 const FASE_2 = { clave: "102", fase_id: 102, orden: 2, nombre: "Recordatorio", espera_sugerida_minutos: 240 };
 
 const ETAPAS = [
-  { tipo: "CONFIRMACION_PEDIDO_WEB", nombre: "Confirmación de pedido web", descripcion: "Pedidos nuevos por confirmar.", pedidos: 27 },
-  { tipo: "VENTA_WHATSAPP", nombre: "Venta por WhatsApp", descripcion: "Ventas por WhatsApp.", pedidos: 0 },
-  { tipo: "SEGUIMIENTO_ENVIO", nombre: "Seguimiento de envío", descripcion: "Pedidos ya confirmados.", pedidos: 4 },
-  { tipo: "ESCALAMIENTO_VENTAS", nombre: "Escalamiento de ventas", descripcion: "Pedidos entregados.", pedidos: 3 },
+  { tipo: "CONFIRMACION_PEDIDO_WEB", nombre: "Confirmación de pedido web", descripcion: "Pedidos nuevos por confirmar.", pedidos: 27, vencidos: 1 },
+  { tipo: "VENTA_WHATSAPP", nombre: "Venta por WhatsApp", descripcion: "Ventas por WhatsApp.", pedidos: 0, vencidos: 0 },
+  { tipo: "SEGUIMIENTO_ENVIO", nombre: "Seguimiento de envío", descripcion: "Pedidos ya confirmados.", pedidos: 4, vencidos: 2 },
+  { tipo: "ESCALAMIENTO_VENTAS", nombre: "Escalamiento de ventas", descripcion: "Pedidos entregados.", pedidos: 3, vencidos: 0 },
 ];
 
 const AVISO_ENVIO = { clave: "301", fase_id: 301, orden: 1, nombre: "Pedido confirmado", espera_sugerida_minutos: 0 };
@@ -59,13 +59,14 @@ function tablero({ etapa, paginas = {}, busqueda, cuando } = {}) {
     flujos: [{ id: 1, nombre: "Confirmación de pedido", predeterminado: true, pendientes: 27 }],
     flujo_id: 1,
     totales: { ahora: 26, hoy: 1, despues: 0, sin_fecha: 0 },
+    vencidos: 1,
     truncado: false,
     columnas: [
-      { ...FASE_1, conteo: { ahora: 25, hoy: 0, despues: 0, sin_fecha: 0 }, data: fase1, total: totalFase1, page: pagina1, totalPages: Math.ceil(totalFase1 / 10), limit: 10 },
+      { ...FASE_1, conteo: { ahora: 25, hoy: 0, despues: 0, sin_fecha: 0 }, vencidos: 0, data: fase1, total: totalFase1, page: pagina1, totalPages: Math.ceil(totalFase1 / 10), limit: 10 },
       {
-        ...FASE_2, conteo: { ahora: 1, hoy: 1, despues: 0, sin_fecha: 0 },
+        ...FASE_2, conteo: { ahora: 1, hoy: 1, despues: 0, sin_fecha: 0 }, vencidos: 1,
         data: busqueda || cuando ? [] : [
-          item(30, FASE_2, { cliente: "Lucía Fernández", fase_abierta_en: "2026-10-11T12:55:00.000Z" }),
+          item(30, FASE_2, { cliente: "Lucía Fernández", fase_abierta_en: "2026-10-11T12:55:00.000Z", motivo: "vencido", recordatorio: { id: 8, estado: "VENCIDO", ejecutar_en: "2026-10-11T09:00:00.000Z" } }),
           item(31, FASE_2, { cliente: "Derlis Ayala", cuando: "hoy", motivo: "programado", recordatorio: { id: 9, estado: "PENDIENTE", ejecutar_en: "2026-10-11T21:30:00.000Z" } }),
         ],
         total: busqueda || cuando ? 0 : 2, page: 1, totalPages: 1, limit: 10,
@@ -138,8 +139,8 @@ test("el selector de etapa pide al backend el tablero de esa etapa, con su flujo
   const servicios = await montar();
   expect(servicios.tablero).toHaveBeenLastCalledWith(expect.objectContaining({ etapa: "CONFIRMACION_PEDIDO_WEB" }));
   // Las cuatro etapas están siempre, cada una con cuántos pedidos tiene.
-  expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
-    "Confirmación de pedido web 27", "Venta por WhatsApp 0", "Seguimiento de envío 4", "Escalamiento de ventas 3",
+  expect(screen.getAllByRole("tab").map((t) => t.textContent.replace(/\s+/g, " ").trim())).toEqual([
+    "Confirmación de pedido web 27 1 vencido", "Venta por WhatsApp 0", "Seguimiento de envío 4 2 vencidos", "Escalamiento de ventas 3",
   ]);
 
   fireEvent.click(screen.getByRole("tab", { name: /Seguimiento de envío/ }));
@@ -150,6 +151,24 @@ test("el selector de etapa pide al backend el tablero de esa etapa, con su flujo
   expect(within(aviso).getByText(/Despachado, sin avisos enviados/)).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "Fase 2: Recordatorio" })).not.toBeInTheDocument();
   expect(screen.getByRole("tab", { name: /Seguimiento de envío/ })).toHaveAttribute("aria-selected", "true");
+});
+
+test("lo vencido se ve en rojo en la pestaña, la columna y la tarjeta, y tiene su filtro", async () => {
+  const servicios = await montar();
+
+  // Pestaña: avisa aunque no sea la etapa que se está mirando.
+  expect(within(screen.getByRole("tab", { name: /Seguimiento de envío/ })).getByText(/2 vencidos/)).toHaveClass("rp-etapa-vencidos");
+  expect(screen.getByRole("tab", { name: /Venta por WhatsApp/ }).querySelector(".rp-etapa-vencidos")).toBeNull();
+
+  // Columna y tarjeta de la etapa abierta.
+  const fase2 = columna("Fase 2: Recordatorio");
+  expect(within(fase2).getByText("1 vencido")).toHaveClass("rp-vencidos");
+  expect(within(fase2).getByText("Lucía Fernández").closest("article")).toHaveClass("rp-tarjeta--vencido");
+  expect(within(fase2).getByText("Derlis Ayala").closest("article")).not.toHaveClass("rp-tarjeta--vencido");
+
+  // Filtro: se le pide al backend, no se filtra acá.
+  fireEvent.click(screen.getByRole("button", { name: "Vencidos 1" }));
+  await waitFor(() => expect(servicios.tablero).toHaveBeenLastCalledWith(expect.objectContaining({ cuando: "vencido", paginas: {} })));
 });
 
 test("paginar una columna le pide esa página al backend, sin tocar las demás", async () => {

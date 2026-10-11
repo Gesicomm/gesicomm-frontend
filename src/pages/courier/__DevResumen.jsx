@@ -88,7 +88,7 @@ const pedidos = [
   // Seguimiento de envío: ya confirmados.
   base(70, 'SEGUIMIENTO_ENVIO', 'Confirmado'),
   base(71, 'SEGUIMIENTO_ENVIO', 'Confirmado'),
-  base(72, 'SEGUIMIENTO_ENVIO', 'Preparado', { completadas: 1 }),
+  base(72, 'SEGUIMIENTO_ENVIO', 'Preparado', { completadas: 1, recordatorio: { id: 972, estado: 'VENCIDO', ejecutar_en: enHoras(-6), nota: null } }),
   base(73, 'SEGUIMIENTO_ENVIO', 'Despachado', { completadas: 1, abierta: true }),
   base(74, 'SEGUIMIENTO_ENVIO', 'Despachado', { completadas: 2 }),
   base(75, 'SEGUIMIENTO_ENVIO', 'Reprogramado', { completadas: 3 }),
@@ -147,6 +147,8 @@ const deLaEtapa = (etapa) => pedidos
   .sort((a, b) => ORDEN.indexOf(a.cuando) - ORDEN.indexOf(b.cuando) || a.envio_id - b.envio_id);
 const contar = (items) => items.reduce((c, i) => ({ ...c, [i.cuando]: c[i.cuando] + 1 }), { ahora: 0, hoy: 0, despues: 0, sin_fecha: 0 });
 const clave = (i) => (i.fase_id ? String(i.fase_id) : 'sin_fase');
+const vencidosDe = (items) => items.filter((i) => i.motivo === 'vencido').length;
+const pasaCuando = (i, cuando) => !cuando || (cuando === 'vencido' ? i.motivo === 'vencido' : i.cuando === cuando);
 
 function coincide(item, busqueda) {
   const t = String(busqueda || '').trim().toLowerCase();
@@ -181,24 +183,25 @@ const servicios = {
     console.log('[dev] POST /envios/seguimiento/tablero', { etapa, cuando, busqueda, limit, paginas });
     const flujo = FLUJOS[etapa];
     const items = deLaEtapa(etapa);
-    const filtrados = items.filter((i) => (!cuando || i.cuando === cuando) && coincide(i, busqueda));
+    const filtrados = items.filter((i) => pasaCuando(i, cuando) && coincide(i, busqueda));
     const columna = (k, datos) => ({
       clave: k, ...datos,
       conteo: contar(items.filter((i) => clave(i) === k)),
+      vencidos: vencidosDe(items.filter((i) => clave(i) === k)),
       ...paginar(filtrados.filter((i) => clave(i) === k), paginas[k], limit),
     });
     const columnas = flujo.fases.map((f) => columna(String(f.id), { fase_id: f.id, orden: f.orden, nombre: f.nombre, espera_sugerida_minutos: f.espera_sugerida_minutos }));
     if (items.some((i) => !i.fase_id)) columnas.push(columna('sin_fase', { fase_id: null, orden: null, nombre: 'Flujo terminado', espera_sugerida_minutos: 0 }));
     return demora({
       etapa,
-      etapas: ETAPAS.map((e) => ({ ...e, pedidos: pedidos.filter((p) => p.etapa === e.tipo).length })),
+      etapas: ETAPAS.map((e) => ({ ...e, pedidos: pedidos.filter((p) => p.etapa === e.tipo).length, vencidos: vencidosDe(deLaEtapa(e.tipo)) })),
       flujos: [{ id: flujo.id, nombre: flujo.nombre, predeterminado: true, pendientes: items.length }],
-      flujo_id: flujo.id, totales: contar(items), columnas, truncado: false,
+      flujo_id: flujo.id, totales: contar(items), vencidos: vencidosDe(items), columnas, truncado: false,
     });
   },
   pendientes: async ({ etapa = 'CONFIRMACION_PEDIDO_WEB', cuando, page, limit }) => {
     console.log('[dev] POST /envios/seguimiento/pendientes', { etapa, cuando, page, limit });
-    return demora(paginar(deLaEtapa(etapa).filter((i) => !cuando || i.cuando === cuando), page, limit));
+    return demora(paginar(deLaEtapa(etapa).filter((i) => pasaCuando(i, cuando)), page, limit));
   },
   enviarMensaje: async (envioId, payload) => servicioSeguimiento.crearContacto(envioId, payload),
   completarFase: async (envioId, faseId) => servicioSeguimiento.completarFase(envioId, faseId),

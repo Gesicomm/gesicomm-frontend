@@ -17,6 +17,9 @@ import "./resumen-pedidos.css";
  *   seguimiento de envío, escalamiento de ventas). A qué etapa pertenece un
  *   pedido lo decide su estado: cambia solo cuando el pedido se confirma o
  *   se entrega.
+ * - Vencido = tenía un recordatorio, ya le pasó la hora y el mensaje sigue
+ *   sin marcarse como enviado. Se ve en rojo en la tarjeta, en la columna y
+ *   en la pestaña de la etapa, y tiene su propio filtro.
  * - Cada tarjeta tiene sus dos pasos a la vista: "Enviar mensaje" (abre
  *   WhatsApp con el mensaje de esa fase) y, recién después, "Marcar como
  *   enviado", que es lo que mueve al pedido a la columna siguiente.
@@ -41,6 +44,7 @@ const PERIODOS = [
 
 const CUANDO = [
   { id: "", label: "Todos" },
+  { id: "vencido", label: "Vencidos" },
   { id: "ahora", label: "Para enviar ahora" },
   { id: "hoy", label: "Hoy más tarde" },
   { id: "despues", label: "Otro día" },
@@ -248,6 +252,7 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
 
   const enCola = cola ? cola.items[cola.indice] : null;
   const totales = tablero?.totales || { ahora: 0, hoy: 0, despues: 0, sin_fecha: 0 };
+  const vencidos = tablero?.vencidos || 0;
   const flujos = tablero?.flujos || [];
   const etapas = tablero?.etapas || [];
   const etapaActual = etapas.find((e) => e.tipo === etapa);
@@ -294,6 +299,7 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
             <h2><MessageCircle size={17} /> Mensajes por enviar</h2>
             <p className="rp-sub">
               <strong>{totales.ahora}</strong> para enviar ahora
+              {vencidos > 0 && <> (<span className="rp-vencidos">{vencidos} {vencidos === 1 ? "vencido" : "vencidos"}</span>)</>}
               {" · "}{totales.hoy} hoy más tarde
               {" · "}{totales.despues} otro día
               {" · "}{totales.sin_fecha} sin fecha
@@ -323,6 +329,11 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
                 onClick={() => cambiarEtapa(e.tipo)}
               >
                 {e.nombre} <span className="rp-etapa-cuenta">{e.pedidos}</span>
+                {e.vencidos > 0 && (
+                  <span className="rp-etapa-vencidos" title={`${e.vencidos} ${e.vencidos === 1 ? "mensaje vencido" : "mensajes vencidos"} sin enviar`}>
+                    <AlertCircle size={12} aria-hidden="true" /> {e.vencidos} {e.vencidos === 1 ? "vencido" : "vencidos"}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -354,8 +365,14 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
           </label>
           <div className="rp-chips" role="group" aria-label="Filtrar por cuándo toca">
             {CUANDO.map((c) => (
-              <button key={c.id || "todos"} type="button" className={cuando === c.id ? "active" : ""} aria-pressed={cuando === c.id} onClick={() => cambiarFiltro(() => setCuando(c.id))}>
-                {c.label}
+              <button
+                key={c.id || "todos"}
+                type="button"
+                className={`${cuando === c.id ? "active" : ""} ${c.id === "vencido" && vencidos > 0 ? "rp-chip--alerta" : ""}`}
+                aria-pressed={cuando === c.id}
+                onClick={() => cambiarFiltro(() => setCuando(c.id))}
+              >
+                {c.label}{c.id === "vencido" ? ` ${vencidos}` : ""}
               </button>
             ))}
           </div>
@@ -441,7 +458,7 @@ function Columna({ columna, hayFiltros, ocupada, onAbrir, onEnviar, onMarcarEnvi
   const titulo = columna.orden ? `Fase ${columna.orden}` : "Sin fase";
 
   return (
-    <section className={`kanban-column rp-columna ${conteo.ahora > 0 ? "rp-columna--urgente" : ""}`} aria-label={`${titulo}: ${columna.nombre}`}>
+    <section className={`kanban-column rp-columna ${conteo.ahora > 0 ? "rp-columna--urgente" : ""} ${columna.vencidos > 0 ? "rp-columna--vencida" : ""}`} aria-label={`${titulo}: ${columna.nombre}`}>
       <div className="kanban-col-header">
         <h3 className="kanban-col-title">
           <span className="rp-columna-fase">{titulo}</span>
@@ -451,6 +468,7 @@ function Columna({ columna, hayFiltros, ocupada, onAbrir, onEnviar, onMarcarEnvi
       </div>
       <p className="rp-columna-sub">
         <strong>{conteo.ahora}</strong> para enviar ahora
+        {columna.vencidos > 0 && <> · <span className="rp-vencidos">{columna.vencidos} {columna.vencidos === 1 ? "vencido" : "vencidos"}</span></>}
         {conteo.hoy > 0 && <> · {conteo.hoy} hoy</>}
         {conteo.despues > 0 && <> · {conteo.despues} otro día</>}
         {conteo.sin_fecha > 0 && <> · {conteo.sin_fecha} sin fecha</>}
@@ -499,7 +517,7 @@ function Tarjeta({ item, ocupada, onAbrir, onEnviar, onMarcarEnviado }) {
   const detalle = [item.productos, item.monto > 0 ? formatGs(item.monto) : null].filter(Boolean).join(" · ");
 
   return (
-    <article className={`rp-tarjeta rp-tarjeta--${item.cuando}`}>
+    <article className={`rp-tarjeta rp-tarjeta--${item.cuando} ${item.motivo === "vencido" ? "rp-tarjeta--vencido" : ""}`}>
       <button type="button" className="rp-tarjeta-cuerpo" onClick={onAbrir} aria-label={`Pedido ${item.numero_pedido}, ${item.cliente}: abrir para enviar el mensaje`}>
         <span className="rp-tarjeta-top">
           <strong>#{item.numero_pedido}</strong>

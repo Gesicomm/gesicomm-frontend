@@ -230,6 +230,41 @@
   color: var(--color-fg-muted);
 }
 
+/* ─── Vencidos: recordatorio pasado y mensaje sin enviar ──── */
+
+.rp-vencidos { color: var(--color-danger); font-weight: 700; }
+
+.rp-etapa-vencidos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.rp-chips button.rp-chip--alerta {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.rp-chips button.rp-chip--alerta.active {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
+.rp-kanban .rp-columna--vencida { border-top: 3px solid var(--color-danger); }
+
+.rp-tarjeta.rp-tarjeta--vencido {
+  border-color: color-mix(in srgb, var(--color-danger) 45%, transparent);
+  border-left: 3px solid var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 7%, var(--color-canvas));
+}
+
 /* ─── Filtros (los resuelve el backend) ───────────────────── */
 
 .rp-filtros {
