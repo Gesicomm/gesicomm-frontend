@@ -131,7 +131,11 @@ export function KanbanBoard({
         <KanbanColumn
           key={lane.id}
           estado={lane.estado || lane.id}
-          meta={lane.type === "abastecimiento" || lane.operational ? lane : undefined}
+          // Los carriles de los contextos (comercial, logística, recompra) traen
+          // su propio rótulo; solo el tablero legacy por estado lo saca de STATUS.
+          // Sin esto, "Pendientes", "Confirmados" y "Cancelados" llegaban sin
+          // rótulo y la vista Kanban entera se caía al dibujarlos.
+          meta={lane.label ? lane : undefined}
           envios={envios.filter((e) => (
             lane.match
               ? lane.match(e)
@@ -150,7 +154,9 @@ export function KanbanBoard({
           onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
           onAccionSiguiente={onAccionSiguiente}
           isAdmin={isAdmin}
-          readOnly={lane.type === "abastecimiento" || lane.operational}
+          // Un carril que agrupa varios estados (sin `estado` propio) no puede
+          // recibir tarjetas: no hay un estado real al que moverlas.
+          readOnly={lane.type === "abastecimiento" || lane.operational || (Boolean(lane.match) && !lane.estado)}
           emptyText={lane.emptyText}
         />
       ))}

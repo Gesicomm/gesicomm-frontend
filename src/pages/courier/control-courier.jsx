@@ -8,9 +8,6 @@ import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
 import { ReprogramarModal } from "./ReprogramarModal";
-import LogisticaAbastecimientoModal from '../../components/depositos/LogisticaAbastecimientoModal';
-import TransferenciaAbastecimientoModal from '../../components/abastecimiento/TransferenciaAbastecimientoModal';
-import AbastecimientoTimelineModal from '../../components/abastecimiento/AbastecimientoTimelineModal';
 import { CostoViajeModal } from "./CostoViajeModal";
 import { MarcarEntregadoModal } from "./MarcarEntregadoModal";
 import { DevolucionModal } from "./DevolucionModal";
@@ -24,10 +21,6 @@ import {
   getCouriers,
   getEnvios,
   updateEstadoEnvio,
-  validarPagoAbastecimiento,
-  rechazarPagoAbastecimiento,
-  avanzarAbastecimiento,
-  confirmarRecepcionAbastecimiento,
   createCourier,
   updateCourier,
   deleteCourier,
@@ -81,8 +74,6 @@ export function ControlCourier() {
   const [resumenEnvio, setResumenEnvio] = useState(null);
   const [historialEnvio, setHistorialEnvio] = useState(null);
   const [seguimientoEnvio, setSeguimientoEnvio] = useState(null);
-  const [transferenciaModalEnvio, setTransferenciaModalEnvio] = useState(null);
-  const [timelineAbastecimientoEnvio, setTimelineAbastecimientoEnvio] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
   const esAdmin = usuarioActual?.rol === "administrador";
 
@@ -155,16 +146,6 @@ export function ControlCourier() {
     return acc;
   }, [envios]);
 
-  // Pedidos que requieren accion del comercio en abastecimiento:
-  // pendiente_pago = nunca pago, rechazado = fue rechazado y debe volver a pagar
-  const pagosPendientesCount = useMemo(
-    () => envios.filter(e =>
-      e.abastecimiento_estado === 'pendiente_pago' ||
-      e.abastecimiento_estado === 'rechazado'
-    ).length,
-    [envios]
-  );
-
   const handleChangeEstado = async (id, nuevoEstado, envioDirecto = null) => {
     if (nuevoEstado === "Confirmado") {
       const envio = envioDirecto || envios.find(e => e.id === id);
@@ -181,81 +162,6 @@ export function ControlCourier() {
       console.error("Error actualizando estado:", err);
       cargarDatos();
       setRefrescarKey(k => k + 1);
-    }
-  };
-
-  const [logisticaModalEnvio, setLogisticaModalEnvio] = useState(null);
-
-  // pendiente_pago sin logística definida: primero hay que elegir GESICOMM
-  // o depósito propio (LogisticaAbastecimientoModal). Con la logística ya
-  // definida (primer pago o reenvío tras un rechazo) se va directo a la
-  // transferencia — ya no hay redirect a PagoPar.
-  const handlePagarAbastecimiento = (envio) => {
-    if (envio.abastecimiento_estado === "pendiente_pago" && !envio.tipo_logistica_abastecimiento) {
-      setLogisticaModalEnvio(envio);
-    } else {
-      setTransferenciaModalEnvio(envio);
-    }
-  };
-
-  const handleComprobanteEnviado = (actualizado) => {
-    setEnvios(prev => prev.map(e => e.id === actualizado.id ? actualizado : e));
-    setTransferenciaModalEnvio(null);
-    cargarDatos();
-    setRefrescarKey(k => k + 1);
-  };
-
-  const handleValidarPagoAbastecimiento = async (envio) => {
-    try {
-      const actualizado = await validarPagoAbastecimiento(envio.id);
-      setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
-      cargarDatos();
-      setRefrescarKey(k => k + 1);
-    } catch (err) {
-      console.error("Error validando pago de abastecimiento:", err);
-      alert(err.response?.data?.error || err.message || "No se pudo validar el pago.");
-    }
-  };
-
-  const handleRechazarPagoAbastecimiento = async (envio) => {
-    const motivo = window.prompt("Motivo del rechazo (obligatorio, lo ve la tienda):", "");
-    if (!motivo) return;
-    try {
-      const actualizado = await rechazarPagoAbastecimiento(envio.id, motivo);
-      setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
-      cargarDatos();
-      setRefrescarKey(k => k + 1);
-    } catch (err) {
-      console.error("Error rechazando pago de abastecimiento:", err);
-      alert(err.response?.data?.error || err.message || "No se pudo rechazar el pago.");
-    }
-  };
-
-  // El backend resuelve el único siguiente estado válido (proveedor
-  // contactado → ... → recibido/disponible): acá no se elige nada, solo se
-  // dispara la acción.
-  const handleAvanzarAbastecimiento = async (envio) => {
-    try {
-      const actualizado = await avanzarAbastecimiento(envio.id);
-      setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
-      cargarDatos();
-      setRefrescarKey(k => k + 1);
-    } catch (err) {
-      console.error("Error avanzando abastecimiento:", err);
-      alert(err.response?.data?.error || err.message || "No se pudo avanzar el abastecimiento.");
-    }
-  };
-
-  const handleConfirmarRecepcionAbastecimiento = async (envio) => {
-    if (!window.confirm("¿Confirmás que recibiste este abastecimiento en tu depósito?")) return;
-    try {
-      const actualizado = await confirmarRecepcionAbastecimiento(envio.id);
-      setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
-      cargarDatos();
-      setRefrescarKey(k => k + 1);
-    } catch (err) {
-      console.error("Error confirmando recepción de abastecimiento:", err);
-      alert(err.response?.data?.error || err.message || "No se pudo confirmar la recepción.");
     }
   };
 
@@ -355,7 +261,7 @@ export function ControlCourier() {
             </div>
             <div>
               <h1 className="prod-title">Pedidos</h1>
-              <p className="prod-subtitle">Confirmación, abastecimiento, despacho y rendición</p>
+              <p className="prod-subtitle">Confirmación, despacho y rendición</p>
             </div>
           </div>
 
@@ -385,7 +291,7 @@ export function ControlCourier() {
           <TabButton active={tab === "resumen"} onClick={() => seleccionarTab("resumen")} icon={<ListChecks size={16} />}>
             Resumen
           </TabButton>
-          <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />} badge={pagosPendientesCount}>
+          <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
             Tablero
           </TabButton>
           <TabButton active={tab === "delivery"} onClick={() => seleccionarTab("delivery")} icon={<Truck size={16} />}>
@@ -409,12 +315,6 @@ export function ControlCourier() {
           <PedidosTable
             couriers={couriers}
             onChangeEstado={handleChangeEstado}
-            onPagarAbastecimiento={handlePagarAbastecimiento}
-            onValidarPagoAbastecimiento={handleValidarPagoAbastecimiento}
-            onRechazarPagoAbastecimiento={handleRechazarPagoAbastecimiento}
-            onAvanzarAbastecimiento={handleAvanzarAbastecimiento}
-            onConfirmarRecepcionAbastecimiento={handleConfirmarRecepcionAbastecimiento}
-            onAbrirTimelineAbastecimiento={(envio) => setTimelineAbastecimientoEnvio(envio)}
             onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
             onAccionEspecial={(tipo, envio, extra) => setAccionEspecial({ tipo, envio, ...extra })}
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
@@ -537,29 +437,6 @@ export function ControlCourier() {
         envio={seguimientoEnvio}
         onClose={() => setSeguimientoEnvio(null)}
         onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
-      />
-      <LogisticaAbastecimientoModal
-        open={!!logisticaModalEnvio}
-        envio={logisticaModalEnvio}
-        onClose={() => setLogisticaModalEnvio(null)}
-        onPagar={() => {
-          const envio = logisticaModalEnvio;
-          setLogisticaModalEnvio(null);
-          setTransferenciaModalEnvio(envio);
-        }}
-      />
-      <TransferenciaAbastecimientoModal
-        open={!!transferenciaModalEnvio}
-        envio={transferenciaModalEnvio}
-        onClose={() => setTransferenciaModalEnvio(null)}
-        onEnviado={handleComprobanteEnviado}
-      />
-      <AbastecimientoTimelineModal
-        open={!!timelineAbastecimientoEnvio}
-        envio={timelineAbastecimientoEnvio}
-        onClose={() => setTimelineAbastecimientoEnvio(null)}
-        esAdmin={esAdmin}
-        onConfirmarRecepcion={esAdmin ? null : handleConfirmarRecepcionAbastecimiento}
       />
     </div>
   );

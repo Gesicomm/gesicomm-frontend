@@ -414,112 +414,10 @@ const accionBtnStyle = {
   whiteSpace: "nowrap",
 };
 
-function AccionPrincipal({ envio, isAdmin, onAbrirDetalle, onAbrirResumen, onAccionSiguiente }) {
+function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen, onAccionSiguiente }) {
   const accion = envio.accion_siguiente;
 
-  // La confirmación de recepción en el depósito propio se decide SOLO por el
-  // estado de abastecimiento, no por el estado de venta del pedido: es el
-  // paso que destraba el pase a "Preparado", así que la tienda tiene que
-  // poder marcarlo siempre que la mercadería esté viajando hacia su depósito.
-  if (envio.abastecimiento_estado === "en_transito_a_deposito_cliente") {
-    if (isAdmin) {
-      return (
-        <span className="pt-next-pill pt-next-pill--info" title="Solo el comercio puede confirmar la recepción en su depósito">
-          <Package size={13} /> Esperando confirmación del cliente
-        </span>
-      );
-    }
-    return (
-      <button
-        type="button"
-        className="pt-next-action pt-next-action--success"
-        title="Cuando recibas la mercadería, confirmá la recepción para poder preparar el pedido"
-        onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, { tipo: "confirmar_recepcion_deposito" }); }}
-      >
-        <Package size={13} /> Confirmar recepción
-      </button>
-    );
-  }
-
-  // pendiente_pago: solo la tienda tiene acción (pagar por transferencia). El
-  // admin no acredita nada acá — el pago se valida recién cuando llega el
-  // comprobante (pago_enviado).
-  if (accion?.tipo === "pagar_abastecimiento") {
-    if (isAdmin) {
-      return <span className="pt-next-pill pt-next-pill--danger" title={accion.descripcion}><CreditCard size={13} /> Pendiente de pago</span>;
-    }
-    return (
-      <button
-        type="button"
-        className={`pt-next-action pt-next-action--${accion.tono || "danger"}`}
-        title={accion.descripcion}
-        onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, accion); }}
-      >
-        <CreditCard size={13} /> {accion.cta}
-      </button>
-    );
-  }
-
-  // pago_enviado: solo el admin puede validar/rechazar.
-  if (accion?.tipo === "pago_enviado") {
-    if (!isAdmin) {
-      return <span className="pt-next-pill pt-next-pill--warning" title={accion.descripcion}><CreditCard size={13} /> {accion.titulo}</span>;
-    }
-    return (
-      <div style={{ display: "inline-flex", gap: 6 }}>
-        <button
-          type="button"
-          className="pt-next-action pt-next-action--success"
-          onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, { ...accion, tipo: "validar_pago" }); }}
-        >
-          Validar pago
-        </button>
-        <button
-          type="button"
-          className="pt-next-action pt-next-action--danger"
-          onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, { ...accion, tipo: "rechazar_pago" }); }}
-        >
-          Rechazar
-        </button>
-      </div>
-    );
-  }
-
-  // pago_rechazado: solo la tienda puede reemplazar el comprobante y reenviar.
-  if (accion?.tipo === "pago_rechazado") {
-    if (isAdmin) {
-      return <span className="pt-next-pill pt-next-pill--danger" title={accion.descripcion}><CreditCard size={13} /> Rechazado, esperando reenvío</span>;
-    }
-    return (
-      <button
-        type="button"
-        className="pt-next-action pt-next-action--danger"
-        title={accion.descripcion}
-        onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, accion); }}
-      >
-        <CreditCard size={13} /> {accion.cta}
-      </button>
-    );
-  }
-
-  // Tramo operativo intermedio: solo el admin avanza, la tienda ve el estado.
-  if (accion?.tipo === "abastecimiento_avanzar") {
-    if (!isAdmin) {
-      return <span className="pt-next-pill pt-next-pill--info" title={accion.descripcion}><Package size={13} /> {accion.titulo}</span>;
-    }
-    return (
-      <button
-        type="button"
-        className="pt-next-action pt-next-action--info"
-        title={accion.descripcion}
-        onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, accion); }}
-      >
-        <Package size={13} /> {accion.cta}
-      </button>
-    );
-  }
-
-  // en_transito_a_deposito_cliente: solo la tienda confirma la recepción.
+  // El backend manda la próxima acción del pedido con su estado destino.
   if (accion?.cta && accion.siguiente_estado) {
     return (
       <button
@@ -605,8 +503,6 @@ export function PedidosTable({
   const [metodosPagoList, setMetodosPagoList] = useState([]);
   const [canalesVenta, setCanalesVenta] = useState([]);
   const [usuarioActual, setUsuarioActual] = useState(null);
-  const [modalAbastecimientoOpen, setModalAbastecimientoOpen] = useState(false);
-  const [modalAbastecimientoDismissedKey, setModalAbastecimientoDismissedKey] = useState(null);
   
   const [etiquetas, setEtiquetas] = useState([]);
   const [flujos, setFlujos] = useState([]);
@@ -805,9 +701,6 @@ export function PedidosTable({
   };
 
   const handleSelectEstado = (estado) => {
-    if (estado === "Confirmado") {
-      setModalAbastecimientoDismissedKey(null);
-    }
     setEstadoActivo(estado);
     setTimelineExpandidoId(null);
     setPage(1);
@@ -829,7 +722,6 @@ export function PedidosTable({
 
   const handleSelectAbastecimientoEstado = (estado) => {
     setAbastecimientoEstadoActivo(estado);
-    setModalAbastecimientoDismissedKey(null);
     setPage(1);
   };
 
@@ -887,30 +779,6 @@ export function PedidosTable({
   };
 
   const handleAccionSiguiente = (item, accion) => {
-    if (accion.tipo === "pagar_abastecimiento") {
-      onPagarAbastecimiento?.(item);
-      return;
-    }
-    if (accion.tipo === "validar_pago") {
-      onValidarPagoAbastecimiento?.(item);
-      return;
-    }
-    if (accion.tipo === "rechazar_pago") {
-      onRechazarPagoAbastecimiento?.(item);
-      return;
-    }
-    if (accion.tipo === "pago_rechazado") {
-      onPagarAbastecimiento?.(item);
-      return;
-    }
-    if (accion.tipo === "abastecimiento_avanzar") {
-      onAvanzarAbastecimiento?.(item);
-      return;
-    }
-    if (accion.tipo === "confirmar_recepcion_deposito") {
-      onConfirmarRecepcionAbastecimiento?.(item);
-      return;
-    }
     if (accion.siguiente_estado === "Confirmado") {
       onAbrirDetalle?.(item);
       return;
@@ -973,13 +841,6 @@ export function PedidosTable({
   const saldoLiquidacionEntregados = Number(resumenEntregados?.saldo_liquidacion || 0);
   const montoPendienteRendicion = Math.abs(saldoLiquidacionEntregados);
   const tableColSpan = 9;
-  const pagosAbastecimientoPendientes = envios.filter((e) => e.accion_siguiente?.tipo === "pagar_abastecimiento");
-  const totalAbastecimientoPendiente = pagosAbastecimientoPendientes.reduce(
-    (acc, e) => acc + (Number(e.abastecimiento_costo) || 0),
-    0
-  );
-  const abastecimientoModalKey = pagosAbastecimientoPendientes.map((e) => e.id).sort((a, b) => a - b).join("-");
-  const primerPagoPendiente = pagosAbastecimientoPendientes[0] || null;
   const resumenCiclo = {
     pendientes: Number(conteos.Pendiente || 0) + Number(conteos.EnSeguimiento || 0),
     confirmados: Number(conteos.Confirmado || 0),
@@ -991,85 +852,8 @@ export function PedidosTable({
   const estadosEtapaActiva = STAGE_TO_ESTADOS[etapaActiva] || [];
   const totalEstadosEtapaActiva = estadosEtapaActiva.reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
 
-  useEffect(() => {
-    if (
-      !soloAbastecimiento &&
-      usuarioActual?.rol !== "administrador" &&
-      estadoActivo === "Confirmado" &&
-      !loading &&
-      pagosAbastecimientoPendientes.length > 0 &&
-      abastecimientoModalKey &&
-      modalAbastecimientoDismissedKey !== abastecimientoModalKey
-    ) {
-      setModalAbastecimientoOpen(true);
-    }
-  }, [
-    estadoActivo,
-    soloAbastecimiento,
-    usuarioActual,
-    loading,
-    pagosAbastecimientoPendientes.length,
-    abastecimientoModalKey,
-    modalAbastecimientoDismissedKey,
-  ]);
-
-  const cerrarModalAbastecimiento = () => {
-    setModalAbastecimientoDismissedKey(abastecimientoModalKey);
-    setModalAbastecimientoOpen(false);
-  };
-
-  const pagarDesdeModalAbastecimiento = () => {
-    if (!primerPagoPendiente) return;
-    cerrarModalAbastecimiento();
-    handleAccionSiguiente(primerPagoPendiente, primerPagoPendiente.accion_siguiente);
-  };
-
   return (
     <div className="pt-root">
-      {!soloAbastecimiento && modalAbastecimientoOpen && primerPagoPendiente && (
-        <div className="pt-payment-modal-backdrop" role="presentation">
-          <div
-            className="pt-payment-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="pt-payment-modal-title"
-          >
-            <button
-              type="button"
-              className="pt-payment-modal__close"
-              onClick={cerrarModalAbastecimiento}
-              aria-label="Cerrar aviso de abastecimiento"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="pt-payment-modal__icon">
-              <CreditCard size={28} />
-            </div>
-
-            <div className="pt-payment-modal__content">
-              <span className="pt-payment-modal__eyebrow">Acción requerida</span>
-              <h2 id="pt-payment-modal-title">Tenés pedidos que pagar</h2>
-              <p>
-                Hay {pagosAbastecimientoPendientes.length} pedido{pagosAbastecimientoPendientes.length === 1 ? "" : "s"} confirmado{pagosAbastecimientoPendientes.length === 1 ? "" : "s"} con abastecimiento pendiente por {formatGs(totalAbastecimientoPendiente)}.
-              </p>
-              <p className="pt-payment-modal__warning">
-                Tenés 24 horas para pagar. Gesicom recién procesa el abastecimiento cuando el pago esté acreditado.
-              </p>
-            </div>
-
-            <div className="pt-payment-modal__actions">
-              <button type="button" className="pt-payment-modal__secondary" onClick={cerrarModalAbastecimiento}>
-                Ver pedidos
-              </button>
-              <button type="button" className="pt-payment-modal__primary" onClick={pagarDesdeModalAbastecimiento}>
-                Pagar abastecimiento
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {!soloAbastecimiento && (
         <div className="pt-viewbar">
           <div className="pt-viewbar-copy">
@@ -1188,18 +972,6 @@ export function PedidosTable({
                   <span className="pt-status-chip__label">{label}</span>
                   <strong className="pt-status-chip__count">{conteos[st] ?? 0}</strong>
                 </button>,
-                etapaActiva === "comercial" && st === "Confirmado" && (
-                  <button
-                    key="abastecimiento-seguimiento-tab"
-                    type="button"
-                    onClick={() => handleSelectEstado(TAB_ABASTECIMIENTO_ID)}
-                    className={`pt-status-chip ${estadoActivo === TAB_ABASTECIMIENTO_ID ? "active" : ""}`}
-                    style={estadoActivo === TAB_ABASTECIMIENTO_ID ? { borderColor: TAB_ABASTECIMIENTO_CFG.chipText, background: TAB_ABASTECIMIENTO_CFG.chipBg, color: TAB_ABASTECIMIENTO_CFG.chipText } : undefined}
-                  >
-                    <span className="pt-status-chip__label">{TAB_ABASTECIMIENTO_CFG.label}</span>
-                    <strong className="pt-status-chip__count">{conteos.abastecimiento_pagado ?? 0}</strong>
-                  </button>
-                ),
               ];
             })}
           </div>
@@ -1270,20 +1042,6 @@ export function PedidosTable({
               />
             </div>
           )}
-        </div>
-      )}
-
-      {!soloAbastecimiento && estadoActivo === "Confirmado" && pagosAbastecimientoPendientes.length > 0 && (
-        <div className="pt-payment-alert" role="alert">
-          <div className="pt-payment-alert__icon">
-            <CreditCard size={18} />
-          </div>
-          <div className="pt-payment-alert__body">
-            <strong>Tenés que pagar abastecimiento para procesar estos pedidos.</strong>
-            <span>
-              {pagosAbastecimientoPendientes.length} pedido{pagosAbastecimientoPendientes.length === 1 ? "" : "s"} · {formatGs(totalAbastecimientoPendiente)} pendientes. Tenés 24 horas para pagar; Gesicom procesa el pedido recién cuando el pago esté acreditado.
-            </span>
-          </div>
         </div>
       )}
 
@@ -1763,11 +1521,6 @@ export function PedidosTable({
                         </td>
                         <td className="pt-td" data-label="Estado logístico">
                           <LogisticaCell envio={e} />
-                          {e.abastecimiento_estado && e.abastecimiento_estado !== "no_requiere" && (
-                            <div style={{ marginTop: 4 }} onClick={(ev) => ev.stopPropagation()}>
-                              <AbastecimientoBadge envio={e} onAbrirTimeline={onAbrirTimelineAbastecimiento} />
-                            </div>
-                          )}
                         </td>
                         <td className="pt-td" data-label="Estado de recompra">
                           <RecompraCell envio={e} />
@@ -1791,7 +1544,6 @@ export function PedidosTable({
                       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                         <AccionPrincipal
                           envio={e}
-                          isAdmin={esAdmin}
                           onAbrirDetalle={onAbrirDetalle}
                           onAbrirResumen={onAbrirResumen}
                           onAccionSiguiente={handleAccionSiguiente}
@@ -1804,16 +1556,6 @@ export function PedidosTable({
                             onClick={() => onAbrirHistorial(e)}
                           >
                             <History size={13} />
-                          </button>
-                        )}
-                        {onAbrirTimelineAbastecimiento && e.abastecimiento_estado && e.abastecimiento_estado !== "no_requiere" && (
-                          <button
-                            type="button"
-                            title="Ver seguimiento de abastecimiento"
-                            style={{ ...accionBtnStyle, padding: "4px 6px" }}
-                            onClick={() => onAbrirTimelineAbastecimiento(e)}
-                          >
-                            <Truck size={13} />
                           </button>
                         )}
                         {esAdmin && (
