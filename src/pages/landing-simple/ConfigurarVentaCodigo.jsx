@@ -109,6 +109,7 @@ const MODOS = [
 ];
 
 const CANTIDADES_RECO = [2, 3, 4, 6, 8];
+const MAX_RECOMENDADOS_MANUALES = Math.max(...CANTIDADES_RECO);
 // Con catálogos enormes, el preview no necesita más que esto para verse igual.
 const MAX_PRODUCTOS_PREVIEW = 120;
 const FILTROS_CATALOGO = [
@@ -1420,14 +1421,14 @@ export default function ConfigurarVentaCodigo({
     [candidatosReco],
   );
   const recoItemsValidos = useMemo(
-    () => recoItems.filter(id => idsCandidatosReco.has(id)).slice(0, 12),
+    () => recoItems.filter(id => idsCandidatosReco.has(id)).slice(0, MAX_RECOMENDADOS_MANUALES),
     [recoItems, idsCandidatosReco],
   );
   useEffect(() => {
     if (recoItemsValidos.length !== recoItems.length) setRecoItems(recoItemsValidos);
   }, [recoItems, recoItemsValidos]);
   const checkoutRecoItemsValidos = useMemo(
-    () => checkoutRecoItems.filter(id => idsCandidatosReco.has(id)).slice(0, 12),
+    () => checkoutRecoItems.filter(id => idsCandidatosReco.has(id)).slice(0, MAX_RECOMENDADOS_MANUALES),
     [checkoutRecoItems, idsCandidatosReco],
   );
   useEffect(() => {
@@ -2000,7 +2001,7 @@ export default function ConfigurarVentaCodigo({
           <div className="space-y-2">
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-fg-muted">Buscá y tocá los productos que querés recomendar ({recoItemsValidos.length} de hasta 12).</p>
+                <p className="text-xs text-fg-muted">Buscá y tocá los productos que querés recomendar ({recoItemsValidos.length} de hasta {MAX_RECOMENDADOS_MANUALES}).</p>
                 {recoItemsValidos.length > 0 && (
                   <button
                     type="button"
@@ -2057,26 +2058,32 @@ export default function ConfigurarVentaCodigo({
                 </div>
               ) : candidatosRecoFiltrados.map(i => {
                 const elegido = recoItems.includes(i.content_id);
+                const bloqueadoPorLimite = !elegido && recoItemsValidos.length >= MAX_RECOMENDADOS_MANUALES;
                 const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
                 const anclaKey = claveItem(i);
                 const img = imagenPanel(i);
                 return (
                   <div
                     key={i.content_id}
-                    className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : 'border-border bg-surface hover:border-border-strong'}`}
+                    className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : bloqueadoPorLimite ? 'border-border bg-surface opacity-55' : 'border-border bg-surface hover:border-border-strong'}`}
                   >
                     <button
                       type="button"
                       aria-pressed={elegido}
+                      disabled={bloqueadoPorLimite}
                       onClick={() => {
-                        setRecoItems(prev => (elegido ? prev.filter(x => x !== i.content_id) : [...prev, i.content_id].slice(0, 12)));
+                        setRecoItems(prev => {
+                          if (prev.includes(i.content_id)) return prev.filter(x => x !== i.content_id);
+                          if (prev.length >= MAX_RECOMENDADOS_MANUALES) return prev;
+                          return [...prev, i.content_id];
+                        });
                         // La vista previa no cambia de producto: se queda en la ficha que
                         // se está editando y resalta su sección de recomendados.
                         setVistaPreview('producto');
                         setAvisoPreview('');
                         setResaltado({ lista: 'recomendados', n: 0 });
                       }}
-                      className="flex w-full items-start gap-3 text-left"
+                      className="flex w-full items-start gap-3 text-left disabled:cursor-not-allowed"
                     >
                       <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
                         {img
@@ -2834,7 +2841,7 @@ export default function ConfigurarVentaCodigo({
                               <div className="flex flex-col gap-3">
                                 <div className="flex items-center justify-between gap-3">
                                   <p className="text-xs text-fg-muted">
-                                    Tocá los productos que querés mostrar ({checkoutRecoItemsValidos.length} de hasta 12).
+                                    Tocá los productos que querés mostrar ({checkoutRecoItemsValidos.length} de hasta {MAX_RECOMENDADOS_MANUALES}).
                                   </p>
                                   {checkoutRecoItemsValidos.length > 0 && (
                                     <button
@@ -2897,23 +2904,29 @@ export default function ConfigurarVentaCodigo({
                                   </div>
                                 ) : candidatosCheckoutRecoFiltrados.map(i => {
                                   const elegido = checkoutRecoItemsValidos.includes(i.content_id);
+                                  const bloqueadoPorLimite = !elegido && checkoutRecoItemsValidos.length >= MAX_RECOMENDADOS_MANUALES;
                                   const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
                                   const img = imagenPanel(i);
                                   return (
                                     <div
                                       key={i.content_id}
-                                      className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : 'border-border bg-surface hover:border-border-strong'}`}
+                                      className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : bloqueadoPorLimite ? 'border-border bg-surface opacity-55' : 'border-border bg-surface hover:border-border-strong'}`}
                                     >
                                       <button
                                         type="button"
                                         aria-pressed={elegido}
+                                        disabled={bloqueadoPorLimite}
                                         onClick={() => {
-                                          setCheckoutRecoItems(prev => (elegido ? prev.filter(x => x !== i.content_id) : [...prev, i.content_id].slice(0, 12)));
+                                          setCheckoutRecoItems(prev => {
+                                            if (prev.includes(i.content_id)) return prev.filter(x => x !== i.content_id);
+                                            if (prev.length >= MAX_RECOMENDADOS_MANUALES) return prev;
+                                            return [...prev, i.content_id];
+                                          });
                                           setVistaPreview('checkout');
                                           setAvisoPreview('');
                                           setResaltado({ lista: 'checkout_recomendados', n: Date.now() });
                                         }}
-                                        className="flex w-full items-start gap-3 text-left"
+                                        className="flex w-full items-start gap-3 text-left disabled:cursor-not-allowed"
                                       >
                                         <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
                                           {img
@@ -3158,7 +3171,7 @@ export default function ConfigurarVentaCodigo({
                         <div className="space-y-2">
                           <div className="flex flex-col gap-3">
                             <div className="flex items-center justify-between gap-3">
-                              <p className="text-xs text-fg-muted">Buscá y tocá los productos que querés recomendar ({recoItemsValidos.length} de hasta 12).</p>
+                              <p className="text-xs text-fg-muted">Buscá y tocá los productos que querés recomendar ({recoItemsValidos.length} de hasta {MAX_RECOMENDADOS_MANUALES}).</p>
                               {recoItemsValidos.length > 0 && (
                                 <button
                                   type="button"
@@ -3215,26 +3228,32 @@ export default function ConfigurarVentaCodigo({
                               </div>
                             ) : candidatosRecoFiltrados.map(i => {
                               const elegido = recoItems.includes(i.content_id);
+                              const bloqueadoPorLimite = !elegido && recoItemsValidos.length >= MAX_RECOMENDADOS_MANUALES;
                               const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
                               const anclaKey = claveItem(i);
                               const img = imagenPanel(i);
                               return (
                                 <div
                                   key={i.content_id}
-                                  className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : 'border-border bg-surface hover:border-border-strong'}`}
+                                  className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : bloqueadoPorLimite ? 'border-border bg-surface opacity-55' : 'border-border bg-surface hover:border-border-strong'}`}
                                 >
                                   <button
                                     type="button"
                                     aria-pressed={elegido}
+                                    disabled={bloqueadoPorLimite}
                                     onClick={() => {
-                                      setRecoItems(prev => (elegido ? prev.filter(x => x !== i.content_id) : [...prev, i.content_id].slice(0, 12)));
+                                      setRecoItems(prev => {
+                                        if (prev.includes(i.content_id)) return prev.filter(x => x !== i.content_id);
+                                        if (prev.length >= MAX_RECOMENDADOS_MANUALES) return prev;
+                                        return [...prev, i.content_id];
+                                      });
                                       // La vista previa no cambia de producto: se queda en la ficha que
                                       // se está editando y resalta su sección de recomendados.
                                       setVistaPreview('producto');
                                       setAvisoPreview('');
                                       setResaltado({ lista: 'recomendados', n: 0 });
                                     }}
-                                    className="flex w-full items-start gap-3 text-left"
+                                    className="flex w-full items-start gap-3 text-left disabled:cursor-not-allowed"
                                   >
                                     <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
                                       {img
