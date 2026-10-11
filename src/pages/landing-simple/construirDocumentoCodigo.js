@@ -864,8 +864,11 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
   background: color-mix(in srgb, var(--gc-superficie, var(--tienda-superficie, #fff)) 92%, transparent) !important;
   border-color: var(--tienda-linea, var(--gc-primario, #d7e6ef)) !important;
 }
+/* Alto FIJO: el del logo más grande (76px) + su aire. Antes dependía de
+   --gc-logo-tamano y achicar el logo achicaba el encabezado entero; el
+   control "Tamaño del logo" solo tiene que escalar la imagen. */
 :where(.commerce-header .header-main) {
-  min-height: max(76px, calc(var(--gc-logo-tamano, 76px) + 20px)) !important;
+  min-height: 96px !important;
 }
 /* Variante "embebido" (ver estilosInicioCodigo.js): el header va transparente
    y superpuesto a la foto del banner, así que acá NO se fuerza el fondo/texto
