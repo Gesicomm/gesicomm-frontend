@@ -9,7 +9,7 @@ import {
   resolverConEjemplos, partirMensaje, variablesDesconocidas, agruparVariables,
   nombreSugerido, desarmarEspera, formatEspera, horaSimulada, UNIDADES,
 } from "./variablesWhatsapp";
-import { FLOW_TYPES } from "./orderLifecycle";
+import { CUSTOM_FLOW_TYPE, FLOW_TYPES } from "./orderLifecycle";
 import "./flujos-whatsapp.css";
 
 /**
@@ -55,7 +55,7 @@ const flujoNuevo = (tipo = "CONFIRMACION_PEDIDO_WEB") => ({
   descripcion: "",
   activo: true,
   tipo,
-  activacion: "AUTOMATICA",
+  activacion: tipo === CUSTOM_FLOW_TYPE ? "MANUAL" : "AUTOMATICA",
   predeterminado: false,
   fases: conEsperaInicial([faseNueva(0)], tipo),
 });
@@ -215,8 +215,8 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
       descripcion: editando.descripcion,
       activo: editando.activo,
       tipo: editando.tipo || "CONFIRMACION_PEDIDO_WEB",
-      activacion: editando.activacion || "MANUAL",
-      predeterminado: !!editando.predeterminado,
+      activacion: editando.tipo === CUSTOM_FLOW_TYPE ? "MANUAL" : (editando.activacion || "MANUAL"),
+      predeterminado: editando.tipo === CUSTOM_FLOW_TYPE ? false : !!editando.predeterminado,
       // El orden es la posición en el array; el backend recalcula `orden`.
       fases: editando.fases.map((f) => ({
         id: f.id,
@@ -282,8 +282,8 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
               <p className="gw-eyebrow">Seguimiento por WhatsApp</p>
               <h2 style={{ margin: 0, fontSize: "1.3rem" }}>Flujos de mensajes</h2>
               <p style={{ margin: "0.35rem 0 0", fontSize: "0.86rem", color: "var(--color-fg-muted)", maxWidth: "70ch" }}>
-                El seguimiento tiene cuatro etapas y cada pedido pasa de una a otra solo, según su estado.
-                Cada etapa tiene su flujo de mensajes: podés editarlo y sumar más flujos a cualquier etapa.
+                Las etapas principales avanzan según el estado del pedido, y también podés crear otros flujos manuales
+                para casos propios de tu operación.
               </p>
             </div>
           </header>
@@ -348,12 +348,21 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
 
           <section className="gw-flow-config" aria-label="Configuración del flujo">
             <div className="gw-flow-config__field">
-              <label className="gw-field-label">Etapa <span className="gw-req">*</span></label>
+              <label className="gw-field-label">Uso del flujo <span className="gw-req">*</span></label>
               <select
                 className="gw-input"
                 value={editando?.tipo || "CONFIRMACION_PEDIDO_WEB"}
-                onChange={(e) => setEditando((p) => ({ ...p, tipo: e.target.value, fases: conEsperaInicial(p.fases, e.target.value) }))}
-                aria-label="Etapa del flujo"
+                onChange={(e) => {
+                  const tipo = e.target.value;
+                  setEditando((p) => ({
+                    ...p,
+                    tipo,
+                    activacion: tipo === CUSTOM_FLOW_TYPE ? "MANUAL" : p.activacion,
+                    predeterminado: tipo === CUSTOM_FLOW_TYPE ? false : p.predeterminado,
+                    fases: conEsperaInicial(p.fases, tipo),
+                  }));
+                }}
+                aria-label="Uso del flujo"
               >
                 {Object.entries(FLOW_TYPES).map(([value, meta]) => (
                   <option key={value} value={value}>{meta.label}</option>
@@ -362,14 +371,16 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
               <p>{FLOW_TYPES[editando?.tipo || "CONFIRMACION_PEDIDO_WEB"]?.hint}</p>
             </div>
 
-            <label className="gw-switch gw-switch--inline">
-              <input
-                type="checkbox"
-                checked={!!editando?.predeterminado}
-                onChange={(e) => setEditando((p) => ({ ...p, predeterminado: e.target.checked }))}
-              />
-              <span>Flujo principal de la etapa: el que reciben los pedidos que entran a ella</span>
-            </label>
+            {editando?.tipo !== CUSTOM_FLOW_TYPE && (
+              <label className="gw-switch gw-switch--inline">
+                <input
+                  type="checkbox"
+                  checked={!!editando?.predeterminado}
+                  onChange={(e) => setEditando((p) => ({ ...p, predeterminado: e.target.checked }))}
+                />
+                <span>Flujo principal de la etapa: el que reciben los pedidos que entran a ella</span>
+              </label>
+            )}
           </section>
 
           {erroresValidacion.length > 0 && (
@@ -501,8 +512,8 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
 /* ─── Listado ──────────────────────────────────────────────── */
 
 function ListaFlujos({ flujos, onEditar, onEliminar, onNuevo }) {
-  // Una sección por etapa, siempre las cuatro: el backend garantiza que cada
-  // una tenga su flujo, y acá se puede sumar más a cualquiera.
+  // Una sección por uso: las etapas automáticas y un grupo libre para flujos
+  // manuales que no dependen del estado del pedido.
   return (
     <div className="gw-etapas">
       {Object.entries(FLOW_TYPES).map(([tipo, meta]) => {
@@ -520,14 +531,16 @@ function ListaFlujos({ flujos, onEditar, onEliminar, onNuevo }) {
             </header>
 
             {deLaEtapa.length === 0 ? (
-              <div className="gw-empty">Esta etapa todavía no tiene flujo.</div>
+              <div className="gw-empty">
+                {meta.stage === "manual" ? "Todavía no hay flujos manuales." : "Esta etapa todavía no tiene flujo."}
+              </div>
             ) : (
               <div className="gw-cards">
                 {deLaEtapa.map((flujo) => (
                   <TarjetaFlujo
                     key={flujo.id}
                     flujo={flujo}
-                    unicoDeLaEtapa={deLaEtapa.length === 1}
+                    unicoDeLaEtapa={meta.stage !== "manual" && deLaEtapa.length === 1}
                     onEditar={onEditar}
                     onEliminar={onEliminar}
                   />

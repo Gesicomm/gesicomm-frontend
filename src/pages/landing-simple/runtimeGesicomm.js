@@ -1142,7 +1142,7 @@ export function runtimeGesicomm() {
     return {
       mostrar_logo: e.mostrar_logo !== false,
       mostrar_nombre: e.mostrar_nombre !== false,
-      logo_tamano: isFinite(tamano) ? Math.max(28, Math.min(76, tamano)) : 76,
+      logo_tamano: isFinite(tamano) ? Math.max(28, Math.min(128, tamano)) : 76,
       logo_rotacion: isFinite(rotacion) ? Math.max(-180, Math.min(180, rotacion)) : 0,
       logo_posicion: e.logo_posicion === 'centro' ? 'centro' : 'izquierda',
       variante: varianteMobile,

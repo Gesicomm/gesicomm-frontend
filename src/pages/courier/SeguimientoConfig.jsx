@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, Loader2, Tag, Clock, AlertCircle, MessageCircle } from "lucide-react";
+import { Plus, Trash2, Edit2, Loader2, Tag, Clock, AlertCircle } from "lucide-react";
 import { seguimientoService } from "../../services/seguimiento.service";
 import { FlujosWhatsapp } from "./FlujosWhatsapp";
 
@@ -12,13 +12,11 @@ import { FlujosWhatsapp } from "./FlujosWhatsapp";
  */
 export function SeguimientoConfig() {
   const [etiquetas, setEtiquetas] = useState([]);
-  const [plantillas, setPlantillas] = useState([]);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [editandoEtiqueta, setEditandoEtiqueta] = useState(null);
-  const [editandoPlantilla, setEditandoPlantilla] = useState(null);
   const [editandoFlujo, setEditandoFlujo] = useState(false);
   const [tiemposInput, setTiemposInput] = useState("");
 
@@ -26,13 +24,11 @@ export function SeguimientoConfig() {
     setLoading(true);
     setError(null);
     try {
-      const [resE, resP, resC] = await Promise.all([
+      const [resE, resC] = await Promise.all([
         seguimientoService.getEtiquetas(),
-        seguimientoService.getPlantillas(),
         seguimientoService.getConfiguracion()
       ]);
       setEtiquetas(resE || []);
-      setPlantillas(resP || []);
       setConfig(resC || { tiempos_rapidos_horas: [1, 2, 4, 8, 24] });
       setTiemposInput((resC?.tiempos_rapidos_horas || [1, 2, 4, 8, 24]).join(", "));
     } catch (e) {
@@ -88,34 +84,6 @@ export function SeguimientoConfig() {
     }
   };
 
-  const savePlantilla = async (plantilla) => {
-    if (!plantilla.nombre?.trim() || !plantilla.codigo?.trim() || !plantilla.mensaje?.trim()) {
-      alert("Nombre, código y mensaje son obligatorios.");
-      return;
-    }
-    try {
-      if (plantilla.id) {
-        await seguimientoService.updatePlantilla(plantilla.id, plantilla);
-      } else {
-        await seguimientoService.createPlantilla(plantilla);
-      }
-      setEditandoPlantilla(null);
-      cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.error || "Error al guardar la plantilla");
-    }
-  };
-
-  const deletePlantilla = async (id) => {
-    if (!window.confirm("¿Seguro que deseas eliminar esta plantilla?")) return;
-    try {
-      await seguimientoService.deletePlantilla(id);
-      cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.error || "Error al eliminar la plantilla");
-    }
-  };
-
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: "4rem", color: "var(--color-fg-muted)" }}>
@@ -128,7 +96,7 @@ export function SeguimientoConfig() {
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1.5rem", color: "var(--color-fg)" }}>
       {!editandoFlujo && (
         <header style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 0.5rem 0" }}>Configuración de Seguimiento</h1>
+          <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 0.5rem 0" }}>Flujos de WhatsApp</h1>
           <p style={{ color: "var(--color-fg-muted)", margin: 0 }}>
             Administra los flujos de mensajes de WhatsApp, las etiquetas de estado global y los tiempos de recordatorio.
           </p>
@@ -148,38 +116,6 @@ export function SeguimientoConfig() {
 
         {!editandoFlujo && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "2rem" }}>
-
-          {/* PLANTILLAS DE WHATSAPP */}
-          <section style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)", borderRadius: "12px", overflow: "hidden", gridColumn: "1 / -1" }}>
-            <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--color-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <MessageCircle size={18} color="var(--color-success)" /> Plantillas de WhatsApp
-                </h2>
-                <p style={{ margin: "0.25rem 0 0 0", fontSize: "0.8rem", color: "var(--color-fg-muted)" }}>Mensajes reutilizables para contactar pedidos.</p>
-              </div>
-              <button className="btn-secondary" onClick={() => setEditandoPlantilla({ nombre: "", codigo: "", mensaje: "", activo: true })}>
-                <Plus size={14} /> Nueva
-              </button>
-            </div>
-            <div style={{ padding: "1.5rem" }}>
-              {editandoPlantilla && (
-                <div style={{ background: "var(--color-canvas)", border: "1px solid var(--color-success)", borderRadius: "8px", padding: "1.25rem", marginBottom: "1.5rem" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                    <label><span style={{ display: "block", fontSize: "0.8rem", fontWeight: 600 }}>Nombre</span><input className="form-input" value={editandoPlantilla.nombre} onChange={e => setEditandoPlantilla({ ...editandoPlantilla, nombre: e.target.value })} /></label>
-                    <label><span style={{ display: "block", fontSize: "0.8rem", fontWeight: 600 }}>Código</span><input className="form-input" value={editandoPlantilla.codigo} onChange={e => setEditandoPlantilla({ ...editandoPlantilla, codigo: e.target.value })} /></label>
-                    <label style={{ gridColumn: "1 / -1" }}><span style={{ display: "block", fontSize: "0.8rem", fontWeight: 600 }}>Mensaje</span><textarea className="form-input" rows={4} value={editandoPlantilla.mensaje} onChange={e => setEditandoPlantilla({ ...editandoPlantilla, mensaje: e.target.value })} /></label>
-                    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><input type="checkbox" checked={editandoPlantilla.activo} onChange={e => setEditandoPlantilla({ ...editandoPlantilla, activo: e.target.checked })} /> Activa</label>
-                  </div>
-                  <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}><button className="btn-primary" onClick={() => savePlantilla(editandoPlantilla)}>Guardar</button><button className="btn-secondary" onClick={() => setEditandoPlantilla(null)}>Cancelar</button></div>
-                </div>
-              )}
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {plantillas.map(p => <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", padding: "0.75rem 1rem", background: "var(--color-canvas)", borderRadius: "6px", border: "1px solid var(--color-border)" }}><div><strong>{p.nombre}</strong><div style={{ fontSize: "0.8rem", color: "var(--color-fg-muted)" }}>{p.codigo} · {p.mensaje}</div></div><div style={{ display: "flex", gap: "0.5rem" }}><button className="icon-button" onClick={() => setEditandoPlantilla(p)}><Edit2 size={14} /></button><button className="icon-button" style={{ color: "var(--color-danger)" }} onClick={() => deletePlantilla(p.id)}><Trash2 size={14} /></button></div></div>)}
-                {plantillas.length === 0 && !editandoPlantilla && <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--color-fg-muted)", fontStyle: "italic" }}>Sin plantillas configuradas</div>}
-              </div>
-            </div>
-          </section>
 
           {/* ETIQUETAS */}
           <section style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)", borderRadius: "12px", overflow: "hidden" }}>

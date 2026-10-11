@@ -479,6 +479,9 @@
 .lp-footer {
   border-top: 1px solid var(--l-card-border, rgba(255,255,255,0.08));
   padding-block: var(--l-s5);
+  font-size: clamp(15px, 1.15vw, 17px);
+  font-weight: 650;
+  line-height: 1.62;
 }
 .lp-footer-inner {
   max-width: var(--l-max);
@@ -492,17 +495,18 @@
 }
 .lp-footer-nombre {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: clamp(1.15rem, 1.6vw, 1.45rem);
+  font-weight: 900;
   letter-spacing: -0.01em;
   color: var(--l-text, #f8fafc);
 }
 .lp-footer-desc {
   margin: 0.35rem 0 0;
   max-width: 26rem;
-  font-size: 0.85rem;
+  font-size: clamp(0.95rem, 1.08vw, 1rem);
+  font-weight: 700;
   line-height: 1.55;
-  color: var(--l-text-muted, #94a3b8);
+  color: var(--l-text, #f8fafc);
 }
 .lp-footer-links {
   display: flex;
@@ -510,10 +514,10 @@
   gap: 0.6rem;
 }
 .lp-footer-links a {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: clamp(0.95rem, 1.08vw, 1rem);
+  font-weight: 800;
   text-decoration: none;
-  color: var(--l-text-muted, #94a3b8);
+  color: var(--l-text, #f8fafc);
   transition: color 0.15s;
 }
 .lp-footer-links a:hover { color: var(--l-text, #f8fafc); }
@@ -525,8 +529,8 @@
   padding: 0.6rem 1.1rem;
   border-radius: var(--l-radius-sm, 10px);
   border: 1px solid var(--l-card-border, rgba(255,255,255,0.08));
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: clamp(0.95rem, 1.08vw, 1rem);
+  font-weight: 850;
   text-decoration: none;
   color: var(--l-text, #f8fafc);
   transition: color 0.15s, border-color 0.15s;

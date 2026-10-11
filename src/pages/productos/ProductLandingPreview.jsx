@@ -2,23 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Monitor, Smartphone, Tablet } from 'lucide-react';
 import { ofertaAFormaPublica, ofertaService } from '../../services/ofertaService';
 import { tiendaService } from '../../services/tiendaService';
-import BasicoProductPage from '../landing-simple/templates/basico/BasicoProductPage';
-import { fichaBasicoDesdeProducto, resolverFichaBasico } from '../landing-simple/templates/basico/fichaBasico';
-import BeautyProductPage from '../landing-simple/templates/beauty/BeautyProductPage';
-import BazarProductPage from '../landing-simple/templates/bazar/BazarProductPage';
-import ModaProductPage from '../landing-simple/templates/moda/ModaProductPage';
-import { fichaModaDesdeProducto, resolverFichaModa } from '../landing-simple/templates/moda/fichaModa';
-import { fichaBazarDesdeProducto, resolverFichaBazar } from '../landing-simple/templates/bazar/fichaBazar';
-import { fichaBeautyDesdeProducto, resolverFichaBeauty } from '../landing-simple/templates/beauty/fichaBeauty';
-import FitnessProductPage from '../landing-simple/templates/fitness/FitnessProductPage';
-import {
-  armarItemFicha as armarItemFitness,
-  fichaDesdeMarketing,
-  resolverFichaFitness,
-} from '../landing-simple/templates/fitness/fichaFitness';
-import TechProductPage from '../landing-simple/templates/tech/TechProductPage';
-import { fichaTechDesdeProducto, resolverFichaTech } from '../landing-simple/templates/tech/fichaTech';
-import { armarItemFicha } from '../landing-simple/templates/fichaComun';
 import CodigoPreview from '../landing-simple/CodigoPreview';
 import { codigoFichaProducto } from '../landing-simple/fichaCodigoLanding';
 import { datosRuntimePublico } from '../landing-simple/datosRuntime';
@@ -29,29 +12,6 @@ const DEVICE_OPTIONS = [
   { id: 'tablet', label: 'Tablet', icon: Tablet },
   { id: 'mobile', label: 'Mobile', icon: Smartphone },
 ];
-
-const TEMPLATE_BY_RUBRO = {
-  suplementos: 'fitness-suplementos',
-  tecnologia: 'tech-electronica',
-  beauty: 'beauty-skincare',
-  bazar: 'bazar-hogar',
-  moda: 'moda-indumentaria',
-};
-
-/**
- * Los colores con los que arranca una landing nueva: los de Mi Tienda, y lo
- * que falte lo completa el default del template (resolverTemaPorSlug). Es la
- * misma regla que usa el armador (mapEditorDraftToTemplateData) para una
- * landing sin colores propios; antes acá había un azul fijo y la vista del
- * producto no se parecía a ninguna landing real.
- */
-function temaDeTienda(tienda) {
-  return {
-    fondo: tienda?.color_fondo || null,
-    texto: tienda?.color_secundario || null,
-    acento: tienda?.color_primario || null,
-  };
-}
 
 function imagenesOrdenadas(imagenes = [], imagenesNuevas = []) {
   return [
@@ -189,9 +149,7 @@ export default function ProductLandingPreview({
     precioAncla,
   ]);
 
-  const esLienzo = landing?.template?.kind === 'codigo';
   const previewLienzo = useMemo(() => {
-    if (!esLienzo) return null;
     const contentId = producto?.slug || (productoId ? `producto-${productoId}` : 'preview');
     // Mismo formato que un item de /api/l: así pasa por itemPublicoARuntime
     // igual que en la tienda publicada.
@@ -218,7 +176,9 @@ export default function ProductLandingPreview({
       ficha_datos: dto.ficha_datos,
     };
     const data = {
-      ...landing,
+      ...(landing || {}),
+      content: landing?.content || {},
+      template: landing?.template || { kind: 'codigo', slug: 'lienzo-blanco', name: 'Lienzo en blanco' },
       catalogo_items: [item],
       tienda: { nombre: tienda?.nombre || '', logo_imagen: tienda?.logo_imagen || null, colores: tienda ? { primario: tienda.color_primario || null, secundario: tienda.color_secundario || null, fondo: tienda.color_fondo || null } : undefined },
     };
@@ -226,143 +186,19 @@ export default function ProductLandingPreview({
       codigo: codigoFichaProducto(landing?.content, contentId),
       datos: datosRuntimePublico(data, landing?.slug || null, item, { vista: 'producto' }),
     };
-  }, [esLienzo, landing, tienda, dto, producto, productoId]);
+  }, [landing, tienda, dto, producto, productoId]);
 
-  const preview = useMemo(() => {
-    if (previewLienzo) {
-      return (
-        <div style={{ height: 'min(78vh, 900px)' }}>
-          <CodigoPreview
-            codigo={previewLienzo.codigo}
-            titulo={dto.nombre}
-            datos={previewLienzo.datos}
-            previewDevice={device}
-            style={{ width: '100%', height: '100%', border: 0 }}
-          />
-        </div>
-      );
-    }
-    const rubro = producto?.ficha_rubro || '';
-    const templateSlug = TEMPLATE_BY_RUBRO[rubro] || 'basico';
-    const comun = {
-      tema: temaDeTienda(tienda),
-      templateSlug,
-      nombreComercio: tienda?.nombre || 'Tu tienda',
-      contacto: null,
-      isMobile: device === 'mobile',
-      previewMode: true,
-      onComprar: () => {},
-      onAgregar: null,
-      onVolver: null,
-      onClickRelacionado: null,
-    };
-
-    if (rubro === 'suplementos') {
-      const ficha = resolverFichaFitness(null, null, fichaDesdeMarketing(dto));
-      const item = armarItemFitness({
-        nombre: dto.nombre,
-        categoria: dto.categoria,
-        descripcion: dto.descripcion_larga || dto.descripcion,
-        precio: dto.precio,
-        precioAntes: dto.precio_antes,
-        imagenes: dto.imagenes,
-        ofertas: dto.ofertas,
-        variantes: dto.variantes,
-        opciones: dto.opciones,
-        faq: dto.faq,
-        faqTitulo: dto.faq_titulo,
-      });
-      return <FitnessProductPage item={item} ficha={ficha} {...comun} />;
-    }
-
-    if (rubro === 'tecnologia') {
-      const ficha = resolverFichaTech(null, null, fichaTechDesdeProducto(dto));
-      const item = armarItemFicha({
-        nombre: dto.nombre,
-        categoria: dto.categoria,
-        descripcion: dto.descripcion_larga || dto.descripcion,
-        precio: dto.precio,
-        precioAntes: dto.precio_antes,
-        imagenes: dto.imagenes,
-        ofertas: dto.ofertas,
-        variantes: dto.variantes,
-        opciones: dto.opciones,
-        faq: dto.faq,
-        faqTitulo: dto.faq_titulo,
-      });
-      return <TechProductPage item={item} ficha={ficha} {...comun} />;
-    }
-
-    if (rubro === 'beauty') {
-      const ficha = resolverFichaBeauty(null, null, fichaBeautyDesdeProducto(dto));
-      const item = armarItemFicha({
-        nombre: dto.nombre,
-        categoria: dto.categoria,
-        descripcion: dto.descripcion_larga || dto.descripcion,
-        precio: dto.precio,
-        precioAntes: dto.precio_antes,
-        imagenes: dto.imagenes,
-        ofertas: dto.ofertas,
-        variantes: dto.variantes,
-        opciones: dto.opciones,
-        faq: dto.faq,
-        faqTitulo: dto.faq_titulo,
-      });
-      return <BeautyProductPage item={item} ficha={ficha} {...comun} />;
-    }
-
-    if (rubro === 'bazar') {
-      const ficha = resolverFichaBazar(null, null, fichaBazarDesdeProducto(dto));
-      const item = armarItemFicha({
-        nombre: dto.nombre,
-        categoria: dto.categoria,
-        descripcion: dto.descripcion_larga || dto.descripcion,
-        precio: dto.precio,
-        precioAntes: dto.precio_antes,
-        imagenes: dto.imagenes,
-        ofertas: dto.ofertas,
-        variantes: dto.variantes,
-        opciones: dto.opciones,
-        faq: dto.faq,
-        faqTitulo: dto.faq_titulo,
-      });
-      return <BazarProductPage item={item} ficha={ficha} {...comun} />;
-    }
-
-    if (rubro === 'moda') {
-      const ficha = resolverFichaModa(null, null, fichaModaDesdeProducto(dto));
-      const item = armarItemFicha({
-        nombre: dto.nombre,
-        categoria: dto.categoria,
-        descripcion: dto.descripcion_larga || dto.descripcion,
-        precio: dto.precio,
-        precioAntes: dto.precio_antes,
-        imagenes: dto.imagenes,
-        ofertas: dto.ofertas,
-        variantes: dto.variantes,
-        opciones: dto.opciones,
-        faq: dto.faq,
-        faqTitulo: dto.faq_titulo,
-      });
-      return <ModaProductPage item={item} ficha={ficha} {...comun} />;
-    }
-
-    const ficha = resolverFichaBasico(null, null, fichaBasicoDesdeProducto(dto));
-    const item = armarItemFicha({
-      nombre: dto.nombre,
-      categoria: dto.categoria,
-      descripcion: dto.descripcion_larga || dto.descripcion,
-      precio: dto.precio,
-      precioAntes: dto.precio_antes,
-      imagenes: dto.imagenes,
-      ofertas: dto.ofertas,
-      variantes: dto.variantes,
-      opciones: dto.opciones,
-      faq: dto.faq,
-      faqTitulo: dto.faq_titulo,
-    });
-    return <BasicoProductPage item={item} ficha={ficha} {...comun} />;
-  }, [device, dto, producto?.ficha_rubro, tienda, previewLienzo]);
+  const preview = useMemo(() => (
+    <div style={{ height: 'min(78vh, 900px)' }}>
+      <CodigoPreview
+        codigo={previewLienzo.codigo}
+        titulo={dto.nombre}
+        datos={previewLienzo.datos}
+        previewDevice={device}
+        style={{ width: '100%', height: '100%', border: 0 }}
+      />
+    </div>
+  ), [device, dto.nombre, previewLienzo]);
 
   return (
     <section className="product-preview-panel" aria-label="Vista pública del producto">

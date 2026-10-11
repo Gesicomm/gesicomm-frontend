@@ -22,9 +22,9 @@ import {
 // estos valores el peor caso de los 12 (la firma sobre Beauty, que es el tema
 // de menor contraste intrínseco) queda en 5,2:1, por encima del mínimo AA de
 // 4,5:1. Bajar la firma a 0,6 la deja en 3,7:1 y ya no cumple.
-const ALPHA_ENLACE = 0.85;
-const ALPHA_TEXTO  = 0.70;
-const ALPHA_FIRMA  = 0.72;
+const ALPHA_ENLACE = 0.96;
+const ALPHA_TEXTO  = 0.88;
+const ALPHA_FIRMA  = 0.90;
 
 export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isPreview = false, style }) {
   const colorTexto = tema?.texto || '#000000';
@@ -53,7 +53,8 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
     color: linkColor,
     textDecoration: 'none',
     transition: 'color 0.2s ease',
-    fontSize: '0.75rem',
+    fontSize: 'clamp(0.94rem, 1.05vw, 1rem)',
+    fontWeight: 700,
   };
 
   const enlaces = [
@@ -83,16 +84,16 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
         ))}
       </div>
 
-      <div className="mb-2 text-xs" style={{ color: textColor }}>
+      <div className="mb-2" style={{ color: textColor, fontSize: 'clamp(0.9rem, 1vw, 0.96rem)', fontWeight: 700 }}>
         © 2026 {nombreComercio}
       </div>
-      <div className="text-xs" style={{ color: firmaColor }}>
+      <div style={{ color: firmaColor, fontSize: 'clamp(0.9rem, 1vw, 0.96rem)', fontWeight: 700 }}>
         Tecnología de{' '}
         <a
           href="https://gesicomm.com"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: colorMarca, fontWeight: 600 }}
+          style={{ color: colorMarca, fontWeight: 900 }}
         >
           Gesicom
         </a>

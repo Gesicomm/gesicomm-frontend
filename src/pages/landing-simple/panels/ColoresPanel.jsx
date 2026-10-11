@@ -8,9 +8,9 @@ const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 // `temaKey` es el nombre del color dentro del tema resuelto del template
 // (ver DEFAULT_TEMA_POR_TEMPLATE), que no coincide con el de la columna.
 const CAMPOS = [
-  { key: 'color_fondo', temaKey: 'fondo', label: 'Fondo' },
-  { key: 'color_texto', temaKey: 'texto', label: 'Texto' },
-  { key: 'color_primario', temaKey: 'acento', label: 'color de botones' },
+  { key: 'color_fondo', temaKey: 'fondo', label: 'Fondo de la landing', ayuda: 'Base general de la página y secciones amplias.' },
+  { key: 'color_texto', temaKey: 'texto', label: 'Texto principal', ayuda: 'Títulos, menú y textos normales. Si no contrasta, la landing ajusta derivados.' },
+  { key: 'color_primario', temaKey: 'acento', label: 'Primario / botones', ayuda: 'CTAs, botones de compra, estados activos y carrito.' },
 ];
 
 /**
@@ -42,10 +42,16 @@ export default function ColoresPanel({ draft, onCampo, templateSlug, tienda }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-xs text-fg/40">
-        Se aplican a toda la landing. Dejá un color vacío para usar el branding de Mi Tienda; si no hay uno cargado, se usa el default del template.
-      </p>
-      {CAMPOS.map(({ key, temaKey, label }) => {
+      <div className="rounded-xl border border-fg/10 bg-fg/[0.03] p-3 text-xs text-fg/55">
+        <p className="font-semibold text-fg/75">Cómo se reparte la paleta</p>
+        <p className="mt-1">
+          El <b>primario</b> mueve botones y acciones. El <b>secundario</b> viene de Mi Tienda y se usa como destacado cuando tiene contraste. El <b>acento</b> es el uso visual del primario en CTAs, badges y estados activos.
+        </p>
+        <p className="mt-2">
+          Si dejás un campo vacío, hereda Branding de Mi Tienda; si tampoco existe, usa la paleta del template.
+        </p>
+      </div>
+      {CAMPOS.map(({ key, temaKey, label, ayuda }) => {
         const heredado = temaActual[temaKey];
         const valor = draft[key] || '';
         // El selector siempre muestra el color que se ve en la página: el
@@ -83,9 +89,13 @@ export default function ColoresPanel({ draft, onCampo, templateSlug, tienda }) {
                 className="flex-1 bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30"
               />
             </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-fg/35">{ayuda}</p>
           </div>
         );
       })}
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-relaxed text-fg/55">
+        Hoy estos colores son globales. Cambiar color por bloque es viable, pero conviene hacerlo como una capa avanzada: cada bloque heredaría la paleta global y solo guardaría overrides propios cuando el usuario los active.
+      </div>
     </div>
   );
 }

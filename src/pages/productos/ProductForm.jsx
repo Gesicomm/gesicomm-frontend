@@ -13,7 +13,6 @@ import { calcularPrincipal, simularDescuentosPrincipal } from '../../utils/combo
 import CurrencyInput from '../../components/CurrencyInput';
 import SelectorIcono from '../../components/SelectorIcono';
 import OfertasProductoTab from './OfertasProductoTab';
-import FichaRubroTab from './FichaRubroTab';
 import ProductLandingPreview from './ProductLandingPreview';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
 import { estiloVisualMedio } from '../landing-simple/templates/mediaGaleria';
@@ -70,7 +69,7 @@ const TABS = [
   { id: 'comercial', label: 'Precio', desc: 'Precio, descuento y margen', level: 'Esencial', icon: <DollarSign size={15} /> },
   { id: 'stock', label: 'Inventario', desc: 'Stock y variantes', level: 'Recomendado', icon: <Layers size={15} /> },
   { id: 'venta', label: 'Venta', desc: 'Packs, bumps y upsells', level: 'Avanzado', icon: <Tag size={15} /> },
-  { id: 'marketing', label: 'Vista del producto', desc: 'Campos dinámicos, FAQ y preview', level: 'Recomendado', icon: <Eye size={15} /> },
+  { id: 'marketing', label: 'Vista del producto', desc: 'Lienzo en blanco, FAQ y preview', level: 'Recomendado', icon: <Eye size={15} /> },
   { id: 'publicacion', label: 'Publicacion', desc: 'Estado y visibilidad', level: 'Esencial', icon: <Settings size={15} /> },
   // NO re-agregar una pestaña que apunte a /mi-landing/producto:
   // ese editor de embudos legacy fue retirado.
@@ -249,6 +248,7 @@ function mezclarDatosMuestra(actual = {}, muestra = {}) {
 }
 
 const MAX_BENEFICIOS_RAPIDOS = 6;
+const MAX_INCLUYE_PEDIDO = 8;
 
 function normalizarBeneficiosRapidos(datos) {
   return Array.isArray(datos?.beneficios_rapidos) ? datos.beneficios_rapidos : [];
@@ -256,10 +256,17 @@ function normalizarBeneficiosRapidos(datos) {
 
 function EncabezadoProductoFields({ datos, onDatos }) {
   const datosActuales = datos && typeof datos === 'object' && !Array.isArray(datos) ? datos : {};
+  const presentacion = datosActuales.presentacion && typeof datosActuales.presentacion === 'object' && !Array.isArray(datosActuales.presentacion)
+    ? datosActuales.presentacion
+    : {};
   const beneficiosRapidos = normalizarBeneficiosRapidos(datosActuales);
 
   const actualizarDatos = (patch) => onDatos({ ...datosActuales, ...patch });
   const actualizarBeneficios = (items) => actualizarDatos({ beneficios_rapidos: items });
+  const cambiarCta = (valor) => actualizarDatos({
+    cta_principal_texto: valor,
+    presentacion: { ...presentacion, cta_texto: valor },
+  });
 
   return (
     <div className="rubro-field-card">
@@ -281,8 +288,8 @@ function EncabezadoProductoFields({ datos, onDatos }) {
       <label className="rubro-field">
         <span>Texto del botón principal</span>
         <input
-          value={datosActuales.cta_principal_texto || ''}
-          onChange={(e) => actualizarDatos({ cta_principal_texto: e.target.value })}
+          value={presentacion.cta_texto || datosActuales.cta_principal_texto || ''}
+          onChange={(e) => cambiarCta(e.target.value)}
           placeholder="Ej: Comprar ahora, Reservar, Pedir por WhatsApp"
         />
       </label>
@@ -316,6 +323,243 @@ function EncabezadoProductoFields({ datos, onDatos }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function LienzoProductoFields({ datos, onDatos }) {
+  const datosActuales = datos && typeof datos === 'object' && !Array.isArray(datos) ? datos : {};
+  const presentacion = datosActuales.presentacion && typeof datosActuales.presentacion === 'object' && !Array.isArray(datosActuales.presentacion)
+    ? datosActuales.presentacion
+    : {};
+  const incluye = Array.isArray(presentacion.incluye_pedido) ? presentacion.incluye_pedido : [];
+
+  const cambiarPresentacion = (campo, valor) => onDatos({
+    ...datosActuales,
+    presentacion: { ...presentacion, [campo]: valor },
+  });
+  const cambiarIncluye = (items) => cambiarPresentacion('incluye_pedido', items);
+
+  return (
+    <>
+      <div className="rubro-field-card">
+        <div className="rubro-card-header">
+          <div>
+            <label>Bloques del lienzo en blanco</label>
+            <p>Textos que toma la ficha pública cuando la landing usa la vista de producto del lienzo.</p>
+          </div>
+        </div>
+        <div className="rubro-row-fields">
+          <label className="rubro-field">
+            <span>Encabezado</span>
+            <input
+              value={presentacion.insignia_principal || ''}
+              maxLength={40}
+              placeholder="Ej: Más vendido"
+              onChange={e => cambiarPresentacion('insignia_principal', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Nombre comercial</span>
+            <input
+              value={presentacion.titulo_comercial || ''}
+              maxLength={100}
+              placeholder="Vacío = nombre del producto"
+              onChange={e => cambiarPresentacion('titulo_comercial', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Badge de precio</span>
+            <input
+              value={presentacion.insignia_secundaria || ''}
+              maxLength={40}
+              placeholder="Ej: Oferta especial"
+              onChange={e => cambiarPresentacion('insignia_secundaria', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Texto debajo del precio</span>
+            <textarea
+              rows={2}
+              value={presentacion.mensaje_comercial || ''}
+              maxLength={220}
+              placeholder="Ej: Producto seleccionado para resolver tu compra en pocos pasos."
+              onChange={e => cambiarPresentacion('mensaje_comercial', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Texto de reseñas</span>
+            <input
+              value={presentacion.resenas_texto || ''}
+              maxLength={80}
+              placeholder="Ej: 4.9 de 5 · 12 opiniones"
+              onChange={e => cambiarPresentacion('resenas_texto', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Estrellas comerciales</span>
+            <input
+              type="number"
+              min="1"
+              max="5"
+              step="0.1"
+              value={presentacion.resenas_calificacion ?? ''}
+              placeholder="4.9"
+              onChange={e => cambiarPresentacion('resenas_calificacion', e.target.value)}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="rubro-field-card">
+        <div className="rubro-card-header">
+          <div>
+            <label>Oferta por tiempo limitado</label>
+            <p>Se muestra solo si la plantilla del lienzo tiene el bloque de oferta activo.</p>
+          </div>
+        </div>
+        <div className="rubro-row-fields">
+          <label className="rubro-field">
+            <span>Encabezado de la oferta</span>
+            <input
+              value={presentacion.urgencia_kicker || ''}
+              maxLength={60}
+              placeholder="Ej: Oferta por tiempo limitado"
+              onChange={e => cambiarPresentacion('urgencia_kicker', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Nombre de la oferta</span>
+            <input
+              value={presentacion.urgencia_titulo || ''}
+              maxLength={90}
+              placeholder="Ej: Reservá esta condición antes de que termine"
+              onChange={e => cambiarPresentacion('urgencia_titulo', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Texto de la oferta</span>
+            <textarea
+              rows={2}
+              value={presentacion.urgencia_texto || ''}
+              maxLength={180}
+              placeholder="Ej: El descuento se confirma antes de cerrar el pedido."
+              onChange={e => cambiarPresentacion('urgencia_texto', e.target.value)}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="rubro-field-card">
+        <div className="rubro-card-header">
+          <div>
+            <label>Qué incluye tu pedido</label>
+            <p>Cada línea aparece como checklist dentro de la ficha del producto.</p>
+          </div>
+          <button
+            type="button"
+            className="btn-secondary btn-small"
+            disabled={incluye.length >= MAX_INCLUYE_PEDIDO}
+            onClick={() => cambiarIncluye([...incluye, { texto: '' }])}
+          >
+            <Plus size={14} /> Agregar ítem
+          </button>
+        </div>
+        {incluye.length === 0 ? (
+          <p className="field-hint">Sin ítems cargados, el lienzo usa la configuración general de la landing.</p>
+        ) : (
+          <div className="rubro-list">
+            {incluye.map((item, index) => (
+              <div key={index} className="rubro-row rubro-row--line">
+                <label className="rubro-field">
+                  <span>Ítem {index + 1}</span>
+                  <input
+                    value={item?.texto || ''}
+                    maxLength={120}
+                    placeholder="Ej: 1 unidad del producto seleccionado"
+                    onChange={e => cambiarIncluye(incluye.map((actual, i) => (i === index ? { ...(actual || {}), texto: e.target.value } : actual)))}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={() => cambiarIncluye(incluye.filter((_, i) => i !== index))}
+                  aria-label={`Eliminar ítem ${index + 1}`}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rubro-field-card">
+        <div className="rubro-card-header">
+          <div>
+            <label>Títulos de secciones</label>
+            <p>Encabezados propios del producto para opiniones y preguntas frecuentes.</p>
+          </div>
+        </div>
+        <div className="rubro-row-fields">
+          <label className="rubro-field">
+            <span>Rótulo de opiniones</span>
+            <input
+              value={presentacion.opiniones_kicker || ''}
+              maxLength={60}
+              placeholder="Opiniones"
+              onChange={e => cambiarPresentacion('opiniones_kicker', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Título de opiniones</span>
+            <input
+              value={presentacion.opiniones_titulo || ''}
+              maxLength={90}
+              placeholder="Personas que ya lo probaron"
+              onChange={e => cambiarPresentacion('opiniones_titulo', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Subtítulo de opiniones</span>
+            <textarea
+              rows={2}
+              value={presentacion.opiniones_subtitulo || ''}
+              maxLength={180}
+              placeholder="Texto opcional debajo del título"
+              onChange={e => cambiarPresentacion('opiniones_subtitulo', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Rótulo de preguntas</span>
+            <input
+              value={presentacion.preguntas_kicker || ''}
+              maxLength={60}
+              placeholder="Resolvemos tus dudas"
+              onChange={e => cambiarPresentacion('preguntas_kicker', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Título de preguntas</span>
+            <input
+              value={presentacion.preguntas_titulo || ''}
+              maxLength={90}
+              placeholder="Preguntas frecuentes"
+              onChange={e => cambiarPresentacion('preguntas_titulo', e.target.value)}
+            />
+          </label>
+          <label className="rubro-field">
+            <span>Subtítulo de preguntas</span>
+            <textarea
+              rows={2}
+              value={presentacion.preguntas_subtitulo || ''}
+              maxLength={180}
+              placeholder="Texto opcional debajo del título"
+              onChange={e => cambiarPresentacion('preguntas_subtitulo', e.target.value)}
+            />
+          </label>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -925,7 +1169,7 @@ export default function ProductForm() {
     useFieldArray({ control, name: 'confianza', keyName: '_rhfKey' });
 
   const nombre = watch('nombre');
-  const fichaRubroVal = watch('ficha_rubro') || 'basico';
+  const muestraLienzoProducto = MUESTRAS_VISTA_PRODUCTO.basico;
 
   // ── Cargar datos ──────────────────────────────────────────
   // Todo en una sola oleada de Promise.all: ninguna de estas 5 llamadas
@@ -1366,15 +1610,6 @@ export default function ProductForm() {
       }))
       .filter((fila) => fila.deposito_id && fila.cantidad > 0);
   };
-
-  // Fotos de la ficha del rubro (Vista del producto): van a R2 y vuelven como
-  // URL, sin tocar la galería. Solo con el producto ya guardado (hay id).
-  async function subirImagenFicha(file) {
-    const formData = new FormData();
-    formData.append('imagen', file);
-    const { url } = await productService.subirImagenFicha(id, formData);
-    return url;
-  }
 
   const onSubmit = async (data) => {
     setGuardando(true);
@@ -1862,8 +2097,9 @@ export default function ProductForm() {
   const imagenPrincipalUrl = imagenPrincipal?.url ? getMediaUrl(imagenPrincipal.url) : null;
   const tieneMarketing = Boolean(
     (valoresProducto.propuesta_valor || '').trim()
-    || (fichaRubroVal === 'basico' && (valoresProducto.sobre_este_producto || '').trim())
+    || (valoresProducto.sobre_este_producto || '').trim()
     || hayContenido(valoresProducto.ficha_datos?.beneficios_rapidos)
+    || hayContenido(valoresProducto.ficha_datos?.presentacion)
     || (valoresProducto.ficha_datos?.cta_principal_texto || '').trim()
     || beneficiosFields.length
     || faq.length
@@ -1886,18 +2122,18 @@ export default function ProductForm() {
     comercial: precioBaseVal > 0 ? 'ok' : 'todo',
     stock: tieneVariantes ? (variantesFields.length ? 'ok' : 'warn') : (stockActualVal > 0 ? 'ok' : 'warn'),
     venta: esEdicion ? 'warn' : (ofertasBorrador.length > 0 ? 'ok' : 'todo'),
-    marketing: fichaRubroVal ? (tieneMarketing ? 'ok' : 'warn') : 'todo',
+    marketing: tieneMarketing ? 'ok' : 'warn',
     publicacion: estadoVentaVal && activoVal !== undefined ? 'ok' : 'todo',
   };
 
   function aplicarEjemploVista() {
-    const muestra = MUESTRAS_VISTA_PRODUCTO[fichaRubroVal];
+    const muestra = muestraLienzoProducto;
     if (!muestra) return;
 
     if (!hayContenido(valoresProducto.propuesta_valor)) {
       setValue('propuesta_valor', muestra.propuesta_valor, { shouldDirty: true });
     }
-    if (fichaRubroVal === 'basico' && !hayContenido(valoresProducto.sobre_este_producto)) {
+    if (!hayContenido(valoresProducto.sobre_este_producto)) {
       setValue('sobre_este_producto', muestra.sobre_este_producto, { shouldDirty: true });
     }
     if (!hayContenido(valoresProducto.beneficios)) {
@@ -1915,12 +2151,29 @@ export default function ProductForm() {
       setFaq(muestra.faq || []);
     }
 
-    const datosMuestra = mezclarDatosMuestra(valoresProducto.ficha_datos, muestra.ficha_datos);
+    const datosMuestra = mezclarDatosMuestra(valoresProducto.ficha_datos, {
+      ...(muestra.ficha_datos || {}),
+      presentacion: {
+        insignia_principal: 'Detalles del producto',
+        titulo_comercial: '',
+        mensaje_comercial: muestra.propuesta_valor,
+        cta_texto: muestra.ficha_datos?.cta_principal_texto || 'Comprar ahora',
+        beneficios_kicker: 'Por qué elegirlo',
+        beneficios_titulo: 'Beneficios que se entienden rápido.',
+        preguntas_kicker: 'Resolvemos tus dudas',
+        preguntas_titulo: 'Preguntas frecuentes',
+        incluye_pedido: [
+          { texto: '1 unidad del producto seleccionado' },
+          { texto: 'Coordinación de entrega' },
+          { texto: 'Soporte de la tienda para tu compra' },
+        ],
+      },
+    });
     if (JSON.stringify(datosMuestra) !== JSON.stringify(valoresProducto.ficha_datos || {})) {
       setValue('ficha_datos', datosMuestra, { shouldDirty: true });
     }
 
-    setMuestrasAplicadas(prev => ({ ...prev, [fichaRubroVal]: true }));
+    setMuestrasAplicadas(prev => ({ ...prev, lienzo: true }));
   }
 
   if (cargando) return (
@@ -3388,30 +3641,10 @@ export default function ProductForm() {
         <div className={`tab-content ${tabActiva === 'marketing' ? 'active' : ''}`}>
           <div className="product-view-workspace">
             <div className="product-view-editor">
-              <Controller
-                control={control}
-                name="ficha_rubro"
-                render={({ field: campoRubro }) => (
-                  <Controller
-                    control={control}
-                    name="ficha_datos"
-                    render={({ field: campoDatos }) => (
-                      <FichaRubroTab
-                        rubro={campoRubro.value}
-                        datos={campoDatos.value}
-                        onRubro={(v) => campoRubro.onChange(v || 'basico')}
-                        onDatos={campoDatos.onChange}
-                        modo="selector"
-                      />
-                    )}
-                  />
-                )}
-              />
-
               <div className="form-section-title">
-                <Eye size={14} /> Contenido público
-                {MUESTRAS_VISTA_PRODUCTO[fichaRubroVal] && (
-                  <button type="button" className="btn-secondary btn-small" onClick={aplicarEjemploVista} disabled={!!muestrasAplicadas[fichaRubroVal]}>
+                <Eye size={14} /> Contenido para lienzo en blanco
+                {muestraLienzoProducto && (
+                  <button type="button" className="btn-secondary btn-small" onClick={aplicarEjemploVista} disabled={!!muestrasAplicadas.lienzo}>
                     Cargar contenido de ejemplo
                   </button>
                 )}
@@ -3474,17 +3707,26 @@ export default function ProductForm() {
                 )}
               />
 
-              {fichaRubroVal === 'basico' && (
-                <div className="form-group full">
-                  <label>Sobre este producto</label>
-                  <textarea
-                    {...register('sobre_este_producto')}
-                    placeholder="Información ampliada: materiales, medidas, qué incluye la caja…"
-                    rows={5}
+              <Controller
+                control={control}
+                name="ficha_datos"
+                render={({ field: campoDatos }) => (
+                  <LienzoProductoFields
+                    datos={campoDatos.value}
+                    onDatos={campoDatos.onChange}
                   />
-                  <p className="field-hint">Sección "Detalles" de la ficha genérica. Vacío = la sección no se muestra.</p>
-                </div>
-              )}
+                )}
+              />
+
+              <div className="form-group full">
+                <label>Sobre este producto</label>
+                <textarea
+                  {...register('sobre_este_producto')}
+                  placeholder="Información ampliada: materiales, medidas, compatibilidad, cuidados o qué incluye."
+                  rows={5}
+                />
+                <p className="field-hint">Se usa en la sección de detalles de la vista de producto del lienzo en blanco.</p>
+              </div>
 
               <div className="form-group full">
                 <div className="inline-section-head">
@@ -3522,28 +3764,6 @@ export default function ProductForm() {
                 )}
               </div>
 
-              <Controller
-                control={control}
-                name="ficha_rubro"
-                render={({ field: campoRubro }) => (
-                  <Controller
-                    control={control}
-                    name="ficha_datos"
-                    render={({ field: campoDatos }) => (
-                      <FichaRubroTab
-                        rubro={campoRubro.value}
-                        datos={campoDatos.value}
-                        onRubro={(v) => campoRubro.onChange(v || '')}
-                        onDatos={campoDatos.onChange}
-                        modo="campos"
-                        productoId={esEdicion ? id : null}
-                        onSubirImagen={esEdicion ? subirImagenFicha : null}
-                        variantes={valoresProducto.variantes || []}
-                      />
-                    )}
-                  />
-                )}
-              />
               <div className="form-group">
                 <label htmlFor="prod-faq-titulo">Título de la sección</label>
                 <input

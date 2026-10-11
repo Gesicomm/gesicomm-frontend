@@ -3,6 +3,7 @@ import { ChevronDown, ShoppingCart, Phone, Mail, MapPin, Clock, Check, MessageCi
 import { InstagramIcon, FacebookIcon, WhatsappIcon, TikTokIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
 import { getIconoBeneficio } from './iconosBeneficios';
 import { FormattedText } from '../../../components/FormattedText';
+import { contraste } from './themeUtils';
 import './muestraEditor.css';
 
 /**
@@ -20,6 +21,10 @@ export function textoOMuestra(valor, ejemplo, previewMode) {
 
 /** Tope de fotos que rota una tarjeta: más que esto marea y son bytes de más. */
 const MAX_FOTOS_TARJETA = 5;
+
+function textoSobreFondo(fondo) {
+  return contraste(fondo, '#FFFFFF') >= contraste(fondo, '#111111') ? '#FFFFFF' : '#111111';
+}
 
 /**
  * Imagen de la tarjeta de producto. Cuando el producto tiene más de una
@@ -108,7 +113,7 @@ export function CartButton({ cantidad = 0, acento, color, onClick }) {
       {cantidad > 0 && (
         <span
           className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center"
-          style={{ backgroundColor: acento, color: '#fff' }}
+          style={{ backgroundColor: acento, color: textoSobreFondo(acento) }}
         >
           {cantidad}
         </span>

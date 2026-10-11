@@ -448,8 +448,63 @@ test('encabezado permite logo mas grande junto al nombre de la tienda', async ({
   expect(estilos.logoWidth).toBeGreaterThanOrEqual(55);
   expect(estilos.logoHeight).toBeGreaterThan(estilos.nombreHeight);
   expect(estilos.separacion).toBeGreaterThanOrEqual(14);
-  expect(estilos.headerHeight).toBeLessThanOrEqual(80);
+  expect(estilos.headerHeight).toBeLessThanOrEqual(100);
   expect(estilos.transform).not.toBe('none');
+});
+
+test('encabezado permite agrandar solo el logo sin subir la altura de la barra', async ({ page }) => {
+  const html = construirDocumentoCodigo({
+    html: `
+      <header class="commerce-header">
+        <div class="container header-main">
+          <a class="brand brand-mark" href="#">
+            <img class="brand-logo" data-gesicomm-tienda="logo" alt="">
+            <span data-gesicomm-tienda="nombre">Clickazo</span>
+          </a>
+          <nav class="header-nav">
+            <div class="nav-links"><a class="active" href="/">Inicio</a><a href="/catalogo">Productos</a></div>
+          </nav>
+        </div>
+      </header>
+    `,
+    css: `
+      .commerce-header { background:#fff; }
+      .header-main { display:flex; align-items:center; }
+      .brand-logo { width: 32px; height: 32px; }
+      .brand-mark { font-size: 20px; font-weight: 900; }
+    `,
+    js: '',
+  }, {
+    datos: {
+      tienda: { nombre: 'Clickazo', logo: producto.imagen, colores: coloresTienda },
+      venta: { inicio: { encabezado: { logo_tamano: 120, logo_rotacion: 0, logo_posicion: 'izquierda' } } },
+    },
+  });
+
+  await page.setContent(html);
+  await expect(page.locator('.brand-logo')).toBeVisible();
+
+  const estilos = await page.evaluate(() => {
+    const header = document.querySelector('.commerce-header');
+    const headerMain = document.querySelector('.header-main');
+    const brand = document.querySelector('.brand-mark');
+    const logo = document.querySelector('.brand-logo');
+    const hr = header.getBoundingClientRect();
+    const hmr = headerMain.getBoundingClientRect();
+    const br = brand.getBoundingClientRect();
+    const lr = logo.getBoundingClientRect();
+    return {
+      headerHeight: hr.height,
+      headerMainHeight: hmr.height,
+      brandHeight: br.height,
+      logoHeight: lr.height,
+    };
+  });
+
+  expect(estilos.logoHeight).toBeGreaterThanOrEqual(118);
+  expect(estilos.headerMainHeight).toBeLessThanOrEqual(100);
+  expect(estilos.headerHeight).toBeLessThanOrEqual(100);
+  expect(estilos.logoHeight).toBeGreaterThan(estilos.brandHeight);
 });
 
 test('encabezado movil compacta logo y acciones sin apretar la marca', async ({ page }) => {

@@ -57,6 +57,26 @@ function legibleSobre(color, fondo, minimo = 3) {
   return hacia;
 }
 
+function textoSobre(fondo) {
+  return contraste('#ffffff', fondo) >= contraste('#111111', fondo) ? '#ffffff' : '#111111';
+}
+
+function bandaDeMarca({ primario, secundario, fondo, oscuro }) {
+  if (oscuro) {
+    return primario ? mezclar(primario, fondo, 0.35) : mezclar(fondo, '#ffffff', 0.94);
+  }
+  if (secundario && contraste(secundario, '#ffffff') >= 4.5) return secundario;
+  if (primario && contraste(primario, '#ffffff') >= 4.5) return primario;
+  if (primario) return mezclar(primario, '#000000', 0.42);
+  return '#111827';
+}
+
+function acentoDeBanda({ primario, secundario, banda, texto }) {
+  const iguales = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase();
+  const candidatos = [primario, secundario].filter(c => c && !iguales(c, banda) && contraste(c, banda) >= 3);
+  return candidatos[0] || texto;
+}
+
 /**
  * Variables --tienda-* para el <head> de la landing.
  *   --tienda-primario / --tienda-texto-sobre-primario / --tienda-primario-texto
@@ -73,17 +93,21 @@ export function cssMarcaTienda(colores) {
   const F = HEX.test(fondo || '') ? fondo : null;
   const oscuro = F ? luminancia(F) < 0.3 : false;
   const superficie = F ? (oscuro ? mezclar(F, '#ffffff', 0.9) : '#ffffff') : '#ffffff';
+  const banda = F || P || S ? bandaDeMarca({ primario: P, secundario: S, fondo: F || '#ffffff', oscuro }) : null;
+  const bandaTexto = banda ? textoSobre(banda) : null;
+  const bandaAcento = banda ? acentoDeBanda({ primario: P, secundario: S, banda, texto: bandaTexto }) : null;
   const v = [];
 
   if (P) {
     v.push(`--tienda-primario: ${P};`);
-    v.push(`--tienda-texto-sobre-primario: ${luminancia(P) > 0.45 ? '#111111' : '#ffffff'};`);
+    v.push(`--tienda-texto-sobre-primario: ${textoSobre(P)};`);
     v.push(`--tienda-primario-texto: ${legibleSobre(P, superficie)};`);
   }
   if (S) {
     v.push(`--tienda-secundario: ${S};`);
-    v.push(`--tienda-texto-sobre-secundario: ${luminancia(S) > 0.45 ? '#111111' : '#ffffff'};`);
+    v.push(`--tienda-texto-sobre-secundario: ${textoSobre(S)};`);
     v.push(`--tienda-destacado: ${legibleSobre(S, superficie)};`);
+    v.push(`--tienda-texto-sobre-destacado: ${textoSobre(legibleSobre(S, superficie))};`);
   }
   if (F) {
     v.push(`--tienda-fondo: ${F};`);
@@ -91,14 +115,12 @@ export function cssMarcaTienda(colores) {
     v.push(`--tienda-texto-suave: ${oscuro ? '#a9b5c1' : '#506172'};`);
     v.push(`--tienda-superficie: ${superficie};`);
     v.push(`--tienda-linea: ${oscuro ? mezclar(F, '#ffffff', 0.78) : '#e4eaf0'};`);
-    if (oscuro) {
-      // Bandas (barra superior, oferta final, contacto): el fondo teñido
-      // con el principal, para que se distingan del resto de la página.
-      v.push(`--tienda-banda: ${P ? mezclar(P, F, 0.35) : mezclar(F, '#ffffff', 0.94)};`);
-      v.push('--tienda-banda-texto: #ffffff;');
-    } else {
-      v.push(`--tienda-fondo-claro: ${F};`);
-    }
+    if (!oscuro) v.push(`--tienda-fondo-claro: ${F};`);
+  }
+  if (banda) {
+    v.push(`--tienda-banda: ${banda};`);
+    v.push(`--tienda-banda-texto: ${bandaTexto};`);
+    v.push(`--tienda-banda-acento: ${bandaAcento};`);
   }
   return v.length ? `:root { ${v.join(' ')} }` : '';
 }

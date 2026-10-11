@@ -258,12 +258,12 @@ test("\"Empezar a enviar\" arma la cola con lo que devuelve el backend para ahor
   await waitFor(() => expect(screen.getByText("Pedido 2 de 2")).toBeInTheDocument());
 });
 
-test("una etapa sin flujo activo manda a Flujos y plantillas", async () => {
+test("una etapa sin flujo activo manda a Flujos de WhatsApp", async () => {
   const servicios = nuevosServicios({
     tablero: vi.fn(async () => ({ etapa: "CONFIRMACION_PEDIDO_WEB", etapas: ETAPAS, flujos: [], flujo_id: null, totales: { ahora: 0, hoy: 0, despues: 0, sin_fecha: 0 }, columnas: [], truncado: false })),
   });
   render(<MemoryRouter><ResumenTab servicios={servicios} servicioSeguimiento={servicioSeguimiento} /></MemoryRouter>);
 
-  expect(await screen.findByRole("link", { name: /Ir a Flujos y plantillas/ })).toHaveAttribute("href", "/pedidos/configuracion");
+  expect(await screen.findByRole("link", { name: /Ir a Flujos de WhatsApp/ })).toHaveAttribute("href", "/pedidos/configuracion");
   expect(screen.getByRole("button", { name: /Nada para enviar ahora/ })).toBeDisabled();
 });

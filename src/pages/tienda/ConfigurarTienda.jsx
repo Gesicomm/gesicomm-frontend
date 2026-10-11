@@ -855,7 +855,7 @@ export default function ConfigurarTienda() {
                               )}
                             </div>
                             <span className="tn-field-hint">
-                              PNG con fondo transparente, JPG o WebP (máx. 5 MB). Tamaño recomendado: 512x512 px. Se guarda al subirlo y aparece en todas tus páginas que no tengan un logo propio.
+                              PNG transparente o WebP de alta calidad (JPG solo si no tiene transparencia), máx. 5 MB. Logo horizontal recomendado: 1200×400 px; mínimo 800×250 px. Logo cuadrado o isotipo: 1024×1024 px; mínimo 512×512 px. Evitá capturas o imágenes comprimidas de redes.
                             </span>
                             {errorLogo && <span className="tn-logo-error"><AlertCircle size={12} /> {errorLogo}</span>}
                           </div>

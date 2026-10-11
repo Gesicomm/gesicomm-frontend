@@ -45,7 +45,7 @@ const SIDEBAR_FALLBACK = [
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-pedidos', label: 'Pedidos', icono: 'ShoppingCart', menuKey: 'mis-pedidos', dangerBadgeKey: 'seguimientos_vencidos' },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/inventario', label: 'Inventario / Ingresos', icono: 'PackageCheck', menuKey: 'inventario', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icono: 'Truck', menuKey: 'mis-abastecimientos', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/pedidos/configuracion', label: 'Flujos y plantillas', icono: 'Settings', menuKey: 'pedidos-configuracion', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/pedidos/configuracion', label: 'Flujos de WhatsApp', icono: 'Settings', menuKey: 'pedidos-configuracion', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/mi-dashboard', label: 'Dashboard', icono: 'LayoutDashboard', menuKey: 'mi-dashboard', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/costos-gastos', label: 'Control financiero', icono: 'Receipt', menuKey: 'finanzas-costos-gastos', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/proveedores', label: 'Proveedores', icono: 'Truck', menuKey: 'finanzas-proveedores', rolesPermitidos: ['administrador'] },
@@ -280,7 +280,7 @@ const UserLayout = ({ children }) => {
       : null;
     const menuKey = item.menuKey || item.menu_key;
     const label = menuKey === 'pedidos-configuracion'
-      ? 'Flujos y plantillas'
+      ? 'Flujos de WhatsApp'
       : (item.label || item.etiqueta);
 
     return {

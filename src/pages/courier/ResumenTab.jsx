@@ -401,7 +401,7 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
         ) : tablero && tablero.columnas.length === 0 ? (
           <div className="rp-vacio">
             <p>Esta etapa no tiene un flujo activo. Activá o creá uno para ver en qué mensaje está cada pedido.</p>
-            <Link to="/pedidos/configuracion" className="rp-btn rp-btn--primario">Ir a Flujos y plantillas</Link>
+            <Link to="/pedidos/configuracion" className="rp-btn rp-btn--primario">Ir a Flujos de WhatsApp</Link>
           </div>
         ) : tablero ? (
           <div className="kanban-board rp-kanban" aria-busy={cargando}>

@@ -139,8 +139,8 @@ export function OrderCard({
               <button
                 type="button"
                 className="order-whatsapp-action"
-                title={`Abrir plantillas de WhatsApp para ${envio.telefono}`}
-                aria-label={`Abrir plantillas de WhatsApp para ${nombreCliente}`}
+                title={`Abrir flujos de WhatsApp para ${envio.telefono}`}
+                aria-label={`Abrir flujos de WhatsApp para ${nombreCliente}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onAbrirSeguimiento(envio);
@@ -185,7 +185,7 @@ export function OrderCard({
             <button
               type="button"
               className={`order-alert-chip ${seguimientoVencido ? "danger" : "info"}`}
-              title={seguimientoVencido ? "Hay seguimiento vencido. Abrir plantillas de WhatsApp." : "Pedido en seguimiento. Abrir plantillas de WhatsApp."}
+              title={seguimientoVencido ? "Hay seguimiento vencido. Abrir flujos de WhatsApp." : "Pedido en seguimiento. Abrir flujos de WhatsApp."}
               onClick={handleSeguimientoClick}
               draggable={false}
             >

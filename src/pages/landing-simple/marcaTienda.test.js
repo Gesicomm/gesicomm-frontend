@@ -26,6 +26,15 @@ describe('Branding de Mi Tienda en la landing HTML', () => {
     expect(cssMarcaTienda({ fondo: '#fafaf5' })).toContain('--tienda-fondo-claro: #fafaf5;');
   });
 
+  it('marca amarilla y negra reparte barra y carrito con contraste', () => {
+    const css = cssMarcaTienda({ primario: '#ffcc00', secundario: '#000000', fondo: '#ffffff' });
+    expect(css).toContain('--tienda-banda: #000000;');
+    expect(css).toContain('--tienda-banda-texto: #ffffff;');
+    expect(css).toContain('--tienda-banda-acento: #ffcc00;');
+    expect(css).toContain('--tienda-destacado: #000000;');
+    expect(css).toContain('--tienda-texto-sobre-destacado: #ffffff;');
+  });
+
   it('solo acepta hex: nada que pueda romper el CSS', () => {
     expect(cssMarcaTienda({ primario: 'red;} body{display:none' })).toBe('');
     expect(cssMarcaTienda(null)).toBe('');

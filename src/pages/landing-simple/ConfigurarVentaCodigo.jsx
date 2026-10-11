@@ -388,7 +388,7 @@ function normalizarEncabezadoInicio(encabezado = {}) {
   return {
     mostrar_logo: encabezado.mostrar_logo !== false,
     mostrar_nombre: encabezado.mostrar_nombre !== false,
-    logo_tamano: limitarNumero(encabezado.logo_tamano, 28, 76, ENCABEZADO_INICIO_DEFAULT.logo_tamano),
+    logo_tamano: limitarNumero(encabezado.logo_tamano, 28, 128, ENCABEZADO_INICIO_DEFAULT.logo_tamano),
     logo_rotacion: limitarNumero(encabezado.logo_rotacion, -180, 180, ENCABEZADO_INICIO_DEFAULT.logo_rotacion),
     logo_posicion: encabezado.logo_posicion === 'centro' ? 'centro' : ENCABEZADO_INICIO_DEFAULT.logo_posicion,
     variante: VARIANTES_ENCABEZADO.includes(encabezado.variante) ? encabezado.variante : ENCABEZADO_INICIO_DEFAULT.variante,
@@ -4898,7 +4898,7 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
             <input
               type="range"
               min="28"
-              max="76"
+              max="128"
               value={cfg.logo_tamano}
               onChange={e => onCambiarEncabezado({ logo_tamano: Number(e.target.value) })}
               className="w-full accent-primary"

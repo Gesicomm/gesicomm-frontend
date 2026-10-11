@@ -347,8 +347,11 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
 :where(.trust-bar, .announcement) {
   padding-top: env(safe-area-inset-top, 0px) !important;
 }
-:where(.trust-item span, .footer-brand p, .footer-note, footer a, .site-footer, .footer-links a) {
-  color: color-mix(in srgb, var(--tienda-banda-texto, #fff) 74%, transparent) !important;
+:where(.footer-brand p, .footer-note, footer a, .site-footer, .footer-links a) {
+  color: color-mix(in srgb, var(--tienda-banda-texto, #fff) 94%, transparent) !important;
+}
+:where(.trust-bar .trust-item, .announcement span, .trust-bar .trust-item span) {
+  color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
 }
 :where(.site-footer, .gcx-footer) {
   width: 100% !important;
@@ -356,8 +359,9 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
   padding: clamp(34px, 5vw, 56px) 0 0 !important;
   background: var(--tienda-banda, var(--gc-primario, var(--tienda-primario, #062b4f))) !important;
   color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
-  font-size: clamp(14px, 1.05vw, 15px) !important;
-  line-height: 1.55 !important;
+  font-size: clamp(15px, 1.18vw, 17px) !important;
+  font-weight: 650 !important;
+  line-height: 1.62 !important;
 }
 :where(.site-footer .container, .site-footer .footer-row, .gcx-footer-top, .gcx-footer-bottom) {
   width: 100% !important;
@@ -390,8 +394,8 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
 :where(.site-footer .footer-col > strong, .gcx-footer-col h3) {
   margin: 0 !important;
   color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
-  font-size: 13px !important;
-  font-weight: 800 !important;
+  font-size: clamp(14px, 1.1vw, 16px) !important;
+  font-weight: 900 !important;
   letter-spacing: .06em !important;
   text-transform: uppercase !important;
 }
@@ -403,13 +407,15 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
   list-style: none !important;
 }
 :where(.site-footer .footer-links a, .site-footer .footer-datos, .site-footer .footer-datos a, .gcx-footer a, .gcx-footer-datos li) {
-  color: color-mix(in srgb, var(--tienda-banda-texto, #fff) 90%, transparent) !important;
+  color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
+  font-size: clamp(15px, 1.12vw, 16px) !important;
+  font-weight: 700 !important;
   overflow-wrap: anywhere !important;
   text-decoration: none !important;
 }
 :where(.site-footer .footer-dato::before, .gcx-footer-datos span) {
-  color: color-mix(in srgb, var(--tienda-banda-texto, #fff) 90%, transparent) !important;
-  font-weight: 600 !important;
+  color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
+  font-weight: 900 !important;
 }
 :where(.site-footer .footer-redes, .gcx-footer-social-row) {
   display: flex !important;
@@ -445,7 +451,9 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
   text-align: center !important;
 }
 :where(.site-footer .footer-bottom, .site-footer .footer-bottom a, .gcx-footer-bottom, .gcx-footer-bottom a) {
-  color: color-mix(in srgb, var(--tienda-banda-texto, #fff) 78%, transparent) !important;
+  color: color-mix(in srgb, var(--tienda-banda-texto, #fff) 96%, transparent) !important;
+  font-size: clamp(14px, 1vw, 15px) !important;
+  font-weight: 700 !important;
 }
 :where(main[data-gesicomm-base="checkout"] .lv-summary, .lv-checkout-page .lv-summary) {
   min-width: 0 !important;
@@ -857,18 +865,25 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
     max-width: 82% !important;
   }
 }
-:where(.trust-item strong, .announcement strong, .trust-icon, .trust-item svg) {
-  color: var(--tienda-secundario, var(--gc-secundario, #93c5fd)) !important;
+:where(.trust-item strong, .announcement strong) {
+  color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
+}
+:where(.trust-icon, .trust-item svg) {
+  color: var(--tienda-banda-acento, var(--tienda-secundario, var(--gc-secundario, #93c5fd))) !important;
 }
 :where(.site-header, .commerce-header:not([data-variante="embebido"])) {
   background: color-mix(in srgb, var(--gc-superficie, var(--tienda-superficie, #fff)) 92%, transparent) !important;
   border-color: var(--tienda-linea, var(--gc-primario, #d7e6ef)) !important;
 }
-/* Alto FIJO: el del logo más grande (76px) + su aire. Antes dependía de
-   --gc-logo-tamano y achicar el logo achicaba el encabezado entero; el
-   control "Tamaño del logo" solo tiene que escalar la imagen. */
+/* Alto fijo: el control "Tamaño del logo" solo escala la imagen. Si el logo
+   se agranda, sobresale visualmente sin empujar ni deformar el encabezado. */
+:where(.commerce-header) {
+  overflow: visible !important;
+}
 :where(.commerce-header .header-main) {
+  height: 96px !important;
   min-height: 96px !important;
+  overflow: visible !important;
 }
 /* Variante "embebido" (ver estilosInicioCodigo.js): el header va transparente
    y superpuesto a la foto del banner, así que acá NO se fuerza el fondo/texto
@@ -886,7 +901,8 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
 }
 :where(.commerce-header .brand, .commerce-header .brand-mark) {
   gap: clamp(10px, 1vw, 14px) !important;
-  min-height: var(--gc-logo-tamano, 76px) !important;
+  height: 76px !important;
+  min-height: 76px !important;
   overflow: visible !important;
 }
 :where(.commerce-header.logo-centrado .brand, .commerce-header.logo-centrado .brand-mark) {
@@ -1998,7 +2014,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   padding: 0 5px !important;
   place-items: center !important;
   border-radius: 999px !important;
-  color: var(--gc-texto-sobre-primario, #fff) !important;
+  color: var(--tienda-texto-sobre-destacado, var(--gc-texto-sobre-primario, #fff)) !important;
   background: var(--tienda-destacado, var(--gc-secundario, var(--gc-primario, #0d6efd))) !important;
   font-size: 10px !important;
   font-weight: 900 !important;

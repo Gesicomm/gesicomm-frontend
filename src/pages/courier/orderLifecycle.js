@@ -1,5 +1,8 @@
-// Las cuatro etapas del seguimiento por WhatsApp. A cuál entra un pedido lo
-// decide su estado (ver flujosBase.js en el backend), no una persona.
+export const CUSTOM_FLOW_TYPE = "PERSONALIZADO";
+
+// Las etapas automáticas del seguimiento por WhatsApp. A cuál entra un pedido
+// lo decide su estado (ver flujosBase.js en el backend), no una persona.
+// "Otros flujos" queda para usos manuales que no dependen del ciclo del pedido.
 export const FLOW_TYPES = {
   CONFIRMACION_PEDIDO_WEB: {
     label: "Confirmación de pedido web",
@@ -20,6 +23,11 @@ export const FLOW_TYPES = {
     label: "Escalamiento de ventas",
     stage: "recompra",
     hint: "Pedidos entregados. Entran solos; el primer mensaje espera los días que definas desde la entrega.",
+  },
+  [CUSTOM_FLOW_TYPE]: {
+    label: "Otros flujos",
+    stage: "manual",
+    hint: "Flujos manuales para casos propios de tu operación. Aparecen en el panel del pedido, pero no cambian de etapa automáticamente.",
   },
 };
 
