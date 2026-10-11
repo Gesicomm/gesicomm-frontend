@@ -1914,6 +1914,66 @@ export default function ConfigurarVentaCodigo({
       >
         Ver dónde aparece
       </button>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label>
+          <span className="block text-sm font-medium text-fg mb-1.5">Rótulo superior</span>
+          <input
+            value={recoKicker}
+            onChange={e => setRecoKicker(e.target.value)}
+            maxLength={50}
+            placeholder="Te puede gustar"
+            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+          />
+        </label>
+        <label>
+          <span className="block text-sm font-medium text-fg mb-1.5">Título de la sección</span>
+          <input
+            value={recoTitulo}
+            onChange={e => setRecoTitulo(e.target.value)}
+            maxLength={80}
+            placeholder="Productos recomendados"
+            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+          />
+        </label>
+        <label className="sm:col-span-2">
+          <span className="block text-sm font-medium text-fg mb-1.5">Subtítulo</span>
+          <textarea
+            value={recoSubtitulo}
+            onChange={e => setRecoSubtitulo(e.target.value)}
+            maxLength={180}
+            rows={2}
+            placeholder="Elegí alternativas o complementos para que el cliente siga comprando."
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+          />
+        </label>
+        <label>
+          <span className="block text-sm font-medium text-fg mb-1.5">Texto del botón</span>
+          <input
+            value={recoCta}
+            onChange={e => setRecoCta(e.target.value)}
+            maxLength={40}
+            placeholder="Agregar"
+            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+          />
+        </label>
+        <div>
+          <span id="reco-cantidad" className="block text-sm font-medium text-fg mb-1.5">Cuántos mostrar</span>
+          <div role="radiogroup" aria-labelledby="reco-cantidad" className="inline-flex rounded-lg bg-surface-2 p-1">
+            {CANTIDADES_RECO.map(n => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={recoMax === n}
+                onClick={() => setRecoMax(n)}
+                className={`w-9 h-8 rounded-md font-mono text-sm transition-colors ${recoMax === n ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
       <div role="radiogroup" aria-label="Cómo elegir los recomendados" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {[
           ['auto', 'Automático', 'En cada ficha, otros productos de su misma categoría.'],
@@ -2082,67 +2142,6 @@ export default function ConfigurarVentaCodigo({
           </div>
         )
       )}
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label>
-          <span className="block text-sm font-medium text-fg mb-1.5">Rótulo superior</span>
-          <input
-            value={recoKicker}
-            onChange={e => setRecoKicker(e.target.value)}
-            maxLength={50}
-            placeholder="Te puede gustar"
-            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-          />
-        </label>
-        <label>
-          <span className="block text-sm font-medium text-fg mb-1.5">Título de la sección</span>
-          <input
-            value={recoTitulo}
-            onChange={e => setRecoTitulo(e.target.value)}
-            maxLength={80}
-            placeholder="Productos recomendados"
-            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-          />
-        </label>
-        <label className="sm:col-span-2">
-          <span className="block text-sm font-medium text-fg mb-1.5">Subtítulo</span>
-          <textarea
-            value={recoSubtitulo}
-            onChange={e => setRecoSubtitulo(e.target.value)}
-            maxLength={180}
-            rows={2}
-            placeholder="Elegí alternativas o complementos para que el cliente siga comprando."
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-          />
-        </label>
-        <label>
-          <span className="block text-sm font-medium text-fg mb-1.5">Texto del botón</span>
-          <input
-            value={recoCta}
-            onChange={e => setRecoCta(e.target.value)}
-            maxLength={40}
-            placeholder="Agregar"
-            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-          />
-        </label>
-        <div>
-          <span id="reco-cantidad" className="block text-sm font-medium text-fg mb-1.5">Cuántos mostrar</span>
-          <div role="radiogroup" aria-labelledby="reco-cantidad" className="inline-flex rounded-lg bg-surface-2 p-1">
-            {CANTIDADES_RECO.map(n => (
-              <button
-                key={n}
-                type="button"
-                role="radio"
-                aria-checked={recoMax === n}
-                onClick={() => setRecoMax(n)}
-                className={`w-9 h-8 rounded-md font-mono text-sm transition-colors ${recoMax === n ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   ) : (
     <p className="text-sm text-fg-muted">Activá “Mostrar” para configurar productos recomendados en la ficha.</p>
