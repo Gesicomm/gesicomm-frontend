@@ -1082,3 +1082,40 @@
   .gw-modal-backdrop { padding: 0; align-items: flex-end; }
   .gw-modal { max-width: 100%; border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: 92%; }
 }
+
+/* ─── Listado agrupado por etapa ─────────────────────────── */
+
+.gw-etapas {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.gw-etapa-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.gw-etapa-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.gw-etapa-head p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-fg-muted);
+  max-width: 70ch;
+}
+
+/* Espera del primer mensaje (escalamiento de ventas): no cuelga de una fase anterior. */
+.gw-connector--inicio { padding-left: 0; min-height: 40px; }
+.gw-connector--inicio .gw-wait-text { white-space: nowrap; }
+.gw-connector--inicio .gw-select--wait-unit { width: auto; }

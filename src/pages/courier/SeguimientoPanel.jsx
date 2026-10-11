@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { X, MessageCircle, Clock, Check, Tag, Loader2, Ban, Circle, CheckCircle2, RotateCcw, Send, Bell, ChevronRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { X, MessageCircle, Clock, Check, Tag, Loader2, Ban, Circle, CheckCircle2, RotateCcw, Send, ChevronRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import Select, { components } from "react-select";
 import { seguimientoService } from "../../services/seguimiento.service";
 import { formatEspera } from "./variablesWhatsapp";
@@ -63,13 +63,6 @@ function formatMomento(iso) {
   return `${f.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' })} ${hora}`;
 }
 
-/** Valor para un <input type="datetime-local"> a partir de minutos desde ahora. */
-function dentroDeMinutosLocal(minutos) {
-  const f = new Date(Date.now() + minutos * 60 * 1000);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}T${pad(f.getHours())}:${pad(f.getMinutes())}`;
-}
-
 /**
  * El recordatorio del pedido tal como vino en la fila de la bandeja. De ahí
  * en adelante el panel lleva su propia copia: la fila que le pasan no se
@@ -113,11 +106,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
   const [recordatorio, setRecordatorio] = useState(null);
   // Fase cuyo mensaje se está viendo antes de abrir WhatsApp.
   const [faseVista, setFaseVista] = useState(null);
-  // Fase que hay que guardar con el recordatorio cuando se ajusta la fecha a mano ("Cambiar").
-  const [fasePendienteId, setFasePendienteId] = useState(null);
-
-  // Propuesta de recordatorio que aparece después de abrir una fase.
-  const [propuesta, setPropuesta] = useState(null);
 
   const [telefonoPersonalizado, setTelefonoPersonalizado] = useState("");
   const [fechaCustom, setFechaCustom] = useState("");
@@ -137,10 +125,8 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
     let activo = true;
 
     setCargando(true);
-    setPropuesta(null);
     setRecordatorio(recordatorioDeEnvio(envio));
     setFaseVista(faseQueToca);
-    setFasePendienteId(null);
     setNotaRecordatorio("");
     setHorasProgramadas(null);
     setFechaCustom("");
@@ -203,7 +189,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
    */
   const abrirFase = async (fase) => {
     setFaseEnviando(fase.id);
-    setPropuesta(null);
     try {
       const res = await servicio.crearContacto(envio.id, {
         fase_id: fase.id,
@@ -232,22 +217,17 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
    */
   const completarFase = async (fase) => {
     setFaseEnviando(fase.id);
-    setPropuesta(null);
     try {
       const res = await servicio.completarFase(envio.id, fase.id);
       const cumplidos = res?.recordatorios_cumplidos || [];
-      setRecordatorio(prev => (prev && cumplidos.includes(prev.id) ? null : prev));
+      // El backend agenda solo el mensaje siguiente con la espera del flujo:
+      // acá solo se muestra lo que quedó (se puede cambiar o cancelar abajo).
+      setRecordatorio(prev => res?.recordatorio || (prev && cumplidos.includes(prev.id) ? null : prev));
+      if (res?.siguiente_fase) setFaseVista(res.siguiente_fase.id);
       await cargarFlujos(envio.id);
       if (onRefreshPedido) onRefreshPedido();
-
-      const siguiente = res?.siguiente_fase;
-      if (siguiente && siguiente.espera_sugerida_minutos > 0) {
-        setPropuesta({ fase: siguiente, minutos: siguiente.espera_sugerida_minutos });
-        setFaseVista(siguiente.id);
-      } else {
-        // Sin nada que agendar, en la cola de trabajo este pedido ya está.
-        cola?.onSiguiente?.();
-      }
+      // En la cola de trabajo, marcar como enviado cierra este pedido.
+      cola?.onSiguiente?.();
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.error || "No se pudo marcar el mensaje como enviado");
@@ -259,7 +239,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
   /** Deshace un "marcar como enviado" hecho por error. */
   const descompletarFase = async (fase) => {
     setFaseEnviando(fase.id);
-    setPropuesta(null);
     try {
       await servicio.descompletarFase(envio.id, fase.id);
       await cargarFlujos(envio.id);
@@ -272,50 +251,11 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
     }
   };
 
-  /** Agenda el recordatorio que propuso la fase siguiente. */
-  const aceptarPropuesta = async () => {
-    if (!propuesta) return;
-    setLoadingAccion(true);
-    try {
-      const agendado = await servicio.programarRecordatorio(envio.id, {
-        ejecutar_en: new Date(Date.now() + propuesta.minutos * 60 * 1000).toISOString(),
-        nota: `Enviar "${propuesta.fase.nombre}" (Fase ${propuesta.fase.orden}) si el cliente no responde`,
-        fase_id: propuesta.fase.id,
-      });
-      setRecordatorio(agendado);
-      setPropuesta(null);
-      if (onRefreshPedido) onRefreshPedido();
-      // En la cola de trabajo, agendar el próximo contacto cierra este pedido.
-      cola?.onSiguiente?.();
-    } catch (e) {
-      console.error(e);
-      alert(e.response?.data?.error || "No se pudo agendar el recordatorio");
-    } finally {
-      setLoadingAccion(false);
-    }
-  };
-
-  /** "Cambiar": pasa la fecha sugerida al campo manual para ajustarla. */
-  const editarPropuesta = () => {
-    if (!propuesta) return;
-    setFechaCustom(dentroDeMinutosLocal(propuesta.minutos));
-    setHorasProgramadas('custom');
-    setNotaRecordatorio(`Enviar "${propuesta.fase.nombre}" (Fase ${propuesta.fase.orden}) si el cliente no responde`);
-    setFasePendienteId(propuesta.fase.id);
-    setPropuesta(null);
-  };
-
-  const descartarPropuesta = () => {
-    setPropuesta(null);
-    cola?.onSiguiente?.();
-  };
-
   const guardarNotaORecordatorio = async () => {
     setLoadingAccion(true);
     try {
       if (horasProgramadas || fechaCustom) {
         const payload = { nota: notaRecordatorio.trim() };
-        if (fasePendienteId) payload.fase_id = fasePendienteId;
         if (horasProgramadas && horasProgramadas !== 'custom') {
           payload.horas = horasProgramadas;
         } else if (fechaCustom) {
@@ -329,7 +269,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
       setNotaRecordatorio("");
       setHorasProgramadas(null);
       setFechaCustom("");
-      setFasePendienteId(null);
       if (onRefreshPedido) onRefreshPedido();
     } catch (err) {
       console.error(err);
@@ -503,7 +442,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
                       styles={selectStyles}
                       placeholder="Seleccionar flujo..."
                       value={flujos.map(f => ({ value: f.id, label: f.nombre })).find(o => o.value === flujoId) || null}
-                      onChange={opt => { setFlujoId(opt ? opt.value : null); setPropuesta(null); }}
+                      onChange={opt => setFlujoId(opt ? opt.value : null)}
                       options={flujos.map(f => ({ value: f.id, label: f.nombre }))}
                       isDisabled={!!faseEnviando}
                       isSearchable={false}
@@ -537,24 +476,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
                       Abrir WhatsApp solo no lo mueve.
                     </p>
 
-                    {propuesta && (
-                      <div style={{ marginTop: "14px", padding: "0.85rem", borderRadius: "8px", background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 35%, transparent)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", fontWeight: 600, color: "var(--color-primary-text)", marginBottom: "4px" }}>
-                          <Bell size={14} /> ¿Te recordamos el seguimiento?
-                        </div>
-                        <div style={{ fontSize: "0.8rem", color: "var(--color-fg-muted)", marginBottom: "10px" }}>
-                          Si el cliente no responde, la fase {propuesta.fase.orden} “{propuesta.fase.nombre}”
-                          está sugerida {formatEspera(propuesta.minutos)} después.
-                        </div>
-                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                          <button className="btn-primary" style={{ padding: "5px 12px", fontSize: "0.8rem" }} onClick={aceptarPropuesta} disabled={loadingAccion}>
-                            En {formatEspera(propuesta.minutos)}
-                          </button>
-                          <button className="btn-secondary" style={{ padding: "5px 12px", fontSize: "0.8rem" }} onClick={editarPropuesta} disabled={loadingAccion}>Cambiar</button>
-                          <button className="btn-secondary" style={{ padding: "5px 12px", fontSize: "0.8rem" }} onClick={descartarPropuesta} disabled={loadingAccion}>No recordar</button>
-                        </div>
-                      </div>
-                    )}
                   </>
                 )}
               </div>

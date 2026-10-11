@@ -36,15 +36,28 @@ const faseNueva = (indice) => ({
   etiqueta_id: null,
 });
 
-const flujoNuevo = () => ({
+const ETAPA_RECOMPRA = "ESCALAMIENTO_VENTAS";
+const TRES_DIAS = 3 * 24 * 60;
+
+/**
+ * En escalamiento de ventas la espera del PRIMER mensaje se cuenta desde la
+ * entrega del pedido; en las demás etapas el primero no espera nada.
+ */
+function conEsperaInicial(fases, tipo) {
+  if (tipo !== ETAPA_RECOMPRA || fases.length === 0) return fases;
+  if (Number(fases[0].espera_sugerida_minutos) > 0) return fases;
+  return [{ ...fases[0], espera_sugerida_minutos: TRES_DIAS }, ...fases.slice(1)];
+}
+
+const flujoNuevo = (tipo = "CONFIRMACION_PEDIDO_WEB") => ({
   id: null,
   nombre: "",
   descripcion: "",
   activo: true,
-  tipo: "CONFIRMACION_PEDIDO_WEB",
+  tipo,
   activacion: "AUTOMATICA",
   predeterminado: false,
-  fases: [faseNueva(0)],
+  fases: conEsperaInicial([faseNueva(0)], tipo),
 });
 
 /** Las fases que llegan del backend necesitan una key estable para el drag & drop. */
@@ -122,10 +135,10 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
     nodo.querySelector("input")?.focus();
   }, [editando?.fases?.length]);
 
-  const abrirNuevo = () => {
+  const abrirNuevo = (tipo) => {
     setErroresValidacion([]);
     setFaseActiva(0);
-    setEditando(flujoNuevo());
+    setEditando(flujoNuevo(typeof tipo === "string" ? tipo : undefined));
   };
 
   const abrirExistente = async (flujo) => {
@@ -268,18 +281,13 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
             <div className="gw-head-titles">
               <p className="gw-eyebrow">Seguimiento por WhatsApp</p>
               <h2 style={{ margin: 0, fontSize: "1.3rem" }}>Flujos de mensajes</h2>
-              <p style={{ margin: "0.35rem 0 0", fontSize: "0.86rem", color: "var(--color-fg-muted)", maxWidth: "62ch" }}>
-                Cada flujo es una secuencia de mensajes recomendada. Desde el pedido podés abrir
-                cualquier fase cuando quieras, y repetirla las veces que necesites.
+              <p style={{ margin: "0.35rem 0 0", fontSize: "0.86rem", color: "var(--color-fg-muted)", maxWidth: "70ch" }}>
+                El seguimiento tiene cuatro etapas y cada pedido pasa de una a otra solo, según su estado.
+                Cada etapa tiene su flujo de mensajes: podés editarlo y sumar más flujos a cualquier etapa.
               </p>
             </div>
-            <div className="gw-head-actions">
-              <button className="gw-btn gw-btn--primary" onClick={abrirNuevo}>
-                <Plus size={16} /> Nuevo flujo
-              </button>
-            </div>
           </header>
-          <ListaFlujos flujos={flujos} onEditar={abrirExistente} onEliminar={eliminar} />
+          <ListaFlujos flujos={flujos} onEditar={abrirExistente} onEliminar={eliminar} onNuevo={abrirNuevo} />
         </>
       ) : (
         <>
@@ -340,11 +348,12 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
 
           <section className="gw-flow-config" aria-label="Configuración del flujo">
             <div className="gw-flow-config__field">
-              <label className="gw-field-label">Tipo de flujo <span className="gw-req">*</span></label>
+              <label className="gw-field-label">Etapa <span className="gw-req">*</span></label>
               <select
                 className="gw-input"
                 value={editando?.tipo || "CONFIRMACION_PEDIDO_WEB"}
-                onChange={(e) => setEditando((p) => ({ ...p, tipo: e.target.value }))}
+                onChange={(e) => setEditando((p) => ({ ...p, tipo: e.target.value, fases: conEsperaInicial(p.fases, e.target.value) }))}
+                aria-label="Etapa del flujo"
               >
                 {Object.entries(FLOW_TYPES).map(([value, meta]) => (
                   <option key={value} value={value}>{meta.label}</option>
@@ -353,32 +362,13 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
               <p>{FLOW_TYPES[editando?.tipo || "CONFIRMACION_PEDIDO_WEB"]?.hint}</p>
             </div>
 
-            <div className="gw-flow-config__field">
-              <label className="gw-field-label">Activación</label>
-              <div className="gw-segmented" role="radiogroup" aria-label="Activación del flujo">
-                {[
-                  ["AUTOMATICA", "Automática"],
-                  ["MANUAL", "Manual"],
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={(editando?.activacion || "MANUAL") === value ? "active" : ""}
-                    onClick={() => setEditando((p) => ({ ...p, activacion: value }))}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <label className="gw-switch gw-switch--inline">
               <input
                 type="checkbox"
                 checked={!!editando?.predeterminado}
                 onChange={(e) => setEditando((p) => ({ ...p, predeterminado: e.target.checked }))}
               />
-              <span>Usar como flujo predeterminado para este tipo</span>
+              <span>Flujo principal de la etapa: el que reciben los pedidos que entran a ella</span>
             </label>
           </section>
 
@@ -401,6 +391,15 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
                         <Draggable key={fase._key} draggableId={fase._key} index={idx}>
                           {(dragProvided, snapshot) => (
                             <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} style={dragProvided.draggableProps.style}>
+                              {idx === 0 && editando.tipo === ETAPA_RECOMPRA && (
+                                <ConnectorWait
+                                  inicio
+                                  texto="Enviar el primer mensaje"
+                                  sufijo="después de la entrega"
+                                  esperaMinutos={fase.espera_sugerida_minutos}
+                                  onChangeEspera={(nuevosMinutos) => cambiarFase(idx, "espera_sugerida_minutos", nuevosMinutos)}
+                                />
+                              )}
                               {idx > 0 && (
                                 <ConnectorWait
                                   esperaMinutos={fase.espera_sugerida_minutos}
@@ -501,62 +500,96 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
 
 /* ─── Listado ──────────────────────────────────────────────── */
 
-function ListaFlujos({ flujos, onEditar, onEliminar }) {
-  if (flujos.length === 0) {
-    return (
-      <div className="gw-empty">
-        Todavía no hay flujos.<br />
-        Creá el primero: por ejemplo “Confirmación de pedido”, con un primer contacto,
-        un recordatorio a las 4 h y un último intento al día siguiente.
-      </div>
-    );
-  }
-
+function ListaFlujos({ flujos, onEditar, onEliminar, onNuevo }) {
+  // Una sección por etapa, siempre las cuatro: el backend garantiza que cada
+  // una tenga su flujo, y acá se puede sumar más a cualquiera.
   return (
-    <div className="gw-cards">
-      {flujos.map((flujo) => {
-        const fases = flujo.fases || [];
+    <div className="gw-etapas">
+      {Object.entries(FLOW_TYPES).map(([tipo, meta]) => {
+        const deLaEtapa = flujos.filter((f) => (f.tipo || "CONFIRMACION_PEDIDO_WEB") === tipo);
         return (
-          <article key={flujo.id} className={`gw-card ${flujo.activo ? "" : "is-off"}`}>
-            <div className="gw-card-head">
+          <section key={tipo} className="gw-etapa" aria-label={meta.label}>
+            <header className="gw-etapa-head">
               <div style={{ minWidth: 0 }}>
-                <h4>{flujo.nombre}</h4>
-                <div className="gw-card-meta">
-                  {fases.length} {fases.length === 1 ? "fase" : "fases"}
-                  {" · "}
-                  <span className="gw-pill">{FLOW_TYPES[flujo.tipo]?.label || "Confirmación de pedido web"}</span>
-                  {flujo.predeterminado && <> · <span className="gw-pill gw-pill--ok">Predeterminado</span></>}
-                  {!flujo.activo && <> · <span className="gw-pill">Inactivo</span></>}
-                </div>
+                <h3>{meta.label}</h3>
+                <p>{meta.hint}</p>
               </div>
-              <div className="gw-step-tools">
-                <button className="gw-icon-btn" onClick={() => onEditar(flujo)} title="Editar flujo"><Edit2 size={15} /></button>
-                <button className="gw-icon-btn gw-icon-btn--danger" onClick={() => onEliminar(flujo)} title="Eliminar flujo"><Trash2 size={15} /></button>
-              </div>
-            </div>
+              <button className="gw-btn gw-btn--ghost" onClick={() => onNuevo(tipo)}>
+                <Plus size={15} /> Agregar flujo
+              </button>
+            </header>
 
-            {flujo.descripcion && (
-              <p style={{ margin: "0.7rem 0 0", fontSize: "0.8rem", color: "var(--color-fg-muted)" }}>{flujo.descripcion}</p>
+            {deLaEtapa.length === 0 ? (
+              <div className="gw-empty">Esta etapa todavía no tiene flujo.</div>
+            ) : (
+              <div className="gw-cards">
+                {deLaEtapa.map((flujo) => (
+                  <TarjetaFlujo
+                    key={flujo.id}
+                    flujo={flujo}
+                    unicoDeLaEtapa={deLaEtapa.length === 1}
+                    onEditar={onEditar}
+                    onEliminar={onEliminar}
+                  />
+                ))}
+              </div>
             )}
-
-            <ul className="gw-card-steps">
-              {fases.map((fase, i) => (
-                <li key={fase.id} className="gw-card-step">
-                  <span className="gw-badge">{i + 1}</span>
-                  <span className="gw-card-step-name">{fase.nombre}</span>
-                  {i > 0 && <span className="gw-card-step-wait">+{formatEspera(fase.espera_sugerida_minutos)}</span>}
-                </li>
-              ))}
-            </ul>
-          </article>
+          </section>
         );
       })}
     </div>
   );
 }
 
+function TarjetaFlujo({ flujo, unicoDeLaEtapa, onEditar, onEliminar }) {
+  const fases = flujo.fases || [];
+  const esRecompra = flujo.tipo === ETAPA_RECOMPRA;
+  return (
+    <article className={`gw-card ${flujo.activo ? "" : "is-off"}`}>
+      <div className="gw-card-head">
+        <div style={{ minWidth: 0 }}>
+          <h4>{flujo.nombre}</h4>
+          <div className="gw-card-meta">
+            {fases.length} {fases.length === 1 ? "mensaje" : "mensajes"}
+            {flujo.predeterminado && <> · <span className="gw-pill gw-pill--ok">Principal</span></>}
+            {!flujo.activo && <> · <span className="gw-pill">Inactivo</span></>}
+          </div>
+        </div>
+        <div className="gw-step-tools">
+          <button className="gw-icon-btn" onClick={() => onEditar(flujo)} title="Editar flujo"><Edit2 size={15} /></button>
+          <button
+            className="gw-icon-btn gw-icon-btn--danger"
+            onClick={() => onEliminar(flujo)}
+            disabled={unicoDeLaEtapa}
+            title={unicoDeLaEtapa ? "Es el único flujo de esta etapa: se puede editar o desactivar, no eliminar" : "Eliminar flujo"}
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+
+      {flujo.descripcion && (
+        <p style={{ margin: "0.7rem 0 0", fontSize: "0.8rem", color: "var(--color-fg-muted)" }}>{flujo.descripcion}</p>
+      )}
+
+      <ul className="gw-card-steps">
+        {fases.map((fase, i) => (
+          <li key={fase.id} className="gw-card-step">
+            <span className="gw-badge">{i + 1}</span>
+            <span className="gw-card-step-name">{fase.nombre}</span>
+            {i > 0 && <span className="gw-card-step-wait">+{formatEspera(fase.espera_sugerida_minutos)}</span>}
+            {i === 0 && esRecompra && fase.espera_sugerida_minutos > 0 && (
+              <span className="gw-card-step-wait">{formatEspera(fase.espera_sugerida_minutos)} tras la entrega</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
 /* ─── Conector interactivo de espera entre fases ───────────── */
-function ConnectorWait({ esperaMinutos, onChangeEspera }) {
+function ConnectorWait({ esperaMinutos, onChangeEspera, texto = "esperar", sufijo = null, inicio = false }) {
   const { valor, unidad } = desarmarEspera(esperaMinutos);
 
   const cambiarEspera = (nuevoValor, nuevaUnidad) => {
@@ -566,11 +599,11 @@ function ConnectorWait({ esperaMinutos, onChangeEspera }) {
   };
 
   return (
-    <div className="gw-connector">
-      <div className="gw-connector-line" />
+    <div className={`gw-connector ${inicio ? "gw-connector--inicio" : ""}`}>
+      {!inicio && <div className="gw-connector-line" />}
       <div className="gw-wait-editable">
         <Clock size={13} className="gw-wait-icon" />
-        <span className="gw-wait-text">esperar</span>
+        <span className="gw-wait-text">{texto}</span>
         <input
           type="number"
           min="0"
@@ -591,6 +624,7 @@ function ConnectorWait({ esperaMinutos, onChangeEspera }) {
             </option>
           ))}
         </select>
+        {sufijo && <span className="gw-wait-text">{sufijo}</span>}
       </div>
     </div>
   );

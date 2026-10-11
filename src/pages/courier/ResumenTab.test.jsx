@@ -21,15 +21,42 @@ const item = (id, fase, extra = {}) => ({
 const FASE_1 = { clave: "101", fase_id: 101, orden: 1, nombre: "Confirmación", espera_sugerida_minutos: 0 };
 const FASE_2 = { clave: "102", fase_id: 102, orden: 2, nombre: "Recordatorio", espera_sugerida_minutos: 240 };
 
+const ETAPAS = [
+  { tipo: "CONFIRMACION_PEDIDO_WEB", nombre: "Confirmación de pedido web", descripcion: "Pedidos nuevos por confirmar.", pedidos: 27 },
+  { tipo: "VENTA_WHATSAPP", nombre: "Venta por WhatsApp", descripcion: "Ventas por WhatsApp.", pedidos: 0 },
+  { tipo: "SEGUIMIENTO_ENVIO", nombre: "Seguimiento de envío", descripcion: "Pedidos ya confirmados.", pedidos: 4 },
+  { tipo: "ESCALAMIENTO_VENTAS", nombre: "Escalamiento de ventas", descripcion: "Pedidos entregados.", pedidos: 3 },
+];
+
+const AVISO_ENVIO = { clave: "301", fase_id: 301, orden: 1, nombre: "Pedido confirmado", espera_sugerida_minutos: 0 };
+
+/** La etapa de envío: otro flujo, otras columnas, otros pedidos. */
+function tableroDeEnvio() {
+  return {
+    etapa: "SEGUIMIENTO_ENVIO", etapas: ETAPAS,
+    flujos: [{ id: 3, nombre: "Seguimiento de envío", predeterminado: true, pendientes: 4 }],
+    flujo_id: 3,
+    totales: { ahora: 4, hoy: 0, despues: 0, sin_fecha: 0 },
+    truncado: false,
+    columnas: [{
+      ...AVISO_ENVIO, conteo: { ahora: 4, hoy: 0, despues: 0, sin_fecha: 0 },
+      data: [item(50, AVISO_ENVIO, { cliente: "Noelia Cáceres", estado: "Despachado", etapa: "SEGUIMIENTO_ENVIO" })],
+      total: 4, page: 1, totalPages: 1, limit: 10,
+    }],
+  };
+}
+
 /** Respuesta del backend: la fase 1 tiene 25 pedidos y manda de a 10. */
-function tablero({ paginas = {}, busqueda, cuando } = {}) {
+function tablero({ etapa, paginas = {}, busqueda, cuando } = {}) {
+  if (etapa === "SEGUIMIENTO_ENVIO") return tableroDeEnvio();
   const pagina1 = paginas["101"] || 1;
   const fase1 = busqueda || cuando
     ? [item(7, FASE_1, { cliente: "Carlos Benítez" })]
     : Array.from({ length: pagina1 === 3 ? 5 : 10 }, (_, i) => item((pagina1 - 1) * 10 + i + 1, FASE_1));
   const totalFase1 = busqueda || cuando ? 1 : 25;
   return {
-    flujos: [{ id: 1, nombre: "Confirmación de pedido", pendientes: 27 }],
+    etapa: "CONFIRMACION_PEDIDO_WEB", etapas: ETAPAS,
+    flujos: [{ id: 1, nombre: "Confirmación de pedido", predeterminado: true, pendientes: 27 }],
     flujo_id: 1,
     totales: { ahora: 26, hoy: 1, despues: 0, sin_fecha: 0 },
     truncado: false,
@@ -105,6 +132,24 @@ test("es un Kanban: una columna por fase, con el número de pedido en cada tarje
   expect(within(fase1).getByText("1–10 de 25")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Empezar a enviar \(26\)/ })).toBeInTheDocument();
   expect(screen.getByText("12")).toBeInTheDocument(); // pedidos recibidos
+});
+
+test("el selector de etapa pide al backend el tablero de esa etapa, con su flujo y sus pedidos", async () => {
+  const servicios = await montar();
+  expect(servicios.tablero).toHaveBeenLastCalledWith(expect.objectContaining({ etapa: "CONFIRMACION_PEDIDO_WEB" }));
+  // Las cuatro etapas están siempre, cada una con cuántos pedidos tiene.
+  expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
+    "Confirmación de pedido web 27", "Venta por WhatsApp 0", "Seguimiento de envío 4", "Escalamiento de ventas 3",
+  ]);
+
+  fireEvent.click(screen.getByRole("tab", { name: /Seguimiento de envío/ }));
+
+  await waitFor(() => expect(servicios.tablero).toHaveBeenLastCalledWith(expect.objectContaining({ etapa: "SEGUIMIENTO_ENVIO", paginas: {} })));
+  const aviso = await screen.findByRole("region", { name: "Fase 1: Pedido confirmado" });
+  expect(within(aviso).getByText("Noelia Cáceres")).toBeInTheDocument();
+  expect(within(aviso).getByText(/Despachado, sin avisos enviados/)).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Fase 2: Recordatorio" })).not.toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: /Seguimiento de envío/ })).toHaveAttribute("aria-selected", "true");
 });
 
 test("paginar una columna le pide esa página al backend, sin tocar las demás", async () => {
@@ -186,7 +231,7 @@ test("\"Empezar a enviar\" arma la cola con lo que devuelve el backend para ahor
 
   fireEvent.click(screen.getByRole("button", { name: /Empezar a enviar/ }));
 
-  await waitFor(() => expect(servicios.pendientes).toHaveBeenCalledWith({ flujo_id: 1, cuando: "ahora", page: 1, limit: 50 }));
+  await waitFor(() => expect(servicios.pendientes).toHaveBeenCalledWith({ etapa: "CONFIRMACION_PEDIDO_WEB", flujo_id: 1, cuando: "ahora", page: 1, limit: 50 }));
   const panel = await screen.findByRole("dialog");
   expect(within(panel).getByText("Pedido 1 de 2")).toBeInTheDocument();
 
@@ -194,12 +239,12 @@ test("\"Empezar a enviar\" arma la cola con lo que devuelve el backend para ahor
   await waitFor(() => expect(screen.getByText("Pedido 2 de 2")).toBeInTheDocument());
 });
 
-test("sin flujos configurados invita a crear el primero", async () => {
+test("una etapa sin flujo activo manda a Flujos y plantillas", async () => {
   const servicios = nuevosServicios({
-    tablero: vi.fn(async () => ({ flujos: [], flujo_id: null, totales: { ahora: 0, hoy: 0, despues: 0, sin_fecha: 0 }, columnas: [], truncado: false })),
+    tablero: vi.fn(async () => ({ etapa: "CONFIRMACION_PEDIDO_WEB", etapas: ETAPAS, flujos: [], flujo_id: null, totales: { ahora: 0, hoy: 0, despues: 0, sin_fecha: 0 }, columnas: [], truncado: false })),
   });
   render(<MemoryRouter><ResumenTab servicios={servicios} servicioSeguimiento={servicioSeguimiento} /></MemoryRouter>);
 
-  expect(await screen.findByRole("link", { name: /Crear mi primer flujo/ })).toHaveAttribute("href", "/pedidos/configuracion");
+  expect(await screen.findByRole("link", { name: /Ir a Flujos y plantillas/ })).toHaveAttribute("href", "/pedidos/configuracion");
   expect(screen.getByRole("button", { name: /Nada para enviar ahora/ })).toBeDisabled();
 });

@@ -13,6 +13,10 @@ import "./resumen-pedidos.css";
  *
  * - Cada tarjeta es un pedido en la fase en la que está. Se toca para abrir
  *   el mismo SeguimientoPanel de la bandeja, ya parado en esa fase.
+ * - Arriba se elige la etapa (confirmación web, venta por WhatsApp,
+ *   seguimiento de envío, escalamiento de ventas). A qué etapa pertenece un
+ *   pedido lo decide su estado: cambia solo cuando el pedido se confirma o
+ *   se entrega.
  * - Cada tarjeta tiene sus dos pasos a la vista: "Enviar mensaje" (abre
  *   WhatsApp con el mensaje de esa fase) y, recién después, "Marcar como
  *   enviado", que es lo que mueve al pedido a la columna siguiente.
@@ -77,13 +81,16 @@ function fechaCorta(iso) {
 
 /** Por qué este pedido está donde está, dicho como lo diría el operador. */
 function motivoDelItem(item) {
-  if (item.motivo === "vencido") return { texto: `Tocaba ${tiempoRelativo(item.recordatorio?.ejecutar_en)}`, tono: "vencido" };
-  if (item.motivo === "nuevo") return { texto: `Entró ${tiempoRelativo(item.creado_en)}`, tono: "nuevo" };
-  if (item.motivo === "programado") {
-    const cuando = item.cuando === "hoy"
-      ? `Hoy ${horaCorta(item.recordatorio.ejecutar_en)}`
-      : `${fechaCorta(item.recordatorio.ejecutar_en)} ${horaCorta(item.recordatorio.ejecutar_en)}`;
-    return { texto: `Agendado: ${cuando}`, tono: "programado" };
+  const toca = item.toca_en || item.recordatorio?.ejecutar_en;
+  if (item.motivo === "vencido") return { texto: `Tocaba ${tiempoRelativo(toca)}`, tono: "vencido" };
+  if (item.motivo === "nuevo") {
+    if (item.etapa === "ESCALAMIENTO_VENTAS") return { texto: `Entregado ${tiempoRelativo(item.entregado_en)}`, tono: "nuevo" };
+    if (item.etapa === "SEGUIMIENTO_ENVIO") return { texto: `${item.estado}, sin avisos enviados`, tono: "nuevo" };
+    return { texto: `Entró ${tiempoRelativo(item.creado_en)}`, tono: "nuevo" };
+  }
+  if (item.motivo === "programado" && toca) {
+    const cuando = item.cuando === "hoy" ? `Hoy ${horaCorta(toca)}` : `${fechaCorta(toca)} ${horaCorta(toca)}`;
+    return { texto: `${item.recordatorio ? "Agendado" : "Toca"}: ${cuando}`, tono: "programado" };
   }
   return { texto: "Sin próximo contacto agendado", tono: "suelto" };
 }
@@ -112,6 +119,7 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
   const [errorVentas, setErrorVentas] = useState(null);
 
   // ── Tablero: todo esto viaja al backend, que es quien filtra y pagina ──
+  const [etapa, setEtapa] = useState("CONFIRMACION_PEDIDO_WEB");
   const [flujoId, setFlujoId] = useState(null);
   const [cuando, setCuando] = useState("");
   const [busquedaEscrita, setBusquedaEscrita] = useState("");
@@ -149,6 +157,7 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
     setCargando(true);
     try {
       const res = await servicios.tablero({
+        etapa,
         ...(flujoId ? { flujo_id: flujoId } : {}),
         ...(cuando ? { cuando } : {}),
         ...(busqueda ? { busqueda } : {}),
@@ -164,11 +173,14 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
     } finally {
       if (pedido === pedidoTablero.current) setCargando(false);
     }
-  }, [servicios, flujoId, cuando, busqueda, limite, paginas]);
+  }, [servicios, etapa, flujoId, cuando, busqueda, limite, paginas]);
 
   useEffect(() => { cargarTablero(); }, [cargarTablero]);
 
   const cambiarFiltro = (aplicar) => { aplicar(); setPaginas({}); };
+
+  /** Cada etapa tiene sus propios flujos: al cambiarla se vuelve al principal. */
+  const cambiarEtapa = (tipo) => { setEtapa(tipo); setFlujoId(null); setPaginas({}); };
 
   const abrirCola = (items, indice = 0) => {
     if (items.length === 0) return;
@@ -190,6 +202,7 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
     setArmandoCola(true);
     try {
       const res = await servicios.pendientes({
+        etapa,
         ...(tablero?.flujo_id ? { flujo_id: tablero.flujo_id } : {}),
         cuando: "ahora",
         page: 1,
@@ -236,6 +249,8 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
   const enCola = cola ? cola.items[cola.indice] : null;
   const totales = tablero?.totales || { ahora: 0, hoy: 0, despues: 0, sin_fecha: 0 };
   const flujos = tablero?.flujos || [];
+  const etapas = tablero?.etapas || [];
+  const etapaActual = etapas.find((e) => e.tipo === etapa);
   const hayFiltros = Boolean(cuando || busqueda);
 
   return (
@@ -295,6 +310,25 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
           </div>
         </header>
 
+        {/* Etapa: a cuál pertenece cada pedido lo decide su estado */}
+        {etapas.length > 0 && (
+          <div className="rp-etapas" role="tablist" aria-label="Etapa del seguimiento">
+            {etapas.map((e) => (
+              <button
+                key={e.tipo}
+                type="button"
+                role="tab"
+                aria-selected={etapa === e.tipo}
+                className={etapa === e.tipo ? "active" : ""}
+                onClick={() => cambiarEtapa(e.tipo)}
+              >
+                {e.nombre} <span className="rp-etapa-cuenta">{e.pedidos}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {etapaActual?.descripcion && <p className="rp-etapa-descripcion">{etapaActual.descripcion}</p>}
+
         {/* Filtros: todos se resuelven en el backend */}
         <div className="rp-filtros">
           {flujos.length > 1 && (
@@ -349,8 +383,8 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
           <div className="rp-estado"><Loader2 size={18} className="animate-spin" /> Cargando tablero…</div>
         ) : tablero && tablero.columnas.length === 0 ? (
           <div className="rp-vacio">
-            <p>Todavía no tenés un flujo de mensajes. Con un flujo, acá vas a ver en qué mensaje está cada pedido.</p>
-            <Link to="/pedidos/configuracion" className="rp-btn rp-btn--primario">Crear mi primer flujo</Link>
+            <p>Esta etapa no tiene un flujo activo. Activá o creá uno para ver en qué mensaje está cada pedido.</p>
+            <Link to="/pedidos/configuracion" className="rp-btn rp-btn--primario">Ir a Flujos y plantillas</Link>
           </div>
         ) : tablero ? (
           <div className="kanban-board rp-kanban" aria-busy={cargando}>

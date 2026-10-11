@@ -33,6 +33,8 @@ const FLUJOS = [
     nombre: 'Confirmación de pedido',
     descripcion: 'Para pedidos nuevos que todavía no confirmó el cliente.',
     activo: true,
+    tipo: 'CONFIRMACION_PEDIDO_WEB',
+    predeterminado: true,
     fases: [
       {
         id: 101, flujo_id: 1, orden: 1, nombre: 'Primer contacto', activo: true,
@@ -53,13 +55,15 @@ const FLUJOS = [
   },
   {
     id: 2,
-    nombre: 'Recuperación de carrito',
-    descripcion: '',
-    activo: false,
+    nombre: 'Escalamiento de ventas',
+    descripcion: 'Pedidos entregados: volver a contactar al cliente.',
+    activo: true,
+    tipo: 'ESCALAMIENTO_VENTAS',
+    predeterminado: true,
     fases: [
       {
-        id: 201, flujo_id: 2, orden: 1, nombre: 'Primer contacto', activo: true,
-        espera_sugerida_minutos: 0, etiqueta_id: null,
+        id: 201, flujo_id: 2, orden: 1, nombre: '¿Cómo te fue?', activo: true,
+        espera_sugerida_minutos: 4320, etiqueta_id: null,
         mensaje: 'Hola {cliente_nombre}, vimos que dejaste {productos} sin terminar la compra. ¿Te ayudamos?',
       },
       {

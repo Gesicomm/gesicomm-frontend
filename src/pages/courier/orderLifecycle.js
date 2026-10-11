@@ -1,23 +1,25 @@
+// Las cuatro etapas del seguimiento por WhatsApp. A cuál entra un pedido lo
+// decide su estado (ver flujosBase.js en el backend), no una persona.
 export const FLOW_TYPES = {
   CONFIRMACION_PEDIDO_WEB: {
     label: "Confirmación de pedido web",
     stage: "comercial",
-    hint: "Se utiliza automáticamente para nuevos pedidos provenientes de una landing.",
+    hint: "Pedidos por confirmar que entraron por la tienda o una landing. Entran solos apenas se crean.",
   },
   VENTA_WHATSAPP: {
     label: "Venta por WhatsApp",
     stage: "comercial",
-    hint: "Se utiliza para ventas iniciadas desde una conversación de WhatsApp.",
+    hint: "Pedidos por confirmar que entraron por WhatsApp. Entran solos apenas se crean.",
   },
   SEGUIMIENTO_ENVIO: {
     label: "Seguimiento de envío",
     stage: "logistica",
-    hint: "Se utiliza cuando un pedido entra en etapa de envío.",
+    hint: "Pedidos confirmados, preparados, despachados o reprogramados. Entran solos cuando el pedido se confirma.",
   },
   ESCALAMIENTO_VENTAS: {
     label: "Escalamiento de ventas",
     stage: "recompra",
-    hint: "Se utiliza para volver a trabajar oportunidades o clientes dentro de Recompra.",
+    hint: "Pedidos entregados. Entran solos; el primer mensaje espera los días que definas desde la entrega.",
   },
 };
 
