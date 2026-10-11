@@ -173,9 +173,24 @@ export const getConteoPorAbastecimiento = async (filtros = {}) => {
 };
 
 /** Resumen financiero minimalista de la pestaña Entregados (ver plan sección 22). */
-/** Pestaña Resumen: pedidos del período + mensajes de WhatsApp por enviar, agrupados por fase. */
+/** Pestaña Resumen: pedidos del período agrupados por en qué quedaron. */
 export const getResumenPedidos = async (filtros = {}) => {
   const { data } = await api.post('/envios/resumen', filtros);
+  return data;
+};
+
+/**
+ * Kanban de mensajes por enviar: una columna por fase, cada una con su página.
+ * Todo se filtra y pagina en el backend: { flujo_id, cuando, busqueda, limit, paginas }.
+ */
+export const getTableroSeguimiento = async (filtros = {}) => {
+  const { data } = await api.post('/envios/seguimiento/tablero', filtros);
+  return data;
+};
+
+/** La misma lista del tablero, plana y paginada: { flujo_id, fase, cuando, busqueda, page, limit }. */
+export const getPendientesSeguimiento = async (filtros = {}) => {
+  const { data } = await api.post('/envios/seguimiento/pendientes', filtros);
   return data;
 };
 

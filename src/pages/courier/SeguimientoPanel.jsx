@@ -129,6 +129,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
     return resFlujos || [];
   }, [servicio]);
 
+  // Con qué fase se abre el panel (para elegir el flujo y mostrar su mensaje).
   const faseQueToca = faseSugeridaId ?? envio?.recordatorio_fase_id ?? null;
 
   useEffect(() => {
@@ -188,6 +189,14 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
   const flujo = flujos.find(f => f.id === flujoId) || null;
   const fases = flujo?.fases || [];
 
+  // La fase en la que está el pedido: la que pidió quien abrió el panel
+  // mientras no esté completada; si no, la siguiente a la más avanzada que
+  // ya se completó. Así, al marcar una como enviada, "Toca ahora" pasa sola
+  // a la que sigue.
+  const sugeridaPendiente = fases.find(f => f.id === faseQueToca && !f.completada);
+  const mayorCompletada = fases.reduce((max, f) => (f.completada ? Math.max(max, f.orden) : max), 0);
+  const faseActualId = (sugeridaPendiente || fases.find(f => f.orden > mayorCompletada))?.id ?? null;
+
   /**
    * Abre una fase en WhatsApp. No valida ningún orden a propósito: se puede
    * abrir cualquier fase, y repetirla las veces que haga falta.
@@ -201,22 +210,63 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
         telefono: telefonoPersonalizado || envio.telefono
       });
       if (res.whatsapp_url) window.open(res.whatsapp_url, '_blank');
-      const cumplidos = res.recordatorios_cumplidos || [];
-      setRecordatorio(prev => (prev && cumplidos.includes(prev.id) ? null : prev));
 
-      const actualizados = await cargarFlujos(envio.id);
-      const flujoActual = actualizados.find(f => f.id === fase.flujo_id) || flujo;
-      const siguiente = (flujoActual?.fases || []).find(f => f.orden === fase.orden + 1);
-      if (siguiente && siguiente.espera_sugerida_minutos > 0) {
-        setPropuesta({ fase: siguiente, minutos: siguiente.espera_sugerida_minutos });
-      }
-
+      // Abrir WhatsApp no mueve al pedido de fase: eso pasa recién cuando se
+      // marca el mensaje como enviado (completarFase).
+      await cargarFlujos(envio.id);
       const resEtiqPed = await servicio.getEtiquetasPedido(envio.id);
       setEtiquetasPedido(resEtiqPed || []);
       if (onRefreshPedido) onRefreshPedido();
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.error || "No se pudo registrar el envío");
+    } finally {
+      setFaseEnviando(null);
+    }
+  };
+
+  /**
+   * "Ya lo envié": marca la fase como completada. Es lo que hace pasar al
+   * pedido a la fase siguiente, y recién ahí se ofrece agendar el próximo
+   * contacto.
+   */
+  const completarFase = async (fase) => {
+    setFaseEnviando(fase.id);
+    setPropuesta(null);
+    try {
+      const res = await servicio.completarFase(envio.id, fase.id);
+      const cumplidos = res?.recordatorios_cumplidos || [];
+      setRecordatorio(prev => (prev && cumplidos.includes(prev.id) ? null : prev));
+      await cargarFlujos(envio.id);
+      if (onRefreshPedido) onRefreshPedido();
+
+      const siguiente = res?.siguiente_fase;
+      if (siguiente && siguiente.espera_sugerida_minutos > 0) {
+        setPropuesta({ fase: siguiente, minutos: siguiente.espera_sugerida_minutos });
+        setFaseVista(siguiente.id);
+      } else {
+        // Sin nada que agendar, en la cola de trabajo este pedido ya está.
+        cola?.onSiguiente?.();
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "No se pudo marcar el mensaje como enviado");
+    } finally {
+      setFaseEnviando(null);
+    }
+  };
+
+  /** Deshace un "marcar como enviado" hecho por error. */
+  const descompletarFase = async (fase) => {
+    setFaseEnviando(fase.id);
+    setPropuesta(null);
+    try {
+      await servicio.descompletarFase(envio.id, fase.id);
+      await cargarFlujos(envio.id);
+      if (onRefreshPedido) onRefreshPedido();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "No se pudo desmarcar");
     } finally {
       setFaseEnviando(null);
     }
@@ -467,12 +517,14 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
                         <FaseFila
                           key={fase.id}
                           fase={fase}
-                          sugerida={fase.id === faseQueToca}
+                          sugerida={fase.id === faseActualId}
                           vistaAbierta={fase.id === faseVista}
                           onVerMensaje={() => setFaseVista(v => (v === fase.id ? null : fase.id))}
                           enviando={faseEnviando === fase.id}
                           deshabilitado={!!faseEnviando}
                           onAbrir={() => abrirFase(fase)}
+                          onCompletar={() => completarFase(fase)}
+                          onDescompletar={() => descompletarFase(fase)}
                         />
                       ))}
                       {fases.length === 0 && (
@@ -481,8 +533,8 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
                     </div>
 
                     <p style={{ fontSize: "0.72rem", color: "var(--color-fg-muted)", margin: "12px 0 0 0" }}>
-                      Se registra que abriste WhatsApp con el mensaje, no que el cliente lo recibió:
-                      el envío lo confirmás vos desde WhatsApp.
+                      El pedido pasa a la fase siguiente cuando marcás el mensaje como enviado.
+                      Abrir WhatsApp solo no lo mueve.
                     </p>
 
                     {propuesta && (
@@ -609,25 +661,32 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
 }
 
 /**
- * Una fase del flujo dentro del pedido. Siempre se puede abrir: haberla
- * abierto antes no la bloquea, solo cambia lo que dice el botón.
+ * Una fase del flujo dentro del pedido. Tres estados:
+ *  - sin abrir: "Abrir en WhatsApp" (y "Ya lo envié" si se mandó por fuera);
+ *  - abierta sin completar: "Marcar como enviado" pasa a ser el botón
+ *    principal — es lo que mueve al pedido a la fase siguiente;
+ *  - completada: se puede reabrir igual, y desmarcar si fue un error.
  */
-function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, enviando, deshabilitado, onAbrir }) {
+function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, enviando, deshabilitado, onAbrir, onCompletar, onDescompletar }) {
   const abierta = (fase.envios || 0) > 0;
-  // El botón verde es "lo que hay que hacer": la fase que toca, o una que
-  // todavía no se abrió nunca.
-  const destacar = sugerida || !abierta;
+  const completada = !!fase.completada;
+  const faltaMarcar = abierta && !completada;
   const borde = sugerida
     ? "color-mix(in srgb, var(--color-primary) 55%, transparent)"
-    : abierta
+    : completada
       ? "color-mix(in srgb, var(--color-success) 35%, transparent)"
-      : "color-mix(in srgb, var(--color-fg) 10%, transparent)";
+      : faltaMarcar
+        ? "color-mix(in srgb, var(--color-warning) 45%, transparent)"
+        : "color-mix(in srgb, var(--color-fg) 10%, transparent)";
+  const botonChico = { padding: "5px 10px", fontSize: "0.75rem", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" };
+  const verde = { background: "var(--color-success)", borderColor: "var(--color-success)", color: "#fff" };
+  const enlace = { padding: 0, background: "none", border: "none", cursor: "pointer", color: "var(--color-primary-text)", fontSize: "0.75rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" };
 
   return (
     <div style={{ borderRadius: "8px", background: "var(--color-canvas)", border: `1px solid ${borde}` }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 12px" }}>
-        <div style={{ paddingTop: "2px", color: abierta ? "var(--color-success)" : "var(--color-fg-subtle)", flexShrink: 0 }}>
-          {abierta ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+        <div style={{ paddingTop: "2px", color: completada ? "var(--color-success)" : faltaMarcar ? "var(--color-warning)" : "var(--color-fg-subtle)", flexShrink: 0 }}>
+          {completada ? <CheckCircle2 size={16} /> : <Circle size={16} />}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -639,47 +698,55 @@ function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, 
               </span>
             )}
           </div>
-          <div style={{ fontSize: "0.75rem", color: "var(--color-fg-muted)", marginTop: "2px" }}>
-            {abierta
-              ? `Abierta ${formatMomento(fase.ultimo_envio_en)}${fase.envios > 1 ? ` · ${fase.envios} veces` : ""}`
-              : fase.espera_sugerida_minutos > 0
-                ? `Sugerida ${formatEspera(fase.espera_sugerida_minutos)} después de la anterior`
-                : "Sin enviar"}
+          <div style={{ fontSize: "0.75rem", color: faltaMarcar ? "var(--color-warning)" : "var(--color-fg-muted)", marginTop: "2px" }}>
+            {completada
+              ? `Enviado ${formatMomento(fase.ultimo_envio_en)}`
+              : faltaMarcar
+                ? `Abriste WhatsApp ${formatMomento(fase.ultimo_envio_en)} · falta marcarlo como enviado`
+                : fase.espera_sugerida_minutos > 0
+                  ? `Sugerida ${formatEspera(fase.espera_sugerida_minutos)} después de la anterior`
+                  : "Sin enviar"}
           </div>
-          {fase.mensaje_resuelto && onVerMensaje && (
-            <button
-              type="button"
-              onClick={onVerMensaje}
-              aria-expanded={vistaAbierta}
-              style={{ marginTop: "6px", padding: 0, background: "none", border: "none", cursor: "pointer", color: "var(--color-primary-text)", fontSize: "0.75rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}
-            >
-              {vistaAbierta ? <EyeOff size={12} /> : <Eye size={12} />}
-              {vistaAbierta ? "Ocultar mensaje" : "Ver mensaje"}
-            </button>
-          )}
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "6px" }}>
+            {fase.mensaje_resuelto && onVerMensaje && (
+              <button type="button" onClick={onVerMensaje} aria-expanded={vistaAbierta} style={enlace}>
+                {vistaAbierta ? <EyeOff size={12} /> : <Eye size={12} />}
+                {vistaAbierta ? "Ocultar mensaje" : "Ver mensaje"}
+              </button>
+            )}
+            {completada && onDescompletar && (
+              <button type="button" onClick={onDescompletar} disabled={deshabilitado} style={{ ...enlace, color: "var(--color-fg-muted)" }}>
+                Desmarcar
+              </button>
+            )}
+            {!abierta && onCompletar && (
+              <button type="button" onClick={onCompletar} disabled={deshabilitado} style={{ ...enlace, color: "var(--color-fg-muted)" }} title="Si lo mandaste por fuera del sistema">
+                Ya lo envié
+              </button>
+            )}
+          </div>
         </div>
 
-        <button
-          className="btn-secondary"
-          style={{
-            padding: "5px 10px",
-            fontSize: "0.75rem",
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: "5px",
-            ...(destacar ? { background: "var(--color-success)", borderColor: "var(--color-success)", color: "#fff" } : {}),
-          }}
-          onClick={onAbrir}
-          disabled={deshabilitado}
-          title={abierta ? "Volver a abrir esta fase en WhatsApp" : "Abrir esta fase en WhatsApp"}
-        >
-          {enviando
-            ? <Loader2 size={13} className="animate-spin" />
-            : abierta ? <RotateCcw size={13} /> : <Send size={13} />}
-          {abierta ? "Abrir otra vez" : "Abrir en WhatsApp"}
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0 }}>
+          {faltaMarcar && onCompletar && (
+            <button className="btn-secondary" style={{ ...botonChico, ...verde }} onClick={onCompletar} disabled={deshabilitado} title="Confirmar que mandaste el mensaje: el pedido pasa a la fase siguiente">
+              {enviando ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+              Marcar como enviado
+            </button>
+          )}
+          <button
+            className="btn-secondary"
+            style={{ ...botonChico, ...(!abierta ? verde : {}) }}
+            onClick={onAbrir}
+            disabled={deshabilitado}
+            title={abierta ? "Volver a abrir esta fase en WhatsApp" : "Abrir esta fase en WhatsApp"}
+          >
+            {enviando && !faltaMarcar
+              ? <Loader2 size={13} className="animate-spin" />
+              : abierta ? <RotateCcw size={13} /> : <Send size={13} />}
+            {abierta ? "Abrir otra vez" : "Abrir en WhatsApp"}
+          </button>
+        </div>
       </div>
 
       {vistaAbierta && fase.mensaje_resuelto && (

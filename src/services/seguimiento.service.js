@@ -93,6 +93,15 @@ export const seguimientoService = {
     return data;
   },
 
+  // El operador confirma que mandó el mensaje de la fase: es lo que la hace avanzar.
+  completarFase: async (envioId, faseId) => {
+    const { data } = await api.post(`/envios/${envioId}/seguimiento/fases/${faseId}/completar`);
+    return data;
+  },
+  descompletarFase: async (envioId, faseId) => {
+    await api.delete(`/envios/${envioId}/seguimiento/fases/${faseId}/completar`);
+  },
+
   // Recordatorios
   guardarNota: async (envioId, nota) => {
       const { data } = await api.post(`/envios/${envioId}/seguimiento/nota`, { nota });
