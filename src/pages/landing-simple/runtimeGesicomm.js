@@ -191,13 +191,24 @@ export function runtimeGesicomm() {
     return 'Gs ' + Math.round(n).toLocaleString('es-PY');
   }
 
+  // La landing corre en un iframe srcdoc: ahí window.location.href es
+  // "about:srcdoc", no la dirección que ve el cliente, y así salía el {url}
+  // de los mensajes de WhatsApp. La dirección real la manda la página
+  // contenedora en datos.pagina_url (ver datosRuntimePublico).
+  function urlPagina() {
+    var url = String(datos.pagina_url || '');
+    if (url) return url;
+    var propia = String(window.location.href || '');
+    return /^https?:/i.test(propia) ? propia : '';
+  }
+
   function aplicarPlantillaWhatsapp(plantilla, item) {
     var msg = String(plantilla || '');
     var producto = item || productoActual || productos[0] || null;
     var precio = producto ? precioDe(producto, varianteElegida) : null;
     msg = msg.replace(/\{producto\}/gi, producto && producto.nombre ? producto.nombre : 'este producto');
     msg = msg.replace(/\{precio\}/gi, precio ? formatoPrecio(precio) : '');
-    msg = msg.replace(/\{url\}/gi, window.location.href);
+    msg = msg.replace(/\{url\}/gi, urlPagina());
     return msg.replace(/[ \t]+\n/g, '\n').trim();
   }
 
@@ -210,9 +221,9 @@ export function runtimeGesicomm() {
     var msg = String(plantilla)
       .replace(/\{producto\}/gi, 'sus productos')
       .replace(/\{precio\}/gi, '')
-      .replace(/\{url\}/gi, window.location.href)
+      .replace(/\{url\}/gi, urlPagina())
       .replace(/[ \t]+\n/g, '\n').trim();
-    if (tienda.incluir_url && !/\{url\}/i.test(plantilla)) msg += '\n' + window.location.href;
+    if (tienda.incluir_url && !/\{url\}/i.test(plantilla) && urlPagina()) msg += '\n' + urlPagina();
     return msg;
   }
 
@@ -227,7 +238,7 @@ export function runtimeGesicomm() {
       var precio = precioDe(productoActual, varianteElegida);
       if (precio) msg += '\nPrecio: ' + formatoPrecio(precio);
     }
-    if (tienda.incluir_url && !tieneUrlInline) msg += '\n' + window.location.href;
+    if (tienda.incluir_url && !tieneUrlInline && urlPagina()) msg += '\n' + urlPagina();
     return msg;
   }
 

@@ -29,12 +29,12 @@ function tienda(extra = {}) {
   return { nombre: 'Mi Tienda', whatsapp: '0981 123456', mensaje: PLANTILLA_PRODUCTO_TIENDA, mensaje_general: PLANTILLA_GENERAL_TIENDA, ...extra };
 }
 
-function montar(plantilla, datos) {
+function montar(plantilla, datos, url = 'https://mitienda.gesicomm.com/remera') {
   const abiertos = [];
   const dom = new JSDOM(construirDocumentoCodigo(plantilla, { datos }), {
     runScripts: 'dangerously',
     pretendToBeVisual: true,
-    url: 'https://mitienda.gesicomm.com/remera',
+    url,
     beforeParse(window) {
       window.postMessage = () => {};
       window.scrollTo = () => {};
@@ -115,7 +115,47 @@ describe('WhatsApp del lienzo — ícono flotante', () => {
   });
 });
 
+// La landing publicada corre en un iframe srcdoc: su location NO es la
+// dirección de la tienda. Las pruebas de arriba le dan una URL https al
+// documento y por eso no veían que {url} salía como "about:srcdoc".
+describe('WhatsApp del lienzo — {url} dentro del iframe', () => {
+  const URL_IFRAME = 'about:blank';
+
+  it('usa la dirección real de la página (datos.pagina_url), no la del iframe', () => {
+    const { document } = montar(PLANTILLA_INICIO, {
+      vista: 'inicio', pagina_url: 'https://mitienda.gesicomm.com/', tienda: tienda(), productos: [remera], producto: null, recomendados: [],
+    }, URL_IFRAME);
+    const texto = textoDe(document.querySelector('[data-gesicomm-contacto-flotante]').href);
+    anotar('[flotante inicio, iframe] →', texto);
+    expect(texto).toBe('Hola! Quiero hacer una consulta sobre la tienda https://mitienda.gesicomm.com/');
+  });
+
+  it('en la ficha, {url} es la dirección del producto', () => {
+    const { document, abiertos, click } = montar(PLANTILLA_PRODUCTO, {
+      vista: 'producto', pagina_url: 'https://mitienda.gesicomm.com/remera',
+      tienda: tienda({ mensaje: 'Me interesa {producto}: {url}' }), productos: [remera], producto: remera, recomendados: [],
+    }, URL_IFRAME);
+    click(document.querySelector('[data-gesicomm-accion-contacto="whatsapp"]'));
+    expect(textoDe(abiertos[0])).toBe('Me interesa Chomba Lacoste Clásica: https://mitienda.gesicomm.com/remera');
+  });
+
+  it('sin dirección conocida (preview del editor) nunca manda "about:"', () => {
+    const { document } = montar(PLANTILLA_INICIO, {
+      vista: 'inicio', tienda: tienda({ incluir_url: true }), productos: [remera], producto: null, recomendados: [],
+    }, URL_IFRAME);
+    const texto = textoDe(document.querySelector('[data-gesicomm-contacto-flotante]').href);
+    expect(texto).not.toMatch(/about:/);
+    expect(texto).toBe('Hola! Quiero hacer una consulta sobre la tienda');
+  });
+});
+
 describe('WhatsApp del lienzo — datos que llegan del backend', () => {
+  it('datosRuntimePublico manda la dirección de la página sin query ni hash', () => {
+    const datos = datosRuntimePublico({ tienda: { nombre: 'Mi Tienda' }, catalogo_items: [] }, 'tienda', null);
+    expect(datos.pagina_url).toBe(`${window.location.origin}${window.location.pathname}`);
+    expect(datos.pagina_url).not.toMatch(/[?#]/);
+  });
+
   it('datosRuntimePublico pasa las dos plantillas del DTO público', () => {
     const datos = datosRuntimePublico({
       tienda: { nombre: 'Mi Tienda' },

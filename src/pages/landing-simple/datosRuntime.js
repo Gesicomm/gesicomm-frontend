@@ -867,6 +867,10 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
     : { bumps: [], recomendados: [] };
   return {
     vista: opciones.vista || (producto ? 'producto' : (categoriaActual ? 'categoria' : 'inicio')),
+    // Dirección que ve el cliente, para el {url} de los mensajes de WhatsApp:
+    // el iframe no la puede leer (su location es "about:srcdoc"). Sin query
+    // ni hash, así no viajan los parámetros de seguimiento del anuncio.
+    pagina_url: typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '',
     categoria: categoriaActual ? { nombre: categoriaActual, slug: slugCategoria(categoriaActual), url: urlCategoria(slug, categoriaActual) } : null,
     tienda: tiendaRuntime(data),
     venta: ventaRuntime(venta, catalogo, producto),
