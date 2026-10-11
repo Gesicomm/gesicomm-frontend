@@ -4,12 +4,13 @@ import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
   ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck, SlidersHorizontal, Grid,
-  Store, Trash2
+  Store, Trash2, FileSpreadsheet
 } from 'lucide-react';
 import { productService } from '../../services/productService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CuponesModal from './CuponesModal';
+import CargaMasivaProductosModal from '../productos/CargaMasivaProductosModal';
 import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
 import { verificarSesion } from '../../utils/auth';
@@ -651,6 +652,7 @@ export default function VitrinaGrid() {
   // página de 10 que muestra la grilla. Se pide recién al abrir el modal
   // para no cargarlo en cada visita a la vitrina.
   const [cuponesAbierto, setCuponesAbierto] = useState(false);
+  const [cargaMasivaAbierta, setCargaMasivaAbierta] = useState(false);
   const [catalogoCompleto, setCatalogoCompleto] = useState({ productos: [], combos: [] });
 
   async function abrirCupones() {
@@ -765,6 +767,14 @@ export default function VitrinaGrid() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
           >
             <Plus size={16} /> Agregar Mis Productos
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setCargaMasivaAbierta(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
+          >
+            <FileSpreadsheet size={16} /> Agregar productos masivamente
           </button>
           <button
             type="button"
@@ -1035,6 +1045,10 @@ export default function VitrinaGrid() {
         open={!!productoAbastecer}
         onClose={() => setProductoAbastecer(null)}
       />
+
+      {cargaMasivaAbierta && (
+        <CargaMasivaProductosModal onCerrar={() => setCargaMasivaAbierta(false)} onImportado={cargar} />
+      )}
 
       <CuponesModal
         abierto={cuponesAbierto}
