@@ -126,6 +126,7 @@ const servicios = {
     console.log('[dev] POST /envios/seguimiento/pendientes', { cuando, page, limit });
     return demora(paginar(todos().filter((i) => !cuando || i.cuando === cuando), page, limit));
   },
+  enviarMensaje: async (envioId, payload) => servicioSeguimiento.crearContacto(envioId, payload),
   completarFase: async (envioId, faseId) => servicioSeguimiento.completarFase(envioId, faseId),
 };
 

@@ -58,6 +58,7 @@ function nuevosServicios(extra = {}) {
     resumen: vi.fn(async () => ({ ventas: VENTAS })),
     tablero: vi.fn(async (filtros) => tablero(filtros)),
     pendientes: vi.fn(async () => ({ data: [item(1, FASE_1), item(2, FASE_1)], total: 26, page: 1, totalPages: 1, limit: 50 })),
+    enviarMensaje: vi.fn(async () => ({ whatsapp_url: "https://wa.me/595981111222?text=Hola" })),
     completarFase: vi.fn(async () => ({ siguiente_fase: null, recordatorios_cumplidos: [] })),
     ...extra,
   };
@@ -151,13 +152,29 @@ test("tocar una tarjeta abre el panel parado en la fase en la que está el pedid
   await waitFor(() => expect(servicioSeguimiento.completarFase).toHaveBeenCalledWith(30, 102));
 });
 
-test("con WhatsApp ya abierto, la tarjeta deja marcar como enviado en un clic", async () => {
+test("la tarjeta tiene los dos pasos: primero enviar el mensaje, después marcarlo", async () => {
   const servicios = await montar();
-  const fase2 = columna("Fase 2: Recordatorio");
-  // Solo la tarjeta con WhatsApp abierto ofrece el botón.
-  expect(within(fase2).getAllByRole("button", { name: /Marcar como enviado/ })).toHaveLength(1);
+  const abrir = vi.spyOn(window, "open").mockImplementation(() => null);
+  const sinEnviar = within(columna("Fase 2: Recordatorio")).getByText("Derlis Ayala").closest("article");
 
-  fireEvent.click(within(fase2).getByRole("button", { name: /Marcar como enviado/ }));
+  // Antes de enviar: "Enviar mensaje" es el paso disponible y marcar está bloqueado.
+  expect(within(sinEnviar).getByRole("button", { name: /Marcar como enviado/ })).toBeDisabled();
+  fireEvent.click(within(sinEnviar).getByRole("button", { name: /Enviar mensaje/ }));
+
+  await waitFor(() => expect(servicios.enviarMensaje).toHaveBeenCalledWith(31, { fase_id: 102, telefono: "0981 111 222" }));
+  await waitFor(() => expect(abrir).toHaveBeenCalledWith("https://wa.me/595981111222?text=Hola", "_blank"));
+  // Enviar no mueve al pedido: no se llamó a completar.
+  expect(servicios.completarFase).not.toHaveBeenCalled();
+  abrir.mockRestore();
+});
+
+test("después de enviar, \"Marcar como enviado\" es lo que pasa el pedido de fase", async () => {
+  const servicios = await montar();
+  const yaEnviado = within(columna("Fase 2: Recordatorio")).getByText("Lucía Fernández").closest("article");
+
+  expect(within(yaEnviado).getByText(/WhatsApp abierto/)).toBeInTheDocument();
+  expect(within(yaEnviado).getByRole("button", { name: /Reenviar/ })).toBeEnabled();
+  fireEvent.click(within(yaEnviado).getByRole("button", { name: /Marcar como enviado/ }));
 
   await waitFor(() => expect(servicios.completarFase).toHaveBeenCalledWith(30, 102));
   // El tablero se vuelve a pedir: el pedido ya está en otra columna.

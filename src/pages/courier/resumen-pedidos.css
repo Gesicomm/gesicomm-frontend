@@ -408,35 +408,49 @@
 .rp-tarjeta-motivo--nuevo { color: var(--color-warning); font-weight: 600; }
 .rp-tarjeta-sintel { color: var(--color-danger); }
 
-.rp-tarjeta-confirmar {
+/* Los dos pasos de la tarjeta: enviar el mensaje y, después, marcarlo. */
+.rp-tarjeta-acciones {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding: 0.45rem 0.7rem;
-  font-size: 0.74rem;
-  color: var(--color-warning);
-  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
-  border-top: 1px solid color-mix(in srgb, var(--color-warning) 25%, transparent);
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0.7rem 0.6rem;
+  border-top: 1px solid var(--color-border);
 }
 
-.rp-tarjeta-confirmar button {
+.rp-tarjeta-acciones--enviado {
+  background: color-mix(in srgb, var(--color-warning) 9%, transparent);
+  border-top-color: color-mix(in srgb, var(--color-warning) 25%, transparent);
+}
+
+.rp-tarjeta-aviso { font-size: 0.74rem; color: var(--color-warning); }
+
+.rp-tarjeta-botones { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.rp-accion {
+  flex: 1 1 auto;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.3rem;
   font: inherit;
   font-size: 0.74rem;
   font-weight: 700;
-  padding: 0.3rem 0.6rem;
+  padding: 0.35rem 0.55rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-success);
-  background: var(--color-success);
-  color: #fff;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-2);
+  color: var(--color-fg);
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.rp-tarjeta-confirmar button:disabled { opacity: 0.6; cursor: wait; }
+.rp-accion--principal {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: #fff;
+}
+
+.rp-accion:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .rp-paginador {
   display: flex;

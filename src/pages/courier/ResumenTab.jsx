@@ -13,8 +13,9 @@ import "./resumen-pedidos.css";
  *
  * - Cada tarjeta es un pedido en la fase en la que está. Se toca para abrir
  *   el mismo SeguimientoPanel de la bandeja, ya parado en esa fase.
- * - El pedido cambia de columna cuando el mensaje se marca como enviado
- *   (desde el panel, o desde la tarjeta si WhatsApp ya se abrió).
+ * - Cada tarjeta tiene sus dos pasos a la vista: "Enviar mensaje" (abre
+ *   WhatsApp con el mensaje de esa fase) y, recién después, "Marcar como
+ *   enviado", que es lo que mueve al pedido a la columna siguiente.
  * - Buscar, filtrar y paginar lo hace el backend: acá no se filtra ni se
  *   corta ninguna lista. Cada columna tiene su propia página.
  */
@@ -49,6 +50,7 @@ const SERVICIOS = {
   resumen: getResumenPedidos,
   tablero: getTableroSeguimiento,
   pendientes: getPendientesSeguimiento,
+  enviarMensaje: seguimientoService.crearContacto,
   completarFase: seguimientoService.completarFase,
 };
 
@@ -119,7 +121,8 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
   const [tablero, setTablero] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
-  const [marcando, setMarcando] = useState(null);
+  // Pedido con una acción de tarjeta en curso (enviar o marcar).
+  const [ocupada, setOcupada] = useState(null);
 
   // Cola de trabajo: se congela al abrirla para que los pedidos no cambien
   // de lugar debajo del operador mientras el tablero se va actualizando.
@@ -200,16 +203,33 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
     }
   };
 
-  /** Desde la tarjeta: confirmar que el mensaje ya abierto se mandó. */
+  /**
+   * Paso 1 de la tarjeta: abre WhatsApp con el mensaje de la fase en la que
+   * está el pedido. No lo mueve de columna: eso es el paso 2.
+   */
+  const enviarMensaje = async (item) => {
+    setOcupada(item.envio_id);
+    try {
+      const res = await servicios.enviarMensaje(item.envio_id, { fase_id: item.fase_id, telefono: item.telefono });
+      if (res?.whatsapp_url) window.open(res.whatsapp_url, "_blank");
+      await cargarTablero();
+    } catch (e) {
+      setError(e?.response?.data?.error || "No se pudo abrir WhatsApp para este pedido.");
+    } finally {
+      setOcupada(null);
+    }
+  };
+
+  /** Paso 2: el operador confirma que lo mandó, y el pedido pasa a la fase siguiente. */
   const marcarEnviado = async (item) => {
-    setMarcando(item.envio_id);
+    setOcupada(item.envio_id);
     try {
       await servicios.completarFase(item.envio_id, item.fase_id);
       await cargarTablero();
     } catch (e) {
       setError(e?.response?.data?.error || "No se pudo marcar el mensaje como enviado.");
     } finally {
-      setMarcando(null);
+      setOcupada(null);
     }
   };
 
@@ -339,8 +359,9 @@ export function ResumenTab({ servicios = SERVICIOS, servicioSeguimiento, onIrAlT
                 key={columna.clave}
                 columna={columna}
                 hayFiltros={hayFiltros}
-                marcando={marcando}
+                ocupada={ocupada}
                 onAbrir={(indice) => abrirCola(columna.data, indice)}
+                onEnviar={enviarMensaje}
                 onMarcarEnviado={marcarEnviado}
                 onPagina={(page) => setPaginas((actual) => ({ ...actual, [columna.clave]: page }))}
               />
@@ -378,7 +399,7 @@ function Kpi({ titulo, dato, tono = "default", destacado = false }) {
 }
 
 /** Una fase del flujo: sus pedidos (la página que mandó el backend) y su paginador. */
-function Columna({ columna, hayFiltros, marcando, onAbrir, onMarcarEnviado, onPagina }) {
+function Columna({ columna, hayFiltros, ocupada, onAbrir, onEnviar, onMarcarEnviado, onPagina }) {
   const { conteo, data, total, page, totalPages, limit } = columna;
   const enLaFase = conteo.ahora + conteo.hoy + conteo.despues + conteo.sin_fecha;
   const desde = total === 0 ? 0 : (page - 1) * limit + 1;
@@ -410,8 +431,9 @@ function Columna({ columna, hayFiltros, marcando, onAbrir, onMarcarEnviado, onPa
           <Tarjeta
             key={item.envio_id}
             item={item}
-            marcando={marcando === item.envio_id}
+            ocupada={ocupada === item.envio_id}
             onAbrir={() => onAbrir(indice)}
+            onEnviar={() => onEnviar(item)}
             onMarcarEnviado={() => onMarcarEnviado(item)}
           />
         ))}
@@ -429,11 +451,16 @@ function Columna({ columna, hayFiltros, marcando, onAbrir, onMarcarEnviado, onPa
 }
 
 /**
- * Un pedido en su fase. Tocarlo abre el panel para mandar el mensaje de esa
- * fase. Si WhatsApp ya se abrió y falta confirmar, la tarjeta misma ofrece
- * marcarlo como enviado: un clic y pasa a la columna siguiente.
+ * Un pedido en su fase, con sus dos pasos en la tarjeta:
+ *  1. "Enviar mensaje": abre WhatsApp con el mensaje de esa fase.
+ *  2. "Marcar como enviado": se habilita después del paso 1 y es lo que
+ *     pasa el pedido a la columna siguiente. Lo confirma la persona porque
+ *     el sistema no puede saber si el mensaje salió.
+ * Tocar el cuerpo de la tarjeta abre el panel completo (vista previa del
+ * mensaje, recordatorio, etiquetas, otras fases).
  */
-function Tarjeta({ item, marcando, onAbrir, onMarcarEnviado }) {
+function Tarjeta({ item, ocupada, onAbrir, onEnviar, onMarcarEnviado }) {
+  const enviado = Boolean(item.fase_abierta_en);
   const motivo = motivoDelItem(item);
   const detalle = [item.productos, item.monto > 0 ? formatGs(item.monto) : null].filter(Boolean).join(" · ");
 
@@ -451,12 +478,31 @@ function Tarjeta({ item, marcando, onAbrir, onMarcarEnviado }) {
         </span>
       </button>
 
-      {item.fase_abierta_en && item.fase_id && (
-        <div className="rp-tarjeta-confirmar">
-          <span>WhatsApp abierto {tiempoRelativo(item.fase_abierta_en)}</span>
-          <button type="button" onClick={onMarcarEnviado} disabled={marcando}>
-            {marcando ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Marcar como enviado
-          </button>
+      {item.fase_id && (
+        <div className={`rp-tarjeta-acciones ${enviado ? "rp-tarjeta-acciones--enviado" : ""}`}>
+          {enviado && <span className="rp-tarjeta-aviso">WhatsApp abierto {tiempoRelativo(item.fase_abierta_en)}. ¿Lo enviaste?</span>}
+          <div className="rp-tarjeta-botones">
+            <button
+              type="button"
+              className={`rp-accion ${enviado ? "" : "rp-accion--principal"}`}
+              onClick={onEnviar}
+              disabled={ocupada || !item.telefono}
+              title={item.telefono ? "Abrir WhatsApp con el mensaje de esta fase" : "El pedido no tiene teléfono"}
+            >
+              {ocupada && !enviado ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+              {enviado ? "Reenviar" : "Enviar mensaje"}
+            </button>
+            <button
+              type="button"
+              className={`rp-accion ${enviado ? "rp-accion--principal" : ""}`}
+              onClick={onMarcarEnviado}
+              disabled={ocupada || !enviado}
+              title={enviado ? "Confirmar que lo mandaste: el pedido pasa a la fase siguiente" : "Primero enviá el mensaje"}
+            >
+              {ocupada && enviado ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+              Marcar como enviado
+            </button>
+          </div>
         </div>
       )}
     </article>
