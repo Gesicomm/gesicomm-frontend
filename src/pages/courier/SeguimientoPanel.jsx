@@ -68,6 +68,22 @@ function dentroDeMinutosLocal(minutos) {
   return `${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}T${pad(f.getHours())}:${pad(f.getMinutes())}`;
 }
 
+/**
+ * El recordatorio del pedido tal como vino en la fila de la bandeja. De ahí
+ * en adelante el panel lleva su propia copia: la fila que le pasan no se
+ * vuelve a pedir mientras está abierto, así que si dependiera de ella no se
+ * enteraría de lo que él mismo acaba de agendar, completar o cancelar.
+ */
+function recordatorioDeEnvio(envio) {
+  if (!envio?.recordatorio_id) return null;
+  return {
+    id: envio.recordatorio_id,
+    estado: envio.recordatorio_estado,
+    ejecutar_en: envio.recordatorio_ejecutar_en,
+    nota: envio.recordatorio_nota,
+  };
+}
+
 export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
   const [flujos, setFlujos] = useState([]);
   const [flujoId, setFlujoId] = useState(null);
@@ -78,6 +94,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
   const [loadingAccion, setLoadingAccion] = useState(false);
   const [faseEnviando, setFaseEnviando] = useState(null);
   const [horasProgramadas, setHorasProgramadas] = useState(null);
+  const [recordatorio, setRecordatorio] = useState(null);
 
   // Propuesta de recordatorio que aparece después de abrir una fase.
   const [propuesta, setPropuesta] = useState(null);
@@ -98,6 +115,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
 
     setCargando(true);
     setPropuesta(null);
+    setRecordatorio(recordatorioDeEnvio(envio));
     setTelefonoPersonalizado(envio.telefono || "");
 
     Promise.all([
@@ -123,6 +141,13 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
 
     return () => { activo = false; };
   }, [open, envio]);
+
+  // VENCIDO sigue siendo un recordatorio abierto: es el que más hace falta
+  // poder cerrar desde acá.
+  const recordatorioAbierto = recordatorio && ['PENDIENTE', 'VENCIDO'].includes(recordatorio.estado) ? recordatorio : null;
+  const recordatorioVencido = !!recordatorioAbierto && (
+    recordatorioAbierto.estado === 'VENCIDO' || new Date(recordatorioAbierto.ejecutar_en) <= new Date()
+  );
 
   const flujo = flujos.find(f => f.id === flujoId) || null;
   const fases = flujo?.fases || [];
@@ -164,10 +189,11 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     if (!propuesta) return;
     setLoadingAccion(true);
     try {
-      await seguimientoService.programarRecordatorio(envio.id, {
+      const agendado = await seguimientoService.programarRecordatorio(envio.id, {
         ejecutar_en: new Date(Date.now() + propuesta.minutos * 60 * 1000).toISOString(),
         nota: `Enviar "${propuesta.fase.nombre}" (Fase ${propuesta.fase.orden}) si el cliente no responde`
       });
+      setRecordatorio(agendado);
       setPropuesta(null);
       if (onRefreshPedido) onRefreshPedido();
     } catch (e) {
@@ -197,7 +223,8 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
         } else if (fechaCustom) {
           payload.ejecutar_en = new Date(fechaCustom).toISOString();
         }
-        await seguimientoService.programarRecordatorio(envio.id, payload);
+        const agendado = await seguimientoService.programarRecordatorio(envio.id, payload);
+        setRecordatorio(agendado);
       } else if (notaRecordatorio.trim()) {
         await seguimientoService.guardarNota(envio.id, notaRecordatorio.trim());
       }
@@ -219,10 +246,11 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
   };
 
   const completar = async () => {
-    if (!envio.recordatorio_id) return;
+    if (!recordatorioAbierto) return;
     setLoadingAccion(true);
     try {
-      await seguimientoService.completarRecordatorio(envio.id, envio.recordatorio_id);
+      await seguimientoService.completarRecordatorio(envio.id, recordatorioAbierto.id);
+      setRecordatorio(null);
       if (onRefreshPedido) onRefreshPedido();
     } catch (e) {
       console.error(e);
@@ -233,10 +261,11 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
   };
 
   const cancelarRecordatorio = async () => {
-    if (!envio.recordatorio_id) return;
+    if (!recordatorioAbierto) return;
     setLoadingAccion(true);
     try {
-      await seguimientoService.cancelarRecordatorio(envio.id, envio.recordatorio_id);
+      await seguimientoService.cancelarRecordatorio(envio.id, recordatorioAbierto.id);
+      setRecordatorio(null);
       if (onRefreshPedido) onRefreshPedido();
     } catch (e) {
       console.error(e);
@@ -420,20 +449,23 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                   <Clock size={14}/> Próximo seguimiento
                 </h3>
 
-                {envio.recordatorio_id && envio.recordatorio_estado === 'PENDIENTE' ? (
-                  <div style={{ marginBottom: "1rem", padding: "0.75rem", background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", borderRadius: "6px" }}>
-                    <div style={{ fontSize: "0.85rem", fontWeight: "bold", color: "var(--color-primary-text)" }}>Programado para:</div>
-                    <div style={{ fontSize: "0.9rem", margin: "4px 0 10px 0" }}>{new Date(envio.recordatorio_ejecutar_en).toLocaleString('es-PY')}</div>
+                {recordatorioAbierto ? (
+                  <div style={{ marginBottom: "1rem", padding: "0.75rem", background: `color-mix(in srgb, var(${recordatorioVencido ? "--color-danger" : "--color-primary"}) 10%, transparent)`, borderRadius: "6px" }}>
+                    <div style={{ fontSize: "0.85rem", fontWeight: "bold", color: recordatorioVencido ? "var(--color-danger)" : "var(--color-primary-text)" }}>
+                      {recordatorioVencido ? "Seguimiento vencido" : "Programado para:"}
+                    </div>
+                    <div style={{ fontSize: "0.9rem", margin: "4px 0 0 0" }}>
+                      {recordatorioVencido ? "Era para el " : ""}{new Date(recordatorioAbierto.ejecutar_en).toLocaleString('es-PY')}
+                    </div>
+                    {recordatorioAbierto.nota && (
+                      <div style={{ fontSize: "0.8rem", color: "var(--color-fg-muted)", marginTop: "4px" }}>{recordatorioAbierto.nota}</div>
+                    )}
 
-                    <div style={{ display: "flex", gap: "6px" }}>
+                    <div style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
                       <button className="btn-secondary" style={{ flex: 1, padding: "4px", fontSize: "0.8rem" }} onClick={completar} disabled={loadingAccion}><Check size={14}/> Completar</button>
                       <button className="btn-secondary" style={{ flex: 1, padding: "4px", fontSize: "0.8rem", color: "var(--color-danger)" }} onClick={cancelarRecordatorio} disabled={loadingAccion}><Ban size={14}/> Cancelar</button>
                     </div>
                   </div>
-                ) : envio.recordatorio_id && envio.recordatorio_estado === 'VENCIDO' ? (
-                   <div style={{ marginBottom: "1rem", padding: "0.75rem", background: "color-mix(in srgb, var(--color-danger) 10%, transparent)", borderRadius: "6px" }}>
-                     <div style={{ fontSize: "0.85rem", fontWeight: "bold", color: "var(--color-danger)" }}>Seguimiento vencido</div>
-                   </div>
                 ) : (
                   <div style={{ marginBottom: "1rem", fontSize: "0.85rem", color: "var(--color-fg-muted)" }}>
                     Sin próximo seguimiento

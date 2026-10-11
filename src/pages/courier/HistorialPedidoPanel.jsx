@@ -54,7 +54,7 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
               {historial.map((h, i) => (
-                <div key={h.id} style={{ display: "flex", gap: "0.75rem", position: "relative", paddingBottom: i === historial.length - 1 ? 0 : "1rem" }}>
+                <div key={`${h.tipo}-${h.fecha}-${i}`} style={{ display: "flex", gap: "0.75rem", position: "relative", paddingBottom: i === historial.length - 1 ? 0 : "1rem" }}>
                                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <div style={{ 
                       width: "24px", height: "24px", borderRadius: "50%", 
