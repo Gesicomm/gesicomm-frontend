@@ -1,0 +1,468 @@
+/* ──────────────────────────────────────────────────────────────
+   Pestaña Resumen de Pedidos.
+
+   Autocontenida, igual que flujos-whatsapp.css: solo depende de los
+   tokens --color-* / --radius-* de index.css. Los botones son propios
+   (.rp-btn) para no depender de qué hoja global esté cargada.
+   ────────────────────────────────────────────────────────────── */
+
+.rp-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  color: var(--color-fg);
+}
+
+.rp-bloque {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.rp-bloque-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.rp-bloque-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.rp-sub {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-fg-muted);
+}
+
+.rp-sub strong { color: var(--color-fg); }
+
+.rp-head-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ─── Botones ─────────────────────────────────────────────── */
+
+.rp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 0.95rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-2);
+  color: var(--color-fg);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.rp-btn:hover:not(:disabled) { background: var(--color-surface-3); }
+.rp-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.rp-btn:focus-visible,
+.rp-shell button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+.rp-btn--primario {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-fg);
+}
+
+.rp-btn--primario:hover:not(:disabled) { background: var(--color-primary-hover); }
+.rp-btn--icono { padding: 0.5rem; }
+
+.rp-link {
+  margin-top: 0.85rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-primary-text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.rp-segmento {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+}
+
+.rp-segmento button {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: calc(var(--radius-md) - 3px);
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+}
+
+.rp-segmento button.active {
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* ─── KPIs ────────────────────────────────────────────────── */
+
+.rp-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.rp-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.8rem 0.95rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--rp-tono, var(--color-border-strong));
+  min-width: 0;
+}
+
+.rp-kpi--warning { --rp-tono: var(--color-warning); }
+.rp-kpi--info { --rp-tono: var(--color-info); }
+.rp-kpi--success { --rp-tono: var(--color-success); }
+.rp-kpi--danger { --rp-tono: var(--color-danger); }
+.rp-kpi--destacado { --rp-tono: var(--color-primary); }
+
+.rp-kpi-titulo {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-fg-subtle);
+}
+
+.rp-kpi-numero {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-kpi-monto {
+  font-size: 0.8rem;
+  color: var(--color-fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Tablero por fase ────────────────────────────────────── */
+
+.rp-flujo + .rp-flujo { margin-top: 1.1rem; }
+
+.rp-flujo-nombre {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-fg-subtle);
+}
+
+.rp-fases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.75rem;
+}
+
+.rp-fase {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  min-width: 0;
+}
+
+.rp-fase--activa { border-color: var(--color-primary); }
+
+.rp-fase header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.rp-fase-titulo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-fg-subtle);
+}
+
+.rp-fase-nombre {
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rp-fase-ahora {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-canvas);
+  color: var(--color-fg-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rp-fase-ahora strong {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-fg-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-fase--urgente .rp-fase-ahora {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-canvas));
+  border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+  color: var(--color-fg);
+}
+
+.rp-fase--urgente .rp-fase-ahora strong { color: var(--color-primary-text); }
+.rp-fase-ahora:hover { border-color: var(--color-primary); }
+.rp-fase-ahora.active { box-shadow: 0 0 0 2px var(--color-primary); }
+
+.rp-fase-resto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.rp-fase-resto button {
+  font: inherit;
+  font-size: 0.74rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+}
+
+.rp-fase-resto button strong { color: var(--color-fg); font-variant-numeric: tabular-nums; }
+.rp-fase-resto button:hover { border-color: var(--color-border-strong); }
+.rp-fase-resto button.active { border-color: var(--color-primary); color: var(--color-fg); }
+
+/* ─── Lista / cola ────────────────────────────────────────── */
+
+.rp-cola {
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.rp-cola-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.rp-cola-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rp-cuenta {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-surface-3);
+  color: var(--color-fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+.rp-chips button {
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+}
+
+.rp-chips button.active {
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+  color: var(--color-fg);
+}
+
+.rp-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rp-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-fg);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rp-fila:hover { border-color: var(--color-primary); background: var(--color-surface-3); }
+
+.rp-fila-principal {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.5rem;
+  min-width: 0;
+}
+
+.rp-fila-principal strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.rp-fila-pedido { color: var(--color-fg-subtle); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+
+.rp-fila-fase {
+  flex-basis: 100%;
+  font-size: 0.74rem;
+  color: var(--color-primary-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rp-fila-detalle {
+  color: var(--color-fg-muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rp-fila-motivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--color-fg-muted);
+  min-width: 0;
+}
+
+.rp-fila-motivo--vencido { color: var(--color-danger); font-weight: 600; }
+.rp-fila-motivo--nuevo { color: var(--color-warning); font-weight: 600; }
+
+.rp-fila-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-primary-text);
+  white-space: nowrap;
+}
+
+.rp-cola-vacia,
+.rp-vacio {
+  margin: 0;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--color-fg-muted);
+  font-size: 0.88rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.rp-vacio { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
+.rp-vacio p { margin: 0; max-width: 46ch; }
+
+.rp-aviso {
+  margin: 0 0 0.85rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  color: var(--color-warning);
+}
+
+.rp-estado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 3rem 1rem;
+  color: var(--color-fg-muted);
+}
+
+.rp-estado--error { color: var(--color-danger); flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .rp-fila {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.3rem 0.75rem;
+  }
+  .rp-fila-detalle,
+  .rp-fila-motivo { grid-column: 1 / 2; }
+  .rp-fila-accion { grid-column: 2 / 3; grid-row: 1 / 4; }
+  .rp-bloque { padding: 0.95rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-btn { transition: none; }
+}

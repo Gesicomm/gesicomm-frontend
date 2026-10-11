@@ -173,6 +173,12 @@ export const getConteoPorAbastecimiento = async (filtros = {}) => {
 };
 
 /** Resumen financiero minimalista de la pestaña Entregados (ver plan sección 22). */
+/** Pestaña Resumen: pedidos del período + mensajes de WhatsApp por enviar, agrupados por fase. */
+export const getResumenPedidos = async (filtros = {}) => {
+  const { data } = await api.post('/envios/resumen', filtros);
+  return data;
+};
+
 export const getResumenEntregados = async (filtros = {}) => {
   const { data } = await api.post('/envios/resumen-entregados', filtros);
   return data;

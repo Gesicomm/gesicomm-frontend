@@ -1,6 +1,6 @@
 ﻿import { useMemo, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck } from "lucide-react";
+import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck, ListChecks } from "lucide-react";
 import { verificarSesion } from "../../utils/auth";
 import { PedidosTable } from "./PedidosTable";
 import { DeliveryPanel } from "./DeliveryPanel";
@@ -19,6 +19,7 @@ import { ResumenPedidoPanel } from "./ResumenPedidoPanel";
 import { HistorialPedidoPanel } from "./HistorialPedidoPanel";
 import { RendicionTab } from "./RendicionTab";
 import { SeguimientoPanel } from "./SeguimientoPanel";
+import { ResumenTab } from "./ResumenTab";
 import {
   getCouriers,
   getEnvios,
@@ -43,7 +44,7 @@ import "./courier.css";
 
 // Abastecimiento ya no es una pestaña de acá: vive en su propia sección
 // (/abastecimiento), porque como pestaña quedaba escondida.
-const TABS_VALIDOS = new Set(["tablero", "delivery", "rendicion", "analitica"]);
+const TABS_VALIDOS = new Set(["resumen", "tablero", "delivery", "rendicion", "analitica"]);
 const CLAVE_TAB = "gesicomm:pedidosTab";
 
 // La pestaña activa nunca viaja por query string: llega como router state
@@ -54,7 +55,9 @@ function tabInicial(estadoNavegacion) {
     const guardada = window.sessionStorage.getItem(CLAVE_TAB);
     if (TABS_VALIDOS.has(guardada)) return guardada;
   } catch { /* sin storage */ }
-  return "tablero";
+  // Se entra por el Resumen: lo primero que hay que ver son los mensajes
+  // que quedaron pendientes de enviar.
+  return "resumen";
 }
 
 export function ControlCourier() {
@@ -379,6 +382,9 @@ export function ControlCourier() {
         </div>
 
         <nav className="courier-tabs" aria-label="Secciones de pedidos">
+          <TabButton active={tab === "resumen"} onClick={() => seleccionarTab("resumen")} icon={<ListChecks size={16} />}>
+            Resumen
+          </TabButton>
           <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />} badge={pagosPendientesCount}>
             Tablero
           </TabButton>
@@ -395,7 +401,9 @@ export function ControlCourier() {
       </div>
 
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
-        {tab === "tablero" ? (
+        {tab === "resumen" ? (
+          <ResumenTab onIrAlTablero={() => seleccionarTab("tablero")} />
+        ) : tab === "tablero" ? (
           // Bandeja operativa: sin dashboard arriba, ocupa casi toda la
           // pantalla — los indicadores generales viven en "Analítica" aparte.
           <PedidosTable

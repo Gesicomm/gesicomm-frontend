@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { X, MessageCircle, Clock, Check, Tag, Loader2, Ban, Circle, CheckCircle2, RotateCcw, Send, Bell } from "lucide-react";
+import { X, MessageCircle, Clock, Check, Tag, Loader2, Ban, Circle, CheckCircle2, RotateCcw, Send, Bell, ChevronRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import Select, { components } from "react-select";
 import { seguimientoService } from "../../services/seguimiento.service";
 import { formatEspera } from "./variablesWhatsapp";
+import { numeroPedidoVisible } from "./pedidoNumero";
+import { formatGs } from "../../lib/courier";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -84,7 +86,21 @@ function recordatorioDeEnvio(envio) {
   };
 }
 
-export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
+/** A quién se le está escribiendo: sin esto el panel era "un WhatsApp" sin nombre ni pedido. */
+function contextoDelPedido(envio) {
+  const cliente = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ").trim() || envio.cliente || "";
+  const productos = envio.productos_texto
+    || (envio.items || []).map((i) => `${i.nombre_producto}${Number(i.cantidad) > 1 ? ` x${i.cantidad}` : ""}`).join(", ");
+  return { cliente, productos };
+}
+
+/**
+ * @param {number|null} faseSugeridaId  fase que toca mandar ahora (la marca y abre su vista previa).
+ * @param {object|null} cola            { posicion, total, onSiguiente, onAnterior } cuando el panel se
+ *                                      recorre como cola de trabajo desde el Resumen.
+ * @param {object} servicio             solo para el banco de pruebas (/dev/resumen).
+ */
+export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
   const [flujos, setFlujos] = useState([]);
   const [flujoId, setFlujoId] = useState(null);
   const [configuracion, setConfiguracion] = useState(null);
@@ -95,6 +111,10 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
   const [faseEnviando, setFaseEnviando] = useState(null);
   const [horasProgramadas, setHorasProgramadas] = useState(null);
   const [recordatorio, setRecordatorio] = useState(null);
+  // Fase cuyo mensaje se está viendo antes de abrir WhatsApp.
+  const [faseVista, setFaseVista] = useState(null);
+  // Fase que hay que guardar con el recordatorio cuando se ajusta la fecha a mano ("Cambiar").
+  const [fasePendienteId, setFasePendienteId] = useState(null);
 
   // Propuesta de recordatorio que aparece después de abrir una fase.
   const [propuesta, setPropuesta] = useState(null);
@@ -104,10 +124,12 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
   const [notaRecordatorio, setNotaRecordatorio] = useState("");
 
   const cargarFlujos = useCallback(async (envioId) => {
-    const resFlujos = await seguimientoService.getFlujosPedido(envioId);
+    const resFlujos = await servicio.getFlujosPedido(envioId);
     setFlujos(resFlujos || []);
     return resFlujos || [];
-  }, []);
+  }, [servicio]);
+
+  const faseQueToca = faseSugeridaId ?? envio?.recordatorio_fase_id ?? null;
 
   useEffect(() => {
     if (!open || !envio) return;
@@ -116,20 +138,27 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     setCargando(true);
     setPropuesta(null);
     setRecordatorio(recordatorioDeEnvio(envio));
+    setFaseVista(faseQueToca);
+    setFasePendienteId(null);
+    setNotaRecordatorio("");
+    setHorasProgramadas(null);
+    setFechaCustom("");
     setTelefonoPersonalizado(envio.telefono || "");
 
     Promise.all([
-      seguimientoService.getFlujosPedido(envio.id),
-      seguimientoService.getConfiguracion(),
-      seguimientoService.getEtiquetasPedido(envio.id),
-      seguimientoService.getEtiquetas()
+      servicio.getFlujosPedido(envio.id),
+      servicio.getConfiguracion(),
+      servicio.getEtiquetasPedido(envio.id),
+      servicio.getEtiquetas()
     ]).then(([resFlujos, resConfig, resEtiqPed, resEtiqDisp]) => {
       if (!activo) return;
       const lista = resFlujos || [];
       setFlujos(lista);
-      // Arranca en el flujo que ya se venía usando con este pedido.
+      // Arranca en el flujo de la fase que toca; si no hay, en el que ya se
+      // venía usando con este pedido.
+      const delaFase = faseQueToca ? lista.find(f => (f.fases || []).some(x => x.id === faseQueToca)) : null;
       const enUso = lista.find(f => (f.envios_totales || 0) > 0);
-      setFlujoId((enUso || lista[0])?.id ?? null);
+      setFlujoId((delaFase || enUso || lista[0])?.id ?? null);
       setConfiguracion(resConfig || { tiempos_rapidos_horas: [1, 2, 4, 8, 24] });
       setEtiquetasPedido(resEtiqPed || []);
       setEtiquetasDisponibles(resEtiqDisp || []);
@@ -140,7 +169,14 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     });
 
     return () => { activo = false; };
-  }, [open, envio]);
+  }, [open, envio, servicio, faseQueToca]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const alEscape = (e) => { if (e.key === "Escape") onClose?.(); };
+    document.addEventListener("keydown", alEscape);
+    return () => document.removeEventListener("keydown", alEscape);
+  }, [open, onClose]);
 
   // VENCIDO sigue siendo un recordatorio abierto: es el que más hace falta
   // poder cerrar desde acá.
@@ -160,11 +196,13 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     setFaseEnviando(fase.id);
     setPropuesta(null);
     try {
-      const res = await seguimientoService.crearContacto(envio.id, {
+      const res = await servicio.crearContacto(envio.id, {
         fase_id: fase.id,
         telefono: telefonoPersonalizado || envio.telefono
       });
       if (res.whatsapp_url) window.open(res.whatsapp_url, '_blank');
+      const cumplidos = res.recordatorios_cumplidos || [];
+      setRecordatorio(prev => (prev && cumplidos.includes(prev.id) ? null : prev));
 
       const actualizados = await cargarFlujos(envio.id);
       const flujoActual = actualizados.find(f => f.id === fase.flujo_id) || flujo;
@@ -173,7 +211,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
         setPropuesta({ fase: siguiente, minutos: siguiente.espera_sugerida_minutos });
       }
 
-      const resEtiqPed = await seguimientoService.getEtiquetasPedido(envio.id);
+      const resEtiqPed = await servicio.getEtiquetasPedido(envio.id);
       setEtiquetasPedido(resEtiqPed || []);
       if (onRefreshPedido) onRefreshPedido();
     } catch (err) {
@@ -189,13 +227,16 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     if (!propuesta) return;
     setLoadingAccion(true);
     try {
-      const agendado = await seguimientoService.programarRecordatorio(envio.id, {
+      const agendado = await servicio.programarRecordatorio(envio.id, {
         ejecutar_en: new Date(Date.now() + propuesta.minutos * 60 * 1000).toISOString(),
-        nota: `Enviar "${propuesta.fase.nombre}" (Fase ${propuesta.fase.orden}) si el cliente no responde`
+        nota: `Enviar "${propuesta.fase.nombre}" (Fase ${propuesta.fase.orden}) si el cliente no responde`,
+        fase_id: propuesta.fase.id,
       });
       setRecordatorio(agendado);
       setPropuesta(null);
       if (onRefreshPedido) onRefreshPedido();
+      // En la cola de trabajo, agendar el próximo contacto cierra este pedido.
+      cola?.onSiguiente?.();
     } catch (e) {
       console.error(e);
       alert(e.response?.data?.error || "No se pudo agendar el recordatorio");
@@ -210,7 +251,13 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     setFechaCustom(dentroDeMinutosLocal(propuesta.minutos));
     setHorasProgramadas('custom');
     setNotaRecordatorio(`Enviar "${propuesta.fase.nombre}" (Fase ${propuesta.fase.orden}) si el cliente no responde`);
+    setFasePendienteId(propuesta.fase.id);
     setPropuesta(null);
+  };
+
+  const descartarPropuesta = () => {
+    setPropuesta(null);
+    cola?.onSiguiente?.();
   };
 
   const guardarNotaORecordatorio = async () => {
@@ -218,19 +265,21 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     try {
       if (horasProgramadas || fechaCustom) {
         const payload = { nota: notaRecordatorio.trim() };
+        if (fasePendienteId) payload.fase_id = fasePendienteId;
         if (horasProgramadas && horasProgramadas !== 'custom') {
           payload.horas = horasProgramadas;
         } else if (fechaCustom) {
           payload.ejecutar_en = new Date(fechaCustom).toISOString();
         }
-        const agendado = await seguimientoService.programarRecordatorio(envio.id, payload);
+        const agendado = await servicio.programarRecordatorio(envio.id, payload);
         setRecordatorio(agendado);
       } else if (notaRecordatorio.trim()) {
-        await seguimientoService.guardarNota(envio.id, notaRecordatorio.trim());
+        await servicio.guardarNota(envio.id, notaRecordatorio.trim());
       }
       setNotaRecordatorio("");
       setHorasProgramadas(null);
       setFechaCustom("");
+      setFasePendienteId(null);
       if (onRefreshPedido) onRefreshPedido();
     } catch (err) {
       console.error(err);
@@ -249,7 +298,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     if (!recordatorioAbierto) return;
     setLoadingAccion(true);
     try {
-      await seguimientoService.completarRecordatorio(envio.id, recordatorioAbierto.id);
+      await servicio.completarRecordatorio(envio.id, recordatorioAbierto.id);
       setRecordatorio(null);
       if (onRefreshPedido) onRefreshPedido();
     } catch (e) {
@@ -264,7 +313,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     if (!recordatorioAbierto) return;
     setLoadingAccion(true);
     try {
-      await seguimientoService.cancelarRecordatorio(envio.id, recordatorioAbierto.id);
+      await servicio.cancelarRecordatorio(envio.id, recordatorioAbierto.id);
       setRecordatorio(null);
       if (onRefreshPedido) onRefreshPedido();
     } catch (e) {
@@ -283,8 +332,8 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     setEtiquetasPedido(prev => [...prev, tempEntry]);
     setLoadingAccion(true);
     try {
-      await seguimientoService.addEtiquetaPedido(envio.id, optValue);
-      const resEtiqPed = await seguimientoService.getEtiquetasPedido(envio.id);
+      await servicio.addEtiquetaPedido(envio.id, optValue);
+      const resEtiqPed = await servicio.getEtiquetasPedido(envio.id);
       setEtiquetasPedido(resEtiqPed || []);
     } catch (err) {
       console.error(err);
@@ -300,7 +349,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     setEtiquetasPedido(etiquetasPedido.filter(e => e.etiqueta_id !== etiquetaId));
     setLoadingAccion(true);
     try {
-      await seguimientoService.removeEtiquetaPedido(envio.id, etiquetaId);
+      await servicio.removeEtiquetaPedido(envio.id, etiquetaId);
     } catch (err) {
       console.error(err);
       setEtiquetasPedido(prev);
@@ -312,18 +361,30 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
 
   if (!open || !envio) return null;
 
+  const { cliente, productos } = contextoDelPedido(envio);
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
-      <div style={{ width: "460px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
-          <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <MessageCircle size={18} color="var(--color-primary-text)" /> Seguimiento por WhatsApp
-          </h2>
+      <div role="dialog" aria-modal="true" aria-label={`Seguimiento por WhatsApp del pedido ${numeroPedidoVisible(envio)}`} style={{ width: "460px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.75rem", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <MessageCircle size={18} color="var(--color-primary-text)" style={{ flexShrink: 0 }} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                Pedido #{numeroPedidoVisible(envio)}{cliente ? ` · ${cliente}` : ""}
+              </span>
+            </h2>
+            {(productos || Number(envio.monto) > 0) && (
+              <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "var(--color-fg-muted)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {[productos, Number(envio.monto) > 0 ? formatGs(envio.monto) : null].filter(Boolean).join(" · ")}
+              </p>
+            )}
+          </div>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <button type="button" className="icon-button" onClick={() => window.open("/pedidos/configuracion", "_blank")} title="Configuración de flujos y etiquetas">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
-            <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
+            <button type="button" className="close-btn dark" onClick={onClose} aria-label="Cerrar"><X size={18} /></button>
           </div>
         </div>
 
@@ -406,6 +467,9 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                         <FaseFila
                           key={fase.id}
                           fase={fase}
+                          sugerida={fase.id === faseQueToca}
+                          vistaAbierta={fase.id === faseVista}
+                          onVerMensaje={() => setFaseVista(v => (v === fase.id ? null : fase.id))}
                           enviando={faseEnviando === fase.id}
                           deshabilitado={!!faseEnviando}
                           onAbrir={() => abrirFase(fase)}
@@ -435,7 +499,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                             En {formatEspera(propuesta.minutos)}
                           </button>
                           <button className="btn-secondary" style={{ padding: "5px 12px", fontSize: "0.8rem" }} onClick={editarPropuesta} disabled={loadingAccion}>Cambiar</button>
-                          <button className="btn-secondary" style={{ padding: "5px 12px", fontSize: "0.8rem" }} onClick={() => setPropuesta(null)} disabled={loadingAccion}>No recordar</button>
+                          <button className="btn-secondary" style={{ padding: "5px 12px", fontSize: "0.8rem" }} onClick={descartarPropuesta} disabled={loadingAccion}>No recordar</button>
                         </div>
                       </div>
                     )}
@@ -523,6 +587,22 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
             </div>
           )}
         </div>
+
+        {cola && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", padding: "0.75rem 1.25rem", borderTop: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)", background: "var(--color-surface-2)" }}>
+            <span style={{ fontSize: "0.8rem", color: "var(--color-fg-muted)", fontVariantNumeric: "tabular-nums" }}>
+              Pedido {cola.posicion} de {cola.total}
+            </span>
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button type="button" className="btn-secondary" style={{ padding: "6px 10px", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "4px" }} onClick={cola.onAnterior} disabled={cola.posicion <= 1}>
+                <ChevronLeft size={14} /> Anterior
+              </button>
+              <button type="button" className="btn-primary" style={{ padding: "6px 12px", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "4px" }} onClick={cola.onSiguiente}>
+                {cola.posicion >= cola.total ? "Terminar" : "Siguiente pedido"} <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -532,57 +612,81 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
  * Una fase del flujo dentro del pedido. Siempre se puede abrir: haberla
  * abierto antes no la bloquea, solo cambia lo que dice el botón.
  */
-function FaseFila({ fase, enviando, deshabilitado, onAbrir }) {
+function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, enviando, deshabilitado, onAbrir }) {
   const abierta = (fase.envios || 0) > 0;
+  // El botón verde es "lo que hay que hacer": la fase que toca, o una que
+  // todavía no se abrió nunca.
+  const destacar = sugerida || !abierta;
+  const borde = sugerida
+    ? "color-mix(in srgb, var(--color-primary) 55%, transparent)"
+    : abierta
+      ? "color-mix(in srgb, var(--color-success) 35%, transparent)"
+      : "color-mix(in srgb, var(--color-fg) 10%, transparent)";
 
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "flex-start",
-      gap: "10px",
-      padding: "10px 12px",
-      borderRadius: "8px",
-      background: "var(--color-canvas)",
-      border: `1px solid ${abierta ? "color-mix(in srgb, var(--color-success) 35%, transparent)" : "color-mix(in srgb, var(--color-fg) 10%, transparent)"}`,
-    }}>
-      <div style={{ paddingTop: "2px", color: abierta ? "var(--color-success)" : "var(--color-fg-subtle)", flexShrink: 0 }}>
-        {abierta ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+    <div style={{ borderRadius: "8px", background: "var(--color-canvas)", border: `1px solid ${borde}` }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 12px" }}>
+        <div style={{ paddingTop: "2px", color: abierta ? "var(--color-success)" : "var(--color-fg-subtle)", flexShrink: 0 }}>
+          {abierta ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: "0.85rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+            Fase {fase.orden} — {fase.nombre}
+            {sugerida && (
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", borderRadius: "999px", background: "color-mix(in srgb, var(--color-primary) 18%, transparent)", color: "var(--color-primary-text)" }}>
+                Toca ahora
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "var(--color-fg-muted)", marginTop: "2px" }}>
+            {abierta
+              ? `Abierta ${formatMomento(fase.ultimo_envio_en)}${fase.envios > 1 ? ` · ${fase.envios} veces` : ""}`
+              : fase.espera_sugerida_minutos > 0
+                ? `Sugerida ${formatEspera(fase.espera_sugerida_minutos)} después de la anterior`
+                : "Sin enviar"}
+          </div>
+          {fase.mensaje_resuelto && onVerMensaje && (
+            <button
+              type="button"
+              onClick={onVerMensaje}
+              aria-expanded={vistaAbierta}
+              style={{ marginTop: "6px", padding: 0, background: "none", border: "none", cursor: "pointer", color: "var(--color-primary-text)", fontSize: "0.75rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}
+            >
+              {vistaAbierta ? <EyeOff size={12} /> : <Eye size={12} />}
+              {vistaAbierta ? "Ocultar mensaje" : "Ver mensaje"}
+            </button>
+          )}
+        </div>
+
+        <button
+          className="btn-secondary"
+          style={{
+            padding: "5px 10px",
+            fontSize: "0.75rem",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            ...(destacar ? { background: "var(--color-success)", borderColor: "var(--color-success)", color: "#fff" } : {}),
+          }}
+          onClick={onAbrir}
+          disabled={deshabilitado}
+          title={abierta ? "Volver a abrir esta fase en WhatsApp" : "Abrir esta fase en WhatsApp"}
+        >
+          {enviando
+            ? <Loader2 size={13} className="animate-spin" />
+            : abierta ? <RotateCcw size={13} /> : <Send size={13} />}
+          {abierta ? "Abrir otra vez" : "Abrir en WhatsApp"}
+        </button>
       </div>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>
-          Fase {fase.orden} — {fase.nombre}
+      {vistaAbierta && fase.mensaje_resuelto && (
+        <div style={{ margin: "0 12px 12px 38px", padding: "8px 10px", borderRadius: "8px", background: "color-mix(in srgb, var(--color-success) 9%, transparent)", border: "1px solid color-mix(in srgb, var(--color-success) 22%, transparent)", fontSize: "0.8rem", lineHeight: 1.45, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+          {fase.mensaje_resuelto}
         </div>
-        <div style={{ fontSize: "0.75rem", color: "var(--color-fg-muted)", marginTop: "2px" }}>
-          {abierta
-            ? `Abierta ${formatMomento(fase.ultimo_envio_en)}${fase.envios > 1 ? ` · ${fase.envios} veces` : ""}`
-            : fase.espera_sugerida_minutos > 0
-              ? `Sugerida ${formatEspera(fase.espera_sugerida_minutos)} después de la anterior`
-              : "Sin enviar"}
-        </div>
-      </div>
-
-      <button
-        className="btn-secondary"
-        style={{
-          padding: "5px 10px",
-          fontSize: "0.75rem",
-          whiteSpace: "nowrap",
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          gap: "5px",
-          ...(abierta ? {} : { background: "#10b981", borderColor: "#10b981", color: "#fff" }),
-        }}
-        onClick={onAbrir}
-        disabled={deshabilitado}
-        title={abierta ? "Volver a abrir esta fase en WhatsApp" : "Abrir esta fase en WhatsApp"}
-      >
-        {enviando
-          ? <Loader2 size={13} className="animate-spin" />
-          : abierta ? <RotateCcw size={13} /> : <Send size={13} />}
-        {abierta ? "Abrir otra vez" : "Abrir en WhatsApp"}
-      </button>
+      )}
     </div>
   );
 }
