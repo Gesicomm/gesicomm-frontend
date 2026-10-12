@@ -61,19 +61,62 @@ export function extraerGlobalesTienda(html = '') {
   return { inicio, fin, html: bloque };
 }
 
+// Un pie normal (marca, políticas, contacto, redes) entra holgado; por
+// encima de esto ya trae contenido de página (un catálogo, un formulario
+// largo) y clonarlo en todas las vistas haría más daño que dejarlo.
+const LIMITE_PIE = 20000;
+
+/**
+ * El pie de la tienda: el último <footer> del HTML. El último y no el
+ * primero porque una tarjeta de opinión o un <article> pueden traer su
+ * propio <footer> adentro; el de la página siempre cierra el documento.
+ */
+export function extraerPieTienda(html = '') {
+  const fin = html.toLowerCase().lastIndexOf('</footer>');
+  if (fin < 0) return null;
+  const aperturas = [...html.slice(0, fin).matchAll(/<footer\b[^>]*>/gi)];
+  const apertura = aperturas[aperturas.length - 1];
+  if (!apertura) return null;
+  const finPie = fin + '</footer>'.length;
+  const bloque = html.slice(apertura.index, finPie);
+  if (bloque.length > LIMITE_PIE) return null;
+  return { inicio: apertura.index, fin: finPie, html: bloque };
+}
+
 export function conGlobalesHeredados(codigoVista, codigoInicio) {
   if (!codigoVista?.html || !codigoInicio?.html || codigoVista === codigoInicio) return codigoVista;
+  let html = codigoVista.html;
+  let heredo = false;
+
   const globalInicio = extraerGlobalesTienda(codigoInicio.html);
-  if (!globalInicio) return codigoVista;
-  const globalVista = extraerGlobalesTienda(codigoVista.html);
+  const globalVista = globalInicio ? extraerGlobalesTienda(html) : null;
   // Si no se puede ubicar con seguridad el header/anuncios propio de esta
   // vista (header con hero de fondo, demasiado grande, etc.) no hay forma
   // segura de reemplazarlo — y pegar el global ARRIBA sin sacar el suyo
   // duplica la barra de anuncios y el header (uno roto, sin su lugar en el
   // documento, y el propio de la vista debajo). Mejor dejar la vista con lo
   // que ya tiene antes que duplicar.
-  if (!globalVista) return codigoVista;
-  const html = `${codigoVista.html.slice(0, globalVista.inicio)}${globalInicio.html}${codigoVista.html.slice(globalVista.fin)}`;
+  if (globalInicio && globalVista) {
+    html = `${html.slice(0, globalVista.inicio)}${globalInicio.html}${html.slice(globalVista.fin)}`;
+    heredo = true;
+  }
+
+  // El pie también es de la tienda, no de cada vista. Antes solo se heredaba
+  // el header: una ficha o un checkout con su propio <footer> (el que
+  // escribió una IA, o una copia vieja de la plantilla) mostraba un pie
+  // distinto al del inicio — sin columna de contacto, con otros links. El
+  // del inicio reemplaza al de la vista; si la vista no trae ninguno se
+  // agrega al final, así tampoco cae al pie genérico del sistema.
+  const pieInicio = extraerPieTienda(codigoInicio.html);
+  if (pieInicio) {
+    const pieVista = extraerPieTienda(html);
+    html = pieVista
+      ? `${html.slice(0, pieVista.inicio)}${pieInicio.html}${html.slice(pieVista.fin)}`
+      : `${html}\n${pieInicio.html}`;
+    heredo = true;
+  }
+
+  if (!heredo) return codigoVista;
   return {
     ...codigoVista,
     html,
