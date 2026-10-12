@@ -188,6 +188,25 @@ export async function crearCheckoutLanding(slug, payload) {
  * @returns {{items: Array, subtotal: number, total: number}}
  * @throws {Error} con el mensaje que mandó el backend.
  */
+/**
+ * Productos puntuales de un lienzo, completos (variantes, ofertas, galería).
+ * La landing ya no trae todo el catálogo: el carrito pide por acá los que no
+ * recibió enteros, para poder ofrecer su order bump y sus upsells.
+ * @param {string[]} contentIds
+ * @returns {Promise<Array>} [] si el backend no los tiene o todavía no expone la ruta.
+ */
+export async function obtenerProductosLandingPublica(slug, contentIds) {
+  const path = slug ? `/api/l/${encodeURIComponent(slug)}/productos` : '/api/l/productos';
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content_ids: contentIds }),
+  });
+  if (!res.ok) return [];
+  const data = await res.json().catch(() => null);
+  return Array.isArray(data?.items) ? data.items : [];
+}
+
 export async function recalcularCarritoLanding(slug, items) {
   const path = slug ? `/api/l/${encodeURIComponent(slug)}/carrito` : '/api/l/carrito';
   const res = await fetch(path, {

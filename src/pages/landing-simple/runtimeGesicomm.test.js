@@ -1256,6 +1256,68 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'producto', producto: 'air-fryer-26l' });
   });
 
+  it('tienda grande: el buscador del header le pregunta al servidor y muestra lo que encontró', async () => {
+    const grande = { ...datos, catalogo: { total: 366, paginado: true } };
+    const { window, document, mensajes, click } = montar(PLANTILLA_INICIO, grande);
+    click('[data-gesicomm-search-toggle]');
+    const input = document.querySelector('#gesicomm-search-panel [data-gesicomm-buscar]');
+    input.value = 'licu';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    // En memoria no hay ninguna licuadora: sin el servidor, "no existe".
+    expect(document.querySelectorAll('[data-gesicomm-search-result]')).toHaveLength(0);
+
+    await new Promise(r => setTimeout(r, 400));
+    const pedido = mensajes.filter(m => m.tipo === 'gesicomm:buscar').at(-1);
+    expect(pedido).toMatchObject({ busqueda: 'licu' });
+    const licuadora = { ...airFryer, id: 'licuadora-turbo', nombre: 'Licuadora Turbo', url: '/licuadora-turbo' };
+    window.dispatchEvent(new window.MessageEvent('message', {
+      source: window,
+      data: { tipo: 'gesicomm:buscar-respuesta', id: pedido.id, busqueda: 'licu', productos: [licuadora] },
+    }));
+    const resultados = [...document.querySelectorAll('[data-gesicomm-search-result]')];
+    expect(resultados.map(el => el.getAttribute('data-gesicomm-search-result'))).toEqual(['licuadora-turbo']);
+    resultados[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'producto', producto: 'licuadora-turbo' });
+
+    // Una respuesta vieja (el visitante ya escribió otra cosa) no pisa nada.
+    input.value = 'licuad';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 400));
+    window.dispatchEvent(new window.MessageEvent('message', {
+      source: window,
+      data: { tipo: 'gesicomm:buscar-respuesta', id: pedido.id, busqueda: 'licuad', productos: [airFryer] },
+    }));
+    expect(document.querySelector('[data-gesicomm-search-result="air-fryer-26l"]')).toBeNull();
+  });
+
+  it('catálogo chico: el buscador del header resuelve en memoria, sin pedirle nada al servidor', async () => {
+    const { window, document, mensajes, click } = montar(PLANTILLA_INICIO, datos);
+    click('[data-gesicomm-search-toggle]');
+    const input = document.querySelector('#gesicomm-search-panel [data-gesicomm-buscar]');
+    input.value = 'fry';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 400));
+    expect(mensajes.some(m => m.tipo === 'gesicomm:buscar')).toBe(false);
+  });
+
+  it('tienda grande: las categorías salen de las que manda el servidor, no de los productos recibidos', () => {
+    const grande = {
+      ...datos,
+      catalogo: { total: 366, paginado: true },
+      categorias: [
+        { nombre: 'Audio', cantidad: 100, imagen: 'https://cdn.test/audio.webp' },
+        { nombre: 'Cocina', cantidad: 200, imagen: null },
+      ],
+    };
+    const { window } = montar(PLANTILLA_INICIO, grande);
+    const html = window.document.querySelector('[data-gesicomm-lista="menu_categorias"]').innerHTML;
+    // "Audio" no tiene ningún producto entre los recibidos y aparece igual, con su cantidad real.
+    expect(html).toContain('Audio');
+    expect(html).toContain('100 productos');
+    expect(html).toContain('200 productos');
+    expect(html).toContain('https://cdn.test/audio.webp');
+  });
+
   it('el header móvil abre/cierra búsqueda completa y menú lateral', () => {
     const { document, click } = montar(PLANTILLA_INICIO, datos);
     const estilos = [...document.querySelectorAll('style')].map(el => el.textContent).join('\n');

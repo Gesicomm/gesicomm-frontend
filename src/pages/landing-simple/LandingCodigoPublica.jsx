@@ -5,7 +5,7 @@ import { PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esCheckout
 import { datosRuntimePublico, urlProducto, itemPublicoARuntime, urlPaginaTienda, PAGINAS_TIENDA, ofertaCruzadaVisible } from './datosRuntime';
 import { generarEventId, leerCookiesFacebook, trackearEvento, trackearEventoPersonalizado } from '../../lib/metaPixel';
 import { trackearEventoGA } from '../../lib/googleAnalytics';
-import { registrarEventoLanding, obtenerCatalogoLandingPublica, obtenerGeografiaPublica } from '../../services/landingPublicaService';
+import { registrarEventoLanding, obtenerCatalogoLandingPublica, obtenerGeografiaPublica, obtenerProductosLandingPublica } from '../../services/landingPublicaService';
 import CartDrawer from '../landing/CartDrawer';
 import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
 import { getMediaUrl } from '../../services/api';
@@ -180,13 +180,34 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   // página 7 tiene que encontrar el producto (y el carrito, sus ofertas).
   const [extras, setExtras] = useState([]);
   useEffect(() => { setExtras([]); }, [data]);
+  // Productos del carrito pedidos aparte, completos (ver el efecto de abajo).
+  const [completos, setCompletos] = useState([]);
+  const completosPedidos = useRef(new Set());
   const productos = useMemo(() => {
     const base = data?.catalogo_items || data?.items || [];
-    if (!extras.length) return base;
-    const ids = new Set(base.map(i => i.content_id));
-    return [...base, ...extras.filter(i => !ids.has(i.content_id))];
-  }, [data, extras]);
+    if (!extras.length && !completos.length) return base;
+    // Gana el primero: lo que vino con la landing, después lo pedido completo
+    // y recién al final las páginas del listado, que son livianas.
+    const ids = new Set();
+    return [...base, ...completos, ...extras].filter(i => (ids.has(i.content_id) ? false : (ids.add(i.content_id), true)));
+  }, [data, extras, completos]);
   const cartState = useStoreCart(slug, data, productos);
+  // Una tienda grande manda completos solo los primeros productos y las
+  // páginas del listado vienen sin ofertas. Si el carrito tiene un producto
+  // que no llegó entero (se agregó en otra visita, o desde el listado), el
+  // order bump del checkout y los upsells del carrito no tendrían de dónde
+  // salir: se piden al servidor esos productos puntuales, una sola vez.
+  useEffect(() => {
+    if (!data) return;
+    const base = new Set((data.catalogo_items || data.items || []).map(i => i.content_id));
+    const faltan = [...new Set(Array.from(cartState.carrito.values()).map(it => it.contentId).filter(Boolean))]
+      .filter(id => !base.has(id) && !completosPedidos.current.has(id));
+    if (!faltan.length) return;
+    faltan.forEach(id => completosPedidos.current.add(id));
+    obtenerProductosLandingPublica(slug, faltan)
+      .then(items => { if (items.length) setCompletos(prev => [...prev, ...items]); })
+      .catch(() => {}); // sin estos productos el carrito sigue funcionando, solo no sugiere ofertas
+  }, [data, slug, cartState.carrito]);
   const [checkoutEstado, setCheckoutEstado] = useState(null);
   // Confirmar en la página de checkout: primero el upsell (lo pregunta el
   // CartDrawer, que es donde vive ese popup) y recién después el pedido.
