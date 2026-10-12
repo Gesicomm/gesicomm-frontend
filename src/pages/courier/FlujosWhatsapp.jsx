@@ -2,7 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMe
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   Plus, Trash2, Edit2, Loader2, GripVertical, Copy, X, Search,
-  Clock, AlertCircle, Tag, Eye, Check, ArrowLeft, Info,
+  Clock, AlertCircle, Tag, Eye, Check, ArrowLeft, Info, Clipboard,
 } from "lucide-react";
 import { seguimientoService } from "../../services/seguimiento.service";
 import {
@@ -39,6 +39,180 @@ const faseNueva = (indice) => ({
 const ETAPA_RECOMPRA = "ESCALAMIENTO_VENTAS";
 const TRES_DIAS = 3 * 24 * 60;
 
+const PROMPT_CONFIRMACION_PEDIDO_WEB = String.raw`Actúa como especialista en ventas conversacionales por WhatsApp, seguimiento de pedidos de e-commerce y persuasión aplicada.
+
+Tu tarea es crear una secuencia profesional de seguimiento para personas que YA realizaron un pedido mediante una página web, dejaron su número de WhatsApp y todavía no han confirmado completamente la entrega.
+
+El objetivo de la secuencia NO es volver a vender el producto desde cero. El prospecto ya manifestó intención de compra.
+
+El objetivo principal es conseguir que la persona responda y completar la confirmación del pedido obteniendo, cuando corresponda:
+
+- Confirmación de que mantiene el pedido.
+- Ubicación o dirección de entrega.
+- Referencia para encontrar el domicilio.
+- Horario recomendado para entregar.
+- Cualquier indicación necesaria para completar correctamente la entrega.
+
+La secuencia dura un máximo de 3 días y debe contener exactamente 8 contactos:
+
+DÍA 1
+- Mensaje 1
+- Mensaje 2
+- Mensaje 3
+
+DÍA 2
+- Mensaje 4
+- Mensaje 5
+- Mensaje 6
+
+DÍA 3
+- Mensaje 7
+- Mensaje 8
+
+Si el prospecto responde, confirma el pedido o proporciona la información necesaria para completar la entrega, la secuencia automática debe detenerse.
+
+No continúes enviando mensajes a alguien que ya confirmó.
+
+La secuencia debe ir aumentando ligeramente el nivel de cierre con el paso de los mensajes, pero nunca debe sentirse desesperada, agresiva ni acosadora.
+
+Utiliza de manera natural principios de influencia de Robert Cialdini cuando sean aplicables: prueba social, autoridad, escasez, reciprocidad, consistencia/compromiso, afinidad y unidad.
+
+Nunca inventes escasez. Nunca digas cosas como "quedan solo 2 unidades", "última oportunidad", "tenemos muchos pedidos", "todo el mundo lo está comprando" o afirmaciones similares si esa información no fue proporcionada.
+
+Nunca inventes testimonios, número de clientes, resultados, certificaciones o autoridad.
+
+Los mensajes deben parecer escritos por una persona real, sonar naturales en WhatsApp, ser breves, fáciles de leer desde el celular, tener una intención diferente en cada contacto, evitar repetir exactamente la misma pregunta y evitar sonar como un bot.
+
+Evita lenguaje corporativo innecesario, párrafos largos, presión excesiva y frases genéricas repetitivas como "Seguimos atentos", "Quedamos atentos", "Solo queríamos saber", "Te escribimos nuevamente" o "¿Sigues interesado?".
+
+Cada mensaje debe cumplir una función distinta:
+
+DÍA 1:
+Mensaje 1: contacto inicial después del pedido. Debe mencionar el producto y hacer evidente que estamos procesando el pedido. Objetivo: obtener confirmación y comenzar a recopilar datos de entrega.
+Mensaje 2: seguimiento suave si todavía no respondió. Puede reforzar un beneficio del producto, facilidad de entrega, oferta o seguridad de la compra. Objetivo: provocar una respuesta sencilla.
+Mensaje 3: último contacto del primer día. Debe sentirse humano y operativo. Puede explicar que necesitamos confirmar algunos datos antes de preparar o coordinar el envío.
+
+DÍA 2:
+Mensaje 4: retomar la conversación de manera diferente. No repetir literalmente lo enviado el día anterior.
+Mensaje 5: introducir una razón práctica para responder: organización de entregas, disponibilidad, coordinación logística, forma de pago, horario o preparación del pedido.
+Mensaje 6: intento de cierre del segundo día. Debe pedir una acción concreta y fácil.
+
+DÍA 3:
+Mensaje 7: penúltimo seguimiento. Debe comunicar de manera educada que necesitamos saber si continuamos procesando el pedido.
+Mensaje 8: mensaje final. Debe cerrar elegantemente la secuencia y obtener una última respuesta clara o dar de baja el pedido/prospecto.
+
+Los 8 mensajes NO deben parecer pequeñas modificaciones del mismo texto. Alterna recursos como pregunta directa, confirmación logística, beneficio del producto, recordatorio del pedido, reducción de riesgo, prueba social real, escasez real, coordinación de entrega, pregunta de elección, microcompromiso y cierre de expediente/pedido.
+
+Prioriza preguntas fáciles de responder. No hagas tres o cuatro preguntas diferentes dentro del mismo mensaje. Cada contacto debe tener un objetivo principal.
+
+Antes de entregar la respuesta revisa que ninguno sea redundante, que cada uno tenga una razón distinta para existir, que no hayas inventado información, que el llamado a la acción sea fácil, que el mensaje final permita cerrar o dar de baja al prospecto y que parezcan mensajes de una conversación humana.`;
+
+const PROMPT_VENTA_WHATSAPP = String.raw`Actúa como especialista en ventas conversacionales por WhatsApp, e-commerce de productos físicos, copywriting de respuesta directa y seguimiento comercial.
+
+Tu tarea es crear una secuencia completa de venta y seguimiento por WhatsApp para leads que llegan directamente desde anuncios de Meta, Instagram, Facebook u otra fuente publicitaria.
+
+Este lead NO ha realizado todavía un pedido. Ha visto un anuncio, mostró interés y abrió una conversación por WhatsApp.
+
+Tu función es construir una secuencia que ayude a llevar al prospecto desde:
+
+INTERÉS → CONOCIMIENTO DEL PRODUCTO → DESEO → RESOLUCIÓN DE DUDAS → OFERTA → DECISIÓN → COMPRA.
+
+La secuencia debe estar orientada específicamente a PRODUCTOS FÍSICOS vendidos mediante WhatsApp.
+
+El objetivo principal es conseguir que el prospecto compre el producto. Dependiendo del modelo de venta, esto puede significar confirmar que desea comprar, elegir cantidad o variante, enviar ubicación o dirección, indicar referencia del domicilio, seleccionar horario de entrega, confirmar forma de pago, completar un enlace de pago o coordinar la entrega.
+
+No asumas que el prospecto conoce toda la información del producto. Debes vender.
+
+Nunca inventes características, resultados, promociones, descuentos, testimonios, stock, garantías ni condiciones comerciales. Si determinada información no fue proporcionada, trabaja con lo disponible.
+
+La secuencia tendrá una ventana máxima de 3 días. Genera exactamente 11 contactos:
+
+DÍA 1
+- Mensaje 1
+- Mensaje 2
+- Mensaje 3
+- Mensaje 4
+- Mensaje 5
+
+DÍA 2
+- Mensaje 6
+- Mensaje 7
+- Mensaje 8
+
+DÍA 3
+- Mensaje 9
+- Mensaje 10
+- Mensaje 11
+
+Estos mensajes representan oportunidades de contacto, NO una secuencia que deba continuar ciegamente.
+
+Si el prospecto responde, la secuencia automática debe detenerse temporalmente y la conversación debe continuar según su respuesta. Nunca envíes el siguiente seguimiento automático mientras existe una conversación activa.
+
+Cuando la conversación vuelva a quedar sin respuesta, se puede retomar el seguimiento desde el punto correspondiente.
+
+DÍA 1 — CONVERTIR INTERÉS EN INTENCIÓN DE COMPRA:
+
+Mensaje 1 — Apertura: iniciar una conversación natural relacionada directamente con el anuncio. Debe saludar, mencionar el producto, conectar con el interés generado por el anuncio y abrir la conversación con una pregunta sencilla.
+
+Mensaje 2 — Producto + problema: explicar brevemente qué es el producto y por qué puede interesarle. Conectar problema, producto y beneficio. No escribir una ficha técnica.
+
+Mensaje 3 — Beneficios: aumentar deseo. Selecciona los 2 o 3 beneficios más fuertes. Prioriza beneficios por encima de características.
+
+Mensaje 4 — Oferta: presentar claramente la propuesta comercial. Debe incluir cuando exista producto, precio, precio promocional, descuento, combo, forma de pago, envío, tiempo aproximado de entrega, garantía o bono.
+
+Mensaje 5 — Primer cierre: pedir la compra con una pregunta de cierre fácil y de baja fricción.
+
+DÍA 2 — RECUPERAR AL PROSPECTO:
+
+Mensaje 6 — Nuevo ángulo de venta: volver a despertar interés con un argumento diferente.
+
+Mensaje 7 — Prueba / confianza / objeción: reducir riesgo con información disponible como testimonio real, cantidad real de compradores, garantía, pago contra entrega, política de cambios, empresa, marca, material, calidad, demostración o pregunta frecuente.
+
+Mensaje 8 — Segundo cierre: llevar nuevamente a una decisión con una pregunta concreta o cierre por alternativa cuando realmente existan alternativas.
+
+DÍA 3 — DEFINICIÓN:
+
+Mensaje 9 — Razón para actuar: dar una razón legítima para tomar una decisión. Puede usar promoción real, stock real, condiciones de entrega, precio vigente, disponibilidad, bono, organización logística o beneficio principal. Nunca inventes urgencia ni escasez.
+
+Mensaje 10 — Cierre directo: pedir una respuesta clara.
+
+Mensaje 11 — Cierre de secuencia: obtener una última respuesta o cerrar comercialmente el lead de forma amable, dejando la puerta abierta.
+
+Utiliza cuando correspondan principios de Robert Cialdini: prueba social, autoridad, escasez, reciprocidad, compromiso y consistencia, afinidad y unidad. También aplica venta directa: beneficio antes que característica, reducción de riesgo, claridad de la oferta, eliminación de fricción, microcompromisos, preguntas de elección y cierre progresivo.
+
+No fuerces los principios. La conversación debe sentirse natural.
+
+Nunca inventes escasez, urgencia, número de compradores, testimonios, opiniones, certificaciones, autoridad, garantías, resultados, promociones, precios anteriores, stock ni fechas límite.
+
+Todos los mensajes deben parecer escritos por una persona real: cortos, conversacionales, fáciles de leer, directos, naturales, comerciales, profesionales y cercanos.
+
+Evita lenguaje de publicidad tradicional, textos de call center, bloques enormes, abuso de emojis, todo en mayúsculas y presión artificial.
+
+Cada mensaje debe buscar una acción sencilla. Una pregunta por mensaje es preferible a cinco preguntas. Prioriza microcompromisos.
+
+Antes de entregar el resultado verifica que los 11 mensajes sean diferentes, que la conversación avance, que haya presentación del producto, beneficios, oferta, manejo de riesgo, varios intentos de cierre, que no haya datos inventados, falsa escasez ni falsa prueba social, y que el día 3 termine con una definición comercial.`;
+
+const PROMPTS_IA_POR_TIPO = {
+  CONFIRMACION_PEDIDO_WEB: {
+    promptBase: PROMPT_CONFIRMACION_PEDIDO_WEB,
+  },
+  VENTA_WHATSAPP: {
+    promptBase: PROMPT_VENTA_WHATSAPP,
+  },
+  SEGUIMIENTO_ENVIO: {
+    objetivo: "mantener informado al cliente despues de confirmar el pedido",
+    enfoque: "avisar preparacion, despacho y entrega con mensajes breves y operativos",
+  },
+  ESCALAMIENTO_VENTAS: {
+    objetivo: "volver a contactar clientes con pedidos entregados para feedback y recompra",
+    enfoque: "empezar con experiencia post compra y luego ofrecer una nueva compra sin presionar",
+  },
+  [CUSTOM_FLOW_TYPE]: {
+    objetivo: "crear un flujo manual de WhatsApp para un caso operativo especifico",
+    enfoque: "mantener mensajes claros, humanos y accionables, con esperas razonables entre fases",
+  },
+};
+
 /**
  * En escalamiento de ventas la espera del PRIMER mensaje se cuenta desde la
  * entrega del pedido; en las demás etapas el primero no espera nada.
@@ -70,6 +244,178 @@ function conKeys(fases) {
   }));
 }
 
+function keyNuevaFaseImportada(indice) {
+  return `ia-${Date.now()}-${indice}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function limpiarBloqueJson(texto) {
+  let limpio = String(texto || "").trim();
+  const fence = limpio.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fence) limpio = fence[1].trim();
+  const inicio = limpio.search(/[\[{]/);
+  const finObjeto = Math.max(limpio.lastIndexOf("}"), limpio.lastIndexOf("]"));
+  if (inicio > 0 && finObjeto >= inicio) limpio = limpio.slice(inicio, finObjeto + 1);
+  return limpio;
+}
+
+function parsearJsonFlujo(texto) {
+  try {
+    const parseado = JSON.parse(limpiarBloqueJson(texto));
+    return parseado?.flujo || parseado;
+  } catch {
+    throw new Error("No pude leer el JSON. Pegá solo el objeto JSON que devolvió la IA, sin texto adicional.");
+  }
+}
+
+function minutosDesdeEntrada(fase) {
+  const directo = fase?.espera_sugerida_minutos ?? fase?.espera_minutos ?? fase?.espera;
+  if (directo !== undefined && directo !== null && directo !== "") {
+    const n = Number(directo);
+    if (Number.isFinite(n)) return Math.max(0, Math.floor(n));
+  }
+  const horas = Number(fase?.espera_horas);
+  if (Number.isFinite(horas)) return Math.max(0, Math.floor(horas * 60));
+  const dias = Number(fase?.espera_dias);
+  if (Number.isFinite(dias)) return Math.max(0, Math.floor(dias * 24 * 60));
+  return null;
+}
+
+function etiquetaIdDesdeEntrada(fase, etiquetas) {
+  if (fase?.etiqueta_id === null || fase?.etiqueta_id === "" || fase?.etiqueta_id === undefined) return null;
+  const directa = Number(fase.etiqueta_id);
+  if (Number.isInteger(directa) && etiquetas.some((e) => Number(e.id) === directa)) return directa;
+  const nombre = String(fase?.etiqueta_nombre || fase?.etiqueta || "").trim().toLowerCase();
+  if (!nombre) return null;
+  return etiquetas.find((e) => String(e.nombre || "").trim().toLowerCase() === nombre)?.id || null;
+}
+
+function aplicarJsonAlFlujo({ texto, editando, etiquetas }) {
+  const entrada = parsearJsonFlujo(texto);
+  const fasesEntrada = entrada?.fases || entrada?.mensajes || entrada?.messages;
+  if (!Array.isArray(fasesEntrada) || fasesEntrada.length === 0) {
+    throw new Error('El JSON tiene que incluir un array "fases" con al menos una fase.');
+  }
+
+  const fases = fasesEntrada.map((fase, idx) => {
+    const previa = editando.fases?.[idx] || {};
+    const nombre = String(fase?.nombre || fase?.titulo || fase?.fase || "").trim();
+    const mensaje = String(fase?.mensaje || fase?.texto || fase?.message || "").trim();
+    if (!nombre) throw new Error(`Fase ${idx + 1}: falta "nombre".`);
+    if (!mensaje) throw new Error(`Fase ${idx + 1}: falta "mensaje".`);
+    return {
+      id: previa.id || null,
+      _key: previa._key || keyNuevaFaseImportada(idx),
+      nombre,
+      mensaje,
+      espera_sugerida_minutos: minutosDesdeEntrada(fase) ?? (idx === 0 ? 0 : 240),
+      etiqueta_id: etiquetaIdDesdeEntrada(fase, etiquetas),
+    };
+  });
+
+  return {
+    ...editando,
+    nombre: String(entrada?.nombre || editando.nombre || "").trim(),
+    descripcion: entrada?.descripcion !== undefined ? String(entrada.descripcion || "").trim() : editando.descripcion,
+    activo: entrada?.activo !== undefined ? !!entrada.activo : editando.activo,
+    predeterminado: editando.tipo === CUSTOM_FLOW_TYPE
+      ? false
+      : entrada?.predeterminado !== undefined ? !!entrada.predeterminado : editando.predeterminado,
+    fases: conEsperaInicial(fases, editando.tipo),
+  };
+}
+
+function generarInstruccionesIA({ flujo, variables }) {
+  const tipo = flujo?.tipo || "CONFIRMACION_PEDIDO_WEB";
+  const meta = FLOW_TYPES[tipo] || FLOW_TYPES.CONFIRMACION_PEDIDO_WEB;
+  const prompt = PROMPTS_IA_POR_TIPO[tipo] || PROMPTS_IA_POR_TIPO[CUSTOM_FLOW_TYPE];
+  const cantidadFases = tipo === "VENTA_WHATSAPP" ? 11 : tipo === "CONFIRMACION_PEDIDO_WEB" ? 8 : null;
+  const variablesTexto = (variables || [])
+    .map((v) => `- {${v.key}}: ${v.desc || "Variable disponible"} (ejemplo: ${v.ejemplo || "sin ejemplo"})`)
+    .join("\n");
+  const ejemplo = {
+    nombre: flujo?.nombre || meta.label,
+    descripcion: flujo?.descripcion || meta.hint,
+    activo: true,
+    predeterminado: tipo === CUSTOM_FLOW_TYPE ? false : !!flujo?.predeterminado,
+    fases: [
+      {
+        nombre: "Primer contacto",
+        mensaje: "Hola {cliente_nombre}, te escribimos por tu pedido #{pedido_id}.",
+        espera_sugerida_minutos: 0,
+        etiqueta_id: null,
+      },
+      {
+        nombre: "Recordatorio",
+        mensaje: "Hola {cliente_nombre}, volvemos a escribirte por tu pedido #{pedido_id}.",
+        espera_sugerida_minutos: 240,
+        etiqueta_id: null,
+      },
+    ],
+  };
+
+  const promptBase = prompt.promptBase
+    ? `PROMPT BASE DEL FLUJO
+${prompt.promptBase}
+
+`
+    : `Objetivo: ${prompt.objetivo}
+Enfoque: ${prompt.enfoque}
+
+`;
+
+  return `${promptBase}Necesito que generes un flujo completo de mensajes de WhatsApp para Gesicom.
+
+Tipo de flujo: ${meta.label}
+
+Reglas obligatorias de salida para Gesicom:
+- Tu respuesta debe venir en formato JSON válido para que pueda copiarse completa y pegarse directamente en la sección "Pegar JSON" de Gesicom.
+- Respondé EXCLUSIVAMENTE con el objeto JSON. No uses Markdown, no agregues explicación, no agregues texto antes o después y no encierres la respuesta en \`\`\`.
+- Aunque el prompt base pida análisis, estrategia, tablas, objeciones o clasificaciones, usalo solo como criterio interno. La respuesta final debe ser SOLO el JSON del flujo.
+- El sistema usará ese JSON para armar automáticamente el flujo de conversaciones, por eso debe respetar exactamente los nombres de campos.
+- El JSON raíz debe tener exactamente esta estructura:
+{
+  "nombre": "Nombre del flujo",
+  "descripcion": "Descripción breve del objetivo del flujo",
+  "activo": true,
+  "predeterminado": true,
+  "fases": [
+    {
+      "nombre": "Nombre de la fase",
+      "mensaje": "Texto exacto del mensaje de WhatsApp con variables de Gesicom",
+      "espera_sugerida_minutos": 0,
+      "etiqueta_id": null
+    }
+  ]
+}
+- "fases" debe ser un array ordenado. Cada fase debe tener: nombre, mensaje, espera_sugerida_minutos y etiqueta_id.
+- Cada fase representa un contacto/mensaje del prompt base.${cantidadFases ? ` Generá exactamente ${cantidadFases} fases para este flujo.` : ""}
+- espera_sugerida_minutos siempre es un número entero en minutos. Para 4 horas usá 240; para 1 día usá 1440; para 3 días usá 4320.
+- etiqueta_id debe ser null salvo que yo te indique IDs de etiquetas.
+- Usá solo variables de esta lista, escritas exactamente con llaves:
+${variablesTexto || "- No hay variables disponibles."}
+- Si el prompt base menciona variables con doble llave como {{nombre_cliente}}, convertílas al formato disponible de Gesicom, por ejemplo {cliente_nombre}.
+- No inventes datos del cliente, productos, montos, direcciones ni teléfonos. Usá variables.
+- Mantené el tono cercano, paraguayo/neutro, claro y breve. Cada mensaje debe poder enviarse por WhatsApp tal cual.
+- El flujo tiene que cubrir el recorrido completo, no solo un mensaje.
+
+JSON de ejemplo de formato:
+${JSON.stringify(ejemplo, null, 2)}
+
+Flujo actual para mejorar o reemplazar:
+${JSON.stringify({
+  nombre: flujo?.nombre || meta.label,
+  descripcion: flujo?.descripcion || "",
+  activo: flujo?.activo !== false,
+  predeterminado: tipo === CUSTOM_FLOW_TYPE ? false : !!flujo?.predeterminado,
+  fases: (flujo?.fases || []).map((f) => ({
+    nombre: f.nombre,
+    mensaje: f.mensaje,
+    espera_sugerida_minutos: Number(f.espera_sugerida_minutos) || 0,
+    etiqueta_id: f.etiqueta_id || null,
+  })),
+}, null, 2)}`;
+}
+
 /**
  * `servicio` existe solo como costura para el banco de pruebas
  * (__DevFlujos.jsx, ruta /dev/flujos): permite ver la pantalla con datos
@@ -91,6 +437,10 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
   const [modoPreview, setModoPreview] = useState("ejemplo");
   const [previewMovil, setPreviewMovil] = useState(false);
   const [flujoCompleto, setFlujoCompleto] = useState(false);
+  const [jsonIAAbierto, setJsonIAAbierto] = useState(false);
+  const [jsonIA, setJsonIA] = useState("");
+  const [errorIA, setErrorIA] = useState("");
+  const [avisoIA, setAvisoIA] = useState("");
 
   // Para hacer scroll y dar foco a la fase recién agregada.
   const refsFase = useRef({});
@@ -252,6 +602,45 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
     } catch (e) {
       console.error(e);
       window.alert(e.response?.data?.error || "No se pudo eliminar el flujo");
+    }
+  };
+
+  const copiarInstruccionesIA = async () => {
+    if (!editando) return;
+    setErrorIA("");
+    setAvisoIA("");
+    const instrucciones = generarInstruccionesIA({ flujo: editando, variables });
+    try {
+      await navigator.clipboard.writeText(instrucciones);
+      setAvisoIA("Instrucciones copiadas. Pegalas en la IA y después traé acá el JSON.");
+    } catch {
+      setErrorIA("No pude copiar al portapapeles. Probá de nuevo desde un navegador con permisos de copia.");
+    }
+  };
+
+  const abrirJsonIA = async () => {
+    setErrorIA("");
+    setAvisoIA("");
+    setJsonIA("");
+    setJsonIAAbierto(true);
+    try {
+      const texto = await navigator.clipboard?.readText?.();
+      if (texto && /[\[{]/.test(texto)) setJsonIA(texto);
+    } catch {
+      // El navegador puede negar lectura del portapapeles; el textarea queda listo para pegar manualmente.
+    }
+  };
+
+  const aplicarJsonIA = () => {
+    try {
+      const actualizado = aplicarJsonAlFlujo({ texto: jsonIA, editando, etiquetas });
+      setEditando(actualizado);
+      setFaseActiva(0);
+      setErroresValidacion([]);
+      setJsonIAAbierto(false);
+      setAvisoIA(`JSON aplicado: ${actualizado.fases.length} ${actualizado.fases.length === 1 ? "fase" : "fases"} en el flujo.`);
+    } catch (e) {
+      setErrorIA(e.message || "No pude aplicar el JSON.");
     }
   };
 
@@ -473,6 +862,12 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
                 modo={modoPreview}
                 onModo={setModoPreview}
               />
+              <AsistenteFlujoIA
+                aviso={avisoIA}
+                error={errorIA}
+                onCopiar={copiarInstruccionesIA}
+                onPegar={abrirJsonIA}
+              />
             </aside>
           </div>
 
@@ -503,7 +898,72 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
               <FlujoCompleto fases={fases} variables={variables} />
             </Modal>
           )}
+
+          {jsonIAAbierto && (
+            <Modal
+              titulo="Pegar JSON de la IA"
+              subtitulo="Esto actualiza el flujo en pantalla. Después revisá la vista previa y guardá los cambios."
+              onCerrar={() => setJsonIAAbierto(false)}
+            >
+              <div className="gw-ai-modal">
+                <textarea
+                  className="gw-textarea gw-ai-json"
+                  value={jsonIA}
+                  onChange={(e) => { setJsonIA(e.target.value); setErrorIA(""); }}
+                  placeholder='{"nombre":"Confirmación de pedido web","descripcion":"...","fases":[{"nombre":"Confirmación","mensaje":"Hola {cliente_nombre}...","espera_sugerida_minutos":0,"etiqueta_id":null}]}'
+                  autoFocus
+                  spellCheck={false}
+                />
+                {errorIA && (
+                  <div className="gw-ai-alert gw-ai-alert--error" role="alert">
+                    <AlertCircle size={14} /> {errorIA}
+                  </div>
+                )}
+                <div className="gw-ai-actions">
+                  <button type="button" className="gw-btn gw-btn--ghost" onClick={() => setJsonIAAbierto(false)}>
+                    Cancelar
+                  </button>
+                  <button type="button" className="gw-btn gw-btn--primary" onClick={aplicarJsonIA} disabled={!jsonIA.trim()}>
+                    <Check size={15} /> Aplicar JSON al flujo
+                  </button>
+                </div>
+              </div>
+            </Modal>
+          )}
         </>
+      )}
+    </section>
+  );
+}
+
+/* ─── Asistente IA ─────────────────────────────────────────── */
+
+function AsistenteFlujoIA({ aviso, error, onCopiar, onPegar }) {
+  return (
+    <section className="gw-ai-card" aria-label="Instrucciones para IA">
+      <div className="gw-ai-card__head">
+        <div>
+          <h3>Instrucciones para IA</h3>
+          <p>Copiá el prompt, pedile a la IA el JSON y pegalo acá para actualizar las fases.</p>
+        </div>
+      </div>
+      <div className="gw-ai-card__actions">
+        <button type="button" className="gw-btn gw-btn--ghost" onClick={onCopiar}>
+          <Clipboard size={15} /> Copiar instrucciones
+        </button>
+        <button type="button" className="gw-btn gw-btn--primary" onClick={onPegar}>
+          <Copy size={15} /> Pegar JSON
+        </button>
+      </div>
+      {aviso && (
+        <div className="gw-ai-alert gw-ai-alert--ok" role="status">
+          <Check size={14} /> {aviso}
+        </div>
+      )}
+      {error && (
+        <div className="gw-ai-alert gw-ai-alert--error" role="alert">
+          <AlertCircle size={14} /> {error}
+        </div>
       )}
     </section>
   );

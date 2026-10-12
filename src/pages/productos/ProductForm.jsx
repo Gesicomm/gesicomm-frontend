@@ -1628,7 +1628,7 @@ export default function ProductForm() {
 
       if (stockFisicoTotal > 0 && depositosStock.length === 0) {
         setTabActiva('stock');
-        throw new Error('Para cargar stock, primero creá una ubicación en Mi Tienda → Depósitos.');
+        throw new Error('Para cargar stock, primero creá una ubicación en Depósitos, desde el sidebar.');
       }
 
       if (stockFisicoTotal > 0 && totalDistribuido !== stockFisicoTotal) {
@@ -2184,8 +2184,8 @@ export default function ProductForm() {
     <div className={`prod-page ${tabActiva === 'marketing' ? 'product-view-page' : ''}`}>
 
       <div className="prod-header">
-        <div className="prod-header-left" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="prod-header-left prod-header-left-form">
+          <div className="prod-heading-main">
             <button className="btn-back" onClick={() => navigate('/mi-catalogo')}
               type="button" aria-label="Volver al listado">
               <ChevronLeft size={18} />
@@ -2197,35 +2197,25 @@ export default function ProductForm() {
             </div>
           </div>
           
-          <div className="ia-import-block" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '1rem', background: 'var(--color-surface, #fff)', padding: '4px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+          <div className="ia-import-block">
             <button 
               type="button" 
-              className="btn-secondary" 
+              className="btn-secondary ia-import-copy"
               onClick={() => {
                 navigator.clipboard.writeText(promptConDatosTienda(categorias, proveedores));
                 setAviso('Prompt copiado al portapapeles. Pégalo en tu IA favorita.');
               }}
-              style={{ padding: '0.3rem 0.6rem', fontSize: '12px', height: '30px', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
               title="Copiar instrucciones para la IA"
             >
               <Bot size={14} /> Instrucciones para tu IA
             </button>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <FileJson size={14} style={{ position: 'absolute', left: '8px', color: 'var(--color-text-muted, #666)' }} />
+            <div className="ia-import-input-wrap">
+              <FileJson size={14} className="ia-import-input-icon" />
               <input 
                 type="text" 
                 placeholder="Pegar JSON aquí..." 
                 onChange={handleImportarJSON}
-                style={{
-                  padding: '0.3rem 0.6rem 0.3rem 28px',
-                  fontSize: '12px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--color-border, #ddd)',
-                  background: 'var(--color-background, #fafafa)',
-                  width: '180px',
-                  height: '30px',
-                  outline: 'none'
-                }}
+                className="ia-import-input"
               />
             </div>
           </div>

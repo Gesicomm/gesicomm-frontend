@@ -63,4 +63,43 @@ describe.each(Object.keys(TEMPLATES_RIGIDOS))('Encabezado del catálogo: %s', sl
     expect(await screen.findByRole('heading', { name: 'Catálogo escrito por el comercio' })).toBeInTheDocument();
     expect(screen.getByText('Descripción escrita por el comercio.')).toBeInTheDocument();
   });
+
+  it('usa el nombre y el favicon de la tienda en la pestaña del catálogo público', async () => {
+    document.title = 'Gesicom | Creá y gestioná tu e-commerce en un solo lugar';
+    document.head.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]').forEach(el => el.remove());
+    document.head.insertAdjacentHTML('beforeend', '<link rel="icon" href="/favicon.svg">');
+    obtenerCatalogoLandingPublica.mockResolvedValue({
+      ...landing(slug),
+      disponible: true,
+      titulo: 'Landing interna',
+      seo: { titulo: 'Llevalofacil', descripcion: 'Catálogo público' },
+      tienda: { nombre: 'Llevalofacil', favicon_imagen: 'https://cdn.test/favicon.png', logo_imagen: 'https://cdn.test/logo.png' },
+      catalogo_items: [],
+    });
+
+    render(<MemoryRouter><CatalogoPublico /></MemoryRouter>);
+    await screen.findByRole('heading', { name: 'Catálogo escrito por el comercio' });
+
+    expect(document.title).toBe('Llevalofacil');
+    const iconos = [...document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')];
+    expect(iconos).toHaveLength(1);
+    expect(iconos[0].getAttribute('href')).toBe('https://cdn.test/favicon.png');
+  });
+
+  it('usa el logo de la tienda como favicon si no hay favicon propio', async () => {
+    document.head.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]').forEach(el => el.remove());
+    document.head.insertAdjacentHTML('beforeend', '<link rel="icon" href="/favicon.svg">');
+    obtenerCatalogoLandingPublica.mockResolvedValue({
+      ...landing(slug),
+      disponible: true,
+      seo: { titulo: 'Llevalofacil' },
+      tienda: { nombre: 'Llevalofacil', favicon_imagen: null, logo_imagen: 'https://cdn.test/logo.png' },
+      catalogo_items: [],
+    });
+
+    render(<MemoryRouter><CatalogoPublico /></MemoryRouter>);
+    await screen.findByRole('heading', { name: 'Catálogo escrito por el comercio' });
+
+    expect(document.querySelector('link[rel="icon"]').getAttribute('href')).toBe('https://cdn.test/logo.png');
+  });
 });

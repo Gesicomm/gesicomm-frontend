@@ -94,7 +94,7 @@ describe('ProductList', () => {
     );
 
     await screen.findByText('Calefactor QA');
-    fireEvent.click(screen.getByRole('button', { name: 'Agregar productos masivamente' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Importar mis productos' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Exportación de Shopify' }));
 
     expect(screen.getByRole('dialog', { name: 'Importar productos desde Shopify' })).toBeInTheDocument();
@@ -112,13 +112,13 @@ describe('ProductList', () => {
         </MemoryRouter>
       );
       await screen.findByText('Calefactor QA');
-      fireEvent.click(screen.getByRole('button', { name: 'Agregar productos masivamente' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Importar mis productos' }));
       fireEvent.change(screen.getByLabelText('Archivo a importar'), { target: { files: [plantilla] } });
     }
 
     it('explica paso a paso el formato del archivo, con las columnas que informa el backend, y ofrece la plantilla', async () => {
       await abrirConArchivo();
-      const dialogo = screen.getByRole('dialog', { name: 'Agregar productos masivamente' });
+      const dialogo = screen.getByRole('dialog', { name: 'Importar mis productos' });
       const pasos = within(dialogo).getByRole('list', { name: 'Pasos para cargar productos masivamente' });
       expect(Array.from(pasos.children).map(li => li.querySelector('strong').textContent)).toEqual([
         'Descargá la plantilla.',

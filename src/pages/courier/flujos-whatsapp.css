@@ -875,6 +875,90 @@
   line-height: 1.45;
 }
 
+/* ─── Instrucciones IA ───────────────────────────────────── */
+
+.gw-ai-card {
+  margin-top: 0.85rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0.95rem;
+}
+
+.gw-ai-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.gw-ai-card h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 750;
+  color: var(--color-fg);
+}
+
+.gw-ai-card p {
+  margin: 0.25rem 0 0;
+  color: var(--color-fg-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.gw-ai-card__actions,
+.gw-ai-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.gw-ai-card__actions {
+  margin-top: 0.75rem;
+}
+
+.gw-ai-alert {
+  margin-top: 0.7rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.7rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.gw-ai-alert--ok {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 28%, transparent);
+}
+
+.gw-ai-alert--error {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 28%, transparent);
+}
+
+.gw-ai-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.gw-ai-json {
+  min-height: 18rem;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.gw-ai-actions {
+  justify-content: flex-end;
+}
+
 /* ─── Vista previa completa (modal) ──────────────────────── */
 
 .gw-modal-backdrop {

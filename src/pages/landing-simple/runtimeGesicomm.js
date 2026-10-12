@@ -388,6 +388,61 @@ export function runtimeGesicomm() {
     }
   }
 
+  // ─── Pago anticipado = PagoPar ──────────────────────────────────────────
+  // Solo se cobra por adelantado con PagoPar conectado (Mi tienda → Pagos).
+  // El botón de la ficha y la opción del checkout propio vienen escritos en
+  // el HTML guardado de cada landing, así que se resuelve acá y no en la
+  // plantilla. Sin la pasarela:
+  //   · en el editor quedan a la vista pero apagados, con el motivo al pasar
+  //     el mouse — el comercio tiene que enterarse de por qué no los cobra;
+  //   · en la tienda publicada no se ofrecen: el cliente no puede hacer nada
+  //     con una opción que depende de una configuración del comercio.
+  var AVISO_PAGO_ANTICIPADO = 'Para usar el pago anticipado, conectá PagoPar en Mi tienda → Pagos.';
+  function pagoAnticipadoDisponible() {
+    return !datos.pago_anticipado || datos.pago_anticipado.disponible !== false;
+  }
+  function bloquearPagoAnticipado(el, bloquear, enEditor) {
+    if (!bloquear) {
+      if (!el.hasAttribute('data-gesicomm-pago-bloqueado')) return;
+      el.removeAttribute('data-gesicomm-pago-bloqueado');
+      el.removeAttribute('aria-disabled');
+      el.removeAttribute('title');
+      el.style.display = '';
+      el.style.opacity = '';
+      el.style.cursor = '';
+      return;
+    }
+    el.setAttribute('data-gesicomm-pago-bloqueado', '');
+    el.setAttribute('aria-disabled', 'true');
+    if (enEditor) {
+      el.setAttribute('title', AVISO_PAGO_ANTICIPADO);
+      el.style.opacity = '.45';
+      el.style.cursor = 'not-allowed';
+    } else {
+      el.removeAttribute('title');
+      el.style.display = 'none';
+    }
+  }
+  function aplicarPagoAnticipado() {
+    var bloquear = !pagoAnticipadoDisponible();
+    var enEditor = !!(datos.pago_anticipado && datos.pago_anticipado.editor);
+    var botones = document.querySelectorAll('[data-gesicomm-metodo-pago="pagopar"]');
+    for (var i = 0; i < botones.length; i++) bloquearPagoAnticipado(botones[i], bloquear, enEditor);
+    var radios = document.querySelectorAll('input[name="payment_method"][value="pagopar"]');
+    for (var j = 0; j < radios.length; j++) {
+      var radio = radios[j];
+      bloquearPagoAnticipado(radio.closest('label') || radio, bloquear, enEditor);
+      radio.disabled = bloquear;
+      if (!bloquear || !radio.checked) continue;
+      // Venía marcado por defecto: pasa a la primera opción que sí se cobra.
+      radio.checked = false;
+      var otros = (radio.form || document).querySelectorAll('input[name="payment_method"]');
+      for (var k = 0; k < otros.length; k++) {
+        if (otros[k] !== radio && !otros[k].disabled) { otros[k].checked = true; break; }
+      }
+    }
+  }
+
   // Total de la compra de la ficha: producto (con variante y cantidad) + los
   // order bumps marcados. Lo muestran los elementos data-gesicomm-total (ej.
   // dentro del botón: "Comprar ahora · Gs 160.000"), así marcar la oferta
@@ -2261,6 +2316,7 @@ export function runtimeGesicomm() {
     pintarCheckout();
     pintarGeografia();
     prepararDescuentoBotonPrincipal();
+    aplicarPagoAnticipado();
     pintarTotal();
     var marcas = document.querySelectorAll('[data-gesicomm-tienda]');
     for (var k = 0; k < marcas.length; k++) {
@@ -2814,7 +2870,6 @@ export function runtimeGesicomm() {
     var listas = document.querySelectorAll('[data-gesicomm-lista="catalogo"]');
     for (var i = 0; i < listas.length; i++) renderizarLista(listas[i]);
     pintarControlesCatalogo();
-    prepararDropdownsCatalogo();
     actualizarTituloCategoria();
     prepararMenuCategoriasHeader();
   }
@@ -2996,6 +3051,7 @@ export function runtimeGesicomm() {
       sel.title = '';
       sel.value = filtros[campo];
     }
+    prepararDropdownsCatalogo();
   }
 
   function pintarCheckout() {
@@ -3504,6 +3560,13 @@ export function runtimeGesicomm() {
     var t = e.target && e.target.closest ? e.target : null;
     if (!t) return;
     var el;
+
+    // Va primero: un botón de pago anticipado apagado no compra ni navega.
+    if ((el = t.closest('[data-gesicomm-pago-bloqueado]'))) {
+      e.preventDefault();
+      toast(AVISO_PAGO_ANTICIPADO);
+      return;
+    }
 
     if ((el = t.closest('[data-gesicomm-carrito]'))) {
       e.preventDefault();

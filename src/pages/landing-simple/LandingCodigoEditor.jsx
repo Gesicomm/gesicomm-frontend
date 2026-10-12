@@ -16,6 +16,7 @@ import PhonePreviewShell from './PhonePreviewShell';
 import ConfigurarVentaCodigo, { aplicarReglaVenta } from './ConfigurarVentaCodigo';
 import { urlPublicaLanding } from './urlPublicaLanding';
 import { datosRuntimePreview, contentIdPanel, PAGINAS_TIENDA } from './datosRuntime';
+import { usePagoparConectado } from './usePagoparConectado';
 import { PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, plantillaInicioPara, esBaseIntacta, esFichaProductoBase } from './plantillasBaseCodigo';
 import { leerItemsPrefill, limpiarItemsPrefill, unirItemsPrefill } from './prefilledLandingItems';
 import { armarPromptVista } from './promptsCodigo';
@@ -646,6 +647,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     return () => { vivo = false; };
   }, [paso]);
 
+  const pagoparConectado = usePagoparConectado();
   const datosPreview = useMemo(() => datosRuntimePreview({
     productos: seleccion,
     tienda,
@@ -654,7 +656,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     vista,
     productoId: productoPreviewId,
     ofertas: ofertasTienda,
-  }), [seleccion, tienda, landing, venta, vista, productoPreviewId, ofertasTienda]);
+    pagoparConectado,
+  }), [seleccion, tienda, landing, venta, vista, productoPreviewId, ofertasTienda, pagoparConectado]);
   const codigoPreviewCrudo = codigosPreview[claveVista] || codigosPreview[vista];
   const codigoInicioPreview = codigosPreview.inicio?.html ? codigosPreview.inicio : plantillaInicioPara(venta?.tipo);
   const codigoPreviewHeredado = ['catalogo', 'categoria', 'checkout', 'producto'].includes(vista)

@@ -35,6 +35,7 @@ import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
 import ProductPicker from '../landing/ProductPicker';
 import { datosRuntimePreview, contentIdPanel } from './datosRuntime';
+import { usePagoparConectado } from './usePagoparConectado';
 import { PLANTILLA_PRODUCTO, PLANTILLA_PRODUCTO_SUPLEMENTOS, plantillaInicioPara } from './plantillasBaseCodigo';
 // Pesado (arrastra el editor real de ofertas): solo se carga al llegar al paso.
 const PasoOfertas = lazy(() => import('./PasoOfertas'));
@@ -322,6 +323,7 @@ export default function AILandingWizard({ onCreada }) {
   // no toca el precio del producto ni el de otras páginas.
   const [anclas, setAnclas] = useState({});
   const [previewModo, setPreviewModo] = useState('desktop');
+  const pagoparConectado = usePagoparConectado();
   const mensajesFinRef = useRef(null);
   const composerRef = useRef(null);
 
@@ -1916,6 +1918,7 @@ function PreviewPanel({ paso, landingGenerada, productosSeleccionados, ofertasSe
                 datos={datosRuntimePreview({
                   productos: Array.from(productosSeleccionados.values()),
                   venta: landingGenerada.content?.venta,
+                  pagoparConectado,
                 })}
                 previewDevice={previewModo}
               />

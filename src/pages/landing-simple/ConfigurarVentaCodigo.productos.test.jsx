@@ -13,12 +13,12 @@ const catalogo = { productos: [
   { tipo: 'producto', id: 2, slug: 'olla', nombre: 'Olla', categoria: 'Cocina', precio_efectivo: 950000 },
 ], combos: [] };
 const cargarOfertas = vi.fn().mockResolvedValue([]);
-const datosPreview = () => JSON.parse(screen.getByTestId('preview-datos').textContent);
+const datosPreview = () => JSON.parse(screen.getAllByTestId('preview-datos')[0].textContent);
 afterEach(cleanup);
 
-function montar(inicial = { seleccion: catalogo.productos }) {
+function montar(inicial = null, catalogoFuente = catalogo) {
   const confirmar = vi.fn().mockResolvedValue(true);
-  render(<ConfigurarVentaCodigo catalogo={catalogo} inicial={inicial} onConfirmar={confirmar} cargarOfertas={cargarOfertas} onVolver={vi.fn()} />);
+  render(<ConfigurarVentaCodigo catalogo={catalogoFuente} inicial={inicial || { seleccion: catalogoFuente.productos }} onConfirmar={confirmar} cargarOfertas={cargarOfertas} onVolver={vi.fn()} />);
   fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
   return confirmar;
 }
@@ -143,6 +143,69 @@ describe('Presentación de los productos del lienzo', () => {
     expect(confirmar.mock.calls[0][0].items.map(i => i.id)).toEqual([1, 2]);
     expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: null });
     expect(datosPreview().productos[0].precio_antes).toBe(900000);
+  });
+
+  it('mueve la despublicación a Categorías y elimina el tab Productos', () => {
+    const confirmar = montar();
+    const tabs = within(screen.getByRole('tablist', { name: 'Área de configuración' }));
+    expect(tabs.queryByRole('tab', { name: 'Productos' })).toBeNull();
+
+    fireEvent.click(tabs.getByRole('tab', { name: 'Categorías' }));
+    fireEvent.click(screen.getByRole('button', { name: /Cocina\s*2 productos/i }));
+
+    expect(screen.getByText('Productos de Cocina')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Editar promo' })).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Despublicar$/i })[0]);
+
+    expect(screen.queryByText('Cacerola')).toBeNull();
+    expect(datosPreview().productos.map(i => i.id)).toEqual(['olla']);
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(confirmar.mock.calls[0][0].items.map(i => i.id)).toEqual([2]);
+    expect(confirmar.mock.calls[0][0].seleccion.map(i => i.id)).toEqual([2]);
+  });
+
+  it('permite editar todas las categorías y buscar dentro del filtro activo', () => {
+    const catalogoMulti = {
+      productos: [
+        ...catalogo.productos,
+        { tipo: 'producto', id: 3, slug: 'batidora', nombre: 'Batidora', categoria: 'Electrodomésticos', precio_efectivo: 500000 },
+      ],
+      combos: [],
+    };
+    montar(null, catalogoMulti);
+
+    const tabs = within(screen.getByRole('tablist', { name: 'Área de configuración' }));
+    fireEvent.click(tabs.getByRole('tab', { name: 'Categorías' }));
+    fireEvent.click(screen.getByRole('button', { name: /Todas las categorías\s*3 productos/i }));
+
+    expect(screen.getByText('Productos de todas las categorías')).toBeInTheDocument();
+    expect(screen.getByText('Cacerola')).toBeInTheDocument();
+    expect(screen.getByText('Batidora')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Buscar productos'), { target: { value: 'bati' } });
+    expect(screen.getByText('Batidora')).toBeInTheDocument();
+    expect(screen.queryByText('Cacerola')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Editar promo' })).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /Cocina\s*2 productos/i }));
+    expect(screen.getByText('Productos de Cocina')).toBeInTheDocument();
+    expect(screen.getByText('Cacerola')).toBeInTheDocument();
+    expect(screen.queryByText('Batidora')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Buscar productos'), { target: { value: 'olla' } });
+    expect(screen.getByText('Olla')).toBeInTheDocument();
+    expect(screen.queryByText('Cacerola')).toBeNull();
+  });
+
+  it('al despublicar desde una regla dinámica pasa a manual y el producto desaparece', () => {
+    const confirmar = montar({ venta: { seleccion: 'todos', configurado: true }, seleccion: [] });
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
+    fireEvent.click(screen.getByRole('button', { name: /Cocina\s*2 productos/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /^Despublicar$/i })[0]);
+    expect(screen.queryByText('Cacerola')).toBeNull();
+    expect(datosPreview().productos.map(i => i.id)).toEqual(['olla']);
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(confirmar.mock.calls[0][0].venta.seleccion).toBe('manual');
+    expect(confirmar.mock.calls[0][0].items.map(i => i.id)).toEqual([2]);
   });
 
   it('mantiene y guarda banners aunque exista inicio_comercial viejo vacío', () => {

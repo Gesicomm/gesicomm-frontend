@@ -66,6 +66,7 @@ const EducacionView = lazy(() => import('./pages/educacion/EducacionView'));
 const AdminEducacion = lazy(() => import('./pages/educacion/AdminEducacion'));
 const CostosGastos = lazy(() => import('./pages/finanzas/CostosGastos'));
 const ProveedoresView = lazy(() => import('./pages/finanzas/Proveedores'));
+const ImportadaChina = lazy(() => import('./pages/importada-china/ImportadaChina'));
 const AutomationHub = lazy(() => import('./pages/automation-hub/AutomationHub'));
 const AutomationSettings = lazy(() => import('./pages/automation-hub/AutomationSettings'));
 const FinanzasAutomatizacion = lazy(() => import('./pages/finanzas/FinanzasAutomatizacion'));
@@ -310,6 +311,9 @@ function App() {
         } />
         <Route path="/mis-abastecimientos/:id" element={
           <RequireTienda><DynamicLayout><SolicitudAbastecimientoDetalle /></DynamicLayout></RequireTienda>
+        } />
+        <Route path="/importada-de-china" element={
+          <RequireTienda><DynamicLayout><ImportadaChina /></DynamicLayout></RequireTienda>
         } />
         <Route path="/abastecimiento" element={
           <AdminRoute><DashboardLayout><AbastecimientoAdmin /></DashboardLayout></AdminRoute>

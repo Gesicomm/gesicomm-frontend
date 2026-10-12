@@ -1288,7 +1288,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   ))}
                 </select>
                 <span className="np-hint">
-                  Si elegís una ubicación, el pedido se reserva desde ahí. Si no tiene stock suficiente, el sistema lo va a avisar.
+                  {form.origen_preferido_id
+                    ? 'El pedido completo se reserva desde esta ubicación. Si no tiene stock suficiente, el sistema lo va a avisar y no se confirma.'
+                    : 'No elegís vos: al confirmar, el sistema descuenta primero del salón y, si no alcanza, del depósito que tenga stock suficiente. Solo mira las ubicaciones de esta tienda. Elegí una ubicación solo si querés forzar de dónde sale.'}
                 </span>
               </div>
 

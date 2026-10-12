@@ -4,7 +4,7 @@ import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
   ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck, SlidersHorizontal, Grid,
-  Store, Trash2, FileSpreadsheet
+  Store, Trash2, FileSpreadsheet, EyeOff
 } from 'lucide-react';
 import { productService } from '../../services/productService';
 import { vitrinaService } from '../../services/vitrinaService';
@@ -271,13 +271,15 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
 
         {/* Checkbox de selección */}
         {seleccionable && (
-          <span
+          <button
+            type="button"
             className="vit-card-check"
+            aria-label={seleccionado ? `Quitar selección ${item.nombre}` : `Seleccionar ${item.nombre}`}
             onClick={(e) => { e.stopPropagation(); onToggleSeleccion(item); }}
-            aria-hidden="true"
           >
             <Check size={14} strokeWidth={3} />
-          </span>
+            <span>{seleccionado ? 'Seleccionado' : 'Seleccionar'}</span>
+          </button>
         )}
       </div>
 
@@ -414,7 +416,6 @@ export default function VitrinaGrid() {
   }, []);
   
   const toggleSeleccion = (item) => {
-    if (esVistaLanding) return;
     setSeleccionados(prev => {
       const next = new Set(prev);
       const key = getItemKey(item);
@@ -492,7 +493,6 @@ export default function VitrinaGrid() {
   const totalFiltradoSeleccionado = seleccionTotalKeys.size > 0 && Array.from(seleccionTotalKeys).every(key => seleccionados.has(key));
 
   function seleccionarPagina() {
-    if (esVistaLanding) return;
     if (paginaSeleccionada) {
       quitarKeysDeSeleccion(keysPagina);
       return;
@@ -501,7 +501,6 @@ export default function VitrinaGrid() {
   }
 
   async function seleccionarTodoFiltrado() {
-    if (esVistaLanding) return;
     if (!totalItems || seleccionandoTodos) return;
     if (totalFiltradoSeleccionado) {
       quitarKeysDeSeleccion(Array.from(seleccionTotalKeys));
@@ -587,6 +586,7 @@ export default function VitrinaGrid() {
   }
 
   const [borrando, setBorrando] = useState(false);
+  const [despublicandoLanding, setDespublicandoLanding] = useState(false);
   const borrarSeleccionados = async () => {
     const cantidad = productosSeleccionados.length;
     if (!window.confirm(
@@ -604,6 +604,35 @@ export default function VitrinaGrid() {
       setBorrando(false);
     }
   };
+
+  async function despublicarSeleccionadosLanding() {
+    const itemsADespublicar = itemsSeleccionados
+      .map(item => ({
+        tipo: item?.tipo,
+        id: Number(item?.id ?? item?.referencia_id),
+      }))
+      .filter(item => ['producto', 'combo'].includes(item.tipo) && Number.isInteger(item.id) && item.id > 0);
+
+    if (!itemsADespublicar.length || despublicandoLanding) return;
+
+    setDespublicandoLanding(true);
+    setErrorGenerarLanding(null);
+    try {
+      const keysADespublicar = new Set(itemsSeleccionados.map(getItemKey));
+      const resultado = await vitrinaService.despublicarLanding(itemsADespublicar);
+      setItems(prev => prev.filter(item => !keysADespublicar.has(getItemKey(item))));
+      setTotalItems(prev => Math.max(0, prev - keysADespublicar.size));
+      limpiarSeleccion();
+      setMensajeCategoria(
+        `Se despublicaron ${resultado?.despublicados ?? itemsADespublicar.length} producto${itemsADespublicar.length === 1 ? '' : 's'} de tu landing.`
+      );
+      await cargar();
+    } catch (err) {
+      setErrorGenerarLanding(err.response?.data?.message || err.message || 'No se pudieron despublicar los productos seleccionados.');
+    } finally {
+      setDespublicandoLanding(false);
+    }
+  }
 
   async function guardarCategoriaSeleccion(payload) {
     const resultado = await vitrinaService.categorizarProductos(payload);
@@ -693,8 +722,7 @@ export default function VitrinaGrid() {
   useEffect(() => {
     setPage(1);
     setSeleccionTotalKeys(new Set());
-    if (esVistaLanding) limpiarSeleccion();
-  }, [busqueda, filtroCategoria, filtroProveedor, orden, filtro, esVistaLanding, limpiarSeleccion]);
+  }, [busqueda, filtroCategoria, filtroProveedor, orden, filtro]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -771,14 +799,6 @@ export default function VitrinaGrid() {
           <button
             type="button"
             className="btn-secondary"
-            onClick={() => setCargaMasivaAbierta(true)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
-          >
-            <FileSpreadsheet size={16} /> Agregar productos masivamente
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
             onClick={() => armarCombo([])}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
           >
@@ -798,7 +818,19 @@ export default function VitrinaGrid() {
             <button type="button" className="vit-seleccion-cancelar" onClick={limpiarSeleccion}>
               Quitar selección
             </button>
-            {!enOnboarding && (
+            {esVistaLanding && (
+              <button
+                type="button"
+                className="vit-seleccion-cancelar vit-seleccion-combo vit-seleccion-despublicar"
+                onClick={despublicarSeleccionadosLanding}
+                disabled={despublicandoLanding}
+                title="Despublicar los productos seleccionados de la landing"
+              >
+                {despublicandoLanding ? <Loader size={15} className="spin-icon" /> : <EyeOff size={15} />}
+                Despublicar seleccionados
+              </button>
+            )}
+            {!enOnboarding && !esVistaLanding && (
               <button
                 type="button"
                 className="vit-seleccion-cancelar vit-seleccion-combo"
@@ -809,27 +841,31 @@ export default function VitrinaGrid() {
                 Cambiar precios
               </button>
             )}
-            <button
-              type="button"
-              className="vit-seleccion-cancelar vit-seleccion-combo"
-              onClick={() => armarCombo()}
-              disabled={productosSeleccionados.length < 2}
-              title={productosSeleccionados.length < 2 ? 'Seleccioná al menos 2 productos para armar un combo.' : 'Armar combo con los productos seleccionados'}
-            >
-              <Layers size={15} />
-              Armar combo
-            </button>
-            <button
-              type="button"
-              className="vit-seleccion-cancelar vit-seleccion-combo"
-              onClick={() => setModalCategoriaAbierto(true)}
-              disabled={productosSeleccionados.length === 0}
-              title={productosSeleccionados.length === 0 ? 'Seleccioná al menos un producto para agruparlo.' : 'Agrupar productos seleccionados en una categoría interna'}
-            >
-              <Tag size={15} />
-              Categorizar
-            </button>
-            {todosSonPropios && (
+            {!esVistaLanding && (
+              <button
+                type="button"
+                className="vit-seleccion-cancelar vit-seleccion-combo"
+                onClick={() => armarCombo()}
+                disabled={productosSeleccionados.length < 2}
+                title={productosSeleccionados.length < 2 ? 'Seleccioná al menos 2 productos para armar un combo.' : 'Armar combo con los productos seleccionados'}
+              >
+                <Layers size={15} />
+                Armar combo
+              </button>
+            )}
+            {!esVistaLanding && (
+              <button
+                type="button"
+                className="vit-seleccion-cancelar vit-seleccion-combo"
+                onClick={() => setModalCategoriaAbierto(true)}
+                disabled={productosSeleccionados.length === 0}
+                title={productosSeleccionados.length === 0 ? 'Seleccioná al menos un producto para agruparlo.' : 'Agrupar productos seleccionados en una categoría interna'}
+              >
+                <Tag size={15} />
+                Categorizar
+              </button>
+            )}
+            {!esVistaLanding && todosSonPropios && (
               <button
                 type="button"
                 className="vit-seleccion-cancelar vit-seleccion-combo"
@@ -842,10 +878,12 @@ export default function VitrinaGrid() {
                 Eliminar
               </button>
             )}
-            <button type="button" className="vit-seleccion-cta" onClick={generarLanding} disabled={generandoLanding}>
-              {generandoLanding ? <Loader size={15} className="spin-icon" /> : null}
-              {enOnboarding ? 'Publicar productos en la web' : 'Publicar productos en la web'} <ChevronRight size={15} />
-            </button>
+            {!esVistaLanding && (
+              <button type="button" className="vit-seleccion-cta" onClick={generarLanding} disabled={generandoLanding}>
+                {generandoLanding ? <Loader size={15} className="spin-icon" /> : null}
+                {enOnboarding ? 'Publicar productos en la web' : 'Publicar productos en la web'} <ChevronRight size={15} />
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -895,32 +933,30 @@ export default function VitrinaGrid() {
           ))}
         </div>
 
-        {!esVistaLanding && (
-          <div className="vit-bulk-select">
-            <button
-              type="button"
-              className={`vit-bulk-select-btn ${paginaSeleccionada ? 'active' : ''}`}
-              onClick={seleccionarPagina}
-              disabled={itemsFiltrados.length === 0}
-              aria-pressed={paginaSeleccionada}
-            >
-              <Check size={14} />
-              {paginaSeleccionada ? 'Quitar página' : 'Seleccionar página'}
-              <span>{itemsFiltrados.length}</span>
-            </button>
-            <button
-              type="button"
-              className={`vit-bulk-select-btn ${totalFiltradoSeleccionado ? 'active' : ''}`}
-              onClick={seleccionarTodoFiltrado}
-              disabled={!totalItems || seleccionandoTodos}
-              aria-pressed={totalFiltradoSeleccionado}
-            >
-              {seleccionandoTodos ? <Loader size={14} className="spin-icon" /> : <Check size={14} />}
-              {totalFiltradoSeleccionado ? 'Quitar todo' : 'Seleccionar todo'}
-              <span>{totalItems}</span>
-            </button>
-          </div>
-        )}
+        <div className="vit-bulk-select">
+          <button
+            type="button"
+            className={`vit-bulk-select-btn ${paginaSeleccionada ? 'active' : ''}`}
+            onClick={seleccionarPagina}
+            disabled={itemsFiltrados.length === 0}
+            aria-pressed={paginaSeleccionada}
+          >
+            <Check size={14} />
+            {paginaSeleccionada ? 'Quitar página' : 'Seleccionar página'}
+            <span>{itemsFiltrados.length}</span>
+          </button>
+          <button
+            type="button"
+            className={`vit-bulk-select-btn ${totalFiltradoSeleccionado ? 'active' : ''}`}
+            onClick={seleccionarTodoFiltrado}
+            disabled={!totalItems || seleccionandoTodos}
+            aria-pressed={totalFiltradoSeleccionado}
+          >
+            {seleccionandoTodos ? <Loader size={14} className="spin-icon" /> : <Check size={14} />}
+            {totalFiltradoSeleccionado ? 'Quitar todo' : 'Seleccionar todo'}
+            <span>{totalItems}</span>
+          </button>
+        </div>
 
         {/* Filtro de categoría */}
         {categoriasUnicas.length > 0 && (
@@ -963,6 +999,15 @@ export default function VitrinaGrid() {
             <option key={o.valor} value={o.valor}>{o.label}</option>
           ))}
         </select>
+        {filtro === 'mios' && (
+          <button
+            type="button"
+            className="btn-secondary vit-import-own-btn"
+            onClick={() => setCargaMasivaAbierta(true)}
+          >
+            <FileSpreadsheet size={16} /> Importar mis productos
+          </button>
+        )}
       </div>
 
       {/* ── Contenido ── */}
@@ -1010,7 +1055,7 @@ export default function VitrinaGrid() {
               onEditarProducto={(id) => navigate(`/products/${id}/editar`)}
               onAbastecer={(prod) => setProductoAbastecer(prod)}
               filtro={filtro}
-              seleccionable={!esVistaLanding}
+              seleccionable
             />
           ))}
         </div>

@@ -152,9 +152,13 @@ describe('runtime del lienzo en blanco — inicio', () => {
     });
     const ids = () => [...document.querySelectorAll('#productos [data-gesicomm-item]')].map(el => el.getAttribute('data-gesicomm-item'));
     const select = document.querySelector('[data-gesicomm-filtro="categoria"]');
+    const dropdown = select.nextElementSibling;
 
     expect(select.disabled).toBe(false);
     expect(select.value).toBe('Cocina');
+    expect(dropdown?.getAttribute('data-gesicomm-select-ui')).toBe('true');
+    expect(dropdown.querySelector('.gc-select-ui-button').textContent).toBe('Cocina');
+    expect(select.style.opacity).toBe('0');
     expect(document.querySelector('[data-gesicomm-categoria="nombre"]').textContent).toBe('Cocina');
     expect(ids()).toEqual(['air-fryer-26l', 'malo']);
 
@@ -265,6 +269,39 @@ describe('runtime del lienzo en blanco — inicio', () => {
     descuento.checked = true;
     descuento.dispatchEvent(new window.Event('change', { bubbles: true }));
     expect(mensajes.filter(m => m.tipo === 'gesicomm:catalogo').at(-1)).toMatchObject({ soloDescuento: true, pagina: 1 });
+    dom.window.close();
+  });
+
+  it('muestra el selector estilizado desde el primer render y lo mantiene al cargar el catálogo publicado paginado', () => {
+    const { window, document, mensajes, click, dom } = montar(PLANTILLA_CATALOGO_TEST, {
+      ...datos,
+      vista: 'catalogo',
+      catalogo: { paginado: true, total: 80 },
+      productos: [{ ...airFryer, categoria: 'Cocina' }],
+    });
+    const select = document.querySelector('select[data-gesicomm-filtro="categoria"]');
+    const dropdownInicial = select.nextElementSibling;
+
+    expect(dropdownInicial?.getAttribute('data-gesicomm-select-ui')).toBe('true');
+    expect(dropdownInicial.querySelector('.gc-select-ui-button').textContent).toBe('Todas');
+    expect(select.style.opacity).toBe('0');
+
+    const pedido = mensajes.find(m => m.tipo === 'gesicomm:catalogo');
+    window.dispatchEvent(new window.MessageEvent('message', {
+      source: window,
+      data: {
+        tipo: 'gesicomm:catalogo-respuesta',
+        id: pedido.id,
+        productos: [airFryer],
+        categorias: ['Cocina', 'Ropa'],
+        total: 80,
+      },
+    }));
+
+    expect([...document.querySelectorAll('.gc-select-ui-option')].map(op => op.textContent)).toContain('Ropa');
+    click('[data-gesicomm-select-value="Ropa"]');
+    expect(select.value).toBe('Ropa');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:catalogo').at(-1)).toMatchObject({ categoria: 'Ropa', soloInicio: false, pagina: 1 });
     dom.window.close();
   });
 
@@ -1468,6 +1505,63 @@ describe('runtime — order bump en la ficha', () => {
       descuento_boton_pct: 10,
       payment_method: 'pagopar',
     });
+  });
+
+  it('sin PagoPar conectado, la tienda publicada no ofrece el botón de pago anticipado', () => {
+    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, pago_anticipado: { disponible: false, editor: false } });
+    const boton = document.querySelector('.buy-row [data-gesicomm-comprar]');
+    expect(boton.style.display).toBe('none');
+    // El aviso es para el comercio: al cliente no le llega.
+    expect(boton.hasAttribute('title')).toBe(false);
+    click('.buy-row [data-gesicomm-comprar]');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout')).toEqual([]);
+  });
+
+  it('sin PagoPar conectado, el editor deja el botón a la vista pero apagado, con el motivo', () => {
+    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, pago_anticipado: { disponible: false, editor: true } });
+    const boton = document.querySelector('.buy-row [data-gesicomm-comprar]');
+    expect(boton.style.display).not.toBe('none');
+    expect(boton.getAttribute('aria-disabled')).toBe('true');
+    expect(boton.getAttribute('title')).toMatch(/conectá PagoPar en Mi tienda → Pagos/);
+    click('.buy-row [data-gesicomm-comprar]');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout')).toEqual([]);
+  });
+});
+
+describe('pago anticipado en el checkout propio', () => {
+  const mouse = { content_id: 'mouse', referencia_id: 1, tipo: 'producto', nombre: 'Mouse', precio: 89000, imagen: 'https://cdn.test/m.jpg', stock: 4, ofertas: [] };
+  const carrito = [{ clave: 'm', tipo: 'producto', contentId: 'mouse', nombre: 'Mouse', precio: 89000, cantidad: 1 }];
+  const montarCheckout = (pasarelas, opciones = {}) => montar(
+    PLANTILLA_CHECKOUT,
+    datosRuntimePublico({ catalogo_items: [mouse], content: {}, checkout: { pasarelas } }, 'tienda', null, { vista: 'checkout', carrito, ...opciones }),
+  );
+  const radio = (document, valor) => document.querySelector(`input[name="payment_method"][value="${valor}"]`);
+
+  it('con PagoPar conectado sigue siendo la opción marcada', () => {
+    const { document, dom } = montarCheckout([{ provider: 'pagopar', environment: 'production' }]);
+    expect(radio(document, 'pagopar').checked).toBe(true);
+    expect(radio(document, 'pagopar').disabled).toBe(false);
+    expect(radio(document, 'pagopar').closest('label').style.display).not.toBe('none');
+    dom.window.close();
+  });
+
+  it('sin PagoPar la tienda publicada la saca y deja marcado el contra entrega', () => {
+    const { document, dom } = montarCheckout([]);
+    expect(radio(document, 'pagopar').closest('label').style.display).toBe('none');
+    expect(radio(document, 'pagopar').checked).toBe(false);
+    expect(radio(document, 'pagopar').disabled).toBe(true);
+    expect(radio(document, 'contra_entrega').checked).toBe(true);
+    dom.window.close();
+  });
+
+  it('sin PagoPar el editor la muestra apagada con el motivo', () => {
+    const { document, dom } = montarCheckout(undefined, { pagoparConectado: false });
+    const opcion = radio(document, 'pagopar').closest('label');
+    expect(opcion.style.display).not.toBe('none');
+    expect(opcion.getAttribute('title')).toMatch(/conectá PagoPar en Mi tienda → Pagos/);
+    expect(radio(document, 'pagopar').disabled).toBe(true);
+    expect(radio(document, 'contra_entrega').checked).toBe(true);
+    dom.window.close();
   });
 });
 

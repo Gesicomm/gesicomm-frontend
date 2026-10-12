@@ -201,11 +201,18 @@ export default function CartDrawer({
     ? { '--l-primary': primarioTema, '--l-on-primary': tintaSobre(primarioTema) }
     : undefined;
 
+  // Pago anticipado = PagoPar. Sin la pasarela conectada el método que pidió
+  // el botón de la ficha no se aplica: las opciones de abajo ni se muestran,
+  // y el pedido salía igual como 'pagopar' para fallar recién al cobrar.
+  const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
+  const metodoInicial = paymentMethodInicial === 'efectivo' || (paymentMethodInicial === 'pagopar' && hasPagoPar)
+    ? paymentMethodInicial
+    : null;
+
   useEffect(() => {
-    if (!abierto || !paymentMethodInicial) return;
-    if (paymentMethodInicial !== 'pagopar' && paymentMethodInicial !== 'efectivo') return;
-    setForm(prev => prev.payment_method === paymentMethodInicial ? prev : { ...prev, payment_method: paymentMethodInicial });
-  }, [abierto, paymentMethodInicial]);
+    if (!abierto || !metodoInicial) return;
+    setForm(prev => prev.payment_method === metodoInicial ? prev : { ...prev, payment_method: metodoInicial });
+  }, [abierto, metodoInicial]);
 
   async function aplicarCupon() {
     setValidandoCupon(true);
@@ -234,7 +241,6 @@ export default function CartDrawer({
   const cantidadTotal = items.reduce((s, it) => s + it.cantidad, 0);
   const subtotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
   const pagaOnline = form.payment_method === 'pagopar';
-  const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
 
   /**
    * Qué falta para poder comprar, en el orden en que aparece en el
@@ -355,9 +361,7 @@ export default function CartDrawer({
 
   function reiniciar() {
     setPaso('carrito');
-    setForm(paymentMethodInicial === 'pagopar' || paymentMethodInicial === 'efectivo'
-      ? { ...FORM_VACIO, payment_method: paymentMethodInicial }
-      : FORM_VACIO);
+    setForm(metodoInicial ? { ...FORM_VACIO, payment_method: metodoInicial } : FORM_VACIO);
     setCiudadDeliveryInput('');
     setAcepta(false);
     setResultado(null);

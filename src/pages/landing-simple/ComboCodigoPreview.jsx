@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ImageOff, Layers, ShoppingCart } from 'lucide-react';
 import CodigoPreview from './CodigoPreview';
 import { contentIdPanel, datosRuntimePreview } from './datosRuntime';
+import { usePagoparConectado } from './usePagoparConectado';
 import { getMediaUrl } from '../../services/api';
 
 // El ID 0 identifica únicamente este borrador en el preview; nunca se guarda.
@@ -32,12 +33,13 @@ export default function ComboCodigoPreview({ landing, device, onDeviceChange, ..
     if (contenedor.current) observer.observe(contenedor.current);
     return () => observer.disconnect();
   }, []);
+  const pagoparConectado = usePagoparConectado();
   const item = useMemo(() => itemComboEnCurso(armado), [armado.combo, armado.principal, armado.upsells, armado.precioTotal, armado.imagenes, armado.faq]);
   const datos = useMemo(() => datosRuntimePreview({
     productos: [...(landing.productos || []).filter(p => !(p.tipo === 'combo' && Number(p.id) === 0)), item],
     tienda: landing.tienda, venta: landing.venta, ofertas: landing.ofertas || [],
-    vista, productoId: contentIdPanel(item),
-  }), [landing, item, vista]);
+    vista, productoId: contentIdPanel(item), pagoparConectado,
+  }), [landing, item, vista, pagoparConectado]);
   const codigoInicio = landing.codigos?.inicio;
   const anchoDispositivo = { desktop: 1280, tablet: 768, mobile: 390 }[device] || 1280;
   const escala = ancho ? Math.min(1, ancho / anchoDispositivo) : 1;

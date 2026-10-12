@@ -3,6 +3,7 @@ import CurrencyInput from '../../components/CurrencyInput';
 import { getMediaUrl } from '../../services/api';
 import { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import { contenidoFicha } from './datosRuntime';
+import { AVISO_PAGO_ANTICIPADO } from './usePagoparConectado';
 import ImagenesProductoLanding from './ImagenesProductoLanding';
 import { GripVertical, Upload } from 'lucide-react';
 
@@ -401,6 +402,9 @@ export default function PresentacionProducto({
   pagoLogos = null,
   paymentLogosCatalogo = [],
   onPagoLogosChange = null,
+  // false = el comercio no conectó PagoPar: el pago anticipado se muestra
+  // apagado. null = todavía no se sabe, no se bloquea nada.
+  pagoparConectado = null,
   inicialmenteAbierto = false,
   bloqueRecomendados = null,
   recomendadosActivo = true,
@@ -408,6 +412,7 @@ export default function PresentacionProducto({
   onRecomendadosVisible = null,
 }) {
   const precio = Number(precioDeVenta(item)) || 0;
+  const sinPagopar = pagoparConectado === false;
   const descuento = descuentoDesdeAncla(precio, ancla);
   const src = imagenPrincipal(item);
   const titulo = item.titulo_comercial || item.nombre || 'Producto';
@@ -596,8 +601,9 @@ export default function PresentacionProducto({
         <BloqueFicha numero="9" titulo="Botones de contacto y pago" resumen={resumenContacto} visible={visibleBloque('contacto_pago')} onVisible={v => cambiarBloques({ contacto_pago: v, compra: v })} bloqueClave="contacto_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('contacto_pago')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_150px]">
             <label className="block text-xs text-fg-muted">Botón principal de compra<input className={campo} value={item.cta_texto || ''} maxLength={42} placeholder="Comprar con pago anticipado" onChange={e => onCambiar('cta_texto', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted">Descuento pago anticipado %<input className={campo} type="number" min="0" max="95" step="0.1" inputMode="decimal" value={item.cta_descuento_pct ?? ''} placeholder="Ej: 10" onChange={e => onCambiar('cta_descuento_pct', e.target.value)} onBlur={e => onCambiar('cta_descuento_pct', normalizarDescuentoBoton(e.target.value))} /></label>
+            <label className={`block text-xs text-fg-muted ${sinPagopar ? 'cursor-not-allowed opacity-60' : ''}`} title={sinPagopar ? AVISO_PAGO_ANTICIPADO : undefined}>Descuento pago anticipado %<input className={`${campo} ${sinPagopar ? 'cursor-not-allowed' : ''}`} type="number" min="0" max="95" step="0.1" inputMode="decimal" disabled={sinPagopar} value={item.cta_descuento_pct ?? ''} placeholder="Ej: 10" onChange={e => onCambiar('cta_descuento_pct', e.target.value)} onBlur={e => onCambiar('cta_descuento_pct', normalizarDescuentoBoton(e.target.value))} /></label>
           </div>
+          {sinPagopar && <p className="text-xs leading-relaxed text-fg-muted">{AVISO_PAGO_ANTICIPADO} Mientras tanto el botón de pago anticipado no se ofrece en la tienda publicada.</p>}
           <ListaBotones titulo="Botones de pago" ayuda="Botones secundarios como Pago contra entrega, Comprar por WhatsApp o un link de pago. Podés sumar un descuento por botón para incentivar el pago anticipado." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} descuentos />
           <ListaBotones titulo="Botones configurables de contacto" ayuda="Caminos de contacto adicionales de esta ficha. WhatsApp usa el mensaje configurado en Mi tienda." items={botonesContacto} campoLista="botones_contacto" onCambiar={onCambiar} ocultarValorWhatsapp />
         </BloqueFicha>

@@ -175,7 +175,7 @@ export default function ProductList() {
         </div>
         <div className="prod-header-actions">
           <button className="btn-secondary" onClick={() => setModalImportacion(true)}>
-            <FileSpreadsheet size={16} /> Agregar productos masivamente
+            <FileSpreadsheet size={16} /> Importar mis productos
           </button>
           <button className="btn-primary" onClick={() => navigate('/products/nuevo')}>
             <Plus size={16} /> Nuevo producto

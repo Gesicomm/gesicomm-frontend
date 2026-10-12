@@ -172,14 +172,6 @@
    tarjeta "Embudo de Conversión" — solo agrega el margen que necesita ahí. */
 .md-tabs-embudo { margin: 0.9rem 0 1.2rem; }
 
-/* Selector de landing: mismo patrón que productos, con búsqueda porque una
-   cuenta puede tener muchas páginas históricas y no entran bien como tabs. */
-.md-landing-filter {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: min(360px, 100%);
-}
 .md-tabs-label {
   display: inline-flex;
   align-items: center;
@@ -192,20 +184,6 @@
   color: var(--md-ink-faint);
   white-space: nowrap;
 }
-/* Una página sin publicar puede tener historial pero no recibe tráfico
-   nuevo: se avisa en el propio tab para no leer sus ceros como una caída. */
-.md-tab-badge {
-  margin-left: 0.35rem;
-  padding: 0.05rem 0.3rem;
-  border-radius: 4px;
-  background: var(--md-surface-2);
-  color: var(--md-ink-faint);
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
 .md-selects {
   display: flex;
   justify-content: flex-end;
@@ -226,7 +204,6 @@
 }
 .md-select:last-child { min-width: min(260px, 100%); }
 .md-select:focus { border-color: var(--md-confirmado); }
-.md-select-landing { min-width: min(300px, 100%); }
 
 /* Selector de producto con búsqueda: mismo look que .md-select, pero es un
    <button> que abre un panel propio en vez de dejar que el navegador dibuje
@@ -321,7 +298,6 @@
   margin: 0;
 }
 @media (max-width: 600px) {
-  .md-landing-filter { width: 100%; }
   .md-combo { width: 100%; }
   .md-combo-panel { left: 0; right: 0; width: auto; }
 }

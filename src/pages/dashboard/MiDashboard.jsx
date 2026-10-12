@@ -506,8 +506,8 @@ function TablaEmbudoProductos({ filas }) {
   if (filas.length === 0) {
     return (
       <p className="md-empty-hint">
-        Todavía nadie consultó productos en tu landing en este período. Acá aparecen
-        solo los productos que despertaron interés ahí; los que vendés a mano o por
+        Todavía nadie consultó productos en tu tienda en este período. Acá aparecen
+        solo los productos que despertaron interés en tus páginas; los que vendés a mano o por
         WhatsApp se ven en "Más Vendidos".
       </p>
     );
@@ -518,7 +518,7 @@ function TablaEmbudoProductos({ filas }) {
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Leads <Ayuda texto="Cuánta gente mostró interés en este producto en tu landing: cuanta gente llego a whatsapp con ese producto." /></th>
+            <th>Leads <Ayuda texto="Cuánta gente mostró interés en este producto en tu tienda: cuánta gente llegó a WhatsApp con ese producto." /></th>
             <th>Confirmados <Ayuda texto="De esos interesados, a cuántos les tomaste el pedido y lo confirmaron. Todavía no es una venta cobrada." /></th>
             <th>Compras <Ayuda texto="De esos pedidos confirmados, cuántos llegaron a manos del cliente. Esta sí es la venta concretada." /></th>
             <th>{METRIC_TERMS.conversion} <Ayuda texto="De cada 100 pedidos confirmados de este producto, cuántos terminaron entregados. Es Compras dividido Confirmados." /></th>
@@ -894,9 +894,8 @@ function TablaRendimientoCanal({ filas }) {
  * se pueda ver POR QUÉ (una landing puede facturar poco porque no le llega
  * gente, o porque le llega y no convierte — son dos problemas distintos).
  *
- * Esta tabla NO obedece al selector de landing del header, a propósito:
- * comparar páginas entre sí con una sola seleccionada no compara nada. Sí
- * respeta el período y el filtro de producto.
+ * Esta tabla compara páginas entre sí dentro del período y el filtro de
+ * producto elegidos por el dashboard.
  */
 function TablaRankingLandings({ ranking }) {
   const filas = ranking?.top || [];
@@ -1208,36 +1207,6 @@ function SelectorProducto({ productos, value, onChange, disabled }) {
   );
 }
 
-function SelectorLanding({ landings, value, onChange, disabled }) {
-  const etiquetaTipo = (tipo) => {
-    if (tipo === 'inicio') return 'inicio';
-    if (tipo === 'catalogo') return 'catálogo';
-    if (tipo === 'contacto') return 'contacto';
-    if (tipo === 'funnel') return 'funnel';
-    return tipo || 'landing';
-  };
-
-  return (
-    <select
-      className="md-select md-select-landing"
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      disabled={disabled}
-      aria-label="Landing"
-    >
-      <option value="TODAS">Todas las landings</option>
-      {landings.map(l => (
-        <option
-          key={l.landing_id}
-          value={l.landing_id}
-        >
-          {l.nombre} ({etiquetaTipo(l.tipo_pagina)}{!l.publicada ? ' - sin publicar' : ''})
-        </option>
-      ))}
-    </select>
-  );
-}
-
 const EMBUDOS_TABS = [
   { id: 'formularios', label: 'Formularios Web' },
   { id: 'whatsapp', label: 'WhatsApp' },
@@ -1251,18 +1220,6 @@ export default function MiDashboard() {
   const [productoId, setProductoId] = useState('TODOS');
   const [embudoTab, setEmbudoTab] = useState('formularios');
   const [verTodosProductos, setVerTodosProductos] = useState(false);
-
-  // Qué landing se está mirando. 'TODAS' = toda la tienda (sin filtrar), que
-  // es el total del negocio; un id = solo esa página.
-  //
-  // Antes esto era una heurística que elegía UNA landing sola (es_home →
-  // 'inicio' → la primera) y no se podía cambiar. Con varias tiendas
-  // publicadas eso apuntaba a cualquier página — en un caso real, a una
-  // recién creada y ni siquiera publicada, con cero eventos: el embudo
-  // mostraba "0 visitas → 3 formularios" porque las visitas eran de esa
-  // página vacía y los pedidos, de todo el negocio. Elegir a mano es la
-  // única forma de que las dos mitades del embudo hablen de lo mismo.
-  const [landingId, setLandingId] = useState('TODAS');
   const [ventas, setVentas] = useState(null);
   const [pixel, setPixel] = useState(null);
   // "No se pudo traer el tráfico" ≠ "hubo 0 visitas". Sin esta distinción, un
@@ -1278,7 +1235,6 @@ export default function MiDashboard() {
       mes: periodo === 'personalizado_mes' ? mes : undefined,
       anio,
       producto_id: productoId !== 'TODOS' ? productoId : undefined,
-      landing_id: landingId !== 'TODAS' ? landingId : undefined,
     };
     try {
       const [ventasRes, pixelRes] = await Promise.all([
@@ -1286,12 +1242,12 @@ export default function MiDashboard() {
         // 'todas' suma el tráfico de todas las páginas de la tienda. Va con
         // catch propio para que un problema del pixel no deje sin ventas al
         // dashboard entero: el lado de la plata tiene que verse igual.
-        landingService.estadisticasRango(landingId === 'TODAS' ? 'todas' : landingId, filtros)
-          .catch(err => { console.error('Error cargando el tráfico de la landing:', err); return null; }),
+        landingService.estadisticasRango('todas', filtros)
+          .catch(err => { console.error('Error cargando el tráfico de la tienda:', err); return null; }),
       ]);
       setVentas(ventasRes);
       // Se pisa siempre, incluso con null: dejar el pixel anterior al cambiar
-      // de tab mostraría las visitas de OTRA landing junto a estos pedidos.
+      // de tab mostraría visitas anteriores junto a estos pedidos.
       setPixel(pixelRes);
       setPixelFallo(pixelRes === null);
     } catch (err) {
@@ -1299,7 +1255,7 @@ export default function MiDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [periodo, mes, anio, productoId, landingId]);
+  }, [periodo, mes, anio, productoId]);
 
   useEffect(() => {
     cargar();
@@ -1311,9 +1267,7 @@ export default function MiDashboard() {
   // el front nunca hardcodea esas listas.
   const aniosDisponibles = ventas?.anios_disponibles?.length ? ventas.anios_disponibles : [new Date().getFullYear()];
   const productosDisponibles = ventas?.productos_disponibles || [];
-  const landingsDisponibles = ventas?.landings_disponibles || [];
   const ranking = ventas?.ranking_landings || null;
-  const landingActiva = landingsDisponibles.find(l => String(l.landing_id) === String(landingId));
 
   const kpis = ventas?.kpis || { facturacion_entregada: 0, ticket_promedio: 0 };
   const funnel = ventas?.funnel || { entregados: 0 };
@@ -1406,7 +1360,7 @@ export default function MiDashboard() {
   // Datos de cada embudo — MISMOS cálculos que antes. Lo que cambió es que
   // las etapas del Pixel/CAPI (visitas → carrito → checkout) ahora abren el
   // embudo de Formularios Web en vez de vivir en un tab "Meta / CAPI"
-  // aparte: es el mismo tráfico de la misma landing, no dos canales.
+  // aparte: es el mismo tráfico de la tienda, no dos canales.
   const embudosPorTab = {
     // Al llegar a la tienda y tocar "pagar", la persona se bifurca: o paga
     // con Pagopar (embudo Pago en Web) o llena el formulario que la manda a
@@ -1435,15 +1389,13 @@ export default function MiDashboard() {
       // formularios" sin explicar que eran de páginas distintas.
       nota: [
         pixelFallo
-          ? 'No pudimos traer las visitas de esta página, por eso ese paso muestra un guion en vez de un número. Los pedidos de abajo sí son reales.'
+          ? 'No pudimos traer las visitas de la tienda, por eso ese paso muestra un guion en vez de un número. Los pedidos de abajo sí son reales.'
           : null,
         visitasFormulariosCompletadas
           ? 'Las visitas se muestran como mínimo igual a los formularios porque hay pedidos web en el período pero el tracking histórico de visitas no dejó filas de PageView/visita.'
           : null,
-        landingActiva
-          ? `Solo "${landingActiva.nombre}". Los pedidos que se cargaron antes de que el sistema empezara a guardar la landing de origen no entran acá: se ven en "Todas".`
-          : 'Sumando todas tus páginas. Los pedidos por WhatsApp y los cargados a mano también cuentan acá, aunque no vengan de ninguna landing.',
-        pixel?.visitas_sin_filtrar ? 'Visitas totales de la landing — un pageview no queda asociado a un producto, así que este número no se filtra por producto.' : null,
+        'Sumando toda tu tienda. Los pedidos por WhatsApp y los cargados a mano también cuentan acá, aunque no vengan de ninguna página.',
+        pixel?.visitas_sin_filtrar ? 'Visitas totales de la tienda: un pageview no queda asociado a un producto, así que este número no se filtra por producto.' : null,
       ].filter(Boolean).join(' '),
     },
     whatsapp: {
@@ -1518,24 +1470,6 @@ export default function MiDashboard() {
         </div>
 
         <div className="md-filtros">
-          {/* Selector de landing. Se muestra siempre que haya al menos una
-              tienda publicada: aun con una sola, "Todas" no es lo mismo que
-              esa página (suma catálogo, contacto, funnels y los pedidos
-              cargados a mano, que no vienen de ninguna landing). */}
-          {landingsDisponibles.length > 0 && (
-            <div className="md-landing-filter">
-              <span className="md-tabs-label">
-                Landing
-                <Ayuda texto="Elegí de qué página querés ver los números. Cada tienda tiene su propio tráfico y sus propios pedidos. 'Todas' suma el negocio completo, incluidos los pedidos por WhatsApp y los cargados a mano, que no vienen de ninguna landing — por eso 'Todas' siempre da más que la suma de las páginas." />
-              </span>
-              <SelectorLanding
-                landings={landingsDisponibles}
-                value={landingId}
-                onChange={setLandingId}
-                disabled={loading}
-              />
-            </div>
-          )}
           <div className="md-tabs">
             {PRESETS.map(p => (
               <button
@@ -1826,7 +1760,7 @@ export default function MiDashboard() {
         <h3 className="md-card-title">
           Leads vs. Confirmados por producto
           <span className="md-card-title-sub">pixel + confirmado a mano</span>
-          <Ayuda texto="Compara la intención de compra en la landing (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto. Solo aparecen los productos que tuvieron interés en la landing: lo que vendés a mano o por WhatsApp no pasa por acá, se ve en Más Vendidos." />
+          <Ayuda texto="Compara la intención de compra en la tienda (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto. Solo aparecen los productos que tuvieron interés en tus páginas: lo que vendés a mano o por WhatsApp no pasa por acá, se ve en Más Vendidos." />
         </h3>
         <TablaEmbudoProductos filas={embudoProductosVisibles} />
         {embudoProductos.length > 5 && (

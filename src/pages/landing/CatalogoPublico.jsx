@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { obtenerCatalogoLandingPublica, registrarVisitaLanding } from '../../services/landingPublicaService';
-import { useDocumentSeo } from '../../hooks/useDocumentSeo';
+import { useDocumentSeo, faviconDeLanding } from '../../hooks/useDocumentSeo';
 import { galeriaTarjetaDeItem, mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
 import { getMediaUrl } from '../../services/api';
 import { Store, Loader } from 'lucide-react';
@@ -82,7 +82,20 @@ export default function CatalogoPublico() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  useDocumentSeo(data ? `Catálogo - ${data.titulo || data.tienda?.nombre}` : 'Catálogo', data?.seo_descripcion || '');
+  const seoCatalogo = useMemo(() => {
+    if (!data) return { titulo: 'Catálogo' };
+    const nombreTienda = data.tienda?.nombre || data.titulo || 'Tienda';
+    const titulo = data.seo?.titulo || `Catálogo - ${nombreTienda}`;
+    const favicon = faviconDeLanding(data);
+    return {
+      titulo,
+      descripcion: data.seo?.descripcion || data.seo_descripcion || data.catalogo_descripcion || '',
+      keywords: data.seo?.keywords || null,
+      og_imagen: data.seo?.og_imagen || data.banner_imagen || null,
+      ...(favicon ? { favicon } : {}),
+    };
+  }, [data]);
+  useDocumentSeo(seoCatalogo, typeof window !== 'undefined' ? window.location.href : undefined);
 
   const catalogoCompleto = useMemo(
     () => (data?.catalogo_items?.length ? data.catalogo_items : (data?.items || [])),

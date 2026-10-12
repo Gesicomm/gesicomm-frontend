@@ -9,6 +9,11 @@ const RUTA_POR_TIPO = {
   ABASTECIMIENTO_COMPROBANTE_SUBIDO: '/abastecimiento',
 };
 
+function extraerPrimerUrl(texto) {
+  const match = String(texto || '').match(/https?:\/\/\S+/i);
+  return match?.[0]?.replace(/[),.;]+$/, '') || null;
+}
+
 function formatTimeAgo(dateString) {
   const d = new Date(dateString);
   if (isNaN(d)) return '';
@@ -56,6 +61,13 @@ export default function NotificationBell({
 
   const handleNotificationClick = async (notification) => {
     setIsOpen(false);
+    if (notification.tipo === 'IMPORTADA_CHINA_SOLICITUD') {
+      const url = extraerPrimerUrl(notification.mensaje);
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      await onMarkAsRead(notification.id);
+      return;
+    }
+
     await onMarkAsRead(notification.id);
     if (notification.entidad_tipo === 'raha_solicitud_admin') {
       navigate(`/admin/raha?solicitud=${notification.entidad_id}`);

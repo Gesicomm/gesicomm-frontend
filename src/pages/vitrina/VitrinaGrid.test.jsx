@@ -14,6 +14,7 @@ vi.mock('../../services/vitrinaService', () => ({
     guardarPrecioProducto: vi.fn(),
     guardarPrecioCombo: vi.fn(),
     categorizarProductos: vi.fn(),
+    despublicarLanding: vi.fn(),
   },
 }));
 
@@ -64,6 +65,11 @@ describe('VitrinaGrid Component', () => {
       actualizados: 1,
       categoria: { id: 10, nombre: 'Suplementos' },
       subcategoria: { id: 11, nombre: 'Energía' },
+    });
+    vitrinaService.despublicarLanding.mockResolvedValue({
+      landing_id: 10,
+      despublicados: 1,
+      restantes: 0,
     });
     vitrinaService.catalogo.mockResolvedValue({
       productos: [
@@ -125,6 +131,39 @@ describe('VitrinaGrid Component', () => {
 
     const btnMisProductos = screen.getByText('Productos propios');
     expect(btnMisProductos).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Importar mis productos/i })).toBeNull();
+  });
+
+  it('muestra "Importar mis productos" junto al orden solo en Productos propios', async () => {
+    renderWithRouter(<VitrinaGrid />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Producto de Prueba')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /Importar mis productos/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Productos propios', exact: true }));
+
+    await waitFor(() => {
+      expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          tipo: 'producto',
+          solamenteMios: true,
+        }),
+      );
+    });
+
+    const orden = screen.getByTitle('Ordenar por');
+    const importar = screen.getByRole('button', { name: /Importar mis productos/i });
+    expect(importar).toBeInTheDocument();
+    expect(orden.compareDocumentPosition(importar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Todos', exact: true }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /Importar mis productos/i })).toBeNull();
+    });
   });
 
   it('muestra solo los productos seleccionados para vender en la landing', async () => {
@@ -171,16 +210,60 @@ describe('VitrinaGrid Component', () => {
     expect(await screen.findByText('Producto en Landing')).toBeInTheDocument();
     expect(await screen.findByText('Combo en Landing')).toBeInTheDocument();
     expect(screen.queryByText('Producto fuera de Landing')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Seleccionar página/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Seleccionar todo/i })).toBeNull();
-    expect(screen.queryByRole('checkbox', { name: /Seleccionar Producto en Landing/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /Seleccionar página/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Seleccionar todo/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Seleccionar Producto en Landing/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Despublicar seleccionados/i })).toBeNull();
 
-    fireEvent.click(screen.getByRole('article', { name: 'Producto en Landing' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Seleccionar Producto en Landing/i }));
 
-    expect(screen.queryByRole('region', { name: 'Productos seleccionados' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Productos seleccionados' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Despublicar seleccionados/i })).toBeInTheDocument();
     expect(vitrinaService.catalogo).not.toHaveBeenCalled();
     expect(landingSimpleService.obtener).not.toHaveBeenCalled();
     expect(landingService.obtener).not.toHaveBeenCalled();
+  });
+
+  it('despublica masivamente desde Productos en mi landing y refresca el listado', async () => {
+    vitrinaService.catalogoPaginado
+      .mockResolvedValueOnce({
+        items: [{ id: 99, tipo: 'producto', nombre: 'Producto inicial', precio_base: 50000, precio_efectivo: 50000, stock: 10 }],
+        categorias: [],
+        proveedores: [],
+        totalPages: 1,
+        total: 1,
+      })
+      .mockResolvedValueOnce({
+        items: [{ id: 1, tipo: 'producto', nombre: 'Producto en Landing', precio_base: 50000, precio_efectivo: 50000, stock: 10 }],
+        categorias: [],
+        proveedores: [],
+        totalPages: 1,
+        total: 1,
+      })
+      .mockResolvedValueOnce({
+        items: [],
+        categorias: [],
+        proveedores: [],
+        totalPages: 1,
+        total: 0,
+      });
+
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto inicial');
+    fireEvent.click(screen.getByRole('button', { name: 'Productos en mi landing', exact: true }));
+    expect(await screen.findByText('Producto en Landing')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Seleccionar Producto en Landing/i }));
+    expect(screen.getByRole('region', { name: 'Productos seleccionados' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Despublicar seleccionados/i }));
+
+    await waitFor(() => expect(vitrinaService.despublicarLanding).toHaveBeenCalledWith([
+      { tipo: 'producto', id: 1 },
+    ]));
+    await waitFor(() => {
+      expect(screen.queryByRole('region', { name: 'Productos seleccionados' })).toBeNull();
+    });
+    expect(await screen.findByText('Todavía no tenés productos seleccionados para vender en tu landing.')).toBeInTheDocument();
   });
   it('activa solamenteMios al presionar "Productos propios" y restablece al presionar "Todos"', async () => {
     renderWithRouter(<VitrinaGrid />);

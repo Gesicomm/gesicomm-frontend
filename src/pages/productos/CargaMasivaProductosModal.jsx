@@ -4,7 +4,7 @@ import { productService } from '../../services/productService';
 import './productos.css';
 
 /**
- * Pop-up "Agregar productos masivamente": la plantilla de Gesicom (con el
+ * Pop-up "Importar mis productos": la plantilla de Gesicom (con el
  * paso a paso y el formato del archivo) y la importación desde Shopify.
  * Lo usan el listado de Productos del admin y Productos del panel de
  * usuario (vitrina): un solo pop-up para las dos pantallas.
@@ -102,7 +102,7 @@ export default function CargaMasivaProductosModal({ onCerrar, onImportado }) {
   };
 
   const esPlantilla = origenImportacion === 'gesicom';
-  const titulo = esPlantilla ? 'Agregar productos masivamente' : 'Importar productos desde Shopify';
+  const titulo = esPlantilla ? 'Importar mis productos' : 'Importar productos desde Shopify';
   const erroresDe = (r) => (r?.errores_total > 0 ? (
     <div className="import-errors">
       <strong>

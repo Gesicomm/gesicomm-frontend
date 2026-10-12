@@ -13,6 +13,7 @@ import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import PresentacionProducto from './PresentacionProducto';
+import { usePagoparConectado } from './usePagoparConectado';
 import { contentIdPanel, datosRuntimePreview, presentacionDelProducto, slugCategoria, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
@@ -732,7 +733,7 @@ export default function ConfigurarVentaCodigo({
       .catch(() => {});
     return () => { vivo = false; };
   }, []);
-  const productosSoloDesdeProductos = true;
+  const productosSoloDesdeProductos = false;
   function cambiarPresentacion(item, campo, valor) {
     setPresentacion(prev => ({ ...prev, [claveItem(item)]: { ...prev[claveItem(item)], [campo]: valor } }));
   }
@@ -900,7 +901,6 @@ export default function ConfigurarVentaCodigo({
       precio_ancla: Object.prototype.hasOwnProperty.call(anclas, claveItem(i)) ? (Number(anclas[claveItem(i)]) || null) : (i.precio_ancla ?? null),
     }));
   }, [esRegla, catalogoActual, modo, categorias, incluirCombos, tipo, manual, porClave, principal, presentacion, anclas]);
-
   const excedeManual = !esRegla && seleccion.length > MAX_PRODUCTOS_MANUAL;
   const categoriasLandingDisponibles = useMemo(() => {
     const conteo = new Map();
@@ -994,9 +994,10 @@ export default function ConfigurarVentaCodigo({
     () => candidatosDatosProducto.find(i => i.content_id === productoEditando) || null,
     [candidatosDatosProducto, productoEditando],
   );
+  const categoriaPreviewEsTodas = !categoriaPreview;
   const productosCategoriaActual = useMemo(
-    () => candidatosDatosProducto.filter(i => i.categoria === categoriaPreviewValida),
-    [candidatosDatosProducto, categoriaPreviewValida],
+    () => categoriaPreviewEsTodas ? candidatosDatosProducto : candidatosDatosProducto.filter(i => i.categoria === categoriaPreviewValida),
+    [candidatosDatosProducto, categoriaPreviewEsTodas, categoriaPreviewValida],
   );
   const resolverContentIdProducto = useCallback((id) => {
     const buscado = String(id || '');
@@ -1052,6 +1053,15 @@ export default function ConfigurarVentaCodigo({
       if (ya) return prev.filter(id => id !== contentId);
       return [...prev, contentId].slice(0, MAX_DESTACADOS);
     });
+  }
+
+  function quitarManual(item) {
+    const k = clave(item);
+    setModo('manual');
+    setManual(seleccion.filter(actual => clave(actual) !== k).map(clave));
+    if (principal === k) setPrincipal(null);
+    setAvisoPreview('Producto quitado de esta página de venta. No se eliminó del catálogo.');
+    setResaltado(null);
   }
 
   function activarOfertaCatalogo(contentId) {
@@ -1770,6 +1780,7 @@ export default function ConfigurarVentaCodigo({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productoConfigActual?.id, fichaEnPreview?.id, pedirFichaProducto]);
 
+  const pagoparConectado = usePagoparConectado();
   const datosPreview = useMemo(() => datosRuntimePreview({
     productos: productosPreview,
     tienda,
@@ -1781,7 +1792,8 @@ export default function ConfigurarVentaCodigo({
       ? contentIdPanel(seleccion[0])
       : (productoFicha ? contentIdPanel(productoFicha) : null),
     ofertas: ofertasConImagen,
-  }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion]);
+    pagoparConectado,
+  }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion, pagoparConectado]);
 
   // Dónde se ve cada tipo de oferta en la ficha (para resaltarla en la vista previa).
   function verOfertaEnFicha(oferta, producto) {
@@ -1853,7 +1865,6 @@ export default function ConfigurarVentaCodigo({
   // Lo que impide guardar, dicho como qué falta hacer.
   const bloqueo = (() => {
     if (modo === 'categoria' && !categorias.size) return 'Elegí al menos una categoría.';
-    if (!seleccion.length) return 'Agregá productos desde Productos para configurar esta landing.';
     if (excedeManual) return `Esta landing tiene más de ${MAX_PRODUCTOS_MANUAL} productos. Reducí la selección desde Productos.`;
     if (esRegla && seleccion.filter(i => i.precio_ancla != null || i.etiqueta || i.envio_incluido || i.mostrar_en_inicio === false || i.cta_texto || i.urgencia_texto || i.titulo_comercial || i.mensaje_comercial || i.insignia_principal || i.insignia_secundaria).length > MAX_PRODUCTOS_MANUAL) return `Podés personalizar hasta ${MAX_PRODUCTOS_MANUAL} productos; el resto sigue entrando con la configuración del catálogo.`;
     return null;
@@ -2354,6 +2365,7 @@ export default function ConfigurarVentaCodigo({
                         onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(productoConfigActual)]: v }))}
                         onCambiar={(campo, valor) => cambiarPresentacion(productoConfigActual, campo, valor)}
                         pagoLogos={pagoLogos}
+                        pagoparConectado={pagoparConectado}
                         paymentLogosCatalogo={paymentLogosCatalogo}
                         onPagoLogosChange={(clave, activo) => setPagoLogos(prev => ({ ...prev, [clave]: activo }))}
                         bloqueRecomendados={bloqueRecomendadosFicha}
@@ -2653,10 +2665,18 @@ export default function ConfigurarVentaCodigo({
                     ayuda="La página de categoría toma las categorías reales de esta landing. Elegí una categoría para ver y editar sus productos."
                     verDonde={() => verDonde('categoria', null)}
                   >
-                    {categoriasLandingDisponibles.length === 0 ? (
-                      <p className="text-sm text-fg-muted">Esta landing todavía no tiene productos con categoría.</p>
+                    {candidatosDatosProducto.length === 0 ? (
+                      <p className="text-sm text-fg-muted">Esta landing todavía no tiene productos para mostrar.</p>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                        <button
+                          type="button"
+                          onClick={() => { setCategoriaPreview(''); setVistaPreview('categoria'); setAvisoPreview('Preview de todas las categorías.'); setResaltado(null); }}
+                          className={`rounded-lg border px-3 py-2.5 text-left hover:border-border-strong ${categoriaPreviewEsTodas ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface'}`}
+                        >
+                          <span className="block text-sm font-semibold text-fg truncate">Todas las categorías</span>
+                          <span className="block text-xs text-fg-muted">{candidatosDatosProducto.length} producto{candidatosDatosProducto.length === 1 ? '' : 's'}</span>
+                        </button>
                         {categoriasLandingDisponibles.map(([cat, count]) => (
                           <button
                             key={cat}
@@ -2672,10 +2692,12 @@ export default function ConfigurarVentaCodigo({
                     )}
                   </Bloque>
 
-                  {categoriaPreviewValida && (
+                  {productosCategoriaActual.length > 0 && (
                     <Bloque
-                      titulo={`Productos de ${categoriaPreviewValida}`}
-                      ayuda="Editá precio anterior, descuento, badge, etiquetas de filtro y countdown de los productos de esta categoría."
+                      titulo={categoriaPreviewEsTodas ? 'Productos de todas las categorías' : `Productos de ${categoriaPreviewValida}`}
+                      ayuda={categoriaPreviewEsTodas
+                        ? 'Editá precio anterior, descuento, badge, etiquetas de filtro y countdown de todos los productos de esta landing.'
+                        : 'Editá precio anterior, descuento, badge, etiquetas de filtro y countdown de los productos de esta categoría.'}
                       verDonde={() => verDonde('categoria', null)}
                     >
                       <EditorPromosCatalogo
@@ -2706,6 +2728,11 @@ export default function ConfigurarVentaCodigo({
                           setResaltado(null);
                         }}
                         onQuitarOferta={quitarOfertaCatalogo}
+                        onDespublicar={item => {
+                          quitarManual(item);
+                          setVistaPreview('categoria');
+                          if (!categoriaPreviewEsTodas) setCategoriaPreview(prev => prev || categoriaPreviewValida);
+                        }}
                       />
                     </Bloque>
                   )}
@@ -5082,14 +5109,47 @@ function EditorPromosCatalogo({
   onOfertaTitulo,
   onOfertaTexto,
   onOfertaCta,
+  onDespublicar,
 }) {
+  const [busqueda, setBusqueda] = useState('');
+  const productosFiltrados = useMemo(() => {
+    const q = normalizarTexto(busqueda);
+    if (!q) return productos;
+    return productos.filter(item => normalizarTexto([
+      item.titulo_comercial,
+      item.nombre,
+      item.categoria,
+      item.slug,
+    ].filter(Boolean).join(' ')).includes(q));
+  }, [productos, busqueda]);
+  const productosVisibles = productosFiltrados.slice(0, 24);
+  useEffect(() => {
+    setBusqueda('');
+  }, [productos]);
   if (!productos.length) {
     return <p className="text-sm text-fg-muted">Primero elegí productos para la landing o usá una regla de catálogo.</p>;
   }
   return (
     <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <label className="relative block flex-1">
+          <span className="sr-only">Buscar productos</span>
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
+          <input
+            type="search"
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            aria-label="Buscar productos"
+            placeholder="Buscar producto"
+            className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-fg outline-none transition-colors placeholder:text-fg-muted focus:border-primary"
+          />
+        </label>
+        <span className="text-xs text-fg-muted">
+          {productosFiltrados.length} de {productos.length} producto{productos.length === 1 ? '' : 's'}
+        </span>
+      </div>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-        {productos.slice(0, 24).map(item => {
+        {productosVisibles.map(item => {
           const contentId = item.content_id || contentIdPanel(item);
           const precio = Number(precioDeVenta(item)) || Number(precioPanel(item)) || 0;
           const ancla = Number(item.precio_ancla ?? item.precio_tachado) || 0;
@@ -5110,9 +5170,9 @@ function EditorPromosCatalogo({
                   <span className="mt-1 block truncate text-[11px] text-fg-muted">{item.categoria || 'Sin categoría'}</span>
                 </span>
               </button>
-              <div className="mt-3 grid grid-cols-1 gap-2">
+              <div className={`mt-3 grid grid-cols-1 gap-2 ${onDespublicar ? 'sm:grid-cols-2' : ''}`}>
                 {enOferta && (
-                  <span className="inline-flex h-8 items-center justify-center rounded-lg border border-success/30 bg-success/10 px-3 text-xs font-semibold text-success">
+                  <span className={`inline-flex h-8 items-center justify-center rounded-lg border border-success/30 bg-success/10 px-3 text-xs font-semibold text-success ${onDespublicar ? 'sm:col-span-2' : ''}`}>
                     Countdown activo
                   </span>
                 )}
@@ -5123,12 +5183,22 @@ function EditorPromosCatalogo({
                 >
                   Editar promo
                 </button>
+                {onDespublicar && (
+                  <button
+                    type="button"
+                    onClick={() => onDespublicar(item)}
+                    className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-danger/30 bg-surface px-3 text-xs font-semibold text-danger transition-colors hover:bg-danger/[0.08]"
+                  >
+                    <X size={13} /> Despublicar
+                  </button>
+                )}
               </div>
             </div>
           );
         })}
       </div>
-      {productos.length > 24 && <p className="text-xs text-fg-muted">Mostrando los primeros 24 productos configurables. Los demás siguen usando su precio y datos del catálogo.</p>}
+      {productosFiltrados.length === 0 && <p className="text-sm text-fg-muted">No hay productos que coincidan con la búsqueda.</p>}
+      {productosFiltrados.length > 24 && <p className="text-xs text-fg-muted">Mostrando los primeros 24 productos configurables. Usá el buscador para encontrar uno específico.</p>}
     </div>
   );
 }

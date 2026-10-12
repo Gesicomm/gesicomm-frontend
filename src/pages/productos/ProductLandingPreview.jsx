@@ -5,6 +5,7 @@ import { tiendaService } from '../../services/tiendaService';
 import CodigoPreview from '../landing-simple/CodigoPreview';
 import { codigoFichaProducto } from '../landing-simple/fichaCodigoLanding';
 import { datosRuntimePublico } from '../landing-simple/datosRuntime';
+import { usePagoparConectado } from '../landing-simple/usePagoparConectado';
 import { landingSimpleService } from '../../services/landingSimpleService';
 
 const DEVICE_OPTIONS = [
@@ -70,6 +71,7 @@ export default function ProductLandingPreview({
   // MISMA ficha y el mismo runtime que la página publicada, no las
   // plantillas React de las landings rígidas.
   const [landing, setLanding] = useState(null);
+  const pagoparConectado = usePagoparConectado();
 
   useEffect(() => {
     if (!activo) return undefined;
@@ -184,9 +186,9 @@ export default function ProductLandingPreview({
     };
     return {
       codigo: codigoFichaProducto(landing?.content, contentId),
-      datos: datosRuntimePublico(data, landing?.slug || null, item, { vista: 'producto' }),
+      datos: datosRuntimePublico(data, landing?.slug || null, item, { vista: 'producto', pagoparConectado }),
     };
-  }, [landing, tienda, dto, producto, productoId]);
+  }, [landing, tienda, dto, producto, productoId, pagoparConectado]);
 
   const preview = useMemo(() => (
     <div style={{ height: 'min(78vh, 900px)' }}>

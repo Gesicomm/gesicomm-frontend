@@ -43,7 +43,7 @@ export default function FulfillmentEmptyState({ candidatos = [], onListo }) {
       {candidatos.length === 0 ? (
         <p className="mx-auto mt-5 max-w-lg rounded-md bg-warning/10 px-4 py-3 text-sm text-warning">
           No tenés ningún depósito propio disponible para usar como centro. Creá uno primero
-          en Mi tienda → Depósitos.
+          en Depósitos, desde el sidebar.
         </p>
       ) : (
         <>

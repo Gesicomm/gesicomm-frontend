@@ -38,8 +38,8 @@ describe('Carga masiva desde Productos del panel de usuario', () => {
     await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenCalled());
     const cargasAntes = vitrinaService.catalogoPaginado.mock.calls.length;
 
-    fireEvent.click(screen.getByRole('button', { name: 'Agregar productos masivamente' }));
-    const dialogo = screen.getByRole('dialog', { name: 'Agregar productos masivamente' });
+    fireEvent.click(screen.getByRole('button', { name: 'Importar mis productos' }));
+    const dialogo = screen.getByRole('dialog', { name: 'Importar mis productos' });
     expect(within(dialogo).getByRole('list', { name: 'Pasos para cargar productos masivamente' })).toBeInTheDocument();
     expect(await within(dialogo).findByRole('rowheader', { name: /SKU \*/ })).toBeInTheDocument();
 
@@ -55,6 +55,6 @@ describe('Carga masiva desde Productos del panel de usuario', () => {
     expect(vitrinaService.catalogoPaginado.mock.calls.length).toBeGreaterThan(cargasAntes);
 
     fireEvent.click(within(dialogo).getByText('Cerrar'));
-    expect(screen.queryByRole('dialog', { name: 'Agregar productos masivamente' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Importar mis productos' })).toBeNull();
   });
 });

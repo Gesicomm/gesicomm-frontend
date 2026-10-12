@@ -25,6 +25,12 @@ function setLink(rel, href) {
 
 const SELECTOR_ICONOS_ESTATICOS = 'link[rel="icon"], link[rel="shortcut icon"]';
 
+function normalizarSeo(seo, descripcionLegacy = '') {
+  if (!seo) return null;
+  if (typeof seo === 'string') return { titulo: seo, descripcion: descripcionLegacy || '' };
+  return seo;
+}
+
 /**
  * Reemplaza los <link rel="icon"> de Gesicom (index.html trae varios: svg +
  * png en distintos tamaños + ico) por uno solo apuntando al logo de la
@@ -76,22 +82,24 @@ export function faviconDeLanding(data) {
  */
 export function useDocumentSeo(seo, urlActual) {
   useEffect(() => {
-    if (!seo) return;
+    const seoNormalizado = normalizarSeo(seo, typeof urlActual === 'string' && !/^https?:\/\//i.test(urlActual) ? urlActual : '');
+    const urlFinal = typeof urlActual === 'string' && /^https?:\/\//i.test(urlActual) ? urlActual : undefined;
+    if (!seoNormalizado) return;
     const tituloAnterior = document.title;
-    if (seo.titulo) document.title = seo.titulo;
+    if (seoNormalizado.titulo) document.title = seoNormalizado.titulo;
 
-    setMeta('name', 'description', seo.descripcion);
-    setMeta('name', 'keywords', seo.keywords);
-    setMeta('property', 'og:title', seo.titulo);
-    setMeta('property', 'og:description', seo.descripcion);
-    setMeta('property', 'og:image', seo.og_imagen ? getMediaUrl(seo.og_imagen) : undefined);
-    setMeta('property', 'og:url', urlActual);
+    setMeta('name', 'description', seoNormalizado.descripcion);
+    setMeta('name', 'keywords', seoNormalizado.keywords);
+    setMeta('property', 'og:title', seoNormalizado.titulo);
+    setMeta('property', 'og:description', seoNormalizado.descripcion);
+    setMeta('property', 'og:image', seoNormalizado.og_imagen ? getMediaUrl(seoNormalizado.og_imagen) : undefined);
+    setMeta('property', 'og:url', urlFinal);
     setMeta('property', 'og:type', 'website');
-    setMeta('name', 'twitter:card', seo.og_imagen ? 'summary_large_image' : 'summary');
-    setMeta('name', 'twitter:title', seo.titulo);
-    setMeta('name', 'twitter:description', seo.descripcion);
-    setLink('canonical', urlActual);
-    const restaurarFavicon = seo.favicon ? setFavicon(getMediaUrl(seo.favicon)) : null;
+    setMeta('name', 'twitter:card', seoNormalizado.og_imagen ? 'summary_large_image' : 'summary');
+    setMeta('name', 'twitter:title', seoNormalizado.titulo);
+    setMeta('name', 'twitter:description', seoNormalizado.descripcion);
+    setLink('canonical', urlFinal);
+    const restaurarFavicon = seoNormalizado.favicon ? setFavicon(getMediaUrl(seoNormalizado.favicon)) : null;
 
     return () => {
       document.title = tituloAnterior;

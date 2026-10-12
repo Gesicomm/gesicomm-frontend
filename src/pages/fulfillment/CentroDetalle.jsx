@@ -205,9 +205,9 @@ export default function CentroDetalle() {
           <p className="m-0 mt-5 border-t border-border pt-4 text-[13px] text-fg-muted">
             Los datos del depósito se editan en{' '}
             <Link to="/mi-tienda/depositos" className="font-medium text-primary hover:underline">
-              Mi tienda → Depósitos
+              Depósitos
             </Link>
-            . Acá se ven porque son los que usa la red para coordinar retiros y entregas.
+            , desde el sidebar. Acá se ven porque son los que usa la red para coordinar retiros y entregas.
           </p>
         </div>
       )}
