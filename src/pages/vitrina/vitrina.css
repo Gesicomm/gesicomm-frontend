@@ -17,6 +17,13 @@
   --vit-border:        #243459;
   --vit-border-hover:  #324675;
   --vit-ok:            #34d399;
+  /* Texto sobre los avisos teñidos (error / éxito) y el botón de despublicar.
+     En oscuro va claro; en claro, un tono profundo — el rosa y el verde
+     pastel sobre blanco no se leían. */
+  --vit-danger-fg:       #fecaca;
+  --vit-danger-fg-hover: #ffffff;
+  --vit-ok-fg:           #86efac;
+  --vit-seleccion-sombra: 0 10px 30px rgba(0, 0, 0, 0.45);
   --vit-text:          #f8fafc;
   --vit-muted:         #94a3b8;
   --vit-muted-2:       #64748b;
@@ -40,6 +47,10 @@
   --vit-surface:       #ffffff;
   --vit-accent-soft:   rgba(13, 27, 61, 0.08);
   --vit-accent-fg:     #0d1b3d;
+  --vit-danger-fg:       #b91c1c;
+  --vit-danger-fg-hover: #991b1b;
+  --vit-ok-fg:           #047857;
+  --vit-seleccion-sombra: 0 6px 18px rgba(13, 27, 61, 0.12);
 }
 
 /* ─── Layout global ───────────────────────────────────────────────────── */
@@ -434,7 +445,7 @@
   background: var(--vit-card-bg);
   border: 1px solid var(--vit-accent);
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--vit-seleccion-sombra);
 }
 
 .vit-seleccion-conteo {
@@ -502,13 +513,13 @@
 }
 
 .vit-seleccion-despublicar {
-  color: #fecaca;
+  color: var(--vit-danger-fg);
   border-color: rgba(239, 68, 68, 0.28);
   background: rgba(239, 68, 68, 0.08);
 }
 
 .vit-seleccion-despublicar:hover {
-  color: #fff;
+  color: var(--vit-danger-fg-hover);
   background: rgba(239, 68, 68, 0.18);
 }
 
@@ -543,7 +554,7 @@
   padding: 0.65rem 0.85rem;
   border: 1px solid rgba(239, 68, 68, 0.28);
   border-radius: 8px;
-  color: #fecaca;
+  color: var(--vit-danger-fg);
   background: rgba(239, 68, 68, 0.12);
   font-size: 0.875rem;
 }
@@ -556,7 +567,7 @@
   padding: 0.65rem 0.85rem;
   border: 1px solid rgba(16, 185, 129, 0.28);
   border-radius: 8px;
-  color: #86efac;
+  color: var(--vit-ok-fg);
   background: rgba(16, 185, 129, 0.12);
   font-size: 0.875rem;
 }

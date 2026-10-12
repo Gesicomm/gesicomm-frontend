@@ -8,7 +8,7 @@ function zonaKey(departamento, ciudad) {
   return `${String(departamento || "").trim().toLowerCase()}::${String(ciudad || "").trim().toLowerCase()}`;
 }
 
-function normalizarRegla(regla) {
+export function normalizarRegla(regla) {
   return {
     departamento: regla.departamento || "",
     ciudad: regla.ciudad || "",
@@ -30,7 +30,7 @@ function reglasDesdeZonas(zonas) {
   return (zonas || []).map(normalizarRegla);
 }
 
-function paraApi(filas) {
+export function paraApi(filas) {
   return filas
     .filter(f => f.ciudad.trim())
     .map(f => ({
@@ -91,7 +91,9 @@ function huecosDeCobertura(reglas) {
 export function DeliveryPanel({
   zonas = [],
   couriers = [],
-  enviosCountByCourier = {},
+  // Opcional: en Depósitos no hay pedidos cargados, y mostrar "0 envíos"
+  // ahí sería afirmar algo que no se sabe.
+  enviosCountByCourier = null,
   esAdmin = false,
   onSaveZonas,
   onCreateCourier,
@@ -309,10 +311,10 @@ export function DeliveryPanel({
         <div style={styles.header}>
           <div>
             <h2 style={styles.titulo}>
-              <Users size={18} /> Delivery
+              <Users size={18} /> Couriers
             </h2>
             <p style={styles.descripcion}>
-              Cargá un courier y, en el mismo paso, las ciudades que cubre con sus rangos y tarifas.
+              Quién entrega tus pedidos, las ciudades que cubre cada uno y cuánto cobra.
             </p>
           </div>
           <button type="button" className="btn-nuevo-pedido" onClick={abrirNuevoCourier}>
@@ -412,7 +414,9 @@ export function DeliveryPanel({
                               {grupo.courier.vehiculo || "Sin definir"}
                               {grupo.courier.telefono ? ` · ${grupo.courier.telefono}` : ""}
                               {` · ${ciudadesDe(grupo.courier.id)} ciudad${ciudadesDe(grupo.courier.id) === 1 ? "" : "es"}`}
-                              {` · ${enviosCountByCourier[grupo.courier.id] ?? 0} envío${(enviosCountByCourier[grupo.courier.id] ?? 0) === 1 ? "" : "s"} en el rango`}
+                              {enviosCountByCourier
+                                ? ` · ${enviosCountByCourier[grupo.courier.id] ?? 0} envío${(enviosCountByCourier[grupo.courier.id] ?? 0) === 1 ? "" : "s"} en el rango`
+                                : ""}
                               {grupo.courier.acceso ? ` · Usuario: ${grupo.courier.acceso.username}` : " · Sin acceso al portal"}
                             </>
                           ) : (
@@ -932,7 +936,7 @@ function EmptyState({ onAdd }) {
   return (
     <div style={styles.empty}>
       <Users size={30} style={{ opacity: 0.35, margin: "0 auto 0.75rem" }} />
-      <p style={{ margin: 0, fontWeight: 800, color: "var(--color-fg)" }}>Todavía no configuraste el delivery</p>
+      <p style={{ margin: 0, fontWeight: 800, color: "var(--color-fg)" }}>Todavía no cargaste couriers</p>
       <p style={{ margin: "0.3rem 0 1rem", fontSize: "0.86rem" }}>
         Empezá cargando un courier: en el mismo asistente definís las ciudades que cubre y cuánto cobra en cada una.
       </p>

@@ -394,43 +394,6 @@
   margin: 0.5rem 0;
 }
 
-.order-card-lifecycle {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.35rem;
-  margin: 0.55rem 0 0.2rem;
-}
-
-.order-card-lifecycle div {
-  min-width: 0;
-  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
-  border-radius: 0.45rem;
-  background: color-mix(in srgb, var(--color-fg) 2.5%, transparent);
-  padding: 0.35rem 0.42rem;
-}
-
-.order-card-lifecycle span,
-.order-card-lifecycle strong {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.order-card-lifecycle span {
-  color: var(--color-fg-subtle);
-  font-size: 0.64rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.order-card-lifecycle strong {
-  margin-top: 0.08rem;
-  color: var(--color-fg-muted);
-  font-size: 0.68rem;
-  font-weight: 750;
-}
-
 .order-card-alerts {
   display: flex;
   flex-wrap: wrap;
@@ -3101,7 +3064,7 @@ button.order-alert-chip:focus-visible {
 
 .pt-cycle-summary {
   display: grid;
-  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
   gap: 0.5rem;
 }
 
@@ -3661,6 +3624,16 @@ button.order-alert-chip:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
+}
+/* En la tabla es un <td>: como flex dejaba de respetar el colSpan y el
+   mensaje quedaba apretado en la primera columna. */
+td.pt-empty {
+  display: table-cell;
+}
+td.pt-empty .pt-spinner {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.5rem;
 }
 
 /* ── Spinner ── */

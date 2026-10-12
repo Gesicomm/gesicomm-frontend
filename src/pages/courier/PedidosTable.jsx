@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
-  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Tag, Clock,
+  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Clock,
   Columns3, Table2, SlidersHorizontal
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
 import AbastecimientoTimeline from "../../components/abastecimiento/AbastecimientoTimeline";
 import { canalVentaService } from "../../services/canalVentaService";
-import { seguimientoService } from "../../services/seguimiento.service";
 import { verificarSesion } from "../../utils/auth";
 import { numeroPedidoVisible } from "./pedidoNumero";
 import { KanbanBoard } from "./kanban-board";
@@ -19,9 +18,6 @@ import {
   estadoComercial,
   estadoLogistico,
   paymentLine,
-  seguimientoComercial,
-  seguimientoLogistico,
-  seguimientoRecompra,
 } from "./orderLifecycle";
 
 
@@ -41,9 +37,13 @@ const TAB_ABASTECIMIENTO_CFG = {
 };
 const TODOS_ESTADOS_ID = "TODOS";
 
-const STATUS_COMPACT_LABEL = {
-  EnSeguimiento: "Seguimiento Contacto",
-};
+// "En seguimiento" ya no se muestra como estado aparte: para la bandeja un
+// pedido sin confirmar es Pendiente, lo estén contactando o no. El estado
+// sigue existiendo en el pedido, así que el filtro y el contador de Pendiente
+// lo incluyen para que esos pedidos no desaparezcan.
+const ESTADOS_AGRUPADOS = { Pendiente: ["Pendiente", "EnSeguimiento"] };
+const ESTADOS_SIN_CHIP = new Set(["EnSeguimiento"]);
+const estadosDeFiltro = (estado) => ESTADOS_AGRUPADOS[estado] || [estado];
 
 const ABASTECIMIENTO_TABS = [
   { id: "en_seguimiento", label: "En seguimiento", description: "Pago validado, en camino hacia el depósito" },
@@ -101,18 +101,12 @@ const FILTROS_VACIOS = {
   canal_venta_id: "TODOS",
   producto: "",
   metodo_pago_id: "TODOS",
-  etiqueta_id: "TODOS",
-  flujo_id: "TODOS",
-  seguimiento_responsable_id: "TODOS",
-  seguimiento_pendiente: false,
-  seguimiento_vencido: false,
 };
 
 const STAGE_TO_ESTADOS = {
   todos: null,
   comercial: COMMERCIAL_STATUSES,
   logistica: LOGISTIC_STATUSES,
-  recompra: [],
 };
 
 function EstadoBadgeDropdown({ estado, onChange }) {
@@ -343,48 +337,31 @@ function LifecycleCell({ primary, secondary, alert, tone = "neutral" }) {
   );
 }
 
+const enLogistica = (envio) => estadoLogistico(envio).id !== "SinLogistica";
+
 function ComercialCell({ envio }) {
   const estado = estadoComercial(envio);
-  const seguimiento = seguimientoComercial(envio);
-  const secondary = seguimiento.active
-    ? seguimiento.label
-    : estado.id === "confirmado"
-    ? paymentLine(envio)
-    : null;
   return (
     <LifecycleCell
       primary={estado.label}
-      secondary={secondary}
-      alert={envio.recordatorio_vencido ? "Acción vencida" : null}
-      tone={estado.id === "cancelado" ? "danger" : estado.id === "confirmado" ? "success" : seguimiento.active ? "info" : "warning"}
+      secondary={estado.id === "confirmado" ? paymentLine(envio) : null}
+      tone={estado.id === "cancelado" ? "danger" : estado.id === "confirmado" ? "success" : "warning"}
     />
   );
 }
 
+// El estado logístico existe recién cuando el pedido pasa a logística: antes
+// de eso la celda queda vacía.
 function LogisticaCell({ envio }) {
+  if (!enLogistica(envio)) return null;
   const estado = estadoLogistico(envio);
-  const seguimiento = seguimientoLogistico(envio);
-  const courier = envio.Courier?.nombre || envio.proveedor_logistico_nombre || null;
-  const secondary = estado.id === "SinLogistica"
-    ? "Disponible al confirmar"
-    : [courier, seguimiento.active ? "Seguimiento activo" : null].filter(Boolean).join(" · ");
+  const enCamino = ["Despachado", "Reprogramado"].includes(estado.id);
   return (
     <LifecycleCell
       primary={estado.label}
-      secondary={secondary}
+      secondary={envio.Courier?.nombre || envio.proveedor_logistico_nombre || null}
       alert={estado.id === "DevolucionPendiente" ? "Revisar devolución" : null}
-      tone={estado.id === "Entregado" ? "success" : estado.id === "DevolucionPendiente" ? "danger" : seguimiento.active ? "info" : "neutral"}
-    />
-  );
-}
-
-function RecompraCell({ envio }) {
-  const seguimiento = seguimientoRecompra(envio);
-  return (
-    <LifecycleCell
-      primary={seguimiento.status}
-      secondary={seguimiento.active ? seguimiento.label : "—"}
-      tone={seguimiento.active ? "info" : "neutral"}
+      tone={estado.id === "Entregado" ? "success" : estado.id === "DevolucionPendiente" ? "danger" : enCamino ? "info" : "neutral"}
     />
   );
 }
@@ -503,9 +480,6 @@ export function PedidosTable({
   const [metodosPagoList, setMetodosPagoList] = useState([]);
   const [canalesVenta, setCanalesVenta] = useState([]);
   const [usuarioActual, setUsuarioActual] = useState(null);
-  
-  const [etiquetas, setEtiquetas] = useState([]);
-  const [flujos, setFlujos] = useState([]);
 
   // Modals
   const [modalOpen, setModalOpen] = useState(false);
@@ -514,8 +488,6 @@ export function PedidosTable({
     getMetodosPago().then((data) => setMetodosPagoList(data || [])).catch(() => setMetodosPagoList([]));
     canalVentaService.listar().then((data) => setCanalesVenta(data || [])).catch(() => setCanalesVenta([]));
     verificarSesion().then((res) => setUsuarioActual(res)).catch(() => setUsuarioActual(null));
-    seguimientoService.getEtiquetas({ activo: true }).then(d => setEtiquetas(d || [])).catch(()=>{});
-    seguimientoService.getFlujos({ activo: true }).then(d => setFlujos(d || [])).catch(()=>{});
   }, []);
 
   useEffect(() => {
@@ -547,12 +519,6 @@ export function PedidosTable({
     if (f.canal_venta_id !== "TODOS") payload.canal_venta_id = f.canal_venta_id;
     if (f.producto.trim()) payload.producto_busqueda = f.producto.trim();
     if (f.metodo_pago_id !== "TODOS") payload.metodo_pago_id = f.metodo_pago_id;
-    
-    if (f.etiqueta_id !== "TODOS") payload.etiqueta_id = f.etiqueta_id;
-    if (f.flujo_id !== "TODOS") payload.flujo_id = f.flujo_id;
-    if (f.seguimiento_responsable_id !== "TODOS") payload.seguimiento_responsable_id = f.seguimiento_responsable_id;
-    if (f.seguimiento_pendiente) payload.seguimiento_pendiente = f.seguimiento_pendiente;
-    if (f.seguimiento_vencido) payload.seguimiento_vencido = f.seguimiento_vencido;
 
     if (soloAbastecimiento && incluirFiltroAbastecimiento) {
       if (abastecimientoEstadoActivo && abastecimientoEstadoActivo !== "TODOS") {
@@ -571,14 +537,12 @@ export function PedidosTable({
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (!soloAbastecimiento && estado === TAB_ABASTECIMIENTO_ID) {
         payload.abastecimiento_estado = "pagado";
-      } else if (!soloAbastecimiento && etapaActiva === "recompra") {
-        payload.recompra_activa = true;
       } else if (!soloAbastecimiento && etapaActiva !== "todos" && estadosEtapa?.length) {
         payload.estados = estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
-          ? [estado]
+          ? estadosDeFiltro(estado)
           : estadosEtapa;
       } else if (!soloAbastecimiento && estado && estado !== TODOS_ESTADOS_ID) {
-        payload.estados = [estado];
+        payload.estados = estadosDeFiltro(estado);
       }
       const res = await getEnviosPaginados(payload);
       setData(res);
@@ -601,7 +565,6 @@ export function PedidosTable({
       const payloadBase = { ...construirPayloadBase(f), limit: 100 };
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (etapaActiva !== "todos" && estadosEtapa?.length) payloadBase.estados = estadosEtapa;
-      if (etapaActiva === "recompra") payloadBase.recompra_activa = true;
 
       const acumulado = [];
       let pageToLoad = 1;
@@ -710,7 +673,7 @@ export function PedidosTable({
     setEtapaActiva(etapa);
     setPage(1);
     setTimelineExpandidoId(null);
-    if (etapa === "todos" || etapa === "recompra") {
+    if (etapa === "todos") {
       setEstadoActivo(TODOS_ESTADOS_ID);
       return;
     }
@@ -809,22 +772,12 @@ export function PedidosTable({
       label: metodosPagoList.find((m) => String(m.id) === String(filtros.metodo_pago_id))?.nombre || "Método de pago",
       reset: "TODOS",
     },
-    filtros.etiqueta_id !== "TODOS" && { key: "etiqueta_id", label: "Etiqueta aplicada", reset: "TODOS" },
-    filtros.flujo_id !== "TODOS" && { key: "flujo_id", label: "Flujo usado", reset: "TODOS" },
-    filtros.seguimiento_pendiente && { key: "seguimiento_pendiente", label: "Seguimiento pendiente", reset: false },
-    filtros.seguimiento_vencido && { key: "seguimiento_vencido", label: "Seguimiento vencido", reset: false },
   ].filter(Boolean);
   const esAdmin = usuarioActual?.rol === "administrador";
   const esTabAbastecimiento = !soloAbastecimiento && estadoActivo === TAB_ABASTECIMIENTO_ID;
   const estaEnKanban = !soloAbastecimiento && vista === "kanban";
 
-  const enviosBase = data.data || [];
-  const envios = etapaActiva === "recompra"
-    ? enviosBase.filter((e) => {
-        const recompra = seguimientoRecompra(e);
-        return recompra.active || e.recompra_conseguida || e.recompra_estado === "SIN_SEGUIMIENTO";
-      })
-    : enviosBase;
+  const envios = data.data || [];
   // Viene del backend (agregado sobre TODOS los pedidos filtrados, sin
   // paginar y sin restringir a un solo estado) para que el numero sea el
   // mismo en Tabla y en Kanban -- antes se sumaba solo lo cargado en
@@ -840,17 +793,20 @@ export function PedidosTable({
   const montoCourierEntregado = Number(resumenEntregados?.costo_total_courier || 0);
   const saldoLiquidacionEntregados = Number(resumenEntregados?.saldo_liquidacion || 0);
   const montoPendienteRendicion = Math.abs(saldoLiquidacionEntregados);
-  const tableColSpan = 9;
+  // La columna de estado logístico aparece recién cuando hay algún pedido que
+  // ya pasó a logística (o cuando se está mirando esa etapa).
+  const mostrarEstadoLogistico = !soloAbastecimiento && (etapaActiva === "logistica" || envios.some(enLogistica));
+  const tableColSpan = soloAbastecimiento ? 9 : mostrarEstadoLogistico ? 8 : 7;
   const resumenCiclo = {
     pendientes: Number(conteos.Pendiente || 0) + Number(conteos.EnSeguimiento || 0),
     confirmados: Number(conteos.Confirmado || 0),
     logistica: LOGISTIC_STATUSES.reduce((acc, st) => acc + Number(conteos[st] || 0), 0),
     entregados: Number(conteos.Entregado || 0),
-    recompra: Number(conteos.recompra_activa || 0),
-    incidencias: Number(conteos.Devuelto || 0) + Number(conteos.Perdido || 0) + Number(conteos.seguimiento_vencidos || 0),
+    incidencias: Number(conteos.Devuelto || 0) + Number(conteos.Perdido || 0),
   };
   const estadosEtapaActiva = STAGE_TO_ESTADOS[etapaActiva] || [];
   const totalEstadosEtapaActiva = estadosEtapaActiva.reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
+  const conteoDeFiltro = (estado) => estadosDeFiltro(estado).reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
 
   return (
     <div className="pt-root">
@@ -858,7 +814,7 @@ export function PedidosTable({
         <div className="pt-viewbar">
           <div className="pt-viewbar-copy">
             <strong>Pedidos</strong>
-            <span>Gestión comercial, logística y recompra · {loading ? "Cargando..." : `${totalPedidosVista.toLocaleString("es-PY")} pedido${totalPedidosVista === 1 ? "" : "s"}`}</span>
+            <span>Gestión comercial y logística · {loading ? "Cargando..." : `${totalPedidosVista.toLocaleString("es-PY")} pedido${totalPedidosVista === 1 ? "" : "s"}`}</span>
           </div>
 
           <div className="pt-view-switch" role="group" aria-label="Cambiar vista de pedidos">
@@ -888,7 +844,6 @@ export function PedidosTable({
           <ResumenItem label="Confirmados" value={resumenCiclo.confirmados.toLocaleString("es-PY")} tone="info" />
           <ResumenItem label="En logística" value={resumenCiclo.logistica.toLocaleString("es-PY")} tone="money" />
           <ResumenItem label="Entregados" value={resumenCiclo.entregados.toLocaleString("es-PY")} tone="success" />
-          <ResumenItem label="Recompra activa" value={resumenCiclo.recompra.toLocaleString("es-PY")} tone="default" />
           <ResumenItem label="Incidencias" value={resumenCiclo.incidencias.toLocaleString("es-PY")} tone="danger" />
         </section>
       )}
@@ -957,10 +912,10 @@ export function PedidosTable({
               <span className="pt-status-chip__label">Todos</span>
               <strong className="pt-status-chip__count">{totalEstadosEtapaActiva}</strong>
             </button>
-            {estadosEtapaActiva.map((st) => {
+            {estadosEtapaActiva.filter((st) => !ESTADOS_SIN_CHIP.has(st)).map((st) => {
               const cfg = STATUS[st] || {};
               const active = estadoActivo === st;
-              const label = STATUS_COMPACT_LABEL[st] || cfg.label || st;
+              const label = cfg.label || st;
               return [
                 <button
                   key={st}
@@ -970,7 +925,7 @@ export function PedidosTable({
                   style={active ? { borderColor: cfg.chipText, background: cfg.chipBg, color: cfg.chipText } : undefined}
                 >
                   <span className="pt-status-chip__label">{label}</span>
-                  <strong className="pt-status-chip__count">{conteos[st] ?? 0}</strong>
+                  <strong className="pt-status-chip__count">{conteoDeFiltro(st)}</strong>
                 </button>,
               ];
             })}
@@ -1252,33 +1207,6 @@ export function PedidosTable({
               ))}
             </select>
           </label>
-          
-          {estadoActivo === "EnSeguimiento" && (
-            <>
-              <label className="pt-extra-label">
-                <Tag size={13} />
-                <select className="pt-filter-select" style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }} value={filtros.etiqueta_id} onChange={(e) => setFiltro("etiqueta_id", e.target.value)}>
-                  <option value="TODOS">Todas las etiquetas</option>
-                  {etiquetas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-                </select>
-              </label>
-              <label className="pt-extra-label">
-                <MessageCircle size={13} />
-                <select className="pt-filter-select" style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }} value={filtros.flujo_id} onChange={(e) => setFiltro("flujo_id", e.target.value)}>
-                  <option value="TODOS">Todos los flujos</option>
-                  {flujos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-                </select>
-              </label>
-              <label className="pt-extra-label" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                <input type="checkbox" checked={filtros.seguimiento_pendiente} onChange={e => setFiltro("seguimiento_pendiente", e.target.checked)} />
-                <span style={{ fontSize: "0.8rem", color: "var(--color-fg)" }}>Seguimiento pendiente</span>
-              </label>
-              <label className="pt-extra-label" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                <input type="checkbox" checked={filtros.seguimiento_vencido} onChange={e => setFiltro("seguimiento_vencido", e.target.checked)} />
-                <span style={{ fontSize: "0.8rem", color: "var(--color-fg)" }}>Seguimiento vencido</span>
-              </label>
-            </>
-          )}
       </div>
       )}
 
@@ -1333,8 +1261,7 @@ export function PedidosTable({
               {!soloAbastecimiento && (
                 <>
                   <th className="pt-th">Estado comercial</th>
-                  <th className="pt-th">Estado logístico</th>
-                  <th className="pt-th">Estado de recompra</th>
+                  {mostrarEstadoLogistico && <th className="pt-th">Estado logístico</th>}
                 </>
               )}
               {soloAbastecimiento && <th className="pt-th pt-th-state">Estado</th>}
@@ -1354,8 +1281,6 @@ export function PedidosTable({
                 <td colSpan={tableColSpan} className="pt-empty">
                   {soloAbastecimiento
                     ? "No hay pedidos de abastecimiento que coincidan con los filtros."
-                    : etapaActiva === "recompra"
-                    ? "No hay pedidos con seguimiento de recompra activo que coincidan con los filtros."
                     : estadoActivo === TAB_ABASTECIMIENTO_ID
                     ? "No hay pedidos con abastecimiento en seguimiento que coincidan con los filtros."
                     : estadoActivo === TODOS_ESTADOS_ID
@@ -1519,12 +1444,11 @@ export function PedidosTable({
                         <td className="pt-td" data-label="Estado comercial">
                           <ComercialCell envio={e} />
                         </td>
-                        <td className="pt-td" data-label="Estado logístico">
-                          <LogisticaCell envio={e} />
-                        </td>
-                        <td className="pt-td" data-label="Estado de recompra">
-                          <RecompraCell envio={e} />
-                        </td>
+                        {mostrarEstadoLogistico && (
+                          <td className="pt-td" data-label="Estado logístico">
+                            <LogisticaCell envio={e} />
+                          </td>
+                        )}
                       </>
                     )}
                     {soloAbastecimiento && (

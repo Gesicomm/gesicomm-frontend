@@ -98,7 +98,6 @@ const DevProductoPanel = lazy(() => import('./pages/landing-simple/templates/bea
 // Lienzo en blanco publicado con catálogo falso (bump, upsell, cross-sell): /dev/lienzo[/:productId].
 const DevLienzo = lazy(() => import('./pages/landing-simple/__DevLienzo'));
 const DevFlujos = lazy(() => import('./pages/courier/__DevFlujos'));
-const DevResumen = lazy(() => import('./pages/courier/__DevResumen'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const Terms = lazy(() => import('./pages/legal/Terms'));
@@ -267,7 +266,6 @@ function App() {
         <Route path="/dev/ficha-basico" element={<DevFichaBasico />} />
         <Route path="/dev/producto-panel" element={<DevProductoPanel />} />
         <Route path="/dev/flujos" element={<DevFlujos />} />
-        <Route path="/dev/resumen" element={<DevResumen />} />
         <Route path="/dev/lienzo" element={<DevLienzo />} />
         <Route path="/dev/lienzo/:productId" element={<DevLienzo />} />
         <Route path="/login" element={<Login />} />

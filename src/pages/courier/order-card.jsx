@@ -1,14 +1,7 @@
 import { useRef } from "react";
 import { formatGs } from "../../lib/courier";
 import { AlertCircle, Bike, Car, Clock, CreditCard, Package, Phone, ShoppingBag, MapPin, MessageCircle, Truck } from "lucide-react";
-import {
-  estadoComercial,
-  estadoLogistico,
-  paymentLine,
-  seguimientoComercial,
-  seguimientoLogistico,
-  seguimientoRecompra,
-} from "./orderLifecycle";
+import { estadoComercial, estadoLogistico } from "./orderLifecycle";
 
 function VehiculoIcon({ v }) {
   if (v === "Moto" || v === "Bicicleta") return <Bike size={13} />;
@@ -62,9 +55,6 @@ export function OrderCard({
   const mostrarAlertas = necesitaSeguimiento || seguimientoPendiente;
   const comercial = estadoComercial(envio);
   const logistico = estadoLogistico(envio);
-  const segComercial = seguimientoComercial(envio);
-  const segLogistico = seguimientoLogistico(envio);
-  const segRecompra = seguimientoRecompra(envio);
 
   const handleSeguimientoClick = (event) => {
     event.stopPropagation();
@@ -163,21 +153,6 @@ export function OrderCard({
           </span>
         </div>
       )}
-
-      <div className="order-card-lifecycle" aria-label="Resumen por etapa">
-        <div>
-          <span>Estado comercial</span>
-          <strong>{segComercial.active ? segComercial.label : paymentLine(envio)}</strong>
-        </div>
-        <div>
-          <span>Estado logístico</span>
-          <strong>{segLogistico.active ? segLogistico.label : logistico.label}</strong>
-        </div>
-        <div>
-          <span>Estado recompra</span>
-          <strong>{segRecompra.status}</strong>
-        </div>
-      </div>
 
       {mostrarAlertas && (
         <div className="order-card-alerts" aria-label="Pendientes del pedido">

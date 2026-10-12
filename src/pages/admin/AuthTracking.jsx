@@ -98,6 +98,10 @@ function nombreUsuario(item) {
   return item?.usuario?.nombre || item?.email || item?.usuario?.correo_electronico || 'Sin usuario';
 }
 
+function telefonoUsuario(item) {
+  return item?.usuario?.telefono || item?.metadata?.telefono || null;
+}
+
 function userAgentCorto(userAgent) {
   if (!userAgent) return '-';
   if (userAgent.includes('Edg/')) return 'Edge';
@@ -581,6 +585,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
                     <td>
                       <strong>{s.usuario?.nombre || 'Usuario'}</strong>
                       <small>{s.usuario?.correo_electronico}</small>
+                      {s.usuario?.telefono && <small>{s.usuario.telefono}</small>}
                     </td>
                     <td>{tiempoRelativo(s.last_seen_at)}</td>
                     <td>{s.ip || '-'}</td>
@@ -613,6 +618,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
                 <div>
                   <strong>{n.titulo}</strong>
                   <p>{n.mensaje}</p>
+                  {telefonoUsuario(n) && <small>{telefonoUsuario(n)}</small>}
                   <small><Clock3 size={12} /> {fechaHora(n.created_at)}</small>
                 </div>
               </article>
@@ -643,6 +649,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
                 <div>
                   <strong>{n.titulo}</strong>
                   <p>{n.mensaje}</p>
+                  {telefonoUsuario(n) && <small>{telefonoUsuario(n)}</small>}
                   <small><Clock3 size={12} /> {fechaHora(n.created_at)}</small>
                 </div>
               </article>
@@ -664,7 +671,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
               <input
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar email, IP o usuario"
+                placeholder="Buscar email, teléfono, IP o usuario"
               />
             </label>
             <select value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Filtrar eventos">
@@ -691,6 +698,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
                   <td>
                     <strong>{nombreUsuario(evento)}</strong>
                     <small>{evento.email || evento.usuario?.correo_electronico || '-'}</small>
+                    {evento.usuario?.telefono && <small>{evento.usuario.telefono}</small>}
                   </td>
                   <td>{fechaHora(evento.created_at)}</td>
                   <td>{evento.ip || '-'}</td>

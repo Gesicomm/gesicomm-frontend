@@ -1283,14 +1283,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   <option value="">Automático según stock</option>
                   {ubicaciones.map((u) => (
                     <option key={u.id} value={u.id}>
-                      {(u.tipoUbicacion === 'SALON' ? 'Salón' : 'Depósito')} · {u.nombre} · {u.ciudad}
+                      {u.nombre} · {u.ciudad}
                     </option>
                   ))}
                 </select>
                 <span className="np-hint">
                   {form.origen_preferido_id
-                    ? 'El pedido completo se reserva desde esta ubicación. Si no tiene stock suficiente, el sistema lo va a avisar y no se confirma.'
-                    : 'No elegís vos: al confirmar, el sistema descuenta primero del salón y, si no alcanza, del depósito que tenga stock suficiente. Solo mira las ubicaciones de esta tienda. Elegí una ubicación solo si querés forzar de dónde sale.'}
+                    ? 'El pedido completo se reserva desde este depósito. Si no tiene stock suficiente, el sistema lo va a avisar y no se confirma.'
+                    : 'No elegís vos: al confirmar, el sistema toma el stock del depósito de esta tienda que lo tenga. Elegí un depósito solo si querés forzar de dónde sale.'}
                 </span>
               </div>
 

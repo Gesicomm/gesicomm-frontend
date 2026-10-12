@@ -234,7 +234,6 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             Mi comercio
           </div>
           <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {renderLink({ path: '/orders', label: 'Delivery', icon: <Truck />, state: { tab: 'delivery' } })}
             {renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin /> })}
             {renderLink({ path: '/inventario', label: 'Inventario y envíos', icon: <PackageCheck /> })}
           </ul>

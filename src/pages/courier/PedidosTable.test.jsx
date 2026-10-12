@@ -91,3 +91,55 @@ test("la vista Kanban del Tablero tampoco muestra avisos de abastecimiento", asy
   expect(screen.getByRole("region", { name: "Columna Pendientes" })).toBeInTheDocument();
   expect(screen.queryByText(/abastecimiento/i)).not.toBeInTheDocument();
 });
+
+// Tablero simplificado (2026-10-12): la tabla muestra el estado comercial y,
+// recién cuando el pedido pasa a logística, el logístico. Los estados de
+// seguimiento y de recompra ya no se muestran.
+const encabezados = () => screen.getAllByRole("columnheader").map((th) => th.textContent);
+
+test("sin pedidos en logística la tabla solo tiene el estado comercial", async () => {
+  getEnviosPaginados.mockResolvedValue({
+    data: [pedido(1, "EnSeguimiento", { recordatorio_id: 9, recordatorio_vencido: true, recompra_activa: true })],
+    total: 1,
+    totalPages: 1,
+  });
+  await montar();
+
+  expect(encabezados()).toEqual(["#", "Fecha", "Cliente", "Producto / Oferta", "Total", "Estado comercial", "Acción"]);
+  const fila = screen.getByText("Cliente 1").closest("tr");
+  expect(within(fila).getByText("Pendiente")).toBeInTheDocument();
+  expect(screen.queryByText(/recompra/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/acción vencida|disponible al confirmar|seguimiento activo|confirmación de pedido web/i)).not.toBeInTheDocument();
+});
+
+test("el estado logístico aparece recién cuando un pedido pasa a logística", async () => {
+  getEnviosPaginados.mockResolvedValue({
+    data: [pedido(1, "Pendiente"), pedido(2, "Despachado", { Courier: { nombre: "Raja" } })],
+    total: 2,
+    totalPages: 1,
+  });
+  await montar();
+
+  expect(encabezados()).toEqual(["#", "Fecha", "Cliente", "Producto / Oferta", "Total", "Estado comercial", "Estado logístico", "Acción"]);
+  const celdaLogistica = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[6];
+  expect(celdaLogistica("Cliente 1")).toBeEmptyDOMElement();
+  expect(celdaLogistica("Cliente 2")).toHaveTextContent("Despachado");
+  expect(celdaLogistica("Cliente 2")).toHaveTextContent("Raja");
+});
+
+test("no hay etapa Recompra ni chip de seguimiento, y Pendiente incluye a los que están en seguimiento", async () => {
+  getConteoPorEstado.mockResolvedValue({ Pendiente: 3, EnSeguimiento: 2, Confirmado: 1, recompra_activa: 4, seguimiento_vencidos: 5 });
+  await montar();
+
+  expect(screen.queryByRole("button", { name: "Recompra" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Comercial" }));
+  expect(screen.queryByText(/seguimiento/i)).not.toBeInTheDocument();
+
+  const chipPendiente = await screen.findByRole("button", { name: /^Pendiente/ });
+  expect(chipPendiente).toHaveTextContent("5");
+  fireEvent.click(chipPendiente);
+
+  await waitFor(() => expect(getEnviosPaginados).toHaveBeenCalledWith(
+    expect.objectContaining({ estados: ["Pendiente", "EnSeguimiento"] })
+  ));
+});

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertCircle, ArrowLeft, ArrowRight, BarChart3, Check, CheckCircle2,
-  Eye, EyeOff, Lock, Mail, RotateCcw, ShieldCheck, ShoppingBag, Store, User
+  Eye, EyeOff, Lock, Mail, Phone, RotateCcw, ShieldCheck, ShoppingBag, Store, User
 } from 'lucide-react';
 import { api } from '../utils/api';
 import Logo from '../components/public/Logo';
@@ -170,7 +170,7 @@ export default function Login() {
   const esRutaRegistro = location.pathname === '/registro' || paramsIniciales.get('registro') === '1';
   const [activeForm, setActiveForm] = useState(esRutaRegistro ? 'register' : 'login');
 
-  const [formData, setFormData] = useState({ nombre: '', email: '', password: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({ nombre: '', telefono: '', email: '', password: '', confirmPassword: '' });
   const [tokenSuscripcion, setTokenSuscripcion] = useState(tokenSuscripcionInicial);
   const [suscripcionRegistro, setSuscripcionRegistro] = useState(null);
   const [validandoSuscripcion, setValidandoSuscripcion] = useState(Boolean(tokenSuscripcionInicial));
@@ -225,6 +225,7 @@ export default function Login() {
         setFormData(prev => ({
           ...prev,
           nombre: prev.nombre || data.nombre || '',
+          telefono: prev.telefono || data.telefono || '',
           email: data.email || prev.email,
         }));
         setPendingEmail(data.email || '');
@@ -320,6 +321,8 @@ export default function Login() {
     e.preventDefault();
     if (!formData.nombre) return setError('El nombre completo es requerido.');
     if (formData.nombre.length < 3) return setError('El nombre debe tener al menos 3 caracteres.');
+    if (!formData.telefono) return setError('El número de teléfono es requerido.');
+    if (formData.telefono.replace(/\D/g, '').length < 6) return setError('Ingresá un número de teléfono válido.');
     if (!formData.email) return setError('El correo electrónico es requerido.');
     if (!validateEmail(formData.email)) return setError('Ingresá un correo electrónico válido.');
     if (!formData.password) return setError('La contraseña es requerida.');
@@ -335,6 +338,7 @@ export default function Login() {
     try {
       const res = await api.post('/api/auth/register', {
         nombre: formData.nombre.trim(),
+        telefono: formData.telefono.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         token_suscripcion: tokenSuscripcion || undefined,
@@ -454,6 +458,7 @@ export default function Login() {
     setMostrarConfirmPassword(false);
     setFormData(prev => ({
       nombre: formName === 'register' ? prev.nombre : '',
+      telefono: formName === 'register' ? prev.telefono : '',
       email: prev.email,
       password: '',
       confirmPassword: '',
@@ -613,7 +618,7 @@ export default function Login() {
                 )}
                 {tokenSuscripcion && suscripcionRegistro?.documento && (
                   <div className="rounded-lg border border-success/20 bg-success/10 px-3.5 py-3 text-sm leading-6 text-success">
-                    Cédula y teléfono ya cargados desde el pago. Los vamos a usar para completar el onboarding sin pedirlos dos veces.
+                    Cédula cargada desde el pago. También precargamos tu teléfono de contacto para que puedas revisarlo antes de crear la cuenta.
                   </div>
                 )}
                 {!tokenSuscripcion && (
@@ -630,6 +635,16 @@ export default function Login() {
                   onChange={handleInputChange}
                   autoComplete="name"
                   autoFocus
+                />
+                <AuthField
+                  id="telefono"
+                  label="Teléfono de contacto"
+                  icon={Phone}
+                  type="tel"
+                  placeholder="0981 123 456"
+                  value={formData.telefono}
+                  onChange={handleInputChange}
+                  autoComplete="tel"
                 />
                 <AuthField
                   id="email"

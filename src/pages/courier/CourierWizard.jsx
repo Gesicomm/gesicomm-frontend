@@ -13,15 +13,24 @@ import {
   X,
 } from "lucide-react";
 import CurrencyInput from "../../components/CurrencyInput";
+import DepositoCampos, { DEPOSITO_VACIO, validarDeposito } from "../../components/depositos/DepositoCampos";
 import { getCourierGeografia } from "../../services/courierApi";
 
 const VEHICULOS = ["Moto", "Auto", "Camioneta", "Bicicleta"];
 const TIPOS_PAGO = ["Ambos", "Al Recibir", "Anticipado"];
-const PASOS = [
-  ["courier", "Courier"],
-  ["ciudades", "Ciudades"],
-  ["resumen", "Resumen"],
-];
+const PASO_DEPOSITO = ["deposito", "Depósito"];
+const PASO_COURIER = ["courier", "Courier"];
+const PASO_CIUDADES = ["ciudades", "Ciudades"];
+const PASO_RESUMEN = ["resumen", "Resumen"];
+
+// El alta de un depósito (conDeposito) arranca un paso antes: el depósito se
+// carga primero y el courier nace ya vinculado a él. Si el comercio todavía no
+// tiene courier (sinCourier), se saltea ciudades — no hay a quién cargárselas.
+function pasosDelAsistente(conDeposito, sinCourier) {
+  if (!conDeposito) return [PASO_COURIER, PASO_CIUDADES, PASO_RESUMEN];
+  if (sinCourier) return [PASO_DEPOSITO, PASO_COURIER, PASO_RESUMEN];
+  return [PASO_DEPOSITO, PASO_COURIER, PASO_CIUDADES, PASO_RESUMEN];
+}
 
 export function VehiculoIcon({ v, size = 15 }) {
   if (v === "Moto" || v === "Bicicleta") return <Bike size={size} />;
@@ -192,6 +201,8 @@ function draftInicial(courier, reglas) {
   });
 
   return {
+    deposito: { ...DEPOSITO_VACIO },
+    sinCourier: false,
     courier: {
       nombre: courier?.nombre || "",
       telefono: courier?.telefono || "",
@@ -205,17 +216,23 @@ function draftInicial(courier, reglas) {
 // Alta y edición de un courier junto con las ciudades que cubre y sus rangos,
 // en un solo flujo: la ciudad nunca se carga por separado, nace ya asignada al
 // courier que se está configurando.
+//
+// Con `conDeposito` es además el alta de un depósito: Depósito → Courier →
+// Ciudades → Resumen. `onGuardar` recibe entonces también `deposito`, y
+// `courier` llega en null si el comercio eligió cargarlo después.
 export function CourierWizard({
   open,
+  conDeposito = false,
   courier = null,
   reglas = [],
-  pasoInicial = "courier",
+  pasoInicial = conDeposito ? "deposito" : "courier",
   esAdmin = false,
   onClose,
   onGuardar,
 }) {
   const [paso, setPaso] = useState(pasoInicial);
   const [draft, setDraft] = useState(() => draftInicial(courier, reglas));
+  const [erroresDeposito, setErroresDeposito] = useState({});
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [geo, setGeo] = useState([]);
@@ -226,6 +243,7 @@ export function CourierWizard({
     if (!open) return;
     setDraft(draftInicial(courier, reglas));
     setPaso(pasoInicial);
+    setErroresDeposito({});
     setError("");
     // El draft se siembra al abrir; después es del usuario hasta que cierre.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,6 +289,23 @@ export function CourierWizard({
   );
 
   if (!open) return null;
+
+  const PASOS = pasosDelAsistente(conDeposito, draft.sinCourier);
+
+  function setDeposito(cambios) {
+    setError("");
+    setDraft(prev => ({ ...prev, deposito: { ...prev.deposito, ...cambios } }));
+    setErroresDeposito(prev => {
+      const siguiente = { ...prev };
+      Object.keys(cambios).forEach(campo => { delete siguiente[campo]; });
+      return siguiente;
+    });
+  }
+
+  function setSinCourier(valor) {
+    setError("");
+    setDraft(prev => ({ ...prev, sinCourier: valor }));
+  }
 
   function setCourier(campo, valor) {
     setError("");
@@ -407,7 +442,14 @@ export function CourierWizard({
     }));
   }
 
+  function validarDepositoPaso() {
+    const errores = validarDeposito(draft.deposito);
+    setErroresDeposito(errores);
+    return Object.keys(errores).length ? "Completá los datos obligatorios del depósito." : "";
+  }
+
   function validarCourier() {
+    if (draft.sinCourier) return "";
     if (!draft.courier.nombre.trim()) return "Ingresá el nombre del courier.";
     return "";
   }
@@ -441,11 +483,18 @@ export function CourierWizard({
   async function avanzar(e) {
     e.preventDefault();
 
+    if (paso === "deposito") {
+      const problema = validarDepositoPaso();
+      if (problema) return setError(problema);
+      setError("");
+      return setPaso("courier");
+    }
+
     if (paso === "courier") {
       const problema = validarCourier();
       if (problema) return setError(problema);
       setError("");
-      return setPaso("ciudades");
+      return setPaso(draft.sinCourier ? "resumen" : "ciudades");
     }
 
     if (paso === "ciudades") {
@@ -455,7 +504,7 @@ export function CourierWizard({
       return setPaso("resumen");
     }
 
-    const reglasFinales = draft.ciudades
+    const reglasFinales = draft.sinCourier ? [] : draft.ciudades
       .filter(c => c.ciudad.trim())
       .flatMap(c => configuracionesDeCiudad(c).flatMap(config => config.rangos.map(r => ({
           departamento: c.departamento.trim(),
@@ -475,7 +524,8 @@ export function CourierWizard({
     setGuardando(true);
     try {
       await onGuardar({
-        courier: {
+        ...(conDeposito ? { deposito: draft.deposito } : {}),
+        courier: draft.sinCourier ? null : {
           ...(courier?.id ? { id: courier.id } : {}),
           nombre: draft.courier.nombre.trim(),
           telefono: draft.courier.telefono.trim(),
@@ -486,26 +536,26 @@ export function CourierWizard({
         },
         reglas: reglasFinales,
       });
-    } catch {
-      setError("No pudimos guardar el courier y sus ciudades. Intentá de nuevo.");
+    } catch (err) {
+      // El alta con depósito son varios guardados encadenados: quien llama
+      // sabe cuál falló y lo dice en `mensajeUsuario`.
+      setError(err?.mensajeUsuario || (conDeposito
+        ? "No pudimos guardar el depósito. Intentá de nuevo."
+        : "No pudimos guardar el courier y sus ciudades. Intentá de nuevo."));
     } finally {
       setGuardando(false);
     }
   }
 
+  // Saltar a un paso exige que todos los anteriores estén bien cargados.
   function irAlPaso(targetPaso) {
     if (targetPaso === paso) return;
 
-    if (targetPaso === "ciudades") {
-      const probCourier = validarCourier();
-      if (probCourier) return setError(probCourier);
-    }
-
-    if (targetPaso === "resumen") {
-      const probCourier = validarCourier();
-      if (probCourier) return setError(probCourier);
-      const probCiudades = validarCiudades();
-      if (probCiudades) return setError(probCiudades);
+    const validadores = { deposito: validarDepositoPaso, courier: validarCourier, ciudades: validarCiudades };
+    const destino = PASOS.findIndex(([key]) => key === targetPaso);
+    for (const [key] of PASOS.slice(0, destino)) {
+      const problema = validadores[key]?.();
+      if (problema) return setError(problema);
     }
 
     setError("");
@@ -514,10 +564,11 @@ export function CourierWizard({
 
   function retroceder() {
     setError("");
-    setPaso(paso === "resumen" ? "ciudades" : "courier");
+    setPaso(PASOS[Math.max(0, activeIndex - 1)][0]);
   }
 
   const activeIndex = PASOS.findIndex(([key]) => key === paso);
+  const esPrimerPaso = activeIndex === 0;
   const ciudadesValidas = draft.ciudades.filter(c => c.ciudad.trim());
   const totalRangos = ciudadesValidas.reduce((acc, c) => acc + totalRangosCiudad(c), 0);
 
@@ -527,9 +578,11 @@ export function CourierWizard({
         <form onSubmit={avanzar} style={styles.form}>
           <div style={styles.header}>
             <div>
-              <p style={styles.eyebrow}>{courier?.id ? "Editar courier" : "Nuevo courier"}</p>
+              <p style={styles.eyebrow}>{conDeposito ? "Nuevo depósito" : courier?.id ? "Editar courier" : "Nuevo courier"}</p>
               <h3 style={styles.title}>
-                {paso === "courier"
+                {paso === "deposito"
+                  ? "Datos del depósito"
+                  : paso === "courier"
                   ? "Datos del courier"
                   : paso === "ciudades"
                     ? `Ciudades de ${draft.courier.nombre || "este courier"}`
@@ -573,10 +626,39 @@ export function CourierWizard({
           {error && <div style={styles.error}>{error}</div>}
 
           <div style={styles.body}>
-            {paso === "courier" && (
+            {paso === "deposito" && (
               <div style={styles.stack}>
                 <p style={styles.help}>
-                  Después de estos datos vas a cargar, en el mismo paso, las ciudades que cubre y cuánto cobra en cada una.
+                  Primero el lugar desde donde despachás. En el paso siguiente cargás el courier que retira de acá y las ciudades que cubre.
+                </p>
+                <DepositoCampos form={draft.deposito} errors={erroresDeposito} onChange={setDeposito} autoFocus />
+              </div>
+            )}
+
+            {paso === "courier" && conDeposito && (
+              <label style={{ ...styles.toggle, marginBottom: "1rem" }}>
+                <input
+                  type="checkbox"
+                  checked={draft.sinCourier}
+                  onChange={e => setSinCourier(e.target.checked)}
+                  style={styles.checkbox}
+                />
+                Todavía no tengo courier: guardar solo el depósito
+              </label>
+            )}
+
+            {paso === "courier" && draft.sinCourier && (
+              <p style={styles.help}>
+                El depósito se guarda sin courier. Podés cargarlo después desde esta misma pantalla, en la sección Couriers.
+              </p>
+            )}
+
+            {paso === "courier" && !draft.sinCourier && (
+              <div style={styles.stack}>
+                <p style={styles.help}>
+                  {conDeposito
+                    ? `El courier que va a retirar de ${draft.deposito.nombre.trim() || "este depósito"}. Después cargás las ciudades que cubre y cuánto cobra en cada una.`
+                    : "Después de estos datos vas a cargar, en el mismo paso, las ciudades que cubre y cuánto cobra en cada una."}
                 </p>
 
                 <Field label="Nombre del courier o empresa">
@@ -784,19 +866,37 @@ export function CourierWizard({
 
             {paso === "resumen" && (
               <div style={styles.stack}>
-                <div style={styles.summaryCard}>
-                  <CheckCircle2 size={20} color="var(--color-success)" />
-                  <div>
-                    <h4 style={styles.sectionTitle}>{draft.courier.nombre}</h4>
-                    <p style={styles.sectionHelp}>
-                      {draft.courier.vehiculo}
-                      {draft.courier.telefono ? ` · ${draft.courier.telefono}` : ""}
-                      {` · ${ciudadesValidas.length} ciudad${ciudadesValidas.length === 1 ? "" : "es"} · ${totalRangos} rango${totalRangos === 1 ? "" : "s"}`}
-                    </p>
+                {conDeposito && (
+                  <div style={styles.summaryCard}>
+                    <Building2 size={20} color="var(--color-success)" />
+                    <div>
+                      <h4 style={styles.sectionTitle}>{draft.deposito.nombre}</h4>
+                      <p style={styles.sectionHelp}>
+                        {draft.deposito.direccion}
+                        {` · ${draft.deposito.ciudad}`}
+                        {draft.deposito.departamento ? `, ${draft.deposito.departamento}` : ""}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {ciudadesValidas.map((ciudad, index) => (
+                {draft.sinCourier ? (
+                  <p style={styles.help}>Sin courier por ahora. Lo cargás después desde la sección Couriers.</p>
+                ) : (
+                  <div style={styles.summaryCard}>
+                    <CheckCircle2 size={20} color="var(--color-success)" />
+                    <div>
+                      <h4 style={styles.sectionTitle}>{draft.courier.nombre}</h4>
+                      <p style={styles.sectionHelp}>
+                        {draft.courier.vehiculo}
+                        {draft.courier.telefono ? ` · ${draft.courier.telefono}` : ""}
+                        {` · ${ciudadesValidas.length} ciudad${ciudadesValidas.length === 1 ? "" : "es"} · ${totalRangos} rango${totalRangos === 1 ? "" : "s"}`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!draft.sinCourier && ciudadesValidas.map((ciudad, index) => (
                   <div key={index} style={styles.summaryItem}>
                     <strong style={styles.summaryCity}>
                       {esCoberturaInterior(ciudad) ? "Otras ciudades / interior" : `${ciudad.ciudad}, ${ciudad.departamento || "Sin departamento"}`}
@@ -815,7 +915,7 @@ export function CourierWizard({
           </div>
 
           <div style={styles.actions}>
-            {paso === "courier" ? (
+            {esPrimerPaso ? (
               <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
             ) : (
               <button type="button" className="btn-secondary" onClick={retroceder} disabled={guardando}>
@@ -823,13 +923,17 @@ export function CourierWizard({
               </button>
             )}
             <button type="submit" className="btn-nuevo-pedido" disabled={guardando}>
-              {paso === "courier"
-                ? "Continuar con ciudades"
-                : paso === "ciudades"
-                  ? "Revisar"
-                  : guardando
-                    ? "Guardando..."
-                    : "Guardar courier y ciudades"}
+              {paso === "deposito"
+                ? "Continuar con el courier"
+                : paso === "courier"
+                  ? (draft.sinCourier ? "Revisar" : "Continuar con ciudades")
+                  : paso === "ciudades"
+                    ? "Revisar"
+                    : guardando
+                      ? "Guardando..."
+                      : !conDeposito
+                        ? "Guardar courier y ciudades"
+                        : draft.sinCourier ? "Guardar depósito" : "Guardar depósito y courier"}
             </button>
           </div>
         </form>

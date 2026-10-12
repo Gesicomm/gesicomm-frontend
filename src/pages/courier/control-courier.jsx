@@ -1,9 +1,8 @@
-﻿import { useMemo, useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck, ListChecks } from "lucide-react";
+import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins } from "lucide-react";
 import { verificarSesion } from "../../utils/auth";
 import { PedidosTable } from "./PedidosTable";
-import { DeliveryPanel } from "./DeliveryPanel";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
@@ -16,19 +15,11 @@ import { ResumenPedidoPanel } from "./ResumenPedidoPanel";
 import { HistorialPedidoPanel } from "./HistorialPedidoPanel";
 import { RendicionTab } from "./RendicionTab";
 import { SeguimientoPanel } from "./SeguimientoPanel";
-import { ResumenTab } from "./ResumenTab";
 import {
   getCouriers,
   getEnvios,
   updateEstadoEnvio,
-  createCourier,
-  updateCourier,
-  deleteCourier,
-  createCourierAccess,
-  changeCourierAccessPassword,
-  updateCourierAccessStatus,
   getDeliveryZonas,
-  replaceDeliveryZonas,
   createEnvio,
   registrarDevolucion,
   registrarPerdida,
@@ -36,8 +27,9 @@ import {
 import "./courier.css";
 
 // Abastecimiento ya no es una pestaña de acá: vive en su propia sección
-// (/abastecimiento), porque como pestaña quedaba escondida.
-const TABS_VALIDOS = new Set(["resumen", "tablero", "delivery", "rendicion", "analitica"]);
+// (/abastecimiento), porque como pestaña quedaba escondida. Delivery tampoco:
+// los couriers se cargan junto con el depósito, en Mi Tienda → Depósitos.
+const TABS_VALIDOS = new Set(["tablero", "rendicion", "analitica"]);
 const CLAVE_TAB = "gesicomm:pedidosTab";
 
 // La pestaña activa nunca viaja por query string: llega como router state
@@ -48,9 +40,7 @@ function tabInicial(estadoNavegacion) {
     const guardada = window.sessionStorage.getItem(CLAVE_TAB);
     if (TABS_VALIDOS.has(guardada)) return guardada;
   } catch { /* sin storage */ }
-  // Se entra por el Resumen: lo primero que hay que ver son los mensajes
-  // que quedaron pendientes de enviar.
-  return "resumen";
+  return "tablero";
 }
 
 export function ControlCourier() {
@@ -75,7 +65,6 @@ export function ControlCourier() {
   const [historialEnvio, setHistorialEnvio] = useState(null);
   const [seguimientoEnvio, setSeguimientoEnvio] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
-  const esAdmin = usuarioActual?.rol === "administrador";
 
   // El state de navegación se consume una sola vez: si no, un refresh volvería
   // a forzar la pestaña que pidió la pantalla anterior.
@@ -135,16 +124,6 @@ export function ControlCourier() {
   };
 
   // enviosDelDia eliminado: el backend ya filtra por rango de fechas en envios Data
-
-  const enviosCountByCourier = useMemo(() => {
-    const acc = {};
-    for (const e of envios) {
-      if (e.courier_id) {
-        acc[e.courier_id] = (acc[e.courier_id] ?? 0) + 1;
-      }
-    }
-    return acc;
-  }, [envios]);
 
   const handleChangeEstado = async (id, nuevoEstado, envioDirecto = null) => {
     if (nuevoEstado === "Confirmado") {
@@ -288,14 +267,8 @@ export function ControlCourier() {
         </div>
 
         <nav className="courier-tabs" aria-label="Secciones de pedidos">
-          <TabButton active={tab === "resumen"} onClick={() => seleccionarTab("resumen")} icon={<ListChecks size={16} />}>
-            Resumen
-          </TabButton>
           <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
             Tablero
-          </TabButton>
-          <TabButton active={tab === "delivery"} onClick={() => seleccionarTab("delivery")} icon={<Truck size={16} />}>
-            Delivery
           </TabButton>
           <TabButton active={tab === "rendicion"} onClick={() => seleccionarTab("rendicion")} icon={<HandCoins size={16} />}>
             Rendición
@@ -307,9 +280,7 @@ export function ControlCourier() {
       </div>
 
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
-        {tab === "resumen" ? (
-          <ResumenTab onIrAlTablero={() => seleccionarTab("tablero")} />
-        ) : tab === "tablero" ? (
+        {tab === "tablero" ? (
           // Bandeja operativa: sin dashboard arriba, ocupa casi toda la
           // pantalla — los indicadores generales viven en "Analítica" aparte.
           <PedidosTable
@@ -321,46 +292,6 @@ export function ControlCourier() {
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
             onAbrirSeguimiento={(envio) => setSeguimientoEnvio(envio)}
             refrescarKey={refrescarKey}
-          />
-        ) : tab === "delivery" ? (
-          <DeliveryPanel
-            zonas={deliveryZonas}
-            couriers={couriers}
-            esAdmin={esAdmin}
-            enviosCountByCourier={enviosCountByCourier}
-            onSaveZonas={async (zonas, courierIds) => {
-              const res = await replaceDeliveryZonas(zonas, courierIds);
-              setDeliveryZonas(res);
-            }}
-            onCreateCourier={async (c) => {
-              const res = await createCourier(c);
-              setCouriers(prev => [...prev, res]);
-              return res;
-            }}
-            onUpdateCourier={async (c) => {
-              const res = await updateCourier(c.id, c);
-              setCouriers(prev => prev.map(x => x.id === c.id ? res : x));
-              return res;
-            }}
-            onDeleteCourier={async (id) => {
-              await deleteCourier(id);
-              setCouriers(prev => prev.filter(x => x.id !== id));
-            }}
-            onCreateAccess={async (id, payload) => {
-              const acceso = await createCourierAccess(id, payload);
-              setCouriers(prev => prev.map(x => x.id === id ? { ...x, acceso } : x));
-              return acceso;
-            }}
-            onChangeAccessPassword={async (id, payload) => {
-              const acceso = await changeCourierAccessPassword(id, payload);
-              setCouriers(prev => prev.map(x => x.id === id ? { ...x, acceso } : x));
-              return acceso;
-            }}
-            onUpdateAccessStatus={async (id, activo) => {
-              const acceso = await updateCourierAccessStatus(id, activo);
-              setCouriers(prev => prev.map(x => x.id === id ? { ...x, acceso } : x));
-              return acceso;
-            }}
           />
         ) : tab === "rendicion" ? (
           <RendicionTab couriers={couriers} />

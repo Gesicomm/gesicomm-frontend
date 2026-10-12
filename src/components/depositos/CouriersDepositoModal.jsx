@@ -6,7 +6,7 @@ import { depositoService } from '../../services/deposito.service';
  * Qué couriers pueden despachar desde este depósito.
  *
  * La tarifa NO se define acá: pertenece al courier y su cobertura, y se
- * administra en Pedidos → Delivery. Por eso cada courier muestra cuántas
+ * administra en la sección Couriers de la misma pantalla de Depósitos. Por eso cada courier muestra cuántas
  * reglas de cobertura tiene: habilitar uno sin cobertura no sirve de nada,
  * y conviene que se vea antes de guardar.
  */
@@ -73,7 +73,7 @@ export default function CouriersDepositoModal({ deposito, open, onClose, onGuard
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <p className="m-0 mb-4 text-sm text-fg-muted">
             Elegí con qué couriers se puede despachar desde este depósito. Las ciudades y tarifas de cada
-            courier se cargan en <strong>Pedidos → Delivery</strong>.
+            courier se cargan en la sección <strong>Couriers</strong>, más abajo en esta pantalla.
           </p>
 
           {error && (
@@ -87,7 +87,7 @@ export default function CouriersDepositoModal({ deposito, open, onClose, onGuard
             <div className="flex h-24 items-center justify-center text-sm text-fg-muted">Cargando couriers...</div>
           ) : couriers.length === 0 ? (
             <p className="m-0 text-sm text-fg-muted">
-              Todavía no tenés couriers cargados. Creá uno en Pedidos → Delivery y volvé acá para habilitarlo.
+              Todavía no tenés couriers cargados. Creá uno en la sección Couriers, más abajo en esta pantalla, y volvé acá para habilitarlo.
             </p>
           ) : (
             <ul className="m-0 flex list-none flex-col gap-2 p-0">

@@ -90,8 +90,8 @@ function contextoDelPedido(envio) {
 /**
  * @param {number|null} faseSugeridaId  fase que toca mandar ahora (la marca y abre su vista previa).
  * @param {object|null} cola            { posicion, total, onSiguiente, onAnterior } cuando el panel se
- *                                      recorre como cola de trabajo desde el Resumen.
- * @param {object} servicio             solo para el banco de pruebas (/dev/resumen).
+ *                                      recorre como cola de trabajo.
+ * @param {object} servicio             solo para pruebas.
  */
 export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
   const [flujos, setFlujos] = useState([]);
