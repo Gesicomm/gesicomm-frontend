@@ -183,6 +183,18 @@ export default function ProductLandingPreview({
       template: landing?.template || { kind: 'codigo', slug: 'lienzo-blanco', name: 'Lienzo en blanco' },
       catalogo_items: [item],
       tienda: { nombre: tienda?.nombre || '', logo_imagen: tienda?.logo_imagen || null, colores: tienda ? { primario: tienda.color_primario || null, secundario: tienda.color_secundario || null, fondo: tienda.color_fondo || null } : undefined },
+      // Mismo bloque que arma /api/l (landing.service → contacto). Sin él el
+      // runtime no recibía ni el número ni las plantillas de Mi Tienda y el
+      // botón de WhatsApp de la vista previa mandaba el texto fijo "Hola, me
+      // interesa {producto}" en vez del mensaje configurado.
+      contacto: {
+        whatsapp: landing?.mostrar_whatsapp === false ? null : (tienda?.whatsapp || null),
+        telefono: tienda?.telefono || null,
+        mensaje: tienda?.mensaje_contacto || '',
+        mensaje_general: tienda?.mensaje_consulta_general || '',
+        incluir_precio: !!landing?.whatsapp_incluir_precio,
+        incluir_url: !!landing?.whatsapp_incluir_url,
+      },
     };
     return {
       codigo: codigoFichaProducto(landing?.content, contentId),
