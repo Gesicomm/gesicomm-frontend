@@ -2310,20 +2310,18 @@ export function runtimeGesicomm() {
     }
     aplicarVisibilidadFicha();
     aplicarOrdenMobileFicha();
-    // La ficha base también existe como HTML guardado: evita un bloque de
-    // "Detalles" vacío cuando el producto no tiene descripción cargada.
+    // La sección "Detalles · Todo lo que tenés que saber" ya no es parte de
+    // la ficha: repetía la descripción que va arriba, junto al nombre, y no
+    // es un bloque del editor. La plantilla no la trae más, pero las tiendas
+    // que guardaron su copia de la ficha la siguen teniendo en el HTML: se
+    // oculta acá, junto con los links del menú que apuntaban a ella.
     var descripciones = document.querySelectorAll('section.description');
     for (var d = 0; d < descripciones.length; d++) {
-      var textos = descripciones[d].querySelectorAll('.description-body[data-gesicomm-bind]');
-      if (!textos.length) continue;
-      var hayDescripcion = false;
-      for (var t = 0; t < textos.length; t++) {
-        if (textos[t].style.display !== 'none' && textos[t].textContent.trim()) hayDescripcion = true;
-      }
-      descripciones[d].style.display = hayDescripcion ? '' : 'none';
+      if (!descripciones[d].querySelector('.description-body[data-gesicomm-bind]')) continue;
+      descripciones[d].style.display = 'none';
       if (descripciones[d].id === 'descripcion') {
         var enlacesDetalle = document.querySelectorAll('a[href="#descripcion"]');
-        for (var e = 0; e < enlacesDetalle.length; e++) enlacesDetalle[e].style.display = hayDescripcion ? '' : 'none';
+        for (var e = 0; e < enlacesDetalle.length; e++) enlacesDetalle[e].style.display = 'none';
       }
     }
     pintarControlesCatalogo();

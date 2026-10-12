@@ -1677,8 +1677,6 @@ ${BUMP_CSS}
 .mini-trust div { padding: 12px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; font-size: .78rem; color: var(--ink-soft); }
 .mini-trust strong { display: block; color: var(--ink); font-size: .84rem; }
 
-.description { padding: 48px 0; background: var(--white); }
-.description-body { max-width: 760px; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
 
 .related { padding: 56px 0; }
 
@@ -2295,15 +2293,6 @@ const PRODUCTO_HTML = `${headerTiendaUnico('productos')}
       </template>
     </div>
     <p class="incluye-total" data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s> · En combo: <b data-gesicomm-bind="precio"></b> <span class="badge-off" data-gesicomm-bind="ahorro_texto"></span></p>
-  </div>
-</section>
-
-<section id="descripcion" class="description" data-gesicomm-si="sobre">
-  <div class="container">
-    <div class="section-heading"><p class="eyebrow">Detalles</p><h2>Todo lo que tenés que saber.</h2></div>
-    <!-- "Sobre este producto" (Productos → Vista del producto). La
-         descripción principal ya va arriba, junto al nombre. -->
-    <p class="description-body" data-gesicomm-bind="sobre"></p>
   </div>
 </section>
 

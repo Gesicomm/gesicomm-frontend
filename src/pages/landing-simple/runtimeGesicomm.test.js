@@ -1441,21 +1441,41 @@ describe('ficha: imágenes y descripciones legibles', () => {
       vista: 'producto', productos: [remera], producto: remera, tienda: {}, recomendados: [],
     });
     expect(window.getComputedStyle(document.querySelector('img[data-gesicomm-bind="imagen"]')).display).toBe('none');
-    expect(document.querySelector('#descripcion').style.display).toBe('none');
-    expect(document.querySelector('a[href="#descripcion"]')).toBeNull();
     dom.window.close();
   });
 
-  it('muestra la descripción real con sus párrafos cuando está cargada', () => {
+  it('muestra la descripción una sola vez, arriba, sin sección "Detalles"', () => {
     const producto = { ...airFryer, sobre: 'Una opción práctica.', descripcion_larga: 'Primer párrafo.\n\nSegundo párrafo.' };
     const { document, dom } = montar(PLANTILLA_PRODUCTO, {
       vista: 'producto', productos: [producto], producto, tienda: {}, recomendados: [],
     });
-    expect(document.querySelector('#descripcion').style.display).toBe('');
-    expect(document.querySelector('a[href="#descripcion"]')).toBeNull();
     // La descripcion principal va arriba, junto al nombre; el header queda global.
     expect(document.querySelector('.pdp-lead').textContent).toBe(producto.descripcion_larga);
-    expect(document.querySelector('#descripcion [data-gesicomm-bind="sobre"]').textContent).toBe(producto.sobre);
+    expect(document.querySelector('#descripcion')).toBeNull();
+    expect(document.querySelector('a[href="#descripcion"]')).toBeNull();
+    expect(document.querySelector('section.description')).toBeNull();
+    expect([...document.querySelectorAll('h2')].map(h => h.textContent)).not.toContain('Todo lo que tenés que saber.');
+    dom.window.close();
+  });
+
+  it('oculta la sección "Detalles" de una ficha guardada, aunque tenga descripción', () => {
+    const producto = { ...airFryer, descripcion: 'Freidora de aire.', descripcion_larga: 'Freidora de aire de 6,6 L.' };
+    const { document, dom } = montar({
+      html: `<header><nav><a href="#descripcion">Detalles</a><a href="#relacionados">Te puede gustar</a></nav></header>
+<main class="container"><section class="pdp"><div class="pdp-info"><h1 data-gesicomm-bind="nombre"></h1><p class="pdp-lead" data-gesicomm-bind="descripcion"></p></div></section></main>
+<section id="descripcion" class="description"><div class="container">
+  <div class="section-heading"><p class="eyebrow">Detalles</p><h2>Todo lo que tenés que saber.</h2></div>
+  <p class="description-body" data-gesicomm-bind="descripcion_larga"></p>
+</div></section>
+<section id="relacionados" class="related"><h2>Completá tu compra.</h2></section>`,
+      css: '',
+      js: '',
+    }, { vista: 'producto', productos: [producto], producto, tienda: {}, recomendados: [] });
+    expect(document.querySelector('#descripcion').style.display).toBe('none');
+    expect(document.querySelector('a[href="#descripcion"]').style.display).toBe('none');
+    expect(document.querySelector('.pdp-lead').textContent).toBe(producto.descripcion);
+    expect(document.querySelector('#relacionados').style.display).toBe('');
+    expect(document.querySelector('a[href="#relacionados"]').style.display).toBe('');
     dom.window.close();
   });
 
@@ -2276,8 +2296,8 @@ describe('ficha — propuesta de valor y badge del producto', () => {
     }
     expect(info.querySelector('.pdp-lead').textContent).toBe('Mouse compacto con receptor USB.');
     expect(info.querySelector('.pdp-reviews').style.display).not.toBe('none');
-    // Sin "Sobre este producto" la sección Detalles no se muestra (no repite la descripción).
-    expect(document.getElementById('descripcion').style.display).toBe('none');
+    // La ficha base ya no trae sección Detalles: la descripción va una sola vez.
+    expect(document.getElementById('descripcion')).toBeNull();
     dom.window.close();
   });
 

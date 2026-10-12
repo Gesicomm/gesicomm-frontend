@@ -466,6 +466,7 @@ Estructura (en este orden; es la que más vende según la investigación de usab
 2. ARRIBA DEL PLIEGUE, dos columnas en desktop y una en mobile:
    - Galería grande: <img data-gesicomm-bind="imagen" data-gesicomm-imagen-principal> + miniaturas (lista "imagenes"). Es lo primero que mira el 56% de la gente.
    - Categoría, nombre (h1) y la PROMESA en una frase: bind "propuesta_valor".
+   - La descripción, UNA sola vez y acá: bind "descripcion_ficha" (pre-line). No la repitas abajo.
    - Precio grande, precio tachado ("precio_antes") y el ahorro con bind "ahorro_texto" (Gesicomm ya elige % o Gs según el precio).
    - Si es un combo: <p data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p> y la lista "combo_incluye" (foto + nombre de cada producto que trae). En una ficha de combo, el botón principal data-gesicomm-comprar compra EL COMBO ACTUAL; no escribas IDs a mano ni hagas JavaScript de checkout propio.
    - 3 o 4 "highlights" con check: <ul data-gesicomm-lista="beneficios" data-gesicomm-limite="4"><template><li data-gesicomm-bind="titulo"></li></template></ul>.
@@ -479,7 +480,6 @@ Estructura (en este orden; es la que más vende según la investigación de usab
    - Complementos para aumentar ticket: "Llevalo en combo y ahorrá" con lista "combos_producto" y/o "recomendados" como accesorios reales. Complementos NO son lo mismo que alternativas: los complementos completan el uso del producto.
    - Beneficios completos: lista "beneficios" con binds "titulo" y "texto".
    - Si es un combo: sección <section data-gesicomm-si="combo_incluye"> con la lista "combo_incluye" (foto, nombre, "cantidad", precio suelto con bind "precio") y el total "Por separado vs En combo". Cada producto incluido puede tener un botón data-gesicomm-ver para ver su ficha; no pongas data-gesicomm-comprar dentro de "combo_incluye" salvo que explícitamente quieras vender ese producto suelto.
-   - Descripción: binds "sobre" y "descripcion_larga" (white-space: pre-line).
    - Preguntas frecuentes: lista "preguntas" con <details><summary data-gesicomm-bind="pregunta"></summary><p data-gesicomm-bind="respuesta"></p></details>. Responden las dudas que frenan la compra.
    - Alternativas o productos similares: si usás "recomendados" como alternativa, titulalo claro ("También podés comparar con") y hacé que la ficha se abra con data-gesicomm-ver. Si son accesorios, titulalo como complemento. No mezcles ambos mensajes en un solo bloque.
    - Cierre: nombre, precio y otro botón "Comprar ahora".
