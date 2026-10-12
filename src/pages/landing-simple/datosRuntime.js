@@ -875,6 +875,11 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
     categoria: categoriaActual ? { nombre: categoriaActual, slug: slugCategoria(categoriaActual), url: urlCategoria(slug, categoriaActual) } : null,
     tienda: tiendaRuntime(data),
     venta: ventaRuntime(venta, catalogo, producto),
+    // Categorías de TODO el catálogo (nombre, cantidad, foto). Solo vienen
+    // cuando el servidor recortó la lista: con la tienda entera en `productos`
+    // el runtime las deduce solo.
+    categorias: (Array.isArray(data?.categorias_catalogo) ? data.categorias_catalogo : [])
+      .map(c => ({ nombre: c.nombre, cantidad: c.cantidad, imagen: media(c.imagen) })),
     // paginado: la respuesta trae solo la primera página; el resto lo pide
     // el runtime (ver onCatalogo en LandingCodigoPublica).
     catalogo: {

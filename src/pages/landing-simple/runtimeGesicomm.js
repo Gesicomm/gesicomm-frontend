@@ -1577,12 +1577,26 @@ export function runtimeGesicomm() {
 
   function categoriasDeProductos() {
     var porNombre = {};
+    // Tienda grande: la landing trae solo una parte del catálogo, así que
+    // las categorías (con su cantidad real y una foto) las manda el servidor
+    // en datos.categorias. Deducirlas de los productos recibidos dejaría
+    // afuera del menú a las que no cayeron en esa primera página. Los
+    // productos de abajo solo suman fotos, nunca pisan la cantidad.
+    (Array.isArray(datos.categorias) ? datos.categorias : []).forEach(function (c) {
+      var nombreServidor = String((c && c.nombre) || '').trim();
+      if (!nombreServidor) return;
+      var fotoServidor = urlSegura(c.imagen || '');
+      porNombre[nombreServidor] = {
+        nombre: nombreServidor, categoria: nombreServidor, cantidad: Number(c.cantidad) || 0, cantidadDelServidor: true,
+        imagen: fotoServidor || '', imagenes: fotoServidor ? [fotoServidor] : [], etiqueta: 'Categoria',
+      };
+    });
     productos.forEach(function (p) {
       if (datos.vista === 'inicio' && p.mostrar_en_inicio === false) return;
       var nombre = String(p.categoria || '').trim();
       if (!nombre) return;
       if (!porNombre[nombre]) porNombre[nombre] = { nombre: nombre, categoria: nombre, cantidad: 0, imagen: '', imagenes: [], etiqueta: 'Categoria' };
-      porNombre[nombre].cantidad += 1;
+      if (!porNombre[nombre].cantidadDelServidor) porNombre[nombre].cantidad += 1;
       if (!porNombre[nombre].imagen && (p.imagen || p.url_imagen)) porNombre[nombre].imagen = p.imagen || p.url_imagen;
       var imgSegura = urlSegura(p.imagen || p.url_imagen);
       if (imgSegura && porNombre[nombre].imagenes.indexOf(imgSegura) === -1) porNombre[nombre].imagenes.push(imgSegura);
@@ -2674,8 +2688,28 @@ export function runtimeGesicomm() {
     return panel;
   }
 
+  // Búsqueda del encabezado. Con el catálogo paginado el navegador tiene
+  // solo una parte de los productos: buscar ahí daría "no existe" para un
+  // producto que sí se vende. La búsqueda la resuelve el servidor (el
+  // contenedor la pide, igual que las páginas del catálogo); mientras llega
+  // la respuesta se muestra lo que ya hay en memoria.
+  var pedidoBusquedaHeader = 0;
+  var busquedaServidor = null; // { termino, items } de la última respuesta
+  var temporizadorBusquedaHeader = null;
+  function pedirBusquedaHeader(campo) {
+    clearTimeout(temporizadorBusquedaHeader);
+    if (!paginado) return;
+    var texto = String(campo.value || '').trim().slice(0, 80);
+    if (normalizar(texto).length < 2) return;
+    temporizadorBusquedaHeader = setTimeout(function () {
+      pedidoBusquedaHeader += 1;
+      enviar({ tipo: 'gesicomm:buscar', id: pedidoBusquedaHeader, busqueda: texto });
+    }, 300);
+  }
+
   function resultadosBusquedaHeader(q) {
     var termino = normalizar(q).trim();
+    if (paginado && busquedaServidor && busquedaServidor.termino === termino) return busquedaServidor.items;
     var vistos = {};
     var base = conocidos.concat(productos);
     var salida = [];
@@ -3232,6 +3266,17 @@ export function runtimeGesicomm() {
     var d = e.data || {};
     if (d.tipo === 'gesicomm:resaltar') { resaltar(d.lista); return; }
     if (d.tipo === 'gesicomm:datos') { actualizarDatos(d.datos); return; }
+    if (d.tipo === 'gesicomm:buscar-respuesta') {
+      // Respuesta vieja (el visitante ya siguió escribiendo) o fallida: se
+      // conserva lo que se estaba mostrando.
+      if (d.id !== pedidoBusquedaHeader || d.error) return;
+      var encontrados = (Array.isArray(d.productos) ? d.productos : []).slice(0, 6);
+      recordar(encontrados);
+      busquedaServidor = { termino: normalizar(d.busqueda || '').trim(), items: encontrados };
+      var campoHeader = document.querySelector('.commerce-header .search-wrap [data-gesicomm-buscar]');
+      if (campoHeader && normalizar(campoHeader.value || '').trim() === busquedaServidor.termino) pintarResultadosHeader(campoHeader);
+      return;
+    }
     if (d.tipo === 'gesicomm:cupon-respuesta') {
       if (d.id !== pedidoCupon) return;
       cuponValidando = false;
@@ -3301,6 +3346,7 @@ export function runtimeGesicomm() {
     filtros[clave] = String(campo.value || '').slice(0, 80);
     if (campo.closest && campo.closest('.commerce-header .search-wrap')) {
       pintarResultadosHeader(campo);
+      pedirBusquedaHeader(campo);
       return;
     }
     clearTimeout(temporizadorBusqueda);

@@ -35,3 +35,17 @@ describe('actualización del documento de la preview', () => {
     expect(generador.actual).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('búsqueda del encabezado', () => {
+  it('le pide al contenedor los resultados (servidor) y se los devuelve al iframe con el mismo id', async () => {
+    const onCatalogo = vi.fn(async () => ({ productos: [{ id: 'licuadora' }], total: 1 }));
+    render(<CodigoPreview codigo={{ html: '<p>x</p>', css: '', js: '' }} datos={{ productos: [] }} titulo="Tienda" onCatalogo={onCatalogo} />);
+    const ventana = screen.getByTitle('Tienda').contentWindow;
+    const respuestas = [];
+    ventana.postMessage = m => respuestas.push(m);
+    window.dispatchEvent(new MessageEvent('message', { source: ventana, data: { tipo: 'gesicomm:buscar', id: 7, busqueda: 'licu' } }));
+    await vi.waitFor(() => expect(respuestas.some(m => m.tipo === 'gesicomm:buscar-respuesta')).toBe(true));
+    expect(onCatalogo).toHaveBeenCalledWith({ pagina: 1, porPagina: 6, busqueda: 'licu' });
+    expect(respuestas.find(m => m.tipo === 'gesicomm:buscar-respuesta')).toEqual({ tipo: 'gesicomm:buscar-respuesta', id: 7, busqueda: 'licu', productos: [{ id: 'licuadora' }], error: false });
+  });
+});

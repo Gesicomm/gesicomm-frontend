@@ -94,6 +94,19 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
             try { ventana.postMessage({ tipo: 'gesicomm:catalogo-respuesta', id: pedido.id, modo: pedido.modo, ...res }, '*'); } catch { /* iframe desmontado */ }
           });
       }
+      // Búsqueda del encabezado: misma fuente que el catálogo (el servidor
+      // busca en TODOS los productos de la tienda), pero con su propio id de
+      // pedido para no pisar la página que el listado tenga en pantalla.
+      if (tipo === 'gesicomm:buscar' && h.onCatalogo) {
+        const pedido = e.data;
+        const ventana = e.source;
+        Promise.resolve(h.onCatalogo({ pagina: 1, porPagina: 6, busqueda: pedido.busqueda }))
+          .then(res => ({ productos: res?.productos || [], error: false }))
+          .catch(() => ({ error: true }))
+          .then(res => {
+            try { ventana.postMessage({ tipo: 'gesicomm:buscar-respuesta', id: pedido.id, busqueda: pedido.busqueda, ...res }, '*'); } catch { /* iframe desmontado */ }
+          });
+      }
       // Cupón del checkout: el iframe no tiene red, el contenedor valida
       // contra el backend (mismo endpoint que el carrito de CartDrawer) y
       // devuelve el descuento con el mismo id para descartar respuestas viejas.
