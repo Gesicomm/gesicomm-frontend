@@ -312,7 +312,7 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
   border-color: var(--tienda-linea, var(--line, #d7e6ef)) !important;
   caret-color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
 }
-:where(.pc-search input::placeholder, .storefront input[type="search"]::placeholder) {
+:where(.pc-search input, .storefront input[type="search"])::placeholder {
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
 }
 :where(.trust-section, .benefit-strip, .category-strip, .countdown-section) {
@@ -413,9 +413,18 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
   overflow-wrap: anywhere !important;
   text-decoration: none !important;
 }
-:where(.site-footer .footer-dato::before, .gcx-footer-datos span) {
+:where(.gcx-footer-datos span) {
   color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
   font-weight: 900 !important;
+}
+/* "Atiende:", "WhatsApp:", "Tel:"… El ::before va AFUERA del :where(): adentro
+   es un selector inválido y el navegador descartaba la regla sin avisar, así
+   que el color de estos rótulos quedaba a merced del CSS guardado de cada
+   vista (azul oscuro sobre pie negro en una, blanco en otra). */
+:where(.site-footer .footer-dato)::before {
+  color: var(--tienda-banda-texto, var(--gc-texto-sobre-primario, #fff)) !important;
+  font-weight: 900 !important;
+  opacity: 1 !important;
 }
 :where(.site-footer .footer-redes, .gcx-footer-social-row) {
   display: flex !important;
@@ -1066,6 +1075,23 @@ main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"
   overflow-anchor: none;
 }
 .gc-catalog-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+/* Paginación y selector "Mostrar 25/50/75/100" que agrega el runtime
+   (prepararTamanoPagina) en catálogo y categoría. */
+:where(.gc-pages) { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 22px; }
+:where(.gc-pages button, .gc-page-size select) {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--tienda-linea, var(--line, #d7e6ef));
+  border-radius: 8px;
+  background-color: var(--gc-superficie, var(--tienda-superficie, #fff));
+  color: var(--gc-texto, var(--tienda-texto, #10202f));
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+:where(.gc-pages button:disabled, .gc-page-size select:disabled) { opacity: .45; cursor: not-allowed; }
+:where(.gc-page-size) { display: inline-flex; align-items: center; margin: 0; }
 .gc-catalog-controls > :where(input, select) {
   flex: 1 1 210px; min-width: min(210px, 100%); max-width: 100%; min-height: 44px; padding: 10px 12px;
   color: inherit; background: var(--gc-superficie); border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 12px;
@@ -1921,7 +1947,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
   caret-color: var(--gc-primario, var(--tienda-primario, #0d6efd)) !important;
 }
-:where(.commerce-header .search-box input::placeholder) {
+:where(.commerce-header .search-box input)::placeholder {
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #64748b)) !important;
 }
 :where(.commerce-header .search-box button) {

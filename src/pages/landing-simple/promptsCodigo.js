@@ -133,7 +133,7 @@ Si el usuario te pide "mostralo de otra manera", cambiá diseño, layout, textos
 - <input type="search" data-gesicomm-buscar> → busca por nombre, categoría o marca (sin distinguir tildes).
 - <select data-gesicomm-filtro="categoria"><option value="">Todas</option></select> → Gesicomm agrega las categorías reales. En la vista propia de una categoría NO hace falta este select salvo que quieras permitir saltar a otra categoría: esa página ya entra filtrada por su categoría.
 - <select data-gesicomm-filtro="orden"> con opciones value="" (destacados), "min-max", "max-min", "az", "za".
-- <button data-gesicomm-pagina="anterior"> y <button data-gesicomm-pagina="siguiente"> + <span data-gesicomm-paginacion> ("Página 2 de 9"); o en su lugar <button data-gesicomm-cargar-mas> ("Ver más productos").
+- <button data-gesicomm-pagina="anterior"> y <button data-gesicomm-pagina="siguiente"> + <span data-gesicomm-paginacion> ("Página 2 de 9"); o en su lugar <button data-gesicomm-cargar-mas> ("Ver más productos"). El selector "Mostrar 25 / 50 / 75 / 100" lo agrega Gesicom solo al lado de la paginación del catálogo y de la categoría: no lo escribas.
 - <p data-gesicomm-cargando style="display:none"> y <p data-gesicomm-sin-resultados style="display:none"> → Gesicomm los muestra cuando corresponde.
 - data-gesicomm-total → "N productos disponibles" del catálogo filtrado.
 - Estilá los botones de página con :disabled.

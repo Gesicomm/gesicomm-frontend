@@ -51,7 +51,10 @@ export async function obtenerLandingPublica(slug, opciones = {}) {
 // Mismo TTL que el s-maxage del backend: no se sirve nada más viejo de lo que
 // ya serviría el CDN.
 const TTL_CATALOGO_MS = 60 * 1000;
-const POR_PAGINA_DEFAULT = 20;
+// 25: el mismo tamaño con el que arranca el runtime en catálogo y categoría
+// (TAMANOS_PAGINA en runtimeGesicomm.js). Si difieren, el primer pedido del
+// iframe ya no coincide con el de la página y se pierde la respuesta reusada.
+const POR_PAGINA_DEFAULT = 25;
 const catalogoEnMemoria = new Map();
 
 export function limpiarCacheCatalogoPublico() {

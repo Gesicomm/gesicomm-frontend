@@ -930,7 +930,7 @@ describe('runtime — catálogo navegable', () => {
     };
 
     const inicial = responder({ productos: [airFryer], pagina: 1, totalPaginas: 3, total: 60, categorias: ['Cocina', 'Ropa'] });
-    expect(inicial).toEqual(expect.objectContaining({ pagina: 1, porPagina: 20 }));
+    expect(inicial).toEqual(expect.objectContaining({ pagina: 1, porPagina: 25 }));
     expect(document.querySelector('[data-gesicomm-paginacion]').textContent).toBe('Página 1 de 3');
     expect(document.querySelector('[data-gesicomm-total]').textContent).toBe('60 productos disponibles');
     expect(document.querySelector('[data-gesicomm-pagina="anterior"]').disabled).toBe(true);
@@ -961,6 +961,90 @@ describe('runtime — catálogo navegable', () => {
       data: { tipo: 'gesicomm:catalogo-respuesta', id: viejo.id, productos: [], pagina: 1, totalPaginas: 1, total: 0 },
     }));
     expect(document.querySelectorAll('#productos [data-gesicomm-item]')).toHaveLength(1);
+  });
+
+  const muchos = n => Array.from({ length: n }, (_, i) => ({ ...airFryer, id: `p${i + 1}`, nombre: `Producto ${String(i + 1).padStart(3, '0')}` }));
+  const itemsDe = document => Array.from(document.querySelectorAll('#productos [data-gesicomm-item]')).map(e => e.getAttribute('data-gesicomm-item'));
+  const elegirTamano = (window, document, valor) => {
+    const select = document.querySelector('select[data-gesicomm-filtro="porPagina"]');
+    select.value = String(valor);
+    select.dispatchEvent(new window.Event('change', { bubbles: true }));
+  };
+
+  it('categoría con todo en memoria (preview del editor): pagina de a 25 y deja elegir 50, 75 o 100', () => {
+    const datos = { ...base, vista: 'categoria', categoria: { nombre: 'Cocina', slug: 'cocina', url: '#' }, productos: muchos(60), catalogo: { total: 60, por_pagina: 20, paginado: false } };
+    const { window, document, mensajes, click } = montar(PLANTILLA_CATALOGO_TEST, datos);
+    const select = document.querySelector('select[data-gesicomm-filtro="porPagina"]');
+    expect(Array.from(select.options).map(o => o.textContent)).toEqual(['Mostrar 25', 'Mostrar 50', 'Mostrar 75', 'Mostrar 100']);
+    expect(select.value).toBe('25');
+    expect(itemsDe(document)).toHaveLength(25);
+    expect(document.querySelector('[data-gesicomm-paginacion]').textContent).toBe('Página 1 de 3');
+    expect(document.querySelector('[data-gesicomm-total]').textContent).toBe('60 productos disponibles');
+
+    click('[data-gesicomm-pagina="siguiente"]');
+    expect(itemsDe(document)[0]).toBe('p26');
+    click('[data-gesicomm-pagina="siguiente"]');
+    expect(itemsDe(document)).toHaveLength(10);
+    expect(document.querySelector('[data-gesicomm-pagina="siguiente"]').disabled).toBe(true);
+
+    // Cambiar el tamaño vuelve a la primera página.
+    elegirTamano(window, document, 50);
+    expect(itemsDe(document)).toHaveLength(50);
+    expect(itemsDe(document)[0]).toBe('p1');
+    expect(document.querySelector('[data-gesicomm-paginacion]').textContent).toBe('Página 1 de 2');
+    elegirTamano(window, document, 100);
+    expect(itemsDe(document)).toHaveLength(60);
+    expect(document.querySelector('[data-gesicomm-pagina="siguiente"]').style.display).toBe('none');
+    // Todo en memoria: nunca se le pide nada al contenedor.
+    expect(mensajes.some(m => m.tipo === 'gesicomm:catalogo')).toBe(false);
+  });
+
+  it('catálogo paginado por el servidor: el tamaño elegido viaja en el pedido y sobrevive a un reenvío de datos', () => {
+    const datos = { ...base, productos: muchos(25), catalogo: { total: 300, por_pagina: 25, paginado: true } };
+    const { window, document, mensajes } = montar(PLANTILLA_CATALOGO_TEST, datos);
+    const pedidos = () => mensajes.filter(m => m.tipo === 'gesicomm:catalogo');
+    expect(pedidos().at(-1)).toMatchObject({ pagina: 1, porPagina: 25 });
+
+    elegirTamano(window, document, 75);
+    expect(pedidos().at(-1)).toMatchObject({ pagina: 1, porPagina: 75, modo: 'reemplazar' });
+    // Un valor que no es de la lista (HTML manipulado) no llega al servidor.
+    const select = document.querySelector('select[data-gesicomm-filtro="porPagina"]');
+    select.appendChild(Object.assign(document.createElement('option'), { value: '5000', textContent: 'Todo' }));
+    const antes = pedidos().length;
+    elegirTamano(window, document, 5000);
+    expect(pedidos()).toHaveLength(antes);
+
+    // El contenedor reenvía datos (p. ej. cambió el carrito): se conserva la elección.
+    window.dispatchEvent(new window.MessageEvent('message', { source: window, data: { tipo: 'gesicomm:datos', datos } }));
+    expect(pedidos().at(-1)).toMatchObject({ porPagina: 75 });
+  });
+
+  it('con 25 productos o menos el selector no aparece, y el inicio sigue con el tamaño del servidor', () => {
+    const pocos = montar(PLANTILLA_CATALOGO_TEST, { ...base, vista: 'categoria', productos: muchos(8), catalogo: { total: 8, paginado: false } });
+    expect(pocos.document.querySelector('.gc-page-size').style.display).toBe('none');
+
+    const inicio = montar(PLANTILLA_CATALOGO_TEST, { ...base, vista: 'inicio', productos: muchos(40), catalogo: { total: 300, por_pagina: 20, paginado: true } });
+    expect(inicio.document.querySelector('select[data-gesicomm-filtro="porPagina"]')).toBeNull();
+    expect(inicio.mensajes.filter(m => m.tipo === 'gesicomm:catalogo').at(-1)).toMatchObject({ porPagina: 20, soloInicio: true });
+  });
+
+  it('un listado propio sin paginación la recibe igual (Anterior / Siguiente + selector)', () => {
+    const sinPaginas = { html: PLANTILLA_CATALOGO_TEST.html.replace(/<button type="button" data-gesicomm-pagina="anterior">[\s\S]*?data-gesicomm-pagina="siguiente">Siguiente<\/button>/, ''), css: '', js: '' };
+    expect(sinPaginas.html).not.toContain('data-gesicomm-pagina');
+    const { document, click } = montar(sinPaginas, { ...base, vista: 'catalogo', productos: muchos(40), catalogo: { total: 40, paginado: false } });
+    expect(itemsDe(document)).toHaveLength(25);
+    expect(document.querySelector('.gc-pages [data-gesicomm-paginacion]').textContent).toBe('Página 1 de 2');
+    click('.gc-pages [data-gesicomm-pagina="siguiente"]');
+    expect(itemsDe(document)).toHaveLength(15);
+  });
+});
+
+describe('pie de la tienda', () => {
+  it('los rótulos de contacto ("Atiende:", "WhatsApp:") toman el color del pie en todas las vistas', () => {
+    const doc = construirDocumentoCodigo(PLANTILLA_INICIO, { datos: { vista: 'inicio', tienda: {}, productos: [], producto: null, recomendados: [] } });
+    // ::before adentro de :where() es inválido: el navegador descarta la regla entera.
+    expect(doc).not.toMatch(/:where\([^)]*footer-dato::before[^)]*\)/);
+    expect(doc).toContain(':where(.site-footer .footer-dato)::before');
   });
 });
 

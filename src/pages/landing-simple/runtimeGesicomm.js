@@ -32,6 +32,9 @@
  *     "catalogo" es la grilla navegable: la afectan data-gesicomm-buscar,
  *     data-gesicomm-filtro="categoria|orden", data-gesicomm-pagina="anterior|siguiente",
  *     data-gesicomm-cargar-mas, data-gesicomm-paginacion y data-gesicomm-sin-resultados.
+ *     En las vistas de catálogo y categoría el runtime agrega solo el selector
+ *     "Mostrar 25/50/75/100" (data-gesicomm-filtro="porPagina") y, si el HTML no
+ *     trae paginación, también Anterior/Siguiente.
  *     + un <template> adentro que se clona por cada elemento
  *     + opcionales data-gesicomm-categoria, data-gesicomm-limite
  *   data-gesicomm-bind="nombre|descripcion|descripcion_larga|precio|precio_antes|
@@ -82,7 +85,18 @@ export function runtimeGesicomm() {
   // no tiene red. Si no, todo se resuelve acá con lo que ya vino.
   var metaCatalogo = datos.catalogo || {};
   var paginado = !!metaCatalogo.paginado;
-  var porPagina = metaCatalogo.por_pagina || metaCatalogo.porPagina || 20;
+  // Catálogo y categoría SIEMPRE paginan, con el tamaño que elige el
+  // visitante ("Mostrar 25 / 50 / 75 / 100"), también en el preview del
+  // editor, donde todo el catálogo está en memoria. El resto de las vistas
+  // (la grilla del inicio) conserva el tamaño que manda el servidor.
+  var TAMANOS_PAGINA = [25, 50, 75, 100];
+  var porPaginaElegida = 0;
+  function vistaListado() { return datos.vista === 'catalogo' || datos.vista === 'categoria'; }
+  function tamanoPagina() {
+    if (vistaListado()) return porPaginaElegida || TAMANOS_PAGINA[0];
+    return metaCatalogo.por_pagina || metaCatalogo.porPagina || 20;
+  }
+  var porPagina = tamanoPagina();
   var filtros = { busqueda: '', categoria: datos.categoria && datos.categoria.nombre ? datos.categoria.nombre : '', marca: '', etiqueta: '', precioMin: '', precioMax: '', disponibilidad: 'todos', soloDescuento: '', orden: '', pagina: 1 };
   try {
     var paramsIniciales = new URLSearchParams(window.location.search || '');
@@ -2296,7 +2310,7 @@ export function runtimeGesicomm() {
     productoActual = datos.producto || null;
     metaCatalogo = datos.catalogo || {};
     paginado = !!metaCatalogo.paginado;
-    porPagina = metaCatalogo.por_pagina || metaCatalogo.porPagina || 20;
+    porPagina = tamanoPagina();
     filtros.categoria = datos.categoria && datos.categoria.nombre ? datos.categoria.nombre : filtros.categoria;
     paginasTienda = datos.paginas || {};
     catalogoVista = {
@@ -2749,10 +2763,19 @@ export function runtimeGesicomm() {
     });
     var cats = [];
     productos.forEach(function (p) { if (p.categoria && cats.indexOf(p.categoria) === -1) cats.push(p.categoria); });
-    catalogoVista.items = ordenar(lista);
+    var ordenados = ordenar(lista);
     catalogoVista.total = lista.length;
-    catalogoVista.pagina = 1;
-    catalogoVista.totalPaginas = 1;
+    if (vistaListado()) {
+      var paginasLocales = Math.max(1, Math.ceil(ordenados.length / porPagina));
+      filtros.pagina = Math.max(1, Math.min(Number(filtros.pagina) || 1, paginasLocales));
+      catalogoVista.items = ordenados.slice((filtros.pagina - 1) * porPagina, filtros.pagina * porPagina);
+      catalogoVista.pagina = filtros.pagina;
+      catalogoVista.totalPaginas = paginasLocales;
+    } else {
+      catalogoVista.items = ordenados;
+      catalogoVista.pagina = 1;
+      catalogoVista.totalPaginas = 1;
+    }
     catalogoVista.categorias = cats.sort();
     catalogoVista.marcas = productos.map(function (p) { return p.marca; }).filter(function (m, i, todos) { return m && todos.indexOf(m) === i; }).sort();
     catalogoVista.etiquetas = etiquetasDisponiblesCatalogo(productos);
@@ -2872,9 +2895,58 @@ export function runtimeGesicomm() {
     }
   }
 
+  // Selector "Mostrar 25 / 50 / 75 / 100" del catálogo y de la categoría.
+  // Lo pone el runtime y no la plantilla: cada landing guarda su propia copia
+  // del HTML de estas vistas, así que un control agregado solo a la plantilla
+  // base no les llegaría a las tiendas que ya existen. Si el HTML del comercio
+  // tampoco trae paginación, se le agrega: un listado sin páginas carga todo
+  // el catálogo de una.
+  function prepararTamanoPagina() {
+    if (!vistaListado()) return;
+    var lista = document.querySelector('[data-gesicomm-lista="catalogo"]');
+    if (!lista) return;
+    var select = document.querySelector('select[data-gesicomm-filtro="porPagina"]');
+    if (!select) {
+      var ancla = document.querySelector('[data-gesicomm-pagina="anterior"]') || document.querySelector('[data-gesicomm-paginacion]')
+        || document.querySelector('[data-gesicomm-cargar-mas]');
+      if (!ancla) {
+        var barra = document.createElement('div');
+        barra.className = 'gc-pages';
+        barra.setAttribute('data-gesicomm-generado', '');
+        [['anterior', 'Anterior'], ['', ''], ['siguiente', 'Siguiente']].forEach(function (def) {
+          var nodo = document.createElement(def[0] ? 'button' : 'span');
+          if (def[0]) { nodo.type = 'button'; nodo.textContent = def[1]; nodo.setAttribute('data-gesicomm-pagina', def[0]); }
+          else nodo.setAttribute('data-gesicomm-paginacion', '');
+          barra.appendChild(nodo);
+        });
+        lista.parentNode.insertBefore(barra, lista.nextSibling);
+        ancla = barra.firstChild;
+      }
+      var envoltorio = document.createElement('label');
+      envoltorio.className = 'gc-page-size';
+      envoltorio.setAttribute('data-gesicomm-generado', '');
+      select = document.createElement('select');
+      select.setAttribute('data-gesicomm-filtro', 'porPagina');
+      select.setAttribute('aria-label', 'Productos por página');
+      TAMANOS_PAGINA.forEach(function (n) {
+        var opcion = document.createElement('option');
+        opcion.value = String(n);
+        opcion.textContent = 'Mostrar ' + n;
+        select.appendChild(opcion);
+      });
+      envoltorio.appendChild(select);
+      ancla.parentNode.insertBefore(envoltorio, ancla);
+    }
+    select.value = String(porPagina);
+    select.disabled = !!catalogoVista.cargando;
+    // Con menos productos que el tamaño más chico no hay nada que elegir.
+    (select.closest('.gc-page-size') || select).style.display = catalogoVista.total > TAMANOS_PAGINA[0] ? '' : 'none';
+  }
+
   function pintarControlesCatalogo() {
     var v = catalogoVista;
     var i;
+    prepararTamanoPagina();
     var totales = document.querySelectorAll('[data-gesicomm-total]');
     for (i = 0; i < totales.length; i++) {
       totales[i].textContent = v.total === 1 ? '1 producto disponible' : v.total + ' productos disponibles';
@@ -3210,6 +3282,17 @@ export function runtimeGesicomm() {
     var sel = e.target && e.target.closest ? e.target.closest('[data-gesicomm-filtro]') : null;
     if (!sel) return;
     var campo = sel.getAttribute('data-gesicomm-filtro');
+    if (campo === 'porPagina') {
+      var tamanoElegido = Number(sel.value);
+      if (TAMANOS_PAGINA.indexOf(tamanoElegido) === -1 || tamanoElegido === porPagina) return;
+      clearTimeout(temporizadorBusqueda);
+      porPaginaElegida = tamanoElegido;
+      porPagina = tamanoElegido;
+      filtros.pagina = 1;
+      actualizarCatalogo('reemplazar');
+      irAlCatalogo();
+      return;
+    }
     if (!Object.prototype.hasOwnProperty.call(filtros, campo) || campo === 'pagina') return;
     clearTimeout(temporizadorBusqueda);
     filtros[campo] = sel.type === 'checkbox' ? (sel.checked ? 'true' : '') : String(sel.value || '');
@@ -3612,6 +3695,9 @@ export function runtimeGesicomm() {
       e.preventDefault();
       if (catalogoVista.cargando || filtros.pagina >= catalogoVista.totalPaginas) return;
       filtros.pagina += 1;
+      // Sin servidor (preview del editor) no hay a quién pedirle la página:
+      // se pasa a la siguiente con lo que ya está en memoria.
+      if (!paginado) { actualizarCatalogo('reemplazar'); return; }
       pedirPagina('agregar');
       return;
     }
