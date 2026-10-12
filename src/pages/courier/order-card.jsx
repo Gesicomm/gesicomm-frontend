@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { formatGs } from "../../lib/courier";
 import { AlertCircle, Bike, Car, Clock, CreditCard, Package, Phone, ShoppingBag, MapPin, MessageCircle, Truck } from "lucide-react";
-import { estadoComercial, estadoLogistico } from "./orderLifecycle";
+import { STAGE_LABELS, estadoDePedido } from "./orderLifecycle";
 
 function VehiculoIcon({ v }) {
   if (v === "Moto" || v === "Bicicleta") return <Bike size={13} />;
@@ -53,8 +53,7 @@ export function OrderCard({
   const seguimientoPendiente = envio.recordatorio_estado === "PENDIENTE" && envio.recordatorio_ejecutar_en;
   const necesitaSeguimiento = seguimientoVencido || (envio.estado === "EnSeguimiento" && !seguimientoPendiente);
   const mostrarAlertas = necesitaSeguimiento || seguimientoPendiente;
-  const comercial = estadoComercial(envio);
-  const logistico = estadoLogistico(envio);
+  const estado = estadoDePedido(envio);
 
   const handleSeguimientoClick = (event) => {
     event.stopPropagation();
@@ -111,8 +110,8 @@ export function OrderCard({
           )}
         </div>
         <div className="order-stage-stack" title="Etapa actual del pedido">
-          <span>{comercial.label}</span>
-          {logistico.id !== "SinLogistica" && <small>{logistico.label}</small>}
+          <span>{estado.label}</span>
+          <small>{STAGE_LABELS[estado.etapa]}</small>
         </div>
       </div>
 

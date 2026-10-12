@@ -3141,6 +3141,89 @@ button.order-alert-chip:focus-visible {
 .pt-life-cell--info strong { color: var(--color-info); }
 .pt-life-cell--danger strong { color: var(--color-danger); }
 
+.pt-td-telefono {
+  color: var(--color-fg-muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+/* Columna Seguimiento: el mensaje del flujo que le toca al pedido. */
+.pt-seg {
+  min-width: 11rem;
+  max-width: 16rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.16rem;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.pt-seg--boton {
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-fg) 2.5%, transparent);
+  padding: 0.38rem 0.55rem;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pt-seg--boton:hover,
+.pt-seg--boton:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  outline: none;
+}
+
+.pt-seg__etapa {
+  color: var(--color-fg-subtle);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.pt-seg__fase {
+  color: var(--color-fg);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.pt-seg__cuando {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 0.35rem;
+  padding: 0.08rem 0.38rem;
+  font-size: 0.7rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.pt-seg__cuando--danger {
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  color: var(--color-danger);
+}
+
+.pt-seg__cuando--warning {
+  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+  color: var(--color-warning);
+}
+
+.pt-seg__cuando--info {
+  background: color-mix(in srgb, var(--color-info) 12%, transparent);
+  color: var(--color-info);
+}
+
+.pt-seg__cuando--neutral {
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  color: var(--color-fg-muted);
+}
+
+.pt-seg-vacio {
+  color: var(--color-fg-subtle);
+}
+
 /* ── Filtros extra ── */
 .pt-extra-filters {
   display: flex;
@@ -3293,7 +3376,7 @@ button.order-alert-chip:focus-visible {
 }
 .pt-th-id { width: 56px; text-align: center; }
 .pt-th-num { text-align: right; }
-.pt-th-product { width: 30%; min-width: 280px; }
+.pt-th-product { width: 24%; min-width: 220px; }
 .pt-th-courier { width: 90px; }
 .pt-th-state { width: 130px; }
 .pt-th-action { width: 200px; min-width: 180px; }

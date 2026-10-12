@@ -14,9 +14,10 @@ import { KanbanBoard } from "./kanban-board";
 import {
   COMMERCIAL_STATUSES,
   LOGISTIC_STATUSES,
+  RECOMPRA_STATUSES,
   STAGE_FILTERS,
-  estadoComercial,
-  estadoLogistico,
+  STAGE_LABELS,
+  estadoDePedido,
   paymentLine,
 } from "./orderLifecycle";
 
@@ -104,9 +105,9 @@ const FILTROS_VACIOS = {
 };
 
 const STAGE_TO_ESTADOS = {
-  todos: null,
   comercial: COMMERCIAL_STATUSES,
   logistica: LOGISTIC_STATUSES,
+  recompra: RECOMPRA_STATUSES,
 };
 
 function EstadoBadgeDropdown({ estado, onChange }) {
@@ -337,32 +338,102 @@ function LifecycleCell({ primary, secondary, alert, tone = "neutral" }) {
   );
 }
 
-const enLogistica = (envio) => estadoLogistico(envio).id !== "SinLogistica";
-
-function ComercialCell({ envio }) {
-  const estado = estadoComercial(envio);
+// Un pedido tiene UN estado a la vez, el de la etapa en la que está: al
+// confirmarse deja de mostrarse como comercial y pasa a logística; al
+// entregarse deja logística y pasa a recompra.
+function EstadoCell({ envio }) {
+  const estado = estadoDePedido(envio);
+  const courier = envio.Courier?.nombre || envio.proveedor_logistico_nombre || null;
+  const secundario = estado.etapa === "logistica"
+    ? courier || (estado.id === "Confirmado" ? paymentLine(envio) : null)
+    : estado.etapa === "recompra" && envio.metodo_pago
+    ? `Cobrado: ${envio.metodo_pago}`
+    : null;
   return (
     <LifecycleCell
       primary={estado.label}
-      secondary={estado.id === "confirmado" ? paymentLine(envio) : null}
-      tone={estado.id === "cancelado" ? "danger" : estado.id === "confirmado" ? "success" : "warning"}
+      secondary={secundario}
+      alert={estado.id === "DevolucionPendiente" ? "Revisar devolución" : null}
+      tone={estado.tone}
     />
   );
 }
 
-// El estado logístico existe recién cuando el pedido pasa a logística: antes
-// de eso la celda queda vacía.
-function LogisticaCell({ envio }) {
-  if (!enLogistica(envio)) return null;
-  const estado = estadoLogistico(envio);
-  const enCamino = ["Despachado", "Reprogramado"].includes(estado.id);
+const ENCABEZADO_ESTADO = {
+  comercial: "Estado comercial",
+  logistica: "Estado logístico",
+  recompra: "Estado de recompra",
+};
+
+const ZONA_HORARIA = "America/Asuncion";
+
+/** "hace 3 h", "en 40 min", "hace 2 días". */
+function tiempoRelativo(iso, ahora = Date.now()) {
+  if (!iso) return "";
+  const diff = new Date(iso).getTime() - ahora;
+  const min = Math.round(Math.abs(diff) / 60000);
+  let texto;
+  if (min < 1) texto = "un momento";
+  else if (min < 60) texto = `${min} min`;
+  else if (min < 60 * 36) texto = `${Math.round(min / 60)} h`;
+  else texto = `${Math.round(min / 1440)} días`;
+  return diff > 0 ? `en ${texto}` : `hace ${texto}`;
+}
+
+/** Cuándo toca el próximo mensaje, dicho como lo diría quien lo tiene que mandar. */
+function cuandoDelSeguimiento(seg) {
+  const hora = seg.toca_en
+    ? new Date(seg.toca_en).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_HORARIA })
+    : "";
+  if (seg.motivo === "vencido") return { texto: `Vencido: tocaba ${tiempoRelativo(seg.toca_en)}`, tono: "danger" };
+  if (seg.fase_abierta_en) return { texto: "Falta marcar como enviado", tono: "warning" };
+  if (seg.cuando === "ahora") return { texto: "Para enviar ahora", tono: "warning" };
+  if (seg.cuando === "hoy") return { texto: `Para hoy, ${hora}`, tono: "info" };
+  if (seg.cuando === "despues" && seg.toca_en) {
+    const fecha = new Date(seg.toca_en).toLocaleDateString("es-PY", { day: "2-digit", month: "2-digit", timeZone: ZONA_HORARIA });
+    return { texto: `Para el ${fecha}, ${hora}`, tono: "neutral" };
+  }
+  return { texto: "Sin fecha agendada", tono: "neutral" };
+}
+
+/**
+ * El mensaje del flujo que le toca al pedido en su etapa (lo calcula el
+ * backend, ver seguimientoDePedidos). Se toca para abrir los mensajes del
+ * pedido, ya parado en ese.
+ */
+function SeguimientoCell({ envio, onAbrir }) {
+  const seg = envio.seguimiento;
+  if (!seg) return <span className="pt-seg-vacio">—</span>;
+  const cuando = seg.terminado ? null : cuandoDelSeguimiento(seg);
+  const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "cliente";
+  const cuerpo = (
+    <>
+      <span className="pt-seg__etapa">{seg.etapa_nombre}</span>
+      <strong className="pt-seg__fase">
+        {seg.terminado ? "Todos los mensajes enviados" : `${seg.fase_posicion}/${seg.total_fases} · ${seg.fase_nombre}`}
+      </strong>
+      {cuando && (
+        <span className={`pt-seg__cuando pt-seg__cuando--${cuando.tono}`}>
+          <Clock size={11} /> {cuando.texto}
+        </span>
+      )}
+      {!envio.telefono && <span className="pt-seg__cuando pt-seg__cuando--neutral">Sin teléfono</span>}
+    </>
+  );
+  if (!onAbrir) return <div className="pt-seg">{cuerpo}</div>;
   return (
-    <LifecycleCell
-      primary={estado.label}
-      secondary={envio.Courier?.nombre || envio.proveedor_logistico_nombre || null}
-      alert={estado.id === "DevolucionPendiente" ? "Revisar devolución" : null}
-      tone={estado.id === "Entregado" ? "success" : estado.id === "DevolucionPendiente" ? "danger" : enCamino ? "info" : "neutral"}
-    />
+    <button
+      type="button"
+      className="pt-seg pt-seg--boton"
+      title="Abrir los mensajes de este pedido"
+      aria-label={`Seguimiento de ${nombre}`}
+      onClick={(ev) => {
+        ev.stopPropagation();
+        onAbrir(envio);
+      }}
+    >
+      {cuerpo}
+    </button>
   );
 }
 
@@ -462,7 +533,7 @@ export function PedidosTable({
 }) {
   const filtrosBase = useMemo(() => ({ ...FILTROS_VACIOS, pedido_id: initialPedidoId || "" }), [initialPedidoId]);
   const [estadoActivo, setEstadoActivo] = useState(initialEstado);
-  const [etapaActiva, setEtapaActiva] = useState("todos");
+  const [etapaActiva, setEtapaActiva] = useState(STAGE_FILTERS[0].id);
   // Fila expandida con el seguimiento de abastecimiento (solo en esa pestaña).
   const [timelineExpandidoId, setTimelineExpandidoId] = useState(null);
   const [abastecimientoEstadoActivo, setAbastecimientoEstadoActivo] = useState(initialAbastecimientoEstado);
@@ -534,10 +605,11 @@ export function PedidosTable({
     setLoading(true);
     try {
       const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE };
+      if (!soloAbastecimiento) payload.incluir_seguimiento = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (!soloAbastecimiento && estado === TAB_ABASTECIMIENTO_ID) {
         payload.abastecimiento_estado = "pagado";
-      } else if (!soloAbastecimiento && etapaActiva !== "todos" && estadosEtapa?.length) {
+      } else if (!soloAbastecimiento && estadosEtapa?.length) {
         payload.estados = estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
           ? estadosDeFiltro(estado)
           : estadosEtapa;
@@ -562,9 +634,9 @@ export function PedidosTable({
     if (soloAbastecimiento) return;
     setKanbanLoading(true);
     try {
-      const payloadBase = { ...construirPayloadBase(f), limit: 100 };
+      const payloadBase = { ...construirPayloadBase(f), limit: 100, incluir_seguimiento: true };
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
-      if (etapaActiva !== "todos" && estadosEtapa?.length) payloadBase.estados = estadosEtapa;
+      if (estadosEtapa?.length) payloadBase.estados = estadosEtapa;
 
       const acumulado = [];
       let pageToLoad = 1;
@@ -630,20 +702,21 @@ export function PedidosTable({
     }
   }, [construirPayloadBase]);
 
+  const viendoEntregados = estadoActivo === "Entregado" || etapaActiva === "recompra";
   const timerRef = useRef(null);
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       cargar(filtros, page, estadoActivo);
       cargarConteos(filtros);
-      if (estadoActivo === "Entregado") {
+      if (viendoEntregados) {
         cargarResumenEntregados(filtros);
       } else {
         setResumenEntregados(null);
       }
     }, 300);
     return () => clearTimeout(timerRef.current);
-  }, [filtros, page, estadoActivo, refrescarKey, cargar, cargarConteos, cargarResumenEntregados]);
+  }, [filtros, page, estadoActivo, viendoEntregados, refrescarKey, cargar, cargarConteos, cargarResumenEntregados]);
 
   useEffect(() => {
     if (vista !== "kanban" || soloAbastecimiento) return;
@@ -673,10 +746,6 @@ export function PedidosTable({
     setEtapaActiva(etapa);
     setPage(1);
     setTimelineExpandidoId(null);
-    if (etapa === "todos") {
-      setEstadoActivo(TODOS_ESTADOS_ID);
-      return;
-    }
     const estados = STAGE_TO_ESTADOS[etapa];
     if (estados?.length && !estados.includes(estadoActivo)) {
       setEstadoActivo(TODOS_ESTADOS_ID);
@@ -793,20 +862,20 @@ export function PedidosTable({
   const montoCourierEntregado = Number(resumenEntregados?.costo_total_courier || 0);
   const saldoLiquidacionEntregados = Number(resumenEntregados?.saldo_liquidacion || 0);
   const montoPendienteRendicion = Math.abs(saldoLiquidacionEntregados);
-  // La columna de estado logístico aparece recién cuando hay algún pedido que
-  // ya pasó a logística (o cuando se está mirando esa etapa).
-  const mostrarEstadoLogistico = !soloAbastecimiento && (etapaActiva === "logistica" || envios.some(enLogistica));
-  const tableColSpan = soloAbastecimiento ? 9 : mostrarEstadoLogistico ? 8 : 7;
+  const tableColSpan = 9;
+  const sumarConteos = (estados) => estados.reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
+  // Cada estado cuenta en un solo casillero, igual que en las etapas.
   const resumenCiclo = {
-    pendientes: Number(conteos.Pendiente || 0) + Number(conteos.EnSeguimiento || 0),
-    confirmados: Number(conteos.Confirmado || 0),
-    logistica: LOGISTIC_STATUSES.reduce((acc, st) => acc + Number(conteos[st] || 0), 0),
-    entregados: Number(conteos.Entregado || 0),
-    incidencias: Number(conteos.Devuelto || 0) + Number(conteos.Perdido || 0),
+    pendientes: sumarConteos(["Pendiente", "EnSeguimiento"]),
+    logistica: sumarConteos(["Confirmado", "Preparado", "Despachado", "Reprogramado"]),
+    recompra: sumarConteos(RECOMPRA_STATUSES),
+    cancelados: sumarConteos(["Cancelado"]),
+    incidencias: sumarConteos(["Devuelto", "Perdido"]),
   };
   const estadosEtapaActiva = STAGE_TO_ESTADOS[etapaActiva] || [];
-  const totalEstadosEtapaActiva = estadosEtapaActiva.reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
-  const conteoDeFiltro = (estado) => estadosDeFiltro(estado).reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
+  const totalEstadosEtapaActiva = sumarConteos(estadosEtapaActiva);
+  const chipsEtapaActiva = estadosEtapaActiva.filter((st) => !ESTADOS_SIN_CHIP.has(st));
+  const conteoDeFiltro = (estado) => sumarConteos(estadosDeFiltro(estado));
 
   return (
     <div className="pt-root">
@@ -841,9 +910,9 @@ export function PedidosTable({
       {!soloAbastecimiento && (
         <section className="pt-cycle-summary" aria-label="Resumen del ciclo de pedidos">
           <ResumenItem label="Pendientes" value={resumenCiclo.pendientes.toLocaleString("es-PY")} tone="warning" />
-          <ResumenItem label="Confirmados" value={resumenCiclo.confirmados.toLocaleString("es-PY")} tone="info" />
           <ResumenItem label="En logística" value={resumenCiclo.logistica.toLocaleString("es-PY")} tone="money" />
-          <ResumenItem label="Entregados" value={resumenCiclo.entregados.toLocaleString("es-PY")} tone="success" />
+          <ResumenItem label="En recompra" value={resumenCiclo.recompra.toLocaleString("es-PY")} tone="success" />
+          <ResumenItem label="Cancelados" value={resumenCiclo.cancelados.toLocaleString("es-PY")} tone="default" />
           <ResumenItem label="Incidencias" value={resumenCiclo.incidencias.toLocaleString("es-PY")} tone="danger" />
         </section>
       )}
@@ -896,11 +965,11 @@ export function PedidosTable({
         <div className="pt-kanban-context" role="note">
           <Columns3 size={16} />
           <div>
-            <strong>Kanban por {etapaActiva === "todos" ? "Comercial" : STAGE_FILTERS.find((s) => s.id === etapaActiva)?.label}.</strong>
+            <strong>Kanban por {STAGE_LABELS[etapaActiva]}.</strong>
             <span>Las columnas operativas no crean estados nuevos: muestran qué necesita cada pedido ahora.</span>
           </div>
         </div>
-      ) : !soloAbastecimiento && etapaActiva !== "todos" ? (
+      ) : !soloAbastecimiento && chipsEtapaActiva.length > 1 ? (
         <section className="pt-status-shell" aria-label={`Filtros secundarios de ${etapaActiva}`}>
           <div className="pt-status-tabs pt-status-tabs--secondary" role="tablist">
             <button
@@ -912,7 +981,7 @@ export function PedidosTable({
               <span className="pt-status-chip__label">Todos</span>
               <strong className="pt-status-chip__count">{totalEstadosEtapaActiva}</strong>
             </button>
-            {estadosEtapaActiva.filter((st) => !ESTADOS_SIN_CHIP.has(st)).map((st) => {
+            {chipsEtapaActiva.map((st) => {
               const cfg = STATUS[st] || {};
               const active = estadoActivo === st;
               const label = cfg.label || st;
@@ -934,13 +1003,13 @@ export function PedidosTable({
       ) : null}
 
       {!soloAbastecimiento && (
-        <div className={`pt-ops-summary ${estadoActivo === "Entregado" && resumenEntregados ? "pt-ops-summary--story" : ""}`} aria-label="Resumen financiero de pedidos">
+        <div className={`pt-ops-summary ${viendoEntregados && resumenEntregados ? "pt-ops-summary--story" : ""}`} aria-label="Resumen financiero de pedidos">
           <div className="pt-ops-summary__header">
-            <span>{estadoActivo === "Entregado" && resumenEntregados ? "Resumen de entregados" : "Resumen operativo"}</span>
+            <span>{viendoEntregados && resumenEntregados ? "Resumen de entregados" : "Resumen operativo"}</span>
             <strong>{formatGs(totalVisibleACobrar)} por cobrar · {formatGs(totalCobrado)} cobrado</strong>
           </div>
 
-          {estadoActivo === "Entregado" && resumenEntregados ? (
+          {viendoEntregados && resumenEntregados ? (
             <div className="pt-finance-story">
               <div className="pt-finance-story__lead">
                 <strong>
@@ -1235,7 +1304,7 @@ export function PedidosTable({
               onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
               onAccionSiguiente={handleAccionSiguiente}
               isAdmin={esAdmin}
-              context={etapaActiva === "todos" ? "comercial" : etapaActiva}
+              context={etapaActiva}
             />
           )}
         </div>
@@ -1254,14 +1323,15 @@ export function PedidosTable({
               ) : (
                 <>
                   <th className="pt-th">Cliente</th>
+                  <th className="pt-th">Teléfono</th>
                 </>
               )}
               <th className="pt-th pt-th-product">Producto / Oferta</th>
               <th className="pt-th pt-th-num">Total</th>
               {!soloAbastecimiento && (
                 <>
-                  <th className="pt-th">Estado comercial</th>
-                  {mostrarEstadoLogistico && <th className="pt-th">Estado logístico</th>}
+                  <th className="pt-th">{ENCABEZADO_ESTADO[etapaActiva]}</th>
+                  <th className="pt-th">Seguimiento</th>
                 </>
               )}
               {soloAbastecimiento && <th className="pt-th pt-th-state">Estado</th>}
@@ -1305,8 +1375,7 @@ export function PedidosTable({
                   e.hora,
                   e.createdAt
                 );
-                const whatsappLink = getWhatsappLink(e);
-                const nombreCliente = [e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") || e.cliente || "cliente";
+                const nombreCliente = [e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") || e.cliente || "—";
 
                 return [
                   <tr
@@ -1355,74 +1424,11 @@ export function PedidosTable({
                     ) : (
                       <>
                         <td className="pt-td" data-label="Cliente">
-                          <span className="pt-cliente-nombre">
-                            {[e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") ||
-                              e.cliente ||
-                              "—"}
-                          </span>
-                          <span className="pt-phone-cell" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", marginTop: 4 }}>
-                            <span>{e.telefono || "—"}</span>
-                            {e.recordatorio_vencido ? (
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "2px",
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                  fontSize: "0.68rem",
-                                  fontWeight: 800,
-                                  background: "color-mix(in srgb, var(--color-danger) 18%, transparent)",
-                                  color: "var(--color-danger)",
-                                  border: "1px solid color-mix(in srgb, var(--color-danger) 40%, transparent)",
-                                  whiteSpace: "nowrap",
-                                }}
-                                title={`Seguimiento vencido: ${e.recordatorio_ejecutar_en ? new Date(e.recordatorio_ejecutar_en).toLocaleString('es-PY') : 'Requiere contacto urgente'}`}
-                              >
-                                <Clock size={10} /> Contactar
-                              </span>
-                            ) : e.recordatorio_estado === 'PENDIENTE' && e.recordatorio_ejecutar_en ? (
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "2px",
-                                  padding: "2px 5px",
-                                  borderRadius: "4px",
-                                  fontSize: "0.68rem",
-                                  fontWeight: 600,
-                                  background: "color-mix(in srgb, var(--color-info) 10%, transparent)",
-                                  color: "var(--color-info)",
-                                  border: "1px solid color-mix(in srgb, var(--color-info) 25%, transparent)",
-                                  whiteSpace: "nowrap",
-                                }}
-                                title={`Próximo contacto: ${new Date(e.recordatorio_ejecutar_en).toLocaleString('es-PY')}`}
-                              >
-                                <Clock size={10} /> {new Date(e.recordatorio_ejecutar_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            ) : null}
-                            {e.telefono && onAbrirSeguimiento && (
-                              <button
-                                type="button"
-                                className={`pt-whatsapp-action ${e.recordatorio_vencido ? "vencido-pulse" : ""}`}
-                                title={`Seguimiento por WhatsApp a ${e.telefono}${e.recordatorio_vencido ? ' (Requiere contacto)' : ''}`}
-                                aria-label={`Seguimiento por WhatsApp a ${nombreCliente}`}
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  onAbrirSeguimiento(e);
-                                }}
-                                style={e.recordatorio_vencido ? {
-                                  borderColor: "var(--color-danger)",
-                                  background: "color-mix(in srgb, var(--color-danger) 22%, transparent)",
-                                  color: "var(--color-danger)",
-                                  boxShadow: "0 0 8px color-mix(in srgb, var(--color-danger) 40%, transparent)",
-                                } : undefined}
-                              >
-                                <MessageCircle size={14} />
-                              </button>
-                            )}
-                          </span>
+                          <span className="pt-cliente-nombre">{nombreCliente}</span>
                           <span className="pt-depto">{[e.ciudad, e.departamento].filter(Boolean).join(" · ") || "Sin ciudad"}</span>
+                        </td>
+                        <td className="pt-td pt-td-telefono" data-label="Teléfono">
+                          {e.telefono || "—"}
                         </td>
                       </>
                     )}
@@ -1441,14 +1447,12 @@ export function PedidosTable({
                     </td>
                     {!soloAbastecimiento && (
                       <>
-                        <td className="pt-td" data-label="Estado comercial">
-                          <ComercialCell envio={e} />
+                        <td className="pt-td" data-label="Estado">
+                          <EstadoCell envio={e} />
                         </td>
-                        {mostrarEstadoLogistico && (
-                          <td className="pt-td" data-label="Estado logístico">
-                            <LogisticaCell envio={e} />
-                          </td>
-                        )}
+                        <td className="pt-td" data-label="Seguimiento" onClick={(ev) => ev.stopPropagation()}>
+                          <SeguimientoCell envio={e} onAbrir={onAbrirSeguimiento} />
+                        </td>
                       </>
                     )}
                     {soloAbastecimiento && (

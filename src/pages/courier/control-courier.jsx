@@ -64,6 +64,8 @@ export function ControlCourier() {
   const [resumenEnvio, setResumenEnvio] = useState(null);
   const [historialEnvio, setHistorialEnvio] = useState(null);
   const [seguimientoEnvio, setSeguimientoEnvio] = useState(null);
+  // El mensaje del flujo que le tocaba al pedido cuando se abrió el panel.
+  const [faseSeguimientoId, setFaseSeguimientoId] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
 
   // El state de navegación se consume una sola vez: si no, un refresh volvería
@@ -76,6 +78,11 @@ export function ControlCourier() {
   useEffect(() => {
     verificarSesion().then(setUsuarioActual).catch(() => setUsuarioActual(null));
   }, []);
+
+  function abrirSeguimiento(envio) {
+    setFaseSeguimientoId(envio?.seguimiento?.fase_id ?? null);
+    setSeguimientoEnvio(envio);
+  }
 
   function seleccionarTab(tabId) {
     setTab(tabId);
@@ -290,7 +297,7 @@ export function ControlCourier() {
             onAccionEspecial={(tipo, envio, extra) => setAccionEspecial({ tipo, envio, ...extra })}
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
-            onAbrirSeguimiento={(envio) => setSeguimientoEnvio(envio)}
+            onAbrirSeguimiento={abrirSeguimiento}
             refrescarKey={refrescarKey}
           />
         ) : tab === "rendicion" ? (
@@ -308,7 +315,7 @@ export function ControlCourier() {
         onSubmit={handleModalSubmit}
         deliveryZonas={deliveryZonas}
         onPrecioItemActualizado={() => setRefrescarKey((k) => k + 1)}
-        onAbrirSeguimiento={(envio) => setSeguimientoEnvio(envio)}
+        onAbrirSeguimiento={abrirSeguimiento}
       />
 
       {/* Modal de Impresión de Pedidos */}
@@ -366,6 +373,7 @@ export function ControlCourier() {
       <SeguimientoPanel
         open={!!seguimientoEnvio}
         envio={seguimientoEnvio}
+        faseSugeridaId={faseSeguimientoId}
         onClose={() => setSeguimientoEnvio(null)}
         onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
       />

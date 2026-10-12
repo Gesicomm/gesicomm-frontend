@@ -31,34 +31,83 @@ export const FLOW_TYPES = {
   },
 };
 
+// No hay una etapa "Todos": un pedido se mira siempre dentro de la etapa en
+// la que está.
 export const STAGE_FILTERS = [
-  { id: "todos", label: "Todos" },
   { id: "comercial", label: "Comercial" },
   { id: "logistica", label: "Logística" },
+  { id: "recompra", label: "Recompra" },
 ];
 
-export const COMMERCIAL_STATUSES = ["Pendiente", "EnSeguimiento", "Confirmado", "Cancelado"];
-export const LOGISTIC_STATUSES = ["Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"];
+export const STAGE_LABELS = { comercial: "Comercial", logistica: "Logística", recompra: "Recompra" };
+
+// Cada estado vive en UNA sola etapa. Al confirmarse, el pedido sale de
+// Comercial y entra a Logística (ahí arranca el seguimiento de envío); al
+// entregarse sale de Logística y entra a Recompra (escalamiento de ventas).
+// Lo que no se concreta queda cerrado en la etapa donde se cortó.
+export const COMMERCIAL_STATUSES = ["Pendiente", "EnSeguimiento", "Cancelado"];
+export const LOGISTIC_STATUSES = ["Confirmado", "Preparado", "Despachado", "Reprogramado", "Devuelto", "Perdido"];
+export const RECOMPRA_STATUSES = ["Entregado"];
+
+export function etapaDePedido(envio) {
+  if (RECOMPRA_STATUSES.includes(envio?.estado)) return "recompra";
+  if (LOGISTIC_STATUSES.includes(envio?.estado)) return "logistica";
+  return "comercial";
+}
+
+const TONO_POR_ESTADO = {
+  Cancelado: "danger",
+  Confirmado: "info",
+  Despachado: "info",
+  Reprogramado: "info",
+  Devuelto: "neutral",
+  Perdido: "danger",
+  Entregado: "success",
+};
+
+/** El estado del pedido dentro de la etapa en la que está ahora. */
+export function estadoDePedido(envio) {
+  const etapa = etapaDePedido(envio);
+  const estado = envio?.estado;
+  if (etapa === "comercial" && estado !== "Cancelado") {
+    return { etapa, id: "Pendiente", label: "Pendiente", tone: "warning" };
+  }
+  if (estado === "Devuelto" && !envio?.devolucion_recibida_at) {
+    return { etapa, id: "DevolucionPendiente", label: "Devolución pendiente", tone: "danger" };
+  }
+  return { etapa, id: estado, label: estado, tone: TONO_POR_ESTADO[estado] || "neutral" };
+}
+
+const esEstado = (...ids) => (e) => ids.includes(estadoDePedido(e).id);
+
+const LANES = {
+  pendientes: { id: "pendiente", label: "Pendientes", columnBar: "bg-amber-400", match: esEstado("Pendiente") },
+  cancelados: { id: "cancelado", label: "Cancelados", columnBar: "bg-red-400", match: esEstado("Cancelado") },
+  confirmados: { id: "Confirmado", label: "Confirmados", columnBar: "bg-teal-400", estado: "Confirmado", match: esEstado("Confirmado") },
+  preparados: { id: "Preparado", label: "Preparados", columnBar: "bg-purple-400", estado: "Preparado", match: esEstado("Preparado") },
+  // Un reprogramado sigue en la calle: va en la misma columna que los despachados.
+  despachados: { id: "Despachado", label: "Despachados", columnBar: "bg-blue-400", estado: "Despachado", match: esEstado("Despachado", "Reprogramado") },
+  devolucionPendiente: { id: "DevolucionPendiente", label: "Devolución pendiente", columnBar: "bg-red-400", operational: true, match: esEstado("DevolucionPendiente") },
+  devueltos: { id: "Devuelto", label: "Devueltos", columnBar: "bg-stone-400", estado: "Devuelto", match: esEstado("Devuelto") },
+  perdidos: { id: "Perdido", label: "Perdidos", columnBar: "bg-stone-400", estado: "Perdido", match: esEstado("Perdido") },
+};
 
 export const KANBAN_CONTEXTS = {
   comercial: {
     label: "Comercial",
-    lanes: [
-      { id: "pendiente", label: "Pendientes", columnBar: "bg-amber-400", match: (e) => estadoComercial(e).id === "pendiente" },
-      { id: "confirmado", label: "Confirmados", columnBar: "bg-teal-400", match: (e) => estadoComercial(e).id === "confirmado" },
-      { id: "cancelado", label: "Cancelados", columnBar: "bg-red-400", match: (e) => estadoComercial(e).id === "cancelado" },
-    ],
+    lanes: [LANES.pendientes, LANES.cancelados],
   },
   logistica: {
     label: "Logística",
+    lanes: [LANES.confirmados, LANES.preparados, LANES.despachados, LANES.devolucionPendiente, LANES.devueltos, LANES.perdidos],
+  },
+  // En recompra el pedido ya está entregado: lo que cambia es si todavía
+  // tiene mensajes de escalamiento de ventas por enviar.
+  recompra: {
+    label: "Recompra",
     lanes: [
-      { id: "Preparado", label: "Preparados", columnBar: "bg-purple-400", estado: "Preparado", match: (e) => estadoLogistico(e).id === "Preparado" },
-      // Un reprogramado sigue en la calle: se muestra como despachado, igual que en la tabla.
-      { id: "Despachado", label: "Despachados", columnBar: "bg-blue-400", estado: "Despachado", match: (e) => ["Despachado", "Reprogramado"].includes(estadoLogistico(e).id) },
-      { id: "Entregado", label: "Entregados", columnBar: "bg-emerald-400", estado: "Entregado", match: (e) => estadoLogistico(e).id === "Entregado" },
-      { id: "DevolucionPendiente", label: "Devolución pendiente", columnBar: "bg-red-400", operational: true, match: (e) => estadoLogistico(e).id === "DevolucionPendiente" },
-      { id: "Devuelto", label: "Devueltos", columnBar: "bg-stone-400", estado: "Devuelto", match: (e) => estadoLogistico(e).id === "Devuelto" },
-      { id: "Perdido", label: "Perdidos", columnBar: "bg-stone-400", estado: "Perdido", match: (e) => estadoLogistico(e).id === "Perdido" },
+      { id: "recompra_pendiente", label: "Con mensajes por enviar", columnBar: "bg-blue-300", operational: true, match: (e) => Boolean(e?.seguimiento?.fase_id) },
+      { id: "recompra_sin_mensajes", label: "Sin mensajes por enviar", columnBar: "bg-emerald-400", operational: true, match: (e) => !e?.seguimiento?.fase_id },
     ],
   },
 };
@@ -67,29 +116,9 @@ export function esPagoAnticipado(envio) {
   return envio?.pago_anticipado === true || envio?.pago_anticipado === 1 || String(envio?.pago_anticipado).toLowerCase() === "true";
 }
 
-export function estadoComercial(envio) {
-  if (envio?.estado === "Cancelado") return { id: "cancelado", label: "Cancelado" };
-  if (["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"].includes(envio?.estado)) {
-    return { id: "confirmado", label: "Confirmado" };
-  }
-  return { id: "pendiente", label: "Pendiente" };
-}
-
-export function estadoLogistico(envio) {
-  const estado = envio?.estado_logistico || envio?.estado;
-  if (estado === "Devuelto" && !envio?.devolucion_recibida_at) {
-    return { id: "DevolucionPendiente", label: "Devolución pendiente" };
-  }
-  if (["Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"].includes(estado)) {
-    return { id: estado, label: estado === "Reprogramado" ? "Despachado" : estado };
-  }
-  return { id: "SinLogistica", label: "—" };
-}
-
 export function paymentLine(envio) {
   if (esPagoAnticipado(envio)) {
     return `Pago anticipado${envio?.metodo_pago ? ` · ${envio.metodo_pago}` : ""}`;
   }
   return "Contra entrega";
 }
-

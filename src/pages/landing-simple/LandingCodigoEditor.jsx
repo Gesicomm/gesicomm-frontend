@@ -117,6 +117,37 @@ const ANCHOS_VIEWPORT = { desktop: '100%', tablet: '768px', mobile: '390px' };
 // por la plantilla base, que ya vende.
 const MARCA_CODIGO_INICIAL = 'Escribí acá el HTML de tu landing';
 
+const mismoCodigo = (a, b) => !!a && !!b && ['html', 'css', 'js'].every(k => (a[k] || '') === (b[k] || ''));
+
+/**
+ * Las vistas que hay que mandar al guardar: solo las que cambiaron respecto
+ * de lo que el servidor ya tiene. El backend deja intacta la vista que no
+ * viene y mezcla legales/fichas propias con las guardadas, así que omitirlas
+ * no cambia nada. Mandarlas todas siempre (inicio, catálogo, categoría,
+ * checkout, 6 legales: ~550 KB en una tienda real) dejaba el guardado al
+ * borde del límite del body: con una lista larga de productos el servidor
+ * respondía 413 y no se guardaba nada.
+ */
+export function vistasCambiadas(codigos, guardadas = {}, propiasBorradas = [], legales = {}) {
+  const libres = Object.fromEntries(['catalogo', 'producto', 'categoria', 'checkout']
+    .filter(k => codigos[k] && !mismoCodigo(guardadas[k], codigos[k]))
+    .map(k => [k, codigos[k]]));
+  const legalesCambiadas = Object.fromEntries(Object.entries(legales)
+    .filter(([k, c]) => !mismoCodigo(guardadas.legales?.[k], c)));
+  const propias = {
+    ...Object.fromEntries([...propiasBorradas].map(cid => [cid, null])),
+    ...Object.fromEntries(Object.entries(codigos)
+      .filter(([k]) => k.startsWith(PREFIJO_PROPIA))
+      .map(([k, c]) => [k.slice(PREFIJO_PROPIA.length), c])
+      .filter(([cid, c]) => !mismoCodigo(guardadas.productos?.[cid], c))),
+  };
+  return {
+    ...libres,
+    ...(Object.keys(legalesCambiadas).length ? { legales: legalesCambiadas } : {}),
+    ...(Object.keys(propias).length ? { productos: propias } : {}),
+  };
+}
+
 /** Items de la landing ({tipo, referencia_id}) → items del catálogo del panel, en el mismo orden. */
 export function resolverSeleccion(items, catalogo) {
   const productos = new Map((catalogo?.productos || []).map(p => [Number(p.id), { ...p, tipo: 'producto' }]));
@@ -406,20 +437,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         titulo: ajustes.titulo,
         seo_titulo: ajustes.seo_titulo,
         seo_descripcion: ajustes.seo_descripcion,
-        codigo: codigosAGuardar.inicio,
-        vistas: {
-          catalogo: codigosAGuardar.catalogo,
-          producto: codigosAGuardar.producto,
-          categoria: codigosAGuardar.categoria,
-          checkout: codigosAGuardar.checkout,
-          legales: legalesAGuardar,
-          productos: {
-            ...Object.fromEntries([...propiasBorradas].map(cid => [cid, null])),
-            ...Object.fromEntries(Object.entries(codigosAGuardar)
-              .filter(([k]) => k.startsWith(PREFIJO_PROPIA))
-              .map(([k, c]) => [k.slice(PREFIJO_PROPIA.length), c])),
-          },
-        },
+        ...(mismoCodigo(landing?.content?.codigo, codigosAGuardar.inicio) ? {} : { codigo: codigosAGuardar.inicio }),
+        vistas: vistasCambiadas(codigosAGuardar, landing?.content?.vistas, propiasBorradas, legalesAGuardar),
         ...(ventaAGuardar ? { venta: ventaAGuardar } : {}),
         // Única puerta hacia venta.urgencia/prueba_social "confirmado" (ver
         // landingSimple.service.js): separado de `venta` a propósito, así un
