@@ -2974,6 +2974,28 @@ main[data-gesicomm-base="catalogo"] .brand-badge {
 // Branding de Mi Tienda (--tienda-*): ver marcaTiendaCodigo.js.
 export { cssMarcaTienda };
 
+// Todo el CSS de sistema de la ficha (galería contenida, miniaturas al
+// costado, ancho completo, celular) cuelga de data-gesicomm-base="producto".
+// Las tiendas que guardaron su copia de la ficha ANTES de que la plantilla
+// llevara ese atributo tienen <main class="container"> a secas: ninguna de
+// esas reglas les aplica y una foto grande revienta la columna de la galería
+// y tapa la de compra. Se marca acá, único punto por el que pasan la preview
+// y la publicada. Solo si es la estructura de la plantilla (.pdp +
+// .gallery-main) y nadie declaró una base: una ficha propia con otro armado
+// no se toca.
+const ES_FICHA_DE_PLANTILLA = [
+  /data-gesicomm-imagen-principal/i,
+  /class=(["'])(?:[^"']*\s)?pdp(?:\s[^"']*)?\1/i,
+  /class=(["'])(?:[^"']*\s)?gallery-main(?:\s[^"']*)?\1/i,
+];
+
+export function conBaseDeFicha(html = '') {
+  const texto = String(html || '');
+  if (/data-gesicomm-base=/i.test(texto)) return texto;
+  if (!ES_FICHA_DE_PLANTILLA.every(marca => marca.test(texto))) return texto;
+  return texto.replace(/<main\b/i, '<main data-gesicomm-base="producto"');
+}
+
 export function construirDocumentoCodigo(codigo, opciones = {}) {
   const { html = '', css = '', js = '', fonts = [] } = codigo || {};
   const { titulo = '', reportarErrores = false, datos = null, extras = null } = opciones;
@@ -3081,7 +3103,7 @@ ${SYSTEM_CSS}
 ${extras?.css ? `<style>\n${escaparCierreStyle(extras.css)}\n</style>` : ''}
 </head>
 <body>
-${cuerpoConExtras(html, extras?.html)}
+${cuerpoConExtras(conBaseDeFicha(html), extras?.html)}
 ${puenteGesicomm}
 ${puenteErrores}
 <!-- El codigo del comercio va en su propio script, en el nivel mas alto y
