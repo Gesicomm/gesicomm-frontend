@@ -9,7 +9,8 @@ vi.mock('../../services/courierApi', () => ({ getCouriers: vi.fn() }));
 const config = { environment: 'sandbox', credentials_configured: true, webhook_configured: true, automatic_enabled: true,
   sandbox_endpoint: 'https://speedboxpy.com/api/speedbox_sandbox.php', production_request_url: 'https://speedboxpy.com/speedbox_api_cliente.php',
   webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=sandbox&token=12345678901234567890123456789012',
-  connection: { tienda_id: '54', courier_id: 2, activo: true }, checks: { spec: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
+  public_key: 'sbx_saved_public', has_private_key: true,
+  connection: { tienda_id: '54', courier_id: 2, activo: true, has_private_key: true }, checks: { spec: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
 beforeEach(() => {
   cleanup(); vi.clearAllMocks();
   HTMLDialogElement.prototype.showModal = function showModal() { this.setAttribute('open', ''); };
@@ -39,11 +40,11 @@ describe('Speedbox settings', () => {
     await screen.findByText('Sin conciliar');
     expect(screen.queryByRole('button', { name: 'Conciliar movimiento 3' })).not.toBeInTheDocument();
   });
-  it('saves the chosen courier and activation without any credentials', async () => {
+  it('saves the chosen courier and activation with stored RAHA credentials', async () => {
     render(<SpeedboxConfig />);
     fireEvent.change(await screen.findByLabelText('Courier RAHA'), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ courier_id: 3, activo: true }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ courier_id: 3, activo: true, public_key: 'sbx_saved_public' }));
   });
   it('keeps inputs after a validation failure', async () => {
     speedboxService.guardar.mockRejectedValue({ response: { data: { message: 'Courier no disponible.' } } });
@@ -86,7 +87,7 @@ describe('Speedbox settings', () => {
     expect(screen.queryByRole('link', { name: /Abrir portal RAHA/ })).not.toBeInTheDocument();
   });
 
-  it('uses pasted sandbox keys for the validation steps without saving them', async () => {
+  it('uses pasted sandbox keys for validation and saves them for automatic orders', async () => {
     render(<SpeedboxConfig />);
     const publicInput = await screen.findByLabelText('Public key');
     fireEvent.change(publicInput, { target: { value: ' sbx_public ' } });
@@ -96,6 +97,13 @@ describe('Speedbox settings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enviar pedido sandbox' }));
     await waitFor(() => expect(speedboxService.enviarPrueba).toHaveBeenCalledWith({ public_key: 'sbx_public', private_key: 'private_secret' }));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ courier_id: 2, activo: true }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ courier_id: 2, activo: true, public_key: 'sbx_public', private_key: 'private_secret' }));
+  });
+
+  it('shows saved private key state without revealing the secret', async () => {
+    render(<SpeedboxConfig />);
+    expect(await screen.findByText('Guardadas o listas para validar')).toBeInTheDocument();
+    expect(screen.getByLabelText('Private key')).toHaveAttribute('placeholder', 'Private key guardada. Pegá una nueva para reemplazarla.');
+    expect(screen.getByLabelText('Private key')).toHaveValue('');
   });
 });

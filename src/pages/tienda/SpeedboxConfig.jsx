@@ -45,6 +45,8 @@ export default function SpeedboxConfig() {
     if (resetForm) {
       setCourierId(config.connection?.courier_id ? String(config.connection.courier_id) : '');
       setActive(Boolean(config.connection?.activo));
+      setPublicKey(config.public_key || config.connection?.public_key || '');
+      setPrivateKey('');
     }
   }
   useEffect(() => {
@@ -55,6 +57,8 @@ export default function SpeedboxConfig() {
       setCouriers(available.filter(courier => courier.activo));
       setCourierId(config.connection?.courier_id ? String(config.connection.courier_id) : '');
       setActive(Boolean(config.connection?.activo));
+      setPublicKey(config.public_key || config.connection?.public_key || '');
+      setPrivateKey('');
     }).catch(err => { if (mounted) setError(err.response?.data?.message || 'No se pudo cargar RAHA.'); })
       .finally(() => { if (mounted) setBusy(''); });
     return () => { mounted = false; };
@@ -68,7 +72,11 @@ export default function SpeedboxConfig() {
   }
   const disabled = Boolean(busy);
   const credentials = { public_key: publicKey.trim(), private_key: privateKey.trim() };
-  const credentialsReady = Boolean(credentials.public_key && credentials.private_key);
+  const credentialsPayload = () => ({
+    ...(credentials.public_key ? { public_key: credentials.public_key } : {}),
+    ...(credentials.private_key ? { private_key: credentials.private_key } : {}),
+  });
+  const credentialsAvailable = Boolean(credentials.public_key && (credentials.private_key || data?.has_private_key || data?.connection?.has_private_key));
   const uncertain = retryOrder && ['incierto', 'enviando'].includes(retryOrder.estado);
   const wallet = (data?.events || []).filter(event => event.tipo === 'wallet.transaction');
   const reviews = (data?.events || []).filter(event => event.estado === 'revision' && event.tipo !== 'wallet.transaction');
@@ -101,14 +109,15 @@ export default function SpeedboxConfig() {
       </section>
       <section className="spb-section">
         <div className="spb-heading"><h3>Credenciales sandbox</h3><span className="spb-badge spb-sandbox">Sandbox</span></div>
-        <p className="spb-muted">Pegá las claves de RAHA solo para ejecutar estas pruebas. Gesicom no las guarda.</p>
+        <p className="spb-muted">Guardá las claves de RAHA para validar sandbox y crear pedidos automáticamente. La private key queda cifrada y no se vuelve a mostrar.</p>
         <div className="spb-fields">
           <label className="spb-field" htmlFor="spb-public-key">Public key<input id="spb-public-key" value={publicKey} disabled={disabled} autoComplete="off" onChange={event => setPublicKey(event.target.value)} placeholder="sbx_..." /></label>
-          <label className="spb-field" htmlFor="spb-private-key">Private key<input id="spb-private-key" value={privateKey} disabled={disabled} autoComplete="off" type="password" onChange={event => setPrivateKey(event.target.value)} placeholder="Pegá la private key" /></label>
+          <label className="spb-field" htmlFor="spb-private-key">Private key<input id="spb-private-key" value={privateKey} disabled={disabled} autoComplete="off" type="password" onChange={event => setPrivateKey(event.target.value)} placeholder={(data?.has_private_key || data?.connection?.has_private_key) ? 'Private key guardada. Pegá una nueva para reemplazarla.' : 'Pegá la private key'} /></label>
         </div>
         <dl className="spb-summary">
           <div><dt>Endpoint sandbox</dt><dd>{data.sandbox_endpoint || 'https://speedboxpy.com/api/speedbox_sandbox.php'}</dd></div>
           <div><dt>Tienda RAHA sandbox</dt><dd>{data.connection?.tienda_id || 'Sin vincular'}</dd></div>
+          <div><dt>Credenciales</dt><dd>{credentialsAvailable ? 'Guardadas o listas para validar' : 'Pendientes'}</dd></div>
           <div><dt>Webhook Gesicom</dt><dd>{data.webhook_url ? 'Disponible' : data.webhook_configured ? 'Falta URL pública' : 'Pendiente'}</dd></div>
           <div><dt>Automatización producción</dt><dd>{data.automatic_enabled && data.connection?.activo ? 'Activa' : 'Pausada'}</dd></div>
         </dl>
@@ -116,10 +125,10 @@ export default function SpeedboxConfig() {
       <section className="spb-section"><h3>Checks de conexión</h3>
         <ul className="spb-checks">{Object.entries(labels).map(([key, label]) => <li key={key}><span className={data.checks[key] ? 'spb-check-ok' : 'spb-check-pending'}>{data.checks[key] ? <Check size={15} /> : <span aria-hidden="true">-</span>}</span><span>{label}</span><span className="spb-muted">{data.checks[key] ? 'Verificado' : 'Pendiente'}</span></li>)}</ul>
         <div className="spb-step-grid">
-          <button type="button" className="spb-button" disabled={disabled || !credentialsReady} onClick={() => run('spec', () => speedboxService.probar(credentials), 'Autenticación verificada.')}><ShieldCheck size={16} /> Probar autenticación</button>
-          <button type="button" className="spb-button" disabled={disabled || !credentialsReady} onClick={() => run('store', () => speedboxService.vincular(credentials), 'Tienda sandbox vinculada.')}><Link2 size={16} /> Vincular tienda sandbox</button>
-          <button type="button" className="spb-button" disabled={disabled || !credentialsReady || !data.connection?.tienda_id} onClick={() => run('order-test', () => speedboxService.enviarPrueba(credentials), 'Pedido sandbox recibido por RAHA.')}><Send size={16} /> Enviar pedido sandbox</button>
-          <button type="button" className="spb-button" disabled={disabled || !credentialsReady || !data.connection?.tienda_id} onClick={() => run('updates', () => speedboxService.sincronizar(credentials), 'Estados y billetera consultados.')}><RefreshCw size={16} /> Consultar estados</button>
+          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('spec', () => speedboxService.probar(credentialsPayload()), 'Autenticación verificada.')}><ShieldCheck size={16} /> Probar autenticación</button>
+          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('store', () => speedboxService.vincular(credentialsPayload()), 'Tienda sandbox vinculada.')}><Link2 size={16} /> Vincular tienda sandbox</button>
+          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !data.connection?.tienda_id} onClick={() => run('order-test', () => speedboxService.enviarPrueba(credentialsPayload()), 'Pedido sandbox recibido por RAHA.')}><Send size={16} /> Enviar pedido sandbox</button>
+          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !data.connection?.tienda_id} onClick={() => run('updates', () => speedboxService.sincronizar(credentialsPayload()), 'Estados y billetera consultados.')}><RefreshCw size={16} /> Consultar estados</button>
         </div>
         <div className="spb-webhook-box">
           <div><strong>Webhook para pegar en RAHA</strong><p className="spb-muted">RAHA lo usa para avisar cambios de estado y movimientos de billetera. Gesicom identifica la tienda por tienda_id u order_id.</p></div>
@@ -137,7 +146,7 @@ export default function SpeedboxConfig() {
           <label className="spb-checkbox"><input type="checkbox" checked={active} disabled={disabled || !data.connection?.tienda_id} onChange={event => setActive(event.target.checked)} /> Integración activa</label>
         </div>
         <div className="spb-actions">
-          <button type="button" className="spb-button spb-primary" disabled={disabled || !data.connection?.tienda_id || (active && !courierId)} onClick={() => run('save', () => speedboxService.guardar({ courier_id: courierId ? Number(courierId) : null, activo: active }), 'Configuración guardada.', true)}><Save size={16} /> Guardar</button>
+          <button type="button" className="spb-button spb-primary" disabled={disabled || (active && (!data.connection?.tienda_id || !courierId || !credentialsAvailable))} onClick={() => run('save', () => speedboxService.guardar({ courier_id: courierId ? Number(courierId) : null, activo: active, ...credentialsPayload() }), 'Configuración guardada.', true)}><Save size={16} /> Guardar</button>
           <button type="button" className="spb-button" disabled={disabled} title="Actualizar panel" aria-label="Actualizar panel" onClick={() => run('refresh', () => load(), 'Panel actualizado.')}><RefreshCw size={16} /></button>
         </div>
       </section>
