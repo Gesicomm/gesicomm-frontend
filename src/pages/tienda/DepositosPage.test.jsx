@@ -4,6 +4,8 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 import DepositosPage from './DepositosPage';
 import { depositoService } from '../../services/deposito.service';
 import * as courierApi from '../../services/courierApi';
+import { productService } from '../../services/productService';
+import { solicitudAbastecimientoService } from '../../services/solicitudAbastecimiento.service';
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 vi.mock('../../hooks/useSesion', () => ({ default: () => ({ estado: 'autenticado', usuario: { rol: 'usuario' } }) }));
@@ -17,6 +19,17 @@ vi.mock('../../services/deposito.service', () => ({
     eliminarDeposito: vi.fn(),
     listarCouriersDeposito: vi.fn(),
     guardarCouriersDeposito: vi.fn(),
+  },
+}));
+vi.mock('../../services/productService', () => ({
+  productService: {
+    buscar: vi.fn(),
+    variantes: vi.fn(),
+  },
+}));
+vi.mock('../../services/solicitudAbastecimiento.service', () => ({
+  solicitudAbastecimientoService: {
+    crear: vi.fn(),
   },
 }));
 vi.mock('../../services/courierApi', () => ({
@@ -47,6 +60,9 @@ beforeEach(() => {
   courierApi.createCourier.mockResolvedValue({ id: 7, nombre: 'Moto Express', activo: true });
   courierApi.updateCourier.mockResolvedValue({ id: 7, nombre: 'Moto Express', activo: true });
   courierApi.replaceDeliveryZonas.mockResolvedValue([]);
+  productService.buscar.mockResolvedValue({ productos: [], total: 0, total_paginas: 0 });
+  productService.variantes.mockResolvedValue([]);
+  solicitudAbastecimientoService.crear.mockResolvedValue({ id: 99 });
 });
 
 async function abrirFormularioDeposito() {
@@ -117,6 +133,39 @@ describe('Depósitos: alta simple', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Crear courier' }));
     expect(await screen.findByText('Nuevo courier')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Datos del courier' })).toBeInTheDocument();
+  });
+
+  it('permite abastecer un depósito con productos de catálogo RAHA', async () => {
+    depositoService.listarDepositos.mockResolvedValue({
+      data: [{ id: 50, nombre: 'Depósito Luque', ciudad: 'Luque', departamento: 'Central', direccion: 'Av. Test 123', activo: true }],
+      total: 1,
+    });
+    depositoService.listarCouriersDeposito.mockResolvedValue({ couriers: [] });
+    productService.buscar.mockResolvedValue({
+      productos: [{ id: 80, nombre: 'Air Fryer RAHA', sku: 'RAHA-80', variantes_count: 0, puede_editar: false }],
+      total: 1,
+      total_paginas: 1,
+    });
+
+    render(<DepositosPage />);
+
+    expect((await screen.findAllByText('Depósito Luque')).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Administrar/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Abastecer depósito' }));
+
+    await screen.findByText('Producto de catálogo RAHA');
+    fireEvent.click(await screen.findByRole('button', { name: /Air Fryer RAHA/ }));
+    fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar al pedido' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear pedido' }));
+
+    await waitFor(() => expect(solicitudAbastecimientoService.crear).toHaveBeenCalledWith({
+      producto_id: 80,
+      variante_id: null,
+      cantidad: 3,
+      tipoLogistica: 'PROPIA',
+      depositoId: 50,
+    }));
   });
 });
 

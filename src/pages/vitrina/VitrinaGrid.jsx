@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
-  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck, SlidersHorizontal, Grid,
+  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, SlidersHorizontal, Grid,
   Store, Trash2, FileSpreadsheet, EyeOff
 } from 'lucide-react';
 import { productService } from '../../services/productService';
@@ -14,7 +14,6 @@ import CargaMasivaProductosModal from '../productos/CargaMasivaProductosModal';
 import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
 import { verificarSesion } from '../../utils/auth';
-import AbastecerseModal from '../../components/depositos/AbastecerseModal';
 import { ImagenProductoHover } from '../landing-simple/templates/sections.jsx';
 import './vitrina.css';
 
@@ -232,7 +231,7 @@ function CategoriaSeleccionModal({ abierto, productos, categorias, onClose, onGu
 }
 
 /* ─── Componente: card ────────────────────────────────────────────────── */
-function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, onAbastecer, filtro, seleccionable = true }) {
+function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, filtro, seleccionable = true }) {
   const esCombo = item.tipo === 'combo';
   const badge   = getBadgeConfig(item);
   const sinStock = item.stock === 0 && !esCombo;
@@ -346,19 +345,6 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
             <ChevronRight size={13} className="vit-card-action-arrow" />
           </button>
 
-          {!esEditable && item.tipo === 'producto' && (
-            <button
-              type="button"
-              className="vit-card-action"
-              style={{ flexShrink: 0, color: 'var(--color-primary, #2563eb)', fontWeight: 600 }}
-              onClick={(e) => { e.stopPropagation(); onAbastecer(item); }}
-              title="Pedir stock a mi depósito"
-            >
-              <Truck size={13} />
-              Abastecerme
-            </button>
-          )}
-
           {esEditable && (
             <button
               type="button"
@@ -387,7 +373,6 @@ export default function VitrinaGrid() {
   const [busqueda, setBusqueda]   = useState('');
   const [orden, setOrden]         = useState('nombre');
   const [seleccionSensibilidad, setSeleccionSensibilidad] = useState(null);
-  const [productoAbastecer, setProductoAbastecer] = useState(null);
   const [categoriasUnicas, setCategoriasUnicas] = useState([]);
   const [proveedoresUnicos, setProveedoresUnicos] = useState([]);
   const [usuarioActual, setUsuarioActual] = useState(null);
@@ -1053,7 +1038,6 @@ export default function VitrinaGrid() {
               onVerSensibilidad={setSeleccionSensibilidad}
               usuarioActual={usuarioActual}
               onEditarProducto={(id) => navigate(`/products/${id}/editar`)}
-              onAbastecer={(prod) => setProductoAbastecer(prod)}
               filtro={filtro}
               seleccionable
             />
@@ -1084,12 +1068,6 @@ export default function VitrinaGrid() {
           onAplicarPrecio={handleGuardarPrecio}
         />
       )}
-
-      <AbastecerseModal
-        producto={productoAbastecer}
-        open={!!productoAbastecer}
-        onClose={() => setProductoAbastecer(null)}
-      />
 
       {cargaMasivaAbierta && (
         <CargaMasivaProductosModal onCerrar={() => setCargaMasivaAbierta(false)} onImportado={cargar} />

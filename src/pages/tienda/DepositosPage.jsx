@@ -7,6 +7,7 @@ import DepositoCard from '../../components/depositos/DepositoCard';
 import DepositoDetailPanel from '../../components/depositos/DepositoDetailPanel';
 import DepositoForm from '../../components/depositos/DepositoForm';
 import CouriersDepositoModal from '../../components/depositos/CouriersDepositoModal';
+import AbastecerDepositoModal from '../../components/depositos/AbastecerDepositoModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import FulfillmentCard from '../../components/depositos/FulfillmentCard';
 import { CourierWizard } from '../courier/CourierWizard';
@@ -45,6 +46,7 @@ export default function DepositosPage() {
   const [formLoading, setFormLoading] = useState(false);
 
   const [depositoCouriers, setDepositoCouriers] = useState(null);
+  const [depositoAbastecer, setDepositoAbastecer] = useState(null);
   const [depositoSeleccionado, setDepositoSeleccionado] = useState(null);
   const [courierSummaries, setCourierSummaries] = useState({});
   const [summariesLoading, setSummariesLoading] = useState(false);
@@ -331,6 +333,7 @@ export default function DepositosPage() {
                     onManage={setDepositoSeleccionado}
                     onEdit={handleOpenEditar}
                     onCouriers={setDepositoCouriers}
+                    onAbastecer={setDepositoAbastecer}
                     onToggleEstado={handleToggleEstado}
                     onDelete={handleDelete}
                   />
@@ -411,6 +414,7 @@ export default function DepositosPage() {
         onClose={() => setDepositoSeleccionado(null)}
         onEdit={handleOpenEditar}
         onAssignCouriers={setDepositoCouriers}
+        onAbastecer={setDepositoAbastecer}
         onCreateCourier={handleCrearCourierParaDeposito}
         onConfigureCourier={handleConfigurarCourier}
       />
@@ -432,6 +436,12 @@ export default function DepositosPage() {
           setDepositoCouriers(null);
           fetchResumenesCouriers(depositos);
         }}
+      />
+
+      <AbastecerDepositoModal
+        deposito={depositoAbastecer}
+        open={Boolean(depositoAbastecer)}
+        onClose={() => setDepositoAbastecer(null)}
       />
 
       <CourierWizard

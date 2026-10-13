@@ -17,7 +17,6 @@ vi.mock('../../services/productService', () => ({ productService: {
 vi.mock('../../services/catalogoService', () => ({ categoriaService: { buscar: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../services/costosGastosService', () => ({ proveedoresService: { buscar: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 9, rol: 'tienda' }) }));
-vi.mock('../../components/depositos/LogisticaAbastecimientoModal', () => ({ default: () => null }));
 
 function DestinoProducto() {
   const location = useLocation();

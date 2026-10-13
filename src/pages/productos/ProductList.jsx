@@ -8,12 +8,11 @@ import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
-  ToggleLeft, ToggleRight, Loader, Tag, Layers, Warehouse, Truck,
+  ToggleLeft, ToggleRight, Loader, Tag, Layers, Warehouse,
   FileSpreadsheet
 } from 'lucide-react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import CargaMasivaProductosModal from './CargaMasivaProductosModal';
-import LogisticaAbastecimientoModal from '../../components/depositos/LogisticaAbastecimientoModal';
 import { verificarSesion } from '../../utils/auth';
 import './productos.css';
 
@@ -47,7 +46,6 @@ export default function ProductList() {
   const [categorias, setCategorias] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [productoABajar, setProductoABajar] = useState(null);
-  const [productoAbastecer, setProductoAbastecer] = useState(null);
   const [dandoBaja, setDandoBaja] = useState(false);
   const [usuarioActual, setUsuarioActual] = useState(null);
   const [modalImportacion, setModalImportacion] = useState(false);
@@ -384,17 +382,6 @@ export default function ProductList() {
                         </td>
                         <td>
                           <div className="action-btns">
-                            {/* Producto de catálogo Gesicomm (Global): botón para solicitar abastecimiento a depósito propio */}
-                            {!editable && (
-                              <button
-                                className="btn-icon"
-                                style={{ color: 'var(--color-primary, #2563eb)' }}
-                                onClick={(e) => { e.stopPropagation(); setProductoAbastecer(p); }}
-                                title="Abastecerme (Pedir stock a mi depósito)"
-                              >
-                                <Truck size={15} />
-                              </button>
-                            )}
                             {/* Un producto propio es editable y puede enviarse a Fulfillment Gesicomm */}
                             {editable && (
                               <>
@@ -494,18 +481,6 @@ export default function ProductList() {
           </>
         )}
       </div>
-
-      {productoAbastecer && (
-        <LogisticaAbastecimientoModal
-          open={!!productoAbastecer}
-          envio={{ id: productoAbastecer.id, producto_nombre: productoAbastecer.nombre, abastecimiento_estado: 'pendiente_pago' }}
-          onClose={() => setProductoAbastecer(null)}
-          onPagar={() => {
-            setProductoAbastecer(null);
-            buscar(pagina);
-          }}
-        />
-      )}
 
       <ConfirmDialog
         open={!!productoABajar}

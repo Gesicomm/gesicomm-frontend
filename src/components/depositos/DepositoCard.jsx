@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, User, Edit2, Trash2, Power, PowerOff, MoreVertical, Truck, ArrowRight, AlertTriangle } from 'lucide-react';
+import { MapPin, Phone, User, Edit2, Trash2, Power, PowerOff, MoreVertical, Truck, ArrowRight, AlertTriangle, PackagePlus } from 'lucide-react';
 import DepositoStatusBadge from './DepositoStatusBadge';
 
 export default function DepositoCard({
@@ -10,6 +10,7 @@ export default function DepositoCard({
   onManage,
   onEdit,
   onCouriers,
+  onAbastecer,
   onToggleEstado,
   onDelete,
 }) {
@@ -122,6 +123,19 @@ export default function DepositoCard({
                   >
                     <Truck size={14} />
                     Asignar couriers
+                  </button>
+                )}
+                {onAbastecer && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onAbastecer(deposito);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-fg-muted hover:bg-surface-2 hover:text-fg"
+                  >
+                    <PackagePlus size={14} />
+                    Abastecer depósito
                   </button>
                 )}
                 <button

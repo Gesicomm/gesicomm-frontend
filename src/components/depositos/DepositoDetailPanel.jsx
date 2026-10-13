@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, MapPin, Pencil, Plus, Truck, User, X } from 'lucide-react';
+import { AlertTriangle, MapPin, PackagePlus, Pencil, Plus, Truck, User, X } from 'lucide-react';
 import DepositoStatusBadge from './DepositoStatusBadge';
 
 function CourierRow({ courier, onConfigure }) {
@@ -33,6 +33,7 @@ export default function DepositoDetailPanel({
   onClose,
   onEdit,
   onAssignCouriers,
+  onAbastecer,
   onCreateCourier,
   onConfigureCourier,
 }) {
@@ -94,6 +95,24 @@ export default function DepositoDetailPanel({
             >
               <Pencil size={15} />
               Editar
+            </button>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-border bg-surface px-4 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="m-0 text-base font-semibold text-fg">Abastecer este depósito</h3>
+              <p className="m-0 mt-0.5 text-[13px] text-fg-muted">Pedí productos de catálogo RAHA para que lleguen a esta dirección.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onAbastecer?.(deposito)}
+              disabled={!deposito.activo}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+            >
+              <PackagePlus size={15} />
+              Abastecer depósito
             </button>
           </div>
         </section>
