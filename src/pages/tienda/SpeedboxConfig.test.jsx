@@ -4,9 +4,11 @@ import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-li
 import SpeedboxConfig from './SpeedboxConfig';
 import { speedboxService } from '../../services/speedboxService';
 import { getCouriers } from '../../services/courierApi';
-vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: vi.fn(), guardar: vi.fn(), vincular: vi.fn(), probar: vi.fn(), sincronizar: vi.fn(), reintentar: vi.fn(), enviar: vi.fn(), conciliar: vi.fn() } }));
+vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: vi.fn(), guardar: vi.fn(), vincular: vi.fn(), probar: vi.fn(), enviarPrueba: vi.fn(), sincronizar: vi.fn(), reintentar: vi.fn(), enviar: vi.fn(), conciliar: vi.fn() } }));
 vi.mock('../../services/courierApi', () => ({ getCouriers: vi.fn() }));
 const config = { environment: 'sandbox', credentials_configured: true, webhook_configured: true, automatic_enabled: true,
+  sandbox_endpoint: 'https://speedboxpy.com/api/speedbox_sandbox.php', production_request_url: 'https://speedboxpy.com/speedbox_api_cliente.php',
+  webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=sandbox&token=12345678901234567890123456789012',
   connection: { tienda_id: '54', courier_id: 2, activo: true }, checks: { spec: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
 beforeEach(() => {
   cleanup(); vi.clearAllMocks();
@@ -39,17 +41,17 @@ describe('Speedbox settings', () => {
   });
   it('saves the chosen courier and activation without any credentials', async () => {
     render(<SpeedboxConfig />);
-    fireEvent.change(await screen.findByLabelText('Courier Speedbox'), { target: { value: '3' } });
+    fireEvent.change(await screen.findByLabelText('Courier RAHA'), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ courier_id: 3, activo: true }));
   });
   it('keeps inputs after a validation failure', async () => {
     speedboxService.guardar.mockRejectedValue({ response: { data: { message: 'Courier no disponible.' } } });
     render(<SpeedboxConfig />);
-    fireEvent.change(await screen.findByLabelText('Courier Speedbox'), { target: { value: '3' } });
+    fireEvent.change(await screen.findByLabelText('Courier RAHA'), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Courier no disponible.');
-    expect(screen.getByLabelText('Courier Speedbox')).toHaveValue('3');
+    expect(screen.getByLabelText('Courier RAHA')).toHaveValue('3');
   });
   it('requires reconciliation before resending an uncertain submission', async () => {
     speedboxService.obtener.mockResolvedValue({ ...config, orders: [{ id: 1, envio_id: 31, external_order_id: 'GESICOMM-sandbox-7-31', estado: 'incierto' }] });
@@ -67,19 +69,33 @@ describe('Speedbox settings', () => {
     expect(label.parentElement).toHaveTextContent('Pendiente');
   });
 
-  it('opens the configured Speedy registration without leaking session or personal data', async () => {
-    speedboxService.obtener.mockResolvedValue({ ...config, registration_url: 'https://registration.example.test/register' });
+  it('opens the official RAHA portal without leaking session or personal data', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config, production_request_url: 'https://speedboxpy.com/speedbox_api_cliente.php' });
     render(<SpeedboxConfig />);
-    const link = await screen.findByRole('link', { name: 'Crear cuenta en Speedy' });
-    expect(link).toHaveAttribute('href', 'https://registration.example.test/register');
+    const link = await screen.findByRole('link', { name: /Abrir portal RAHA/ });
+    expect(link).toHaveAttribute('href', 'https://speedboxpy.com/speedbox_api_cliente.php');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
   });
 
   it('keeps registration disabled until an official URL is configured', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config, production_request_url: null });
     render(<SpeedboxConfig />);
-    expect(await screen.findByRole('button', { name: 'Registro en Speedy no disponible' })).toBeDisabled();
-    expect(screen.queryByRole('link', { name: 'Crear cuenta en Speedy' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Portal RAHA no disponible' })).toBeDisabled();
+    expect(screen.queryByRole('link', { name: /Abrir portal RAHA/ })).not.toBeInTheDocument();
+  });
+
+  it('uses pasted sandbox keys for the validation steps without saving them', async () => {
+    render(<SpeedboxConfig />);
+    const publicInput = await screen.findByLabelText('Public key');
+    fireEvent.change(publicInput, { target: { value: ' sbx_public ' } });
+    fireEvent.change(screen.getByLabelText('Private key'), { target: { value: ' private_secret ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Probar autenticación' }));
+    await waitFor(() => expect(speedboxService.probar).toHaveBeenCalledWith({ public_key: 'sbx_public', private_key: 'private_secret' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar pedido sandbox' }));
+    await waitFor(() => expect(speedboxService.enviarPrueba).toHaveBeenCalledWith({ public_key: 'sbx_public', private_key: 'private_secret' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ courier_id: 2, activo: true }));
   });
 });

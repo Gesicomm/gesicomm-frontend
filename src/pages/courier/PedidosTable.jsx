@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
   ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Clock,
-  Columns3, Table2, SlidersHorizontal
+  Columns3, Table2, SlidersHorizontal, CheckCircle2
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
@@ -110,11 +110,13 @@ const STAGE_TO_ESTADOS = {
   recompra: RECOMPRA_STATUSES,
 };
 
-function EstadoBadgeDropdown({ estado, onChange }) {
+function EstadoBadgeDropdown({ estado, etiqueta, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const s = STATUS[estado] || { chipBg: "color-mix(in srgb, var(--color-fg) 8%, transparent)", chipText: "var(--color-fg-muted)" };
-  const validas = TRANSICIONES_VALIDAS_FRONTEND[estado] || [];
+  // "En seguimiento" lo pone el sistema al marcar un mensaje como enviado: no se elige a mano.
+  const validas = (TRANSICIONES_VALIDAS_FRONTEND[estado] || []).filter((st) => !ESTADOS_SIN_CHIP.has(st));
+  const sinCambios = validas.length === 0;
 
   useEffect(() => {
     const handler = (e) => {
@@ -128,9 +130,12 @@ function EstadoBadgeDropdown({ estado, onChange }) {
     <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
       <button
         type="button"
+        title={sinCambios ? "Estado final: no tiene más cambios" : "Cambiar el estado del pedido"}
+        aria-haspopup="menu"
+        aria-expanded={open}
         onClick={(e) => {
           e.stopPropagation();
-          setOpen((prev) => !prev);
+          if (!sinCambios) setOpen((prev) => !prev);
         }}
         style={{
           background: s.chipBg,
@@ -140,7 +145,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
           padding: "4px 10px",
           fontSize: "0.74rem",
           fontWeight: 700,
-          cursor: "pointer",
+          cursor: sinCambios ? "default" : "pointer",
           display: "inline-flex",
           alignItems: "center",
           gap: "6px",
@@ -150,15 +155,17 @@ function EstadoBadgeDropdown({ estado, onChange }) {
           userSelect: "none",
         }}
       >
-        <span>{estado || "Pendiente"}</span>
-        <ChevronDown
-          size={12}
-          style={{
-            opacity: 0.8,
-            transform: open ? "rotate(180deg)" : "none",
-            transition: "transform 0.15s",
-          }}
-        />
+        <span>{etiqueta || estado || "Pendiente"}</span>
+        {!sinCambios && (
+          <ChevronDown
+            size={12}
+            style={{
+              opacity: 0.8,
+              transform: open ? "rotate(180deg)" : "none",
+              transition: "transform 0.15s",
+            }}
+          />
+        )}
       </button>
 
       {open && (
@@ -178,27 +185,20 @@ function EstadoBadgeDropdown({ estado, onChange }) {
             flexDirection: "column",
             gap: "2px",
           }}
+          role="menu"
           onClick={(e) => e.stopPropagation()}
         >
-          {STATUS_ORDER.map((st) => {
+          {STATUS_ORDER.filter((st) => st === estado || validas.includes(st)).map((st) => {
             const config = STATUS[st] || { chipBg: "color-mix(in srgb, var(--color-fg) 5%, transparent)", chipText: "var(--color-fg-muted)" };
             const isSelected = st === estado;
-            const isValid = isSelected || validas.includes(st);
-            
+
             return (
               <button
                 key={st}
                 type="button"
+                role="menuitem"
                 onClick={() => {
                   setOpen(false);
-                  if (!isValid) {
-                    if (validas.length === 0) {
-                      alert(`El pedido está en un estado final (${estado}).\n\nNo se puede cambiar a ningún otro estado.`);
-                    } else {
-                      alert(`Transición no permitida.\n\nNo se puede pasar de "${estado}" a "${st}".\n\nLos estados permitidos son: ${validas.join(", ")}.`);
-                    }
-                    return;
-                  }
                   onChange(st);
                 }}
                 style={{
@@ -212,17 +212,16 @@ function EstadoBadgeDropdown({ estado, onChange }) {
                   border: "none",
                   fontSize: "0.78rem",
                   fontWeight: isSelected ? 700 : 500,
-                  cursor: isValid ? "pointer" : "not-allowed",
+                  cursor: "pointer",
                   textAlign: "left",
                   transition: "background 0.12s",
                   width: "100%",
-                  opacity: isValid ? 1 : 0.4,
                 }}
                 onMouseEnter={(e) => {
-                  if (isValid && !isSelected) e.currentTarget.style.background = "color-mix(in srgb, var(--color-fg) 7%, transparent)";
+                  if (!isSelected) e.currentTarget.style.background = "color-mix(in srgb, var(--color-fg) 7%, transparent)";
                 }}
                 onMouseLeave={(e) => {
-                  if (isValid && !isSelected) e.currentTarget.style.background = "transparent";
+                  if (!isSelected) e.currentTarget.style.background = "transparent";
                 }}
               >
                 <span
@@ -234,7 +233,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ flex: 1 }}>{st}</span>
+                <span style={{ flex: 1 }}>{isSelected ? (etiqueta || st) : st}</span>
                 {isSelected && (
                   <span style={{ color: config.chipText, fontSize: "0.75rem", fontWeight: "bold" }}>
                     ✓
@@ -338,24 +337,34 @@ function LifecycleCell({ primary, secondary, alert, tone = "neutral" }) {
   );
 }
 
-// Un pedido tiene UN estado a la vez, el de la etapa en la que está: al
-// confirmarse deja de mostrarse como comercial y pasa a logística; al
-// entregarse deja logística y pasa a recompra.
-function EstadoCell({ envio }) {
-  const estado = estadoDePedido(envio);
+// Se muestra UN estado, el de la etapa que se está mirando: en Comercial
+// Pendiente / Confirmado / Cancelado, en Logística el del envío, en Recompra
+// cómo viene el escalamiento de ventas.
+function EstadoCell({ envio, etapa, onCambiarEstado }) {
+  const estado = estadoDePedido(envio, etapa);
   const courier = envio.Courier?.nombre || envio.proveedor_logistico_nombre || null;
-  const secundario = estado.etapa === "logistica"
-    ? courier || (estado.id === "Confirmado" ? paymentLine(envio) : null)
-    : estado.etapa === "recompra" && envio.metodo_pago
+  const secundario = estado.id === "Confirmado"
+    ? paymentLine(envio)
+    : estado.id === "Entregado" && envio.metodo_pago
     ? `Cobrado: ${envio.metodo_pago}`
+    : estado.etapa === "logistica"
+    ? courier
     : null;
+  const alerta = estado.id === "DevolucionPendiente" ? "Revisar devolución" : null;
+  // En Recompra el estado es el del escalamiento de ventas, no uno que se elija.
+  if (etapa === "recompra" || !onCambiarEstado) {
+    return <LifecycleCell primary={estado.label} secondary={secundario} alert={alerta} tone={estado.tone} />;
+  }
   return (
-    <LifecycleCell
-      primary={estado.label}
-      secondary={secundario}
-      alert={estado.id === "DevolucionPendiente" ? "Revisar devolución" : null}
-      tone={estado.tone}
-    />
+    <div className="pt-life-cell">
+      <EstadoBadgeDropdown
+        estado={envio.estado}
+        etiqueta={estado.label}
+        onChange={(nuevoEstado) => onCambiarEstado(envio, nuevoEstado)}
+      />
+      {secundario && <span>{secundario}</span>}
+      {alerta && <em>{alerta}</em>}
+    </div>
   );
 }
 
@@ -380,20 +389,32 @@ function tiempoRelativo(iso, ahora = Date.now()) {
   return diff > 0 ? `en ${texto}` : `hace ${texto}`;
 }
 
-/** Cuándo toca el próximo mensaje, dicho como lo diría quien lo tiene que mandar. */
-function cuandoDelSeguimiento(seg) {
+function fechaSeguimientoVencida(seg, ahora = Date.now()) {
+  if (!seg?.toca_en || seg.terminado) return false;
+  const tocaEn = new Date(seg.toca_en).getTime();
+  return Number.isFinite(tocaEn) && tocaEn < ahora;
+}
+
+/** Estado semáforo del mensaje que le toca al pedido. */
+function estadoDelSeguimiento(seg) {
   const hora = seg.toca_en
     ? new Date(seg.toca_en).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_HORARIA })
     : "";
-  if (seg.motivo === "vencido") return { texto: `Vencido: tocaba ${tiempoRelativo(seg.toca_en)}`, tono: "danger" };
-  if (seg.fase_abierta_en) return { texto: "Falta marcar como enviado", tono: "warning" };
-  if (seg.cuando === "ahora") return { texto: "Para enviar ahora", tono: "warning" };
-  if (seg.cuando === "hoy") return { texto: `Para hoy, ${hora}`, tono: "info" };
+  if (seg.terminado) {
+    return { texto: "Enviado", detalle: "Todos los mensajes enviados", tono: "success", icono: CheckCircle2 };
+  }
+  if (seg.motivo === "vencido" || fechaSeguimientoVencida(seg)) {
+    const relativo = tiempoRelativo(seg.toca_en);
+    return { texto: relativo ? `Expiró ${relativo}` : "Expiró", tono: "danger", icono: Clock, pulso: true };
+  }
+  if (seg.fase_abierta_en) return { texto: "Pendiente de confirmar envío", tono: "warning", icono: Clock };
+  if (seg.cuando === "ahora") return { texto: "Pendiente de envío", tono: "warning", icono: Clock };
+  if (seg.cuando === "hoy") return { texto: `Pendiente hoy, ${hora}`, tono: "warning", icono: Clock };
   if (seg.cuando === "despues" && seg.toca_en) {
     const fecha = new Date(seg.toca_en).toLocaleDateString("es-PY", { day: "2-digit", month: "2-digit", timeZone: ZONA_HORARIA });
-    return { texto: `Para el ${fecha}, ${hora}`, tono: "neutral" };
+    return { texto: `Pendiente ${fecha}, ${hora}`, tono: "warning", icono: Clock };
   }
-  return { texto: "Sin fecha agendada", tono: "neutral" };
+  return { texto: "Sin fecha agendada", tono: "neutral", icono: Clock };
 }
 
 /**
@@ -404,19 +425,18 @@ function cuandoDelSeguimiento(seg) {
 function SeguimientoCell({ envio, onAbrir }) {
   const seg = envio.seguimiento;
   if (!seg) return <span className="pt-seg-vacio">—</span>;
-  const cuando = seg.terminado ? null : cuandoDelSeguimiento(seg);
+  const estado = estadoDelSeguimiento(seg);
+  const EstadoIcono = estado.icono || Clock;
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "cliente";
   const cuerpo = (
     <>
       <span className="pt-seg__etapa">{seg.etapa_nombre}</span>
       <strong className="pt-seg__fase">
-        {seg.terminado ? "Todos los mensajes enviados" : `${seg.fase_posicion}/${seg.total_fases} · ${seg.fase_nombre}`}
+        {seg.terminado ? estado.detalle : `${seg.fase_posicion}/${seg.total_fases} · ${seg.fase_nombre}`}
       </strong>
-      {cuando && (
-        <span className={`pt-seg__cuando pt-seg__cuando--${cuando.tono}`}>
-          <Clock size={11} /> {cuando.texto}
-        </span>
-      )}
+      <span className={`pt-seg__estado pt-seg__estado--${estado.tono}${estado.pulso ? " is-pulsing" : ""}`}>
+        <EstadoIcono size={11} /> {estado.texto}
+      </span>
       {!envio.telefono && <span className="pt-seg__cuando pt-seg__cuando--neutral">Sin teléfono</span>}
     </>
   );
@@ -864,11 +884,12 @@ export function PedidosTable({
   const montoPendienteRendicion = Math.abs(saldoLiquidacionEntregados);
   const tableColSpan = 9;
   const sumarConteos = (estados) => estados.reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
-  // Cada estado cuenta en un solo casillero, igual que en las etapas.
+  // Cada estado cuenta en un solo casillero.
   const resumenCiclo = {
     pendientes: sumarConteos(["Pendiente", "EnSeguimiento"]),
-    logistica: sumarConteos(["Confirmado", "Preparado", "Despachado", "Reprogramado"]),
-    recompra: sumarConteos(RECOMPRA_STATUSES),
+    confirmados: sumarConteos(["Confirmado"]),
+    logistica: sumarConteos(["Preparado", "Despachado", "Reprogramado"]),
+    entregados: sumarConteos(["Entregado"]),
     cancelados: sumarConteos(["Cancelado"]),
     incidencias: sumarConteos(["Devuelto", "Perdido"]),
   };
@@ -910,8 +931,9 @@ export function PedidosTable({
       {!soloAbastecimiento && (
         <section className="pt-cycle-summary" aria-label="Resumen del ciclo de pedidos">
           <ResumenItem label="Pendientes" value={resumenCiclo.pendientes.toLocaleString("es-PY")} tone="warning" />
+          <ResumenItem label="Confirmados" value={resumenCiclo.confirmados.toLocaleString("es-PY")} tone="info" />
           <ResumenItem label="En logística" value={resumenCiclo.logistica.toLocaleString("es-PY")} tone="money" />
-          <ResumenItem label="En recompra" value={resumenCiclo.recompra.toLocaleString("es-PY")} tone="success" />
+          <ResumenItem label="Entregados" value={resumenCiclo.entregados.toLocaleString("es-PY")} tone="success" />
           <ResumenItem label="Cancelados" value={resumenCiclo.cancelados.toLocaleString("es-PY")} tone="default" />
           <ResumenItem label="Incidencias" value={resumenCiclo.incidencias.toLocaleString("es-PY")} tone="danger" />
         </section>
@@ -1448,7 +1470,7 @@ export function PedidosTable({
                     {!soloAbastecimiento && (
                       <>
                         <td className="pt-td" data-label="Estado">
-                          <EstadoCell envio={e} />
+                          <EstadoCell envio={e} etapa={etapaActiva} onCambiarEstado={handleItemEstadoChange} />
                         </td>
                         <td className="pt-td" data-label="Seguimiento" onClick={(ev) => ev.stopPropagation()}>
                           <SeguimientoCell envio={e} onAbrir={onAbrirSeguimiento} />

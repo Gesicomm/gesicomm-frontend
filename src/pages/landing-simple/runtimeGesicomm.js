@@ -392,46 +392,32 @@ export function runtimeGesicomm() {
   // Solo se cobra por adelantado con PagoPar conectado (Mi tienda → Pagos).
   // El botón de la ficha y la opción del checkout propio vienen escritos en
   // el HTML guardado de cada landing, así que se resuelve acá y no en la
-  // plantilla. Sin la pasarela:
-  //   · en el editor quedan a la vista pero apagados, con el motivo al pasar
-  //     el mouse — el comercio tiene que enterarse de por qué no los cobra;
-  //   · en la tienda publicada no se ofrecen: el cliente no puede hacer nada
-  //     con una opción que depende de una configuración del comercio.
-  var AVISO_PAGO_ANTICIPADO = 'Para usar el pago anticipado, conectá PagoPar en Mi tienda → Pagos.';
+  // plantilla. Sin la pasarela no se ofrecen, ni en la tienda publicada ni
+  // en la vista previa del editor: la preview muestra lo mismo que va a ver
+  // el cliente. El motivo se le explica al comercio en el formulario de la
+  // ficha (PresentacionProducto), no dentro de la página.
   function pagoAnticipadoDisponible() {
     return !datos.pago_anticipado || datos.pago_anticipado.disponible !== false;
   }
-  function bloquearPagoAnticipado(el, bloquear, enEditor) {
+  function bloquearPagoAnticipado(el, bloquear) {
     if (!bloquear) {
       if (!el.hasAttribute('data-gesicomm-pago-bloqueado')) return;
       el.removeAttribute('data-gesicomm-pago-bloqueado');
-      el.removeAttribute('aria-disabled');
-      el.removeAttribute('title');
-      el.style.display = '';
-      el.style.opacity = '';
-      el.style.cursor = '';
+      el.style.removeProperty('display');
       return;
     }
     el.setAttribute('data-gesicomm-pago-bloqueado', '');
-    el.setAttribute('aria-disabled', 'true');
-    if (enEditor) {
-      el.setAttribute('title', AVISO_PAGO_ANTICIPADO);
-      el.style.opacity = '.45';
-      el.style.cursor = 'not-allowed';
-    } else {
-      el.removeAttribute('title');
-      el.style.display = 'none';
-    }
+    // important: el CSS propio de una landing no lo puede volver a mostrar.
+    el.style.setProperty('display', 'none', 'important');
   }
   function aplicarPagoAnticipado() {
     var bloquear = !pagoAnticipadoDisponible();
-    var enEditor = !!(datos.pago_anticipado && datos.pago_anticipado.editor);
     var botones = document.querySelectorAll('[data-gesicomm-metodo-pago="pagopar"]');
-    for (var i = 0; i < botones.length; i++) bloquearPagoAnticipado(botones[i], bloquear, enEditor);
+    for (var i = 0; i < botones.length; i++) bloquearPagoAnticipado(botones[i], bloquear);
     var radios = document.querySelectorAll('input[name="payment_method"][value="pagopar"]');
     for (var j = 0; j < radios.length; j++) {
       var radio = radios[j];
-      bloquearPagoAnticipado(radio.closest('label') || radio, bloquear, enEditor);
+      bloquearPagoAnticipado(radio.closest('label') || radio, bloquear);
       radio.disabled = bloquear;
       if (!bloquear || !radio.checked) continue;
       // Venía marcado por defecto: pasa a la primera opción que sí se cobra.
@@ -441,6 +427,97 @@ export function runtimeGesicomm() {
         if (otros[k] !== radio && !otros[k].disabled) { otros[k].checked = true; break; }
       }
     }
+    acomodarCompraSinAnticipado();
+    prepararCamposCheckout();
+  }
+  // ─── Datos del comprador en el checkout ─────────────────────────────────
+  // PagoPar no abre el cobro sin el documento (cédula o RUC) y el correo del
+  // comprador, que es donde le llega el comprobante: con pago anticipado
+  // elegido los dos son obligatorios; contra entrega no. "Necesito factura"
+  // muestra y exige razón social y RUC. El checkout base ya trae los campos; a uno personalizado se le
+  // agregan el correo y la casilla de promociones copiando el del celular.
+  function campoCheckout(form, nombre) { return form.querySelector('[name="' + nombre + '"]'); }
+  function rotuloDeCampo(campo) {
+    var caja = campo && campo.closest ? campo.closest('label') : null;
+    return caja ? caja.querySelector('span') : null;
+  }
+  function asegurarCamposAnticipado(form) {
+    var telefono = campoCheckout(form, 'telefono');
+    var cajaTelefono = telefono && telefono.closest ? telefono.closest('label') : null;
+    if (!campoCheckout(form, 'email') && cajaTelefono) {
+      var cajaEmail = cajaTelefono.cloneNode(true);
+      var entrada = cajaEmail.querySelector('input');
+      var rotulo = cajaEmail.querySelector('span');
+      if (entrada) {
+        entrada.name = 'email'; entrada.type = 'email'; entrada.value = '';
+        entrada.setAttribute('autocomplete', 'email'); entrada.setAttribute('maxlength', '160');
+        entrada.removeAttribute('required'); entrada.removeAttribute('placeholder');
+        if (rotulo) rotulo.textContent = 'Correo electronico';
+        cajaTelefono.insertAdjacentElement('afterend', cajaEmail);
+      }
+    }
+    var email = campoCheckout(form, 'email');
+    if (email && !campoCheckout(form, 'acepta_promociones')) {
+      var cajaAcepta = document.createElement('label');
+      cajaAcepta.style.cssText = 'display:flex;align-items:flex-start;gap:10px;grid-column:1/-1;font-size:13px;line-height:1.45;cursor:pointer';
+      var casilla = document.createElement('input');
+      casilla.type = 'checkbox'; casilla.name = 'acepta_promociones';
+      casilla.style.cssText = 'width:18px;height:18px;min-height:0;margin:1px 0 0;flex-shrink:0';
+      var texto = document.createElement('span');
+      texto.textContent = 'Quiero recibir promociones y descuentos de la tienda en mi correo.';
+      cajaAcepta.appendChild(casilla); cajaAcepta.appendChild(texto);
+      (email.closest('label') || email).insertAdjacentElement('afterend', cajaAcepta);
+    }
+  }
+  function prepararCamposCheckout() {
+    var forms = document.querySelectorAll('form[data-gesicomm-checkout-form]');
+    for (var i = 0; i < forms.length; i++) {
+      var form = forms[i];
+      asegurarCamposAnticipado(form);
+      var anticipado = !!form.querySelector('input[name="payment_method"][value="pagopar"]:checked');
+      exigirCampoCheckout(campoCheckout(form, 'documento'), anticipado);
+      exigirCampoCheckout(campoCheckout(form, 'email'), anticipado);
+      var avisos = form.querySelectorAll('[data-gesicomm-si-anticipado]');
+      for (var a = 0; a < avisos.length; a++) avisos[a].style.display = anticipado ? '' : 'none';
+      // Sin la casilla (checkout personalizado) no se toca nada de la factura.
+      var casillaFactura = campoCheckout(form, 'quiere_factura');
+      if (!casillaFactura) continue;
+      var quiereFactura = !!casillaFactura.checked;
+      var cajasFactura = form.querySelectorAll('[data-gesicomm-si-factura]');
+      for (var c = 0; c < cajasFactura.length; c++) cajasFactura[c].style.display = quiereFactura ? '' : 'none';
+      ['razon_social', 'ruc'].forEach(function (nombre) {
+        var campo = campoCheckout(form, nombre);
+        if (!campo) return;
+        // Destildó: lo que había escrito no viaja con el pedido.
+        if (!quiereFactura) campo.value = '';
+        exigirCampoCheckout(campo, quiereFactura);
+      });
+    }
+  }
+  function exigirCampoCheckout(campo, obligatorio) {
+    if (!campo) return;
+    campo.required = !!obligatorio;
+    var rotulo = rotuloDeCampo(campo);
+    if (!rotulo) return;
+    if (!rotulo.hasAttribute('data-gesicomm-rotulo')) rotulo.setAttribute('data-gesicomm-rotulo', rotulo.textContent.replace(/\s*\*\s*$/, ''));
+    rotulo.textContent = rotulo.getAttribute('data-gesicomm-rotulo') + (obligatorio ? ' *' : '');
+  }
+  // Sin el botón principal, el selector de cantidad quedaba solo en su fila
+  // y los botones abajo. El primer botón de compra que sí se cobra (contra
+  // entrega) sube a esa fila, al lado de la cantidad. La lista de botones se
+  // rearma en cada render, así que el que se subió antes se descarta.
+  function acomodarCompraSinAnticipado() {
+    var subidos = document.querySelectorAll('[data-gesicomm-pago-promovido]');
+    for (var s = 0; s < subidos.length; s++) subidos[s].parentNode.removeChild(subidos[s]);
+    var principal = document.querySelector('[data-gesicomm-boton-principal-pago][data-gesicomm-pago-bloqueado]');
+    var fila = principal ? principal.parentNode : null;
+    if (!fila || !fila.querySelector('[data-gesicomm-cantidad-input]')) return;
+    var reemplazo = document.querySelector('[data-gesicomm-accion-pago="checkout"]:not([data-gesicomm-pago-bloqueado])');
+    if (!reemplazo) return;
+    reemplazo.setAttribute('data-gesicomm-pago-promovido', '');
+    reemplazo.style.flex = '1';
+    reemplazo.style.minHeight = '52px';
+    fila.insertBefore(reemplazo, principal);
   }
 
   // Total de la compra de la ficha: producto (con variante y cantidad) + los
@@ -574,7 +651,8 @@ export function runtimeGesicomm() {
 
   function normalizarRating(valor, fallback) {
     var crudo = String(valor == null ? '' : valor).replace(',', '.').trim();
-    var n = Number(crudo);
+    // Sin dato no es un 0 (Number('') da 0): vale el respaldo.
+    var n = crudo === '' ? NaN : Number(crudo);
     var base = Number.isFinite(n) ? n : Number(fallback);
     if (!Number.isFinite(base)) base = 5;
     return Math.max(1, Math.min(5, Math.round(base * 10) / 10));
@@ -589,7 +667,13 @@ export function runtimeGesicomm() {
     var partes = [];
     for (var i = 1; i <= 5; i++) {
       var fill = Math.max(0, Math.min(100, (n - (i - 1)) * 100));
-      partes.push('<span class="gc-star" style="--fill:' + fill.toFixed(2) + '%">★</span>');
+      // El relleno va escrito en cada estrella y no solo en la clase .gc-star:
+      // el CSS de la ficha se guarda con la landing, y las guardadas antes de
+      // que existiera esa regla mostraban siempre las cinco estrellas llenas.
+      var relleno = fill.toFixed(2) + '%';
+      partes.push('<span class="gc-star" style="--fill:' + relleno + ';display:inline-block;'
+        + 'background:linear-gradient(90deg,currentColor ' + relleno + ',rgba(148,163,184,.45) ' + relleno + ');'
+        + '-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">★</span>');
     }
     return '<span class="gc-stars-meter" aria-hidden="true">' + partes.join('') + '</span>';
   }
@@ -598,12 +682,22 @@ export function runtimeGesicomm() {
     var campo = el.getAttribute('data-gesicomm-bind');
     var valor = null;
     var variante = extra && extra.variante;
+    // item.vacios: textos de la ficha que el comercio borró a propósito en el
+    // panel (ver presentacionComercial). Vacío = no se dibuja; sin esto cada
+    // caso de abajo lo volvía a llenar con su texto de respaldo.
+    var vacios = Array.isArray(item.vacios) ? item.vacios : [];
+    function vaciado(c) { return vacios.indexOf(c) !== -1; }
+    if (vaciado(campo)) {
+      el.textContent = '';
+      el.style.display = 'none';
+      return;
+    }
     switch (campo) {
       case 'nombre': valor = item.titulo_comercial || item.nombre; break;
       case 'descripcion': valor = item.mensaje_comercial || item.descripcion; break;
       // Texto principal de la ficha: el mensaje comercial de esta landing si
       // lo hay; si no, la descripción completa del producto, o la corta.
-      case 'descripcion_ficha': valor = item.mensaje_comercial || item.descripcion_ficha || item.descripcion_larga || item.descripcion; break;
+      case 'descripcion_ficha': valor = vaciado('mensaje_comercial') ? '' : (item.mensaje_comercial || item.descripcion_ficha || item.descripcion_larga || item.descripcion); break;
       case 'insignia_principal': valor = item.insignia_principal || item.categoria || ''; break;
       case 'resenas_texto': valor = item.resenas_texto || ''; break;
       case 'resenas_estrellas': valor = normalizarRating(item.resenas_calificacion, 5); break;
@@ -634,7 +728,7 @@ export function runtimeGesicomm() {
       case 'precio_separado': valor = formatoPrecio(item.precio_separado); break;
       case 'por_unidad': valor = Number(item.por_unidad) > 0 ? formatoPrecio(item.por_unidad) + ' c/u' : ''; break;
       case 'badge_precio':
-        valor = item.insignia_secundaria || (!(Number(item.ahorro) > 0) ? ''
+        valor = vaciado('insignia_secundaria') ? '' : item.insignia_secundaria || (!(Number(item.ahorro) > 0) ? ''
           : (Number(item.precio_antes || 0) < 750000 && Number(item.descuento_pct) > 0
             ? 'Ahorrás ' + item.descuento_pct + '%'
             : 'Ahorrás ' + formatoPrecio(item.ahorro)));
@@ -1118,10 +1212,12 @@ export function runtimeGesicomm() {
     var testimonios = (venta.inicio && venta.inicio.testimonios) || (venta.inicio_comercial && venta.inicio_comercial.testimonios) || {};
     var checkoutReco = venta.checkout_recomendados || {};
     switch (campo) {
-      case 'recomendados_kicker': return venta.recomendados_kicker || 'Te puede gustar';
-      case 'recomendados_titulo': return venta.recomendados_titulo || 'Te puede gustar';
+      // Llegan resueltos (ver textosRecomendados en datosRuntime.js): vacío
+      // es vacío y no se dibuja. El respaldo es solo para datos sin la clave.
+      case 'recomendados_kicker': return 'recomendados_kicker' in venta ? venta.recomendados_kicker : '';
+      case 'recomendados_titulo': return 'recomendados_titulo' in venta ? venta.recomendados_titulo : 'Te puede gustar';
       case 'recomendados_subtitulo': return venta.recomendados_subtitulo || '';
-      case 'recomendados_cta': return venta.recomendados_cta || 'Agregar';
+      case 'recomendados_cta': return 'recomendados_cta' in venta ? venta.recomendados_cta : 'Agregar';
       case 'checkout_recomendados_kicker': return checkoutReco.kicker || 'Antes de cerrar';
       case 'checkout_recomendados_titulo': return checkoutReco.titulo || 'También te puede interesar';
       case 'checkout_recomendados_subtitulo': return checkoutReco.subtitulo || '';
@@ -1151,7 +1247,13 @@ export function runtimeGesicomm() {
       var config = (datos.venta && datos.venta[clave]) || (clave === 'marca' ? marcaConfig() : (clave === 'testimonios' ? testimoniosInicioConfig() : null));
       seccion.hidden = !config || config.activo !== true;
     });
-    var els = document.querySelectorAll('[data-gesicomm-venta]');
+    pintarTextosVenta(document);
+  }
+  // También lo llama cada lista al rearmarse: el botón de una tarjeta de
+  // recomendados sale del <template> con su texto de fábrica y, si el
+  // comercio lo vació u ocultó, tiene que desaparecer igual.
+  function pintarTextosVenta(raiz) {
+    var els = raiz.querySelectorAll('[data-gesicomm-venta]');
     for (var i = 0; i < els.length; i++) {
       var valor = textoVenta(els[i].getAttribute('data-gesicomm-venta'));
       if (!valor) { els[i].style.display = 'none'; continue; }
@@ -1693,13 +1795,22 @@ export function runtimeGesicomm() {
     panel.hidden = toggle.getAttribute('aria-expanded') !== 'true';
   }
 
+  // El menú es SOLO lo que el comercio cargó en "Menú principal" (Inicio →
+  // Bloques). El runtime no agrega links por su cuenta: antes completaba con
+  // una lista fija (Descuentos, Nosotros, Contacto) fuera del Inicio, y un
+  // link que el comercio había quitado le volvía a aparecer en la ficha, el
+  // catálogo y el checkout, sin tener dónde sacarlo.
   function menuPrincipal() {
-    var inicio = inicioConfig();
-    if (!Array.isArray(inicio.menu_links) || !inicio.menu_links.length) return null;
-    var links = inicio.menu_links;
+    var links = inicioConfig().menu_links;
+    if (!Array.isArray(links)) return [];
     return links.filter(function (item) {
       return item && item.visible !== false && item.texto && item.destino;
     });
+  }
+
+  function esLinkInicio(item) {
+    var destino = String(item && item.destino || '');
+    return destino === '/' || destino === '#inicio' || destino === '';
   }
 
   function vistaHeaderActual() {
@@ -1716,46 +1827,7 @@ export function runtimeGesicomm() {
     var destino = String(item && item.destino || '');
     if (vista === 'checkout') return destino === '/checkout';
     if (vista === 'catalogo') return destino === '/catalogo' || destino === '/productos';
-    return destino === '#inicio' || destino === '/' || destino === '';
-  }
-
-  function linksNavegacionBase() {
-    return [
-      { texto: 'Inicio', destino: '/' },
-      { texto: 'Productos', destino: '/catalogo' },
-      { texto: 'Descuentos', destino: '/catalogo?etiqueta=Oferta' },
-      { texto: 'Nosotros', destino: '/#marca' },
-      { texto: 'Contacto', destino: '/contacto' },
-    ];
-  }
-
-  function completarLinksDeVista(links, vista) {
-    var lista = Array.isArray(links) ? links.slice() : [];
-    if (vista === 'inicio') return lista;
-    function tieneInicio() {
-      return lista.some(function (item) {
-        var destino = String(item && item.destino || '');
-        return destino === '/' || destino === '#inicio' || destino === '';
-      });
-    }
-    function tieneCatalogo() {
-      return lista.some(function (item) {
-        var destino = String(item && item.destino || '');
-        return destino === '/catalogo' || destino === '/productos';
-      });
-    }
-    function tieneDestino(destinoEsperado) {
-      return lista.some(function (item) {
-        return String(item && item.destino || '') === destinoEsperado;
-      });
-    }
-    var base = linksNavegacionBase();
-    if (!tieneInicio()) lista.unshift(base[0]);
-    if (!tieneCatalogo()) lista.push(base[1]);
-    for (var b = 2; b < base.length; b++) {
-      if (!tieneDestino(base[b].destino)) lista.push(base[b]);
-    }
-    return lista;
+    return esLinkInicio(item);
   }
 
   function hrefMenuActivo(a, vista) {
@@ -1775,53 +1847,38 @@ export function runtimeGesicomm() {
     var contenedores = document.querySelectorAll('#nav-links, [data-gesicomm-menu-principal]');
     if (!contenedores.length) return;
     var links = menuPrincipal();
+    var configurado = links.length > 0;
     var vista = vistaHeaderActual();
-    if (!links) {
-      links = linksNavegacionBase();
-      for (var x = 0; x < contenedores.length; x++) {
-        var contBase = contenedores[x];
-        if (!contBase.closest('.commerce-header')) continue;
-        contBase.textContent = '';
-        for (var b = 0; b < links.length; b++) {
-          var itemBase = links[b];
-          var aBase = document.createElement('a');
-          aBase.href = urlSegura(itemBase.destino) || '#inicio';
-          aBase.textContent = itemBase.texto;
-          if (itemBase.destino === '/' || itemBase.destino === '#inicio' || itemBase.destino === '') aBase.setAttribute('data-gesicomm-inicio', '');
-          if (/^\/catalogo(?:[?#]|$)/.test(itemBase.destino) || itemBase.destino === '/productos') aBase.setAttribute('data-gesicomm-link', 'catalogo');
-          if (itemBase.destino === '/contacto') aBase.setAttribute('data-gesicomm-link', 'contacto');
-          if (linkMenuActivo(itemBase, vista)) aBase.className = 'active';
-          contBase.appendChild(aBase);
-        }
-        contBase.style.display = '';
-      }
-      return;
-    }
+    // Un link a una sección del Inicio (#ofertas, #marca) no lleva a ningún
+    // lado desde otra vista: ahí no se muestra.
     if (vista !== 'inicio') {
       links = links.filter(function (item) {
         var destino = String(item && item.destino || '');
         return !destino || destino.charAt(0) !== '#' || destino === '#inicio';
       });
-      links = completarLinksDeVista(links, vista);
     }
+    // Lo único que se garantiza es "Inicio": sin él, desde la ficha o el
+    // checkout no habría cómo volver.
+    if (!links.some(esLinkInicio)) links = [{ texto: 'Inicio', destino: '/' }].concat(links);
     for (var c = 0; c < contenedores.length; c++) {
       var cont = contenedores[c];
+      // Sin menú configurado solo se toca el header de la tienda: un <nav>
+      // escrito a mano en el HTML del comercio se queda con sus links.
+      if (!configurado && !cont.closest('.commerce-header')) continue;
       cont.textContent = '';
       for (var i = 0; i < links.length; i++) {
         var item = links[i];
         var a = document.createElement('a');
         a.href = urlSegura(item.destino) || '#inicio';
         a.textContent = item.texto;
-        if (item.destino === '/' || item.destino === '#inicio' || item.destino === '') a.setAttribute('data-gesicomm-inicio', '');
+        if (esLinkInicio(item)) a.setAttribute('data-gesicomm-inicio', '');
         if (/^\/catalogo(?:[?#]|$)/.test(item.destino) || item.destino === '/productos') a.setAttribute('data-gesicomm-link', 'catalogo');
         if (item.destino === '/checkout') a.setAttribute('data-gesicomm-link', 'checkout');
         if (item.destino === '/contacto') a.setAttribute('data-gesicomm-link', 'contacto');
-        if (linkMenuActivo(item, vista)) {
-          a.className = 'active';
-        }
+        if (linkMenuActivo(item, vista)) a.className = 'active';
         cont.appendChild(a);
       }
-      cont.style.display = links.length ? '' : 'none';
+      cont.style.display = '';
     }
   }
 
@@ -2170,6 +2227,7 @@ export function runtimeGesicomm() {
       frag.appendChild(clon);
     });
     tpl.parentNode.insertBefore(frag, tpl);
+    pintarTextosVenta(el);
     var anidadas = el.querySelectorAll('[data-gesicomm-generado] [data-gesicomm-lista]');
     for (var n = 0; n < anidadas.length; n++) renderizarLista(anidadas[n]);
     if (nombre === 'checkout_recomendados') {
@@ -3237,6 +3295,76 @@ export function runtimeGesicomm() {
     catch (err) { window.scrollTo(0, Math.max(0, y)); }
   }
 
+  // ─── Bloques de la ficha en el editor ───────────────────────────────────
+  // datos.editor_bloques = { clave: 'N · Título' } llega solo desde el panel
+  // (nunca en la tienda publicada). Al pasar el mouse se marca el bloque y se
+  // rotula con el mismo número y nombre que tiene en "Vista producto"; un clic
+  // sobre una zona sin acción propia (texto, fondo, foto) pide abrirlo allá.
+  // Los botones y enlaces siguen haciendo lo suyo, para poder probar la ficha.
+  var bloqueMarcado = null;
+  var rotuloBloque = null;
+  function bloquesEditor() {
+    return datos.editor_bloques && typeof datos.editor_bloques === 'object' ? datos.editor_bloques : null;
+  }
+  function bloqueEditorDe(nodo) {
+    var mapa = bloquesEditor();
+    if (!mapa || !nodo || !nodo.closest) return null;
+    for (var el = nodo.closest('[data-gesicomm-ficha-bloque]'); el; el = el.parentElement && el.parentElement.closest('[data-gesicomm-ficha-bloque]')) {
+      if (mapa[el.getAttribute('data-gesicomm-ficha-bloque')]) return el;
+    }
+    return null;
+  }
+  function desmarcarBloqueEditor() {
+    if (bloqueMarcado) {
+      bloqueMarcado.style.outline = bloqueMarcado.__gesicommOutline || '';
+      bloqueMarcado.style.outlineOffset = bloqueMarcado.__gesicommOutlineOffset || '';
+      bloqueMarcado.style.cursor = bloqueMarcado.__gesicommCursor || '';
+    }
+    bloqueMarcado = null;
+    if (rotuloBloque) rotuloBloque.style.display = 'none';
+  }
+  function marcarBloqueEditor(el) {
+    if (el === bloqueMarcado) return;
+    desmarcarBloqueEditor();
+    if (!el) return;
+    bloqueMarcado = el;
+    el.__gesicommOutline = el.style.outline;
+    el.__gesicommOutlineOffset = el.style.outlineOffset;
+    el.__gesicommCursor = el.style.cursor;
+    el.style.outline = '2px solid #2563eb';
+    el.style.outlineOffset = '3px';
+    if (!rotuloBloque) {
+      // <span>, no <div>: la base de la tienda estira a todo el ancho los
+      // div que cuelgan directo del body.
+      rotuloBloque = document.createElement('span');
+      rotuloBloque.setAttribute('data-gesicomm-rotulo-bloque', '');
+      rotuloBloque.style.cssText = 'position:fixed;z-index:2147483646;pointer-events:none;background:#2563eb;color:#fff;'
+        + 'font:700 12px/1.2 system-ui,sans-serif;padding:5px 9px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.25);'
+        + 'display:block;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis';
+      document.body.appendChild(rotuloBloque);
+    }
+    rotuloBloque.textContent = bloquesEditor()[el.getAttribute('data-gesicomm-ficha-bloque')] + ' · clic para editar';
+    var r = el.getBoundingClientRect();
+    var alto = window.innerHeight || document.documentElement.clientHeight;
+    rotuloBloque.style.display = '';
+    rotuloBloque.style.left = Math.max(4, r.left) + 'px';
+    // Arriba del bloque; si no entra (bloque pegado al borde), adentro.
+    rotuloBloque.style.top = Math.min(alto - 30, r.top >= 30 ? r.top - 28 : Math.max(4, r.top + 4)) + 'px';
+  }
+  var ZONAS_CON_ACCION = 'a,button,input,select,textarea,label,summary,video,[role="button"],[data-gesicomm-ver],[data-gesicomm-comprar],'
+    + '[data-gesicomm-agregar],[data-gesicomm-variante-id],[data-gesicomm-paquete],[data-gesicomm-imagen-idx],[data-gesicomm-accion-pago],[data-gesicomm-accion-contacto]';
+  document.addEventListener('mouseover', function (e) {
+    if (!bloquesEditor()) return;
+    marcarBloqueEditor(bloqueEditorDe(e.target));
+  });
+  document.addEventListener('mouseleave', desmarcarBloqueEditor);
+  window.addEventListener('scroll', desmarcarBloqueEditor, true);
+  document.addEventListener('click', function (e) {
+    var bloque = bloqueEditorDe(e.target);
+    if (!bloque || (e.target.closest && e.target.closest(ZONAS_CON_ACCION))) return;
+    enviar({ tipo: 'gesicomm:bloque', clave: bloque.getAttribute('data-gesicomm-ficha-bloque') });
+  });
+
   var resaltadoTimer = null;
   function resaltar(lista) {
     if (!/^[a-z_]+$/.test(String(lista || ''))) return;
@@ -3355,6 +3483,9 @@ export function runtimeGesicomm() {
   });
 
   document.addEventListener('change', function (e) {
+    // Cambió el medio de pago: la cédula y el correo pasan a ser (o dejan de
+    // ser) obligatorios.
+    if (e.target && (e.target.name === 'payment_method' || e.target.name === 'quiere_factura')) prepararCamposCheckout();
     // Order bump: marcar la casilla lo deja listo para sumarse al comprar.
     var bump = e.target && e.target.matches && e.target.matches('input[data-gesicomm-bump]') ? e.target : null;
     if (bump) {
@@ -3605,10 +3736,10 @@ export function runtimeGesicomm() {
     if (!t) return;
     var el;
 
-    // Va primero: un botón de pago anticipado apagado no compra ni navega.
+    // Va primero: sin PagoPar el pago anticipado no se ejecuta, aunque algo
+    // haya dejado el botón a la vista.
     if ((el = t.closest('[data-gesicomm-pago-bloqueado]'))) {
       e.preventDefault();
-      toast(AVISO_PAGO_ANTICIPADO);
       return;
     }
 

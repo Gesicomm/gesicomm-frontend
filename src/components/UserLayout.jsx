@@ -40,6 +40,7 @@ const ICONOS_SIDEBAR = {
 const SIDEBAR_FALLBACK = [
   { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-tienda', label: 'Mi tienda', icono: 'Store', menuKey: 'mi-tienda', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-tienda/depositos', label: 'Depósitos', icono: 'MapPin', menuKey: 'mi-tienda-depositos', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-tienda/couriers', label: 'Couriers', icono: 'Truck', menuKey: 'mi-tienda-couriers', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-catalogo', label: 'Productos', icono: 'Grid', menuKey: 'mi-catalogo', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'MARKETING', path: '/landing', label: 'Páginas de venta', icono: 'Sparkles', menuKey: 'landing', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'MARKETING', path: '/mis-anuncios', label: 'Publicidad', icono: 'Megaphone', menuKey: 'mis-anuncios', rolesPermitidos: ['usuario', 'administrador'] },

@@ -12,9 +12,9 @@ import { comboAdminService } from '../../services/comboAdminService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
-import PresentacionProducto from './PresentacionProducto';
+import PresentacionProducto, { ROTULOS_BLOQUES_FICHA, bloqueDeZona } from './PresentacionProducto';
 import { usePagoparConectado } from './usePagoparConectado';
-import { contentIdPanel, datosRuntimePreview, presentacionDelProducto, slugCategoria, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
+import { contentIdPanel, datosRuntimePreview, itemPanelARuntime, presentacionDelProducto, slugCategoria, textosRecomendados, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
 import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
@@ -369,8 +369,15 @@ function crearSeccionInicio(tipo = 'categoria', categoria = '') {
   };
 }
 
-function normalizarMenuPrincipal(menu = []) {
-  const fuente = Array.isArray(menu) && menu.length ? menu : MENU_PRINCIPAL_DEFAULT;
+// El menú es lo que cargó el comercio y nada más (ver menuPrincipal en
+// runtimeGesicomm.js). El default solo se propone a una tienda que nunca
+// tuvo menú; si lo vació, queda vacío salvo "Inicio", que es lo único que
+// se garantiza. Antes un menú vacío volvía al default y "Productos"
+// reaparecía al recargar el editor.
+const esLinkInicioMenu = item => ['/', '#inicio', ''].includes(String(item?.destino || ''));
+
+function normalizarMenuPrincipal(menu) {
+  const fuente = Array.isArray(menu) ? menu : MENU_PRINCIPAL_DEFAULT;
   const normalizados = fuente
     .map((item, idx) => {
       const destino = item.destino || item.href || item.enlace || MENU_PRINCIPAL_DEFAULT[idx]?.destino || '#inicio';
@@ -383,7 +390,7 @@ function normalizarMenuPrincipal(menu = []) {
       };
     })
     .filter(Boolean);
-  return normalizados.length ? normalizados : MENU_PRINCIPAL_DEFAULT;
+  return normalizados.some(esLinkInicioMenu) ? normalizados : [MENU_PRINCIPAL_DEFAULT[0], ...normalizados];
 }
 
 function normalizarEncabezadoInicio(encabezado = {}) {
@@ -702,7 +709,7 @@ export default function ConfigurarVentaCodigo({
   }));
   const [presentacion, setPresentacion] = useState(() => ({ ...Object.fromEntries((inicial?.seleccion || []).map(i => [claveItem(i), {
     etiqueta: i.etiqueta || '', mostrar_en_inicio: i.mostrar_en_inicio !== false, envio_incluido: i.envio_incluido === true,
-  }])), ...ventaInicial.presentacion_productos }));
+  }])), ...presentacionGuardada(ventaInicial.presentacion_productos) }));
   const [filtrosCatalogo, setFiltrosCatalogo] = useState(() => ventaInicial.catalogo_filtros || {});
   const [paymentLogosCatalogo, setPaymentLogosCatalogo] = useState(PAYMENT_LOGOS_DEFAULT);
   const [pagoLogos, setPagoLogos] = useState(() => {
@@ -753,10 +760,13 @@ export default function ConfigurarVentaCodigo({
   const [recoModo, setRecoModo] = useState(ventaInicial.recomendados?.modo || 'auto');
   const [recoItems, setRecoItems] = useState(ventaInicial.recomendados?.items || []);
   const [recoMax, setRecoMax] = useState(ventaInicial.recomendados?.max || 4);
-  const [recoTitulo, setRecoTitulo] = useState(ventaInicial.recomendados?.titulo || '');
-  const [recoKicker, setRecoKicker] = useState(ventaInicial.recomendados?.kicker || '');
-  const [recoSubtitulo, setRecoSubtitulo] = useState(ventaInicial.recomendados?.subtitulo || '');
-  const [recoCta, setRecoCta] = useState(ventaInicial.recomendados?.cta_texto || '');
+  // Lo que se ve en la ficha es lo que está escrito acá: sin texto, o con
+  // "Mostrar" destildado, ese renglón no se dibuja (ver textosRecomendados).
+  const [recoTitulo, setRecoTitulo] = useState(() => textosRecomendados(ventaInicial.recomendados).titulo);
+  const [recoKicker, setRecoKicker] = useState(() => textosRecomendados(ventaInicial.recomendados).kicker);
+  const [recoSubtitulo, setRecoSubtitulo] = useState(() => textosRecomendados(ventaInicial.recomendados).subtitulo);
+  const [recoCta, setRecoCta] = useState(() => textosRecomendados(ventaInicial.recomendados).cta_texto);
+  const [recoMostrar, setRecoMostrar] = useState(() => textosRecomendados(ventaInicial.recomendados).mostrar);
   const [recoBusqueda, setRecoBusqueda] = useState('');
   const [recoCategoria, setRecoCategoria] = useState('');
   const checkoutRecoInicial = ventaInicial.checkout_recomendados || {};
@@ -1558,7 +1568,8 @@ export default function ConfigurarVentaCodigo({
     paquetes: confPaquetes,
     catalogo_filtros: filtrosCatalogo,
     presentacion_productos: Object.fromEntries(Object.entries(presentacion).slice(0, 500).map(([key, value]) => [key, {
-      ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'cta_descuento_pct', 'agregar_carrito_texto', 'resenas_texto', 'resenas_calificacion', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, value[campo] || ''])),
+      v: 2,
+      ...Object.fromEntries(CAMPOS_TEXTO_FICHA.filter(campo => value[campo] != null).map(campo => [campo, value[campo]])),
       ...(value.ficha_bloques && typeof value.ficha_bloques === 'object' ? { ficha_bloques: value.ficha_bloques } : {}),
       ...(Array.isArray(value.ficha_orden_mobile) ? { ficha_orden_mobile: value.ficha_orden_mobile } : {}),
       ...(Array.isArray(value.imagenes_landing) ? { imagenes_landing: value.imagenes_landing } : {}),
@@ -1586,6 +1597,7 @@ export default function ConfigurarVentaCodigo({
       kicker: recoKicker,
       subtitulo: recoSubtitulo,
       cta_texto: recoCta,
+      mostrar: recoMostrar,
     },
     checkout_recomendados: {
       activo: checkoutRecoActivo,
@@ -1625,11 +1637,23 @@ export default function ConfigurarVentaCodigo({
       })),
   }), [
     tipo, abrirEn, combosPrimero, destacadosValidos, inicioActual, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
-    crossActivo, ofertasElegidas, recoActivo, recoModo, recoItemsValidos, recoMax, recoTitulo, recoKicker, recoSubtitulo, recoCta,
+    crossActivo, ofertasElegidas, recoActivo, recoModo, recoItemsValidos, recoMax, recoTitulo, recoKicker, recoSubtitulo, recoCta, recoMostrar,
     checkoutRecoActivo, checkoutRecoItemsValidos, checkoutRecoMax, checkoutRecoTitulo, checkoutRecoKicker, checkoutRecoSubtitulo, checkoutRecoCta, checkoutRecoPreciosAntes,
     urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, urgenciaProductosValidos, urgenciaConfirmar, urgenciaTitulo, urgenciaTexto, urgenciaCta, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
     pagoLogos, paymentLogosCatalogo,
   ]);
+
+  // La ficha del producto que se está editando, resuelta con la MISMA función
+  // que usan la vista previa y la tienda publicada. Cada bloque del panel
+  // muestra exactamente el texto que sale en la página —el del producto, el
+  // propio de esta landing o el de respaldo— y no una copia calculada aparte
+  // (antes los beneficios, la descripción o las reseñas del producto se veían
+  // en la página pero el bloque aparecía vacío o con textos de ejemplo).
+  const fichaEfectiva = useMemo(() => {
+    const base = seleccion.find(i => contentIdPanel(i) === productoEditando);
+    if (!base) return null;
+    return itemPanelARuntime({ ...fichasProducto[claveItem(base)], ...base }, [], () => null, ventaActual);
+  }, [seleccion, productoEditando, fichasProducto, ventaActual]);
 
   function alternarOferta(oferta) {
     const elegida = ofertasElegidas.has(oferta.id);
@@ -1793,6 +1817,7 @@ export default function ConfigurarVentaCodigo({
       : (productoFicha ? contentIdPanel(productoFicha) : null),
     ofertas: ofertasConImagen,
     pagoparConectado,
+    bloquesEditor: ROTULOS_BLOQUES_FICHA,
   }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion, pagoparConectado]);
 
   // Dónde se ve cada tipo de oferta en la ficha (para resaltarla en la vista previa).
@@ -1829,6 +1854,24 @@ export default function ConfigurarVentaCodigo({
   function verRecomendados() {
     verDonde('producto', 'recomendados');
   }
+
+  // Clic sobre un bloque de la ficha en la vista previa: abre ese bloque en
+  // el panel, para el producto que se está viendo.
+  const [bloqueFichaAbierto, setBloqueFichaAbierto] = useState(null); // { clave, n }
+  const alBloquePreview = useCallback((zona) => {
+    const clave = bloqueDeZona(zona);
+    const contentId = productoFicha ? contentIdPanel(productoFicha) : null;
+    if (!clave || !contentId) return;
+    // El panel tiene que quedar a la vista: se cierran la vista previa a
+    // pantalla completa y la del celular, que lo tapan.
+    setPanelesOcultos(false);
+    setPreviewMovil(false);
+    setPreviewAmpliada(false);
+    setSeccionConfig('fichas');
+    setProductoEditando(contentId);
+    setProductoPreview(contentId);
+    setBloqueFichaAbierto({ clave, n: Date.now() });
+  }, [productoFicha]);
 
   const alNavegarPreview = useCallback((p) => {
     if (p?.destino === 'producto') {
@@ -1917,6 +1960,37 @@ export default function ConfigurarVentaCodigo({
     ? 'sin recomendados'
     : (recoModo === 'auto' ? 'recomendados automáticos' : `${recoItems.length} recomendado${recoItems.length === 1 ? '' : 's'} a mano`);
   const estadisticasConfirmables = pruebaSocialItems.some(it => String(it.valor || '').trim() && String(it.etiqueta || '').trim());
+  // Cada texto de la sección con su "Mostrar": destildado u vacío, no sale.
+  const campoTextoReco = (clave, titulo, valor, onValor, { max, area = false, ejemplo, ancho = '' }) => {
+    const visible = recoMostrar[clave] !== false;
+    const clases = `w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary ${area ? 'py-2' : 'h-10'} ${visible ? '' : 'opacity-50'}`;
+    const comunes = { value: valor, onChange: e => onValor(e.target.value), maxLength: max, placeholder: `Ej: ${ejemplo}`, 'aria-label': titulo, className: clases };
+    return (
+      <div key={clave} className={ancho}>
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-fg">{titulo}</span>
+          <label className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-fg-muted">
+            <input
+              type="checkbox"
+              className="accent-primary"
+              checked={visible}
+              onChange={e => setRecoMostrar(prev => ({ ...prev, [clave]: e.target.checked }))}
+              aria-label={`Mostrar ${titulo.toLowerCase()}`}
+            />
+            Mostrar
+          </label>
+        </div>
+        {area ? <textarea rows={2} {...comunes} /> : <input {...comunes} />}
+        {visible && !String(valor || '').trim() && <p className="mt-1 text-xs text-fg-muted">Vacío: no se muestra en la ficha.</p>}
+      </div>
+    );
+  };
+  const camposTextoReco = [
+    campoTextoReco('kicker', 'Rótulo superior', recoKicker, setRecoKicker, { max: 50, ejemplo: 'Te puede gustar' }),
+    campoTextoReco('titulo', 'Título de la sección', recoTitulo, setRecoTitulo, { max: 80, ejemplo: 'Productos recomendados' }),
+    campoTextoReco('subtitulo', 'Subtítulo', recoSubtitulo, setRecoSubtitulo, { max: 180, area: true, ejemplo: 'Elegí complementos para seguir comprando.', ancho: 'sm:col-span-2' }),
+    campoTextoReco('cta', 'Texto del botón', recoCta, setRecoCta, { max: 40, ejemplo: 'Agregar' }),
+  ];
   const bloqueRecomendadosFicha = recoActivo ? (
     <div className="space-y-4">
       <button
@@ -1927,47 +2001,7 @@ export default function ConfigurarVentaCodigo({
         Ver dónde aparece
       </button>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label>
-          <span className="block text-sm font-medium text-fg mb-1.5">Rótulo superior</span>
-          <input
-            value={recoKicker}
-            onChange={e => setRecoKicker(e.target.value)}
-            maxLength={50}
-            placeholder="Te puede gustar"
-            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-          />
-        </label>
-        <label>
-          <span className="block text-sm font-medium text-fg mb-1.5">Título de la sección</span>
-          <input
-            value={recoTitulo}
-            onChange={e => setRecoTitulo(e.target.value)}
-            maxLength={80}
-            placeholder="Productos recomendados"
-            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-          />
-        </label>
-        <label className="sm:col-span-2">
-          <span className="block text-sm font-medium text-fg mb-1.5">Subtítulo</span>
-          <textarea
-            value={recoSubtitulo}
-            onChange={e => setRecoSubtitulo(e.target.value)}
-            maxLength={180}
-            rows={2}
-            placeholder="Elegí alternativas o complementos para que el cliente siga comprando."
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-          />
-        </label>
-        <label>
-          <span className="block text-sm font-medium text-fg mb-1.5">Texto del botón</span>
-          <input
-            value={recoCta}
-            onChange={e => setRecoCta(e.target.value)}
-            maxLength={40}
-            placeholder="Agregar"
-            className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-          />
-        </label>
+        {camposTextoReco}
         <div>
           <span id="reco-cantidad" className="block text-sm font-medium text-fg mb-1.5">Cuántos mostrar</span>
           <div role="radiogroup" aria-labelledby="reco-cantidad" className="inline-flex rounded-lg bg-surface-2 p-1">
@@ -2180,6 +2214,7 @@ export default function ConfigurarVentaCodigo({
     onNavegar: alNavegarPreview,
     onComprar: alComprarPreview,
     onCarrito: alCarritoPreview,
+    onBloque: alBloquePreview,
     dispositivo,
     onDispositivo: setDispositivo,
   };
@@ -2364,6 +2399,9 @@ export default function ConfigurarVentaCodigo({
                       <PresentacionProducto item={productoConfigActual} ancla={anclas[claveItem(productoConfigActual)] ?? ''}
                         onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(productoConfigActual)]: v }))}
                         onCambiar={(campo, valor) => cambiarPresentacion(productoConfigActual, campo, valor)}
+                        propio={presentacion[claveItem(productoConfigActual)]}
+                        efectivo={fichaEfectiva}
+                        bloqueAbierto={bloqueFichaAbierto}
                         pagoLogos={pagoLogos}
                         pagoparConectado={pagoparConectado}
                         paymentLogosCatalogo={paymentLogosCatalogo}
@@ -3348,47 +3386,7 @@ export default function ConfigurarVentaCodigo({
                     )}
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <label>
-                        <span className="block text-sm font-medium text-fg mb-1.5">Rótulo superior</span>
-                        <input
-                          value={recoKicker}
-                          onChange={e => setRecoKicker(e.target.value)}
-                          maxLength={50}
-                          placeholder="Te puede gustar"
-                          className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-                        />
-                      </label>
-                      <label>
-                        <span className="block text-sm font-medium text-fg mb-1.5">Título de la sección</span>
-                        <input
-                          value={recoTitulo}
-                          onChange={e => setRecoTitulo(e.target.value)}
-                          maxLength={80}
-                          placeholder="Productos recomendados"
-                          className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-                        />
-                      </label>
-                      <label className="sm:col-span-2">
-                        <span className="block text-sm font-medium text-fg mb-1.5">Subtítulo</span>
-                        <textarea
-                          value={recoSubtitulo}
-                          onChange={e => setRecoSubtitulo(e.target.value)}
-                          maxLength={180}
-                          rows={2}
-                          placeholder="Elegí alternativas o complementos para que el cliente siga comprando."
-                          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-                        />
-                      </label>
-                      <label>
-                        <span className="block text-sm font-medium text-fg mb-1.5">Texto del botón</span>
-                        <input
-                          value={recoCta}
-                          onChange={e => setRecoCta(e.target.value)}
-                          maxLength={40}
-                          placeholder="Agregar"
-                          className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-                        />
-                      </label>
+                      {camposTextoReco}
                       <div>
                         <span id="reco-cantidad" className="block text-sm font-medium text-fg mb-1.5">Cuántos mostrar</span>
                         <div role="radiogroup" aria-labelledby="reco-cantidad" className="inline-flex rounded-lg bg-surface-2 p-1">
@@ -3711,6 +3709,20 @@ function useTamano() {
   return [setNodo, tam];
 }
 
+// Textos de la ficha que se guardan por producto. Va SOLO lo que el comercio
+// tocó (ficha v2): ausente = vale el texto del producto; vacío = lo borró y no
+// se muestra. Ver presentacionComercial (datosRuntime.js).
+const CAMPOS_TEXTO_FICHA = ['titulo_comercial', 'mensaje_comercial', 'propuesta_valor', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'cta_descuento_pct', 'agregar_carrito_texto', 'resenas_texto', 'resenas_calificacion', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'];
+
+// Las fichas guardadas antes de la v2 traen '' en todos los textos que nunca
+// se tocaron: no son "vaciados" y se descartan, para que siga valiendo el
+// texto del producto.
+function presentacionGuardada(fichas) {
+  return Object.fromEntries(Object.entries(fichas || {}).map(([clave, ficha]) => [clave, ficha?.v === 2
+    ? ficha
+    : Object.fromEntries(Object.entries(ficha || {}).filter(([, valor]) => valor !== ''))]));
+}
+
 /**
  * La landing con la selección y las ofertas reales, en celular o en
  * escritorio. Usa el mismo iframe y el mismo runtime que la landing
@@ -3718,7 +3730,7 @@ function useTamano() {
  * en el lugar disponible (como se ve en una notebook, en miniatura).
  */
 function VistaPrevia({
-  vista, onVista, productos, productoFicha, onProducto, codigo, datos, resaltado, aviso, inicioEsBase, onNavegar, onComprar, onCarrito,
+  vista, onVista, productos, productoFicha, onProducto, codigo, datos, resaltado, aviso, inicioEsBase, onNavegar, onComprar, onCarrito, onBloque,
   dispositivo, onDispositivo, onAmpliar, ampliada, onCerrar, disenoPendienteIA = false,
   // Solo la landing, sin la cabecera (paneles ocultos): el dispositivo se
   // elige desde la barra superior y se navega con los links de la página.
@@ -3741,6 +3753,7 @@ function VistaPrevia({
       onNavegar={onNavegar}
       onCheckout={onComprar}
       onCarrito={onCarrito}
+      onBloque={onBloque}
     />
   );
 

@@ -1,20 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FilterX, Building2, ArrowLeft } from 'lucide-react';
+import { Plus, FilterX, Building2, ArrowLeft, ChevronDown, Truck } from 'lucide-react';
 import { depositoService } from '../../services/deposito.service';
-import { createCourier, updateCourier, replaceDeliveryZonas } from '../../services/courierApi';
 import DepositoFilters from '../../components/depositos/DepositoFilters';
 import DepositoCard from '../../components/depositos/DepositoCard';
+import DepositoDetailPanel from '../../components/depositos/DepositoDetailPanel';
 import DepositoForm from '../../components/depositos/DepositoForm';
 import CouriersDepositoModal from '../../components/depositos/CouriersDepositoModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import FulfillmentCard from '../../components/depositos/FulfillmentCard';
 import { CourierWizard } from '../courier/CourierWizard';
 import { normalizarRegla, paraApi } from '../courier/DeliveryPanel';
-import CouriersSection from './CouriersSection';
+import { createCourier, getDeliveryZonas, replaceDeliveryZonas, updateCourier } from '../../services/courierApi';
 import useSesion from '../../hooks/useSesion';
+import '../courier/courier.css';
 
-const detalleDelServidor = (err) => (err?.response?.data?.error ? ` (${err.response.data.error})` : '');
+const resumenCouriers = (data) => {
+  const couriers = data?.couriers || [];
+  const enabledCouriers = couriers.filter((c) => c.habilitado);
+  return {
+    enabledCouriers,
+    enabledCount: enabledCouriers.length,
+    totalAvailable: couriers.length,
+    totalCities: enabledCouriers.reduce((acc, c) => acc + (Number(c.ciudades_cubiertas) || 0), 0),
+    pendingCount: enabledCouriers.filter((c) => !c.ciudades_cubiertas).length,
+  };
+};
 
 export default function DepositosPage() {
   const navigate = useNavigate();
@@ -28,22 +39,49 @@ export default function DepositosPage() {
   const [filtros, setFiltros] = useState({});
   const limit = 10;
 
-  // Alta: asistente Depósito → Courier → Ciudades → Resumen.
-  const [altaOpen, setAltaOpen] = useState(false);
-  // Lo que el asistente ya llegó a crear. El alta son varios guardados
-  // encadenados; si uno falla y el usuario reintenta, no hay que duplicar el
-  // depósito ni el courier que sí se guardaron.
-  const altaRef = useRef({ depositoId: null, courierId: null });
-
-  // Edición: un depósito existente se corrige en el modal de siempre.
+  // Alta y edición del depósito. Los couriers se asignan después, desde el detalle.
   const [formOpen, setFormOpen] = useState(false);
   const [formValues, setFormValues] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
 
   const [depositoCouriers, setDepositoCouriers] = useState(null);
-  const [recargarCouriers, setRecargarCouriers] = useState(0);
+  const [depositoSeleccionado, setDepositoSeleccionado] = useState(null);
+  const [courierSummaries, setCourierSummaries] = useState({});
+  const [summariesLoading, setSummariesLoading] = useState(false);
+  const [courierWizard, setCourierWizard] = useState({ open: false, deposito: null, courier: null, reglas: [] });
+  const [fulfillmentOpen, setFulfillmentOpen] = useState(true);
+  const resumenesReqRef = useRef(0);
 
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', desc: '', action: null, danger: false });
+
+  const fetchResumenesCouriers = async (lista) => {
+    const requestId = ++resumenesReqRef.current;
+    if (!lista?.length) {
+      setCourierSummaries({});
+      setSummariesLoading(false);
+      return;
+    }
+
+    setSummariesLoading(true);
+    const resultados = await Promise.allSettled(
+      lista.map(async (dep) => {
+        const data = await depositoService.listarCouriersDeposito(dep.id);
+        return [dep.id, resumenCouriers(data)];
+      }),
+    );
+
+    if (requestId !== resumenesReqRef.current) return;
+
+    const siguiente = {};
+    resultados.forEach((resultado) => {
+      if (resultado.status === 'fulfilled') {
+        const [id, resumen] = resultado.value;
+        siguiente[id] = resumen;
+      }
+    });
+    setCourierSummaries(siguiente);
+    setSummariesLoading(false);
+  };
 
   const fetchDepositos = async (currentPage = page, currentFiltros = filtros) => {
     try {
@@ -53,8 +91,14 @@ export default function DepositosPage() {
         limit,
         ...currentFiltros
       });
-      setDepositos(res.data || []);
+      const lista = res.data || [];
+      setDepositos(lista);
       setTotal(res.total || 0);
+      setDepositoSeleccionado((seleccionado) => {
+        if (!seleccionado) return null;
+        return lista.find((dep) => dep.id === seleccionado.id) || null;
+      });
+      fetchResumenesCouriers(lista);
     } catch (err) {
       console.error('Error cargando depósitos:', err);
     } finally {
@@ -72,8 +116,8 @@ export default function DepositosPage() {
   };
 
   const handleOpenNuevo = () => {
-    altaRef.current = { depositoId: null, courierId: null };
-    setAltaOpen(true);
+    setFormValues(null);
+    setFormOpen(true);
   };
 
   const handleOpenEditar = (deposito) => {
@@ -81,62 +125,53 @@ export default function DepositosPage() {
     setFormOpen(true);
   };
 
-  const refrescarTrasAlta = () => {
-    setPage(1);
-    fetchDepositos(1);
-    setRecargarCouriers(k => k + 1);
+  const handleCrearCourierParaDeposito = (deposito) => {
+    setCourierWizard({ open: true, deposito, courier: null, reglas: [] });
   };
 
-  // Depósito → courier → ciudades → vínculo, en ese orden. Cada paso que sale
-  // bien queda anotado en altaRef para que un reintento retome desde ahí.
-  const handleGuardarAlta = async ({ deposito, courier, reglas }) => {
-    const alta = altaRef.current;
-
+  const handleConfigurarCourier = async (courier, deposito = depositoSeleccionado) => {
     try {
-      if (alta.depositoId) {
-        await depositoService.actualizarDeposito(alta.depositoId, deposito);
-      } else {
-        const creado = await depositoService.crearDeposito(deposito);
-        alta.depositoId = creado.id;
-      }
+      const zonas = await getDeliveryZonas();
+      const reglas = (zonas || []).filter((zona) => String(zona.courier_id) === String(courier.id));
+      setCourierWizard({ open: true, deposito, courier, reglas });
     } catch (err) {
-      throw Object.assign(err, {
-        mensajeUsuario: `No pudimos guardar el depósito. Intentá de nuevo.${detalleDelServidor(err)}`,
-      });
+      console.error('Error cargando tarifas del courier:', err);
+      alert('No pudimos cargar la configuración del courier.');
     }
-
-    if (courier) {
-      try {
-        if (alta.courierId) {
-          await updateCourier(alta.courierId, courier);
-        } else {
-          const creado = await createCourier(courier);
-          alta.courierId = creado.id;
-        }
-        const propias = reglas.map(r => normalizarRegla({ ...r, courier_id: String(alta.courierId) }));
-        await replaceDeliveryZonas(paraApi(propias), [Number(alta.courierId)]);
-        // Solo un courier activo se puede habilitar en un depósito.
-        if (courier.activo !== false) {
-          await depositoService.guardarCouriersDeposito(alta.depositoId, [alta.courierId]);
-        }
-      } catch (err) {
-        refrescarTrasAlta();
-        throw Object.assign(err, {
-          mensajeUsuario: `El depósito ya quedó guardado, pero no pudimos guardar el courier. Tocá Guardar para reintentar solo esa parte.${detalleDelServidor(err)}`,
-        });
-      }
-    }
-
-    setAltaOpen(false);
-    refrescarTrasAlta();
   };
 
-  const handleGuardarEdicion = async (form) => {
+  const handleGuardarCourier = async ({ courier, reglas }) => {
+    if (!courier) return;
+
+    const guardado = courier.id
+      ? await updateCourier(courier.id, courier)
+      : await createCourier(courier);
+    const courierId = guardado.id || courier.id;
+    const reglasCourier = reglas.map((regla) => normalizarRegla({ ...regla, courier_id: courierId }));
+
+    await replaceDeliveryZonas(paraApi(reglasCourier), [Number(courierId)]);
+
+    if (!courier.id && courierWizard.deposito?.id) {
+      const actuales = courierSummaries[courierWizard.deposito.id]?.enabledCouriers || [];
+      const ids = [...new Set([...actuales.map((c) => Number(c.id)), Number(courierId)].filter(Boolean))];
+      await depositoService.guardarCouriersDeposito(courierWizard.deposito.id, ids);
+    }
+
+    setCourierWizard({ open: false, deposito: null, courier: null, reglas: [] });
+    await fetchResumenesCouriers(depositos);
+  };
+
+  const handleGuardarDeposito = async (form) => {
     try {
       setFormLoading(true);
-      await depositoService.actualizarDeposito(form.id, form);
+      const guardado = form.id
+        ? await depositoService.actualizarDeposito(form.id, form)
+        : await depositoService.crearDeposito(form);
       setFormOpen(false);
-      fetchDepositos();
+      setFormValues(null);
+      setDepositoSeleccionado(guardado);
+      if (!form.id) setPage(1);
+      await fetchDepositos(form.id ? page : 1);
     } catch (err) {
       alert(err.response?.data?.error || 'Ocurrió un error al guardar el depósito.');
     } finally {
@@ -188,6 +223,13 @@ export default function DepositosPage() {
 
   const totalPages = Math.ceil(total / limit) || 1;
   const tieneFiltros = Object.keys(filtros).length > 0;
+  const depositosActivos = depositos.filter((dep) => dep.activo).length;
+  const depositosConCouriers = depositos.filter((dep) => (courierSummaries[dep.id]?.enabledCount || 0) > 0).length;
+  const depositosPorConfigurar = depositos.filter((dep) => {
+    const resumen = courierSummaries[dep.id];
+    return dep.activo && resumen && (resumen.enabledCount === 0 || resumen.pendingCount > 0);
+  }).length;
+  const resumenSeleccionado = depositoSeleccionado ? courierSummaries[depositoSeleccionado.id] : null;
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
@@ -202,11 +244,11 @@ export default function DepositosPage() {
           </button>
         </div>
       )}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="m-0 text-2xl font-bold text-fg">Depósitos</h1>
           <p className="m-0 mt-1 text-sm text-fg-muted">
-            Desde dónde despachás y qué couriers entregan tus pedidos.
+            Administrá los lugares desde donde despachás y sus couriers asociados.
           </p>
         </div>
         <button
@@ -219,9 +261,49 @@ export default function DepositosPage() {
         </button>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm shadow-sm">
+        <span className="font-semibold text-fg">{total} depósitos</span>
+        <span className="text-fg-muted"><strong className="font-semibold text-fg">{depositosActivos}</strong> activos</span>
+        <span className="text-fg-muted">
+          <strong className={`font-semibold ${depositosPorConfigurar > 0 ? 'text-warning' : 'text-fg'}`}>
+            {summariesLoading ? '...' : depositosPorConfigurar}
+          </strong>{' '}
+          por configurar
+        </span>
+        <span className="text-fg-muted"><strong className="font-semibold text-fg">{depositosConCouriers}</strong> con couriers</span>
+      </div>
+
       {!esAdmin && (
-        <div className="mb-6">
-          <FulfillmentCard />
+        <div className="mb-6 rounded-lg border border-border bg-surface">
+          <div className="flex w-full flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={() => setFulfillmentOpen((open) => !open)}
+              aria-expanded={fulfillmentOpen}
+              className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md text-left text-fg hover:text-primary"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">Entrega de pedidos</span>
+                <span className="block text-[13px] text-fg-muted">Elegí si despachás con tus depósitos/couriers o con Gesicom-RAHA.</span>
+              </span>
+              <ChevronDown className={`flex-shrink-0 text-fg-muted transition-transform ${fulfillmentOpen ? 'rotate-180' : ''}`} size={18} />
+            </button>
+            <span className="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => navigate('/mi-tienda/couriers')}
+                className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-[13px] font-semibold text-fg hover:bg-surface-2"
+              >
+                <Truck size={14} />
+                Catálogo de couriers
+              </button>
+            </span>
+          </div>
+          {fulfillmentOpen && (
+            <div className="border-t border-border p-4">
+              <FulfillmentCard />
+            </div>
+          )}
         </div>
       )}
 
@@ -238,47 +320,51 @@ export default function DepositosPage() {
 
         {depositos.length > 0 ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              {depositos.map(dep => (
-                <DepositoCard
-                  key={dep.id}
-                  deposito={dep}
-                  onEdit={handleOpenEditar}
-                  onCouriers={setDepositoCouriers}
-                  onToggleEstado={handleToggleEstado}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-
-            {total > limit && (
-              <div className="flex items-center justify-between border-t border-border pt-4 mt-8">
-                <span className="text-sm text-fg-muted">
-                  Mostrando {(page - 1) * limit + 1} a {Math.min(page * limit, total)} de {total} depósitos
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={page === 1}
-                    onClick={() => setPage(p => p - 1)}
-                    className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg disabled:opacity-30 disabled:pointer-events-none"
-                  >
-                    Anterior
-                  </button>
-                  <span className="text-sm font-medium text-fg px-2">
-                    {page} / {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={page === totalPages}
-                    onClick={() => setPage(p => p + 1)}
-                    className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg disabled:opacity-30 disabled:pointer-events-none"
-                  >
-                    Siguiente
-                  </button>
-                </div>
+              <div className="grid grid-cols-1 gap-3">
+                {depositos.map(dep => (
+                  <DepositoCard
+                    key={dep.id}
+                    deposito={dep}
+                    courierSummary={courierSummaries[dep.id]}
+                    summaryLoading={summariesLoading && !courierSummaries[dep.id]}
+                    selected={depositoSeleccionado?.id === dep.id}
+                    onManage={setDepositoSeleccionado}
+                    onEdit={handleOpenEditar}
+                    onCouriers={setDepositoCouriers}
+                    onToggleEstado={handleToggleEstado}
+                    onDelete={handleDelete}
+                  />
+                ))}
               </div>
-            )}
+
+              {total > limit && (
+                <div className="flex items-center justify-between border-t border-border pt-4 mt-8">
+                  <span className="text-sm text-fg-muted">
+                    Mostrando {(page - 1) * limit + 1} a {Math.min(page * limit, total)} de {total} depósitos
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={page === 1}
+                      onClick={() => setPage(p => p - 1)}
+                      className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      Anterior
+                    </button>
+                    <span className="text-sm font-medium text-fg px-2">
+                      {page} / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={page === totalPages}
+                      onClick={() => setPage(p => p + 1)}
+                      className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              )}
           </div>
         ) : !loading && (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface-50 py-20 text-center px-4">
@@ -302,7 +388,7 @@ export default function DepositosPage() {
                 <Building2 size={48} className="mb-4 text-fg-muted opacity-50" />
                 <h3 className="m-0 mb-1 text-lg font-medium text-fg">Todavía no tenés depósitos registrados</h3>
                 <p className="m-0 mb-6 text-sm text-fg-muted max-w-sm leading-relaxed">
-                  Agregá un depósito y, en el mismo asistente, el courier que retira de ahí y las ciudades que cubre.
+                  Agregá primero el lugar desde donde despachás. Después vas a poder asignarle uno o varios couriers.
                 </p>
                 <button
                   type="button"
@@ -318,25 +404,21 @@ export default function DepositosPage() {
         )}
       </div>
 
-      <div className="mt-10">
-        <CouriersSection
-          esAdmin={esAdmin}
-          recargarKey={recargarCouriers}
-        />
-      </div>
-
-      <CourierWizard
-        open={altaOpen}
-        conDeposito
-        esAdmin={esAdmin}
-        onClose={() => setAltaOpen(false)}
-        onGuardar={handleGuardarAlta}
+      <DepositoDetailPanel
+        deposito={depositoSeleccionado}
+        courierSummary={resumenSeleccionado}
+        summaryLoading={summariesLoading && !resumenSeleccionado}
+        onClose={() => setDepositoSeleccionado(null)}
+        onEdit={handleOpenEditar}
+        onAssignCouriers={setDepositoCouriers}
+        onCreateCourier={handleCrearCourierParaDeposito}
+        onConfigureCourier={handleConfigurarCourier}
       />
 
       {formOpen && (
         <DepositoForm
           initialValues={formValues}
-          onSubmit={handleGuardarEdicion}
+          onSubmit={handleGuardarDeposito}
           onClose={() => setFormOpen(false)}
           loading={formLoading}
         />
@@ -346,6 +428,20 @@ export default function DepositosPage() {
         deposito={depositoCouriers}
         open={Boolean(depositoCouriers)}
         onClose={() => setDepositoCouriers(null)}
+        onGuardado={() => {
+          setDepositoCouriers(null);
+          fetchResumenesCouriers(depositos);
+        }}
+      />
+
+      <CourierWizard
+        open={courierWizard.open}
+        courier={courierWizard.courier}
+        reglas={courierWizard.reglas}
+        pasoInicial={courierWizard.courier ? 'ciudades' : 'courier'}
+        esAdmin={esAdmin}
+        onClose={() => setCourierWizard({ open: false, deposito: null, courier: null, reglas: [] })}
+        onGuardar={handleGuardarCourier}
       />
 
       <ConfirmDialog

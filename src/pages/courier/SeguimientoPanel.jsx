@@ -5,6 +5,7 @@ import { seguimientoService } from "../../services/seguimiento.service";
 import { formatEspera } from "./variablesWhatsapp";
 import { numeroPedidoVisible } from "./pedidoNumero";
 import { formatGs } from "../../lib/courier";
+import { FLOW_TYPES } from "./orderLifecycle";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -52,6 +53,10 @@ const EtiquetaOption = (props) => {
   );
 };
 
+function nombreVisibleDelFlujo(flujo) {
+  return FLOW_TYPES[flujo?.tipo]?.label || flujo?.nombre || "Flujo";
+}
+
 /** "hoy 18:42" si es de hoy, "28/09 18:42" si no. */
 function formatMomento(iso) {
   if (!iso) return "";
@@ -91,9 +96,14 @@ function contextoDelPedido(envio) {
  * @param {number|null} faseSugeridaId  fase que toca mandar ahora (la marca y abre su vista previa).
  * @param {object|null} cola            { posicion, total, onSiguiente, onAnterior } cuando el panel se
  *                                      recorre como cola de trabajo.
+ * @param {function} onConfirmarPedido  abre el pedido para confirmarlo. Se ofrece mientras está por
+ *                                      confirmar, en la fase que sea: al confirmarse, el pedido sale
+ *                                      solo del flujo de confirmación.
+ * @param {function} onDespacharPedido  marca el pedido como Despachado cuando se completa la fase
+ *                                      operativa "Pedido despachado".
  * @param {object} servicio             solo para pruebas.
  */
-export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
+export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConfirmarPedido, onDespacharPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
   const [flujos, setFlujos] = useState([]);
   const [flujoId, setFlujoId] = useState(null);
   const [configuracion, setConfiguracion] = useState(null);
@@ -174,6 +184,11 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
 
   const flujo = flujos.find(f => f.id === flujoId) || null;
   const fases = flujo?.fases || [];
+  const faseMarcaDespacho = (fase) => (
+    envio?.estado === "Preparado"
+    && flujo?.tipo === "SEGUIMIENTO_ENVIO"
+    && (Number(fase?.orden) === 2 || /despach/i.test(String(fase?.nombre || "")))
+  );
 
   // La fase en la que está el pedido: la que pidió quien abrió el panel
   // mientras no esté completada; si no, la siguiente a la más avanzada que
@@ -224,6 +239,14 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
       // acá solo se muestra lo que quedó (se puede cambiar o cancelar abajo).
       setRecordatorio(prev => res?.recordatorio || (prev && cumplidos.includes(prev.id) ? null : prev));
       if (res?.siguiente_fase) setFaseVista(res.siguiente_fase.id);
+      if (faseMarcaDespacho(fase) && onDespacharPedido) {
+        try {
+          await onDespacharPedido(envio);
+        } catch (err) {
+          console.error(err);
+          alert(err.response?.data?.error || "El mensaje quedó marcado como enviado, pero no se pudo cambiar el pedido a Despachado");
+        }
+      }
       await cargarFlujos(envio.id);
       if (onRefreshPedido) onRefreshPedido();
       // En la cola de trabajo, marcar como enviado cierra este pedido.
@@ -351,6 +374,30 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
   if (!open || !envio) return null;
 
   const { cliente, productos } = contextoDelPedido(envio);
+  const porConfirmar = ["Pendiente", "EnSeguimiento"].includes(envio.estado);
+  const opcionesFlujo = flujos.map(f => ({ value: f.id, label: nombreVisibleDelFlujo(f) }));
+  const confirmarPedidoCta = porConfirmar && onConfirmarPedido ? (
+    <div style={{
+      marginTop: "14px",
+      padding: "12px",
+      borderRadius: "8px",
+      background: "color-mix(in srgb, var(--color-success) 9%, transparent)",
+      border: "1px solid color-mix(in srgb, var(--color-success) 32%, transparent)"
+    }}>
+      <button
+        type="button"
+        className="btn-secondary"
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", background: "var(--color-success)", borderColor: "var(--color-success)", color: "#fff", fontWeight: 700 }}
+        onClick={() => onConfirmarPedido(envio)}
+        disabled={!!faseEnviando}
+      >
+        <CheckCircle2 size={15} /> Confirmar pedido
+      </button>
+      <p style={{ fontSize: "0.72rem", color: "var(--color-fg-muted)", margin: "7px 0 0 0", lineHeight: 1.35 }}>
+        Si el cliente ya confirmó, completás los datos del pedido y este seguimiento se cierra.
+      </p>
+    </div>
+  ) : null;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
@@ -441,15 +488,17 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, faseSu
                     <Select
                       styles={selectStyles}
                       placeholder="Seleccionar flujo..."
-                      value={flujos.map(f => ({ value: f.id, label: f.nombre })).find(o => o.value === flujoId) || null}
+                      value={opcionesFlujo.find(o => o.value === flujoId) || null}
                       onChange={opt => setFlujoId(opt ? opt.value : null)}
-                      options={flujos.map(f => ({ value: f.id, label: f.nombre }))}
+                      options={opcionesFlujo}
                       isDisabled={!!faseEnviando}
                       isSearchable={false}
                     />
 
                     <label style={{ display: "block", fontSize: "0.8rem", margin: "12px 0 4px", color: "var(--color-fg-subtle)" }}>Teléfono</label>
                     <input type="text" className="form-input" style={{ width: "100%" }} value={telefonoPersonalizado} onChange={e => setTelefonoPersonalizado(e.target.value)} disabled={!!faseEnviando} />
+
+                    {confirmarPedidoCta}
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
                       {fases.map(fase => (

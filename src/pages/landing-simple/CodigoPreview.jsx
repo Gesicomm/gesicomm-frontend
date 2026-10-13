@@ -23,7 +23,7 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * (contacto/footer, order bump de la landing — ver seccionesSistemaCodigo.js
  * y el order bump del runtime); `onTema` recibe los colores reales del carrito.
  */
-export default function CodigoPreview({ codigo, titulo, datos, extras = null, typography = null, previewDevice = null, onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito, resaltar, className = '', style }) {
+export default function CodigoPreview({ codigo, titulo, datos, extras = null, typography = null, previewDevice = null, onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito, onBloque, resaltar, className = '', style }) {
   const ref = useRef(null);
 
   // resaltar = { lista, n }: pide al runtime que muestre y marque una zona.
@@ -61,7 +61,7 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
   // Refs para los handlers: se registran una sola vez y siempre llaman a
   // la versión más nueva, sin re-suscribir el listener en cada render.
   const handlers = useRef({});
-  handlers.current = { onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito };
+  handlers.current = { onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito, onBloque };
 
   useEffect(() => {
     function alMensaje(e) {
@@ -78,6 +78,8 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
       if (tipo === 'gesicomm:carrito') h.onCarrito?.(e.data);
       if (tipo === 'gesicomm:navegar') h.onNavegar?.(e.data);
       if (tipo === 'gesicomm:evento') h.onEvento?.(e.data);
+      // Clic sobre un bloque de la ficha en la vista previa del editor.
+      if (tipo === 'gesicomm:bloque') h.onBloque?.(e.data.clave);
       // Colores reales de la landing para el carrito (ver el puente de tema
       // en construirDocumentoCodigo.js).
       if (tipo === 'gesicomm:tema') h.onTema?.(e.data);

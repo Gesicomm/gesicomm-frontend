@@ -1009,6 +1009,62 @@ button.order-alert-chip:focus-visible {
   color: var(--color-warning);
 }
 
+.np-stock-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 52%, var(--np-soft-border));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-danger) 13%, var(--np-paper));
+  color: var(--color-fg);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.np-stock-alert svg {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+  color: var(--color-danger);
+}
+
+.np-stock-alert strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--color-danger);
+}
+
+.np-stock-alert p {
+  margin: 0.15rem 0;
+}
+
+.np-stock-alert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.np-stock-alert-actions span {
+  color: var(--color-fg-muted);
+}
+
+.np-stock-alert-actions button {
+  border: 1px solid color-mix(in srgb, var(--color-danger) 36%, var(--np-soft-border));
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  color: var(--color-danger);
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 0.32rem 0.55rem;
+  cursor: pointer;
+}
+
+.np-stock-alert-actions button:hover {
+  background: color-mix(in srgb, var(--color-danger) 18%, transparent);
+}
+
 .np-full-width {
   grid-column: 1 / -1;
 }
@@ -3064,7 +3120,7 @@ button.order-alert-chip:focus-visible {
 
 .pt-cycle-summary {
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
   gap: 0.5rem;
 }
 
@@ -3198,6 +3254,58 @@ button.order-alert-chip:focus-visible {
   font-size: 0.7rem;
   font-weight: 750;
   white-space: nowrap;
+}
+
+.pt-seg__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.38rem;
+  padding: 0.1rem 0.42rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pt-seg__estado--success {
+  border-color: color-mix(in srgb, var(--color-success) 34%, transparent);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success);
+}
+
+.pt-seg__estado--warning {
+  border-color: color-mix(in srgb, var(--color-warning) 34%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+  color: var(--color-warning);
+}
+
+.pt-seg__estado--danger {
+  border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  color: var(--color-danger);
+}
+
+.pt-seg__estado--neutral {
+  border-color: color-mix(in srgb, var(--color-fg) 10%, transparent);
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  color: var(--color-fg-muted);
+}
+
+.pt-seg__estado.is-pulsing {
+  animation: pt-seg-expired-pulse 1.35s ease-out infinite;
+}
+
+@keyframes pt-seg-expired-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 36%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-danger) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 0%, transparent);
+  }
 }
 
 .pt-seg__cuando--danger {

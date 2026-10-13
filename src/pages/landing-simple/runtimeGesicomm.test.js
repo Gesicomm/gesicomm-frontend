@@ -1154,13 +1154,15 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
       vista: 'inicio',
       venta: { inicio: { menu_links: [{ texto: 'Ofertas', destino: '#ofertas' }] } },
     });
-    const link = document.querySelector('#nav-links a');
-    expect(link.textContent).toBe('Ofertas');
+    const links = [...document.querySelectorAll('#nav-links a')];
+    // "Inicio" es lo único que se garantiza; lo demás es lo que cargó el comercio.
+    expect(links.map(l => l.textContent)).toEqual(['Inicio', 'Ofertas']);
+    const link = links[1];
     expect(link.getAttribute('href')).toBe('#ofertas');
     expect(link.className).toBe('');
   });
 
-  it('el menú principal marca Productos en catálogo y completa navegación fuera de Inicio', () => {
+  it('el menú principal marca Productos en catálogo y no agrega links que el comercio no cargó', () => {
     const plantilla = {
       html: '<main class="lv-shop-page"></main><nav id="nav-links"></nav>',
       css: '',
@@ -1181,7 +1183,8 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     });
 
     const links = [...document.querySelectorAll('#nav-links a')];
-    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos', 'Descuentos', 'Nosotros', 'Contacto']);
+    // "Colecciones" es una sección del Inicio: desde el catálogo no lleva a ningún lado.
+    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos']);
     expect(links.find(link => link.textContent === 'Productos').className).toBe('active');
     expect(links.find(link => link.textContent === 'Inicio').className).toBe('');
   });
@@ -1206,8 +1209,42 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     });
 
     const links = [...document.querySelectorAll('#nav-links a')];
-    expect(links.map(link => link.textContent)).toEqual(['Inicio', 'Productos', 'Descuentos', 'Nosotros', 'Contacto']);
+    expect(links.map(link => link.textContent)).toEqual(['Inicio']);
+    expect(links[0].hasAttribute('data-gesicomm-inicio')).toBe(true);
     expect(document.querySelector('#nav-links').style.display).toBe('');
+  });
+
+  it('el menú es el mismo en todas las vistas: solo lo que cargó el comercio', () => {
+    // Caso Llevalofacil: menú de dos links; la ficha le sumaba Descuentos,
+    // Nosotros y Contacto, que el comercio nunca puso.
+    const plantilla = {
+      html: '<header class="commerce-header"><nav><div id="nav-links"><a href="/">Inicio</a><a href="/catalogo">Productos</a><a href="/catalogo?etiqueta=Oferta">Descuentos</a><a href="/#marca">Nosotros</a><a href="/contacto">Contacto</a></div></nav></header>',
+      css: '',
+      js: '',
+    };
+    const menu = [
+      { texto: 'Inicio', destino: '#inicio', visible: true },
+      { texto: 'Productos', destino: '/catalogo', visible: true },
+      { texto: 'Descuentos', destino: '/catalogo?etiqueta=Oferta', visible: false },
+    ];
+    for (const vista of ['inicio', 'catalogo', 'producto', 'checkout']) {
+      const { document } = montar(plantilla, { ...datos, vista, venta: { inicio: { menu_links: menu } } });
+      expect([...document.querySelectorAll('#nav-links a')].map(a => a.textContent)).toEqual(['Inicio', 'Productos']);
+    }
+  });
+
+  it('sin menú cargado el header de la tienda muestra solo Inicio', () => {
+    const plantilla = {
+      html: '<header class="commerce-header"><nav><div id="nav-links"><a href="/">Inicio</a><a href="/catalogo">Productos</a><a href="/catalogo?etiqueta=Oferta">Descuentos</a><a href="/#marca">Nosotros</a><a href="/contacto">Contacto</a></div></nav></header><nav data-gesicomm-menu-principal><a href="/mi-link">Mi link</a></nav>',
+      css: '',
+      js: '',
+    };
+    for (const inicio of [{}, { menu_links: [] }]) {
+      const { document } = montar(plantilla, { ...datos, vista: 'producto', venta: { inicio } });
+      expect([...document.querySelectorAll('#nav-links a')].map(a => a.textContent)).toEqual(['Inicio']);
+      // Un <nav> escrito a mano fuera del header de la tienda no se toca.
+      expect(document.querySelector('[data-gesicomm-menu-principal] a').textContent).toBe('Mi link');
+    }
   });
 
   it('el buscador del header abre catálogo con la búsqueda aplicada cuando no hay grilla en la vista', () => {
@@ -1590,23 +1627,34 @@ describe('runtime — order bump en la ficha', () => {
   });
 
   it('sin PagoPar conectado, la tienda publicada no ofrece el botón de pago anticipado', () => {
-    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, pago_anticipado: { disponible: false, editor: false } });
+    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, pago_anticipado: { disponible: false } });
     const boton = document.querySelector('.buy-row [data-gesicomm-comprar]');
     expect(boton.style.display).toBe('none');
-    // El aviso es para el comercio: al cliente no le llega.
-    expect(boton.hasAttribute('title')).toBe(false);
     click('.buy-row [data-gesicomm-comprar]');
     expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout')).toEqual([]);
   });
 
-  it('sin PagoPar conectado, el editor deja el botón a la vista pero apagado, con el motivo', () => {
-    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, pago_anticipado: { disponible: false, editor: true } });
+  it('sin PagoPar conectado, la vista previa del editor tampoco muestra el botón: se ve igual que la publicada', () => {
+    const fryer = { id: 'air', tipo: 'producto', nombre: 'Air Fryer', slug: 'air', precio_efectivo: 145735, imagen: 'https://cdn.test/air.jpg' };
+    const vista = datosRuntimePreview({ productos: [fryer], venta: {}, vista: 'producto', productoId: 'air', pagoparConectado: false });
+    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, vista);
     const boton = document.querySelector('.buy-row [data-gesicomm-comprar]');
-    expect(boton.style.display).not.toBe('none');
-    expect(boton.getAttribute('aria-disabled')).toBe('true');
-    expect(boton.getAttribute('title')).toMatch(/conectá PagoPar en Mi tienda → Pagos/);
+    expect(boton.style.display).toBe('none');
+    expect(boton.hasAttribute('title')).toBe(false);
     click('.buy-row [data-gesicomm-comprar]');
     expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout')).toEqual([]);
+    // El contra entrega sube a la fila de la cantidad: no queda el selector solo arriba.
+    const fila = document.querySelector('.buy-row');
+    const contraEntrega = fila.querySelector('[data-gesicomm-accion-pago="checkout"]');
+    expect(contraEntrega.textContent).toMatch(/Pago contra entrega/);
+    expect(fila.querySelector('[data-gesicomm-cantidad-input]').nextElementSibling).toBe(contraEntrega);
+    expect(document.querySelectorAll('[data-gesicomm-accion-pago="checkout"]')).toHaveLength(1);
+    fila.querySelector('[data-gesicomm-cantidad-input]').value = '3';
+    contraEntrega.dispatchEvent(new fila.ownerDocument.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({ producto: 'air', cantidad: 3, payment_method: 'efectivo' });
+    // Con PagoPar conectado (o todavía cargando) el botón sigue ahí.
+    const conPagopar = montar(PLANTILLA_PRODUCTO, datosRuntimePreview({ productos: [fryer], venta: {}, vista: 'producto', productoId: 'air', pagoparConectado: true }));
+    expect(conPagopar.document.querySelector('.buy-row [data-gesicomm-comprar]').style.display).not.toBe('none');
   });
 });
 
@@ -1636,11 +1684,9 @@ describe('pago anticipado en el checkout propio', () => {
     dom.window.close();
   });
 
-  it('sin PagoPar el editor la muestra apagada con el motivo', () => {
+  it('sin PagoPar la vista previa del panel también la saca', () => {
     const { document, dom } = montarCheckout(undefined, { pagoparConectado: false });
-    const opcion = radio(document, 'pagopar').closest('label');
-    expect(opcion.style.display).not.toBe('none');
-    expect(opcion.getAttribute('title')).toMatch(/conectá PagoPar en Mi tienda → Pagos/);
+    expect(radio(document, 'pagopar').closest('label').style.display).toBe('none');
     expect(radio(document, 'pagopar').disabled).toBe(true);
     expect(radio(document, 'contra_entrega').checked).toBe(true);
     dom.window.close();

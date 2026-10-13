@@ -1,7 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-import RahaConexion from './RahaConexion';
+import RahaConexion, { semaforoRaha } from './RahaConexion';
 import { rahaService } from '../../services/rahaService';
 vi.mock('../../services/rahaService', () => ({ rahaService: { obtener: vi.fn(), guardar: vi.fn(), enviar: vi.fn(), subir: vi.fn(), quitar: vi.fn(), documento: vi.fn() } }));
 const base = { id: 1, estado: 'borrador', version: 0, datos: {}, documentos: [], historial: [] };
@@ -39,5 +39,13 @@ describe('Raha application', () => {
     fireEvent.change(await screen.findByLabelText('Adjuntar Constancia de RUC'), { target: { files: [new File(['<svg/>'], 'ruc.svg', { type: 'image/svg+xml' })] } });
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('hasta 8 MB'));
     expect(rahaService.subir).not.toHaveBeenCalled();
+  });
+  it('correctly maps traffic light semaphore colors to application lifecycle', () => {
+    expect(semaforoRaha('borrador').color).toBe('rojo');
+    expect(semaforoRaha('observada').color).toBe('rojo');
+    expect(semaforoRaha('rechazada').color).toBe('rojo');
+    expect(semaforoRaha('enviada_raha').color).toBe('amarillo');
+    expect(semaforoRaha('en_revision').color).toBe('amarillo');
+    expect(semaforoRaha('aprobada').color).toBe('verde');
   });
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import DepositosPage from './DepositosPage';
 import { depositoService } from '../../services/deposito.service';
 import * as courierApi from '../../services/courierApi';
@@ -49,10 +49,10 @@ beforeEach(() => {
   courierApi.replaceDeliveryZonas.mockResolvedValue([]);
 });
 
-async function abrirAsistente() {
+async function abrirFormularioDeposito() {
   render(<DepositosPage />);
   fireEvent.click(await screen.findByRole('button', { name: /Agregar depósito/ }));
-  expect(await screen.findByText('Datos del depósito')).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Nuevo depósito' })).toBeInTheDocument();
 }
 
 async function completarDeposito() {
@@ -60,115 +60,77 @@ async function completarDeposito() {
   fireEvent.change(screen.getByPlaceholderText('Calle, número, barrio'), { target: { value: 'Av. Test 123' } });
   // Ciudad: el segundo combo (el primero es departamento). Se escribe y se
   // confirma la opción del catálogo, que además completa el departamento.
-  const ciudad = within(screen.getByRole('dialog')).getAllByRole('combobox')[1];
+  const ciudad = screen.getAllByRole('combobox')[2];
   await waitFor(() => expect(courierApi.getCourierGeografia).toHaveBeenCalled());
   fireEvent.change(ciudad, { target: { value: 'Luque' } });
   fireEvent.keyDown(ciudad, { key: 'Enter', code: 'Enter' });
 }
 
-describe('Depósitos: alta por pasos', () => {
-  it('ya no pide elegir entre depósito y salón', async () => {
-    await abrirAsistente();
+describe('Depósitos: alta simple', () => {
+  it('abre solo el formulario del depósito, sin pedir courier en el alta', async () => {
+    await abrirFormularioDeposito();
     expect(screen.queryByText(/Tipo de ubicación/)).toBeNull();
     expect(screen.queryByText(/Salón/)).toBeNull();
+    expect(screen.queryByText('Datos del courier')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Continuar con el courier/ })).toBeNull();
   });
 
-  it('los pasos son Depósito, Courier, Ciudades y Resumen, en ese orden', async () => {
-    await abrirAsistente();
-    const pasos = screen.getAllByRole('button', { name: /^\d/ }).map(b => b.textContent);
-    expect(pasos).toEqual(['1Depósito', '2Courier', '3Ciudades', '4Resumen']);
-  });
-
-  it('no avanza al courier si faltan los datos obligatorios del depósito', async () => {
-    await abrirAsistente();
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar con el courier' }));
+  it('no guarda si faltan los datos obligatorios del depósito', async () => {
+    await abrirFormularioDeposito();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar depósito' }));
     expect(screen.getByText('El nombre es obligatorio')).toBeInTheDocument();
     expect(screen.getByText('La ciudad es obligatoria')).toBeInTheDocument();
-    expect(screen.getByText('Datos del depósito')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Nuevo depósito' })).toBeInTheDocument();
   });
 
-  it('guarda el depósito, el courier, sus ciudades y los deja vinculados', async () => {
-    await abrirAsistente();
+  it('guarda únicamente el depósito y luego permite asignar couriers desde el detalle', async () => {
+    await abrirFormularioDeposito();
     await completarDeposito();
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar con el courier' }));
 
-    expect(await screen.findByText('Datos del courier')).toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText('Ej. Propio, TSI, PAP...'), { target: { value: 'Moto Express' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar con ciudades' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar depósito' }));
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Lambaré' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
-
-    // Resumen: el depósito y el courier, juntos.
-    expect(await screen.findByText('Revisar y guardar')).toBeInTheDocument();
-    expect(screen.getByText('Depósito Luque')).toBeInTheDocument();
-    expect(screen.getByText('Moto Express')).toBeInTheDocument();
-    expect(screen.getByText('Lambaré, Central')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar depósito y courier' }));
-
-    await waitFor(() => expect(depositoService.guardarCouriersDeposito).toHaveBeenCalledWith(50, [7]));
+    await waitFor(() => expect(depositoService.crearDeposito).toHaveBeenCalledTimes(1));
     expect(depositoService.crearDeposito).toHaveBeenCalledWith(expect.objectContaining({
       nombre: 'Depósito Luque', ciudad: 'Luque', departamento: 'Central', direccion: 'Av. Test 123', tipoUbicacion: 'DEPOSITO',
     }));
-    expect(courierApi.createCourier).toHaveBeenCalledWith(expect.objectContaining({ nombre: 'Moto Express' }));
-    const [zonas, alcance] = courierApi.replaceDeliveryZonas.mock.calls[0];
-    expect(alcance).toEqual([7]);
-    expect(zonas).toEqual([expect.objectContaining({ ciudad: 'Lambaré', departamento: 'Central', courier_id: '7' })]);
-    // El asistente se cierra y la lista se vuelve a pedir.
-    await waitFor(() => expect(screen.queryByText('Revisar y guardar')).toBeNull());
-    expect(depositoService.listarDepositos.mock.calls.length).toBeGreaterThan(1);
-  });
-
-  it('permite guardar solo el depósito cuando todavía no hay courier', async () => {
-    await abrirAsistente();
-    await completarDeposito();
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar con el courier' }));
-
-    fireEvent.click(await screen.findByLabelText(/Todavía no tengo courier/));
-    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Guardar depósito' }));
-
-    await waitFor(() => expect(depositoService.crearDeposito).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByText('Revisar y guardar')).toBeNull());
     expect(courierApi.createCourier).not.toHaveBeenCalled();
     expect(courierApi.replaceDeliveryZonas).not.toHaveBeenCalled();
     expect(depositoService.guardarCouriersDeposito).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Nuevo depósito' })).toBeNull());
+    expect(depositoService.listarDepositos.mock.calls.length).toBeGreaterThan(1);
   });
 
-  it('si falla el courier, reintentar no duplica el depósito', async () => {
-    courierApi.createCourier.mockRejectedValueOnce(new Error('caído'));
-    await abrirAsistente();
-    await completarDeposito();
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar con el courier' }));
-    fireEvent.change(await screen.findByPlaceholderText('Ej. Propio, TSI, PAP...'), { target: { value: 'Moto Express' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar con ciudades' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Lambaré' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Guardar depósito y courier' }));
+  it('si el depósito no tiene couriers disponibles, guía a crear el primer courier', async () => {
+    depositoService.listarDepositos.mockResolvedValue({
+      data: [{ id: 50, nombre: 'Depósito Luque', ciudad: 'Luque', departamento: 'Central', direccion: 'Av. Test 123', activo: true }],
+      total: 1,
+    });
+    depositoService.listarCouriersDeposito.mockResolvedValue({ couriers: [] });
 
-    expect(await screen.findByText(/El depósito ya quedó guardado/)).toBeInTheDocument();
+    render(<DepositosPage />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar depósito y courier' }));
-    await waitFor(() => expect(depositoService.guardarCouriersDeposito).toHaveBeenCalledWith(50, [7]));
-    expect(depositoService.crearDeposito).toHaveBeenCalledTimes(1);
-    expect(depositoService.actualizarDeposito).toHaveBeenCalledWith(50, expect.objectContaining({ nombre: 'Depósito Luque' }));
-    expect(courierApi.createCourier).toHaveBeenCalledTimes(2);
+    expect((await screen.findAllByText('Depósito Luque')).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Administrar/ }));
+
+    expect(await screen.findByText('Primero cargá tus couriers')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Crear courier' }));
+    expect(await screen.findByText('Nuevo courier')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Datos del courier' })).toBeInTheDocument();
   });
 });
 
-describe('Depósitos: couriers en la misma pantalla', () => {
-  it('muestra la sección Couriers con los couriers del comercio', async () => {
+describe('Depósitos: gestión de couriers', () => {
+  it('ya no incrusta el administrador global de couriers debajo del listado', async () => {
     courierApi.getCouriers.mockResolvedValue([{ id: 1, nombre: 'Propio', vehiculo: 'Moto', activo: true }]);
     courierApi.getDeliveryZonas.mockResolvedValue([
       { id: 10, departamento: 'Central', ciudad: 'Luque', courier_id: 1, tipo_pago: 'Ambos', rango_min: 1, rango_max: null, costo: 25000, tiempo_entrega_hs: 'En el día', activo: true },
     ]);
     render(<DepositosPage />);
 
-    expect(await screen.findByRole('heading', { name: /Couriers/ })).toBeInTheDocument();
-    expect(await screen.findByText('Propio')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Nuevo courier/ })).toBeInTheDocument();
-    // En Depósitos no hay pedidos cargados: no se inventa un contador de envíos.
+    expect(screen.queryByRole('heading', { name: /Couriers/ })).toBeNull();
+    expect(screen.queryByText(/Configuración avanzada de couriers/)).toBeNull();
+    expect(screen.getByRole('button', { name: /Catálogo de couriers/ })).toBeInTheDocument();
     expect(screen.queryByText(/envíos? en el rango/)).toBeNull();
   });
 });

@@ -1,8 +1,8 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import CurrencyInput from '../../components/CurrencyInput';
 import { getMediaUrl } from '../../services/api';
 import { claveItem, precioDeVenta } from './PrecioAnclaItem';
-import { contenidoFicha } from './datosRuntime';
+import { contenidoFicha, presentacionComercial } from './datosRuntime';
 import { AVISO_PAGO_ANTICIPADO } from './usePagoparConectado';
 import ImagenesProductoLanding from './ImagenesProductoLanding';
 import { GripVertical, Upload } from 'lucide-react';
@@ -57,6 +57,33 @@ export const FICHA_BLOQUES_ORDEN = [
   { clave: 'preguntas', numero: 15, titulo: 'Preguntas frecuentes' },
 ];
 const FICHA_BLOQUES_CLAVES = FICHA_BLOQUES_ORDEN.map(b => b.clave);
+// Los bloques tal como se numeran y titulan en este panel, y qué zonas de la
+// ficha (data-gesicomm-ficha-bloque) edita cada uno. Lo usa la vista previa
+// para rotular un bloque al pasarle el mouse y abrirlo acá con un clic.
+export const BLOQUES_FICHA_PANEL = [
+  { clave: 'galeria', numero: 1, titulo: 'Galería del producto', zonas: ['galeria', 'portada'] },
+  { clave: 'encabezado', numero: 2, titulo: 'Encabezado', zonas: ['encabezado'] },
+  { clave: 'nombre_comercial', numero: 3, titulo: 'Nombre comercial', zonas: ['nombre_comercial'] },
+  { clave: 'resenas_comerciales', numero: 4, titulo: 'Reseñas comerciales', zonas: ['resenas_comerciales'] },
+  { clave: 'precio', numero: 5, titulo: 'Precio y oferta', zonas: ['precio', 'badge_precio'] },
+  { clave: 'oferta', numero: 6, titulo: 'Oferta por tiempo limitado', zonas: ['oferta', 'urgencia', 'oferta_encabezado', 'oferta_nombre', 'oferta_texto', 'oferta_duracion'] },
+  { clave: 'descripcion', numero: 7, titulo: 'Descripción breve', zonas: ['descripcion'] },
+  { clave: 'beneficios', numero: 8, titulo: 'Beneficios principales', zonas: ['beneficios'] },
+  { clave: 'contacto_pago', numero: 9, titulo: 'Botones de contacto y pago', zonas: ['contacto_pago', 'compra'] },
+  { clave: 'promociones_pago', numero: 10, titulo: 'Disponibilidad y medios de pago', zonas: ['promociones_pago', 'info_compra'] },
+  { clave: 'incluye', numero: 11, titulo: 'Qué incluye tu pedido', zonas: ['incluye'] },
+  { clave: 'recomendados', numero: 12, titulo: 'Productos recomendados', zonas: ['recomendados'] },
+  { clave: 'confianza', numero: 13, titulo: 'Zona de confianza', zonas: ['confianza'] },
+  { clave: 'opiniones', numero: 14, titulo: 'Opiniones', zonas: ['opiniones'] },
+  { clave: 'preguntas', numero: 15, titulo: 'Preguntas frecuentes', zonas: ['preguntas'] },
+];
+export const ROTULOS_BLOQUES_FICHA = Object.fromEntries(
+  BLOQUES_FICHA_PANEL.flatMap(b => b.zonas.map(zona => [zona, `${b.numero} · ${b.titulo}`])),
+);
+export const bloqueDeZona = zona => BLOQUES_FICHA_PANEL.find(b => b.zonas.includes(zona))?.clave || null;
+// pedido = { clave, n }: el bloque que la vista previa pidió abrir (n cambia en
+// cada pedido). activo = el bloque que el comercio está editando ahora.
+const BloquePedidoContext = createContext({ pedido: null, activo: null, marcarActivo: () => {} });
 const FICHA_BLOQUES_ALIAS = {
   urgencia: ['oferta'],
   oferta_encabezado: ['oferta'],
@@ -114,15 +141,13 @@ const DEFAULTS_PRESENTACION = {
     { pregunta: '¿Puedo pagar contra entrega o pedir un cambio?', respuesta: 'Las opciones disponibles dependen de tu ciudad y de las políticas de la tienda. Podés consultarnos antes de comprar.' },
   ],
 };
-const valorConfigurable = (obj, campo, fallback) => (
-  Object.prototype.hasOwnProperty.call(obj || {}, campo) ? (obj[campo] || '') : fallback
-);
 
 const gs = n => `Gs ${Math.round(Number(n) || 0).toLocaleString('es-PY')}`;
 const limpiarNumero = valor => Number(String(valor ?? '').replace(/\D/g, '')) || 0;
 const normalizarCalificacion = (valor, fallback = DEFAULTS_PRESENTACION.resenas_calificacion) => {
   const crudo = String(valor ?? '').replace(',', '.').trim();
-  const n = Number(crudo);
+  // Sin dato no es un 0: Number('') da 0 y la ficha mostraba 1 estrella.
+  const n = crudo === '' ? NaN : Number(crudo);
   const base = Number.isFinite(n) ? n : Number(fallback);
   return Math.max(1, Math.min(5, Math.round((Number.isFinite(base) ? base : 5) * 10) / 10));
 };
@@ -166,10 +191,27 @@ function imagenPrincipal(item) {
 
 function BloqueFicha({ numero, titulo, resumen, abierto = false, visible = true, onVisible, bloqueClave, onMover, ordenIndice, children }) {
   const dragActivo = Boolean(bloqueClave && onMover);
+  const { pedido, activo, marcarActivo } = useContext(BloquePedidoContext);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!pedido || pedido.clave !== bloqueClave || !ref.current) return;
+    ref.current.open = true;
+    ref.current.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+    marcarActivo(bloqueClave);
+  }, [pedido?.n, pedido?.clave, bloqueClave, marcarActivo]);
+  // El bloque en el que se está trabajando queda marcado con el mismo borde
+  // que el bloque abierto del Inicio (FilaBloqueInicio), para saber de un
+  // vistazo cuál se está editando aunque haya varios abiertos.
+  const editando = !!bloqueClave && activo === bloqueClave;
   return (
     <details
+      ref={ref}
       open={abierto}
-      className="group overflow-hidden rounded-xl border border-border bg-surface"
+      data-bloque-ficha={bloqueClave}
+      data-editando={editando ? '' : undefined}
+      onFocusCapture={() => marcarActivo(bloqueClave)}
+      onClickCapture={() => marcarActivo(bloqueClave)}
+      className={`group overflow-hidden rounded-xl border bg-surface transition-shadow ${editando ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}
       style={Number.isFinite(ordenIndice) ? { order: ordenIndice } : undefined}
       onDragOver={dragActivo ? e => e.preventDefault() : undefined}
       onDrop={dragActivo ? e => {
@@ -405,6 +447,12 @@ export default function PresentacionProducto({
   // false = el comercio no conectó PagoPar: el pago anticipado se muestra
   // apagado. null = todavía no se sabe, no se bloquea nada.
   pagoparConectado = null,
+  // Lo que ESTA landing guardó para el producto (solo lo que se tocó) y la
+  // ficha tal como la resuelve la página. Sin ellas se calculan del item.
+  propio = null,
+  efectivo = null,
+  // { clave, n }: bloque que hay que abrir y llevar a la vista.
+  bloqueAbierto = null,
   inicialmenteAbierto = false,
   bloqueRecomendados = null,
   recomendadosActivo = true,
@@ -418,19 +466,32 @@ export default function PresentacionProducto({
   const titulo = item.titulo_comercial || item.nombre || 'Producto';
   const insigniasListId = `insignias-comerciales-${claveItem(item).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
   const porcentaje = useMemo(() => descuento || '', [descuento]);
-  const beneficios = Array.isArray(item.beneficios) && item.beneficios.length ? item.beneficios : DEFAULTS_PRESENTACION.beneficios;
-  const confianza = Array.isArray(item.confianza) ? item.confianza : [];
-  const botonesPago = Array.isArray(item.botones_pago) && item.botones_pago.length ? item.botones_pago : DEFAULTS_PRESENTACION.botones_pago;
-  // Lista vacía = el comercio desmarcó todo; solo sin dato se usan los ejemplos.
-  const metodosPago = Array.isArray(item.metodos_pago) ? item.metodos_pago : DEFAULTS_PRESENTACION.metodos_pago;
-  const incluyePedido = Array.isArray(item.incluye_pedido) && item.incluye_pedido.length ? item.incluye_pedido : DEFAULTS_PRESENTACION.incluye_pedido;
-  const botonesContacto = Array.isArray(item.botones_contacto) ? item.botones_contacto : DEFAULTS_PRESENTACION.botones_contacto;
-  // Sin edición propia en esta landing, opiniones y preguntas arrancan con las
-  // del producto (las mismas que muestra la ficha publicada); los ejemplos
-  // quedan solo para el producto que no tiene ninguna.
-  const delProducto = useMemo(() => contenidoFicha(item), [item]);
-  const opiniones = Array.isArray(item.opiniones) ? item.opiniones : (delProducto.opiniones.length ? delProducto.opiniones : DEFAULTS_PRESENTACION.opiniones);
-  const preguntas = Array.isArray(item.preguntas) && item.preguntas.length ? item.preguntas : (delProducto.preguntas.length ? delProducto.preguntas : DEFAULTS_PRESENTACION.preguntas);
+  // Cada campo muestra lo que SALE en la ficha. `ef` es la ficha resuelta con
+  // la misma función que la página (presentacionComercial): lo propio de esta
+  // landing, si no el texto del producto, si no el de respaldo. Antes el panel
+  // calculaba todo por su cuenta y mostraba ejemplos o campos vacíos mientras
+  // la página publicaba los beneficios, la descripción o las reseñas reales.
+  const ef = useMemo(
+    () => efectivo || { ...item, ...contenidoFicha(item), ...presentacionComercial(item, null) },
+    [efectivo, item],
+  );
+  const mio = propio || item;
+  const tiene = c => Object.prototype.hasOwnProperty.call(mio, c) && mio[c] != null;
+  // Lo escrito en esta landing tal cual (también vacío: se borró a propósito);
+  // si el campo no se tocó, el texto que resuelve la página.
+  const val = (c, respaldo = '') => (propio && tiene(c) ? mio[c] : (ef[c] ?? respaldo));
+  const listaDe = c => (propio && Array.isArray(mio[c]) ? mio[c] : (Array.isArray(ef[c]) ? ef[c] : []));
+  const beneficios = listaDe('beneficios');
+  const confianza = listaDe('confianza');
+  const botonesPago = listaDe('botones_pago');
+  const metodosPago = listaDe('metodos_pago');
+  const incluyePedido = listaDe('incluye_pedido');
+  const botonesContacto = listaDe('botones_contacto');
+  const opiniones = listaDe('opiniones');
+  const preguntas = listaDe('preguntas');
+  const encabezado = propio && tiene('insignia_principal') ? mio.insignia_principal : (ef.insignia_principal || ef.categoria || '');
+  const fraseDestacada = propio && tiene('propuesta_valor') ? mio.propuesta_valor : (ef.propuesta_valor || '');
+  const descripcionFicha = propio && tiene('mensaje_comercial') ? mio.mensaje_comercial : (ef.mensaje_comercial || ef.descripcion_ficha || ef.descripcion_larga || ef.descripcion || '');
   const bloquesGuardados = item.ficha_bloques || {};
   const bloquesFicha = { ...FICHA_BLOQUES_DEFAULT, ...bloquesGuardados };
   if (bloquesGuardados.encabezado === false) {
@@ -449,7 +510,12 @@ export default function PresentacionProducto({
     if (bloquesGuardados.promociones_pago === undefined) bloquesFicha.promociones_pago = false;
   }
   const ordenMobile = useMemo(() => normalizarOrdenMobile(item.ficha_orden_mobile), [item.ficha_orden_mobile]);
-  const ratingResenas = normalizarCalificacion(item.resenas_calificacion);
+  const ratingResenas = normalizarCalificacion(val('resenas_calificacion', DEFAULTS_PRESENTACION.resenas_calificacion));
+  const [bloqueActivo, setBloqueActivo] = useState(null);
+  const contextoBloques = useMemo(
+    () => ({ pedido: bloqueAbierto, activo: bloqueActivo, marcarActivo: setBloqueActivo }),
+    [bloqueAbierto, bloqueActivo],
+  );
   const [opinionError, setOpinionError] = useState('');
   const [opinionSubiendo, setOpinionSubiendo] = useState(null);
   const opinionInputs = useRef({});
@@ -515,16 +581,16 @@ export default function PresentacionProducto({
   }
 
   const resumenPortada = src ? 'Imagen principal y miniaturas listas' : 'Subí o pegá la imagen principal';
-  const resumenEncabezado = item.insignia_principal || 'Encabezado visible';
+  const resumenEncabezado = encabezado || 'Sin encabezado';
   const resumenNombreComercial = titulo;
-  const resumenResenas = item.resenas_texto || `${formatearCalificacion(ratingResenas)} estrellas`;
+  const resumenResenas = val('resenas_texto') || `${formatearCalificacion(ratingResenas)} estrellas`;
   const resumenPrecio = `${gs(precio)}${descuento ? ` · -${descuento}%` : ''}`;
   const resumenOfertaEncabezado = item.urgencia_kicker || DEFAULTS_PRESENTACION.urgencia_kicker;
-  const resumenOfertaNombre = item.urgencia_titulo || DEFAULTS_PRESENTACION.urgencia_titulo;
+  const resumenOfertaNombre = val('urgencia_titulo') || 'Sin nombre';
   const resumenOfertaTexto = item.urgencia_texto || DEFAULTS_PRESENTACION.urgencia_texto;
-  const resumenOfertaDuracion = `${item.urgencia_horas ?? DEFAULTS_PRESENTACION.urgencia_horas}h ${item.urgencia_minutos ?? DEFAULTS_PRESENTACION.urgencia_minutos}m ${item.urgencia_segundos ?? DEFAULTS_PRESENTACION.urgencia_segundos}s`;
+  const resumenOfertaDuracion = `${val('urgencia_horas') || DEFAULTS_PRESENTACION.urgencia_horas}h ${val('urgencia_minutos') || DEFAULTS_PRESENTACION.urgencia_minutos}m ${val('urgencia_segundos') || DEFAULTS_PRESENTACION.urgencia_segundos}s`;
   const resumenOferta = `${resumenOfertaNombre} · ${resumenOfertaDuracion}`;
-  const resumenDescripcion = item.mensaje_comercial || item.descripcion || 'Texto debajo del precio';
+  const resumenDescripcion = fraseDestacada || descripcionFicha || 'Sin descripción';
   const resumenBeneficios = beneficios.length ? `${beneficios.length} beneficio${beneficios.length === 1 ? '' : 's'}` : 'Sin beneficios cargados';
   const resumenConfianza = confianza.length ? `${confianza.length} tarjeta${confianza.length === 1 ? '' : 's'}` : 'Sin tarjetas cargadas';
   const resumenPagos = `${metodosPago.length} método${metodosPago.length === 1 ? '' : 's'}`;
@@ -534,10 +600,12 @@ export default function PresentacionProducto({
   const resumenPreguntas = preguntas.length ? `${preguntas.length} pregunta${preguntas.length === 1 ? '' : 's'}` : 'Sin preguntas cargadas';
 
   return (
+    <BloquePedidoContext.Provider value={contextoBloques}>
     <div className="mt-3 space-y-3">
       <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
         <p className="text-sm font-semibold text-fg">Editás solo la ficha pública de este producto.</p>
         <p className="mt-1 text-xs leading-relaxed text-fg-muted">Los bloques siguen el orden real de la ficha. Los números quedan fijos aunque ocultes una sección.</p>
+        <p className="mt-1 text-xs leading-relaxed text-fg-muted">Cada campo muestra el texto que sale en la ficha. Si lo borrás, ese renglón deja de mostrarse. En la vista previa, pasá el mouse por una zona para ver a qué bloque corresponde y hacé clic para abrirlo acá.</p>
       </div>
       <div className="flex flex-col gap-3">
         <BloqueFicha numero="1" titulo="Galería del producto" resumen={resumenPortada} abierto={inicialmenteAbierto} visible={visibleBloque('galeria')} onVisible={v => cambiarBloque('galeria', v)} bloqueClave="galeria" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('galeria')}>
@@ -545,18 +613,27 @@ export default function PresentacionProducto({
           <ImagenesProductoLanding item={item} onCambiar={onCambiar} onSubirImagen={onSubirImagen} />
         </BloqueFicha>
         <BloqueFicha numero="2" titulo="Encabezado" resumen={resumenEncabezado} abierto={inicialmenteAbierto} visible={visibleBloque('encabezado')} onVisible={v => cambiarBloque('encabezado', v)} bloqueClave="encabezado" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('encabezado')}>
-          <label className="block text-xs text-fg-muted">Encabezado<input className={campo} value={item.insignia_principal || ''} list={insigniasListId} maxLength={40} placeholder={DEFAULTS_PRESENTACION.insignia_principal} onChange={e => onCambiar('insignia_principal', e.target.value)} /></label>
+          <label className="block text-xs text-fg-muted">Encabezado<input className={campo} value={encabezado} list={insigniasListId} maxLength={40} placeholder="Vacío: no se muestra" onChange={e => onCambiar('insignia_principal', e.target.value)} /></label>
         </BloqueFicha>
         <BloqueFicha numero="3" titulo="Nombre comercial" resumen={resumenNombreComercial} abierto={inicialmenteAbierto} visible={visibleBloque('nombre_comercial')} onVisible={v => cambiarBloque('nombre_comercial', v)} bloqueClave="nombre_comercial" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('nombre_comercial')}>
           <label className="block text-xs text-fg-muted">Nombre comercial<input className={campo} value={item.titulo_comercial || ''} maxLength={100} placeholder={item.nombre} onChange={e => onCambiar('titulo_comercial', e.target.value)} /></label>
         </BloqueFicha>
         <BloqueFicha numero="4" titulo="Reseñas comerciales" resumen={resumenResenas} abierto={inicialmenteAbierto} visible={visibleBloque('resenas_comerciales')} onVisible={v => cambiarBloque('resenas_comerciales', v)} bloqueClave="resenas_comerciales" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('resenas_comerciales')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_150px]">
-            <label className="block text-xs text-fg-muted">Texto de reseñas<input className={campo} value={item.resenas_texto || ''} maxLength={80} placeholder={DEFAULTS_PRESENTACION.resenas_texto} onChange={e => onCambiar('resenas_texto', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted">Cantidad de estrellas<input className={campo} type="number" min="1" max="5" step="0.1" inputMode="decimal" value={item.resenas_calificacion ?? DEFAULTS_PRESENTACION.resenas_calificacion} onChange={e => onCambiar('resenas_calificacion', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Texto de reseñas<input className={campo} value={val('resenas_texto')} maxLength={80} placeholder="Vacío: solo las estrellas" onChange={e => onCambiar('resenas_texto', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Cantidad de estrellas<input className={campo} type="number" min="1" max="5" step="0.1" inputMode="decimal" value={val('resenas_calificacion', DEFAULTS_PRESENTACION.resenas_calificacion)} onChange={e => onCambiar('resenas_calificacion', e.target.value)} /></label>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm">
-            <span className="font-black text-amber-500" aria-hidden="true">★★★★★</span>
+            <span className="font-black text-amber-500" aria-hidden="true">
+              {[1, 2, 3, 4, 5].map(n => {
+                // Misma cuenta que la ficha: cada estrella se llena hasta donde llega la calificación.
+                const relleno = `${Math.max(0, Math.min(100, (ratingResenas - (n - 1)) * 100))}%`;
+                // backgroundImage y no el atajo `background`: al cambiar la calificación React
+                // reescribe solo lo que cambió, y el atajo borraba el recorte al texto
+                // (la estrella quedaba como un rectángulo de color).
+                return <span key={n} style={{ display: 'inline-block', backgroundImage: `linear-gradient(90deg, currentColor ${relleno}, rgba(148,163,184,.45) ${relleno})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>★</span>;
+              })}
+            </span>
             <span className="text-xs font-semibold text-fg-muted">{formatearCalificacion(ratingResenas)} de 5 estrellas</span>
           </div>
         </BloqueFicha>
@@ -564,36 +641,38 @@ export default function PresentacionProducto({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="block text-xs text-fg-muted">Precio anterior<CurrencyInput id={`ancla-${claveItem(item)}`} aria-label="Precio anterior" inputMode="numeric" value={ancla ?? ''} onChange={v => onAncla(v == null ? '' : String(v))} placeholder="Opcional" className={campo} /></label>
             <label className="block text-xs text-fg-muted">% de descuento<input inputMode="numeric" value={porcentaje} placeholder="Ej: 21" className={campo} onChange={e => onAncla(precioAnclaPorDescuento(precio, e.target.value))} /></label>
-            <label className="block text-xs text-fg-muted">Badge de precio<input className={campo} value={item.insignia_secundaria || ''} list={insigniasListId} maxLength={40} placeholder={descuento ? `-${descuento}%` : 'Oferta especial'} onChange={e => onCambiar('insignia_secundaria', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Badge de precio<input className={campo} value={val('insignia_secundaria')} list={insigniasListId} maxLength={40} placeholder={descuento ? `-${descuento}%` : 'Oferta especial'} onChange={e => onCambiar('insignia_secundaria', e.target.value)} /></label>
           </div>
         </BloqueFicha>
         <BloqueFicha numero="6" titulo="Oferta por tiempo limitado" resumen={resumenOferta} abierto={inicialmenteAbierto} visible={visibleBloque('oferta')} onVisible={v => cambiarBloques({ oferta: v, urgencia: v })} bloqueClave="oferta" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('oferta')}>
           <div className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-              <label className="block text-xs text-fg-muted">Encabezado de la oferta<input className={campo} value={item.urgencia_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.urgencia_kicker} onChange={e => onCambiar('urgencia_kicker', e.target.value)} /></label>
+              <label className="block text-xs text-fg-muted">Encabezado de la oferta<input className={campo} value={val('urgencia_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('urgencia_kicker', e.target.value)} /></label>
               <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_encabezado')} onChange={e => cambiarBloque('oferta_encabezado', e.target.checked)} /> Mostrar encabezado</label>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-              <label className="block text-xs text-fg-muted">Nombre de la oferta<input className={campo} value={item.urgencia_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.urgencia_titulo} onChange={e => onCambiar('urgencia_titulo', e.target.value)} /></label>
+              <label className="block text-xs text-fg-muted">Nombre de la oferta<input className={campo} value={val('urgencia_titulo')} maxLength={90} placeholder="Vacío: no se muestra" onChange={e => onCambiar('urgencia_titulo', e.target.value)} /></label>
               <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_nombre')} onChange={e => cambiarBloque('oferta_nombre', e.target.checked)} /> Mostrar nombre</label>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-              <label className="block text-xs text-fg-muted">Texto de la oferta<textarea className={area} rows={2} value={item.urgencia_texto || ''} maxLength={180} placeholder={DEFAULTS_PRESENTACION.urgencia_texto} onChange={e => onCambiar('urgencia_texto', e.target.value)} /></label>
+              <label className="block text-xs text-fg-muted">Texto de la oferta<textarea className={area} rows={2} value={val('urgencia_texto')} maxLength={180} placeholder="Vacío: no se muestra" onChange={e => onCambiar('urgencia_texto', e.target.value)} /></label>
               <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_texto')} onChange={e => cambiarBloque('oferta_texto', e.target.checked)} /> Mostrar texto</label>
             </div>
             <fieldset className="rounded-lg border border-border bg-surface px-3 py-3">
               <legend className="px-1 text-sm font-semibold text-fg">Duración del contador</legend>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
-                <label className="block text-xs text-fg-muted">Horas<input className={campo} type="number" min="0" max="99" value={item.urgencia_horas ?? ''} placeholder={String(DEFAULTS_PRESENTACION.urgencia_horas)} onChange={e => onCambiar('urgencia_horas', e.target.value)} /></label>
-                <label className="block text-xs text-fg-muted">Minutos<input className={campo} type="number" min="0" max="59" value={item.urgencia_minutos ?? ''} placeholder={String(DEFAULTS_PRESENTACION.urgencia_minutos)} onChange={e => onCambiar('urgencia_minutos', e.target.value)} /></label>
-                <label className="block text-xs text-fg-muted">Segundos<input className={campo} type="number" min="0" max="59" value={item.urgencia_segundos ?? ''} placeholder={String(DEFAULTS_PRESENTACION.urgencia_segundos)} onChange={e => onCambiar('urgencia_segundos', e.target.value)} /></label>
+                <label className="block text-xs text-fg-muted">Horas<input className={campo} type="number" min="0" max="99" value={val('urgencia_horas')} placeholder={String(DEFAULTS_PRESENTACION.urgencia_horas)} onChange={e => onCambiar('urgencia_horas', e.target.value)} /></label>
+                <label className="block text-xs text-fg-muted">Minutos<input className={campo} type="number" min="0" max="59" value={val('urgencia_minutos')} placeholder={String(DEFAULTS_PRESENTACION.urgencia_minutos)} onChange={e => onCambiar('urgencia_minutos', e.target.value)} /></label>
+                <label className="block text-xs text-fg-muted">Segundos<input className={campo} type="number" min="0" max="59" value={val('urgencia_segundos')} placeholder={String(DEFAULTS_PRESENTACION.urgencia_segundos)} onChange={e => onCambiar('urgencia_segundos', e.target.value)} /></label>
                 <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_duracion')} onChange={e => cambiarBloque('oferta_duracion', e.target.checked)} /> Mostrar contador</label>
               </div>
             </fieldset>
           </div>
         </BloqueFicha>
         <BloqueFicha numero="7" titulo="Descripción breve" resumen={resumenDescripcion} abierto={inicialmenteAbierto} visible={visibleBloque('descripcion')} onVisible={v => cambiarBloque('descripcion', v)} bloqueClave="descripcion" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('descripcion')}>
-          <label className="block text-xs text-fg-muted">Texto debajo del precio<textarea className={area} rows={2} value={item.mensaje_comercial || ''} maxLength={220} placeholder="Sonido para acompañar tu rutina." onChange={e => onCambiar('mensaje_comercial', e.target.value)} /></label>
+          <label className="block text-xs text-fg-muted">Frase destacada<input className={campo} value={fraseDestacada} maxLength={220} placeholder="Vacío: no se muestra" onChange={e => onCambiar('propuesta_valor', e.target.value)} /></label>
+          <label className="block text-xs text-fg-muted">Descripción<textarea className={area} rows={4} value={descripcionFicha} maxLength={2000} placeholder="Vacío: no se muestra" onChange={e => onCambiar('mensaje_comercial', e.target.value)} /></label>
+          <p className="text-xs leading-relaxed text-fg-muted">Arrancan con la propuesta de valor y la descripción cargadas en el producto. Lo que cambies acá vale solo para esta landing.</p>
         </BloqueFicha>
         <BloqueFicha numero="8" titulo="Beneficios principales" resumen={resumenBeneficios} visible={visibleBloque('beneficios')} onVisible={v => cambiarBloque('beneficios', v)} bloqueClave="beneficios" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('beneficios')}>
           <ListaBeneficios items={beneficios} onCambiar={onCambiar} />
@@ -603,7 +682,7 @@ export default function PresentacionProducto({
             <label className="block text-xs text-fg-muted">Botón principal de compra<input className={campo} value={item.cta_texto || ''} maxLength={42} placeholder="Comprar con pago anticipado" onChange={e => onCambiar('cta_texto', e.target.value)} /></label>
             <label className={`block text-xs text-fg-muted ${sinPagopar ? 'cursor-not-allowed opacity-60' : ''}`} title={sinPagopar ? AVISO_PAGO_ANTICIPADO : undefined}>Descuento pago anticipado %<input className={`${campo} ${sinPagopar ? 'cursor-not-allowed' : ''}`} type="number" min="0" max="95" step="0.1" inputMode="decimal" disabled={sinPagopar} value={item.cta_descuento_pct ?? ''} placeholder="Ej: 10" onChange={e => onCambiar('cta_descuento_pct', e.target.value)} onBlur={e => onCambiar('cta_descuento_pct', normalizarDescuentoBoton(e.target.value))} /></label>
           </div>
-          {sinPagopar && <p className="text-xs leading-relaxed text-fg-muted">{AVISO_PAGO_ANTICIPADO} Mientras tanto el botón de pago anticipado no se ofrece en la tienda publicada.</p>}
+          {sinPagopar && <p className="text-xs leading-relaxed text-fg-muted">{AVISO_PAGO_ANTICIPADO} Mientras tanto el botón de pago anticipado no se muestra, ni en la vista previa ni en la tienda publicada.</p>}
           <ListaBotones titulo="Botones de pago" ayuda="Botones secundarios como Pago contra entrega, Comprar por WhatsApp o un link de pago. Podés sumar un descuento por botón para incentivar el pago anticipado." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} descuentos />
           <ListaBotones titulo="Botones configurables de contacto" ayuda="Caminos de contacto adicionales de esta ficha. WhatsApp usa el mensaje configurado en Mi tienda." items={botonesContacto} campoLista="botones_contacto" onCambiar={onCambiar} ocultarValorWhatsapp />
         </BloqueFicha>
@@ -622,9 +701,9 @@ export default function PresentacionProducto({
         </BloqueFicha>
         <BloqueFicha numero="14" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('opiniones')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={valorConfigurable(item, 'opiniones_kicker', DEFAULTS_PRESENTACION.opiniones_kicker)} maxLength={60} placeholder={DEFAULTS_PRESENTACION.opiniones_kicker} onChange={e => onCambiar('opiniones_kicker', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={valorConfigurable(item, 'opiniones_titulo', DEFAULTS_PRESENTACION.opiniones_titulo)} maxLength={90} placeholder={DEFAULTS_PRESENTACION.opiniones_titulo} onChange={e => onCambiar('opiniones_titulo', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted sm:col-span-2">Subtítulo de sección<textarea className={area} rows={2} value={valorConfigurable(item, 'opiniones_subtitulo', DEFAULTS_PRESENTACION.opiniones_subtitulo)} maxLength={180} placeholder={DEFAULTS_PRESENTACION.opiniones_subtitulo} onChange={e => onCambiar('opiniones_subtitulo', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={val('opiniones_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_kicker', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={val('opiniones_titulo')} maxLength={90} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_titulo', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted sm:col-span-2">Subtítulo de sección<textarea className={area} rows={2} value={val('opiniones_subtitulo')} maxLength={180} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_subtitulo', e.target.value)} /></label>
           </div>
           <fieldset className="space-y-3 rounded-lg border border-border bg-surface px-3 py-3">
             <legend className="px-1 text-sm font-semibold text-fg">Opiniones reales</legend>
@@ -653,13 +732,14 @@ export default function PresentacionProducto({
         </BloqueFicha>
         <BloqueFicha numero="15" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('preguntas')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={item.preguntas_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.preguntas_kicker} onChange={e => onCambiar('preguntas_kicker', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={item.preguntas_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.preguntas_titulo} onChange={e => onCambiar('preguntas_titulo', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted sm:col-span-2">Subtítulo de sección<textarea className={area} rows={2} value={item.preguntas_subtitulo || ''} maxLength={180} placeholder="Texto opcional debajo del título" onChange={e => onCambiar('preguntas_subtitulo', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={val('preguntas_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('preguntas_kicker', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={val('preguntas_titulo')} maxLength={90} placeholder="Vacío: no se muestra" onChange={e => onCambiar('preguntas_titulo', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted sm:col-span-2">Subtítulo de sección<textarea className={area} rows={2} value={val('preguntas_subtitulo')} maxLength={180} placeholder="Vacío: no se muestra" onChange={e => onCambiar('preguntas_subtitulo', e.target.value)} /></label>
           </div>
           <ListaPreguntas items={preguntas} onCambiar={onCambiar} />
         </BloqueFicha>
       </div>
     </div>
+    </BloquePedidoContext.Provider>
   );
 }

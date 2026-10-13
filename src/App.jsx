@@ -33,6 +33,7 @@ const LandingSimpleEntry = lazy(() => import('./pages/landing-simple/LandingSimp
 const EditorSegunModo = lazy(() => import('./pages/landing-simple/EditorSegunModo'));
 const ConfigurarTienda = lazy(() => import('./pages/tienda/ConfigurarTienda'));
 const DepositosPage = lazy(() => import('./pages/tienda/DepositosPage'));
+const CouriersCatalogPage = lazy(() => import('./pages/tienda/CouriersCatalogPage'));
 const InventarioPage = lazy(() => import('./pages/inventario/InventarioPage'));
 const NuevoIngresoPage = lazy(() => import('./pages/inventario/NuevoIngresoPage'));
 const IngresoDetalle = lazy(() => import('./pages/inventario/IngresoDetalle'));
@@ -62,6 +63,8 @@ const PedidosPrepararGesicomm = lazy(() => import('./pages/fulfillment/PedidosPr
 const SeguimientoConfig = lazy(() => import('./pages/courier/SeguimientoConfig').then(m => ({ default: m.SeguimientoConfig })));
 const CourierLogin = lazy(() => import('./pages/courier/CourierLogin'));
 const CourierPedidos = lazy(() => import('./pages/courier/CourierPedidos'));
+const RahaLogin = lazy(() => import('./pages/raha/RahaLogin'));
+const RahaPortal = lazy(() => import('./pages/raha/RahaPortal'));
 const EducacionView = lazy(() => import('./pages/educacion/EducacionView'));
 const AdminEducacion = lazy(() => import('./pages/educacion/AdminEducacion'));
 const CostosGastos = lazy(() => import('./pages/finanzas/CostosGastos'));
@@ -274,6 +277,10 @@ function App() {
         <Route path="/courier" element={<Navigate to="/courier/login" replace />} />
         <Route path="/courier/login" element={<CourierLogin />} />
         <Route path="/courier/pedidos" element={<CourierPedidos />} />
+        <Route path="/raha" element={<Navigate to="/raha/login" replace />} />
+        <Route path="/raha/login" element={<RahaLogin />} />
+        <Route path="/raha/solicitudes" element={<RahaPortal />} />
+        <Route path="/raha/portal" element={<Navigate to="/raha/solicitudes" replace />} />
 
         {/* Rutas protegidas — panel admin */}
         <Route path="/dashboard" element={
@@ -449,6 +456,9 @@ function App() {
         <Route path="/mi-tienda/depositos" element={
           <RequireTienda><DynamicLayout><DepositosPage /></DynamicLayout></RequireTienda>
         } />
+        <Route path="/mi-tienda/couriers" element={
+          <RequireTienda><DynamicLayout><CouriersCatalogPage /></DynamicLayout></RequireTienda>
+        } />
         <Route path="/inventario" element={
           <RequireTienda><DynamicLayout><InventarioPage /></DynamicLayout></RequireTienda>
         } />
@@ -573,5 +583,4 @@ function App() {
 }
 
 export default App;
-
 

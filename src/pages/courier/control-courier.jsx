@@ -159,6 +159,15 @@ export function ControlCourier() {
     setRefrescarKey(k => k + 1);
   };
 
+  const handleDespacharDesdeSeguimiento = async (envio) => {
+    const actualizado = await updateEstadoEnvio(envio.id, { estado: "Despachado" });
+    setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
+    setSeguimientoEnvio(actualizado);
+    cargarDatos();
+    setRefrescarKey(k => k + 1);
+    return actualizado;
+  };
+
   const handleCreateNuevoPedido = async (payload) => {
     const res = await createEnvio(payload);
     setEnvios(prev => [res, ...prev]);
@@ -375,6 +384,13 @@ export function ControlCourier() {
         envio={seguimientoEnvio}
         faseSugeridaId={faseSeguimientoId}
         onClose={() => setSeguimientoEnvio(null)}
+        onConfirmarPedido={(envio) => {
+          // Mismo camino que "Completar datos" de la bandeja: al confirmar,
+          // el pedido sale solo del flujo de confirmación.
+          setSeguimientoEnvio(null);
+          setEnvioParaCompletar(envio);
+        }}
+        onDespacharPedido={handleDespacharDesdeSeguimiento}
         onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
       />
     </div>

@@ -6,6 +6,11 @@ export const inventarioService = {
     return data;
   },
 
+  diagnosticarStockPedido: async (payload = {}) => {
+    const { data } = await api.post('/inventario/stock/pedido-origenes', payload);
+    return data;
+  },
+
   listarIngresos: async (filtros = {}) => {
     const { data } = await api.post('/inventario/ingresos/listado', filtros);
     return data;

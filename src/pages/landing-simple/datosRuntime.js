@@ -228,6 +228,17 @@ const PRESENTACION_PRODUCTO_DEFAULT = {
   ],
 };
 
+// Textos de la ficha que pueden quedar vacíos: si el comercio los borra, ese
+// renglón no se dibuja. Un botón o el nombre no entran — sin texto vuelven a
+// su respaldo, porque no existe un botón de compra sin rótulo.
+const TEXTOS_FICHA_VACIABLES = [
+  'mensaje_comercial', 'propuesta_valor', 'insignia_principal', 'insignia_secundaria', 'resenas_texto',
+  'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo',
+  'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto',
+  'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo',
+  'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo',
+];
+
 /** Ahorro y % de descuento de una oferta — lo que muestran "Ahorrás Gs X" y el "-30%". */
 function conAhorro(oferta) {
   const antes = Number(oferta.precio_normal) || 0;
@@ -267,7 +278,8 @@ function textoLimpio(valor) {
 
 function normalizarCalificacion(valor, fallback = 5) {
   const crudo = String(valor ?? '').replace(',', '.').trim();
-  const n = Number(crudo);
+  // Sin dato no es un 0: Number('') da 0 y la ficha mostraba 1 estrella.
+  const n = crudo === '' ? NaN : Number(crudo);
   const base = Number.isFinite(n) ? n : Number(fallback);
   return Math.max(1, Math.min(5, Math.round((Number.isFinite(base) ? base : 5) * 10) / 10));
 }
@@ -371,16 +383,30 @@ export function presentacionComercial(item, venta) {
   // desde el JSON de la IA): valen en todas sus landings mientras la landing
   // no escriba los suyos. Mismos nombres de campo que presentacion_productos.
   const delProducto = presentacionDelProducto(fichaDatos);
-  const texto = campo => String(fuente[campo] || delProducto[campo] || PRESENTACION_PRODUCTO_DEFAULT[campo] || '').trim();
-  const lista = (campo) => [fuente[campo], delProducto[campo]].find(l => Array.isArray(l) && l.length) || PRESENTACION_PRODUCTO_DEFAULT[campo];
-  const beneficiosFuente = primeraListaConDatos(fuente.beneficios, item.beneficios, fichaDatos.beneficios_rapidos) || PRESENTACION_PRODUCTO_DEFAULT.beneficios;
-  const beneficios = (beneficiosFuente.length ? beneficiosFuente : PRESENTACION_PRODUCTO_DEFAULT.beneficios)
+  // Ficha v2 (ver `v` en limpiarPresentacionProducto, backend): la landing
+  // guarda SOLO lo que el comercio tocó, así que lo que está, manda — también
+  // vacío ("lo borré": no se muestra) y también una lista sin elementos. En
+  // las fichas anteriores un texto vacío es "sin tocar" y cae al del producto.
+  const v2 = fuente !== item && fuente.v === 2;
+  const propio = campo => v2 && Object.prototype.hasOwnProperty.call(fuente, campo) && fuente[campo] != null;
+  const listaPropia = campo => (v2 && Array.isArray(fuente[campo]) ? fuente[campo] : null);
+  // Vacío a propósito: el runtime no lo rellena con su texto de respaldo.
+  const vacios = TEXTOS_FICHA_VACIABLES.filter(campo => propio(campo) && !String(fuente[campo]).trim());
+  const texto = campo => {
+    if (propio(campo) && (TEXTOS_FICHA_VACIABLES.includes(campo) || String(fuente[campo]).trim())) return String(fuente[campo]).trim();
+    return String(fuente[campo] || delProducto[campo] || PRESENTACION_PRODUCTO_DEFAULT[campo] || '').trim();
+  };
+  const lista = (campo) => listaPropia(campo)
+    || [fuente[campo], delProducto[campo]].find(l => Array.isArray(l) && l.length) || PRESENTACION_PRODUCTO_DEFAULT[campo];
+  const beneficiosFuente = listaPropia('beneficios')
+    || primeraListaConDatos(fuente.beneficios, item.beneficios, fichaDatos.beneficios_rapidos);
+  const beneficios = (listaPropia('beneficios') || beneficiosFuente.length ? beneficiosFuente : PRESENTACION_PRODUCTO_DEFAULT.beneficios)
     .map(normalizarBeneficio)
     .filter(b => b.titulo || b.texto);
-  const confianza = primeraListaConDatos(fuente.confianza, item.confianza, fichaDatos.confianza, fichaDatos.trust_items)
+  const confianza = (listaPropia('confianza') || primeraListaConDatos(fuente.confianza, item.confianza, fichaDatos.confianza, fichaDatos.trust_items))
     .map(normalizarConfianza)
     .filter(c => c.titulo || c.texto);
-  const preguntasFuente = primeraListaConDatos(
+  const preguntasFuente = listaPropia('preguntas') || primeraListaConDatos(
     fuente.preguntas,
     fuente.faq,
     fuente.faqs,
@@ -390,7 +416,7 @@ export function presentacionComercial(item, venta) {
     item.faqs,
     item.preguntas_frecuentes,
   );
-  const preguntas = (preguntasFuente.length ? preguntasFuente : PRESENTACION_PRODUCTO_DEFAULT.preguntas)
+  const preguntas = (listaPropia('preguntas') || preguntasFuente.length ? preguntasFuente : PRESENTACION_PRODUCTO_DEFAULT.preguntas)
     .map(normalizarPregunta)
     .filter(f => f.pregunta && f.respuesta);
   const opinionesFuente = Array.isArray(fuente.opiniones)
@@ -448,8 +474,11 @@ export function presentacionComercial(item, venta) {
 
   return {
     ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'cta_descuento_pct', 'agregar_carrito_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, texto(campo)])),
-    resenas_texto: texto('resenas_texto') || resenasAuto,
+    // La frase destacada es del producto; la landing puede pisarla o vaciarla.
+    ...(propio('propuesta_valor') ? { propuesta_valor: String(fuente.propuesta_valor).trim() || null } : {}),
+    resenas_texto: propio('resenas_texto') ? texto('resenas_texto') : (texto('resenas_texto') || resenasAuto),
     resenas_calificacion: resenasCalificacion,
+    vacios,
     ficha_bloques: bloquesCompatibles,
     ficha_orden_mobile: normalizarOrdenMobileFicha(fuente.ficha_orden_mobile),
     beneficios,
@@ -751,15 +780,45 @@ function ventaRuntime(venta, catalogo = [], productoPreferido = null) {
       banners: (Array.isArray(inicio.banners) ? inicio.banners : []).filter(Boolean).map(normalizarBanner),
       banners_intermedios: (Array.isArray(inicio.banners_intermedios) ? inicio.banners_intermedios : []).filter(Boolean).map(normalizarBanner),
     },
-    recomendados_kicker: venta.recomendados?.kicker || '',
-    recomendados_titulo: venta.recomendados?.titulo || '',
-    recomendados_subtitulo: venta.recomendados?.subtitulo || '',
-    recomendados_cta: venta.recomendados?.cta_texto || '',
+    ...(() => {
+      const textos = textosRecomendados(venta.recomendados);
+      const visible = clave => (textos.mostrar[clave] ? textos[clave === 'cta' ? 'cta_texto' : clave].trim() : '');
+      return {
+        recomendados_kicker: visible('kicker'),
+        recomendados_titulo: visible('titulo'),
+        recomendados_subtitulo: visible('subtitulo'),
+        recomendados_cta: visible('cta'),
+      };
+    })(),
     checkout_recomendados: venta.checkout_recomendados || {},
     paquetes: venta.paquetes || {},
     catalogo_filtros: venta.catalogo_filtros || {},
     urgencia,
     prueba_social: pruebaSocial,
+  };
+}
+
+/**
+ * Los cuatro textos de "Productos recomendados" y cuáles se muestran. Un
+ * texto vacío no se dibuja: lo que aparece en la página es exactamente lo que
+ * está escrito en el panel.
+ *
+ * Las landings guardadas antes de que cada texto se pudiera ocultar no traen
+ * `mostrar`; mostraban un título y un botón de fábrica sin que el comercio
+ * los hubiera escrito. Para no dejarlas de golpe sin título ni botón, esos
+ * dos arrancan cargados con lo que ya se veía ("Te puede gustar", "Agregar"):
+ * el panel los muestra escritos y el comercio los cambia, borra u oculta.
+ */
+export function textosRecomendados(reco) {
+  const r = reco && typeof reco === 'object' ? reco : {};
+  const legado = !(r.mostrar && typeof r.mostrar === 'object');
+  const texto = (campo, deFabrica = '') => (typeof r[campo] === 'string' && (r[campo] || !legado) ? r[campo] : deFabrica);
+  return {
+    kicker: texto('kicker'),
+    titulo: texto('titulo', 'Te puede gustar'),
+    subtitulo: texto('subtitulo'),
+    cta_texto: texto('cta_texto', 'Agregar'),
+    mostrar: Object.fromEntries(['kicker', 'titulo', 'subtitulo', 'cta'].map(clave => [clave, legado || r.mostrar[clave] !== false])),
   };
 }
 
@@ -904,20 +963,19 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
     // panel) no las trae y pasa lo que consultó: opciones.pagoparConectado.
     pago_anticipado: pagoAnticipadoRuntime(
       opciones.pagoparConectado ?? (Array.isArray(pasarelas) ? pasarelas.some(p => p.provider === 'pagopar') : null),
-      opciones.pagoparConectado != null,
     ),
   };
 }
 
 /**
  * Pago anticipado = PagoPar: sin la pasarela conectada no se puede cobrar
- * por adelantado. `conectado` null = no se sabe (todavía cargando): no se
- * bloquea. `editor` decide cómo lo muestra el runtime cuando falta — apagado
- * con el motivo en el editor, fuera de la página en la tienda publicada (ver
- * aplicarPagoAnticipado en runtimeGesicomm.js).
+ * por adelantado y el runtime saca el botón y la opción del checkout, igual
+ * en la vista previa que en la tienda publicada (ver aplicarPagoAnticipado en
+ * runtimeGesicomm.js). `conectado` null = no se sabe (todavía cargando): no
+ * se bloquea.
  */
-function pagoAnticipadoRuntime(conectado, editor) {
-  return { disponible: conectado !== false, editor: !!editor };
+function pagoAnticipadoRuntime(conectado) {
+  return { disponible: conectado !== false };
 }
 
 /** Sentinel para "todas las categorías" en el preview del panel de categorías. */
@@ -933,7 +991,7 @@ function coloresTiendaPreview(tienda, landing = null) {
 }
 
 /** Datos del runtime para el preview del editor, con el catálogo del panel. */
-export function datosRuntimePreview({ productos = [], tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], pagoparConectado = null }) {
+export function datosRuntimePreview({ productos = [], tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], pagoparConectado = null, bloquesEditor = null }) {
   // Ofertas de la tienda (panel) agrupadas por su producto, ya filtradas
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
@@ -1000,7 +1058,10 @@ export function datosRuntimePreview({ productos = [], tienda, landing = null, ve
     checkout_recomendados: extrasCheckout.recomendados,
     recomendados: recomendadosVista(catalogo, producto, venta),
     geografia: Array.isArray(geografia) ? geografia : [],
-    pago_anticipado: pagoAnticipadoRuntime(pagoparConectado, true),
+    pago_anticipado: pagoAnticipadoRuntime(pagoparConectado),
+    // Solo el editor de fichas: rótulo de cada bloque al pasar el mouse y
+    // clic para abrirlo en el panel (ver bloquesEditor en el runtime).
+    ...(producto && bloquesEditor ? { editor_bloques: bloquesEditor } : {}),
   };
 }
 

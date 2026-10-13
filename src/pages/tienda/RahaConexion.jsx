@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Download, FileText, Loader, RefreshCw, Save, Send, ShieldCheck, Trash2, Upload } from 'lucide-react';
 import { rahaService } from '../../services/rahaService';
 import './raha.css';
-export const ESTADOS_RAHA = { borrador: 'Borrador', en_revision: 'En revisión de Gesicom', observada: 'Requiere correcciones', enviada_raha: 'Enviada manualmente a Raha', aprobada: 'Aprobación de Raha registrada', rechazada: 'Rechazada' };
+export const ESTADOS_RAHA = { borrador: 'Trámite no iniciado', en_revision: 'Enviada a Raha', observada: 'Raha pidió correcciones', enviada_raha: 'Enviada a Raha', aprobada: 'Aprobada por Raha', rechazada: 'Rechazada por Raha' };
 export const GRUPOS_RAHA = [
   { titulo: 'Empresa y representante', campos: [['razon_social', 'Razón social'], ['ruc', 'RUC'], ['representante', 'Nombre del representante legal'], ['cedula', 'Cédula del representante legal']] },
   { titulo: 'Contacto y dirección', campos: [['email', 'Email', 'email'], ['telefono', 'Teléfono', 'tel'], ['direccion', 'Dirección'], ['ciudad', 'Ciudad'], ['departamento', 'Departamento']] },
@@ -10,28 +10,47 @@ export const GRUPOS_RAHA = [
   { titulo: 'Cuenta para liquidaciones', campos: [['banco', 'Banco'], ['titular_cuenta', 'Titular de la cuenta'], ['numero_cuenta', 'Número de cuenta'], ['moneda', 'Moneda', 'select']] },
 ];
 const LIMITES = { razon_social: 180, ruc: 30, representante: 180, cedula: 30, email: 150, telefono: 30, direccion: 300, ciudad: 100, departamento: 100, actividad_economica: 300, tipo_productos: 600, operaciones_mensuales: 10, banco: 100, titular_cuenta: 180, numero_cuenta: 80 };
-const TIPOS_DOC = [['ruc', 'Constancia de RUC', true], ['cedula', 'Cédula del representante legal', true]];
+export const TIPOS_DOC_RAHA = [['ruc', 'Constancia de RUC'], ['cedula', 'Cédula del representante legal']];
+// Semáforo: rojo = trámite sin iniciar (o a corregir), amarillo = enviado, verde = aceptado.
+export function semaforoRaha(estado) {
+  if (estado === 'aprobada') return { color: 'verde', titulo: 'Aprobado por Raha', texto: 'Tu conexión con Raha está activa. Ya podés proveerte con Raha.' };
+  if (estado === 'en_revision' || estado === 'enviada_raha') return { color: 'amarillo', titulo: 'Solicitud enviada', texto: 'Raha recibió tu solicitud y la está evaluando. Te avisaremos cuando responda.' };
+  if (estado === 'observada') return { color: 'rojo', titulo: 'Raha pidió correcciones', texto: 'Revisá la nota en el seguimiento, corregí los datos o documentos y volvé a enviar.' };
+  if (estado === 'rechazada') return { color: 'rojo', titulo: 'Solicitud rechazada', texto: 'Raha rechazó la solicitud. Revisá el motivo en el seguimiento.' };
+  return { color: 'rojo', titulo: 'Trámite no iniciado', texto: 'Completá los datos, adjuntá los 2 documentos y enviá la solicitud a Raha.' };
+}
+export function RahaSemaforo({ estado, compacto = false }) {
+  const s = semaforoRaha(estado);
+  return <div className={`raha-semaforo ${compacto ? 'raha-semaforo-compacto' : ''}`} role="status" aria-label={`Estado: ${s.titulo}`}>
+    <div className="raha-luces" aria-hidden="true">{['rojo', 'amarillo', 'verde'].map(color => <span key={color} className={`raha-luz ${color} ${s.color === color ? 'on' : ''}`} />)}</div>
+    {!compacto && <div><strong>{s.titulo}</strong><p>{s.texto}</p></div>}
+  </div>;
+}
 export function RahaHistorial({ solicitud }) {
   return <section className="raha-section"><h3>Seguimiento</h3>
     {solicitud.historial?.length ? <ol className="raha-history">{solicitud.historial.map((entry, index) => <li key={index}>
       <div><strong>{ESTADOS_RAHA[entry.estado] || entry.estado}</strong><time>{new Date(entry.ocurrido_at).toLocaleString('es-PY')}</time></div>
+      {entry.autor && <p className="raha-muted">{entry.autor}</p>}
       {entry.nota && <p>{entry.nota}</p>}{entry.referencia && <p>Referencia: {entry.referencia}</p>}
     </li>)}</ol> : <p className="raha-muted">Todavía no se presentó la solicitud.</p>}
   </section>;
 }
 export function RahaDocumentos({ documentos = [], editable = false, busy, onUpload, onDelete, onDownload }) {
-  return <section className="raha-section"><h3>Documentos e imágenes</h3>
-    <div className="raha-docs">{TIPOS_DOC.map(([tipo, label, required]) => <div className="raha-doc-group" key={tipo}>
-      <div className="raha-doc-head"><strong>{label}</strong><span className="raha-muted">{required ? 'Obligatorio' : 'Opcional'}</span></div>
-      <ul>{documentos.filter(doc => doc.tipo === tipo).map(doc => <li key={doc.id}>
-        <FileText size={16} /><span className="raha-filename">{doc.nombre}<small>{Math.ceil(doc.size / 1024)} KB</small></span>
-        <button type="button" className="raha-icon" title={`Descargar ${doc.nombre}`} aria-label={`Descargar ${doc.nombre}`} disabled={busy} onClick={() => onDownload(doc)}><Download size={16} /></button>
-        {editable && <button type="button" className="raha-icon" title={`Quitar ${doc.nombre}`} aria-label={`Quitar ${doc.nombre}`} disabled={busy} onClick={() => onDelete(doc)}><Trash2 size={16} /></button>}
-      </li>)}</ul>
-      {editable && <label className={`raha-upload ${busy ? 'raha-disabled' : ''}`}><Upload size={15} /> Adjuntar archivo
-        <input aria-label={`Adjuntar ${label}`} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={busy || documentos.length >= 12} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) onUpload(file, tipo); }} />
-      </label>}
-    </div>)}</div>
+  return <section className="raha-section"><h3>Documentos</h3>
+    <div className="raha-docs">{TIPOS_DOC_RAHA.map(([tipo, label]) => {
+      const docs = documentos.filter(doc => doc.tipo === tipo);
+      return <div className="raha-doc-group" key={tipo}>
+        <div className="raha-doc-head"><strong>{label}</strong><span className={docs.length ? 'raha-ok' : 'raha-muted'}>{docs.length ? 'Adjuntado' : 'Obligatorio'}</span></div>
+        <ul>{docs.map(doc => <li key={doc.id}>
+          <FileText size={16} /><span className="raha-filename">{doc.nombre}<small>{Math.ceil(doc.size / 1024)} KB</small></span>
+          <button type="button" className="raha-icon" title={`Descargar ${doc.nombre}`} aria-label={`Descargar ${doc.nombre}`} disabled={busy} onClick={() => onDownload(doc)}><Download size={16} /></button>
+          {editable && onDelete && <button type="button" className="raha-icon" title={`Quitar ${doc.nombre}`} aria-label={`Quitar ${doc.nombre}`} disabled={busy} onClick={() => onDelete(doc)}><Trash2 size={16} /></button>}
+        </li>)}</ul>
+        {editable && <label className={`raha-upload ${busy ? 'raha-disabled' : ''}`}><Upload size={15} /> {docs.length ? 'Reemplazar archivo' : 'Adjuntar archivo'}
+          <input aria-label={`Adjuntar ${label}`} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={busy} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) onUpload(file, tipo); }} />
+        </label>}
+      </div>;
+    })}</div>
   </section>;
 }
 export default function RahaConexion({ tienda }) {
@@ -66,10 +85,11 @@ export default function RahaConexion({ tienda }) {
     <div className="raha-status"><ShieldCheck size={20} /><div><strong>Solicitud de conexión Raha</strong>{solicitud && <span className={`raha-badge ${solicitud.estado}`}>{ESTADOS_RAHA[solicitud.estado]}</span>}</div>
       <button type="button" className="raha-icon" title="Actualizar solicitud" aria-label="Actualizar solicitud" disabled={busy} onClick={cargar}><RefreshCw size={16} /></button>
     </div>
+    {solicitud && <RahaSemaforo estado={solicitud.estado} />}
     {error && <div role="alert" className="raha-alert raha-error"><AlertCircle size={18} />{error}</div>}
     {mensaje && <div role="status" className="raha-alert raha-success"><CheckCircle2 size={18} />{mensaje}</div>}
     {!solicitud ? <button type="button" className="raha-button" onClick={cargar}><RefreshCw size={15} /> Reintentar</button> : <>
-      <form onSubmit={event => { event.preventDefault(); if (consentimiento) action(() => rahaService.enviar({ datos, consentimiento: true, version: solicitud.version }), 'Solicitud presentada a Gesicom para revisión manual.'); }}>
+      <form onSubmit={event => { event.preventDefault(); if (consentimiento) action(() => rahaService.enviar({ datos, consentimiento: true, version: solicitud.version }), 'Solicitud enviada a Raha. Te avisaremos cuando responda.'); }}>
         {GRUPOS_RAHA.map(group => <section className="raha-section" key={group.titulo}><h3>{group.titulo}</h3><div className="raha-fields">
           {group.campos.map(([key, label, type = 'text']) => <label key={key} className={`raha-field ${type === 'textarea' ? 'raha-wide' : ''}`}><span>{label}</span>
             {type === 'select' ? <select value={datos[key]} disabled={!editable || busy} onChange={event => setDatos(prev => ({ ...prev, [key]: event.target.value }))}><option value="PYG">Guaraníes (PYG)</option><option value="USD">Dólares (USD)</option></select>
@@ -79,8 +99,8 @@ export default function RahaConexion({ tienda }) {
         </div></section>)}
         <RahaDocumentos documentos={solicitud.documentos} editable={editable} busy={busy} onUpload={subir} onDownload={doc => action(() => rahaService.documento(doc))} onDelete={doc => { if (window.confirm(`¿Quitar ${doc.nombre}?`)) action(() => rahaService.quitar(doc.id, solicitud.version), 'Archivo quitado.'); }} />
         {editable && <section className="raha-section">
-          <p className="raha-muted">PDF, JPG, PNG o WebP. Hasta 8 MB por archivo y 12 adjuntos. Los documentos no se publican en tu tienda.</p>
-          <label className="raha-consent"><input type="checkbox" checked={consentimiento} disabled={busy} onChange={event => setConsentimiento(event.target.checked)} />Autorizo a Raha a revisar estos datos y documentos y enviarlos manualmente a Raha para evaluar mi registro.</label>
+          <p className="raha-muted">PDF, JPG, PNG o WebP de hasta 8 MB. Un archivo por documento (2 en total); si subís otro, reemplaza al anterior. Los documentos no se publican en tu tienda.</p>
+          <label className="raha-consent"><input type="checkbox" checked={consentimiento} disabled={busy} onChange={event => setConsentimiento(event.target.checked)} />Autorizo a Gesicom a enviar estos datos y documentos a Raha para evaluar mi registro como cliente.</label>
           <div className="raha-actions"><button type="button" className="raha-button" disabled={busy} onClick={() => action(() => rahaService.guardar({ datos, version: solicitud.version }), 'Borrador guardado.')}><Save size={16} /> Guardar borrador</button>
             <button type="submit" className="raha-button raha-primary" disabled={busy || !consentimiento}>{busy ? <Loader size={16} className="raha-spin" /> : <Send size={16} />} Enviar solicitud</button></div>
         </section>}

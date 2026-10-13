@@ -28,4 +28,7 @@ export const rahaService = {
   detalle: async id => (await api.get(`${base}/admin/${id}`)).data,
   revisar: async (id, payload) => (await api.post(`${base}/admin/${id}/revisar`, payload)).data,
   expediente: id => descargar(`${base}/admin/${id}/expediente`, `raha-solicitud-${id}.zip`),
+  listarUsuariosPortal: async () => (await api.get(`${base}/admin/portal-usuarios`)).data,
+  crearUsuarioPortal: async payload => (await api.post(`${base}/admin/portal-usuarios`, payload)).data,
+  actualizarUsuarioPortal: async (id, payload) => (await api.patch(`${base}/admin/portal-usuarios/${id}`, payload)).data,
 };

@@ -1597,7 +1597,7 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .breadcrumb { display: flex; flex-wrap: wrap; gap: 8px; padding: 22px 0 0; color: var(--ink-soft); font-size: .82rem; }
 .breadcrumb a { color: var(--brand-dark); font-weight: 700; cursor: pointer; }
 
-.pdp { display: grid; grid-template-columns: 1.05fr .95fr; gap: 44px; padding: 24px 0 54px; align-items: start; }
+.pdp { display: grid; grid-template-columns: 1.05fr .95fr; gap: 44px; padding: 24px 0 0px; align-items: start; }
 .gallery { position: sticky; top: 92px; display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; align-items: start; }
 .gallery-main { display: grid; place-items: center; aspect-ratio: 1; padding: 22px; background: transparent; border-radius: var(--radius-lg); }
 .gallery-main img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: normal; }
@@ -1678,7 +1678,7 @@ ${BUMP_CSS}
 .mini-trust strong { display: block; color: var(--ink); font-size: .84rem; }
 
 
-.related { padding: 56px 0; }
+.related { padding: 0px 0; }
 
 /* ─── Paquetes por cantidad ─────────────────────────────────────────── */
 .paquetes { margin: 26px 0 20px; }
@@ -2652,10 +2652,14 @@ a{color:inherit;text-decoration:none}
 .lv-metric{background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);padding:14px;box-shadow:0 12px 30px rgba(16,32,29,.06)}
 .lv-metric strong{display:block;font-size:19px}.lv-metric span{display:block;margin-top:2px;color:var(--lv-muted);font-size:12px;font-weight:700}
 .lv-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 180px 180px;gap:10px;margin:20px 0 18px;background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);padding:12px;box-shadow:0 12px 30px rgba(16,32,29,.05)}
-.lv-field{display:grid;gap:6px}
+.lv-field{display:grid;gap:6px;align-content:start;align-self:start}
 .lv-field span{color:var(--lv-muted);font-size:11px;font-weight:850;text-transform:uppercase}
 .lv-field input,.lv-field select,.lv-field textarea{width:100%;min-height:43px;border:1px solid var(--lv-line);border-radius:7px;background:var(--lv-surface);color:var(--gc-texto);padding:10px 12px;outline:none}
 .lv-field select option{color:var(--gc-texto);background:var(--lv-surface)}
+.lv-field small{color:var(--lv-muted);font-size:12px;line-height:1.4}
+.lv-field input,.lv-field select{height:46px}
+.lv-consent{display:flex;align-items:flex-start;gap:10px;color:var(--lv-muted);font-size:13px;line-height:1.45;cursor:pointer}
+.lv-consent input{width:18px;height:18px;min-height:0;margin:1px 0 0;flex-shrink:0;accent-color:var(--gc-primario)}
 .lv-field input:focus,.lv-field select:focus,.lv-field textarea:focus{border-color:var(--gc-primario);box-shadow:0 0 0 3px color-mix(in srgb,var(--gc-primario) 14%,transparent)}
 .lv-pay-options{display:grid;gap:10px}
 .lv-pay-option{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1.5px solid var(--lv-line);border-radius:var(--lv-radius);cursor:pointer;background:var(--lv-surface);transition:border-color .15s ease,box-shadow .15s ease}
@@ -3012,6 +3016,19 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
             <span>Celular</span>
             <input name="telefono" autocomplete="tel" required>
           </label>
+          <!-- Correo y documento: obligatorios solo con pago anticipado (los
+               exige PagoPar). El runtime prende el "required" y el aviso segun
+               el medio de pago elegido. -->
+          <label class="lv-field">
+            <span>Correo electronico</span>
+            <input name="email" type="email" autocomplete="email" maxlength="160">
+            <small data-gesicomm-si-anticipado style="display:none">Ahi te llega el comprobante de tu compra.</small>
+          </label>
+          <label class="lv-field">
+            <span>Cedula o RUC</span>
+            <input name="documento" autocomplete="off" maxlength="30">
+            <small data-gesicomm-si-anticipado style="display:none">Obligatorio para pagar por adelantado.</small>
+          </label>
           <label class="lv-field">
             <span>Departamento</span>
             <select name="departamento" data-gesicomm-geografia="departamento" autocomplete="address-level1">
@@ -3024,13 +3041,27 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
               <option value="">Ciudad</option>
             </select>
           </label>
-          <label class="lv-field">
-            <span>Documento</span>
-            <input name="documento" autocomplete="off">
-          </label>
-          <label class="lv-field">
+          <label class="lv-field lv-wide">
             <span>Direccion</span>
             <input name="direccion" autocomplete="street-address" required>
+          </label>
+          <!-- Factura: los datos aparecen (y pasan a ser obligatorios) al tildar. -->
+          <label class="lv-consent lv-wide">
+            <input type="checkbox" name="quiere_factura">
+            <span>Necesito factura</span>
+          </label>
+          <label class="lv-field" data-gesicomm-si-factura style="display:none">
+            <span>Razon social</span>
+            <input name="razon_social" maxlength="120" placeholder="Nombre o empresa que va en la factura">
+          </label>
+          <label class="lv-field" data-gesicomm-si-factura style="display:none">
+            <span>RUC</span>
+            <input name="ruc" maxlength="20" placeholder="Ej: 80012345-6">
+            <small>Al facturar se aplica el IVA correspondiente.</small>
+          </label>
+          <label class="lv-consent lv-wide">
+            <input type="checkbox" name="acepta_promociones">
+            <span>Quiero recibir promociones y descuentos de la tienda en mi correo.</span>
           </label>
           <div class="lv-field lv-wide">
             <span>Metodo de pago</span>
@@ -3173,7 +3204,7 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
     <!-- Pedido creado: el carrito ya quedó vacío, así que sin esto se veía
          "Tu pedido todavia no tiene productos" en vez de la confirmación. -->
     <section class="lv-empty-checkout" data-gesicomm-checkout-confirmado style="display:none">
-      <p class="lv-kicker">Pedido confirmado</p>
+      <p class="lv-kicker">Pedido recibido</p>
       <h1>¡Gracias por tu compra!</h1>
       <p data-gesicomm-checkout="mensaje"></p>
       <p>La tienda se va a comunicar con vos para coordinar la entrega.</p>

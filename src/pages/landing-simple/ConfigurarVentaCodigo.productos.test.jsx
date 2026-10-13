@@ -43,7 +43,7 @@ describe('Presentación de los productos del lienzo', () => {
     const descripcion = bloqueFicha('Descripción breve');
     fireEvent.change(within(precio).getByLabelText('Precio anterior'), { target: { value: '1200000' } });
     fireEvent.change(within(nombreComercial).getByLabelText('Nombre comercial'), { target: { value: 'Cocina sin esfuerzo' } });
-    fireEvent.change(within(descripcion).getByLabelText('Texto debajo del precio'), { target: { value: 'Ideal para risottos' } });
+    fireEvent.change(within(descripcion).getByLabelText('Descripción'), { target: { value: 'Ideal para risottos' } });
     fireEvent.change(within(encabezado).getByLabelText('Encabezado'), { target: { value: 'Oferta' } });
     expect(datosPreview().productos[0]).toMatchObject({ precio: 850000, precio_antes: 1200000, descuento_pct: 29 });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));

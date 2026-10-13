@@ -61,7 +61,7 @@ describe('Vista producto: cada campo llega a la preview', () => {
     escribir(within(bloque('Reseñas comerciales')).getByLabelText('Texto de reseñas'), '4.8 · 320 reseñas en Asunción');
     escribir(within(bloque('Encabezado')).getByLabelText('Encabezado'), 'Más vendido');
     escribir(within(bloque('Nombre comercial')).getByLabelText('Nombre comercial'), 'Cacerola de hierro 24 cm');
-    escribir(within(bloque('Descripción breve')).getByLabelText('Texto debajo del precio'), 'Cocina parejo y retiene el calor.');
+    escribir(within(bloque('Descripción breve')).getByLabelText('Descripción'), 'Cocina parejo y retiene el calor.');
     escribir(within(bloque('Precio y oferta')).getByLabelText('Precio anterior'), '1000000');
     const f = ficha();
     expect(f.txt('[data-gesicomm-bind="resenas_texto"]')).toBe('4.8 · 320 reseñas en Asunción');

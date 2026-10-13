@@ -79,7 +79,10 @@ export default function CouriersSection({ esAdmin = false, recargarKey = 0, onCa
       couriers={couriers}
       esAdmin={esAdmin}
       onSaveZonas={async (nuevasZonas, courierIds) => {
-        setZonas(await replaceDeliveryZonas(nuevasZonas, courierIds));
+        const actualizadas = await replaceDeliveryZonas(nuevasZonas, courierIds);
+        setZonas(actualizadas);
+        onCambio?.();
+        return actualizadas;
       }}
       onCreateCourier={async (c) => {
         const res = await createCourier(c);

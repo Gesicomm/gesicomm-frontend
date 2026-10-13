@@ -908,7 +908,13 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
 :where(.commerce-header:not([data-variante="embebido"]) .brand, .commerce-header:not([data-variante="embebido"]) .brand-mark, .commerce-header:not([data-variante="embebido"]) [data-gesicomm-tienda="nombre"], .commerce-header:not([data-variante="embebido"]) .cart-button, .commerce-header:not([data-variante="embebido"]) .cart-button strong, .commerce-header:not([data-variante="embebido"]) .menu-toggle) {
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
+/* width: auto — el header se hereda del inicio, pero el CSS de cada vista se
+   suma al del inicio. Una ficha guardada con la plantilla vieja trae
+   ".brand-mark { width: 36px }" (ahí era un ícono cuadrado): el contenedor
+   del logo quedaba en 36px y el logo se montaba sobre el menú, solo en esa
+   vista. */
 :where(.commerce-header .brand, .commerce-header .brand-mark) {
+  width: auto !important;
   gap: clamp(10px, 1vw, 14px) !important;
   height: 76px !important;
   min-height: 76px !important;

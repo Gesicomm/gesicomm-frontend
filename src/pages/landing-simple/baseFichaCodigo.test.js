@@ -20,6 +20,23 @@ const FICHA_VIEJA = `<header class="site-header"><div class="container nav"></di
   </section>
 </main>`;
 
+describe('header heredado sobre el CSS viejo de una ficha guardada', () => {
+  it('el contenedor del logo no queda con el ancho del ícono de la plantilla vieja', () => {
+    const documento = construirDocumentoCodigo({
+      html: `<header class="commerce-header"><div class="container header-main">
+  <div class="brand-column"><a class="brand brand-mark" href="#" data-gesicomm-inicio><img class="brand-logo" data-gesicomm-tienda="logo" alt=""></a></div>
+  <nav class="header-nav"><div class="nav-links"><a href="/">Inicio</a></div></nav>
+</div></header>
+${FICHA_VIEJA.replace(/<header[\s\S]*?<\/header>/, '')}`,
+      // Así llega la ficha de Llevalofacil: el CSS del inicio y, después, el suyo.
+      css: '.brand-mark { display: inline-flex; min-width: 0; }\n.brand-mark { display: grid; width: 36px; height: 36px; place-items: center; }',
+    }, { datos: { vista: 'producto', tienda: {}, productos: [] } });
+    const { window } = new JSDOM(documento);
+
+    expect(window.getComputedStyle(window.document.querySelector('.commerce-header .brand')).width).toBe('auto');
+  });
+});
+
 describe('ficha guardada sin data-gesicomm-base', () => {
   it('marca el main de una copia vieja de la plantilla', () => {
     const doc = new JSDOM(conBaseDeFicha(FICHA_VIEJA)).window.document;

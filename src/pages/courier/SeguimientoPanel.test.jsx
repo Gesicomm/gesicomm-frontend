@@ -18,6 +18,7 @@ vi.mock("../../services/seguimiento.service", () => ({
     cancelarRecordatorio: vi.fn(),
     guardarNota: vi.fn(),
     crearContacto: vi.fn(),
+    completarFase: vi.fn(),
   },
 }));
 
@@ -88,4 +89,100 @@ test("cancelar un recordatorio pendiente lo saca del panel", async () => {
 
   await waitFor(() => expect(screen.getByText("Sin próximo seguimiento")).toBeInTheDocument());
   expect(seguimientoService.cancelarRecordatorio).toHaveBeenCalledWith(50, 902);
+});
+
+// 2026-10-13: mientras el pedido está por confirmar, se puede confirmar desde
+// el panel en la fase que sea, sin tener que mandar las que faltan.
+const FLUJO_CONFIRMACION = {
+  id: 10, nombre: "Confirmación de pedido", envios_totales: 1,
+  fases: [
+    { id: 101, orden: 1, nombre: "Confirmación", envios: 1, completada: true, ultimo_envio_en: "2026-10-12T15:00:00.000Z" },
+    { id: 102, orden: 2, nombre: "Recordatorio", envios: 0, completada: false },
+  ],
+};
+
+test("un pedido por confirmar se puede confirmar desde el panel, esté en la fase que esté", async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([FLUJO_CONFIRMACION]);
+  const onConfirmarPedido = vi.fn();
+  const envio = pedido({ estado: "EnSeguimiento" });
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} onConfirmarPedido={onConfirmarPedido} />);
+  await screen.findByText(/Fase 2 — Recordatorio/);
+
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar pedido" }));
+
+  expect(onConfirmarPedido).toHaveBeenCalledWith(envio);
+});
+
+test("un pedido que ya se confirmó no ofrece confirmarlo de nuevo", async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([FLUJO_CONFIRMACION]);
+  render(<SeguimientoPanel open envio={pedido({ estado: "Despachado" })} onClose={() => {}} onConfirmarPedido={vi.fn()} />);
+  await screen.findByText(/Fase 2 — Recordatorio/);
+
+  expect(screen.queryByRole("button", { name: "Confirmar pedido" })).not.toBeInTheDocument();
+});
+
+test("un flujo legado de confirmación web no se muestra como Contacto inicial", async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{
+    id: 99,
+    nombre: "Contacto inicial",
+    tipo: "CONFIRMACION_PEDIDO_WEB",
+    envios_totales: 0,
+    fases: [{ id: 991, orden: 1, nombre: "Fase 1", envios: 0, completada: false }],
+  }]);
+
+  render(<SeguimientoPanel open envio={pedido({ estado: "Pendiente" })} onClose={() => {}} />);
+  await screen.findByText(/Fase 1/);
+
+  expect(screen.getByText("Confirmación de pedido web")).toBeInTheDocument();
+  expect(screen.queryByText("Contacto inicial")).not.toBeInTheDocument();
+});
+
+const FLUJO_ENVIO = {
+  id: 30, nombre: "Seguimiento de envío", tipo: "SEGUIMIENTO_ENVIO", envios_totales: 2,
+  fases: [
+    { id: 301, orden: 1, nombre: "Pedido confirmado", envios: 1, completada: true, ultimo_envio_en: "2026-10-12T15:00:00.000Z" },
+    { id: 302, orden: 2, nombre: "Pedido despachado", envios: 1, completada: false, ultimo_envio_en: "2026-10-12T16:00:00.000Z" },
+    { id: 303, orden: 3, nombre: "Pedido en camino", envios: 0, completada: false },
+  ],
+};
+
+test("marcar enviada la fase Pedido despachado también despacha el pedido", async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([FLUJO_ENVIO]);
+  seguimientoService.completarFase.mockResolvedValue({
+    recordatorios_cumplidos: [],
+    siguiente_fase: { id: 303, orden: 3, nombre: "Pedido en camino" },
+  });
+  const envio = pedido({ estado: "Preparado" });
+  const onDespacharPedido = vi.fn(async () => ({ ...envio, estado: "Despachado" }));
+
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} onDespacharPedido={onDespacharPedido} />);
+  await screen.findByText(/Fase 2 — Pedido despachado/);
+
+  fireEvent.click(screen.getByRole("button", { name: /Marcar como enviado/ }));
+
+  await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, 302));
+  expect(onDespacharPedido).toHaveBeenCalledWith(envio);
+});
+
+test("marcar enviada la fase Pedido en camino es solo aviso y no cambia estado", async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{
+    ...FLUJO_ENVIO,
+    fases: FLUJO_ENVIO.fases.map((fase) => (
+      fase.id === 302
+        ? { ...fase, completada: true }
+        : fase.id === 303
+          ? { ...fase, envios: 1, completada: false, ultimo_envio_en: "2026-10-12T17:00:00.000Z" }
+          : fase
+    )),
+  }]);
+  seguimientoService.completarFase.mockResolvedValue({ recordatorios_cumplidos: [], siguiente_fase: null });
+  const onDespacharPedido = vi.fn();
+
+  render(<SeguimientoPanel open envio={pedido({ estado: "Despachado" })} onClose={() => {}} onDespacharPedido={onDespacharPedido} />);
+  await screen.findByText(/Fase 3 — Pedido en camino/);
+
+  fireEvent.click(screen.getByRole("button", { name: /Marcar como enviado/ }));
+
+  await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, 303));
+  expect(onDespacharPedido).not.toHaveBeenCalled();
 });

@@ -190,7 +190,7 @@ export default function FulfillmentCard({ onCambio }) {
     );
   };
 
-  const Opcion = ({ valor, icono: Icono, titulo, children, deshabilitada, motivo }) => {
+  const Opcion = ({ valor, icono: Icono, titulo, bajada, children, deshabilitada, motivo }) => {
     const activa = modalidad === valor;
     return (
       <button
@@ -202,7 +202,7 @@ export default function FulfillmentCard({ onCambio }) {
           }
           setModalidad(valor);
         }}
-        className={`flex-1 rounded-lg border-2 p-4 text-left transition-colors ${
+        className={`flex-1 rounded-lg border p-4 text-left transition-colors ${
           deshabilitada ? 'cursor-not-allowed opacity-60' : ''
         } ${
           activa ? 'border-primary bg-primary/5' : 'border-border bg-surface hover:border-primary/50'
@@ -215,7 +215,8 @@ export default function FulfillmentCard({ onCambio }) {
           <Icono size={16} className={activa ? 'text-primary' : 'text-fg-muted'} />
           <h4 className={`m-0 text-[15px] font-semibold ${activa ? 'text-primary' : 'text-fg'}`}>{titulo}</h4>
         </div>
-        <div className="pl-6 text-[13px] text-fg-muted">{children}</div>
+        {bajada && <p className="m-0 pl-6 text-[13px] text-fg-muted">{bajada}</p>}
+        {children && <div className="mt-2 pl-6 text-[13px] text-fg-muted">{children}</div>}
         {deshabilitada && motivo && (
           <p className="m-0 mt-2 pl-6 text-[12px] text-warning">{motivo}</p>
         )}
@@ -224,40 +225,38 @@ export default function FulfillmentCard({ onCambio }) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
-      <div className="mb-1 flex items-center gap-2">
-        <Truck size={18} className="text-primary" />
-        <h3 className="m-0 text-base font-semibold text-fg">¿Cómo querés gestionar las entregas de tus pedidos?</h3>
+    <div>
+      <div className="mb-4">
+        <h3 className="m-0 text-base font-semibold text-fg">Quién entrega cuando vendés</h3>
+        <p className="m-0 mt-1 text-sm text-fg-muted">
+          Esta elección define qué couriers aparecen al crear un pedido y cómo se calcula el envío en la tienda.
+        </p>
       </div>
-      <p className="m-0 mb-4 text-sm text-fg-muted">
-        Esto define quién prepara y entrega cuando vendés. Es independiente de dónde recibís el stock que comprás.
-      </p>
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Opcion
+          valor="PROPIA"
+          icono={Building2}
+          titulo="Mis propios envíos"
+          bajada="Despachás desde un depósito propio y usás tus couriers asignados."
+          deshabilitada={!config.propia.disponible}
+          motivo="Necesitás tener al menos un depósito activo."
+        />
+
+        <Opcion
           valor="GESICOMM"
           icono={Truck}
-          titulo="Gesicom-RAHA gestiona mis envíos"
+          titulo="Gesicom-RAHA gestiona la entrega"
+          bajada="Gesicom prepara y despacha con su red logística."
           deshabilitada={!config.gesicomm.disponible}
           motivo="Gesicomm todavía no tiene cobertura configurada."
         >
-          Gesicomm prepara y despacha tus pedidos con sus proveedores logísticos.
           {config.gesicomm.costo_desde !== null && (
             <span className="mt-1 block font-medium text-fg">
               Desde {formatGs(config.gesicomm.costo_desde)} por entrega
             </span>
           )}
           <span className="mt-1 block">El costo depende de la ciudad del destinatario.</span>
-        </Opcion>
-
-        <Opcion
-          valor="PROPIA"
-          icono={Building2}
-          titulo="Quiero gestionar mis propios envíos"
-          deshabilitada={!config.propia.disponible}
-          motivo="Necesitás tener al menos un depósito activo."
-        >
-          Despachás desde tu depósito y elegís el courier al crear el pedido.
         </Opcion>
       </div>
 

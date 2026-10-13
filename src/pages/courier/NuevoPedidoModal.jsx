@@ -4,6 +4,7 @@ import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
 import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio, getCourierGeografia } from "../../services/courierApi";
 import { depositoService } from "../../services/deposito.service";
+import { inventarioService } from "../../services/inventario.service";
 import { canalVentaService } from "../../services/canalVentaService";
 import { obtenerTarifaPara, buscarCourierYTarifa, buscarZonaDelivery } from "../../lib/tarifaCourier";
 import { getMediaUrl } from "../../services/api";
@@ -89,7 +90,7 @@ const PASOS_PEDIDO = [
 
 const ERROR_KEYS_POR_PASO = {
   cliente: ["nombre_cliente", "telefono"],
-  entrega: ["ciudad", "direccion", "link_maps"],
+  entrega: ["ciudad", "direccion", "link_maps", "origen_preferido_id"],
   productos: ["items"],
   revision: ["ruc"],
 };
@@ -192,15 +193,23 @@ function buildFormFromEnvio(envio) {
  */
 export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, deliveryZonas = [], onPrecioItemActualizado, onAbrirSeguimiento }) {
   const modoCompletar = !!envio;
-  // Confirmar solo aplica a un pedido Pendiente. Sobre uno que ya avanzó, el
-  // modal es un editor: guarda datos y no toca el estado. El título y el
-  // botón lo dicen, para no prometer una acción que el backend va a rechazar.
-  const vaAConfirmar = modoCompletar && envio.estado === "Pendiente";
+  // Confirmar solo aplica a un pedido por confirmar: Pendiente, o En
+  // seguimiento (un pendiente al que ya se le escribió). Sobre uno que ya
+  // avanzó, el modal es un editor: guarda datos y no toca el estado. El
+  // título y el botón lo dicen, para no prometer una acción que el backend
+  // va a rechazar.
+  const vaAConfirmar = modoCompletar && ["Pendiente", "EnSeguimiento"].includes(envio.estado);
 
   const [form, setForm] = useState(() => buildFormFromEnvio(null));
   const [items, setItems] = useState([]);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [couriers, setCouriers] = useState([]);
+  const [courierIdsPorDeposito, setCourierIdsPorDeposito] = useState({});
+  const [couriersDepositoLoading, setCouriersDepositoLoading] = useState("");
+  const [couriersDepositoError, setCouriersDepositoError] = useState("");
+  const [stockOrigen, setStockOrigen] = useState(null);
+  const [stockOrigenLoading, setStockOrigenLoading] = useState(false);
+  const [stockOrigenError, setStockOrigenError] = useState("");
   const [metodosPago, setMetodosPago] = useState([]);
   const [canalesVenta, setCanalesVenta] = useState([]);
   const [ubicaciones, setUbicaciones] = useState([]);
@@ -307,12 +316,118 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   // van agregando en el formulario.
   // Normalizamos siempre el subtotal porque los items que vienen del endpoint
   // paginado no tienen el campo "subtotal" precalculado — lo calculamos acá.
-  const itemsParaTarifa = modoCompletar
-    ? (itemsActuales || envio?.items || []).map(it => ({
+  const itemsBasePedido = modoCompletar ? (itemsActuales || envio?.items || []) : items;
+  const itemsParaTarifa = itemsBasePedido.map(it => ({
         ...it,
         subtotal: Number(it.subtotal) || (Number(it.precio_unitario) * Number(it.cantidad)),
+      }));
+  const itemsStockPedido = useMemo(() => (
+    itemsBasePedido
+      .map(it => ({
+        producto_id: it.producto_id ? Number(it.producto_id) : null,
+        variante_id: it.variante_id ? Number(it.variante_id) : null,
+        oferta_id: it.oferta_id ? Number(it.oferta_id) : null,
+        componente_variante_id: it.componente_variante_id ? Number(it.componente_variante_id) : null,
+        cantidad: Number(it.cantidad) || 0,
       }))
-    : items;
+      .filter(it => it.producto_id && it.cantidad > 0)
+  ), [itemsBasePedido]);
+  const itemsStockPedidoKey = useMemo(() => JSON.stringify(itemsStockPedido), [itemsStockPedido]);
+
+  const depositoSeleccionadoId = form.origen_preferido_id ? String(form.origen_preferido_id) : "";
+  const courierIdsDepositoSeleccionado = depositoSeleccionadoId
+    ? courierIdsPorDeposito[depositoSeleccionadoId]
+    : null;
+  const courierIdsPermitidos = useMemo(() => (
+    Array.isArray(courierIdsDepositoSeleccionado)
+      ? new Set(courierIdsDepositoSeleccionado.map(Number))
+      : null
+  ), [courierIdsDepositoSeleccionado]);
+  const couriersParaOrigen = useMemo(() => {
+    if (!depositoSeleccionadoId) return couriers;
+    if (!courierIdsPermitidos) return [];
+    return couriers.filter(c => courierIdsPermitidos.has(Number(c.id)));
+  }, [couriers, courierIdsPermitidos, depositoSeleccionadoId]);
+  const deliveryZonasParaOrigen = useMemo(() => {
+    if (!depositoSeleccionadoId || !courierIdsPermitidos) return deliveryZonas;
+    return (deliveryZonas || []).filter(z => !z.courier_id || courierIdsPermitidos.has(Number(z.courier_id)));
+  }, [courierIdsPermitidos, deliveryZonas, depositoSeleccionadoId]);
+
+  useEffect(() => {
+    if (!open || !depositoSeleccionadoId || courierIdsPorDeposito[depositoSeleccionadoId]) return;
+    let cancelado = false;
+    setCouriersDepositoLoading(depositoSeleccionadoId);
+    setCouriersDepositoError("");
+    depositoService.listarCouriersDeposito(depositoSeleccionadoId)
+      .then(data => {
+        if (cancelado) return;
+        const ids = (data?.couriers || [])
+          .filter(c => c.habilitado)
+          .map(c => Number(c.id))
+          .filter(Boolean);
+        setCourierIdsPorDeposito(prev => ({ ...prev, [depositoSeleccionadoId]: ids }));
+      })
+      .catch(() => {
+        if (cancelado) return;
+        setCourierIdsPorDeposito(prev => ({ ...prev, [depositoSeleccionadoId]: [] }));
+        setCouriersDepositoError("No pudimos cargar los couriers de este depósito.");
+      })
+      .finally(() => {
+        if (!cancelado) setCouriersDepositoLoading("");
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [courierIdsPorDeposito, depositoSeleccionadoId, open]);
+
+  useEffect(() => {
+    if (!depositoSeleccionadoId || !courierIdsPermitidos || !form.courier_id) return;
+    if (courierIdsPermitidos.has(Number(form.courier_id))) return;
+    setForm(prev => (
+      String(prev.origen_preferido_id || "") === depositoSeleccionadoId
+        ? { ...prev, courier_id: "", costo_envio: 0 }
+        : prev
+    ));
+  }, [courierIdsPermitidos, depositoSeleccionadoId, form.courier_id]);
+
+  useEffect(() => {
+    if (!open || !depositoSeleccionadoId || itemsStockPedido.length === 0) {
+      setStockOrigen(null);
+      setStockOrigenError("");
+      setStockOrigenLoading(false);
+      return;
+    }
+
+    let cancelado = false;
+    setStockOrigenLoading(true);
+    setStockOrigenError("");
+    inventarioService.diagnosticarStockPedido({
+      origen_preferido_id: Number(depositoSeleccionadoId),
+      items: itemsStockPedido,
+    })
+      .then(data => {
+        if (!cancelado) setStockOrigen(data || null);
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setStockOrigen(null);
+          setStockOrigenError("No pudimos verificar el stock de este depósito.");
+        }
+      })
+      .finally(() => {
+        if (!cancelado) setStockOrigenLoading(false);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [depositoSeleccionadoId, itemsStockPedidoKey, open]);
+
+  const problemaStockOrigen = useMemo(() => (
+    form.origen_preferido_id && stockOrigen?.origen && stockOrigen.origen.ok === false
+      ? stockOrigen.origen
+      : null
+  ), [form.origen_preferido_id, stockOrigen]);
 
   /**
    * Cambia el precio de UN ítem del pedido — caso real de seguimiento
@@ -355,13 +470,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     if (form.courier_id) return;
     if (!form.ciudad || metodosPago.length === 0) return;
     const esAnticipado = form.pago_anticipado;
-    const resultado = buscarZonaDelivery(deliveryZonas, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento)
-      || buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento);
+    const resultado = buscarZonaDelivery(deliveryZonasParaOrigen, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento)
+      || buscarCourierYTarifa(couriersParaOrigen, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento);
     if (resultado) {
       setForm(prev => (prev.courier_id ? prev : { ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, modoCompletar, couriers, deliveryZonas, metodosPago, form.ciudad, form.departamento]);
+  }, [open, modoCompletar, couriersParaOrigen, deliveryZonasParaOrigen, metodosPago, form.ciudad, form.departamento]);
 
   const optionsDepartamentos = useMemo(() => (
     geografia.map(d => ({
@@ -419,7 +534,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       }));
     });
 
-    deliveryZonas
+    deliveryZonasParaOrigen
       .filter(z => z.tipo_cobertura !== 'RESTO_PAIS')
       .forEach(z => agregar({
         ciudad: z.ciudad,
@@ -430,7 +545,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
         tieneTarifa: true,
       }));
 
-    couriers.forEach(c => {
+    couriersParaOrigen.forEach(c => {
       if (c.tarifas && Array.isArray(c.tarifas)) {
         c.tarifas
           .filter(t => t.tipo_cobertura !== 'RESTO_PAIS')
@@ -448,7 +563,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     });
 
     return Array.from(ciudades.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
-  }, [couriers, deliveryZonas, form.departamento, geografia]);
+  }, [couriersParaOrigen, deliveryZonasParaOrigen, form.departamento, geografia]);
 
   const productoPorId = useMemo(() => {
     const map = new Map();
@@ -489,7 +604,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
 
       if (valCiudad) {
         const esAnticipado = prev.pago_anticipado;
-        const resultadoZona = buscarZonaDelivery(deliveryZonas, valCiudad, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
+        const resultadoZona = buscarZonaDelivery(deliveryZonasParaOrigen, valCiudad, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
         if (resultadoZona) {
           nextForm.courier_id = resultadoZona.courierId || "";
           nextForm.costo_envio = resultadoZona.costo;
@@ -498,7 +613,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
 
         // Si ya hay un courier seleccionado, intentar buscar su tarifa para la nueva ciudad
         if (prev.courier_id) {
-          const costo = obtenerTarifaPara(couriers, valCiudad, prev.courier_id, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
+          const costo = obtenerTarifaPara(couriersParaOrigen, valCiudad, prev.courier_id, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
           if (costo !== null) {
             nextForm.costo_envio = costo;
             return nextForm;
@@ -506,7 +621,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
         }
 
         // Si no hay courier o el seleccionado no cubre la nueva ciudad, buscar el primero que la cubra
-        const resultado = buscarCourierYTarifa(couriers, valCiudad, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
+        const resultado = buscarCourierYTarifa(couriersParaOrigen, valCiudad, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
@@ -528,7 +643,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       const nextForm = { ...prev, courier_id: courierId };
       if (courierId && prev.ciudad) {
         const esAnticipado = prev.pago_anticipado;
-        const costo = obtenerTarifaPara(couriers, prev.ciudad, courierId, esAnticipado, itemsParaTarifa, prev.departamento);
+        const costo = obtenerTarifaPara(couriersParaOrigen, prev.ciudad, courierId, esAnticipado, itemsParaTarifa, prev.departamento);
         if (costo !== null) {
           nextForm.costo_envio = costo;
         }
@@ -547,20 +662,15 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       const nextForm = { ...prev, pago_anticipado: nuevoValor };
       if (!prev.ciudad) return nextForm;
 
-      const resultadoZona = buscarZonaDelivery(deliveryZonas, prev.ciudad, nuevoValor, itemsParaTarifa, prev.departamento);
-      if (resultadoZona) {
-        nextForm.courier_id = resultadoZona.courierId || "";
-        nextForm.costo_envio = resultadoZona.costo;
-      } else if (prev.courier_id) {
-        const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, nuevoValor, itemsParaTarifa, prev.departamento);
-        nextForm.costo_envio = costo !== null ? costo : 0;
+      if (prev.courier_id) {
+        const costo = obtenerTarifaPara(couriersParaOrigen, prev.ciudad, prev.courier_id, nuevoValor, itemsParaTarifa, prev.departamento);
+        if (costo !== null) nextForm.costo_envio = costo;
       } else {
-        const resultado = buscarCourierYTarifa(couriers, prev.ciudad, nuevoValor, itemsParaTarifa, prev.departamento);
+        const resultado = buscarZonaDelivery(deliveryZonasParaOrigen, prev.ciudad, nuevoValor, itemsParaTarifa, prev.departamento)
+          || buscarCourierYTarifa(couriersParaOrigen, prev.ciudad, nuevoValor, itemsParaTarifa, prev.departamento);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
-        } else {
-          nextForm.costo_envio = 0;
         }
       }
       return nextForm;
@@ -581,15 +691,15 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
 
       const esAnticipado = prev.pago_anticipado;
       if (prev.courier_id) {
-        const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa, departamento);
+        const costo = obtenerTarifaPara(couriersParaOrigen, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa, departamento);
         if (costo !== null) {
           nextForm.costo_envio = costo;
           return nextForm;
         }
       }
 
-      const resultado = buscarZonaDelivery(deliveryZonas, prev.ciudad, esAnticipado, itemsParaTarifa, departamento)
-        || buscarCourierYTarifa(couriers, prev.ciudad, esAnticipado, itemsParaTarifa, departamento);
+      const resultado = buscarZonaDelivery(deliveryZonasParaOrigen, prev.ciudad, esAnticipado, itemsParaTarifa, departamento)
+        || buscarCourierYTarifa(couriersParaOrigen, prev.ciudad, esAnticipado, itemsParaTarifa, departamento);
       if (resultado) {
         nextForm.courier_id = resultado.courierId;
         nextForm.costo_envio = resultado.costo;
@@ -602,10 +712,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
 
   const coberturaDeliveryActual = useMemo(() => {
     if (!form.ciudad) return null;
-    return buscarZonaDelivery(deliveryZonas, form.ciudad, form.pago_anticipado, itemsParaTarifa, form.departamento)
-      || buscarCourierYTarifa(couriers, form.ciudad, form.pago_anticipado, itemsParaTarifa, form.departamento);
+    return buscarZonaDelivery(deliveryZonasParaOrigen, form.ciudad, form.pago_anticipado, itemsParaTarifa, form.departamento)
+      || buscarCourierYTarifa(couriersParaOrigen, form.ciudad, form.pago_anticipado, itemsParaTarifa, form.departamento);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [couriers, deliveryZonas, form.ciudad, form.departamento, form.pago_anticipado, itemsParaTarifa]);
+  }, [couriersParaOrigen, deliveryZonasParaOrigen, form.ciudad, form.departamento, form.pago_anticipado, itemsParaTarifa]);
 
   const courierAsignado = useMemo(
     () => couriers.find(c => String(c.id) === String(form.courier_id)) || null,
@@ -631,14 +741,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   const aplicarTarifaConItems = (nuevosItems) => {
     if (!form.ciudad) return;
     const esAnticipado = form.pago_anticipado;
-    const resultadoZona = buscarZonaDelivery(deliveryZonas, form.ciudad, esAnticipado, nuevosItems, form.departamento);
+    const resultadoZona = buscarZonaDelivery(deliveryZonasParaOrigen, form.ciudad, esAnticipado, nuevosItems, form.departamento);
     if (resultadoZona) {
       setForm(prev => ({ ...prev, courier_id: resultadoZona.courierId || "", costo_envio: resultadoZona.costo }));
     } else if (form.courier_id) {
-      const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems, form.departamento);
+      const nuevoCosto = obtenerTarifaPara(couriersParaOrigen, form.ciudad, form.courier_id, esAnticipado, nuevosItems, form.departamento);
       setForm(prev => ({ ...prev, costo_envio: nuevoCosto !== null ? nuevoCosto : 0 }));
     } else {
-      const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, nuevosItems, form.departamento);
+      const resultado = buscarCourierYTarifa(couriersParaOrigen, form.ciudad, esAnticipado, nuevosItems, form.departamento);
       if (resultado) {
         setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
       } else {
@@ -759,6 +869,11 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       if (!form.direccion.trim()) {
         newErrors.direccion = "Por favor, ingresa la dirección de entrega.";
       }
+      if (form.origen_preferido_id && stockOrigenLoading) {
+        newErrors.origen_preferido_id = "Esperá un momento: estamos verificando el stock del depósito.";
+      } else if (problemaStockOrigen) {
+        newErrors.origen_preferido_id = "El depósito elegido no tiene stock suficiente para este pedido.";
+      }
       if (form.link_maps.trim()) {
         try {
           new URL(form.link_maps.trim());
@@ -850,11 +965,16 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       await onSubmit(payload, modoCompletar);
     } catch (err) {
       const data = err.response?.data || {};
-      setSubmitError(
-        data.code === 'STOCK_DISTRIBUIDO_ENTRE_UBICACIONES'
-          ? 'Hay stock suficiente, pero está distribuido entre varias ubicaciones. Elegí una ubicación con stock suficiente o separá el pedido.'
-          : (data.error || "Ocurrió un error al guardar el pedido.")
-      );
+      if (data.code === 'STOCK_DISTRIBUIDO_ENTRE_UBICACIONES') {
+        setPasoActivo(1);
+        setErrors(prev => ({
+          ...prev,
+          origen_preferido_id: data.error || 'El origen de despacho elegido no tiene stock suficiente. Revisá el depósito antes de confirmar.',
+        }));
+        setSubmitError(null);
+      } else {
+        setSubmitError(data.error || "Ocurrió un error al guardar el pedido.");
+      }
     } finally {
       setGuardando(false);
     }
@@ -1276,9 +1396,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
               <div className="np-row">
                 <label>Origen de despacho</label>
                 <select
-                  className="form-input"
+                  className={`form-input ${errors.origen_preferido_id ? 'input-error' : ''}`}
                   value={form.origen_preferido_id}
-                  onChange={e => setForm({ ...form, origen_preferido_id: e.target.value })}
+                  aria-invalid={Boolean(errors.origen_preferido_id)}
+                  onChange={e => {
+                    setForm({ ...form, origen_preferido_id: e.target.value });
+                    if (errors.origen_preferido_id) setErrors({ ...errors, origen_preferido_id: null });
+                    setSubmitError(null);
+                  }}
                 >
                   <option value="">Automático según stock</option>
                   {ubicaciones.map((u) => (
@@ -1292,6 +1417,51 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                     ? 'El pedido completo se reserva desde este depósito. Si no tiene stock suficiente, el sistema lo va a avisar y no se confirma.'
                     : 'No elegís vos: al confirmar, el sistema toma el stock del depósito de esta tienda que lo tenga. Elegí un depósito solo si querés forzar de dónde sale.'}
                 </span>
+                {couriersDepositoError && form.origen_preferido_id && (
+                  <span className="field-error">{couriersDepositoError}</span>
+                )}
+                {stockOrigenLoading && form.origen_preferido_id && itemsStockPedido.length > 0 && (
+                  <span className="np-hint">Verificando stock de este depósito...</span>
+                )}
+                {stockOrigenError && form.origen_preferido_id && (
+                  <span className="field-error">{stockOrigenError}</span>
+                )}
+                {problemaStockOrigen && (
+                  <div className="np-stock-alert" role="alert">
+                    <AlertCircle size={16} />
+                    <div>
+                      <strong>El depósito seleccionado no tiene stock suficiente.</strong>
+                      <p>
+                        {problemaStockOrigen.faltantes?.length === 1
+                          ? `${problemaStockOrigen.faltantes[0].nombre} necesita ${problemaStockOrigen.faltantes[0].necesario} unidad${problemaStockOrigen.faltantes[0].necesario === 1 ? '' : 'es'} y acá hay ${problemaStockOrigen.faltantes[0].disponible}.`
+                          : "Este depósito no alcanza para todos los productos del pedido."}
+                      </p>
+                      {(stockOrigen?.alternativas || []).length > 0 ? (
+                        <div className="np-stock-alert-actions">
+                          <span>Hay stock suficiente en:</span>
+                          {stockOrigen.alternativas.slice(0, 3).map((d) => (
+                            <button
+                              key={d.id}
+                              type="button"
+                              onClick={() => {
+                                setForm(prev => ({ ...prev, origen_preferido_id: String(d.id) }));
+                                setErrors(prev => ({ ...prev, origen_preferido_id: null }));
+                                setSubmitError(null);
+                              }}
+                            >
+                              {d.nombre}{d.ciudad ? ` · ${d.ciudad}` : ''}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p>El stock disponible está distribuido entre varias ubicaciones. Cambiá el origen de despacho o separá el pedido.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {errors.origen_preferido_id && !problemaStockOrigen && (
+                  <span className="field-error">{errors.origen_preferido_id}</span>
+                )}
               </div>
 
               {/* El tilde dice UNA sola cosa: si el envío se suma o no al
@@ -1323,14 +1493,23 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                     className="form-input"
                     value={form.courier_id}
                     onChange={e => handleCourierChange(e.target.value)}
+                    disabled={Boolean(form.origen_preferido_id && couriersDepositoLoading === String(form.origen_preferido_id))}
                   >
-                    <option value="">-- Sin asignar --</option>
-                    {couriers.map(c => (
+                    <option value="">
+                      {form.origen_preferido_id && couriersDepositoLoading === String(form.origen_preferido_id)
+                        ? "-- Cargando couriers --"
+                        : "-- Sin asignar --"}
+                    </option>
+                    {couriersParaOrigen.map(c => (
                       <option key={c.id} value={c.id}>{c.nombre} ({c.vehiculo})</option>
                     ))}
                   </select>
                   <span className="np-hint">
-                    {courierAsignado
+                    {form.origen_preferido_id && couriersDepositoLoading === String(form.origen_preferido_id)
+                      ? "Estamos buscando los couriers vinculados a ese depósito."
+                      : form.origen_preferido_id && courierIdsPermitidos && couriersParaOrigen.length === 0
+                        ? "Este depósito todavía no tiene couriers vinculados."
+                        : courierAsignado
                       ? `Asignado a ${courierAsignado.nombre}.`
                       : "No bloquea el pedido: podés asignarlo cuando tengas el courier cargado."}
                   </span>

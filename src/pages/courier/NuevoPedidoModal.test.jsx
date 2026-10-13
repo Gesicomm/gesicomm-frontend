@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { NuevoPedidoModal } from './NuevoPedidoModal';
+import { getCouriers } from '../../services/courierApi';
+import { depositoService } from '../../services/deposito.service';
+import { inventarioService } from '../../services/inventario.service';
 
 vi.mock('../../services/productService', () => ({
   productService: { buscar: vi.fn().mockResolvedValue({ data: [] }) },
@@ -14,6 +17,18 @@ vi.mock('../../services/courierApi', () => ({
     { id: 1, nombre: 'Efectivo contra entrega', comision_porcentaje: 0, es_anticipado: false, activo: true },
     { id: 3, nombre: 'POS / Tarjeta', comision_porcentaje: 2.2, es_anticipado: true, activo: true },
   ]),
+  getCourierGeografia: vi.fn().mockResolvedValue([]),
+}));
+vi.mock('../../services/deposito.service', () => ({
+  depositoService: {
+    listarDepositos: vi.fn().mockResolvedValue({ data: [] }),
+    listarCouriersDeposito: vi.fn().mockResolvedValue({ couriers: [] }),
+  },
+}));
+vi.mock('../../services/inventario.service', () => ({
+  inventarioService: {
+    diagnosticarStockPedido: vi.fn().mockResolvedValue({ depositos: [], origen: null, alternativas: [], faltantes: [] }),
+  },
 }));
 vi.mock('../../services/canalVentaService', () => ({
   canalVentaService: { listar: vi.fn().mockResolvedValue([]) },
@@ -73,6 +88,17 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
   it('sí manda "Confirmado" cuando el pedido está Pendiente', async () => {
     const onSubmit = vi.fn().mockResolvedValue({});
     await abrir({ ...pedidoEntregado, estado: 'Pendiente' }, onSubmit);
+    await guardar();
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0].estado).toBe('Confirmado');
+  });
+
+  it('también confirma un pedido que está en seguimiento: sigue estando por confirmar', async () => {
+    // Al marcar el primer mensaje como enviado el pedido pasa de Pendiente a
+    // En seguimiento, y desde ahí el modal solo guardaba: no había forma de
+    // confirmarlo.
+    const onSubmit = vi.fn().mockResolvedValue({});
+    await abrir({ ...pedidoEntregado, estado: 'EnSeguimiento' }, onSubmit);
     await guardar();
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0][0].estado).toBe('Confirmado');
@@ -139,19 +165,93 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
     expect(onSubmit.mock.calls[0][0].costo_envio).toBe(35000);
   });
 
-  it('sin tarifa para ese tipo de pago deja el flete en cero para cargarlo a mano', async () => {
-    // Luque solo tiene tarifa contra entrega. Al pasar a anticipado no hay
-    // coincidencia exacta: antes degradaba a la tarifa más barata de la
-    // ciudad y cobraba un precio que nadie configuró para ese caso.
-    const zonas = [
-      { ciudad: 'Luque', departamento: 'Central', tipo_pago: 'Al Recibir', rango_min: 1, rango_max: 3, costo: 20000, activo: true },
-    ];
+  it('si el courier ya estaba asignado conserva el flete cuando no hay tarifa para el nuevo tipo de pago', async () => {
+    // Luque solo tiene tarifa contra entrega para este courier. Al pasar a
+    // anticipado no hay coincidencia exacta, pero el flete real ya cargado no
+    // debe pisarse a cero.
+    getCouriers.mockResolvedValueOnce([
+      {
+        id: 76,
+        nombre: 'JB Rider',
+        vehiculo: 'Moto',
+        tarifas: [
+          { ciudad_zona: 'Luque', departamento: 'Central', tipo_pago: 'Al Recibir', rango_min: 1, rango_max: 3, costo: 30000, activo: true },
+        ],
+      },
+    ]);
     const onSubmit = vi.fn().mockResolvedValue({});
-    render(<NuevoPedidoModal open envio={pedidoEntregado} onClose={() => {}} onSubmit={onSubmit} deliveryZonas={zonas} />);
+    render(<NuevoPedidoModal open envio={{ ...pedidoEntregado, courier_id: 76, costo_envio: 30000 }} onClose={() => {}} onSubmit={onSubmit} deliveryZonas={[]} />);
     await waitFor(() => expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('checkbox', { name: /Pago anticipado/i }));
-    await waitFor(() => expect(screen.getByLabelText(/Costo del envío/i).value).toBe('0'));
+    await waitFor(() => expect(screen.getByLabelText(/Costo del envío/i).value).toBe('30.000'));
+  });
+
+  it('al elegir un origen de despacho lista solo los couriers vinculados a ese depósito', async () => {
+    getCouriers.mockResolvedValueOnce([
+      { id: 1, nombre: 'Courier Central', vehiculo: 'Moto', tarifas: [] },
+      { id: 2, nombre: 'Courier Luque', vehiculo: 'Auto', tarifas: [] },
+    ]);
+    depositoService.listarDepositos.mockResolvedValueOnce({
+      data: [{ id: 10, nombre: 'Principal', ciudad: 'Luque' }],
+    });
+    depositoService.listarCouriersDeposito.mockResolvedValueOnce({
+      couriers: [
+        { id: 1, nombre: 'Courier Central', habilitado: false },
+        { id: 2, nombre: 'Courier Luque', habilitado: true },
+      ],
+    });
+
+    const onSubmit = vi.fn().mockResolvedValue({});
+    const { container } = render(<NuevoPedidoModal open envio={null} onClose={() => {}} onSubmit={onSubmit} deliveryZonas={[]} />);
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    const origenSelect = Array.from(container.querySelectorAll('select'))
+      .find(select => Array.from(select.options).some(option => option.textContent === 'Automático según stock'));
+    fireEvent.change(origenSelect, { target: { value: '10' } });
+
+    await waitFor(() => expect(depositoService.listarCouriersDeposito).toHaveBeenCalledWith('10'));
+    await waitFor(() => {
+      const courierSelect = Array.from(container.querySelectorAll('select'))
+        .find(select => Array.from(select.options).some(option => option.textContent === 'Courier Luque (Auto)'));
+      const opciones = Array.from(courierSelect.options).map(o => o.textContent);
+      expect(opciones).toContain('Courier Luque (Auto)');
+      expect(opciones).not.toContain('Courier Central (Moto)');
+    });
+  });
+
+  it('avisa al elegir un depósito sin stock y sugiere uno que sí alcanza', async () => {
+    depositoService.listarDepositos.mockResolvedValueOnce({
+      data: [
+        { id: 10, nombre: 'Depósito Test E2E', ciudad: 'Luque' },
+        { id: 20, nombre: 'Principal', ciudad: 'Luque' },
+      ],
+    });
+    depositoService.listarCouriersDeposito.mockResolvedValueOnce({ couriers: [] });
+    inventarioService.diagnosticarStockPedido.mockResolvedValueOnce({
+      origen: {
+        id: 10,
+        nombre: 'Depósito Test E2E',
+        ok: false,
+        faltantes: [{ nombre: 'Cafeteira', necesario: 1, disponible: 0, faltante: 1 }],
+      },
+      alternativas: [{ id: 20, nombre: 'Principal', ciudad: 'Luque', ok: true, faltantes: [] }],
+      faltantes: [{ nombre: 'Cafeteira', necesario: 1, disponible: 0, faltante: 1 }],
+    });
+
+    const onSubmit = vi.fn().mockResolvedValue({});
+    const { container } = render(<NuevoPedidoModal open envio={pedidoEntregado} onClose={() => {}} onSubmit={onSubmit} deliveryZonas={[]} />);
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    const origenSelect = Array.from(container.querySelectorAll('select'))
+      .find(select => Array.from(select.options).some(option => option.textContent === 'Automático según stock'));
+    fireEvent.change(origenSelect, { target: { value: '10' } });
+
+    await waitFor(() => expect(screen.getByText(/El depósito seleccionado no tiene stock suficiente/i)).toBeInTheDocument());
+    expect(screen.getByText(/Cafeteira necesita 1 unidad y acá hay 0/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Principal · Luque/i })).toBeInTheDocument();
   });
 
   it('manda pago_anticipado en el payload para que quede guardado', async () => {
