@@ -172,7 +172,12 @@ describe('Depósitos: alta simple', () => {
     await screen.findByText('Producto de catálogo RAHA');
     expect(await screen.findByAltText('Air Fryer RAHA')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Categoría'), { target: { value: '4' } });
-    await waitFor(() => expect(productService.buscar).toHaveBeenCalledWith(expect.objectContaining({ categoria_id: 4 })));
+    await waitFor(() => expect(productService.buscar).toHaveBeenCalledWith(expect.objectContaining({
+      catalogo_raha: true,
+      categoria_id: 4,
+      page: 1,
+      limit: 20,
+    })));
     fireEvent.click(await screen.findByRole('button', { name: /Air Fryer RAHA/ }));
     fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: 'Agregar al pedido' }));
@@ -185,6 +190,58 @@ describe('Depósitos: alta simple', () => {
       tipoLogistica: 'PROPIA',
       depositoId: 50,
     }));
+  });
+
+  it('pagina el catálogo RAHA completo sin recortarlo en el frontend', async () => {
+    depositoService.listarDepositos.mockResolvedValue({
+      data: [{ id: 50, nombre: 'Depósito Luque', ciudad: 'Luque', departamento: 'Central', direccion: 'Av. Test 123', activo: true }],
+      total: 1,
+    });
+    depositoService.listarCouriersDeposito.mockResolvedValue({ couriers: [] });
+    productService.buscar
+      .mockResolvedValueOnce({
+        productos: [{
+          id: 80,
+          nombre: 'Producto RAHA página 1',
+          sku: 'RAHA-80',
+          categoria_id: 4,
+          precio_base: 100000,
+          variantes_count: 0,
+          imagenes: [{ url: '/uploads/p1.jpg' }],
+        }],
+        total: 25,
+        total_paginas: 2,
+      })
+      .mockResolvedValueOnce({
+        productos: [{
+          id: 81,
+          nombre: 'Producto RAHA página 2',
+          sku: 'RAHA-81',
+          categoria_id: 4,
+          precio_base: 120000,
+          variantes_count: 0,
+          imagenes: [{ url: '/uploads/p2.jpg' }],
+        }],
+        total: 25,
+        total_paginas: 2,
+      });
+
+    render(<DepositosPage />);
+
+    expect((await screen.findAllByText('Depósito Luque')).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Administrar/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Abastecer depósito' }));
+
+    expect(await screen.findByText('Producto RAHA página 1')).toBeInTheDocument();
+    expect(screen.getByText('25 productos · página 1 de 2')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Siguiente/ }));
+
+    await waitFor(() => expect(productService.buscar).toHaveBeenLastCalledWith(expect.objectContaining({
+      catalogo_raha: true,
+      page: 2,
+      limit: 20,
+    })));
+    expect(await screen.findByText('Producto RAHA página 2')).toBeInTheDocument();
   });
 });
 

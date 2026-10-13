@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Check, ImageOff, Loader, PackagePlus, Plus, Search, Trash2, X } from 'lucide-react';
+import { AlertCircle, Check, ChevronLeft, ChevronRight, ImageOff, Loader, PackagePlus, Plus, Search, Trash2, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getMediaUrl } from '../../services/api';
 import { productService } from '../../services/productService';
@@ -38,6 +38,8 @@ function categoriaNombre(producto, categorias) {
   return categorias.find((cat) => String(cat.id) === String(categoriaId))?.nombre || '';
 }
 
+const PRODUCTOS_PAGE_SIZE = 20;
+
 function ProductImage({ producto, className = 'h-16 w-16' }) {
   const src = imagenProducto(producto);
   if (!src) {
@@ -63,6 +65,8 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
   const [categoriaId, setCategoriaId] = useState('');
   const [categorias, setCategorias] = useState([]);
   const [productos, setProductos] = useState([]);
+  const [paginaProductos, setPaginaProductos] = useState(1);
+  const [metaProductos, setMetaProductos] = useState({ total: 0, totalPaginas: 1 });
   const [cargandoProductos, setCargandoProductos] = useState(false);
   const [producto, setProducto] = useState(null);
   const [variantes, setVariantes] = useState([]);
@@ -78,6 +82,8 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
       setTexto('');
       setCategoriaId('');
       setProductos([]);
+      setPaginaProductos(1);
+      setMetaProductos({ total: 0, totalPaginas: 1 });
       setProducto(null);
       setVariantes([]);
       setVarianteId('');
@@ -107,16 +113,23 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
     let activo = true;
     setCargandoProductos(true);
     productService.buscar({
-      page: 1,
-      limit: 20,
+      page: paginaProductos,
+      limit: PRODUCTOS_PAGE_SIZE,
       activo: true,
+      catalogo_raha: true,
       ordenar_por: 'nombre',
       ...(textoBuscado.trim() ? { texto: textoBuscado.trim() } : {}),
       ...(categoriaId ? { categoria_id: Number(categoriaId) } : {}),
     })
       .then((data) => {
         if (!activo) return;
-        setProductos((data.productos || []).filter((p) => !p.puede_editar));
+        const totalPaginas = Math.max(1, Number(data.total_paginas || data.totalPaginas) || 1);
+        setProductos(data.productos || []);
+        setMetaProductos({
+          total: Number(data.total) || 0,
+          totalPaginas,
+        });
+        if (paginaProductos > totalPaginas) setPaginaProductos(totalPaginas);
       })
       .catch(() => {
         if (activo) setError('No se pudieron cargar los productos de catálogo.');
@@ -125,7 +138,17 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
         if (activo) setCargandoProductos(false);
       });
     return () => { activo = false; };
-  }, [open, textoBuscado, categoriaId]);
+  }, [open, textoBuscado, categoriaId, paginaProductos]);
+
+  function buscarPorTexto(valor) {
+    setTexto(valor);
+    setPaginaProductos(1);
+  }
+
+  function filtrarPorCategoria(valor) {
+    setCategoriaId(valor);
+    setPaginaProductos(1);
+  }
 
   useEffect(() => {
     if (!producto) {
@@ -233,7 +256,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={16} />
                   <input
                     value={texto}
-                    onChange={(event) => setTexto(event.target.value)}
+                    onChange={(event) => buscarPorTexto(event.target.value)}
                     placeholder="Buscar por nombre o SKU..."
                     className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
                   />
@@ -242,7 +265,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
                 <select
                   id="categoria-raha"
                   value={categoriaId}
-                  onChange={(event) => setCategoriaId(event.target.value)}
+                  onChange={(event) => filtrarPorCategoria(event.target.value)}
                   className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-primary"
                 >
                   <option value="">Todas las categorías</option>
@@ -253,7 +276,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" aria-busy={cargandoProductos}>
               {cargandoProductos && productos.length === 0 ? (
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-5 text-sm text-fg-muted">
                   <Loader size={16} className="animate-spin text-primary" />
@@ -288,6 +311,33 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
                 </button>
               ))}
             </div>
+            {productos.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2">
+                <span className="text-[12px] font-medium text-fg-muted">
+                  {metaProductos.total.toLocaleString('es-PY')} producto{metaProductos.total === 1 ? '' : 's'} · página {paginaProductos} de {metaProductos.totalPaginas}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaginaProductos((prev) => Math.max(1, prev - 1))}
+                    disabled={cargandoProductos || paginaProductos <= 1}
+                    className="inline-flex h-8 items-center gap-1 rounded-md border border-border px-2.5 text-[12px] font-semibold text-fg hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ChevronLeft size={14} />
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaginaProductos((prev) => Math.min(metaProductos.totalPaginas, prev + 1))}
+                    disabled={cargandoProductos || paginaProductos >= metaProductos.totalPaginas}
+                    className="inline-flex h-8 items-center gap-1 rounded-md border border-border px-2.5 text-[12px] font-semibold text-fg hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Siguiente
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <aside className="flex min-h-0 flex-col bg-surface p-5">
