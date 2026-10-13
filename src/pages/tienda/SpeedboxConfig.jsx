@@ -10,12 +10,24 @@ const money = value => new Intl.NumberFormat('es-PY', { style: 'currency', curre
 const conceptos = { pago_proveedor: 'Pago al proveedor', costo_abastecimiento: 'Costo de abastecimiento', envio: 'Envio', cobro_cliente: 'Cobro al cliente', otro: 'Otro' };
 const estado = value => (value || '-').replaceAll('_', ' ');
 
-function webhookUrlFallback(environment = 'sandbox') {
+function webhookUrlFallback(environment = 'production') {
   const origin = apiOrigin() || (typeof window !== 'undefined' ? window.location.origin : '');
   if (!origin) return '';
   const url = new URL('/api/webhooks/speedbox', origin);
-  url.searchParams.set('environment', environment || 'sandbox');
+  url.searchParams.set('environment', environment || 'production');
   return url.href;
+}
+
+function productionWebhookFromData(data) {
+  const raw = data?.production_webhook_url || data?.webhook_url || (data ? webhookUrlFallback('production') : '');
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    url.searchParams.set('environment', 'production');
+    return url.href;
+  } catch {
+    return raw;
+  }
 }
 
 export default function SpeedboxConfig() {
@@ -83,16 +95,16 @@ export default function SpeedboxConfig() {
   const wallet = (data?.events || []).filter(event => event.tipo === 'wallet.transaction');
   const reviews = (data?.events || []).filter(event => event.estado === 'revision' && event.tipo !== 'wallet.transaction');
   const allChecks = data?.checks && Object.values(data.checks).every(Boolean);
-  const webhookUrl = data?.webhook_url || (data ? webhookUrlFallback(data.environment) : '');
+  const productionWebhookUrl = productionWebhookFromData(data);
 
   async function copyWebhook() {
-    if (!webhookUrl) return;
+    if (!productionWebhookUrl) return;
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(webhookUrl);
+        await navigator.clipboard.writeText(productionWebhookUrl);
       } else {
         const input = document.createElement('textarea');
-        input.value = webhookUrl;
+        input.value = productionWebhookUrl;
         input.setAttribute('readonly', '');
         input.style.position = 'fixed';
         input.style.opacity = '0';
@@ -133,7 +145,7 @@ export default function SpeedboxConfig() {
           <div><dt>Endpoint sandbox</dt><dd>{data.sandbox_endpoint || 'https://speedboxpy.com/api/speedbox_sandbox.php'}</dd></div>
           <div><dt>Tienda RAHA sandbox</dt><dd>{data.connection?.tienda_id || 'Sin vincular'}</dd></div>
           <div><dt>Credenciales</dt><dd>{credentialsAvailable ? 'Guardadas o listas para validar' : 'Pendientes'}</dd></div>
-          <div><dt>Webhook Gesicom</dt><dd>{webhookUrl ? 'Disponible' : data.webhook_configured ? 'Falta URL pública' : 'Pendiente'}</dd></div>
+          <div><dt>Webhook producción</dt><dd>{productionWebhookUrl ? 'Disponible' : data.webhook_configured ? 'Falta URL pública' : 'Pendiente'}</dd></div>
           <div><dt>Automatización producción</dt><dd>{data.automatic_enabled && data.connection?.activo ? 'Activa' : 'Pausada'}</dd></div>
         </dl>
       </section>
@@ -146,11 +158,11 @@ export default function SpeedboxConfig() {
           <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !data.connection?.tienda_id} onClick={() => run('updates', () => speedboxService.sincronizar(credentialsPayload()), 'Estados y billetera consultados.')}><RefreshCw size={16} /> Consultar estados</button>
         </div>
         <div className="spb-webhook-box">
-          <div><strong>Webhook para pegar en RAHA</strong><p className="spb-muted">RAHA lo usa para avisar cambios de estado y movimientos de billetera. Gesicom identifica la tienda por tienda_id u order_id.</p></div>
-          {webhookUrl
-            ? <code>{webhookUrl}</code>
+          <div><strong>Webhook producción para pegar en RAHA</strong><p className="spb-muted">Usá este enlace en el portal RAHA de producción. Gesicom identifica la tienda por tienda_id u order_id.</p></div>
+          {productionWebhookUrl
+            ? <code>{productionWebhookUrl}</code>
             : <p className="spb-webhook-missing">Webhook integrado en Gesicom: /api/webhooks/speedbox. Actualizá el panel para obtener la URL pública completa.</p>}
-          <button type="button" className="spb-button" disabled={disabled || !webhookUrl} title={webhookUrl ? 'Copiar webhook' : 'Webhook pendiente de configuración del servidor'} onClick={copyWebhook}><Copy size={16} /> Copiar webhook</button>
+          <button type="button" className="spb-button" disabled={disabled || !productionWebhookUrl} title={productionWebhookUrl ? 'Copiar webhook producción' : 'Webhook pendiente de configuración del servidor'} onClick={copyWebhook}><Copy size={16} /> Copiar webhook</button>
         </div>
         {busy && <Loader size={18} className="spb-spin" aria-label="Procesando" />}
       </section>

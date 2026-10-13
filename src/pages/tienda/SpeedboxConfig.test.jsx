@@ -7,6 +7,8 @@ vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: v
 const config = { environment: 'sandbox', credentials_configured: true, webhook_configured: true, automatic_enabled: true,
   sandbox_endpoint: 'https://speedboxpy.com/api/speedbox_sandbox.php', production_request_url: 'https://speedboxpy.com/speedbox_api_cliente.php',
   webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=sandbox&token=12345678901234567890123456789012',
+  production_webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=production&token=12345678901234567890123456789012',
+  sandbox_webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=sandbox&token=12345678901234567890123456789012',
   public_key: 'sbx_saved_public', has_private_key: true,
   connection: { tienda_id: '54', courier_id: 2, activo: true, has_private_key: true }, checks: { spec: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
 beforeEach(() => {
@@ -102,23 +104,33 @@ describe('Speedbox settings', () => {
     const writeText = vi.fn().mockResolvedValue();
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     render(<SpeedboxConfig />);
-    await screen.findByText(config.webhook_url);
+    await screen.findByText(config.production_webhook_url);
     fireEvent.click(screen.getByRole('button', { name: 'Copiar webhook' }));
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(config.webhook_url));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(config.production_webhook_url));
     expect(screen.getByRole('status')).toHaveTextContent('Webhook copiado.');
   });
 
-  it('builds and copies a public webhook even when the backend response has no URL', async () => {
+  it('builds and copies a production webhook even when the backend response has no URL', async () => {
     const writeText = vi.fn().mockResolvedValue();
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
-    speedboxService.obtener.mockResolvedValue({ ...config, webhook_url: null, webhook_configured: false });
+    speedboxService.obtener.mockResolvedValue({ ...config, webhook_url: null, production_webhook_url: null, webhook_configured: false });
     render(<SpeedboxConfig />);
-    const fallback = await screen.findByText(/\/api\/webhooks\/speedbox\?environment=sandbox/);
+    const fallback = await screen.findByText(/\/api\/webhooks\/speedbox\?environment=production/);
     expect(fallback).toBeInTheDocument();
     const button = screen.getByRole('button', { name: 'Copiar webhook' });
     expect(button).not.toBeDisabled();
     fireEvent.click(button);
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/api\/webhooks\/speedbox\?environment=sandbox$/)));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/api\/webhooks\/speedbox\?environment=production$/)));
+  });
+
+  it('normalizes an old sandbox webhook response before copying it for clients', async () => {
+    const writeText = vi.fn().mockResolvedValue();
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    speedboxService.obtener.mockResolvedValue({ ...config, production_webhook_url: null });
+    render(<SpeedboxConfig />);
+    await screen.findByText('https://api.example.test/api/webhooks/speedbox?environment=production&token=12345678901234567890123456789012');
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar webhook' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('https://api.example.test/api/webhooks/speedbox?environment=production&token=12345678901234567890123456789012'));
   });
 
   it('shows saved private key state without revealing the secret', async () => {
