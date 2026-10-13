@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import RahaConexion, { semaforoRaha } from './RahaConexion';
 import { rahaService } from '../../services/rahaService';
 vi.mock('../../services/rahaService', () => ({ rahaService: { obtener: vi.fn(), guardar: vi.fn(), enviar: vi.fn(), subir: vi.fn(), quitar: vi.fn(), documento: vi.fn() } }));
@@ -39,6 +39,59 @@ describe('Raha application', () => {
     fireEvent.change(await screen.findByLabelText('Adjuntar Constancia de RUC'), { target: { files: [new File(['<svg/>'], 'ruc.svg', { type: 'image/svg+xml' })] } });
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('hasta 8 MB'));
     expect(rahaService.subir).not.toHaveBeenCalled();
+  });
+  it('shows upload progress next to the document and confirms when it is stored', async () => {
+    let avanzar, terminar;
+    rahaService.subir.mockImplementation((file, tipo, version, onProgreso) => { avanzar = onProgreso; return new Promise(resolve => { terminar = resolve; }); });
+    render(<RahaConexion />);
+    fireEvent.change(await screen.findByLabelText('Adjuntar Constancia de RUC'), { target: { files: [new File(['%PDF'], 'ruc.pdf', { type: 'application/pdf' })] } });
+    expect(await screen.findByText('Subiendo… 0%')).toBeInTheDocument();
+    expect(screen.getByLabelText('Adjuntar Cédula del representante legal')).toBeDisabled();
+    act(() => avanzar(40));
+    expect(screen.getByText('Subiendo… 40%')).toBeInTheDocument();
+    act(() => avanzar(100));
+    expect(screen.getByText('Guardando el archivo…')).toBeInTheDocument();
+    await act(async () => terminar({ ...base, version: 1, documentos: [{ id: 4, tipo: 'ruc', nombre: 'ruc.pdf', size: 30 }] }));
+    expect(screen.getByText('Archivo subido correctamente.')).toBeInTheDocument();
+    expect(screen.getByText('Adjuntado')).toBeInTheDocument();
+  });
+  it('reports a failed upload next to the document and lets the user retry', async () => {
+    rahaService.subir.mockRejectedValue({ response: { status: 503, data: { message: 'Error interno del servidor.' } } });
+    render(<RahaConexion />);
+    fireEvent.change(await screen.findByLabelText('Adjuntar Constancia de RUC'), { target: { files: [new File(['%PDF'], 'ruc.pdf', { type: 'application/pdf' })] } });
+    const alerta = await screen.findByRole('alert');
+    expect(alerta).toHaveTextContent('ruc.pdf');
+    expect(alerta).toHaveTextContent('El servidor no pudo guardar el archivo');
+    expect(alerta.closest('.raha-doc-group')).toHaveTextContent('Constancia de RUC');
+    expect(screen.getByText('Reintentar')).toBeInTheDocument();
+    expect(screen.getByText('Obligatorio', { selector: '.raha-doc-group:first-child span' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Adjuntar Constancia de RUC')).toBeEnabled();
+  });
+  it('shows custom inline validation errors when submitting with empty or invalid fields', async () => {
+    render(<RahaConexion />);
+    const consent = await screen.findByRole('checkbox');
+    fireEvent.click(consent);
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar solicitud' }));
+
+    expect(await screen.findByText(/Por favor completá todos los campos obligatorios/)).toBeInTheDocument();
+    expect(screen.getByText('La razón social es obligatoria.')).toBeInTheDocument();
+    expect(screen.getByText('El RUC es obligatorio.')).toBeInTheDocument();
+    expect(screen.getByText('El email es obligatorio.')).toBeInTheDocument();
+    expect(screen.getByText('Debés adjuntar la constancia de RUC.')).toBeInTheDocument();
+    expect(screen.getByText('Debés adjuntar la cédula del representante legal.')).toBeInTheDocument();
+    expect(rahaService.enviar).not.toHaveBeenCalled();
+  });
+  it('validates email and phone formats on blur with custom messages', async () => {
+    render(<RahaConexion />);
+    const emailInput = await screen.findByLabelText('Email');
+    fireEvent.change(emailInput, { target: { value: 'correo-invalido' } });
+    fireEvent.blur(emailInput);
+    expect(screen.getByText('Ingresá un email válido (ej: contacto@empresa.com).')).toBeInTheDocument();
+
+    const telInput = screen.getByLabelText('Teléfono');
+    fireEvent.change(telInput, { target: { value: 'abc' } });
+    fireEvent.blur(telInput);
+    expect(screen.getByText('Ingresá un teléfono válido (ej: 0981 123456).')).toBeInTheDocument();
   });
   it('correctly maps traffic light semaphore colors to application lifecycle', () => {
     expect(semaforoRaha('borrador').color).toBe('rojo');

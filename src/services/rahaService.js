@@ -18,9 +18,11 @@ export const rahaService = {
   obtener: async () => (await api.get(base)).data,
   guardar: async payload => (await api.put(base, payload)).data,
   enviar: async payload => (await api.post(`${base}/enviar`, payload)).data,
-  subir: async (archivo, tipo, version) => {
+  subir: async (archivo, tipo, version, onProgreso) => {
     const form = new FormData(); form.append('archivo', archivo); form.append('tipo', tipo); form.append('version', version);
-    return (await api.post(`${base}/documentos`, form)).data;
+    // El porcentaje es de bytes enviados: al llegar a 100 el servidor todavía valida y guarda.
+    const config = onProgreso ? { onUploadProgress: event => onProgreso(event.total ? Math.round((event.loaded / event.total) * 100) : null) } : undefined;
+    return (await api.post(`${base}/documentos`, form, config)).data;
   },
   quitar: async (id, version) => (await api.delete(`${base}/documentos/${id}`, { data: { version } })).data,
   documento: doc => descargar(`${base}/documentos/${doc.id}`, doc.nombre),
