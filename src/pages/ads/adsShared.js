@@ -35,6 +35,28 @@ export const formatFecha = (value) => {
   return `${d}/${m}/${y}`;
 };
 
+const DIA_MS = 24 * 60 * 60 * 1000;
+const aMs = (ymd) => Date.parse(`${String(ymd).slice(0, 10)}T00:00:00Z`);
+
+/** Días de un rango, contando los dos extremos. 0 si falta una fecha o está invertido. */
+export const diasEntre = (desde, hasta) => {
+  if (!desde || !hasta) return 0;
+  const dias = Math.floor((aMs(hasta) - aMs(desde)) / DIA_MS) + 1;
+  return dias > 0 ? dias : 0;
+};
+
+/** "2026-10-14" -> "2026-10-15". null si no hay fecha. */
+export const diaSiguiente = (ymd) => {
+  if (!ymd) return null;
+  const ms = aMs(ymd);
+  return Number.isNaN(ms) ? null : new Date(ms + DIA_MS).toISOString().slice(0, 10);
+};
+
+/** Un rango de fechas en una línea; un solo día no repite la fecha. */
+export const formatRango = (desde, hasta) => (
+  desde === hasta ? formatFecha(desde) : `${formatFecha(desde)} → ${formatFecha(hasta)}`
+);
+
 /** ISO con hora -> "10 Sep 2026, 09:42". */
 export const formatFechaHora = (value) => {
   if (!value) return '—';
@@ -138,47 +160,7 @@ export function usePreferenciaLocal(clave, valorInicial) {
   return [valor, guardar];
 }
 
-const normalizarTexto = (texto) => (texto || '')
-  .toLowerCase()
-  .normalize('NFD').replace(/[̀-ͯ]/g, '')
-  .replace(/\[gsc-[a-z0-9]+\]/g, ' ')  // el código ya se intentó matchear exacto antes de llegar acá
-  .replace(/[^a-z0-9]+/g, ' ')
-  .trim();
-
-/**
- * Parecido entre dos nombres de campaña, 0 a 1. Jaccard sobre palabras,
- * con premio si un nombre contiene al otro.
- *
- * Es una AYUDA para relacionar a mano, no un match automático: el vínculo
- * automático sigue siendo solo por el código [GSC-XXXX] del nombre, que es
- * exacto. Este puntaje nunca relaciona nada por su cuenta — solo ordena
- * las opciones que el usuario confirma.
- */
-export const parecidoNombres = (a, b) => {
-  const ta = new Set(normalizarTexto(a).split(' ').filter((t) => t.length > 2));
-  const tb = new Set(normalizarTexto(b).split(' ').filter((t) => t.length > 2));
-  if (ta.size === 0 || tb.size === 0) return 0;
-
-  let comunes = 0;
-  for (const t of ta) if (tb.has(t)) comunes += 1;
-  const union = ta.size + tb.size - comunes;
-  let puntaje = union > 0 ? comunes / union : 0;
-
-  const na = normalizarTexto(a);
-  const nb = normalizarTexto(b);
-  if (na && nb && (na.includes(nb) || nb.includes(na))) puntaje = Math.min(1, puntaje + 0.2);
-
-  return puntaje;
-};
-
-/** Campañas internas ordenadas por parecido con el nombre que vino de Meta. */
-export const sugerirCampanas = (nombreMeta, campanas, maximo = 3) => campanas
-  .map((c) => ({ campana: c, puntaje: parecidoNombres(nombreMeta, c.nombre_display) }))
-  .filter((s) => s.puntaje > 0.15)
-  .sort((a, b) => b.puntaje - a.puntaje)
-  .slice(0, maximo);
-
-/** Paginación de las consultas de reportes — el backend usa el mismo número. */
+/** Paginación de las tablas de la sección — el backend usa el mismo número. */
 export const FILAS_POR_PAGINA = 10;
 
 /**

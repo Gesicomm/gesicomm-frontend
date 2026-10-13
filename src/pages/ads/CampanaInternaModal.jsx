@@ -16,8 +16,9 @@ const PASOS = [
  * Modal "Nueva Campaña" del módulo de Reportes de Meta Ads — wizard de 4
  * pasos: producto -> embudo -> fase -> presupuesto. Al final genera un nombre 
  * automáticamente para copiar tal cual como nombre de la campaña real en Meta Ads Manager.
+ * El gasto no se carga acá: va por rango de fechas en GastoCampanaModal.
  */
-export default function CampanaInternaModal({ open, onClose, onCreated, tiendas = [], campanaEditar = null }) {
+export default function CampanaInternaModal({ open, onClose, onCreated, onCargarGasto = null, tiendas = [], campanaEditar = null }) {
   const [step, setStep] = useState(1);
 
   const [productos, setProductos] = useState([]);
@@ -185,8 +186,8 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
         {resultado ? (
           <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-fg)' }}>
-              Campaña creada. Copiá este nombre <strong>tal cual</strong> como nombre de la campaña real en Meta Ads Manager —
-              es lo que va a permitir mapear automáticamente el reporte que subas después.
+              Campaña creada. Copiá este nombre <strong>tal cual</strong> como nombre de la campaña real en Meta Ads Manager.
+              Después cargá acá cuánto gastaste en cada rango de fechas.
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
               <code style={{ flex: 1, fontSize: '0.85rem', color: '#34d399', wordBreak: 'break-all' }}>{resultado.nombre_interno}</code>
@@ -194,7 +195,12 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                 {copiado ? <Check size={16} color="#34d399" /> : <Copy size={16} />}
               </button>
             </div>
-            <button type="button" className="btn-primary" onClick={onClose} style={{ alignSelf: 'flex-end' }}>Listo</button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              {onCargarGasto && (
+                <button type="button" className="btn-secondary" onClick={() => onCargarGasto(resultado)}>Cargar gasto</button>
+              )}
+              <button type="button" className="btn-primary" onClick={onClose}>Listo</button>
+            </div>
           </div>
         ) : (
           <>

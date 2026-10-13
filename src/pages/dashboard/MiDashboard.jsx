@@ -1298,8 +1298,8 @@ export default function MiDashboard() {
   // "este producto me cuesta 3.000.000 de fijos" y no es eso.
   const filtrandoProducto = productoId !== 'TODOS';
 
-  // "META" de la planilla = plata gastada en ads. Sale de los CSV importados
-  // en Ads & Campañas, que es donde el usuario efectivamente lo carga. Se
+  // "META" de la planilla = plata gastada en ads. Sale del gasto cargado por
+  // campaña en Ads & Campañas, que es donde el usuario efectivamente lo carga. Se
   // separa del resto para que la tarjeta lea igual que la planilla
   // (Facturación − Ads − Producto − Envíos − Fijos − Variables).
   const gastoMetaAds = Number(kpis.gasto_meta_ads || 0);
@@ -1599,7 +1599,7 @@ export default function MiDashboard() {
             <span className="md-rent-valor">{gs(kpis.facturacion_entregada)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en Meta Ads en este período. Sale de los reportes que importaste en Ads & Campañas, con IVA. Si un reporte abarca más días que el período que estás viendo, se toma solo la parte proporcional. La publicidad que cargues a mano en Control financiero no entra acá: va en Costos Fijos o Variables, según cómo la hayas clasificado." /></span>
+            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en Meta Ads en este período. Sale del gasto que cargaste en cada campaña de Ads & Campañas. Si un rango cargado abarca más días que el período que estás viendo, se toma solo la parte proporcional. La publicidad que cargues a mano en Control financiero no entra acá: va en Costos Fijos o Variables, según cómo la hayas clasificado." /></span>
             <span className="md-rent-valor">{gs(gastoMetaAds)}</span>
           </div>
           <div className="md-rent-item">
