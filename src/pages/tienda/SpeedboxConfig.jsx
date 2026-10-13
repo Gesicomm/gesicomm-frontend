@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle, Check, Copy, ExternalLink, Link2, Loader, ReceiptText, RefreshCw, Save, Send, ShieldCheck, UserPlus } from 'lucide-react';
 import { speedboxService } from '../../services/speedboxService';
-import { getCouriers } from '../../services/courierApi';
 import './speedbox.css';
 
 const labels = { spec: 'Autenticación y especificación', order: 'Recepción de pedido', updates: 'Consulta de estados y billetera', webhook: 'Webhook de cambio de estado' };
@@ -12,8 +11,6 @@ const estado = value => (value || '-').replaceAll('_', ' ');
 
 export default function SpeedboxConfig() {
   const [data, setData] = useState(null);
-  const [couriers, setCouriers] = useState([]);
-  const [courierId, setCourierId] = useState('');
   const [active, setActive] = useState(false);
   const [busy, setBusy] = useState('cargar');
   const [error, setError] = useState('');
@@ -39,11 +36,9 @@ export default function SpeedboxConfig() {
   function closeFinance() { financeDialogRef.current?.close(); setMovement(null); }
 
   async function load(resetForm = false) {
-    const [config, available] = await Promise.all([speedboxService.obtener(), getCouriers()]);
+    const config = await speedboxService.obtener();
     setData(config);
-    setCouriers(available.filter(courier => courier.activo));
     if (resetForm) {
-      setCourierId(config.connection?.courier_id ? String(config.connection.courier_id) : '');
       setActive(Boolean(config.connection?.activo));
       setPublicKey(config.public_key || config.connection?.public_key || '');
       setPrivateKey('');
@@ -51,11 +46,9 @@ export default function SpeedboxConfig() {
   }
   useEffect(() => {
     let mounted = true;
-    Promise.all([speedboxService.obtener(), getCouriers()]).then(([config, available]) => {
+    speedboxService.obtener().then(config => {
       if (!mounted) return;
       setData(config);
-      setCouriers(available.filter(courier => courier.activo));
-      setCourierId(config.connection?.courier_id ? String(config.connection.courier_id) : '');
       setActive(Boolean(config.connection?.activo));
       setPublicKey(config.public_key || config.connection?.public_key || '');
       setPrivateKey('');
@@ -81,11 +74,24 @@ export default function SpeedboxConfig() {
   const wallet = (data?.events || []).filter(event => event.tipo === 'wallet.transaction');
   const reviews = (data?.events || []).filter(event => event.estado === 'revision' && event.tipo !== 'wallet.transaction');
   const allChecks = data?.checks && Object.values(data.checks).every(Boolean);
+  const webhookUrl = data?.webhook_url || '';
 
   async function copyWebhook() {
-    if (!data?.webhook_url) return;
+    if (!webhookUrl) return;
     try {
-      await navigator.clipboard.writeText(data.webhook_url);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(webhookUrl);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = webhookUrl;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
       setMessage('Webhook copiado.');
     } catch {
       setError('No se pudo copiar el webhook. Seleccioná la URL y copiala manualmente.');
@@ -118,7 +124,7 @@ export default function SpeedboxConfig() {
           <div><dt>Endpoint sandbox</dt><dd>{data.sandbox_endpoint || 'https://speedboxpy.com/api/speedbox_sandbox.php'}</dd></div>
           <div><dt>Tienda RAHA sandbox</dt><dd>{data.connection?.tienda_id || 'Sin vincular'}</dd></div>
           <div><dt>Credenciales</dt><dd>{credentialsAvailable ? 'Guardadas o listas para validar' : 'Pendientes'}</dd></div>
-          <div><dt>Webhook Gesicom</dt><dd>{data.webhook_url ? 'Disponible' : data.webhook_configured ? 'Falta URL pública' : 'Pendiente'}</dd></div>
+          <div><dt>Webhook Gesicom</dt><dd>{webhookUrl ? 'Disponible' : data.webhook_configured ? 'Falta URL pública' : 'Pendiente'}</dd></div>
           <div><dt>Automatización producción</dt><dd>{data.automatic_enabled && data.connection?.activo ? 'Activa' : 'Pausada'}</dd></div>
         </dl>
       </section>
@@ -132,21 +138,21 @@ export default function SpeedboxConfig() {
         </div>
         <div className="spb-webhook-box">
           <div><strong>Webhook para pegar en RAHA</strong><p className="spb-muted">RAHA lo usa para avisar cambios de estado y movimientos de billetera. Gesicom identifica la tienda por tienda_id u order_id.</p></div>
-          <code>{data.webhook_url || 'Configurá SPEEDBOX_WEBHOOK_PUBLIC_BASE_URL y SPEEDBOX_WEBHOOK_TOKEN en el servidor.'}</code>
-          <button type="button" className="spb-button" disabled={disabled || !data.webhook_url} onClick={copyWebhook}><Copy size={16} /> Copiar webhook</button>
+          {webhookUrl
+            ? <code>{webhookUrl}</code>
+            : <p className="spb-webhook-missing">Webhook integrado en Gesicom: /api/webhooks/speedbox. Actualizá el panel para obtener la URL pública completa.</p>}
+          <button type="button" className="spb-button" disabled={disabled || !webhookUrl} title={webhookUrl ? 'Copiar webhook' : 'Webhook pendiente de configuración del servidor'} onClick={copyWebhook}><Copy size={16} /> Copiar webhook</button>
         </div>
         {busy && <Loader size={18} className="spb-spin" aria-label="Procesando" />}
       </section>
       <section className="spb-section">
         <div className="spb-heading"><h3>Automatización producción</h3><span className={`spb-badge ${data.environment === 'sandbox' ? 'spb-sandbox' : ''}`}>{data.environment === 'sandbox' ? 'Sandbox' : 'Producción'}</span></div>
-        <div className="spb-fields">
-          <label className="spb-field" htmlFor="spb-courier">Courier RAHA<select id="spb-courier" value={courierId} disabled={disabled} onChange={event => setCourierId(event.target.value)}>
-            <option value="">Seleccionar courier</option>{couriers.map(courier => <option key={courier.id} value={courier.id}>{courier.nombre}</option>)}
-          </select></label>
+        <div className="spb-automation-row">
+          <p className="spb-muted">RAHA gestiona su propio despacho. Gesicom solo envía a RAHA los pedidos que contengan productos de su catálogo cuando la integración está activa.</p>
           <label className="spb-checkbox"><input type="checkbox" checked={active} disabled={disabled || !data.connection?.tienda_id} onChange={event => setActive(event.target.checked)} /> Integración activa</label>
         </div>
         <div className="spb-actions">
-          <button type="button" className="spb-button spb-primary" disabled={disabled || (active && (!data.connection?.tienda_id || !courierId || !credentialsAvailable))} onClick={() => run('save', () => speedboxService.guardar({ courier_id: courierId ? Number(courierId) : null, activo: active, ...credentialsPayload() }), 'Configuración guardada.', true)}><Save size={16} /> Guardar</button>
+          <button type="button" className="spb-button spb-primary" disabled={disabled || (active && (!data.connection?.tienda_id || !credentialsAvailable))} onClick={() => run('save', () => speedboxService.guardar({ activo: active, ...credentialsPayload() }), 'Configuración guardada.', true)}><Save size={16} /> Guardar</button>
           <button type="button" className="spb-button" disabled={disabled} title="Actualizar panel" aria-label="Actualizar panel" onClick={() => run('refresh', () => load(), 'Panel actualizado.')}><RefreshCw size={16} /></button>
         </div>
       </section>

@@ -3,9 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-library/react';
 import SpeedboxConfig from './SpeedboxConfig';
 import { speedboxService } from '../../services/speedboxService';
-import { getCouriers } from '../../services/courierApi';
 vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: vi.fn(), guardar: vi.fn(), vincular: vi.fn(), probar: vi.fn(), enviarPrueba: vi.fn(), sincronizar: vi.fn(), reintentar: vi.fn(), enviar: vi.fn(), conciliar: vi.fn() } }));
-vi.mock('../../services/courierApi', () => ({ getCouriers: vi.fn() }));
 const config = { environment: 'sandbox', credentials_configured: true, webhook_configured: true, automatic_enabled: true,
   sandbox_endpoint: 'https://speedboxpy.com/api/speedbox_sandbox.php', production_request_url: 'https://speedboxpy.com/speedbox_api_cliente.php',
   webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=sandbox&token=12345678901234567890123456789012',
@@ -16,7 +14,6 @@ beforeEach(() => {
   HTMLDialogElement.prototype.showModal = function showModal() { this.setAttribute('open', ''); };
   HTMLDialogElement.prototype.close = function close() { this.removeAttribute('open'); };
   speedboxService.obtener.mockResolvedValue(structuredClone(config));
-  getCouriers.mockResolvedValue([{ id: 2, nombre: 'Speedbox', activo: true }, { id: 3, nombre: 'Otro', activo: true }]);
 });
 describe('Speedbox settings', () => {
   it('conciles only with an explicit concept, reference and note', async () => {
@@ -40,19 +37,20 @@ describe('Speedbox settings', () => {
     await screen.findByText('Sin conciliar');
     expect(screen.queryByRole('button', { name: 'Conciliar movimiento 3' })).not.toBeInTheDocument();
   });
-  it('saves the chosen courier and activation with stored RAHA credentials', async () => {
+  it('saves activation without asking for a local courier', async () => {
     render(<SpeedboxConfig />);
-    fireEvent.change(await screen.findByLabelText('Courier RAHA'), { target: { value: '3' } });
+    await screen.findByText(/RAHA gestiona su propio despacho/);
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ courier_id: 3, activo: true, public_key: 'sbx_saved_public' }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ activo: true, public_key: 'sbx_saved_public' }));
+    expect(screen.queryByLabelText('Courier RAHA')).not.toBeInTheDocument();
   });
   it('keeps inputs after a validation failure', async () => {
-    speedboxService.guardar.mockRejectedValue({ response: { data: { message: 'Courier no disponible.' } } });
+    speedboxService.guardar.mockRejectedValue({ response: { data: { message: 'Configura el token privado del webhook en el servidor.' } } });
     render(<SpeedboxConfig />);
-    fireEvent.change(await screen.findByLabelText('Courier RAHA'), { target: { value: '3' } });
+    await screen.findByText(/RAHA gestiona su propio despacho/);
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Courier no disponible.');
-    expect(screen.getByLabelText('Courier RAHA')).toHaveValue('3');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Configura el token privado del webhook en el servidor.');
+    expect(screen.getByLabelText('Public key')).toHaveValue('sbx_saved_public');
   });
   it('requires reconciliation before resending an uncertain submission', async () => {
     speedboxService.obtener.mockResolvedValue({ ...config, orders: [{ id: 1, envio_id: 31, external_order_id: 'GESICOMM-sandbox-7-31', estado: 'incierto' }] });
@@ -97,7 +95,17 @@ describe('Speedbox settings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enviar pedido sandbox' }));
     await waitFor(() => expect(speedboxService.enviarPrueba).toHaveBeenCalledWith({ public_key: 'sbx_public', private_key: 'private_secret' }));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ courier_id: 2, activo: true, public_key: 'sbx_public', private_key: 'private_secret' }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ activo: true, public_key: 'sbx_public', private_key: 'private_secret' }));
+  });
+
+  it('copies the webhook URL for RAHA', async () => {
+    const writeText = vi.fn().mockResolvedValue();
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    render(<SpeedboxConfig />);
+    await screen.findByText(config.webhook_url);
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar webhook' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(config.webhook_url));
+    expect(screen.getByRole('status')).toHaveTextContent('Webhook copiado.');
   });
 
   it('shows saved private key state without revealing the secret', async () => {
