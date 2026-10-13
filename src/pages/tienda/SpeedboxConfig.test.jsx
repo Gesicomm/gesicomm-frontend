@@ -108,6 +108,19 @@ describe('Speedbox settings', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Webhook copiado.');
   });
 
+  it('builds and copies a public webhook even when the backend response has no URL', async () => {
+    const writeText = vi.fn().mockResolvedValue();
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    speedboxService.obtener.mockResolvedValue({ ...config, webhook_url: null, webhook_configured: false });
+    render(<SpeedboxConfig />);
+    const fallback = await screen.findByText(/\/api\/webhooks\/speedbox\?environment=sandbox/);
+    expect(fallback).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Copiar webhook' });
+    expect(button).not.toBeDisabled();
+    fireEvent.click(button);
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/api\/webhooks\/speedbox\?environment=sandbox$/)));
+  });
+
   it('shows saved private key state without revealing the secret', async () => {
     render(<SpeedboxConfig />);
     expect(await screen.findByText('Guardadas o listas para validar')).toBeInTheDocument();

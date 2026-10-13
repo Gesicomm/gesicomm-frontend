@@ -2,12 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle, Check, Copy, ExternalLink, Link2, Loader, ReceiptText, RefreshCw, Save, Send, ShieldCheck, UserPlus } from 'lucide-react';
 import { speedboxService } from '../../services/speedboxService';
+import { apiOrigin } from '../../utils/apiBase';
 import './speedbox.css';
 
 const labels = { spec: 'Autenticación y especificación', order: 'Recepción de pedido', updates: 'Consulta de estados y billetera', webhook: 'Webhook de cambio de estado' };
 const money = value => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(value);
 const conceptos = { pago_proveedor: 'Pago al proveedor', costo_abastecimiento: 'Costo de abastecimiento', envio: 'Envio', cobro_cliente: 'Cobro al cliente', otro: 'Otro' };
 const estado = value => (value || '-').replaceAll('_', ' ');
+
+function webhookUrlFallback(environment = 'sandbox') {
+  const origin = apiOrigin() || (typeof window !== 'undefined' ? window.location.origin : '');
+  if (!origin) return '';
+  const url = new URL('/api/webhooks/speedbox', origin);
+  url.searchParams.set('environment', environment || 'sandbox');
+  return url.href;
+}
 
 export default function SpeedboxConfig() {
   const [data, setData] = useState(null);
@@ -74,7 +83,7 @@ export default function SpeedboxConfig() {
   const wallet = (data?.events || []).filter(event => event.tipo === 'wallet.transaction');
   const reviews = (data?.events || []).filter(event => event.estado === 'revision' && event.tipo !== 'wallet.transaction');
   const allChecks = data?.checks && Object.values(data.checks).every(Boolean);
-  const webhookUrl = data?.webhook_url || '';
+  const webhookUrl = data?.webhook_url || (data ? webhookUrlFallback(data.environment) : '');
 
   async function copyWebhook() {
     if (!webhookUrl) return;
