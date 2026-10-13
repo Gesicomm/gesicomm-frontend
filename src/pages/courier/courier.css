@@ -3197,6 +3197,123 @@ button.order-alert-chip:focus-visible {
 .pt-life-cell--info strong { color: var(--color-info); }
 .pt-life-cell--danger strong { color: var(--color-danger); }
 
+.pt-raha-timeline {
+  display: grid;
+  gap: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--color-info) 20%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-info) 5%, var(--color-surface));
+  padding: 1rem;
+}
+
+.pt-raha-timeline__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pt-raha-timeline__header span {
+  display: block;
+  color: var(--color-fg-subtle);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.pt-raha-timeline__header strong {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--color-fg);
+  font-size: 0.95rem;
+}
+
+.pt-raha-timeline__header code {
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--color-fg) 7%, transparent);
+  color: var(--color-fg-muted);
+  padding: 0.28rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.pt-raha-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 0.65rem;
+}
+
+.pt-raha-step {
+  position: relative;
+  display: flex;
+  gap: 0.55rem;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-fg) 2%, transparent);
+  padding: 0.7rem;
+  opacity: 0.72;
+}
+
+.pt-raha-step.is-complete,
+.pt-raha-step.is-active {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--color-info) 26%, transparent);
+  background: color-mix(in srgb, var(--color-info) 7%, transparent);
+}
+
+.pt-raha-step.is-active {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-info) 28%, transparent);
+}
+
+.pt-raha-step__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 1.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  color: var(--color-fg-muted);
+}
+
+.pt-raha-step.is-complete .pt-raha-step__dot {
+  background: color-mix(in srgb, var(--color-info) 18%, transparent);
+  color: var(--color-info);
+}
+
+.pt-raha-step strong {
+  display: block;
+  color: var(--color-fg);
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.pt-raha-step span:not(.pt-raha-step__dot) {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--color-fg-muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.pt-raha-note {
+  margin: 0;
+  color: var(--color-fg-muted);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 900px) {
+  .pt-raha-timeline__header {
+    flex-direction: column;
+  }
+
+  .pt-raha-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
 .pt-td-telefono {
   color: var(--color-fg-muted);
   font-size: 0.82rem;

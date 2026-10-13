@@ -42,15 +42,16 @@ const EN_TRANSITO_VIEJO = pedido(2, "Confirmado", {
 beforeEach(() => {
   vi.clearAllMocks();
   getEnviosPaginados.mockResolvedValue({ data: [VIEJO_CON_ABASTECIMIENTO, EN_TRANSITO_VIEJO], total: 2, totalPages: 1 });
-  getConteoPorEstado.mockResolvedValue({ Confirmado: 2, abastecimiento_pagado: 5, total_visible_a_cobrar: 300000, total_cobrado: 0 });
+  getConteoPorEstado.mockResolvedValue({ Confirmado: 2, logistica_raha: 0, abastecimiento_pagado: 5, total_visible_a_cobrar: 300000, total_cobrado: 0 });
 });
 
 async function montar(props = {}) {
   const onChangeEstado = vi.fn();
   const onAbrirDetalle = vi.fn();
   const onAbrirSeguimiento = vi.fn();
-  render(<PedidosTable couriers={[]} onChangeEstado={onChangeEstado} onAbrirDetalle={onAbrirDetalle} onAbrirSeguimiento={onAbrirSeguimiento} {...props} />);
-  await screen.findByText("Cliente 1");
+  const { esperarCliente = "Cliente 1", ...tableProps } = props;
+  render(<PedidosTable couriers={[]} onChangeEstado={onChangeEstado} onAbrirDetalle={onAbrirDetalle} onAbrirSeguimiento={onAbrirSeguimiento} {...tableProps} />);
+  await screen.findByText(esperarCliente);
   return { onChangeEstado, onAbrirDetalle, onAbrirSeguimiento };
 }
 
@@ -113,7 +114,7 @@ test("las etapas son Comercial, Logística y Recompra, y cada una pide solo sus 
 
   irAEtapa("Logística");
   await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]));
-  expect(chips()).toEqual(["Todos", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
+  expect(chips()).toEqual(["Todos", "Envíos RAHA", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
   expect(encabezados()).toContain("Estado logístico");
   expect(encabezados()).not.toContain("Estado comercial");
 
@@ -151,6 +152,52 @@ test("el estado que se muestra es el de la etapa que se está mirando", async ()
   await waitFor(() => expect(encabezados()).toContain("Estado de recompra"));
   expect(estado("Cliente 4")).toHaveTextContent(/^En seguimiento$/);
   expect(estado("Cliente 5")).toHaveTextContent(/^Sin seguimiento$/);
+});
+
+test("Logística tiene el subestado Envíos RAHA y muestra timeline sin cambio manual", async () => {
+  getConteoPorEstado.mockResolvedValue({
+    Preparado: 1,
+    Despachado: 0,
+    Reprogramado: 0,
+    Entregado: 0,
+    Devuelto: 0,
+    Perdido: 0,
+    logistica_raha: 1,
+  });
+  getEnviosPaginados.mockResolvedValue({
+    data: [
+      pedido(9, "Confirmado", {
+        raha_logistica: {
+          gestionado: true,
+          order_id: "900000000123456",
+          external_order_id: "GESICOMM-sandbox-7-9",
+          status: "en_camino",
+          eventos: [
+            { id: 1, tipo: "shipment.status_changed", status: "cargado", occurred_at: "2026-10-13T12:00:00.000Z" },
+            { id: 2, tipo: "shipment.status_changed", status: "en_camino", occurred_at: "2026-10-13T13:00:00.000Z" },
+          ],
+        },
+      }),
+    ],
+    total: 1,
+    totalPages: 1,
+  });
+
+  const { onChangeEstado } = await montar({ esperarCliente: "Cliente 9" });
+
+  irAEtapa("Logística");
+  fireEvent.click(await screen.findByRole("button", { name: /^Envíos RAHA/ }));
+
+  await waitFor(() => expect(ultimoPedido()).toMatchObject({ logistica_raha: true }));
+  const fila = await screen.findByText("Cliente 9").then((el) => el.closest("tr"));
+  expect(within(fila).getByText("En camino")).toBeInTheDocument();
+  expect(within(fila).getByText("RAHA #900000000123456")).toBeInTheDocument();
+  expect(within(fila).queryByRole("button", { name: /Confirmado|Preparado|Despachado|En camino/ })).not.toBeInTheDocument();
+
+  fireEvent.click(within(fila).getByRole("button", { name: /Ver timeline/ }));
+  expect(await screen.findByText("Logística RAHA")).toBeInTheDocument();
+  expect(screen.getByText(/Estos estados vienen de RAHA/)).toBeInTheDocument();
+  expect(onChangeEstado).not.toHaveBeenCalled();
 });
 
 test("el teléfono va en su propia columna y ya no hay botón de WhatsApp en el cliente", async () => {
