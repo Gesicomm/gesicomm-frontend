@@ -472,8 +472,190 @@
 .rp-btn-amber { background: #ca8a04; color: #fff; }
 .rp-btn-red { background: #dc2626; color: #fff; }
 
+/* Barra de filtros por fecha */
+.rp-date-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  background: rgba(16, 21, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rp-date-presets {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.rp-date-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-right: 0.25rem;
+}
+
+.rp-date-chip {
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rp-date-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.rp-date-chip.active {
+  background: #19764f;
+  border-color: #22c55e;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
+}
+
+.rp-date-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.rp-date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.rp-date-input {
+  color-scheme: dark;
+  background: rgba(10, 14, 26, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 7px;
+  color: #f1f5f9;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.rp-date-input:focus {
+  border-color: #22c55e;
+}
+
+.rp-btn-clear-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 7px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rp-btn-clear-date:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fff;
+}
+
+/* Paginación */
+.rp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 14, 26, 0.6);
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.rp-pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rp-pagination-info strong {
+  color: #fff;
+}
+
+.rp-pagination-total {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.rp-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rp-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rp-page-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.rp-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.rp-page-indicator {
+  font-weight: 600;
+  color: #fff;
+  min-width: 24px;
+  text-align: center;
+}
+
+.rp-page-size-select {
+  color-scheme: dark;
+  background: rgba(10, 14, 26, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  outline: none;
+}
+
 @media (max-width: 900px) {
   .rp-content-grid {
     grid-template-columns: 1fr;
   }
 }
+

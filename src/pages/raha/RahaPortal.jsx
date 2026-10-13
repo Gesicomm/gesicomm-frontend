@@ -3,8 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   AlertTriangle,
+  Calendar,
   Check,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Download,
   FileText,
   Loader,
@@ -33,10 +36,17 @@ export default function RahaPortal() {
   const [usuario, setUsuario] = useState(null);
   const [solicitudes, setSolicitudes] = useState([]);
   const [total, setTotal] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [resumen, setResumen] = useState({ pendiente: 0, observada: 0, aprobada: 0, rechazada: 0 });
   const [filtroEstado, setFiltroEstado] = useState('');
   const [busqueda, setBusqueda] = useState('');
-  const [offset, setOffset] = useState(0);
+
+  // Filtros de fecha ('', 'hoy', 'ayer', '7d', 'mes', 'custom')
+  const [rangoFecha, setRangoFecha] = useState('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
   const [solicitud, setSolicitud] = useState(null);
   const [loadingLista, setLoadingLista] = useState(true);
@@ -67,25 +77,36 @@ export default function RahaPortal() {
       });
   }, [navigate]);
 
-  // Cargar lista con filtros (POST request según regla del proyecto)
+  // Cargar lista con filtros (POST request según regla estricta del proyecto)
   const cargarLista = useCallback(async () => {
     setLoadingLista(true);
     setError('');
     try {
-      const data = await rahaPortalApi.listar({
+      const payload = {
         estado: filtroEstado || undefined,
         buscar: busqueda.trim() || undefined,
-        offset,
-      });
+        page,
+        limit,
+      };
+
+      if (rangoFecha === 'custom') {
+        if (fechaDesde) payload.fecha_desde = fechaDesde;
+        if (fechaHasta) payload.fecha_hasta = fechaHasta;
+      } else if (rangoFecha) {
+        payload.rango_fecha = rangoFecha;
+      }
+
+      const data = await rahaPortalApi.listar(payload);
       setSolicitudes(data.solicitudes || []);
       setTotal(data.total || 0);
+      setTotalPaginas(data.totalPaginas || 1);
       if (data.resumen) setResumen(data.resumen);
     } catch (err) {
       setError(err?.response?.data?.message || 'No se pudo cargar la lista de solicitudes.');
     } finally {
       setLoadingLista(false);
     }
-  }, [filtroEstado, busqueda, offset]);
+  }, [filtroEstado, busqueda, page, limit, rangoFecha, fechaDesde, fechaHasta]);
 
   useEffect(() => {
     cargarLista();
@@ -149,6 +170,34 @@ export default function RahaPortal() {
     }
   }
 
+  function handleSeleccionarRangoFecha(preset) {
+    setRangoFecha(preset);
+    if (preset !== 'custom') {
+      setFechaDesde('');
+      setFechaHasta('');
+    }
+    setPage(1);
+  }
+
+  function handleCambioFechaDesde(val) {
+    setRangoFecha('custom');
+    setFechaDesde(val);
+    setPage(1);
+  }
+
+  function handleCambioFechaHasta(val) {
+    setRangoFecha('custom');
+    setFechaHasta(val);
+    setPage(1);
+  }
+
+  function handleLimpiarFechas() {
+    setRangoFecha('');
+    setFechaDesde('');
+    setFechaHasta('');
+    setPage(1);
+  }
+
   function handleLogout() {
     rahaPortalApi.logout();
     navigate('/raha/login', { replace: true });
@@ -194,7 +243,7 @@ export default function RahaPortal() {
             className={`rp-stat-card ${filtroEstado === 'pendiente' ? 'active' : ''}`}
             onClick={() => {
               setFiltroEstado(filtroEstado === 'pendiente' ? '' : 'pendiente');
-              setOffset(0);
+              setPage(1);
             }}
             style={{ cursor: 'pointer' }}
           >
@@ -211,7 +260,7 @@ export default function RahaPortal() {
             className={`rp-stat-card ${filtroEstado === 'aprobada' ? 'active' : ''}`}
             onClick={() => {
               setFiltroEstado(filtroEstado === 'aprobada' ? '' : 'aprobada');
-              setOffset(0);
+              setPage(1);
             }}
             style={{ cursor: 'pointer' }}
           >
@@ -228,7 +277,7 @@ export default function RahaPortal() {
             className={`rp-stat-card ${filtroEstado === 'observada' ? 'active' : ''}`}
             onClick={() => {
               setFiltroEstado(filtroEstado === 'observada' ? '' : 'observada');
-              setOffset(0);
+              setPage(1);
             }}
             style={{ cursor: 'pointer' }}
           >
@@ -245,7 +294,7 @@ export default function RahaPortal() {
             className={`rp-stat-card ${filtroEstado === 'rechazada' ? 'active' : ''}`}
             onClick={() => {
               setFiltroEstado(filtroEstado === 'rechazada' ? '' : 'rechazada');
-              setOffset(0);
+              setPage(1);
             }}
             style={{ cursor: 'pointer' }}
           >
@@ -259,7 +308,69 @@ export default function RahaPortal() {
           </div>
         </section>
 
-        {/* Toolbar de búsqueda y filtros */}
+        {/* Barra de Filtro por Fechas (Hoy, Ayer, Últimos 7 días, Este mes, Fecha puntual/rango) */}
+        <section className="rp-date-bar">
+          <div className="rp-date-presets">
+            <span className="rp-date-lbl">
+              <Calendar size={15} /> Fecha:
+            </span>
+            {[
+              ['', 'Todas'],
+              ['hoy', 'Hoy'],
+              ['ayer', 'Ayer'],
+              ['7d', 'Últimos 7 días'],
+              ['mes', 'Este mes'],
+            ].map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                className={`rp-date-chip ${rangoFecha === val ? 'active' : ''}`}
+                onClick={() => handleSeleccionarRangoFecha(val)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="rp-date-custom">
+            <div className="rp-date-input-group">
+              <label htmlFor="rp-fecha-desde">Desde:</label>
+              <input
+                id="rp-fecha-desde"
+                type="date"
+                className="rp-date-input"
+                value={fechaDesde}
+                onChange={(e) => handleCambioFechaDesde(e.target.value)}
+                title="Filtrar desde esta fecha (o fecha puntual si no seleccionás Hasta)"
+              />
+            </div>
+
+            <div className="rp-date-input-group">
+              <label htmlFor="rp-fecha-hasta">Hasta:</label>
+              <input
+                id="rp-fecha-hasta"
+                type="date"
+                className="rp-date-input"
+                value={fechaHasta}
+                onChange={(e) => handleCambioFechaHasta(e.target.value)}
+                title="Filtrar hasta esta fecha"
+              />
+            </div>
+
+            {(rangoFecha || fechaDesde || fechaHasta) && (
+              <button
+                type="button"
+                className="rp-btn-clear-date"
+                onClick={handleLimpiarFechas}
+                title="Quitar filtro de fecha"
+              >
+                <X size={13} /> Limpiar fecha
+              </button>
+            )}
+          </div>
+        </section>
+
+        {/* Toolbar de búsqueda y estados */}
         <section className="rp-toolbar">
           <div className="rp-search-wrap">
             <Search size={16} />
@@ -269,7 +380,7 @@ export default function RahaPortal() {
               value={busqueda}
               onChange={(e) => {
                 setBusqueda(e.target.value);
-                setOffset(0);
+                setPage(1);
               }}
               placeholder="Buscar por tienda, razón social o RUC…"
             />
@@ -289,7 +400,7 @@ export default function RahaPortal() {
                 className={`rp-tab ${filtroEstado === valor ? 'active' : ''}`}
                 onClick={() => {
                   setFiltroEstado(valor);
-                  setOffset(0);
+                  setPage(1);
                 }}
               >
                 {etiqueta}
@@ -353,7 +464,7 @@ export default function RahaPortal() {
                         <span style={{ margin: '0 6px' }}>•</span>
                         <span>
                           {sol.enviado_at
-                            ? new Date(sol.enviado_at).toLocaleDateString('es-PY')
+                            ? `${new Date(sol.enviado_at).toLocaleDateString('es-PY')} ${new Date(sol.enviado_at).toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' })}`
                             : 'Reciente'}
                         </span>
                       </div>
@@ -362,6 +473,54 @@ export default function RahaPortal() {
                 ))
               )}
             </ul>
+
+            {/* Paginación de solicitudes */}
+            <footer className="rp-pagination">
+              <div className="rp-pagination-info">
+                <span>Pág. <strong>{page}</strong> / <strong>{totalPaginas}</strong></span>
+                <span className="rp-pagination-total">({total})</span>
+              </div>
+
+              <div className="rp-pagination-controls">
+                <button
+                  type="button"
+                  className="rp-page-btn"
+                  disabled={page <= 1 || loadingLista}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  aria-label="Página anterior"
+                  title="Página anterior"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="rp-page-indicator">{page}</span>
+                <button
+                  type="button"
+                  className="rp-page-btn"
+                  disabled={page >= totalPaginas || loadingLista}
+                  onClick={() => setPage(p => Math.min(totalPaginas, p + 1))}
+                  aria-label="Página siguiente"
+                  title="Página siguiente"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              <div className="rp-page-size">
+                <select
+                  className="rp-page-size-select"
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  aria-label="Items por página"
+                >
+                  <option value={10}>10 / pág</option>
+                  <option value={20}>20 / pág</option>
+                  <option value={50}>50 / pág</option>
+                </select>
+              </div>
+            </footer>
           </aside>
 
           {/* Columna Derecha: Detalle de la solicitud */}
