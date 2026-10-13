@@ -5,6 +5,7 @@ import DepositosPage from './DepositosPage';
 import { depositoService } from '../../services/deposito.service';
 import * as courierApi from '../../services/courierApi';
 import { productService } from '../../services/productService';
+import { categoriaService } from '../../services/catalogoService';
 import { solicitudAbastecimientoService } from '../../services/solicitudAbastecimiento.service';
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
@@ -25,6 +26,11 @@ vi.mock('../../services/productService', () => ({
   productService: {
     buscar: vi.fn(),
     variantes: vi.fn(),
+  },
+}));
+vi.mock('../../services/catalogoService', () => ({
+  categoriaService: {
+    buscar: vi.fn(),
   },
 }));
 vi.mock('../../services/solicitudAbastecimiento.service', () => ({
@@ -60,6 +66,7 @@ beforeEach(() => {
   courierApi.createCourier.mockResolvedValue({ id: 7, nombre: 'Moto Express', activo: true });
   courierApi.updateCourier.mockResolvedValue({ id: 7, nombre: 'Moto Express', activo: true });
   courierApi.replaceDeliveryZonas.mockResolvedValue([]);
+  categoriaService.buscar.mockResolvedValue({ categorias: [{ id: 4, nombre: 'Electro' }] });
   productService.buscar.mockResolvedValue({ productos: [], total: 0, total_paginas: 0 });
   productService.variantes.mockResolvedValue([]);
   solicitudAbastecimientoService.crear.mockResolvedValue({ id: 99 });
@@ -142,7 +149,16 @@ describe('Depósitos: alta simple', () => {
     });
     depositoService.listarCouriersDeposito.mockResolvedValue({ couriers: [] });
     productService.buscar.mockResolvedValue({
-      productos: [{ id: 80, nombre: 'Air Fryer RAHA', sku: 'RAHA-80', variantes_count: 0, puede_editar: false }],
+      productos: [{
+        id: 80,
+        nombre: 'Air Fryer RAHA',
+        sku: 'RAHA-80',
+        categoria_id: 4,
+        precio_base: 227899,
+        variantes_count: 0,
+        puede_editar: false,
+        imagenes: [{ url: '/uploads/air-fryer.jpg' }],
+      }],
       total: 1,
       total_paginas: 1,
     });
@@ -154,6 +170,9 @@ describe('Depósitos: alta simple', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Abastecer depósito' }));
 
     await screen.findByText('Producto de catálogo RAHA');
+    expect(await screen.findByAltText('Air Fryer RAHA')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Categoría'), { target: { value: '4' } });
+    await waitFor(() => expect(productService.buscar).toHaveBeenCalledWith(expect.objectContaining({ categoria_id: 4 })));
     fireEvent.click(await screen.findByRole('button', { name: /Air Fryer RAHA/ }));
     fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: 'Agregar al pedido' }));

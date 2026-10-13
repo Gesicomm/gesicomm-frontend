@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Check, Loader, PackagePlus, Plus, Search, Trash2, X } from 'lucide-react';
+import { AlertCircle, Check, ImageOff, Loader, PackagePlus, Plus, Search, Trash2, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getMediaUrl } from '../../services/api';
 import { productService } from '../../services/productService';
+import { categoriaService } from '../../services/catalogoService';
 import { solicitudAbastecimientoService } from '../../services/solicitudAbastecimiento.service';
 import { useDebounce } from '../../hooks/useDebounce';
 
@@ -12,9 +14,54 @@ function nombreProducto(item) {
     : item.producto.nombre;
 }
 
+function imagenProducto(producto) {
+  if (!producto) return '';
+  return producto.imagenes?.[0]?.url
+    || producto.imagenes?.[0]
+    || producto.imagen
+    || producto.imagen_url
+    || '';
+}
+
+function precioProducto(producto) {
+  return producto?.precio_efectivo ?? producto?.precio_base ?? producto?.precio ?? null;
+}
+
+function formatGs(value) {
+  const numero = Number(value);
+  if (!Number.isFinite(numero) || numero <= 0) return '';
+  return `Gs. ${numero.toLocaleString('es-PY')}`;
+}
+
+function categoriaNombre(producto, categorias) {
+  const categoriaId = producto?.categoria_id || producto?.categoriaId;
+  return categorias.find((cat) => String(cat.id) === String(categoriaId))?.nombre || '';
+}
+
+function ProductImage({ producto, className = 'h-16 w-16' }) {
+  const src = imagenProducto(producto);
+  if (!src) {
+    return (
+      <span className={`${className} flex flex-shrink-0 items-center justify-center rounded-lg border border-border bg-surface-2 text-fg-muted`}>
+        <ImageOff size={18} />
+      </span>
+    );
+  }
+  return (
+    <img
+      src={getMediaUrl(src)}
+      alt={producto.nombre}
+      className={`${className} flex-shrink-0 rounded-lg border border-border bg-surface-2 object-cover`}
+      loading="lazy"
+    />
+  );
+}
+
 export default function AbastecerDepositoModal({ deposito, open, onClose }) {
   const navigate = useNavigate();
   const [texto, setTexto] = useState('');
+  const [categoriaId, setCategoriaId] = useState('');
+  const [categorias, setCategorias] = useState([]);
   const [productos, setProductos] = useState([]);
   const [cargandoProductos, setCargandoProductos] = useState(false);
   const [producto, setProducto] = useState(null);
@@ -29,6 +76,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
   useEffect(() => {
     if (!open) {
       setTexto('');
+      setCategoriaId('');
       setProductos([]);
       setProducto(null);
       setVariantes([]);
@@ -42,6 +90,21 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
   useEffect(() => {
     if (!open) return undefined;
     let activo = true;
+    categoriaService.buscar({ solo_activas: true, limit: 1000 })
+      .then((data) => {
+        if (!activo) return;
+        const lista = Array.isArray(data) ? data : data.categorias || [];
+        setCategorias(lista);
+      })
+      .catch(() => {
+        if (activo) setCategorias([]);
+      });
+    return () => { activo = false; };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    let activo = true;
     setCargandoProductos(true);
     productService.buscar({
       page: 1,
@@ -49,6 +112,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
       activo: true,
       ordenar_por: 'nombre',
       ...(textoBuscado.trim() ? { texto: textoBuscado.trim() } : {}),
+      ...(categoriaId ? { categoria_id: Number(categoriaId) } : {}),
     })
       .then((data) => {
         if (!activo) return;
@@ -61,7 +125,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
         if (activo) setCargandoProductos(false);
       });
     return () => { activo = false; };
-  }, [open, textoBuscado]);
+  }, [open, textoBuscado, categoriaId]);
 
   useEffect(() => {
     if (!producto) {
@@ -164,14 +228,28 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
           <div className="min-h-0 overflow-y-auto border-b border-border bg-surface-50 p-5 lg:border-b-0 lg:border-r">
             <div className="mb-4">
               <label className="mb-2 block text-sm font-semibold text-fg">Producto de catálogo RAHA</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={16} />
-                <input
-                  value={texto}
-                  onChange={(event) => setTexto(event.target.value)}
-                  placeholder="Buscar producto..."
-                  className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
-                />
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={16} />
+                  <input
+                    value={texto}
+                    onChange={(event) => setTexto(event.target.value)}
+                    placeholder="Buscar por nombre o SKU..."
+                    className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <label className="sr-only" htmlFor="categoria-raha">Categoría</label>
+                <select
+                  id="categoria-raha"
+                  value={categoriaId}
+                  onChange={(event) => setCategoriaId(event.target.value)}
+                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-primary"
+                >
+                  <option value="">Todas las categorías</option>
+                  {categorias.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -190,15 +268,23 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
                   key={p.id}
                   type="button"
                   onClick={() => setProducto(p)}
-                  className={`flex w-full items-start justify-between gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${producto?.id === p.id ? 'border-primary bg-primary/5' : 'border-border bg-surface hover:border-primary/50'}`}
+                  className={`group flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${producto?.id === p.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-surface hover:border-primary/50 hover:bg-surface-2'}`}
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-fg">{p.nombre}</span>
-                    <span className="mt-1 block text-[12px] text-fg-muted">
-                      {p.sku || 'Sin SKU'}{Number(p.variantes_count) ? ` · ${p.variantes_count} variantes` : ''}
+                  <ProductImage producto={p} />
+                  <span className="min-w-0 flex-1">
+                    <span className="line-clamp-2 text-sm font-semibold text-fg">{p.nombre}</span>
+                    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-fg-muted">
+                      <span>{p.sku || 'Sin SKU'}</span>
+                      {categoriaNombre(p, categorias) && <span>{categoriaNombre(p, categorias)}</span>}
+                      {Number(p.variantes_count) > 0 && <span>{p.variantes_count} variantes</span>}
                     </span>
+                    {formatGs(precioProducto(p)) && (
+                      <span className="mt-2 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[12px] font-semibold text-primary">
+                        {formatGs(precioProducto(p))}
+                      </span>
+                    )}
                   </span>
-                  {producto?.id === p.id && <Check className="text-primary" size={16} />}
+                  {producto?.id === p.id && <Check className="flex-shrink-0 text-primary" size={17} />}
                 </button>
               ))}
             </div>
@@ -208,7 +294,25 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
             <div className="space-y-4">
               <div>
                 <p className="m-0 text-sm font-semibold text-fg">Producto seleccionado</p>
-                <p className="m-0 mt-1 text-sm text-fg-muted">{producto?.nombre || 'Elegí un producto del listado.'}</p>
+                {producto ? (
+                  <div className="mt-3 flex items-start gap-3 rounded-lg border border-border bg-surface-50 p-3">
+                    <ProductImage producto={producto} className="h-20 w-20" />
+                    <div className="min-w-0">
+                      <p className="m-0 line-clamp-3 text-sm font-semibold text-fg">{producto.nombre}</p>
+                      <p className="m-0 mt-1 text-[12px] text-fg-muted">{producto.sku || 'Sin SKU'}</p>
+                      {categoriaNombre(producto, categorias) && (
+                        <p className="m-0 mt-1 text-[12px] text-fg-muted">{categoriaNombre(producto, categorias)}</p>
+                      )}
+                      {formatGs(precioProducto(producto)) && (
+                        <p className="m-0 mt-2 text-sm font-semibold text-primary">{formatGs(precioProducto(producto))}</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-lg border border-dashed border-border bg-surface-50 px-4 py-6 text-sm text-fg-muted">
+                    Elegí un producto del listado.
+                  </div>
+                )}
               </div>
 
               {productoTieneVariantes && (
@@ -258,11 +362,14 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
               ) : (
                 <ul className="m-0 space-y-2 p-0">
                   {items.map((item) => (
-                    <li key={item.key} className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface-50 px-3 py-2">
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-fg">{nombreProducto(item)}</span>
-                        <span className="mt-0.5 block text-[12px] text-fg-muted">{item.cantidad} u.</span>
-                      </span>
+                    <li key={item.key} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-50 px-3 py-2">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <ProductImage producto={item.producto} className="h-10 w-10 rounded-md" />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold text-fg">{nombreProducto(item)}</span>
+                          <span className="mt-0.5 block text-[12px] text-fg-muted">{item.cantidad} u.</span>
+                        </span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => setItems((prev) => prev.filter((row) => row.key !== item.key))}
