@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { NuevoPedidoModal } from './NuevoPedidoModal';
+import { productService } from '../../services/productService';
 import { getCouriers } from '../../services/courierApi';
 import { depositoService } from '../../services/deposito.service';
 import { inventarioService } from '../../services/inventario.service';
@@ -219,6 +220,38 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
       expect(opciones).toContain('Courier Luque (Auto)');
       expect(opciones).not.toContain('Courier Central (Moto)');
     });
+  });
+
+  it('muestra RAHA como origen y courier cuando el pedido tiene producto RAHA', async () => {
+    productService.buscar.mockResolvedValueOnce({
+      productos: [{ id: 201, nombre: 'Cafeteira', precio_base: 166138, puede_editar: false }],
+    });
+    getCouriers.mockResolvedValueOnce([
+      { id: 76, nombre: 'asd', vehiculo: 'Moto', tarifas: [] },
+    ]);
+
+    const onSubmit = vi.fn().mockResolvedValue({});
+    const { container } = render(<NuevoPedidoModal open envio={{ ...pedidoEntregado, courier_id: 76 }} onClose={() => {}} onSubmit={onSubmit} deliveryZonas={[]} />);
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    const origenSelect = Array.from(container.querySelectorAll('select'))
+      .find(select => Array.from(select.options).some(option => option.textContent === 'RAHA'));
+    expect(origenSelect).toBeDisabled();
+    expect(origenSelect).toHaveValue('__RAHA__');
+    expect(screen.getByText(/Este producto sale desde RAHA/i)).toBeInTheDocument();
+
+    const courierSelect = Array.from(container.querySelectorAll('select'))
+      .filter(select => Array.from(select.options).some(option => option.textContent === 'RAHA'))
+      .at(-1);
+    expect(courierSelect).toBeDisabled();
+    expect(courierSelect).toHaveValue('__RAHA__');
+    expect(screen.getByText(/Asignado a RAHA/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Revisión/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Guardar cambios|Confirmar pedido/i }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ courier_id: null, origen_preferido_id: null });
   });
 
   it('avisa al elegir un depósito sin stock y sugiere uno que sí alcanza', async () => {

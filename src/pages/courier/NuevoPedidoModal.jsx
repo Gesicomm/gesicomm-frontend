@@ -311,18 +311,41 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     }
   };
 
+  const productoPorId = useMemo(() => {
+    const map = new Map();
+    productosDisponibles.forEach(p => map.set(Number(p.id), p));
+    return map;
+  }, [productosDisponibles]);
+
+  const productoEsRaha = (producto) => {
+    if (!producto) return false;
+    if (producto.es_raha === true || producto.origen_despacho === "RAHA") return true;
+    return producto.puede_editar === false;
+  };
+
+  const itemEsRaha = (item) => {
+    if (!item) return false;
+    if (item.es_raha === true || item.producto_raha === true || item.origen_despacho === "RAHA") return true;
+    const producto = productoPorId.get(Number(item.producto_id)) || item.producto || item.Producto;
+    return productoEsRaha(producto);
+  };
+
   // Ítems a considerar para calcular tarifa de courier: en modo "completar"
   // ya están comprometidos (no editables acá), en modo alta son los que se
   // van agregando en el formulario.
   // Normalizamos siempre el subtotal porque los items que vienen del endpoint
   // paginado no tienen el campo "subtotal" precalculado — lo calculamos acá.
   const itemsBasePedido = modoCompletar ? (itemsActuales || envio?.items || []) : items;
+  const pedidoRaha = useMemo(() => (
+    itemsBasePedido.some(item => itemEsRaha(item))
+  ), [itemsBasePedido, productoPorId]);
   const itemsParaTarifa = itemsBasePedido.map(it => ({
         ...it,
         subtotal: Number(it.subtotal) || (Number(it.precio_unitario) * Number(it.cantidad)),
       }));
   const itemsStockPedido = useMemo(() => (
     itemsBasePedido
+      .filter(it => !itemEsRaha(it))
       .map(it => ({
         producto_id: it.producto_id ? Number(it.producto_id) : null,
         variante_id: it.variante_id ? Number(it.variante_id) : null,
@@ -331,7 +354,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
         cantidad: Number(it.cantidad) || 0,
       }))
       .filter(it => it.producto_id && it.cantidad > 0)
-  ), [itemsBasePedido]);
+  ), [itemsBasePedido, productoPorId]);
   const itemsStockPedidoKey = useMemo(() => JSON.stringify(itemsStockPedido), [itemsStockPedido]);
 
   const depositoSeleccionadoId = form.origen_preferido_id ? String(form.origen_preferido_id) : "";
@@ -344,17 +367,33 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       : null
   ), [courierIdsDepositoSeleccionado]);
   const couriersParaOrigen = useMemo(() => {
+    if (pedidoRaha) return [];
     if (!depositoSeleccionadoId) return couriers;
     if (!courierIdsPermitidos) return [];
     return couriers.filter(c => courierIdsPermitidos.has(Number(c.id)));
-  }, [couriers, courierIdsPermitidos, depositoSeleccionadoId]);
+  }, [couriers, courierIdsPermitidos, depositoSeleccionadoId, pedidoRaha]);
   const deliveryZonasParaOrigen = useMemo(() => {
+    if (pedidoRaha) return [];
     if (!depositoSeleccionadoId || !courierIdsPermitidos) return deliveryZonas;
     return (deliveryZonas || []).filter(z => !z.courier_id || courierIdsPermitidos.has(Number(z.courier_id)));
-  }, [courierIdsPermitidos, deliveryZonas, depositoSeleccionadoId]);
+  }, [courierIdsPermitidos, deliveryZonas, depositoSeleccionadoId, pedidoRaha]);
 
   useEffect(() => {
-    if (!open || !depositoSeleccionadoId || courierIdsPorDeposito[depositoSeleccionadoId]) return;
+    if (!open || !pedidoRaha) return;
+    setForm(prev => (
+      prev.origen_preferido_id || prev.courier_id
+        ? { ...prev, origen_preferido_id: "", courier_id: "" }
+        : prev
+    ));
+    setStockOrigen(null);
+    setStockOrigenError("");
+    setStockOrigenLoading(false);
+    setCouriersDepositoError("");
+    setErrors(prev => ({ ...prev, origen_preferido_id: null }));
+  }, [open, pedidoRaha]);
+
+  useEffect(() => {
+    if (pedidoRaha || !open || !depositoSeleccionadoId || courierIdsPorDeposito[depositoSeleccionadoId]) return;
     let cancelado = false;
     setCouriersDepositoLoading(depositoSeleccionadoId);
     setCouriersDepositoError("");
@@ -378,20 +417,20 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     return () => {
       cancelado = true;
     };
-  }, [courierIdsPorDeposito, depositoSeleccionadoId, open]);
+  }, [courierIdsPorDeposito, depositoSeleccionadoId, open, pedidoRaha]);
 
   useEffect(() => {
-    if (!depositoSeleccionadoId || !courierIdsPermitidos || !form.courier_id) return;
+    if (pedidoRaha || !depositoSeleccionadoId || !courierIdsPermitidos || !form.courier_id) return;
     if (courierIdsPermitidos.has(Number(form.courier_id))) return;
     setForm(prev => (
       String(prev.origen_preferido_id || "") === depositoSeleccionadoId
         ? { ...prev, courier_id: "", costo_envio: 0 }
         : prev
     ));
-  }, [courierIdsPermitidos, depositoSeleccionadoId, form.courier_id]);
+  }, [courierIdsPermitidos, depositoSeleccionadoId, form.courier_id, pedidoRaha]);
 
   useEffect(() => {
-    if (!open || !depositoSeleccionadoId || itemsStockPedido.length === 0) {
+    if (pedidoRaha || !open || !depositoSeleccionadoId || itemsStockPedido.length === 0) {
       setStockOrigen(null);
       setStockOrigenError("");
       setStockOrigenLoading(false);
@@ -421,7 +460,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     return () => {
       cancelado = true;
     };
-  }, [depositoSeleccionadoId, itemsStockPedidoKey, open]);
+  }, [depositoSeleccionadoId, itemsStockPedidoKey, open, pedidoRaha]);
 
   const problemaStockOrigen = useMemo(() => (
     form.origen_preferido_id && stockOrigen?.origen && stockOrigen.origen.ok === false
@@ -466,7 +505,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   // Si se está completando un pedido sin courier asignado, intenta
   // autocompletarlo apenas ciudad + couriers + métodos de pago están listos.
   useEffect(() => {
-    if (!open || !modoCompletar) return;
+    if (!open || !modoCompletar || pedidoRaha) return;
     if (form.courier_id) return;
     if (!form.ciudad || metodosPago.length === 0) return;
     const esAnticipado = form.pago_anticipado;
@@ -476,7 +515,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       setForm(prev => (prev.courier_id ? prev : { ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, modoCompletar, couriersParaOrigen, deliveryZonasParaOrigen, metodosPago, form.ciudad, form.departamento]);
+  }, [open, modoCompletar, couriersParaOrigen, deliveryZonasParaOrigen, metodosPago, form.ciudad, form.departamento, pedidoRaha]);
 
   const optionsDepartamentos = useMemo(() => (
     geografia.map(d => ({
@@ -565,12 +604,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     return Array.from(ciudades.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
   }, [couriersParaOrigen, deliveryZonasParaOrigen, form.departamento, geografia]);
 
-  const productoPorId = useMemo(() => {
-    const map = new Map();
-    productosDisponibles.forEach(p => map.set(Number(p.id), p));
-    return map;
-  }, [productosDisponibles]);
-
   const catalogoPedidoPicker = useMemo(() => ({
     productos: productosDisponibles.map(p => ({
       id: p.id,
@@ -581,6 +614,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       categoria: p.categoria?.nombre || (typeof p.categoria === 'string' ? p.categoria : null),
       marca: p.marca?.nombre || (typeof p.marca === 'string' ? p.marca : null),
       destacado: p.destacado,
+      es_raha: productoEsRaha(p),
     })),
     combos: [],
   }), [productosDisponibles]);
@@ -739,6 +773,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   };
 
   const aplicarTarifaConItems = (nuevosItems) => {
+    if (nuevosItems.some(item => itemEsRaha(item))) {
+      setForm(prev => ({ ...prev, origen_preferido_id: "", courier_id: "" }));
+      return;
+    }
     if (!form.ciudad) return;
     const esAnticipado = form.pago_anticipado;
     const resultadoZona = buscarZonaDelivery(deliveryZonasParaOrigen, form.ciudad, esAnticipado, nuevosItems, form.departamento);
@@ -768,7 +806,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       nombre_producto: oferta ? `${producto.nombre} — ${oferta.nombre}` : producto.nombre,
       cantidad: qty,
       precio_unitario: precioUnit,
-      subtotal: qty * precioUnit
+      subtotal: qty * precioUnit,
+      es_raha: productoEsRaha(producto),
     };
   };
 
@@ -940,11 +979,11 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     delete formSinMetodoPago.metodo_pago_id;
     const comunes = {
       ...formSinMetodoPago,
-      courier_id: form.courier_id ? Number(form.courier_id) : null,
+      courier_id: pedidoRaha ? null : (form.courier_id ? Number(form.courier_id) : null),
       costo_envio: Number(form.costo_envio) || 0,
       delivery_a_cargo: deliveryLoPagaNegocio ? "negocio" : "cliente",
       pago_anticipado: form.pago_anticipado === true,
-      origen_preferido_id: form.origen_preferido_id ? Number(form.origen_preferido_id) : null,
+      origen_preferido_id: pedidoRaha ? null : (form.origen_preferido_id ? Number(form.origen_preferido_id) : null),
       monto: precioTotalVendido
     };
 
@@ -1337,7 +1376,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   }}
                 />
                 {errors.ciudad && <span id="np-ciudad-error" className="field-error">{errors.ciudad}</span>}
-                {form.ciudad && !coberturaDeliveryActual && !form.courier_id && (
+                {form.ciudad && !pedidoRaha && !coberturaDeliveryActual && !form.courier_id && (
                   <div className="np-inline-notice">
                     <AlertCircle size={15} />
                     <span>
@@ -1397,23 +1436,32 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                 <label>Origen de despacho</label>
                 <select
                   className={`form-input ${errors.origen_preferido_id ? 'input-error' : ''}`}
-                  value={form.origen_preferido_id}
+                  value={pedidoRaha ? "__RAHA__" : form.origen_preferido_id}
                   aria-invalid={Boolean(errors.origen_preferido_id)}
+                  disabled={pedidoRaha}
                   onChange={e => {
                     setForm({ ...form, origen_preferido_id: e.target.value });
                     if (errors.origen_preferido_id) setErrors({ ...errors, origen_preferido_id: null });
                     setSubmitError(null);
                   }}
                 >
-                  <option value="">Automático según stock</option>
-                  {ubicaciones.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.nombre} · {u.ciudad}
-                    </option>
-                  ))}
+                  {pedidoRaha ? (
+                    <option value="__RAHA__">RAHA</option>
+                  ) : (
+                    <>
+                      <option value="">Automático según stock</option>
+                      {ubicaciones.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.nombre} · {u.ciudad}
+                        </option>
+                      ))}
+                    </>
+                  )}
                 </select>
                 <span className="np-hint">
-                  {form.origen_preferido_id
+                  {pedidoRaha
+                    ? 'Este producto sale desde RAHA. No usa depósitos ni stock local de la tienda.'
+                    : form.origen_preferido_id
                     ? 'El pedido completo se reserva desde este depósito. Si no tiene stock suficiente, el sistema lo va a avisar y no se confirma.'
                     : 'No elegís vos: al confirmar, el sistema toma el stock del depósito de esta tienda que lo tenga. Elegí un depósito solo si querés forzar de dónde sale.'}
                 </span>
@@ -1491,21 +1539,29 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   <label style={{ color: 'var(--color-primary-text)' }}><Truck size={14} style={{ display: 'inline', marginRight: '4px' }} /> Courier asignado</label>
                   <select
                     className="form-input"
-                    value={form.courier_id}
+                    value={pedidoRaha ? "__RAHA__" : form.courier_id}
                     onChange={e => handleCourierChange(e.target.value)}
-                    disabled={Boolean(form.origen_preferido_id && couriersDepositoLoading === String(form.origen_preferido_id))}
+                    disabled={pedidoRaha || Boolean(form.origen_preferido_id && couriersDepositoLoading === String(form.origen_preferido_id))}
                   >
-                    <option value="">
-                      {form.origen_preferido_id && couriersDepositoLoading === String(form.origen_preferido_id)
-                        ? "-- Cargando couriers --"
-                        : "-- Sin asignar --"}
-                    </option>
-                    {couriersParaOrigen.map(c => (
-                      <option key={c.id} value={c.id}>{c.nombre} ({c.vehiculo})</option>
-                    ))}
+                    {pedidoRaha ? (
+                      <option value="__RAHA__">RAHA</option>
+                    ) : (
+                      <>
+                        <option value="">
+                          {form.origen_preferido_id && couriersDepositoLoading === String(form.origen_preferido_id)
+                            ? "-- Cargando couriers --"
+                            : "-- Sin asignar --"}
+                        </option>
+                        {couriersParaOrigen.map(c => (
+                          <option key={c.id} value={c.id}>{c.nombre} ({c.vehiculo})</option>
+                        ))}
+                      </>
+                    )}
                   </select>
                   <span className="np-hint">
-                    {form.origen_preferido_id && couriersDepositoLoading === String(form.origen_preferido_id)
+                    {pedidoRaha
+                      ? "Asignado a RAHA. El pedido se crea en RAHA y no usa couriers locales."
+                      : form.origen_preferido_id && couriersDepositoLoading === String(form.origen_preferido_id)
                       ? "Estamos buscando los couriers vinculados a ese depósito."
                       : form.origen_preferido_id && courierIdsPermitidos && couriersParaOrigen.length === 0
                         ? "Este depósito todavía no tiene couriers vinculados."
