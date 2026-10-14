@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
 import { trackearEventoGA } from '../../lib/googleAnalytics';
@@ -250,6 +250,59 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     return validarCuponLanding(slug, codigo, itemsPayload);
   }
 
+  // Firma del carrito con el que ya se mandó InitiateCheckout: ir y volver
+  // entre el carrito y el formulario con lo mismo no es otro inicio.
+  const checkoutIniciadoRef = useRef(null);
+
+  /**
+   * InitiateCheckout: cuando el comprador llega al formulario de compra (la
+   * página de checkout del lienzo o el paso "formulario" del carrito), no
+   * cuando el pedido ya existe. Antes salía adentro de confirmarPedido,
+   * después del Purchase: solo lo recibía quien ya había comprado, y para
+   * Meta nadie abandonaba el checkout.
+   */
+  function iniciarCheckout() {
+    const itemsCrudos = Array.from(carrito.values());
+    if (!itemsCrudos.length) return;
+    const firma = itemsCrudos.map(i => `${i.clave}x${i.cantidad}`).sort().join('|');
+    if (checkoutIniciadoRef.current === firma) return;
+    checkoutIniciadoRef.current = firma;
+    try {
+      const eventId = generarEventId();
+      const { fbc, fbp } = leerCookiesFacebook();
+      const valorTotal = itemsCrudos.reduce((sum, item) => sum + ((Number(item.precio) || 0) * item.cantidad), 0);
+      const customData = {
+        content_ids: itemsCrudos.map(i => i.contentId),
+        contents: itemsCrudos.map(i => ({ id: i.contentId, quantity: i.cantidad })),
+        content_type: 'product',
+        value: valorTotal,
+        currency: 'PYG',
+        num_items: itemsCrudos.reduce((sum, item) => sum + item.cantidad, 0)
+      };
+      trackearEvento('InitiateCheckout', eventId, customData);
+      trackearEventoGA('begin_checkout', {
+        currency: 'PYG',
+        value: valorTotal,
+        items: itemsCrudos.map(i => ({ item_id: i.contentId, item_name: i.nombre, price: i.precio, quantity: i.cantidad }))
+      });
+      trackearEventoTikTok('InitiateCheckout', {
+        contents: itemsCrudos.map(i => ({ content_id: i.contentId, content_name: i.nombre, quantity: i.cantidad, price: i.precio })),
+        value: valorTotal,
+        currency: 'PYG'
+      });
+      registrarEventoLanding(slug, {
+        event_name: 'InitiateCheckout',
+        event_id: eventId,
+        event_source_url: window.location.href,
+        fbc,
+        fbp,
+        custom_data: customData,
+      }).catch(() => {});
+    } catch (e) {
+      console.error('Error trackeando InitiateCheckout:', e);
+    }
+  }
+
   async function confirmarPedido(datosFormulario = {}) {
     if (carrito.size === 0) throw new Error('Tu carrito está vacío.');
     const itemsCrudos = Array.from(carrito.values());
@@ -308,41 +361,8 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       }
     }
 
-    try {
-      const eventId = generarEventId();
-      const { fbc, fbp } = leerCookiesFacebook();
-      const valorTotal = res.total || itemsCrudos.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
-      const customData = {
-        content_ids: itemsCrudos.map(i => i.contentId),
-        contents: itemsCrudos.map(i => ({ id: i.contentId, quantity: i.cantidad })),
-        content_type: 'product',
-        value: valorTotal,
-        currency: 'PYG',
-        num_items: itemsCrudos.reduce((sum, item) => sum + item.cantidad, 0)
-      };
-      trackearEvento('InitiateCheckout', eventId, customData);
-      trackearEventoGA('begin_checkout', {
-        currency: 'PYG',
-        value: valorTotal,
-        items: itemsCrudos.map(i => ({ item_id: i.contentId, item_name: i.nombre, price: i.precio, quantity: i.cantidad }))
-      });
-      trackearEventoTikTok('InitiateCheckout', {
-        contents: itemsCrudos.map(i => ({ content_id: i.contentId, content_name: i.nombre, quantity: i.cantidad, price: i.precio })),
-        value: valorTotal,
-        currency: 'PYG'
-      });
-      registrarEventoLanding(slug, {
-        event_name: 'InitiateCheckout',
-        event_id: eventId,
-        event_source_url: window.location.href,
-        fbc,
-        fbp,
-        custom_data: customData,
-      }).catch(() => {});
-    } catch (e) {
-      console.error('Error trackeando InitiateCheckout:', e);
-    }
-
+    // Un pedido nuevo con el mismo carrito es otro checkout.
+    checkoutIniciadoRef.current = null;
     setCarrito(new Map());
     return {
       redirigido: false,
@@ -364,6 +384,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     agregarAlCarrito,
     quitarDelCarrito,
     cambiarCantidadCarrito,
+    iniciarCheckout,
     confirmarPedido,
     validarCupon
   };

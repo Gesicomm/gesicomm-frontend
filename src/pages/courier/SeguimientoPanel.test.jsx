@@ -140,11 +140,56 @@ test("un flujo legado de confirmación web no se muestra como Contacto inicial",
 const FLUJO_ENVIO = {
   id: 30, nombre: "Seguimiento de envío", tipo: "SEGUIMIENTO_ENVIO", envios_totales: 2,
   fases: [
-    { id: 301, orden: 1, nombre: "Pedido confirmado", envios: 1, completada: true, ultimo_envio_en: "2026-10-12T15:00:00.000Z" },
-    { id: 302, orden: 2, nombre: "Pedido despachado", envios: 1, completada: false, ultimo_envio_en: "2026-10-12T16:00:00.000Z" },
-    { id: 303, orden: 3, nombre: "Pedido en camino", envios: 0, completada: false },
+    { id: 301, orden: 4, nombre: "Texto renombrado", accion_operativa: "PREPARAR_PEDIDO", envios: 1, completada: true, ultimo_envio_en: "2026-10-12T15:00:00.000Z" },
+    { id: 302, orden: 7, nombre: "Aviso custom", accion_operativa: "DESPACHAR_PEDIDO", envios: 1, completada: false, ultimo_envio_en: "2026-10-12T16:00:00.000Z" },
+    { id: 303, orden: 8, nombre: "Pedido en camino", accion_operativa: "AVISO_EN_CAMINO", envios: 0, completada: false },
   ],
 };
+
+test("marcar enviada la fase Pedido confirmado también prepara el pedido", async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{
+    ...FLUJO_ENVIO,
+    envios_totales: 1,
+    fases: FLUJO_ENVIO.fases.map((fase) => (
+      fase.id === 301
+        ? { ...fase, envios: 1, completada: false, ultimo_envio_en: "2026-10-12T15:00:00.000Z" }
+        : { ...fase, envios: 0, completada: false, ultimo_envio_en: null }
+    )),
+  }]);
+  seguimientoService.completarFase.mockResolvedValue({
+    recordatorios_cumplidos: [],
+    siguiente_fase: { id: 302, orden: 2, nombre: "Pedido despachado" },
+  });
+  const envio = pedido({ estado: "Confirmado" });
+  const onPrepararPedido = vi.fn(async () => ({ ...envio, estado: "Preparado" }));
+
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} onPrepararPedido={onPrepararPedido} />);
+  await screen.findByText(/Fase 4 — Texto renombrado/);
+
+  fireEvent.click(screen.getByRole("button", { name: /Marcar como enviado/ }));
+
+  await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, 301));
+  expect(onPrepararPedido).toHaveBeenCalledWith(envio);
+});
+
+test("si la fase de preparación ya estaba enviada, al abrir el panel corrige el estado atrasado", async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{
+    ...FLUJO_ENVIO,
+    envios_totales: 1,
+    fases: FLUJO_ENVIO.fases.map((fase) => (
+      fase.id === 301
+        ? { ...fase, envios: 1, completada: true, ultimo_envio_en: "2026-10-12T15:00:00.000Z" }
+        : { ...fase, envios: 0, completada: false, ultimo_envio_en: null }
+    )),
+  }]);
+  const envio = pedido({ estado: "Confirmado" });
+  const onPrepararPedido = vi.fn(async () => ({ ...envio, estado: "Preparado" }));
+
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} onPrepararPedido={onPrepararPedido} />);
+  await screen.findByText(/Fase 4 — Texto renombrado/);
+
+  await waitFor(() => expect(onPrepararPedido).toHaveBeenCalledWith(envio));
+});
 
 test("marcar enviada la fase Pedido despachado también despacha el pedido", async () => {
   seguimientoService.getFlujosPedido.mockResolvedValue([FLUJO_ENVIO]);
@@ -156,7 +201,7 @@ test("marcar enviada la fase Pedido despachado también despacha el pedido", asy
   const onDespacharPedido = vi.fn(async () => ({ ...envio, estado: "Despachado" }));
 
   render(<SeguimientoPanel open envio={envio} onClose={() => {}} onDespacharPedido={onDespacharPedido} />);
-  await screen.findByText(/Fase 2 — Pedido despachado/);
+  await screen.findByText(/Fase 7 — Aviso custom/);
 
   fireEvent.click(screen.getByRole("button", { name: /Marcar como enviado/ }));
 
@@ -179,7 +224,7 @@ test("marcar enviada la fase Pedido en camino es solo aviso y no cambia estado",
   const onDespacharPedido = vi.fn();
 
   render(<SeguimientoPanel open envio={pedido({ estado: "Despachado" })} onClose={() => {}} onDespacharPedido={onDespacharPedido} />);
-  await screen.findByText(/Fase 3 — Pedido en camino/);
+  await screen.findByText(/Fase 8 — Pedido en camino/);
 
   fireEvent.click(screen.getByRole("button", { name: /Marcar como enviado/ }));
 

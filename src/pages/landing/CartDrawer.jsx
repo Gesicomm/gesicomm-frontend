@@ -132,6 +132,10 @@ export default function CartDrawer({
   // (el upsell aceptado ya está en el carrito, o el cliente lo rechazó).
   solicitudUpsell = null,
   onUpsellResuelto = null,
+  // InitiateCheckout (useStoreCart.iniciarCheckout): al pasar al formulario
+  // de compra de este drawer. Con onIrACheckout lo dispara la página de
+  // checkout, que es donde está el formulario.
+  onIniciarCheckout = null,
 }) {
   const [paso, setPaso] = useState(pasoInicial); // carrito | formulario | confirmado
   // El upsell NO es un paso del drawer: tiene que interrumpir con un popup
@@ -405,6 +409,7 @@ export default function CartDrawer({
       onIrACheckout();
       return;
     }
+    onIniciarCheckout?.();
     setPaso('formulario');
   }
 

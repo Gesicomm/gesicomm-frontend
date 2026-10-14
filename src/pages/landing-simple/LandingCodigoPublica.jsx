@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import CodigoPreview from './CodigoPreview';
 import { PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esCheckoutBase } from './plantillasBaseCodigo';
 import { datosRuntimePublico, urlProducto, itemPublicoARuntime, urlPaginaTienda, PAGINAS_TIENDA, ofertaCruzadaVisible } from './datosRuntime';
-import { generarEventId, leerCookiesFacebook, trackearEvento, trackearEventoPersonalizado } from '../../lib/metaPixel';
+import { esperarCookiesFacebook, generarEventId, leerCookiesFacebook, trackearEvento, trackearEventoPersonalizado } from '../../lib/metaPixel';
 import { trackearEventoGA } from '../../lib/googleAnalytics';
 import { registrarEventoLanding, obtenerCatalogoLandingPublica, obtenerGeografiaPublica, obtenerProductosLandingPublica } from '../../services/landingPublicaService';
 import CartDrawer from '../landing/CartDrawer';
@@ -284,7 +284,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     vistaTrackeada.current = productoPublico.content_id;
     try {
       const eventId = generarEventId();
-      const { fbc, fbp } = leerCookiesFacebook();
+      const urlOrigen = window.location.href;
       const customData = {
         content_ids: [productoPublico.content_id],
         content_name: productoPublico.nombre,
@@ -298,13 +298,23 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         value: customData.value,
         items: [{ item_id: productoPublico.content_id, item_name: productoPublico.nombre, price: customData.value }],
       });
-      registrarEventoLanding(slug, {
-        event_name: 'ViewContent', event_id: eventId, event_source_url: window.location.href, fbc, fbp, custom_data: customData,
-      });
+      // Sale apenas abre la ficha, muchas veces antes de que cargue el
+      // Pixel: se espera su cookie _fbp para mandarla también por CAPI.
+      esperarCookiesFacebook().then(({ fbc, fbp }) => registrarEventoLanding(slug, {
+        event_name: 'ViewContent', event_id: eventId, event_source_url: urlOrigen, fbc, fbp, custom_data: customData,
+      }));
     } catch (e) {
       console.error('Error trackeando ViewContent:', e);
     }
   }, [esFicha, productoPublico, slug]);
+
+  // InitiateCheckout al llegar a la página de checkout, que es donde está el
+  // formulario de compra (el carrito con onIrACheckout navega acá).
+  const iniciarCheckoutRef = useRef(cartState.iniciarCheckout);
+  iniciarCheckoutRef.current = cartState.iniciarCheckout;
+  useEffect(() => {
+    if (vistaActual === 'checkout' && !modoLegal) iniciarCheckoutRef.current();
+  }, [vistaActual, modoLegal]);
 
   function abrirCheckout(pedido) {
     if (!data) return;
@@ -346,14 +356,19 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       // pagar. Sin esta redirección el cliente veía "confirmado" y nunca
       // llegaba a pagar.
       if (res?.payment_data?.payment_url) {
-        setCheckoutEstado({ estado: 'enviando', mensaje: 'Te llevamos a PagoPar para completar el pago...' });
+        // 'redirigiendo' y no 'enviando': el carrito ya está vacío y el
+        // checkout mostraba "no tiene productos" mientras cargaba PagoPar.
+        setCheckoutEstado({ estado: 'redirigiendo', mensaje: 'Un momento: abrimos el pago seguro para que completes tu compra.', pedido_id: res?.pedido_id, numero_pedido: res?.numero_pedido });
         window.location.href = res.payment_data.payment_url;
         return;
       }
       if (res?.payment_data?.error) {
+        // El pedido YA existe y el carrito quedó vacío: con estado 'error' el
+        // checkout mostraba "Tu pedido todavía no tiene productos", que no
+        // decía nada de lo que había pasado.
         setCheckoutEstado({
-          estado: 'error',
-          mensaje: `Tu pedido ${res?.numero_pedido || ''} quedó registrado, pero no pudimos abrir el pago online. La tienda te va a contactar para coordinar el pago.`,
+          estado: 'pago_pendiente',
+          mensaje: `Recibimos tu pedido ${res?.numero_pedido || ''}, pero no pudimos abrir el pago online en este momento.`,
           pedido_id: res?.pedido_id,
           numero_pedido: res?.numero_pedido,
         });
@@ -498,6 +513,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
           onCantidad={cartState.cambiarCantidadCarrito}
           onQuitar={cartState.quitarDelCarrito}
           onConfirmarPedido={cartState.confirmarPedido}
+          onIniciarCheckout={cartState.iniciarCheckout}
           onValidarCupon={cartState.validarCupon}
           pasarelas={data?.checkout?.pasarelas || []}
           deliveryCiudades={data?.delivery_ciudades || []}

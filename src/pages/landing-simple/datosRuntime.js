@@ -390,8 +390,11 @@ export function presentacionComercial(item, venta) {
   const v2 = fuente !== item && fuente.v === 2;
   const propio = campo => v2 && Object.prototype.hasOwnProperty.call(fuente, campo) && fuente[campo] != null;
   const listaPropia = campo => (v2 && Array.isArray(fuente[campo]) ? fuente[campo] : null);
-  // Vacío a propósito: el runtime no lo rellena con su texto de respaldo.
-  const vacios = TEXTOS_FICHA_VACIABLES.filter(campo => propio(campo) && !String(fuente[campo]).trim());
+  // Vacío a propósito u oculto con "Mostrar" destildado: el runtime no lo
+  // dibuja ni lo rellena con su texto de respaldo. El texto oculto se conserva
+  // (el panel lo sigue mostrando, atenuado) para poder volver a mostrarlo.
+  const ocultos = new Set(listaPropia('textos_ocultos') || []);
+  const vacios = TEXTOS_FICHA_VACIABLES.filter(campo => ocultos.has(campo) || (propio(campo) && !String(fuente[campo]).trim()));
   const texto = campo => {
     if (propio(campo) && (TEXTOS_FICHA_VACIABLES.includes(campo) || String(fuente[campo]).trim())) return String(fuente[campo]).trim();
     return String(fuente[campo] || delProducto[campo] || PRESENTACION_PRODUCTO_DEFAULT[campo] || '').trim();
@@ -480,7 +483,11 @@ export function presentacionComercial(item, venta) {
     resenas_calificacion: resenasCalificacion,
     vacios,
     ficha_bloques: bloquesCompatibles,
-    ficha_orden_mobile: normalizarOrdenMobileFicha(fuente.ficha_orden_mobile),
+    // Sin orden propio la ficha queda como viene en su HTML (ver
+    // aplicarOrdenMobileFicha en el runtime).
+    ficha_orden_mobile: Array.isArray(fuente.ficha_orden_mobile) && fuente.ficha_orden_mobile.length
+      ? normalizarOrdenMobileFicha(fuente.ficha_orden_mobile)
+      : [],
     beneficios,
     confianza,
     botones_pago: lista('botones_pago'),

@@ -8,6 +8,15 @@ const METODO = {
   AL_RECIBIR: 'Pago contra entrega',
 };
 
+function etiquetaRangoPedidos(tramo) {
+  const min = Number(tramo?.rangoMin) || 0;
+  const max = tramo?.rangoMax === null || tramo?.rangoMax === undefined ? null : Number(tramo.rangoMax);
+  const unidad = max === 1 ? 'pedido' : 'pedidos';
+  if (max === null) return `${min.toLocaleString('es-PY')} pedidos o más`;
+  if (min <= 1) return `Hasta ${max.toLocaleString('es-PY')} ${unidad}`;
+  return `${min.toLocaleString('es-PY')} a ${max.toLocaleString('es-PY')} pedidos`;
+}
+
 /**
  * Cobertura de Gesicomm, vista por el comercio.
  *
@@ -119,20 +128,39 @@ export default function FulfillmentCoverageViewer({ open, onClose }) {
                 <ul className="m-0 list-none overflow-hidden rounded-lg border border-border p-0">
                   {g.ciudades.map((c) => {
                     const tiempo = etiquetaTiempo(c.tiempoMinHs, c.tiempoMaxHs);
-                    const precio = c.desde === c.hasta
+                    const tramos = Array.isArray(c.tramos) ? c.tramos : [];
+                    const tramoInicial = tramos[0] || null;
+                    const precio = tramoInicial
+                      ? formatGs(tramoInicial.costo)
+                      : c.desde === c.hasta
                       ? formatGs(c.desde)
                       : `${formatGs(c.desde)} – ${formatGs(c.hasta)}`;
                     return (
                       <li
                         key={`${g.departamento}-${c.ciudad}`}
-                        className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0"
+                        className="border-b border-border px-3 py-2 last:border-b-0"
                       >
-                        <span className="flex-1 text-sm text-fg">{c.ciudad}</span>
-                        <span className="hidden text-[12px] text-fg-muted sm:block">
-                          {(c.metodosPago || []).map((m) => METODO[m] || m).join(' · ')}
-                        </span>
-                        {tiempo && <span className="text-[12px] text-fg-muted">{tiempo}</span>}
-                        <span className="text-sm font-semibold text-fg">{precio}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="flex-1 text-sm text-fg">{c.ciudad}</span>
+                          <span className="hidden text-[12px] text-fg-muted sm:block">
+                            {(c.metodosPago || []).map((m) => METODO[m] || m).join(' · ')}
+                          </span>
+                          {tiempo && <span className="text-[12px] text-fg-muted">{tiempo}</span>}
+                          <span className="text-sm font-semibold text-fg">{precio}</span>
+                        </div>
+                        {tramos.length > 0 && (
+                          <div className="mt-2 grid gap-1 sm:grid-cols-3">
+                            {tramos.map((tramo) => (
+                              <span
+                                key={`${tramo.metodo}-${tramo.rangoMin}-${tramo.rangoMax ?? 'mas'}`}
+                                className="rounded-md bg-surface-2 px-2 py-1 text-[11px] text-fg-muted"
+                              >
+                                <span className="block font-medium text-fg">{formatGs(tramo.costo)}</span>
+                                <span>{etiquetaRangoPedidos(tramo)} / mes</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </li>
                     );
                   })}

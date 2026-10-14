@@ -22,7 +22,7 @@ async function catalogoCompletoDesdePaginado() {
 
 export const vitrinaService = {
   catalogo: catalogoCompletoDesdePaginado,
-  catalogoPaginado: (filtros = {}) => API.post('/vitrina/catalogo-paginado', filtros).then(r => r.data),
+  catalogoPaginado: (filtros = {}, config = {}) => API.post('/vitrina/catalogo-paginado', filtros, { timeout: 20000, ...config }).then(r => r.data),
 
   guardarPrecioProducto: (id, precio) =>
     API.put(`/vitrina/productos/${id}/precio`, { precio }).then(r => r.data),

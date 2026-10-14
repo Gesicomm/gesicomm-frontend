@@ -57,6 +57,34 @@ function nombreVisibleDelFlujo(flujo) {
   return FLOW_TYPES[flujo?.tipo]?.label || flujo?.nombre || "Flujo";
 }
 
+function esFasePreparacion(fase) {
+  const transicion = transicionEstadoFase(fase);
+  return transicion
+    ? transicion.desde === "Confirmado" && transicion.hasta === "Preparado"
+    : fase?.accion_operativa === "PREPARAR_PEDIDO";
+}
+
+function esFaseDespacho(fase) {
+  const transicion = transicionEstadoFase(fase);
+  return transicion
+    ? transicion.desde === "Preparado" && transicion.hasta === "Despachado"
+    : fase?.accion_operativa === "DESPACHAR_PEDIDO";
+}
+
+function transicionEstadoFase(fase) {
+  if (fase?.transicion_estado_desde && fase?.transicion_estado_hasta) {
+    return { desde: fase.transicion_estado_desde, hasta: fase.transicion_estado_hasta };
+  }
+  if (fase?.accion_operativa === "PREPARAR_PEDIDO") return { desde: "Confirmado", hasta: "Preparado" };
+  if (fase?.accion_operativa === "DESPACHAR_PEDIDO") return { desde: "Preparado", hasta: "Despachado" };
+  return null;
+}
+
+function flujoTieneFaseCompletada(flujo, coincide) {
+  return flujo?.tipo === "SEGUIMIENTO_ENVIO"
+    && (flujo.fases || []).some((fase) => fase.completada && coincide(fase));
+}
+
 /** "hoy 18:42" si es de hoy, "28/09 18:42" si no. */
 function formatMomento(iso) {
   if (!iso) return "";
@@ -99,11 +127,12 @@ function contextoDelPedido(envio) {
  * @param {function} onConfirmarPedido  abre el pedido para confirmarlo. Se ofrece mientras está por
  *                                      confirmar, en la fase que sea: al confirmarse, el pedido sale
  *                                      solo del flujo de confirmación.
- * @param {function} onDespacharPedido  marca el pedido como Despachado cuando se completa la fase
- *                                      operativa "Pedido despachado".
+ * @param {function} onCambiarEstadoPedido cambia el pedido al estado configurado en la fase.
+ * @param {function} onPrepararPedido   compatibilidad: marca el pedido como Preparado.
+ * @param {function} onDespacharPedido  compatibilidad: marca el pedido como Despachado.
  * @param {object} servicio             solo para pruebas.
  */
-export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConfirmarPedido, onDespacharPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
+export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConfirmarPedido, onCambiarEstadoPedido, onPrepararPedido, onDespacharPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
   const [flujos, setFlujos] = useState([]);
   const [flujoId, setFlujoId] = useState(null);
   const [configuracion, setConfiguracion] = useState(null);
@@ -151,6 +180,17 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       if (!activo) return;
       const lista = resFlujos || [];
       setFlujos(lista);
+      if (envio.estado === "Confirmado" && lista.some((f) => flujoTieneFaseCompletada(f, esFasePreparacion))) {
+        const cambiar = onCambiarEstadoPedido
+          ? () => onCambiarEstadoPedido(envio, "Preparado")
+          : onPrepararPedido ? () => onPrepararPedido(envio) : null;
+        cambiar?.().catch((err) => console.error(err));
+      } else if (envio.estado === "Preparado" && lista.some((f) => flujoTieneFaseCompletada(f, esFaseDespacho))) {
+        const cambiar = onCambiarEstadoPedido
+          ? () => onCambiarEstadoPedido(envio, "Despachado")
+          : onDespacharPedido ? () => onDespacharPedido(envio) : null;
+        cambiar?.().catch((err) => console.error(err));
+      }
       // Arranca en el flujo de la fase que toca; si no hay, en el que ya se
       // venía usando con este pedido.
       const delaFase = faseQueToca ? lista.find(f => (f.fases || []).some(x => x.id === faseQueToca)) : null;
@@ -166,7 +206,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
     });
 
     return () => { activo = false; };
-  }, [open, envio, servicio, faseQueToca]);
+  }, [open, envio, servicio, faseQueToca, onCambiarEstadoPedido, onPrepararPedido, onDespacharPedido]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -184,11 +224,22 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
   const flujo = flujos.find(f => f.id === flujoId) || null;
   const fases = flujo?.fases || [];
+  const faseMarcaPreparacion = (fase) => (
+    envio?.estado === "Confirmado"
+    && flujo?.tipo === "SEGUIMIENTO_ENVIO"
+    && esFasePreparacion(fase)
+  );
   const faseMarcaDespacho = (fase) => (
     envio?.estado === "Preparado"
     && flujo?.tipo === "SEGUIMIENTO_ENVIO"
-    && (Number(fase?.orden) === 2 || /despach/i.test(String(fase?.nombre || "")))
+    && esFaseDespacho(fase)
   );
+  const faseDebeCambiarEstado = (fase) => {
+    if (flujo?.tipo !== "SEGUIMIENTO_ENVIO") return null;
+    const transicion = transicionEstadoFase(fase);
+    if (!transicion || envio?.estado !== transicion.desde) return null;
+    return transicion;
+  };
 
   // La fase en la que está el pedido: la que pidió quien abrió el panel
   // mientras no esté completada; si no, la siguiente a la más avanzada que
@@ -239,7 +290,22 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       // acá solo se muestra lo que quedó (se puede cambiar o cancelar abajo).
       setRecordatorio(prev => res?.recordatorio || (prev && cumplidos.includes(prev.id) ? null : prev));
       if (res?.siguiente_fase) setFaseVista(res.siguiente_fase.id);
-      if (faseMarcaDespacho(fase) && onDespacharPedido) {
+      const transicion = faseDebeCambiarEstado(fase);
+      if (transicion && onCambiarEstadoPedido) {
+        try {
+          await onCambiarEstadoPedido(envio, transicion.hasta);
+        } catch (err) {
+          console.error(err);
+          alert(err.response?.data?.error || `El mensaje quedó marcado como enviado, pero no se pudo cambiar el pedido a ${transicion.hasta}`);
+        }
+      } else if (faseMarcaPreparacion(fase) && onPrepararPedido) {
+        try {
+          await onPrepararPedido(envio);
+        } catch (err) {
+          console.error(err);
+          alert(err.response?.data?.error || "El mensaje quedó marcado como enviado, pero no se pudo cambiar el pedido a Preparado");
+        }
+      } else if (faseMarcaDespacho(fase) && onDespacharPedido) {
         try {
           await onDespacharPedido(envio);
         } catch (err) {

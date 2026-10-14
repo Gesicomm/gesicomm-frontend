@@ -620,9 +620,11 @@ export default function ConfigurarTienda() {
       ? { tono: 'pendiente', texto: 'Pendiente de verificación' }
       : { tono: 'neutro', texto: 'Sin dominio propio' };
 
-  const estadoMeta = form.meta_pixel_id
-    ? { tono: 'ok', texto: 'Píxel cargado' }
-    : { tono: 'neutro', texto: 'Sin configurar' };
+  const estadoMeta = !form.meta_pixel_id
+    ? { tono: 'neutro', texto: 'Sin configurar' }
+    : form.meta_test_event_code.trim()
+      ? { tono: 'pendiente', texto: 'En modo prueba' }
+      : { tono: 'ok', texto: 'Píxel cargado' };
 
   const typographyCatalogo = tienda?.typography || { ...FORM_INICIAL.typography, customFonts: [] };
   const fuentesDisponibles = listaFuentes(typographyCatalogo);
@@ -1615,6 +1617,9 @@ export default function ConfigurarTienda() {
 
                       {form.meta_capi_activo && !form.meta_pixel_id && (
                         <p className="tn-warning"><AlertCircle size={13} /> <span>Activaste CAPI pero todavía no cargaste el Pixel ID — no se va a enviar nada hasta que lo completes.</span></p>
+                      )}
+                      {form.meta_test_event_code.trim() && (
+                        <p className="tn-warning"><AlertCircle size={13} /> <span>Tenés cargado un Test Event Code: todos los eventos que manda el servidor salen marcados como prueba. Borralo cuando termines de probar en el Administrador de eventos.</span></p>
                       )}
                     </div>
                   </section>

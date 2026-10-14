@@ -83,14 +83,15 @@ const ABASTECIMIENTO_META = {
 // PATCH directo del dropdown. Ver plan Gestión de Pedidos, sección 42.
 const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", Devuelto: "devolver", Perdido: "perder" };
 
-const RAHA_STATUS_ORDER = ["creado", "cargado", "en_camino", "entregado", "devuelto"];
+const RAHA_BASE_STATUS_ORDER = ["creado", "cargado", "en_camino"];
+const RAHA_TERMINAL_STATUS_ORDER = ["entregado", "devuelto"];
 const RAHA_STATUS_META = {
-  creado: { label: "Pedido creado en RAHA", detail: "RAHA recibió el pedido", tone: "info" },
-  pendiente_confirmacion: { label: "Pendiente de confirmación RAHA", detail: "Gesicom ya avisó que el pedido es real; RAHA debe aceptarlo", tone: "warning" },
-  cargado: { label: "Cargado", detail: "RAHA preparó el pedido", tone: "info" },
-  en_camino: { label: "En camino", detail: "RAHA está gestionando la entrega", tone: "info" },
-  entregado: { label: "Entregado", detail: "Entrega confirmada por RAHA", tone: "success" },
-  devuelto: { label: "Devuelto", detail: "RAHA marcó devolución", tone: "danger" },
+  creado: { label: "Registrado", tone: "info" },
+  pendiente_confirmacion: { label: "Pendiente de confirmación RAHA", tone: "warning" },
+  cargado: { label: "Despachado", tone: "info" },
+  en_camino: { label: "En tránsito", tone: "info" },
+  entregado: { label: "Entregado", tone: "success" },
+  devuelto: { label: "Devuelto", tone: "danger" },
 };
 
 const TRANSICIONES_VALIDAS_FRONTEND = {
@@ -335,28 +336,20 @@ function statusRahaActual(envio) {
   return envio?.raha_logistica?.status || eventos.at(-1)?.status || (envio?.raha_logistica?.order_id ? "creado" : null);
 }
 
-function tiendaRahaDetalle(logistica = {}) {
-  if (!logistica.tienda_id) return null;
-  return `Tienda RAHA #${logistica.tienda_id}`;
+function primerTexto(...valores) {
+  for (const valor of valores) {
+    const texto = String(valor || "").trim();
+    if (texto) return texto;
+  }
+  return null;
 }
 
-function tiendaGesicomDetalle(logistica = {}) {
-  if (!logistica.gesicom_store_name) return null;
-  return `Pedido de ${logistica.gesicom_store_name}`;
-}
-
-function enviadoComoDetalle(logistica = {}) {
-  if (!logistica.store_name) return null;
-  return `Enviado como ${logistica.store_name}`;
-}
-
-function detalleRaha(logistica = {}) {
-  return [
-    logistica.order_id ? `RAHA #${logistica.order_id}` : null,
-    tiendaRahaDetalle(logistica),
-    tiendaGesicomDetalle(logistica),
-    enviadoComoDetalle(logistica),
-  ].filter(Boolean).join(" · ") || "Gestionado por RAHA";
+function datosContextoRaha(logistica = {}, evento = {}) {
+  return {
+    courier: primerTexto(evento.courier_name, evento.courier, logistica.courier_name, "RAHA"),
+    codigo: primerTexto(evento.tracking_code, evento.codigo_rastreo, logistica.tracking_code, logistica.order_id),
+    motivoDevolucion: primerTexto(evento.return_reason, evento.motivo_devolucion, evento.motivo, logistica.return_reason),
+  };
 }
 
 function RahaEstadoCell({ envio }) {
@@ -365,7 +358,7 @@ function RahaEstadoCell({ envio }) {
   return (
     <LifecycleCell
       primary={meta.label}
-      secondary={detalleRaha(envio?.raha_logistica)}
+      secondary={null}
       alert={envio?.raha_logistica?.error || null}
       tone={meta.tone}
     />
@@ -373,50 +366,51 @@ function RahaEstadoCell({ envio }) {
 }
 
 function RahaTimeline({ envio }) {
-  const logistica = envio?.raha_logistica || {};
   const eventos = eventosEstadoRaha(envio);
-  const eventosPorStatus = new Map(eventos.map((evento) => [evento.status, evento]));
+  const eventosPorStatus = new Map();
+  eventos.forEach((evento) => {
+    eventosPorStatus.set(evento.status, evento);
+  });
   const statusActual = statusRahaActual(envio);
   const statusNormalizado = statusActual === "pendiente_confirmacion" ? "creado" : statusActual;
-  const indiceActivo = Math.max(0, RAHA_STATUS_ORDER.indexOf(statusNormalizado));
+  const fechaFallback = envio?.raha_logistica?.status_at || envio?.raha_logistica?.updated_at || envio?.raha_logistica?.created_at;
+  const statusCompletado = (status) => {
+    if (RAHA_TERMINAL_STATUS_ORDER.includes(status)) return status === statusNormalizado;
+    const indiceBase = RAHA_BASE_STATUS_ORDER.indexOf(status);
+    const indiceActualBase = RAHA_BASE_STATUS_ORDER.indexOf(statusNormalizado);
+    if (indiceActualBase >= 0) return indiceBase <= indiceActualBase;
+    if (RAHA_TERMINAL_STATUS_ORDER.includes(statusNormalizado)) return indiceBase >= 0;
+    return status === "creado";
+  };
+  const pasos = [...RAHA_BASE_STATUS_ORDER, statusNormalizado === "devuelto" ? "devuelto" : "entregado"];
+  const renderStep = (status, hasNextComplete = false) => {
+    const meta = RAHA_STATUS_META[status];
+    const activo = status === statusNormalizado;
+    const completo = statusCompletado(status);
+    const evento = eventosPorStatus.get(status);
+    const fechaEstado = evento?.occurred_at || (activo ? fechaFallback : null);
+    const fechaTexto = (completo || activo) ? formatFechaHoraCorta(fechaEstado) : null;
+    return (
+      <div key={status} aria-current={activo ? "step" : undefined} className={`pt-raha-step ${status === "devuelto" ? "is-returned" : ""} ${completo ? "is-complete" : ""} ${activo ? "is-active" : ""} ${hasNextComplete ? "has-next-complete" : ""}`}>
+        <span className="pt-raha-step__dot" aria-hidden="true">
+          {completo && <CheckCircle2 size={16} strokeWidth={3} />}
+        </span>
+        <span className="pt-raha-step__body">
+          <strong>{meta.label}</strong>
+          {fechaTexto && <time dateTime={fechaEstado}>{fechaTexto}</time>}
+        </span>
+      </div>
+    );
+  };
   return (
     <div className="pt-raha-timeline">
-      <div className="pt-raha-timeline__header">
-        <div>
-          <span>Logística RAHA</span>
-          <strong>{RAHA_STATUS_META[statusActual]?.label || "Pedido creado en RAHA"}</strong>
-        </div>
-        <code>{logistica.order_id ? `RAHA #${logistica.order_id}` : logistica.external_order_id || "Sin ID RAHA"}</code>
-      </div>
-      <dl className="pt-raha-meta">
-        <div><dt>Ambiente</dt><dd>{logistica.environment || "Sin dato"}</dd></div>
-        <div><dt>Tienda RAHA</dt><dd>{logistica.tienda_id ? `#${logistica.tienda_id}` : "Sin dato"}</dd></div>
-        <div><dt>Tienda Gesicom</dt><dd>{logistica.gesicom_store_name || "Sin dato"}</dd></div>
-        <div><dt>Enviado a RAHA como</dt><dd>{logistica.store_name || "Sin dato"}</dd></div>
-        <div><dt>ID externo</dt><dd>{logistica.external_order_id || "Sin dato"}</dd></div>
-        <div><dt>HTTP</dt><dd>{logistica.remote_http_status || "Sin dato"}</dd></div>
-      </dl>
       <div className="pt-raha-steps" aria-label={`Timeline RAHA del pedido #${numeroPedidoVisible(envio)}`}>
-        {RAHA_STATUS_ORDER.map((status, index) => {
-          const meta = RAHA_STATUS_META[status];
-          const evento = eventosPorStatus.get(status);
-          const activo = status === statusNormalizado;
-          const completo = index <= indiceActivo;
-          const StepIcon = completo ? CheckCircle2 : Clock;
-          return (
-            <div key={status} className={`pt-raha-step ${completo ? "is-complete" : ""} ${activo ? "is-active" : ""}`}>
-              <span className="pt-raha-step__dot"><StepIcon size={13} /></span>
-              <div>
-                <strong>{meta.label}</strong>
-                <span>{evento ? formatFechaHoraCorta(evento.occurred_at) : meta.detail}</span>
-              </div>
-            </div>
-          );
-        })}
+          {pasos.map((status, index) => {
+            const siguiente = pasos[index + 1];
+            const siguienteCompleto = siguiente ? statusCompletado(siguiente) : false;
+            return renderStep(status, siguienteCompleto);
+          })}
       </div>
-      <p className="pt-raha-note">
-        Estos estados vienen de RAHA por webhook o consulta de novedades. No se cambian manualmente desde Gesicom.
-      </p>
     </div>
   );
 }
@@ -764,7 +758,7 @@ export function PedidosTable({
         payload.estados = estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
           ? estadosDeFiltro(estado)
           : estadosEtapa;
-        if (etapaActiva === "logistica") payload.excluir_logistica_raha = true;
+        if (["comercial", "logistica"].includes(etapaActiva)) payload.excluir_logistica_raha = true;
       } else if (!soloAbastecimiento && estado && estado !== TODOS_ESTADOS_ID) {
         payload.estados = estadosDeFiltro(estado);
       }
@@ -789,7 +783,7 @@ export function PedidosTable({
       const payloadBase = { ...construirPayloadBase(f), limit: 100, incluir_seguimiento: true };
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (estadosEtapa?.length) payloadBase.estados = estadosEtapa;
-      if (etapaActiva === "logistica") payloadBase.excluir_logistica_raha = true;
+      if (["comercial", "logistica"].includes(etapaActiva)) payloadBase.excluir_logistica_raha = true;
 
       const acumulado = [];
       let pageToLoad = 1;
@@ -1639,15 +1633,7 @@ export function PedidosTable({
                     )}
                     <td className="pt-td" data-label="Acción" onClick={(ev) => ev.stopPropagation()}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                        {esTabRahaLogistica && e.raha_logistica?.gestionado ? (
-                          <button
-                            type="button"
-                            style={accionBtnStyle}
-                            onClick={() => setTimelineExpandidoId((prev) => (prev === e.id ? null : e.id))}
-                          >
-                            <History size={13} /> Ver timeline
-                          </button>
-                        ) : (
+                        {!(esTabRahaLogistica && e.raha_logistica?.gestionado) && (
                           <AccionPrincipal
                             envio={e}
                             onAbrirDetalle={onAbrirDetalle}
@@ -1692,7 +1678,7 @@ export function PedidosTable({
                   ),
                   esTabRahaLogistica && timelineExpandidoId === e.id && (
                     <tr key={`${e.id}-raha-timeline`} className="pt-row-timeline">
-                      <td className="pt-td" colSpan={tableColSpan} style={{ background: "var(--color-surface-2)", padding: "1rem 1.25rem" }}>
+                      <td className="pt-td" colSpan={tableColSpan}>
                         <RahaTimeline envio={e} />
                       </td>
                     </tr>

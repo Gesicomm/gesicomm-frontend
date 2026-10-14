@@ -1287,7 +1287,7 @@ export function runtimeGesicomm() {
     return (datos.venta && (datos.venta.inicio || datos.venta.inicio_comercial)) || {};
   }
 
-  // Mismo criterio que aplicarOrdenMobileFicha: el ancho real de la ventana
+  // El ancho real de la ventana
   // manda. En el editor esto ya alcanza porque el preview "Celular" renderiza
   // el iframe angosto de verdad (PhonePreviewShell en ConfigurarVentaCodigo),
   // no hace falta un flag forzado aparte.
@@ -2283,50 +2283,103 @@ export function runtimeGesicomm() {
     fichaOrdenParents.push(parent);
   }
 
-  function restaurarOrdenOriginalFicha() {
-    for (var i = 0; i < fichaOrdenParents.length; i++) {
-      var parent = fichaOrdenParents[i];
-      var original = parent && parent.__gesicommFichaOrdenOriginal;
-      if (!parent || !original) continue;
-      for (var j = 0; j < original.length; j++) {
-        if (original[j] && original[j].parentNode === parent) parent.appendChild(original[j]);
-      }
+  function restaurarOrdenDe(parent) {
+    var original = parent && parent.__gesicommFichaOrdenOriginal;
+    if (!original) return;
+    for (var j = 0; j < original.length; j++) {
+      if (original[j] && original[j].parentNode === parent) parent.appendChild(original[j]);
     }
   }
 
-  function claveFichaDeNodo(nodo) {
-    if (!nodo || !nodo.getAttribute) return '';
-    return nodo.getAttribute('data-gesicomm-ficha-bloque') || '';
+  function restaurarOrdenOriginalFicha() {
+    for (var i = 0; i < fichaOrdenParents.length; i++) restaurarOrdenDe(fichaOrdenParents[i]);
   }
 
-  function ordenarHijosFichaMobile(parent, orden) {
+  // Lo que se elige antes de comprar (variantes, order bumps, paquetes) no es
+  // un bloque del editor, pero va pegado a los botones de compra: si el
+  // comercio sube "Botones de contacto y pago", sube con ellos.
+  var ACOMPANAN_COMPRA = '[data-gesicomm-lista="variantes"],[data-gesicomm-lista="ofertas_bump"],.bump-incluye,[data-gesicomm-lista="paquetes"]';
+  function claveFichaDeNodo(nodo, enInfo) {
+    if (!nodo || !nodo.getAttribute) return '';
+    var clave = nodo.getAttribute('data-gesicomm-ficha-bloque') || '';
+    if (!clave && enInfo && nodo.matches && nodo.matches(ACOMPANAN_COMPRA)) clave = 'contacto_pago';
+    return clave;
+  }
+
+  // Reordena los bloques de la ficha DENTRO de su contenedor (la columna del
+  // producto, o las secciones de abajo). Antes los bloques se mandaban al
+  // final del contenedor: en el body quedaban debajo del footer.
+  // - Secciones (body): cada bloque toma el lugar de otro bloque y todo lo
+  //   que no es bloque (encabezado de la tienda, la ficha, combos, footer)
+  //   queda donde estaba.
+  // - Columna del producto: lo que no es bloque viaja con el bloque que tiene
+  //   arriba ("Por separado" con el precio, "Este combo trae" con la
+  //   descripción); lo que se elige antes de comprar, con la compra.
+  function ordenarHijosFicha(parent, orden, enInfo) {
     if (!parent || !orden || !orden.length) return;
     registrarOrdenOriginalFicha(parent);
-    var hijos = Array.prototype.slice.call(parent.children);
-    var usados = [];
-    var mover = [];
-    for (var i = 0; i < orden.length; i++) {
-      for (var j = 0; j < hijos.length; j++) {
-        if (usados.indexOf(hijos[j]) >= 0) continue;
-        if (claveFichaDeNodo(hijos[j]) === orden[i]) {
-          usados.push(hijos[j]);
-          mover.push(hijos[j]);
-        }
-      }
+    // Si el comercio no cambió el orden de los bloques de ESTE contenedor
+    // (por ejemplo, solo movió secciones de abajo), queda como viene.
+    var original = parent.__gesicommFichaOrdenOriginal;
+    var ultimo = -1;
+    var tocado = false;
+    for (var o = 0; o < original.length && !tocado; o++) {
+      var posOriginal = orden.indexOf(claveFichaDeNodo(original[o], false));
+      if (posOriginal < 0) continue;
+      if (posOriginal < ultimo) tocado = true;
+      ultimo = posOriginal;
     }
-    if (!mover.length) return;
-    for (var k = 0; k < mover.length; k++) parent.appendChild(mover[k]);
+    if (!tocado) {
+      restaurarOrdenDe(parent);
+      return;
+    }
+    var hijos = Array.prototype.slice.call(parent.children);
+    var nuevos;
+    if (enInfo) {
+      var grupos = [{ pos: -1, i: -1, nodos: [] }];
+      for (var i = 0; i < hijos.length; i++) {
+        var clave = claveFichaDeNodo(hijos[i], true);
+        var pos = clave ? orden.indexOf(clave) : -1;
+        if (pos >= 0) grupos.push({ pos: pos, i: i, nodos: [hijos[i]] });
+        else grupos[grupos.length - 1].nodos.push(hijos[i]);
+      }
+      // Estable: los nodos de un mismo bloque conservan su orden entre sí.
+      grupos.sort(function (a, b) { return a.pos - b.pos || a.i - b.i; });
+      nuevos = [];
+      for (var g = 0; g < grupos.length; g++) nuevos = nuevos.concat(grupos[g].nodos);
+    } else {
+      var lugares = [];
+      var bloques = [];
+      for (var j = 0; j < hijos.length; j++) {
+        var claveSec = claveFichaDeNodo(hijos[j], false);
+        var posSec = claveSec ? orden.indexOf(claveSec) : -1;
+        if (posSec < 0) continue;
+        lugares.push(j);
+        bloques.push({ nodo: hijos[j], pos: posSec, i: j });
+      }
+      bloques.sort(function (a, b) { return a.pos - b.pos || a.i - b.i; });
+      nuevos = hijos.slice();
+      for (var k = 0; k < bloques.length; k++) nuevos[lugares[k]] = bloques[k].nodo;
+    }
+    var cambia = false;
+    for (var m = 0; m < hijos.length; m++) if (nuevos[m] !== hijos[m]) cambia = true;
+    if (!cambia) return;
+    for (var n = 0; n < nuevos.length; n++) parent.appendChild(nuevos[n]);
   }
 
+  // El orden que el comercio armó arrastrando los bloques en el panel. Vale
+  // en celular y en computadora (antes solo en celular: en la vista previa
+  // de escritorio arrastrar no cambiaba nada). Vacío = nunca se reordenó:
+  // la ficha queda como viene en su HTML.
   function aplicarOrdenMobileFicha() {
     if (!productoActual) return;
     var orden = Array.isArray(productoActual.ficha_orden_mobile) ? productoActual.ficha_orden_mobile : [];
-    if (!esMobile() || !orden.length) {
+    if (!orden.length) {
       restaurarOrdenOriginalFicha();
       return;
     }
-    ordenarHijosFichaMobile(document.querySelector('.pdp-info'), orden);
-    ordenarHijosFichaMobile(document.body, orden);
+    ordenarHijosFicha(document.querySelector('.pdp-info'), orden, true);
+    ordenarHijosFicha(document.body, orden, false);
   }
 
   function renderizar() {
@@ -3144,6 +3197,12 @@ export function runtimeGesicomm() {
     prepararDropdownsCatalogo();
   }
 
+  // Qué dice el bloque del pedido en cada estado en que el pedido ya existe.
+  var TEXTOS_ESTADO_CHECKOUT = {
+    confirmado: { rotulo: 'Pedido recibido', titulo: '¡Gracias por tu compra!', ayuda: 'La tienda se va a comunicar con vos para coordinar la entrega.' },
+    pago_pendiente: { rotulo: 'Pago pendiente', titulo: 'Tu pedido quedó registrado', ayuda: 'No se te cobró nada. Escribile a la tienda para coordinar el pago.' },
+    redirigiendo: { rotulo: 'Pago seguro', titulo: 'Te llevamos a PagoPar', ayuda: '' },
+  };
   function pintarCheckout() {
     var resumen = datos.carrito || { cantidad: 0, subtotal: 0, total: 0, items: [] };
     var estado = datos.checkout_estado || null;
@@ -3162,11 +3221,17 @@ export function runtimeGesicomm() {
       else if (campo === 'total') valor = formatoPrecio(totalConCupon);
       else if (campo === 'estado') valor = estado ? estado.estado || '' : '';
       else if (campo === 'mensaje') valor = estado ? estado.mensaje || '' : '';
+      else if (campo.indexOf('estado_') === 0) valor = (TEXTOS_ESTADO_CHECKOUT[estado ? estado.estado : ''] || {})[campo.slice(7)] || '';
       campos[i].textContent = valor;
       campos[i].style.display = valor ? '' : 'none';
     }
     pintarCupon();
-    var confirmado = !!(estado && estado.estado === 'confirmado');
+    // El pedido ya existe y el carrito quedó vacío en tres casos: confirmado,
+    // pago anticipado que no se pudo abrir, y yendo a PagoPar. En los tres se
+    // muestra el bloque del pedido; antes solo en el primero, y en los otros
+    // dos el cliente veía "Tu pedido todavía no tiene productos" justo
+    // después de comprar.
+    var confirmado = !!(estado && TEXTOS_ESTADO_CHECKOUT[estado.estado]);
     var vacios = document.querySelectorAll('[data-gesicomm-checkout-vacio]');
     for (i = 0; i < vacios.length; i++) vacios[i].style.display = confirmado || (resumen.items && resumen.items.length) ? 'none' : '';
     var confirmados = document.querySelectorAll('[data-gesicomm-checkout-confirmado]');

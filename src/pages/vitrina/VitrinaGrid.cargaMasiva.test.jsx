@@ -36,8 +36,9 @@ describe('Carga masiva desde Productos del panel de usuario', () => {
     render(<BrowserRouter><VitrinaGrid /></BrowserRouter>);
     await screen.findByText('Agregar Mis Productos');
     await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenCalled());
-    const cargasAntes = vitrinaService.catalogoPaginado.mock.calls.length;
-
+    fireEvent.click(screen.getByRole('button', { name: 'Productos propios', exact: true }));
+    await screen.findByRole('button', { name: 'Importar mis productos' });
+    const cargasConFiltro = vitrinaService.catalogoPaginado.mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: 'Importar mis productos' }));
     const dialogo = screen.getByRole('dialog', { name: 'Importar mis productos' });
     expect(within(dialogo).getByRole('list', { name: 'Pasos para cargar productos masivamente' })).toBeInTheDocument();
@@ -47,12 +48,12 @@ describe('Carga masiva desde Productos del panel de usuario', () => {
     fireEvent.change(within(dialogo).getByLabelText('Archivo a importar'), { target: { files: [archivo] } });
     fireEvent.click(within(dialogo).getByRole('button', { name: 'Revisar archivo' }));
     await within(dialogo).findByText('2 de 2 productos listos para importar.');
-    expect(vitrinaService.catalogoPaginado).toHaveBeenCalledTimes(cargasAntes);
+    expect(vitrinaService.catalogoPaginado).toHaveBeenCalledTimes(cargasConFiltro);
 
     fireEvent.click(within(dialogo).getByRole('button', { name: 'Importar 2 productos' }));
     await within(dialogo).findByText(/2 de 2 productos importados\./);
     expect(productService.importarMasivo).toHaveBeenLastCalledWith(archivo, { aplicar: true });
-    expect(vitrinaService.catalogoPaginado.mock.calls.length).toBeGreaterThan(cargasAntes);
+    expect(vitrinaService.catalogoPaginado.mock.calls.length).toBeGreaterThan(cargasConFiltro);
 
     fireEvent.click(within(dialogo).getByText('Cerrar'));
     expect(screen.queryByRole('dialog', { name: 'Importar mis productos' })).toBeNull();

@@ -19,6 +19,12 @@ import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
 import '../pages/educacion/EducacionView.css';
 
+// Editor de landing: el contenedor principal no se desplaza nunca (cada panel
+// tiene su propio scroll). Con overflow:hidden igual se podia correr por codigo
+// o por el navegador (scrollIntoView, foco) y la pantalla quedaba subida con una
+// franja vacia abajo; overflow:clip no es desplazable. Sin soporte, hidden.
+const OVERFLOW_FIJO = typeof CSS !== 'undefined' && CSS.supports?.('overflow', 'clip') ? 'clip' : 'hidden';
+
 const ICONOS_SIDEBAR = {
   Store,
   Grid,
@@ -623,8 +629,8 @@ const UserLayout = ({ children }) => {
             flexDirection: 'column',
             minHeight: 0,
             padding: 0,
-            overflowY: isLandingRoute ? 'hidden' : 'auto',
-            overflowX: isLandingRoute ? 'hidden' : undefined,
+            overflowY: isLandingRoute ? OVERFLOW_FIJO : 'auto',
+            overflowX: isLandingRoute ? OVERFLOW_FIJO : undefined,
           }}
         >
           {children}

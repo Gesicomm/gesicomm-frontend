@@ -3,7 +3,7 @@ import { JSDOM } from 'jsdom';
 import { construirDocumentoCodigo } from './construirDocumentoCodigo';
 import { datosRuntimePreview, datosRuntimePublico, presentacionComercial, textosRecomendados } from './datosRuntime';
 import { PLANTILLA_PRODUCTO, PLANTILLA_CHECKOUT } from './plantillasBaseCodigo';
-import { ROTULOS_BLOQUES_FICHA, bloqueDeZona } from './PresentacionProducto';
+import { ROTULOS_BLOQUES_FICHA, bloqueDeZona, moverEnOrden, normalizarOrdenMobile } from './PresentacionProducto';
 
 // El panel y la página resuelven la ficha con la misma función. Estas pruebas
 // fijan las tres reglas que la mantienen coherente: lo que la landing tocó
@@ -54,6 +54,18 @@ describe('ficha v2: lo que la landing tocó manda, también vacío', () => {
     expect(f.beneficios).toEqual([]);
     expect(f.propuesta_valor).toBeNull();
   });
+
+  it('un texto con "Mostrar" destildado no se dibuja, pero conserva lo escrito', () => {
+    const f = fichaCon({ v: 2, preguntas_titulo: 'Dudas', preguntas_kicker: 'FAQ', textos_ocultos: ['preguntas_titulo', 'propuesta_valor'] });
+    expect(f.vacios).toEqual(expect.arrayContaining(['preguntas_titulo', 'propuesta_valor']));
+    expect(f.vacios).not.toContain('preguntas_kicker');
+    expect(f.preguntas_titulo).toBe('Dudas');
+    const { visible, dom } = montar(datosRuntimePreview({ productos: [producto, otro], venta: { presentacion_productos: { 'producto:10': { v: 2, textos_ocultos: ['propuesta_valor', 'urgencia_kicker'] } } }, vista: 'producto', productoId: 'air' }));
+    expect(visible('[data-gesicomm-bind="propuesta_valor"]')).toBeNull();
+    expect(visible('[data-gesicomm-bind="urgencia_kicker"]')).toBeNull();
+    expect(visible('.pdp-lead[data-gesicomm-bind="descripcion_ficha"]')).toBe('Descripción del producto');
+    dom.window.close();
+  }, 20000);
 
   it('un botón sin texto vuelve a su respaldo: no hay botón de compra sin rótulo', () => {
     expect(fichaCon({ v: 2, cta_texto: '' }).cta_texto).toBe('Comprar con pago anticipado');
@@ -228,4 +240,118 @@ describe('checkout propio: datos que exige el pago anticipado', () => {
     expect(campo(document, 'acepta_promociones')).toBeTruthy();
     dom.window.close();
   }, 20000);
+});
+
+describe('checkout propio: el pedido ya existe y el carrito quedó vacío', () => {
+  const mouse = { content_id: 'mouse', referencia_id: 1, tipo: 'producto', nombre: 'Mouse', precio: 89000, imagen: 'https://cdn.test/m.jpg', stock: 4, ofertas: [] };
+  const conEstado = checkoutEstado => montar(
+    datosRuntimePublico({ catalogo_items: [mouse], content: {}, checkout: { pasarelas: [{ provider: 'pagopar' }] } }, 'tienda', null, { vista: 'checkout', carrito: [], checkoutEstado }),
+    PLANTILLA_CHECKOUT,
+  );
+  const mostrado = (document, sel) => document.querySelector(sel).style.display !== 'none';
+  const texto = (document, campo) => document.querySelector(`[data-gesicomm-checkout-confirmado] [data-gesicomm-checkout="${campo}"]`).textContent;
+
+  it('sin pedido muestra el carrito vacío', () => {
+    const { dom, document } = conEstado(null);
+    expect(mostrado(document, '[data-gesicomm-checkout-vacio]')).toBe(true);
+    expect(mostrado(document, '[data-gesicomm-checkout-confirmado]')).toBe(false);
+    dom.window.close();
+  }, 20000);
+
+  it('si el pago anticipado no se pudo abrir, lo dice: no muestra "tu pedido no tiene productos"', () => {
+    const { dom, document } = conEstado({ estado: 'pago_pendiente', mensaje: 'Recibimos tu pedido 12, pero no pudimos abrir el pago online en este momento.', numero_pedido: 12 });
+    expect(mostrado(document, '[data-gesicomm-checkout-vacio]')).toBe(false);
+    expect(mostrado(document, '[data-gesicomm-checkout-confirmado]')).toBe(true);
+    expect(texto(document, 'estado_titulo')).toBe('Tu pedido quedó registrado');
+    expect(texto(document, 'estado_rotulo')).toBe('Pago pendiente');
+    expect(texto(document, 'mensaje')).toMatch(/pedido 12/);
+    expect(texto(document, 'estado_ayuda')).toMatch(/No se te cobró nada/);
+    dom.window.close();
+  }, 20000);
+
+  it('mientras abre PagoPar tampoco muestra el carrito vacío, y el pedido confirmado sigue igual', () => {
+    const yendo = conEstado({ estado: 'redirigiendo', mensaje: 'Un momento' });
+    expect(mostrado(yendo.document, '[data-gesicomm-checkout-vacio]')).toBe(false);
+    expect(texto(yendo.document, 'estado_titulo')).toBe('Te llevamos a PagoPar');
+    yendo.dom.window.close();
+    const listo = conEstado({ estado: 'confirmado', mensaje: 'Pedido 3 confirmado.' });
+    expect(texto(listo.document, 'estado_titulo')).toBe('¡Gracias por tu compra!');
+    expect(mostrado(listo.document, '[data-gesicomm-checkout-vacio]')).toBe(false);
+    listo.dom.window.close();
+  }, 20000);
+});
+
+describe('orden de los bloques de la ficha (arrastrar en el panel)', () => {
+  const claves = (padre, enInfo) => [...padre.children]
+    .map(el => el.getAttribute('data-gesicomm-ficha-bloque') || (enInfo ? `[${el.getAttribute('data-gesicomm-lista') || el.className}]` : el.tagName.toLowerCase()))
+    .filter(c => !['script', 'style', 'template'].includes(c));
+  const fichaOrdenada = orden => montar(datosRuntimePreview({
+    productos: [producto, otro], tienda: { nombre: 'T' }, vista: 'producto', productoId: 'air',
+    venta: { presentacion_productos: { 'producto:10': { v: 2, ficha_orden_mobile: orden } } },
+  }));
+
+  it('un bloque solo se mueve dentro de su grupo; la galería queda fija', () => {
+    const base = normalizarOrdenMobile([]);
+    expect(moverEnOrden(base, 'beneficios', 'recomendados')).toBeNull();
+    expect(moverEnOrden(base, 'confianza', 'incluye')).toBeNull();
+    expect(moverEnOrden(base, 'galeria', 'encabezado')).toBeNull();
+    const abajo = moverEnOrden(base, 'beneficios', 'incluye');
+    expect(abajo.indexOf('beneficios')).toBe(abajo.indexOf('incluye') + 1);
+    const arriba = moverEnOrden(base, 'confianza', 'recomendados');
+    expect(arriba.indexOf('confianza')).toBe(arriba.indexOf('recomendados') - 1);
+  });
+
+  it('el badge de precio viaja pegado al precio', () => {
+    const orden = moverEnOrden(normalizarOrdenMobile([]), 'precio', 'descripcion');
+    expect(orden.indexOf('badge_precio')).toBe(orden.indexOf('precio') + 1);
+    expect(orden.indexOf('precio')).toBeGreaterThan(orden.indexOf('descripcion'));
+  });
+
+  it('un orden viejo que mezclaba grupos se muestra como lo arma la página', () => {
+    const orden = normalizarOrdenMobile(['recomendados', 'beneficios', 'galeria']);
+    expect(orden[0]).toBe('galeria');
+    expect(orden.indexOf('beneficios')).toBeLessThan(orden.indexOf('recomendados'));
+    expect(orden.slice(-4).sort()).toEqual(['confianza', 'opiniones', 'preguntas', 'recomendados']);
+  });
+
+  it('se aplica en computadora, y las secciones no terminan debajo del footer', () => {
+    const orden = ['confianza', ...normalizarOrdenMobile(moverEnOrden(normalizarOrdenMobile([]), 'beneficios', 'incluye'))];
+    const { document, dom } = fichaOrdenada(orden);
+    const info = claves(document.querySelector('.pdp-info'), true).filter(c => !c.startsWith('['));
+    expect(info.slice(-2)).toEqual(['incluye', 'beneficios']);
+    const body = claves(document.body, false);
+    expect(body.indexOf('confianza')).toBeLessThan(body.indexOf('recomendados'));
+    expect(body.indexOf('preguntas')).toBeLessThan(body.indexOf('footer'));
+    expect(body.indexOf('main')).toBeLessThan(body.indexOf('confianza'));
+    dom.window.close();
+  });
+
+  it('lo que se elige antes de comprar (variantes, bumps, paquetes) sube con los botones de compra', () => {
+    const orden = moverEnOrden(normalizarOrdenMobile([]), 'contacto_pago', 'oferta');
+    const { document, dom } = fichaOrdenada(orden);
+    const info = claves(document.querySelector('.pdp-info'), true);
+    const compra = info.indexOf('contacto_pago');
+    expect(info.slice(compra - 4, compra)).toEqual(['[variantes]', '[ofertas_bump]', '[bump-incluye]', '[paquetes]']);
+    // "Este combo trae" sigue con la descripción, no queda en el medio de la compra.
+    expect(info.indexOf('[combo_incluye]')).toBe(info.lastIndexOf('descripcion') + 1);
+    expect(compra).toBeLessThan(info.indexOf('oferta'));
+    expect(info.indexOf('oferta')).toBeLessThan(info.indexOf('descripcion'));
+    dom.window.close();
+  });
+
+  it('mover solo secciones no toca la columna del producto', () => {
+    const { document, dom } = fichaOrdenada(moverEnOrden(normalizarOrdenMobile([]), 'preguntas', 'recomendados'));
+    const base = new JSDOM(PLANTILLA_PRODUCTO.html).window.document;
+    expect(claves(document.querySelector('.pdp-info'), true)).toEqual(claves(base.querySelector('.pdp-info'), true));
+    const body = claves(document.body, false);
+    expect(body.indexOf('preguntas')).toBeLessThan(body.indexOf('recomendados'));
+    dom.window.close();
+  });
+
+  it('sin orden propio la ficha queda como viene en su HTML', () => {
+    const { document, dom } = fichaOrdenada(undefined);
+    const base = new JSDOM(PLANTILLA_PRODUCTO.html).window.document;
+    expect(claves(document.querySelector('.pdp-info'), true)).toEqual(claves(base.querySelector('.pdp-info'), true));
+    dom.window.close();
+  });
 });

@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import CurrencyInput from '../../components/CurrencyInput';
 import { getMediaUrl } from '../../services/api';
 import { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import { contenidoFicha, presentacionComercial } from './datosRuntime';
 import { AVISO_PAGO_ANTICIPADO } from './usePagoparConectado';
 import ImagenesProductoLanding from './ImagenesProductoLanding';
-import { GripVertical, Upload } from 'lucide-react';
+import { GripVertical, Lock, Upload } from 'lucide-react';
 
 export const INSIGNIAS_COMERCIALES = ['Sale', 'Oferta', 'Flash Deal', 'Más vendido', 'Nuevo', 'Envío gratis', 'Últimas unidades', 'Combo'];
 const campo = 'mt-1 w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg';
@@ -84,6 +84,10 @@ export const bloqueDeZona = zona => BLOQUES_FICHA_PANEL.find(b => b.zonas.includ
 // pedido = { clave, n }: el bloque que la vista previa pidió abrir (n cambia en
 // cada pedido). activo = el bloque que el comercio está editando ahora.
 const BloquePedidoContext = createContext({ pedido: null, activo: null, marcarActivo: () => {} });
+// El arrastre de bloques: quién se arrastra, sobre qué bloque no se puede
+// soltar, y los manejadores (ver PresentacionProducto).
+const ArrastreFichaContext = createContext(null);
+const TIPO_ARRASTRE = 'application/x-gesicomm-bloque-ficha';
 const FICHA_BLOQUES_ALIAS = {
   urgencia: ['oferta'],
   oferta_encabezado: ['oferta'],
@@ -158,7 +162,22 @@ const normalizarDescuentoBoton = valor => {
   if (!Number.isFinite(n) || n <= 0) return '';
   return String(Math.min(95, Math.round(n * 10) / 10));
 };
-const normalizarOrdenMobile = orden => {
+// Hasta dónde se puede arrastrar cada bloque. La ficha arma la columna del
+// producto (bloques 2 a 11) y las secciones de abajo (12 a 15) en
+// contenedores distintos, y la galería es la otra columna: un bloque solo
+// cambia de lugar dentro de su grupo (ver aplicarOrdenMobileFicha en el
+// runtime). null = fijo.
+const SECCIONES_FICHA = ['recomendados', 'confianza', 'opiniones', 'preguntas'];
+export const grupoOrdenFicha = clave => {
+  if (clave === 'galeria') return null;
+  return SECCIONES_FICHA.includes(clave) ? 'secciones' : 'columna';
+};
+const RANGO_GRUPO_FICHA = {
+  columna: 'entre los bloques 2 y 11 (la columna del producto)',
+  secciones: 'entre los bloques 12 y 15 (las secciones debajo de la ficha)',
+};
+const POSICION_GRUPO = { galeria: 0, columna: 1, secciones: 2 };
+export const normalizarOrdenMobile = orden => {
   const vistos = new Set();
   const limpio = [];
   (Array.isArray(orden) ? orden : []).forEach(clave => {
@@ -169,8 +188,31 @@ const normalizarOrdenMobile = orden => {
       limpio.push(claveReal);
     });
   });
-  return [...limpio, ...FICHA_BLOQUES_CLAVES.filter(clave => !vistos.has(clave))];
+  const completo = [...limpio, ...FICHA_BLOQUES_CLAVES.filter(clave => !vistos.has(clave))];
+  // Un orden guardado antes de limitar el arrastre puede mezclar grupos: se
+  // muestra como lo arma la página (cada grupo en su contenedor).
+  const posicion = clave => POSICION_GRUPO[grupoOrdenFicha(clave) || 'galeria'];
+  return completo
+    .map((clave, i) => [clave, i])
+    .sort((a, b) => posicion(a[0]) - posicion(b[0]) || a[1] - b[1])
+    .map(([clave]) => clave);
 };
+// Pone `origen` justo después de `destino` (despues = true) o justo antes.
+// Sin `despues`, al lugar de destino: después si baja, antes si sube. El
+// badge de precio no tiene bloque propio en el panel: va siempre pegado al
+// precio. null = movimiento no permitido o sin cambio.
+export function moverEnOrden(orden, origen, destino, despues) {
+  if (!grupoOrdenFicha(origen) || grupoOrdenFicha(origen) !== grupoOrdenFicha(destino) || origen === destino) return null;
+  const actual = normalizarOrdenMobile(orden);
+  const lista = actual.filter(clave => clave !== 'badge_precio');
+  const desde = lista.indexOf(origen);
+  if (desde < 0 || lista.indexOf(destino) < 0) return null;
+  const baja = despues ?? desde < lista.indexOf(destino);
+  lista.splice(desde, 1);
+  lista.splice(lista.indexOf(destino) + (baja ? 1 : 0), 0, origen);
+  lista.splice(lista.indexOf('precio') + 1, 0, 'badge_precio');
+  return lista.join() === actual.join() ? null : lista;
+}
 
 function precioAnclaPorDescuento(precio, pct) {
   const descuento = Number(pct);
@@ -189,51 +231,103 @@ function imagenPrincipal(item) {
   return getMediaUrl(propia || item.imagen || item.imagen_url || null);
 }
 
-function BloqueFicha({ numero, titulo, resumen, abierto = false, visible = true, onVisible, bloqueClave, onMover, ordenIndice, children }) {
-  const dragActivo = Boolean(bloqueClave && onMover);
+// Desplaza SOLO el panel que contiene al bloque. scrollIntoView no sirve acá:
+// el navegador mueve también los contenedores de afuera aunque tengan
+// overflow oculto, y la pantalla entera del editor quedaba corrida hacia
+// arriba, con una franja vacía debajo de la barra de "Inventario de la landing".
+function llevarBloqueALaVista(bloque) {
+  let panel = bloque.parentElement;
+  while (panel) {
+    const desborde = window.getComputedStyle(panel).overflowY;
+    if ((desborde === 'auto' || desborde === 'scroll') && panel.scrollHeight > panel.clientHeight) break;
+    panel = panel.parentElement;
+  }
+  if (!panel) return;
+  const destino = bloque.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - 12;
+  if (panel.scrollTo) panel.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
+  else panel.scrollTop = Math.max(0, destino);
+}
+
+// Un texto de la ficha con su "Mostrar": destildado no se dibuja en la página,
+// pero el texto queda guardado para volver a mostrarlo (ver textos_ocultos en
+// presentacionComercial). Vacío tampoco se dibuja.
+function CampoOcultable({ titulo, campo, ocultos, onOcultos, className = '', children }) {
+  const visible = !ocultos.includes(campo);
+  return (
+    <div className={`block text-xs text-fg-muted ${className}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span>{titulo}</span>
+        <label className="flex shrink-0 items-center gap-1.5 font-medium">
+          <input
+            type="checkbox"
+            className="accent-primary"
+            checked={visible}
+            aria-label={`Mostrar ${titulo.toLowerCase()}`}
+            onChange={e => onOcultos(e.target.checked ? ocultos.filter(c => c !== campo) : [...ocultos, campo])}
+          />
+          Mostrar
+        </label>
+      </div>
+      <div className={visible ? '' : 'opacity-50'}>{children}</div>
+    </div>
+  );
+}
+
+function BloqueFicha({ numero, titulo, resumen, abierto = false, visible = true, onVisible, bloqueClave, ordenIndice, children }) {
+  const arrastreCtx = useContext(ArrastreFichaContext);
+  const grupo = bloqueClave ? grupoOrdenFicha(bloqueClave) : null;
+  const dragActivo = Boolean(arrastreCtx && grupo);
+  const arrastre = arrastreCtx?.arrastre;
+  const esOrigen = arrastre?.origen === bloqueClave;
+  const fueraDeGrupo = !!arrastre && grupo !== grupoOrdenFicha(arrastre.origen);
+  const bloqueado = !!arrastre && arrastre.bloqueado === bloqueClave;
+  const recienMovido = arrastreCtx?.recienMovido === bloqueClave;
   const { pedido, activo, marcarActivo } = useContext(BloquePedidoContext);
   const ref = useRef(null);
   useEffect(() => {
     if (!pedido || pedido.clave !== bloqueClave || !ref.current) return;
     ref.current.open = true;
-    ref.current.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+    llevarBloqueALaVista(ref.current);
     marcarActivo(bloqueClave);
   }, [pedido?.n, pedido?.clave, bloqueClave, marcarActivo]);
   // El bloque en el que se está trabajando queda marcado con el mismo borde
   // que el bloque abierto del Inicio (FilaBloqueInicio), para saber de un
   // vistazo cuál se está editando aunque haya varios abiertos.
   const editando = !!bloqueClave && activo === bloqueClave;
+  let estilo = editando ? 'border-primary ring-2 ring-primary/30' : 'border-border';
+  if (esOrigen) estilo = 'border-dashed border-primary bg-primary/5 opacity-60';
+  else if (bloqueado) estilo = 'border-danger ring-2 ring-danger/30 opacity-70';
+  else if (fueraDeGrupo) estilo = 'border-border opacity-40';
+  else if (recienMovido) estilo = 'border-primary ring-4 ring-primary/25';
   return (
     <details
       ref={ref}
       open={abierto}
       data-bloque-ficha={bloqueClave}
       data-editando={editando ? '' : undefined}
+      data-arrastrando={esOrigen ? '' : undefined}
       onFocusCapture={() => marcarActivo(bloqueClave)}
       onClickCapture={() => marcarActivo(bloqueClave)}
-      className={`group overflow-hidden rounded-xl border bg-surface transition-shadow ${editando ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}
-      style={Number.isFinite(ordenIndice) ? { order: ordenIndice } : undefined}
-      onDragOver={dragActivo ? e => e.preventDefault() : undefined}
-      onDrop={dragActivo ? e => {
-        e.preventDefault();
-        const origen = e.dataTransfer.getData('text/plain');
-        if (origen) onMover(origen, bloqueClave);
-      } : undefined}
+      className={`group overflow-hidden rounded-xl border bg-surface transition-[box-shadow,opacity,border-color] duration-200 ${estilo}`}
+      style={Number.isFinite(ordenIndice) ? { order: ordenIndice * 2 } : undefined}
+      onDragOver={arrastreCtx && bloqueClave ? e => arrastreCtx.sobre(bloqueClave, e) : undefined}
     >
       <summary className="flex cursor-pointer list-none items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-surface-2/70 [&::-webkit-details-marker]:hidden">
-        {dragActivo && (
+        {dragActivo ? (
           <span
             draggable
             onClick={e => e.stopPropagation()}
-            onDragStart={e => {
-              e.stopPropagation();
-              e.dataTransfer.effectAllowed = 'move';
-              e.dataTransfer.setData('text/plain', bloqueClave);
-            }}
-            className="-ml-1 grid h-8 w-7 shrink-0 cursor-grab place-items-center rounded-lg text-fg-muted transition-colors hover:bg-surface active:cursor-grabbing"
+            onDragStart={e => arrastreCtx.empezar(bloqueClave, e)}
+            onDragEnd={arrastreCtx.terminar}
+            className="-ml-1 grid h-8 w-7 shrink-0 cursor-grab place-items-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg active:cursor-grabbing"
             title="Arrastrar para ordenar"
+            aria-label={`Arrastrar ${titulo} para ordenar`}
           >
             <GripVertical size={15} />
+          </span>
+        ) : arrastreCtx && bloqueClave && (
+          <span className="-ml-1 grid h-8 w-7 shrink-0 place-items-center text-fg-muted/50" title="Este bloque queda fijo: es la otra columna de la ficha">
+            <Lock size={13} />
           </span>
         )}
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-black text-primary-fg">{numero}</span>
@@ -481,6 +575,7 @@ export default function PresentacionProducto({
   // si el campo no se tocó, el texto que resuelve la página.
   const val = (c, respaldo = '') => (propio && tiene(c) ? mio[c] : (ef[c] ?? respaldo));
   const listaDe = c => (propio && Array.isArray(mio[c]) ? mio[c] : (Array.isArray(ef[c]) ? ef[c] : []));
+  const textosOcultos = propio && Array.isArray(mio.textos_ocultos) ? mio.textos_ocultos : [];
   const beneficios = listaDe('beneficios');
   const confianza = listaDe('confianza');
   const botonesPago = listaDe('botones_pago');
@@ -558,16 +653,140 @@ export default function PresentacionProducto({
   function cambiarBloques(pares) {
     onCambiar('ficha_bloques', { ...bloquesFicha, ...pares });
   }
-  function moverBloqueMobile(origen, destino) {
-    const actual = normalizarOrdenMobile(ordenMobile);
-    const desde = actual.indexOf(origen);
-    const hasta = actual.indexOf(destino);
-    if (desde < 0 || hasta < 0 || desde === hasta) return;
-    const siguiente = [...actual];
-    const [movido] = siguiente.splice(desde, 1);
-    siguiente.splice(hasta, 0, movido);
-    onCambiar('ficha_orden_mobile', siguiente);
+  // ─── Arrastrar bloques ────────────────────────────────────────────────
+  // Mientras se arrastra, la lista ya se reordena (los demás bloques se
+  // corren para hacerle lugar, animados) y recién al soltar se guarda. Si se
+  // suelta afuera o con Escape, todo vuelve a su lugar. La referencia es la
+  // fuente de verdad (dragover llega antes de que React pinte); el estado,
+  // lo que se dibuja.
+  const listaBloquesRef = useRef(null);
+  const arrastreRef = useRef(null);
+  const posicionesRef = useRef(null);
+  const [arrastre, setArrastre] = useState(null);
+  const [recienMovido, setRecienMovido] = useState(null);
+  const ordenVisible = arrastre?.orden || ordenMobile;
+  function fijarArrastre(valor) {
+    arrastreRef.current = valor;
+    setArrastre(valor);
   }
+  function medirBloques() {
+    const lista = listaBloquesRef.current;
+    if (!lista) return;
+    posicionesRef.current = new Map(
+      [...lista.querySelectorAll('[data-bloque-ficha]')].map(el => [el, el.getBoundingClientRect().top]),
+    );
+  }
+  // FLIP: cada bloque arranca donde estaba y se desliza hasta su lugar nuevo.
+  useLayoutEffect(() => {
+    const antes = posicionesRef.current;
+    posicionesRef.current = null;
+    const lista = listaBloquesRef.current;
+    if (!antes || !lista) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    lista.querySelectorAll('[data-bloque-ficha]').forEach(el => {
+      const previo = antes.get(el);
+      if (previo === undefined) return;
+      el.style.transition = 'none';
+      el.style.transform = '';
+      const delta = previo - el.getBoundingClientRect().top;
+      if (Math.abs(delta) < 1) return;
+      el.style.transform = `translateY(${delta}px)`;
+      el.getBoundingClientRect();
+      el.style.transition = 'transform 240ms cubic-bezier(.2,.8,.2,1)';
+      el.style.transform = '';
+      clearTimeout(el.__finFlip);
+      el.__finFlip = setTimeout(() => { el.style.transition = ''; }, 260);
+    });
+  }, [ordenVisible]);
+  useEffect(() => {
+    if (!recienMovido) return undefined;
+    const t = setTimeout(() => setRecienMovido(null), 900);
+    return () => clearTimeout(t);
+  }, [recienMovido]);
+  const controlArrastre = {
+    arrastre,
+    recienMovido,
+    empezar(clave, e) {
+      e.stopPropagation();
+      e.dataTransfer.effectAllowed = 'move';
+      // Tipo propio: un texto plano se pegaría en el input sobre el que pase.
+      e.dataTransfer.setData(TIPO_ARRASTRE, clave);
+      // La "foto" que acompaña al cursor es la cabecera entera del bloque,
+      // levantada (fondo y sombra solo durante la captura), no el ícono.
+      const cabecera = e.currentTarget.closest('summary');
+      if (cabecera && e.dataTransfer.setDragImage) {
+        const r = cabecera.getBoundingClientRect();
+        const fondo = window.getComputedStyle(cabecera.parentElement).backgroundColor;
+        Object.assign(cabecera.style, { background: fondo, boxShadow: '0 12px 28px rgba(0,0,0,.35)', borderRadius: '12px' });
+        e.dataTransfer.setDragImage(cabecera, e.clientX - r.left, e.clientY - r.top);
+        setTimeout(() => Object.assign(cabecera.style, { background: '', boxShadow: '', borderRadius: '' }), 0);
+      }
+      arrastreRef.current = { origen: clave, orden: ordenMobile, bloqueado: null };
+      // El bloque se vuelve "hueco" recién después de la captura.
+      setTimeout(() => { if (arrastreRef.current?.origen === clave) setArrastre(arrastreRef.current); }, 0);
+    },
+    sobre(destino, e) {
+      const actual = arrastreRef.current;
+      if (!actual) return;
+      if (grupoOrdenFicha(destino) !== grupoOrdenFicha(actual.origen)) {
+        // Sin preventDefault: el cursor muestra que ahí no se puede soltar.
+        if (actual.bloqueado !== destino) fijarArrastre({ ...actual, bloqueado: destino });
+        return;
+      }
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const limpio = actual.bloqueado ? { ...actual, bloqueado: null } : actual;
+      if (destino === actual.origen) {
+        if (limpio !== actual) fijarArrastre(limpio);
+        return;
+      }
+      // Arriba o abajo se decide por dónde están en pantalla los dos bloques,
+      // no por el orden guardado: entre un dragover y el siguiente React
+      // puede no haber repintado, y comparar contra un orden más nuevo que
+      // la pantalla deshacía el movimiento. Se cambia de lugar cuando el
+      // cursor entra en la zona que el bloque arrastrado va a ocupar: con
+      // bloques de distinto alto (uno abierto) así no rebota.
+      const r = e.currentTarget.getBoundingClientRect();
+      const ro = listaBloquesRef.current?.querySelector(`[data-bloque-ficha="${actual.origen}"]`)?.getBoundingClientRect();
+      let baja;
+      if (ro && r.height > 0 && ro.height > 0) {
+        baja = r.top > ro.top;
+        const entra = baja ? e.clientY > r.bottom - ro.height : e.clientY < r.top + ro.height;
+        if (!entra) {
+          if (limpio !== actual) fijarArrastre(limpio);
+          return;
+        }
+      }
+      const siguiente = moverEnOrden(actual.orden, actual.origen, destino, baja);
+      if (!siguiente) {
+        if (limpio !== actual) fijarArrastre(limpio);
+        return;
+      }
+      medirBloques();
+      fijarArrastre({ ...limpio, orden: siguiente });
+    },
+    soltar(e) {
+      const actual = arrastreRef.current;
+      if (!actual) return;
+      e.preventDefault();
+      if (actual.orden.join() !== ordenMobile.join()) onCambiar('ficha_orden_mobile', actual.orden);
+      setRecienMovido(actual.origen);
+      fijarArrastre(null);
+    },
+    terminar() {
+      // Soltado afuera, en un bloque de otro grupo o con Escape: vuelve.
+      if (!arrastreRef.current) return;
+      medirBloques();
+      fijarArrastre(null);
+    },
+  };
+  function dentroDeLista(e) {
+    const actual = arrastreRef.current;
+    // Entre bloque y bloque (el espacio que los separa) también se puede soltar.
+    if (actual && !actual.bloqueado && !e.target.closest?.('[data-bloque-ficha]')) e.preventDefault();
+  }
+  const tituloBloque = clave => BLOQUES_FICHA_PANEL.find(b => b.clave === clave)?.titulo || clave;
+  const inicioSecciones = ordenVisible.findIndex(clave => grupoOrdenFicha(clave) === 'secciones');
   function visibleBloque(clave) {
     if (bloquesFicha[clave] === false) return false;
     if (clave === 'galeria' && bloquesFicha.portada === false) return false;
@@ -605,22 +824,42 @@ export default function PresentacionProducto({
       <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
         <p className="text-sm font-semibold text-fg">Editás solo la ficha pública de este producto.</p>
         <p className="mt-1 text-xs leading-relaxed text-fg-muted">Los bloques siguen el orden real de la ficha. Los números quedan fijos aunque ocultes una sección.</p>
+        <p className="mt-1 text-xs leading-relaxed text-fg-muted">Para cambiar el orden, arrastrá un bloque desde <GripVertical size={12} className="inline align-[-2px]" />: los bloques 2 a 11 se ordenan dentro de la columna del producto y los 12 a 15 entre las secciones de abajo. La galería queda fija.</p>
         <p className="mt-1 text-xs leading-relaxed text-fg-muted">Cada campo muestra el texto que sale en la ficha. Si lo borrás, ese renglón deja de mostrarse. En la vista previa, pasá el mouse por una zona para ver a qué bloque corresponde y hacé clic para abrirlo acá.</p>
       </div>
-      <div className="flex flex-col gap-3">
-        <BloqueFicha numero="1" titulo="Galería del producto" resumen={resumenPortada} abierto={inicialmenteAbierto} visible={visibleBloque('galeria')} onVisible={v => cambiarBloque('galeria', v)} bloqueClave="galeria" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('galeria')}>
+      <ArrastreFichaContext.Provider value={controlArrastre}>
+      {arrastre && (
+        // Altura cero: el aviso flota sobre la lista sin correr los bloques.
+        <div className="sticky top-2 z-20 h-0">
+          <div
+            role="status"
+            className={`absolute inset-x-0 top-0 rounded-lg border px-3 py-2 text-xs font-medium bg-surface shadow-lg transition-colors ${arrastre.bloqueado ? 'border-danger text-danger' : 'border-primary/50 text-fg'}`}
+          >
+            {arrastre.bloqueado
+              ? `«${tituloBloque(arrastre.origen)}» no puede ir junto a «${tituloBloque(arrastre.bloqueado)}»: se mueve solo ${RANGO_GRUPO_FICHA[grupoOrdenFicha(arrastre.origen)]}.`
+              : `Soltá «${tituloBloque(arrastre.origen)}» ${RANGO_GRUPO_FICHA[grupoOrdenFicha(arrastre.origen)]}.`}
+          </div>
+        </div>
+      )}
+      <div ref={listaBloquesRef} className="flex flex-col gap-3" onDragOver={dentroDeLista} onDrop={controlArrastre.soltar}>
+        {inicioSecciones > 0 && (
+          <div style={{ order: inicioSecciones * 2 - 1 }} className="flex items-center gap-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-fg-muted">
+            <span className="h-px flex-1 bg-border" />Debajo de la ficha<span className="h-px flex-1 bg-border" />
+          </div>
+        )}
+        <BloqueFicha numero="1" titulo="Galería del producto" resumen={resumenPortada} abierto={inicialmenteAbierto} visible={visibleBloque('galeria')} onVisible={v => cambiarBloque('galeria', v)} bloqueClave="galeria" ordenIndice={ordenVisible.indexOf('galeria')}>
           <datalist id={insigniasListId}>{INSIGNIAS_COMERCIALES.map(i => <option key={i} value={i} />)}</datalist>
           <ImagenesProductoLanding item={item} onCambiar={onCambiar} onSubirImagen={onSubirImagen} />
         </BloqueFicha>
-        <BloqueFicha numero="2" titulo="Encabezado" resumen={resumenEncabezado} abierto={inicialmenteAbierto} visible={visibleBloque('encabezado')} onVisible={v => cambiarBloque('encabezado', v)} bloqueClave="encabezado" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('encabezado')}>
+        <BloqueFicha numero="2" titulo="Encabezado" resumen={resumenEncabezado} abierto={inicialmenteAbierto} visible={visibleBloque('encabezado')} onVisible={v => cambiarBloque('encabezado', v)} bloqueClave="encabezado" ordenIndice={ordenVisible.indexOf('encabezado')}>
           <label className="block text-xs text-fg-muted">Encabezado<input className={campo} value={encabezado} list={insigniasListId} maxLength={40} placeholder="Vacío: no se muestra" onChange={e => onCambiar('insignia_principal', e.target.value)} /></label>
         </BloqueFicha>
-        <BloqueFicha numero="3" titulo="Nombre comercial" resumen={resumenNombreComercial} abierto={inicialmenteAbierto} visible={visibleBloque('nombre_comercial')} onVisible={v => cambiarBloque('nombre_comercial', v)} bloqueClave="nombre_comercial" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('nombre_comercial')}>
+        <BloqueFicha numero="3" titulo="Nombre comercial" resumen={resumenNombreComercial} abierto={inicialmenteAbierto} visible={visibleBloque('nombre_comercial')} onVisible={v => cambiarBloque('nombre_comercial', v)} bloqueClave="nombre_comercial" ordenIndice={ordenVisible.indexOf('nombre_comercial')}>
           <label className="block text-xs text-fg-muted">Nombre comercial<input className={campo} value={item.titulo_comercial || ''} maxLength={100} placeholder={item.nombre} onChange={e => onCambiar('titulo_comercial', e.target.value)} /></label>
         </BloqueFicha>
-        <BloqueFicha numero="4" titulo="Reseñas comerciales" resumen={resumenResenas} abierto={inicialmenteAbierto} visible={visibleBloque('resenas_comerciales')} onVisible={v => cambiarBloque('resenas_comerciales', v)} bloqueClave="resenas_comerciales" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('resenas_comerciales')}>
+        <BloqueFicha numero="4" titulo="Reseñas comerciales" resumen={resumenResenas} abierto={inicialmenteAbierto} visible={visibleBloque('resenas_comerciales')} onVisible={v => cambiarBloque('resenas_comerciales', v)} bloqueClave="resenas_comerciales" ordenIndice={ordenVisible.indexOf('resenas_comerciales')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_150px]">
-            <label className="block text-xs text-fg-muted">Texto de reseñas<input className={campo} value={val('resenas_texto')} maxLength={80} placeholder="Vacío: solo las estrellas" onChange={e => onCambiar('resenas_texto', e.target.value)} /></label>
+            <CampoOcultable titulo="Texto de reseñas" campo="resenas_texto" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={val('resenas_texto')} maxLength={80} placeholder="Vacío: solo las estrellas" onChange={e => onCambiar('resenas_texto', e.target.value)} aria-label="Texto de reseñas" /></CampoOcultable>
             <label className="block text-xs text-fg-muted">Cantidad de estrellas<input className={campo} type="number" min="1" max="5" step="0.1" inputMode="decimal" value={val('resenas_calificacion', DEFAULTS_PRESENTACION.resenas_calificacion)} onChange={e => onCambiar('resenas_calificacion', e.target.value)} /></label>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm">
@@ -637,14 +876,14 @@ export default function PresentacionProducto({
             <span className="text-xs font-semibold text-fg-muted">{formatearCalificacion(ratingResenas)} de 5 estrellas</span>
           </div>
         </BloqueFicha>
-        <BloqueFicha numero="5" titulo="Precio y oferta" resumen={resumenPrecio} abierto={inicialmenteAbierto} visible={visibleBloque('precio')} onVisible={v => cambiarBloques({ precio: v, badge_precio: v })} bloqueClave="precio" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('precio')}>
+        <BloqueFicha numero="5" titulo="Precio y oferta" resumen={resumenPrecio} abierto={inicialmenteAbierto} visible={visibleBloque('precio')} onVisible={v => cambiarBloques({ precio: v, badge_precio: v })} bloqueClave="precio" ordenIndice={ordenVisible.indexOf('precio')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="block text-xs text-fg-muted">Precio anterior<CurrencyInput id={`ancla-${claveItem(item)}`} aria-label="Precio anterior" inputMode="numeric" value={ancla ?? ''} onChange={v => onAncla(v == null ? '' : String(v))} placeholder="Opcional" className={campo} /></label>
             <label className="block text-xs text-fg-muted">% de descuento<input inputMode="numeric" value={porcentaje} placeholder="Ej: 21" className={campo} onChange={e => onAncla(precioAnclaPorDescuento(precio, e.target.value))} /></label>
-            <label className="block text-xs text-fg-muted">Badge de precio<input className={campo} value={val('insignia_secundaria')} list={insigniasListId} maxLength={40} placeholder={descuento ? `-${descuento}%` : 'Oferta especial'} onChange={e => onCambiar('insignia_secundaria', e.target.value)} /></label>
+            <CampoOcultable titulo="Badge de precio" campo="insignia_secundaria" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={val('insignia_secundaria')} list={insigniasListId} maxLength={40} placeholder={descuento ? `-${descuento}%` : 'Oferta especial'} onChange={e => onCambiar('insignia_secundaria', e.target.value)} aria-label="Badge de precio" /></CampoOcultable>
           </div>
         </BloqueFicha>
-        <BloqueFicha numero="6" titulo="Oferta por tiempo limitado" resumen={resumenOferta} abierto={inicialmenteAbierto} visible={visibleBloque('oferta')} onVisible={v => cambiarBloques({ oferta: v, urgencia: v })} bloqueClave="oferta" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('oferta')}>
+        <BloqueFicha numero="6" titulo="Oferta por tiempo limitado" resumen={resumenOferta} abierto={inicialmenteAbierto} visible={visibleBloque('oferta')} onVisible={v => cambiarBloques({ oferta: v, urgencia: v })} bloqueClave="oferta" ordenIndice={ordenVisible.indexOf('oferta')}>
           <div className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <label className="block text-xs text-fg-muted">Encabezado de la oferta<input className={campo} value={val('urgencia_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('urgencia_kicker', e.target.value)} /></label>
@@ -669,15 +908,15 @@ export default function PresentacionProducto({
             </fieldset>
           </div>
         </BloqueFicha>
-        <BloqueFicha numero="7" titulo="Descripción breve" resumen={resumenDescripcion} abierto={inicialmenteAbierto} visible={visibleBloque('descripcion')} onVisible={v => cambiarBloque('descripcion', v)} bloqueClave="descripcion" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('descripcion')}>
-          <label className="block text-xs text-fg-muted">Frase destacada<input className={campo} value={fraseDestacada} maxLength={220} placeholder="Vacío: no se muestra" onChange={e => onCambiar('propuesta_valor', e.target.value)} /></label>
-          <label className="block text-xs text-fg-muted">Descripción<textarea className={area} rows={4} value={descripcionFicha} maxLength={2000} placeholder="Vacío: no se muestra" onChange={e => onCambiar('mensaje_comercial', e.target.value)} /></label>
+        <BloqueFicha numero="7" titulo="Descripción breve" resumen={resumenDescripcion} abierto={inicialmenteAbierto} visible={visibleBloque('descripcion')} onVisible={v => cambiarBloque('descripcion', v)} bloqueClave="descripcion" ordenIndice={ordenVisible.indexOf('descripcion')}>
+          <CampoOcultable titulo="Frase destacada" campo="propuesta_valor" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={fraseDestacada} maxLength={220} placeholder="Vacío: no se muestra" onChange={e => onCambiar('propuesta_valor', e.target.value)} aria-label="Frase destacada" /></CampoOcultable>
+          <CampoOcultable titulo="Descripción" campo="mensaje_comercial" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><textarea className={area} rows={4} value={descripcionFicha} maxLength={2000} placeholder="Vacío: no se muestra" onChange={e => onCambiar('mensaje_comercial', e.target.value)} aria-label="Descripción" /></CampoOcultable>
           <p className="text-xs leading-relaxed text-fg-muted">Arrancan con la propuesta de valor y la descripción cargadas en el producto. Lo que cambies acá vale solo para esta landing.</p>
         </BloqueFicha>
-        <BloqueFicha numero="8" titulo="Beneficios principales" resumen={resumenBeneficios} visible={visibleBloque('beneficios')} onVisible={v => cambiarBloque('beneficios', v)} bloqueClave="beneficios" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('beneficios')}>
+        <BloqueFicha numero="8" titulo="Beneficios principales" resumen={resumenBeneficios} visible={visibleBloque('beneficios')} onVisible={v => cambiarBloque('beneficios', v)} bloqueClave="beneficios" ordenIndice={ordenVisible.indexOf('beneficios')}>
           <ListaBeneficios items={beneficios} onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="9" titulo="Botones de contacto y pago" resumen={resumenContacto} visible={visibleBloque('contacto_pago')} onVisible={v => cambiarBloques({ contacto_pago: v, compra: v })} bloqueClave="contacto_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('contacto_pago')}>
+        <BloqueFicha numero="9" titulo="Botones de contacto y pago" resumen={resumenContacto} visible={visibleBloque('contacto_pago')} onVisible={v => cambiarBloques({ contacto_pago: v, compra: v })} bloqueClave="contacto_pago" ordenIndice={ordenVisible.indexOf('contacto_pago')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_150px]">
             <label className="block text-xs text-fg-muted">Botón principal de compra<input className={campo} value={item.cta_texto || ''} maxLength={42} placeholder="Comprar con pago anticipado" onChange={e => onCambiar('cta_texto', e.target.value)} /></label>
             <label className={`block text-xs text-fg-muted ${sinPagopar ? 'cursor-not-allowed opacity-60' : ''}`} title={sinPagopar ? AVISO_PAGO_ANTICIPADO : undefined}>Descuento pago anticipado %<input className={`${campo} ${sinPagopar ? 'cursor-not-allowed' : ''}`} type="number" min="0" max="95" step="0.1" inputMode="decimal" disabled={sinPagopar} value={item.cta_descuento_pct ?? ''} placeholder="Ej: 10" onChange={e => onCambiar('cta_descuento_pct', e.target.value)} onBlur={e => onCambiar('cta_descuento_pct', normalizarDescuentoBoton(e.target.value))} /></label>
@@ -686,24 +925,24 @@ export default function PresentacionProducto({
           <ListaBotones titulo="Botones de pago" ayuda="Botones secundarios como Pago contra entrega, Comprar por WhatsApp o un link de pago. Podés sumar un descuento por botón para incentivar el pago anticipado." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} descuentos />
           <ListaBotones titulo="Botones configurables de contacto" ayuda="Caminos de contacto adicionales de esta ficha. WhatsApp usa el mensaje configurado en Mi tienda." items={botonesContacto} campoLista="botones_contacto" onCambiar={onCambiar} ocultarValorWhatsapp />
         </BloqueFicha>
-        <BloqueFicha numero="10" titulo="Disponibilidad y medios de pago" resumen={resumenPagos} visible={visibleBloque('promociones_pago')} onVisible={v => cambiarBloque('promociones_pago', v)} bloqueClave="promociones_pago" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('promociones_pago')}>
+        <BloqueFicha numero="10" titulo="Disponibilidad y medios de pago" resumen={resumenPagos} visible={visibleBloque('promociones_pago')} onVisible={v => cambiarBloque('promociones_pago', v)} bloqueClave="promociones_pago" ordenIndice={ordenVisible.indexOf('promociones_pago')}>
           <p className="text-xs leading-relaxed text-fg-muted">Esta zona aparece después de los botones: disponibilidad, cobertura y medios de pago antes de confirmar.</p>
           <MetodosPagoEditor metodos={metodosPago} onCambiar={onCambiar} pagoLogos={pagoLogos} paymentLogosCatalogo={paymentLogosCatalogo} onPagoLogosChange={onPagoLogosChange} />
         </BloqueFicha>
-        <BloqueFicha numero="11" titulo="Qué incluye tu pedido" resumen={resumenIncluye} visible={visibleBloque('incluye')} onVisible={v => cambiarBloque('incluye', v)} bloqueClave="incluye" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('incluye')}>
+        <BloqueFicha numero="11" titulo="Qué incluye tu pedido" resumen={resumenIncluye} visible={visibleBloque('incluye')} onVisible={v => cambiarBloque('incluye', v)} bloqueClave="incluye" ordenIndice={ordenVisible.indexOf('incluye')}>
           <ListaSimple titulo="Ítems incluidos" ayuda="Cada línea aparece como checklist dentro de la ficha." items={incluyePedido} campoLista="incluye_pedido" placeholder="Ej: 1 unidad del producto seleccionado" onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="12" titulo="Productos recomendados" resumen={resumenRecomendados} visible={visibleBloque('recomendados') && recomendadosActivo !== false} onVisible={cambiarRecomendadosVisible} bloqueClave="recomendados" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('recomendados')}>
+        <BloqueFicha numero="12" titulo="Productos recomendados" resumen={resumenRecomendados} visible={visibleBloque('recomendados') && recomendadosActivo !== false} onVisible={cambiarRecomendadosVisible} bloqueClave="recomendados" ordenIndice={ordenVisible.indexOf('recomendados')}>
           {bloqueRecomendados || <p className="text-xs leading-relaxed text-fg-muted">Configurá acá los productos que aparecen como recomendados en la ficha.</p>}
         </BloqueFicha>
-        <BloqueFicha numero="13" titulo="Zona de confianza" resumen={resumenConfianza} visible={visibleBloque('confianza')} onVisible={v => cambiarBloque('confianza', v)} bloqueClave="confianza" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('confianza')}>
+        <BloqueFicha numero="13" titulo="Zona de confianza" resumen={resumenConfianza} visible={visibleBloque('confianza')} onVisible={v => cambiarBloque('confianza', v)} bloqueClave="confianza" ordenIndice={ordenVisible.indexOf('confianza')}>
           <ListaConfianzaProducto items={confianza} onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="14" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('opiniones')}>
+        <BloqueFicha numero="14" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" ordenIndice={ordenVisible.indexOf('opiniones')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={val('opiniones_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_kicker', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={val('opiniones_titulo')} maxLength={90} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_titulo', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted sm:col-span-2">Subtítulo de sección<textarea className={area} rows={2} value={val('opiniones_subtitulo')} maxLength={180} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_subtitulo', e.target.value)} /></label>
+            <CampoOcultable titulo="Rótulo de sección" campo="opiniones_kicker" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={val('opiniones_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_kicker', e.target.value)} aria-label="Rótulo de sección" /></CampoOcultable>
+            <CampoOcultable titulo="Título de sección" campo="opiniones_titulo" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={val('opiniones_titulo')} maxLength={90} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_titulo', e.target.value)} aria-label="Título de sección" /></CampoOcultable>
+            <CampoOcultable titulo="Subtítulo de sección" campo="opiniones_subtitulo" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)} className="sm:col-span-2"><textarea className={area} rows={2} value={val('opiniones_subtitulo')} maxLength={180} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_subtitulo', e.target.value)} aria-label="Subtítulo de sección" /></CampoOcultable>
           </div>
           <fieldset className="space-y-3 rounded-lg border border-border bg-surface px-3 py-3">
             <legend className="px-1 text-sm font-semibold text-fg">Opiniones reales</legend>
@@ -730,15 +969,16 @@ export default function PresentacionProducto({
             {opiniones.length < 6 && <button type="button" onClick={agregarOpinion} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Agregar opinión</button>}
           </fieldset>
         </BloqueFicha>
-        <BloqueFicha numero="15" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" onMover={moverBloqueMobile} ordenIndice={ordenMobile.indexOf('preguntas')}>
+        <BloqueFicha numero="15" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" ordenIndice={ordenVisible.indexOf('preguntas')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block text-xs text-fg-muted">Rótulo de sección<input className={campo} value={val('preguntas_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('preguntas_kicker', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted">Título de sección<input className={campo} value={val('preguntas_titulo')} maxLength={90} placeholder="Vacío: no se muestra" onChange={e => onCambiar('preguntas_titulo', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted sm:col-span-2">Subtítulo de sección<textarea className={area} rows={2} value={val('preguntas_subtitulo')} maxLength={180} placeholder="Vacío: no se muestra" onChange={e => onCambiar('preguntas_subtitulo', e.target.value)} /></label>
+            <CampoOcultable titulo="Rótulo de sección" campo="preguntas_kicker" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={val('preguntas_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('preguntas_kicker', e.target.value)} aria-label="Rótulo de sección" /></CampoOcultable>
+            <CampoOcultable titulo="Título de sección" campo="preguntas_titulo" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={val('preguntas_titulo')} maxLength={90} placeholder="Vacío: no se muestra" onChange={e => onCambiar('preguntas_titulo', e.target.value)} aria-label="Título de sección" /></CampoOcultable>
+            <CampoOcultable titulo="Subtítulo de sección" campo="preguntas_subtitulo" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)} className="sm:col-span-2"><textarea className={area} rows={2} value={val('preguntas_subtitulo')} maxLength={180} placeholder="Vacío: no se muestra" onChange={e => onCambiar('preguntas_subtitulo', e.target.value)} aria-label="Subtítulo de sección" /></CampoOcultable>
           </div>
           <ListaPreguntas items={preguntas} onCambiar={onCambiar} />
         </BloqueFicha>
       </div>
+      </ArrastreFichaContext.Provider>
     </div>
     </BloquePedidoContext.Provider>
   );

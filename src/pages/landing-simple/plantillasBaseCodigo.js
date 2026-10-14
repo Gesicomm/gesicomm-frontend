@@ -1614,7 +1614,8 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .pdp-reviews a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .pdp-prices { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
 .pdp-prices .price { font-size: 2rem; }
-.pdp-price-badge { display: inline-flex; width: fit-content; margin: -4px 0 14px; }
+/* Precio, tachado y "Ahorrás" en una sola fila. */
+.pdp-price-badge { display: inline-flex; width: fit-content; margin: 0; }
 .pdp-lead { margin-bottom: 14px; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
 .pdp-offer-card { margin: 0 0 18px; }
 .pdp-offer-card .limited-offer-card { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 18px; }
@@ -1878,7 +1879,6 @@ main[data-gesicomm-base="producto"] ~ .faq-section { padding: 50px 0; }
   .pdp-lead { margin-bottom: 16px; font-size: .96rem; line-height: 1.55; }
   .pdp-prices { gap: 8px 10px; margin: 2px 0 22px; }
   .pdp-prices .price { font-size: 1.55rem; line-height: 1.1; }
-  .pdp-price-badge { margin: -12px 0 18px; }
   .pdp-limited-offer { margin: 0 0 24px; }
   .pdp-limited-offer .limited-offer-card { gap: 16px; padding: 18px 16px; border-radius: 16px; }
   .pdp-limited-offer .limited-offer-kicker { margin-bottom: 8px; font-size: .7rem; line-height: 1.35; letter-spacing: .11em; }
@@ -1937,8 +1937,8 @@ const PRODUCTO_HTML = `${headerTiendaUnico('productos')}
       <div class="pdp-prices" data-gesicomm-ficha-bloque="precio">
         <span class="price" data-gesicomm-bind="precio"></span>
         <span class="price-old" data-gesicomm-bind="precio_antes"></span>
+        <span class="badge-off pdp-price-badge" data-gesicomm-bind="badge_precio" data-gesicomm-ficha-bloque="badge_precio"></span>
       </div>
-      <span class="badge-off pdp-price-badge" data-gesicomm-bind="badge_precio" data-gesicomm-ficha-bloque="badge_precio"></span>
       <!-- Combo: el ancla del ahorro, cuánto costaría por separado. -->
       <p class="pdp-separado" data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p>
 
@@ -3204,10 +3204,12 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
     <!-- Pedido creado: el carrito ya quedó vacío, así que sin esto se veía
          "Tu pedido todavia no tiene productos" en vez de la confirmación. -->
     <section class="lv-empty-checkout" data-gesicomm-checkout-confirmado style="display:none">
-      <p class="lv-kicker">Pedido recibido</p>
-      <h1>¡Gracias por tu compra!</h1>
+      <!-- Rótulo, título y ayuda los escribe el runtime según el estado: pedido
+           confirmado, pago anticipado que no se pudo abrir, o yendo a PagoPar. -->
+      <p class="lv-kicker" data-gesicomm-checkout="estado_rotulo">Pedido recibido</p>
+      <h1 data-gesicomm-checkout="estado_titulo">¡Gracias por tu compra!</h1>
       <p data-gesicomm-checkout="mensaje"></p>
-      <p>La tienda se va a comunicar con vos para coordinar la entrega.</p>
+      <p data-gesicomm-checkout="estado_ayuda">La tienda se va a comunicar con vos para coordinar la entrega.</p>
       <a class="lv-primary" href="/catalogo" data-gesicomm-link="catalogo">Seguir comprando</a>
     </section>
   </main>
@@ -3256,10 +3258,27 @@ export function esBaseIntacta(html) {
   return !!formatoDeBase(html) && !String(html || '').includes(MARCA_PERSONALIZADO);
 }
 
+/**
+ * Ficha escrita por el comercio (por ejemplo con "Instrucciones para la IA"
+ * en Vista producto): queda marcada para que nadie la confunda con la base.
+ * Si conserva data-gesicomm-base, la marca va al lado; si no, en el primer
+ * elemento del HTML.
+ */
+export function marcarFichaPersonalizada(html) {
+  const texto = String(html || '');
+  if (!texto.trim() || texto.includes(MARCA_PERSONALIZADO)) return texto;
+  if (formatoDeBase(texto)) return marcarPersonalizado(texto);
+  return texto.replace(/<(?!!)([a-z][a-z0-9-]*)\b/i, `<$1 ${MARCA_PERSONALIZADO}`);
+}
+
 /** Detecta fichas PDP base de Gesicomm guardadas antes de la base nueva. */
 export function esFichaProductoBase(html) {
   const texto = String(html || '');
   if (!texto.trim()) return true;
+  // Una ficha propia conserva los mismos atributos que la base (galería,
+  // bumps, paquetes, comprar): sin esta marca se la tomaba por la base y se
+  // reemplazaba por la plantilla en la vista previa, al guardar y al publicar.
+  if (texto.includes(MARCA_PERSONALIZADO)) return false;
   if (formatoDeBase(texto) === 'producto') return true;
   return texto.includes('data-gesicomm-imagen-principal')
     && texto.includes('data-gesicomm-lista="ofertas_bump"')

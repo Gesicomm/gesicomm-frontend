@@ -100,8 +100,8 @@ describe('Speedbox settings', () => {
   it('shows the RAHA store creation endpoint and calls it from the validation panel', async () => {
     render(<SpeedboxConfig />);
     expect(await screen.findByText('/api/integraciones/speedbox/store')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Crear tienda sandbox en RAHA' }));
-    await waitFor(() => expect(speedboxService.vincular).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_saved_public' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recrear tienda sandbox en RAHA' }));
+    await waitFor(() => expect(speedboxService.vincular).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_saved_public', force_recreate: true }));
   });
 
   it('opens the official RAHA portal without leaking session or personal data', async () => {
@@ -128,8 +128,8 @@ describe('Speedbox settings', () => {
     fireEvent.change(screen.getByLabelText('Private key'), { target: { value: ' private_secret ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Probar autenticación' }));
     await waitFor(() => expect(speedboxService.probar).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Crear tienda sandbox en RAHA' }));
-    await waitFor(() => expect(speedboxService.vincular).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recrear tienda sandbox en RAHA' }));
+    await waitFor(() => expect(speedboxService.vincular).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret', force_recreate: true }));
     fireEvent.click(screen.getByRole('button', { name: 'Enviar pedido sandbox' }));
     await waitFor(() => expect(speedboxService.enviarPrueba).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret' }));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar sandbox' }));
@@ -149,9 +149,9 @@ describe('Speedbox settings', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     render(<SpeedboxConfig />);
     await screen.findByText(config.production_webhook_url);
-    fireEvent.click(screen.getByRole('button', { name: 'Copiar webhook' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar producción' }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(config.production_webhook_url));
-    expect(screen.getByRole('status')).toHaveTextContent('Webhook copiado.');
+    expect(screen.getByRole('status')).toHaveTextContent('Webhook producción copiado.');
   });
 
   it('builds and copies a production webhook even when the backend response has no URL', async () => {
@@ -161,7 +161,7 @@ describe('Speedbox settings', () => {
     render(<SpeedboxConfig />);
     const fallback = await screen.findByText(/\/api\/webhooks\/speedbox\?environment=production/);
     expect(fallback).toBeInTheDocument();
-    const button = screen.getByRole('button', { name: 'Copiar webhook' });
+    const button = screen.getByRole('button', { name: 'Copiar producción' });
     expect(button).not.toBeDisabled();
     fireEvent.click(button);
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/api\/webhooks\/speedbox\?environment=production$/)));
@@ -173,7 +173,7 @@ describe('Speedbox settings', () => {
     speedboxService.obtener.mockResolvedValue({ ...config, production_webhook_url: null });
     render(<SpeedboxConfig />);
     await screen.findByText('https://api.example.test/api/webhooks/speedbox?environment=production&token=12345678901234567890123456789012');
-    fireEvent.click(screen.getByRole('button', { name: 'Copiar webhook' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar producción' }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('https://api.example.test/api/webhooks/speedbox?environment=production&token=12345678901234567890123456789012'));
   });
 

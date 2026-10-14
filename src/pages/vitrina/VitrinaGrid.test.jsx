@@ -116,6 +116,31 @@ describe('VitrinaGrid Component', () => {
     });
   });
 
+  it('agrupa las teclas de la búsqueda en una petición', async () => {
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto de Prueba');
+    vitrinaService.catalogoPaginado.mockClear();
+    const campo = screen.getByPlaceholderText('Buscar producto o combo...');
+    fireEvent.change(campo, { target: { value: 'p' } });
+    fireEvent.change(campo, { target: { value: 'pr' } });
+    fireEvent.change(campo, { target: { value: 'producto' } });
+    expect(vitrinaService.catalogoPaginado).not.toHaveBeenCalled();
+    await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenCalledTimes(1));
+    expect(vitrinaService.catalogoPaginado.mock.calls[0][0].busqueda).toBe('producto');
+  });
+
+  it('cancela la carga anterior al cambiar de pestaña y al desmontar', async () => {
+    const { unmount } = renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto de Prueba');
+    const primera = vitrinaService.catalogoPaginado.mock.calls[0][1].signal;
+    fireEvent.click(screen.getByRole('button', { name: 'Productos propios', exact: true }));
+    await waitFor(() => expect(vitrinaService.catalogoPaginado.mock.calls.length).toBe(2));
+    expect(primera.aborted).toBe(true);
+    const segunda = vitrinaService.catalogoPaginado.mock.calls[1][1].signal;
+    unmount();
+    expect(segunda.aborted).toBe(true);
+  });
+
   it('renderiza la cabecera con el botón de "Agregar Mis Productos", la pestaña de landing y la pestaña de productos propios', async () => {
     renderWithRouter(<VitrinaGrid />);
 
@@ -151,6 +176,7 @@ describe('VitrinaGrid Component', () => {
           tipo: 'producto',
           solamenteMios: true,
         }),
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
     });
 
@@ -206,7 +232,8 @@ describe('VitrinaGrid Component', () => {
         solamenteMios: false,
         origenCatalogo: null,
       }),
-    ));
+   expect.objectContaining({ signal: expect.any(AbortSignal) }),
+));
     expect(await screen.findByText('Producto en Landing')).toBeInTheDocument();
     expect(await screen.findByText('Combo en Landing')).toBeInTheDocument();
     expect(screen.queryByText('Producto fuera de Landing')).toBeNull();
@@ -214,16 +241,13 @@ describe('VitrinaGrid Component', () => {
     expect(screen.getByRole('button', { name: /Seleccionar todo/i })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /Seleccionar Producto en Landing/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Despublicar seleccionados/i })).toBeNull();
-
     fireEvent.click(screen.getByRole('checkbox', { name: /Seleccionar Producto en Landing/i }));
-
     expect(screen.getByRole('region', { name: 'Productos seleccionados' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Despublicar seleccionados/i })).toBeInTheDocument();
     expect(vitrinaService.catalogo).not.toHaveBeenCalled();
     expect(landingSimpleService.obtener).not.toHaveBeenCalled();
     expect(landingService.obtener).not.toHaveBeenCalled();
   });
-
   it('despublica masivamente desde Productos en mi landing y refresca el listado', async () => {
     vitrinaService.catalogoPaginado
       .mockResolvedValueOnce({
@@ -247,16 +271,13 @@ describe('VitrinaGrid Component', () => {
         totalPages: 1,
         total: 0,
       });
-
     renderWithRouter(<VitrinaGrid />);
     await screen.findByText('Producto inicial');
     fireEvent.click(screen.getByRole('button', { name: 'Productos en mi landing', exact: true }));
     expect(await screen.findByText('Producto en Landing')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('checkbox', { name: /Seleccionar Producto en Landing/i }));
     expect(screen.getByRole('region', { name: 'Productos seleccionados' })).toBeInTheDocument();
-
     fireEvent.click(screen.getByRole('button', { name: /Despublicar seleccionados/i }));
-
     await waitFor(() => expect(vitrinaService.despublicarLanding).toHaveBeenCalledWith([
       { tipo: 'producto', id: 1 },
     ]));
@@ -280,7 +301,9 @@ describe('VitrinaGrid Component', () => {
         expect.objectContaining({
           solamenteMios: true,
         })
-      );
+      ,
+   expect.objectContaining({ signal: expect.any(AbortSignal) })
+ );
     });
 
     const btnTodos = screen.getByText('Todos');
@@ -292,6 +315,8 @@ describe('VitrinaGrid Component', () => {
           solamenteMios: false,
           tipo: 'todos',
         })
+      ,
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
     });
   });
@@ -313,15 +338,18 @@ describe('VitrinaGrid Component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Combos Gesicom', exact: true }));
     await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
       expect.objectContaining({ tipo: 'combo', solamenteMios: false, origenCatalogo: 'GESICOMM' }),
-    ));
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+));
     fireEvent.click(screen.getByRole('button', { name: 'Combos propios', exact: true }));
     await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
       expect.objectContaining({ tipo: 'combo', solamenteMios: true, origenCatalogo: null }),
-    ));
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+));
     fireEvent.click(screen.getByRole('button', { name: 'Todos', exact: true }));
     await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
       expect.objectContaining({ tipo: 'todos', solamenteMios: false, origenCatalogo: null }),
-    ));
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+));
   });
 
   it('lleva las fotos del catálogo al editor del combo', async () => {
@@ -413,7 +441,8 @@ describe('VitrinaGrid Component', () => {
         solamenteMios: false,
         origenCatalogo: 'GESICOMM',
       }),
-    ));
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+));
 
     fireEvent.click(screen.getByRole('button', { name: /Seleccionar todo/i }));
 

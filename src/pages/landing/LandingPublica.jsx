@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, registrarVisitaLanding } from '../../services/landingPublicaService';
-import { generarEventId, inicializarPixel, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
+import { esperarCookiesFacebook, generarEventId, inicializarPixel, trackearEvento } from '../../lib/metaPixel';
 import { inicializarGA } from '../../lib/googleAnalytics';
 import { inicializarTikTokPixel } from '../../lib/tiktokPixel';
 import { cargarFuenteGoogle } from '../../lib/landingDiseno';
@@ -15,8 +15,10 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
   const { slug, productId, categorySlug: categorySlugParam } = useParams();
   const categoriaVista = categorySlug || categorySlugParam || null;
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [estado, setEstado] = useState('cargando'); // 'cargando' | 'no-encontrada' | 'no-disponible' | 'ok'
   const [data, setData] = useState(null);
+  const visitaEnviadaRef = useRef(null);
   const pageviewEnviadoRef = useRef(null);
 
   useEffect(() => {
@@ -50,30 +52,42 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
         if (res.meta?.tiktok_pixel_id) inicializarTikTokPixel(res.meta.tiktok_pixel_id);
         if (res.diseno?.fuente) cargarFuenteGoogle(res.diseno.fuente);
 
-        const pageviewKey = `${slug || 'home'}:${productId || ''}:${window.location.pathname}`;
-        if (pageviewEnviadoRef.current !== pageviewKey) {
-          pageviewEnviadoRef.current = pageviewKey;
+        const visitaKey = `${slug || 'home'}:${productId || ''}:${window.location.pathname}`;
+        if (visitaEnviadaRef.current !== visitaKey) {
+          visitaEnviadaRef.current = visitaKey;
           // La visita la contaba el backend dentro de este GET, lo que lo hacía
           // incacheable. Solo cuando NO hay productId: la ficha de producto
           // tampoco contaba visita antes (obtenerProductoPublico no llamaba a
           // registrarVisita), y la idea es no cambiar qué se mide, solo quién
           // lo dispara.
           if (!productId) registrarVisitaLanding(slug);
-          const eventId = generarEventId();
-          const { fbc, fbp } = leerCookiesFacebook();
-          trackearEvento('PageView', eventId, {});
-          registrarEventoLanding(slug, {
-            event_name: 'PageView',
-            event_id: eventId,
-            event_source_url: window.location.href,
-            fbc,
-            fbp,
-          });
         }
       })
       .catch(() => { if (activo) setEstado('no-encontrada'); });
     return () => { activo = false; };
   }, [slug, productId]);
+
+  // PageView por cada página que se ve, no por cada carga de la landing:
+  // inicio → checkout o → una categoría no cambia slug ni productId (el
+  // efecto de arriba no vuelve a correr), pero para Meta es otra página.
+  useEffect(() => {
+    if (estado !== 'ok') return;
+    const clave = `${slug || 'home'}:${pathname}`;
+    if (pageviewEnviadoRef.current === clave) return;
+    pageviewEnviadoRef.current = clave;
+    const eventId = generarEventId();
+    const urlOrigen = window.location.href;
+    trackearEvento('PageView', eventId, {});
+    // Es el primer evento de la visita: se espera a que el Pixel cree _fbp
+    // para que la Conversions API lo reciba con el mismo navegador.
+    esperarCookiesFacebook().then(({ fbc, fbp }) => registrarEventoLanding(slug, {
+      event_name: 'PageView',
+      event_id: eventId,
+      event_source_url: urlOrigen,
+      fbc,
+      fbp,
+    }));
+  }, [estado, slug, pathname]);
 
   // La pestaña del navegador mostraba el favicon estático de Gesicom
   // (index.html) en TODAS las páginas publicadas. Ver faviconDeLanding:

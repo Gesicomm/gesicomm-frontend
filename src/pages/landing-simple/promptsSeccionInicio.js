@@ -26,12 +26,12 @@ Esto es el inicio de una conversación, no un pedido de código directo. Quien t
 3. Si tiene una imagen de referencia o un sitio que le guste, para que la suba o la describa.
 NO generes HTML ni CSS en esta primera respuesta, ni propongas un diseño todavía. Recién cuando te responda con esa información (texto y, si tiene, una imagen) generás el rediseño con el formato de abajo.`;
 
-const REGLAS_COLOR = `## Colores (obligatorio)
+export const REGLAS_COLOR = `## Colores (obligatorio)
 Usá SIEMPRE estas variables CSS en vez de colores fijos — las define la marca de la tienda (Mi Tienda → Branding) y si escribís un hex fijo la landing deja de seguir esos colores si la tienda los cambia:
 --gc-primario / --tienda-primario (botones y acentos), --gc-texto-sobre-primario / --tienda-texto-sobre-primario (texto sobre el primario), --gc-secundario / --tienda-secundario (segundo color de marca), --gc-fondo / --tienda-fondo (fondo), --gc-texto / --tienda-texto (texto principal), --gc-texto-suave / --tienda-texto-suave, --gc-superficie / --tienda-superficie (tarjetas), --tienda-linea (bordes).
 El logo va con <img data-gesicomm-tienda="logo" alt=""> y el nombre con <span data-gesicomm-tienda="nombre"></span> — nunca los reemplaces por texto o imagen fija.`;
 
-const REGLAS_CALIDAD = `## Calidad
+export const REGLAS_CALIDAD = `## Calidad
 Mobile first (la mayoría entra desde Instagram/Facebook en el celular). Español de Paraguay con voseo ("elegí", "comprá"), moneda en guaraníes ("Gs 145.735", sin decimales — el runtime ya formatea los precios, vos no escribas el número). Accesible: contraste AA, botones reales (<button>), foco visible. No inventes testimonios, cifras, garantías ni certificaciones que no estén en los datos reales de abajo.`;
 
 // Las clases de la plantilla base (.trust-card, .product-card, .hero-banner…)

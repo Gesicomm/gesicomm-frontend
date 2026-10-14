@@ -38,6 +38,18 @@ function productionWebhookFromData(data) {
   }
 }
 
+function sandboxWebhookFromData(data) {
+  const raw = data?.sandbox_webhook_url || data?.webhook_url || (data ? webhookUrlFallback('sandbox') : '');
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    url.searchParams.set('environment', 'sandbox');
+    return url.href;
+  } catch {
+    return raw;
+  }
+}
+
 function connectionByEnvironment(data, environment) {
   return (data?.connections || []).find(conn => conn.environment === environment)
     || (data?.connection?.environment === environment ? data.connection : null);
@@ -132,15 +144,18 @@ export default function SpeedboxConfig() {
   const reviews = (data?.events || []).filter(event => event.estado === 'revision' && event.tipo !== 'wallet.transaction');
   const allChecks = data?.checks && Object.values(data.checks).every(Boolean);
   const productionWebhookUrl = productionWebhookFromData(data);
+  const sandboxWebhookUrl = sandboxWebhookFromData(data);
+  const sandboxStoreActionLabel = sandboxConnection?.tienda_id ? 'Recrear tienda sandbox en RAHA' : 'Crear tienda sandbox en RAHA';
+  const productionStoreActionLabel = productionConnection?.tienda_id ? 'Recrear tienda producción en RAHA' : 'Crear tienda producción en RAHA';
 
-  async function copyWebhook() {
-    if (!productionWebhookUrl) return;
+  async function copyText(value, success) {
+    if (!value) return;
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(productionWebhookUrl);
+        await navigator.clipboard.writeText(value);
       } else {
         const input = document.createElement('textarea');
-        input.value = productionWebhookUrl;
+        input.value = value;
         input.setAttribute('readonly', '');
         input.style.position = 'fixed';
         input.style.opacity = '0';
@@ -149,11 +164,13 @@ export default function SpeedboxConfig() {
         document.execCommand('copy');
         document.body.removeChild(input);
       }
-      setMessage('Webhook copiado.');
+      setMessage(success);
     } catch {
-      setError('No se pudo copiar el webhook. Seleccioná la URL y copiala manualmente.');
+      setError('No se pudo copiar. Seleccioná la URL y copiala manualmente.');
     }
   }
+  const copySandboxWebhook = () => copyText(sandboxWebhookUrl, 'Webhook sandbox copiado.');
+  const copyProductionWebhook = () => copyText(productionWebhookUrl, 'Webhook producción copiado.');
 
   if (busy === 'cargar') return <div className="spb-loading" role="status"><Loader size={18} className="spb-spin" /> Cargando RAHA...</div>;
   return <div className="spb-config">
@@ -182,6 +199,7 @@ export default function SpeedboxConfig() {
           <div><dt>Endpoint Gesicom para crear tienda</dt><dd>{data.create_store_endpoint || '/api/integraciones/speedbox/store'}</dd></div>
           <div><dt>Tienda RAHA sandbox</dt><dd>{sandboxConnection?.tienda_id || 'Sin vincular'}</dd></div>
           <div><dt>Credenciales</dt><dd>{credentialsAvailable ? 'Guardadas o listas para validar' : 'Pendientes'}</dd></div>
+          <div><dt>Webhook sandbox</dt><dd>{sandboxWebhookUrl ? 'Disponible' : data.webhook_configured ? 'Falta URL pública' : 'Pendiente'}</dd></div>
           <div><dt>Webhook producción</dt><dd>{productionWebhookUrl ? 'Disponible' : data.webhook_configured ? 'Falta URL pública' : 'Pendiente'}</dd></div>
           <div><dt>Automatización producción</dt><dd>{data.automatic_enabled && productionConnection?.activo ? 'Activa' : 'Pausada'}</dd></div>
         </dl>
@@ -193,16 +211,23 @@ export default function SpeedboxConfig() {
         <ul className="spb-checks">{Object.entries(labels).map(([key, label]) => <li key={key}><span className={data.checks[key] ? 'spb-check-ok' : 'spb-check-pending'}>{data.checks[key] ? <Check size={15} /> : <span aria-hidden="true">-</span>}</span><span>{label}</span><span className="spb-muted">{data.checks[key] ? 'Verificado' : 'Pendiente'}</span></li>)}</ul>
         <div className="spb-step-grid">
           <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('spec', () => speedboxService.probar(credentialsPayload()), 'Autenticación verificada.')}><ShieldCheck size={16} /> Probar autenticación</button>
-          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('store', () => speedboxService.vincular(credentialsPayload()), 'Tienda sandbox creada o vinculada en RAHA.')}><Link2 size={16} /> Crear tienda sandbox en RAHA</button>
+          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('store', () => speedboxService.vincular({ ...credentialsPayload(), force_recreate: Boolean(sandboxConnection?.tienda_id) }), 'Tienda sandbox creada o vinculada en RAHA.')}><Link2 size={16} /> {sandboxStoreActionLabel}</button>
           <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !sandboxConnection?.tienda_id} onClick={() => run('order-test', () => speedboxService.enviarPrueba(credentialsPayload()), 'Pedido sandbox recibido por RAHA.')}><Send size={16} /> Enviar pedido sandbox</button>
           <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !sandboxConnection?.tienda_id} onClick={() => run('updates', () => speedboxService.sincronizar(credentialsPayload()), 'Estados y billetera consultados.')}><RefreshCw size={16} /> Consultar estados</button>
         </div>
         <div className="spb-webhook-box">
-          <div><strong>Webhook producción para pegar en RAHA</strong><p className="spb-muted">Usá este enlace en el portal RAHA de producción. Gesicom identifica la tienda por tienda_id u order_id.</p></div>
+          <div><strong>Webhook sandbox para pruebas</strong><p className="spb-muted">Usá este enlace en el portal sandbox de RAHA. Para probar local necesitás una URL HTTPS pública hacia tu backend local.</p></div>
+          {sandboxWebhookUrl
+            ? <code>{sandboxWebhookUrl}</code>
+            : <p className="spb-webhook-missing">Webhook integrado en Gesicom: /api/webhooks/speedbox. Actualizá el panel para obtener la URL pública completa.</p>}
+          <button type="button" className="spb-button" disabled={disabled || !sandboxWebhookUrl} title={sandboxWebhookUrl ? 'Copiar webhook sandbox' : 'Webhook pendiente de configuración del servidor'} onClick={copySandboxWebhook}><Copy size={16} /> Copiar sandbox</button>
+        </div>
+        <div className="spb-webhook-box">
+          <div><strong>Webhook producción para pegar en RAHA</strong><p className="spb-muted">Usá este enlace solamente cuando RAHA habilite producción.</p></div>
           {productionWebhookUrl
             ? <code>{productionWebhookUrl}</code>
             : <p className="spb-webhook-missing">Webhook integrado en Gesicom: /api/webhooks/speedbox. Actualizá el panel para obtener la URL pública completa.</p>}
-          <button type="button" className="spb-button" disabled={disabled || !productionWebhookUrl} title={productionWebhookUrl ? 'Copiar webhook producción' : 'Webhook pendiente de configuración del servidor'} onClick={copyWebhook}><Copy size={16} /> Copiar webhook</button>
+          <button type="button" className="spb-button" disabled={disabled || !productionWebhookUrl} title={productionWebhookUrl ? 'Copiar webhook producción' : 'Webhook pendiente de configuración del servidor'} onClick={copyProductionWebhook}><Copy size={16} /> Copiar producción</button>
         </div>
         {busy && <Loader size={18} className="spb-spin" aria-label="Procesando" />}
       </section>
@@ -221,7 +246,7 @@ export default function SpeedboxConfig() {
           <label className="spb-checkbox"><input type="checkbox" checked={productionActive} disabled={disabled || !productionConnection?.tienda_id} onChange={event => setProductionActive(event.target.checked)} /> Integración activa</label>
         </div>
         <div className="spb-actions">
-          <button type="button" className="spb-button" disabled={disabled || !productionCredentialsAvailable} onClick={() => run('store-production', () => speedboxService.vincular(productionCredentialsPayload()), 'Tienda producción creada o vinculada en RAHA.', true)}><Link2 size={16} /> Crear tienda producción en RAHA</button>
+          <button type="button" className="spb-button" disabled={disabled || !productionCredentialsAvailable} onClick={() => run('store-production', () => speedboxService.vincular({ ...productionCredentialsPayload(), force_recreate: Boolean(productionConnection?.tienda_id) }), 'Tienda producción creada o vinculada en RAHA.', true)}><Link2 size={16} /> {productionStoreActionLabel}</button>
           <button type="button" className="spb-button spb-primary" disabled={disabled || (productionActive && (!productionConnection?.tienda_id || !productionCredentialsAvailable))} onClick={() => run('save-production', () => speedboxService.guardar({ activo: productionActive, ...productionCredentialsPayload() }), 'Configuración producción guardada.', true)}><Save size={16} /> Guardar producción</button>
           <button type="button" className="spb-button" disabled={disabled} title="Actualizar panel" aria-label="Actualizar panel" onClick={() => run('refresh', () => load(), 'Panel actualizado.')}><RefreshCw size={16} /></button>
         </div>

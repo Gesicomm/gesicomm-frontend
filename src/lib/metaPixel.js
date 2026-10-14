@@ -39,6 +39,8 @@ export function inicializarPixel(pixelId, opts = {}) {
   const { trackPageView = true } = opts;
   const id = String(pixelId || '').trim();
   if (!id || typeof window === 'undefined') return;
+  // Antes de cualquier navegación interna, que saca el fbclid de la URL.
+  capturarFbclid();
 
   if (!window.fbq) {
     /* eslint-disable */
@@ -67,13 +69,67 @@ export function generarEventId() {
   return `ev-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+/**
+ * Respaldo del clic del anuncio. El Pixel crea la cookie _fbc solo si llega a
+ * cargar mientras el fbclid sigue en la URL: con un bloqueador no la crea
+ * nunca, y los primeros eventos de la visita salen antes de que cargue. Se
+ * guarda el fbclid en el formato de _fbc (fb.1.<ms>.<fbclid>) y dura lo mismo
+ * que esa cookie, 90 días.
+ */
+const CLAVE_FBC = 'gesicomm-fbc';
+const DURACION_FBC_MS = 90 * 24 * 60 * 60 * 1000;
+
+function capturarFbclid() {
+  try {
+    const fbclid = new URLSearchParams(window.location.search).get('fbclid');
+    if (!fbclid) return;
+    const guardado = JSON.parse(localStorage.getItem(CLAVE_FBC) || 'null');
+    // Mismo clic (recarga de la página): se conserva la hora del primero.
+    if (guardado?.fbclid === fbclid) return;
+    localStorage.setItem(CLAVE_FBC, JSON.stringify({ fbclid, fbc: `fb.1.${Date.now()}.${fbclid}`, ts: Date.now() }));
+  } catch { /* sin storage: queda la cookie del Pixel, si la crea */ }
+}
+
+function fbcGuardado() {
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE_FBC) || 'null');
+    if (!guardado?.fbc || !(Date.now() - guardado.ts < DURACION_FBC_MS)) return null;
+    return guardado.fbc;
+  } catch {
+    return null;
+  }
+}
+
 /** Cookies que pone el propio Pixel al cargar (_fbc solo si llegó con fbclid). */
 export function leerCookiesFacebook() {
+  if (typeof document === 'undefined') return { fbc: null, fbp: null };
+  capturarFbclid();
   const obtener = (nombre) => {
     const match = document.cookie.match(new RegExp(`(?:^|; )${nombre}=([^;]*)`));
     return match ? decodeURIComponent(match[1]) : null;
   };
-  return { fbc: obtener('_fbc'), fbp: obtener('_fbp') };
+  return { fbc: obtener('_fbc') || fbcGuardado(), fbp: obtener('_fbp') };
+}
+
+/**
+ * Como leerCookiesFacebook, pero si _fbp todavía no existe espera a que el
+ * Pixel termine de cargar y la cree (hasta `maxMs`). Es para los eventos que
+ * salen apenas abre la página (PageView, ViewContent): sin esto la Conversions
+ * API los recibía sin fbp en cada primera visita. Con un bloqueador el Pixel
+ * no carga nunca y se resuelve con lo que haya al vencer el plazo.
+ */
+export function esperarCookiesFacebook(maxMs = 1000) {
+  const inicial = leerCookiesFacebook();
+  if (inicial.fbp || typeof window === 'undefined' || !window.fbq) return Promise.resolve(inicial);
+  return new Promise((resolve) => {
+    const inicio = Date.now();
+    const revisar = () => {
+      const cookies = leerCookiesFacebook();
+      if (cookies.fbp || Date.now() - inicio >= maxMs) resolve(cookies);
+      else setTimeout(revisar, 100);
+    };
+    setTimeout(revisar, 100);
+  });
 }
 
 /**

@@ -3,7 +3,7 @@ import {
   Loader, ArrowRight, ArrowLeft, Search, Check, AlertTriangle, Infinity as InfinityIcon, Tag, Plus, Pencil, X,
   Eye, EyeOff, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
   ChevronsUpDown, ChevronsDownUp,
-  Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, Trash2, ExternalLink, Save, Settings2,
+  Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, Trash2, ExternalLink, Save, Settings2, Copy, Sparkles,
   GripVertical, Lock, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
@@ -12,17 +12,18 @@ import { comboAdminService } from '../../services/comboAdminService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
-import PresentacionProducto, { ROTULOS_BLOQUES_FICHA, bloqueDeZona } from './PresentacionProducto';
+import PresentacionProducto, { BLOQUES_FICHA_PANEL, ROTULOS_BLOQUES_FICHA, bloqueDeZona } from './PresentacionProducto';
 import { usePagoparConectado } from './usePagoparConectado';
 import { contentIdPanel, datosRuntimePreview, itemPanelARuntime, presentacionDelProducto, slugCategoria, textosRecomendados, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
-import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
+import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado, marcarFichaPersonalizada, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
 import { conGlobalesHeredados } from './globalesCodigo';
 import { extraerFragmentoHtml, reemplazarFragmentoHtml, extraerSeccionCss, reemplazarSeccionCss, bindsDeTiendaPerdidos } from './seccionesCodigo';
 import { armarPromptSeccionInicio } from './promptsSeccionInicio';
+import { armarPromptFichaProducto, bloquesFichaFaltantes, faltantesFicha } from './promptsFichaProducto';
 
 // El MISMO editor de ofertas de la ficha de producto (precios, componentes,
 // margen, imagen): acá se abre en un panel lateral para crear o editar sin
@@ -1571,6 +1572,7 @@ export default function ConfigurarVentaCodigo({
       v: 2,
       ...Object.fromEntries(CAMPOS_TEXTO_FICHA.filter(campo => value[campo] != null).map(campo => [campo, value[campo]])),
       ...(value.ficha_bloques && typeof value.ficha_bloques === 'object' ? { ficha_bloques: value.ficha_bloques } : {}),
+      ...(Array.isArray(value.textos_ocultos) ? { textos_ocultos: value.textos_ocultos } : {}),
       ...(Array.isArray(value.ficha_orden_mobile) ? { ficha_orden_mobile: value.ficha_orden_mobile } : {}),
       ...(Array.isArray(value.imagenes_landing) ? { imagenes_landing: value.imagenes_landing } : {}),
       ...(Array.isArray(value.beneficios) ? { beneficios: value.beneficios.filter(b => b && (b.titulo || b.texto)).slice(0, 8) } : {}),
@@ -3412,6 +3414,22 @@ export default function ConfigurarVentaCodigo({
                 </>
               )}
 
+              {seccionConfig === 'fichas' && onCambiarCodigo ? (
+                <Bloque
+                  titulo="Instrucciones para la IA"
+                  ayuda="Cambiá el diseño de la ficha con ChatGPT, Claude o Gemini, sin tocar código. Vale para la ficha de todos los productos de esta tienda."
+                >
+                  <InstruccionesIaFicha
+                    codigos={codigos}
+                    onCambiarCodigo={onCambiarCodigo}
+                    onRestaurarCodigo={onRestaurarCodigo}
+                    tienda={tienda}
+                    venta={ventaActual}
+                    productos={seleccion}
+                    producto={productoConfigActual}
+                  />
+                </Bloque>
+              ) : (
               <Bloque
                 titulo="Código avanzado"
                 ayuda="HTML, CSS y JavaScript quedan guardados acá abajo. Abrilo solo cuando quieras pegar código generado por ChatGPT."
@@ -3430,6 +3448,7 @@ export default function ConfigurarVentaCodigo({
                   </button>
                 </div>
               </Bloque>
+              )}
             </div>
           </div>
         </div>
@@ -4407,6 +4426,129 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
         },
       }))}
       <FilaBloqueInicio numero={fijosArriba.length + movibles.length + 1} etiqueta="Footer" fijo />
+    </div>
+  );
+}
+
+// "Instrucciones para la IA" de Vista producto: el mismo flujo que el diseño
+// de cada sección del Inicio (EditorCodigoSeccion), pero para la ficha entera
+// y sin mostrar código. El comercio copia el prompt maestro de la ficha
+// (promptsFichaProducto.js: estructura, bloques del panel y motor comercial),
+// la IA le pregunta qué quiere y devuelve HTML/CSS/JS, y al pegarlo acá
+// reemplaza la ficha. Queda marcada como propia: si no, se la tomaba por la
+// base y la vista previa, el guardado y la página publicada volvían a la
+// plantilla (ver esFichaProductoBase).
+export function InstruccionesIaFicha({ codigos, onCambiarCodigo, onRestaurarCodigo, tienda, venta, productos, producto }) {
+  const esBase = esFichaProductoBase(codigos?.producto?.html);
+  const actual = esBase ? PLANTILLA_PRODUCTO : codigos.producto;
+  const [pegado, setPegado] = useState('');
+  const [copiado, setCopiado] = useState(false);
+  const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
+  const [confirmarBase, setConfirmarBase] = useState(false);
+
+  function copiarInstrucciones() {
+    const prompt = armarPromptFichaProducto({ tienda, venta, productos, producto, base: actual });
+    navigator.clipboard?.writeText(prompt).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    }).catch(() => setError('No se pudo copiar. Probá de nuevo.'));
+  }
+
+  function aplicar() {
+    const dividido = dividirCodigoPegado(pegado);
+    if (!dividido.html && !dividido.css && !dividido.js) {
+      setError('No encontramos código en lo que pegaste. Pegá la respuesta completa de la IA, con sus bloques html, css y js.');
+      return;
+    }
+    if (dividido.html) {
+      const faltan = faltantesFicha(dividido.html);
+      if (faltan.length) {
+        setError(`A la ficha nueva le falta ${faltan.join(', ')}. Pedile a la IA que lo agregue y volvé a pegar la respuesta.`);
+        return;
+      }
+    }
+    setError('');
+    const html = marcarFichaPersonalizada(dividido.html ?? actual.html);
+    onCambiarCodigo('producto', 'html', html);
+    onCambiarCodigo('producto', 'css', dividido.css ?? actual.css ?? '');
+    onCambiarCodigo('producto', 'js', dividido.js ?? actual.js ?? '');
+    const sinConexion = bloquesFichaFaltantes(html, BLOQUES_FICHA_PANEL.map(b => b.clave))
+      .map(clave => BLOQUES_FICHA_PANEL.find(b => b.clave === clave))
+      .map(b => `${b.numero} · ${b.titulo}`);
+    // Una IA que devuelve solo "lo que cambió" deja la ficha sin estilos.
+    const cssCorto = dividido.css !== undefined && dividido.css.trim().length < 2500;
+    setAviso([
+      'Listo: la vista previa ya muestra la ficha nueva.',
+      sinConexion.length && `Ojo: estos bloques ya no están conectados al panel (no se pueden ocultar, ordenar ni marcar): ${sinConexion.join(', ')}. Si los querés, pedile a la IA que conserve su data-gesicomm-ficha-bloque.`,
+      cssCorto && 'El CSS que devolvió la IA es muy corto: si la ficha se ve sin estilos, pedile el CSS completo de la ficha, no solo lo que cambió.',
+      'Guardá para publicarla.',
+    ].filter(Boolean).join(' '));
+    setPegado('');
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-border bg-surface-2/60 px-4 py-3">
+        <p className="text-sm font-semibold text-fg">{esBase ? 'Tu ficha usa el diseño base de Gesicomm' : 'Tu ficha tiene un diseño propio'}</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-fg-muted">
+          Las instrucciones le explican a la IA cómo está armada la ficha, qué hace cada bloque de este panel y el motor comercial (precio, oferta, order bump, paquetes, botones de compra). Lo que cargás en los bloques de arriba sigue funcionando con el diseño nuevo.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-fg-muted">1 · Copiá las instrucciones</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={copiarInstrucciones}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-surface border border-border text-sm font-semibold text-fg hover:border-border-strong"
+          >
+            {copiado ? <Check size={15} /> : <Copy size={15} />} {copiado ? 'Instrucciones copiadas' : 'Copiar instrucciones para la IA'}
+          </button>
+        </div>
+        <p className="text-[12px] leading-relaxed text-fg-muted">Pegalas en ChatGPT, Claude o Gemini. La IA te va a preguntar qué querés cambiar y cómo lo querés ver antes de generar nada: respondele ahí (podés subir una imagen de referencia). Si tu IA convierte el texto en un archivo adjunto, está bien.</p>
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="ia-ficha-respuesta" className="block text-xs font-semibold uppercase tracking-wide text-fg-muted">2 · Pegá la respuesta de la IA</label>
+        <textarea
+          id="ia-ficha-respuesta"
+          value={pegado}
+          onChange={e => { setPegado(e.target.value); setError(''); setAviso(''); }}
+          rows={5}
+          spellCheck={false}
+          placeholder="Pegá acá la respuesta completa de la IA (los bloques html, css y js)"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-mono text-fg outline-none focus:border-primary"
+        />
+        <button
+          type="button"
+          onClick={aplicar}
+          disabled={!pegado.trim()}
+          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-primary text-primary-fg text-sm font-semibold disabled:opacity-45"
+        >
+          <Sparkles size={15} /> Aplicar a la ficha
+        </button>
+      </div>
+
+      {error && <p role="alert" className="flex items-start gap-1.5 text-[13px] text-danger"><AlertTriangle size={14} className="mt-0.5 shrink-0" />{error}</p>}
+      {aviso && <p role="status" className="text-[13px] text-success">{aviso}</p>}
+
+      {!esBase && onRestaurarCodigo && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          {confirmarBase ? (
+            <>
+              <span className="text-[13px] text-fg">¿Volver al diseño base? Se pierde el diseño propio de la ficha.</span>
+              <button type="button" onClick={() => { onRestaurarCodigo('producto'); setConfirmarBase(false); setAviso('La ficha volvió al diseño base. Guardá para publicarla.'); }} className="h-8 px-3 rounded-lg bg-danger text-white text-xs font-semibold">Sí, volver</button>
+              <button type="button" onClick={() => setConfirmarBase(false)} className="h-8 px-3 rounded-lg border border-border text-xs font-semibold text-fg-muted hover:text-fg">Cancelar</button>
+            </>
+          ) : (
+            <button type="button" onClick={() => setConfirmarBase(true)} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-xs font-semibold text-fg-muted hover:text-fg">
+              <RefreshCw size={13} /> Volver al diseño base
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

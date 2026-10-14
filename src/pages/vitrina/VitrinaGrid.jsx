@@ -371,6 +371,7 @@ export default function VitrinaGrid() {
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [filtroProveedor, setFiltroProveedor] = useState('');
   const [busqueda, setBusqueda]   = useState('');
+  const [busquedaAplicada, setBusquedaAplicada] = useState('');
   const [orden, setOrden]         = useState('nombre');
   const [seleccionSensibilidad, setSeleccionSensibilidad] = useState(null);
   const [categoriasUnicas, setCategoriasUnicas] = useState([]);
@@ -399,6 +400,11 @@ export default function VitrinaGrid() {
   useEffect(() => {
     verificarSesion().then(u => setUsuarioActual(u));
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setBusquedaAplicada(busqueda), 300);
+    return () => clearTimeout(timer);
+  }, [busqueda]);
   
   const toggleSeleccion = (item) => {
     setSeleccionados(prev => {
@@ -433,7 +439,7 @@ export default function VitrinaGrid() {
     return {
       page,
       limit: 10,
-      busqueda,
+      busqueda: busquedaAplicada,
       filtroCategoria,
       filtroProveedor,
       orden,
@@ -442,7 +448,7 @@ export default function VitrinaGrid() {
       origenCatalogo: filtro === 'producto' || filtro === 'combo' ? 'GESICOMM' : null,
       ...overrides,
     };
-  }, [page, busqueda, filtroCategoria, filtroProveedor, orden, filtro]);
+  }, [page, busquedaAplicada, filtroCategoria, filtroProveedor, orden, filtro]);
 
   /* Items ya filtrados por el backend */
   const itemsFiltrados = items;
@@ -683,13 +689,17 @@ export default function VitrinaGrid() {
   // "Productos propios" apenas entrar dejaba la pestaña marcada con los 354
   // productos de Gesicom en la grilla (llegaba última la carga inicial).
   const ultimaCarga = useRef(0);
+  const peticionCatalogo = useRef(null);
   const cargar = useCallback(async () => {
     const numero = ++ultimaCarga.current;
+    peticionCatalogo.current?.abort();
+    const controller = new AbortController();
+    peticionCatalogo.current = controller;
     const vigente = () => numero === ultimaCarga.current;
     setCargando(true);
     setError(null);
     try {
-      const data = await vitrinaService.catalogoPaginado(getFiltrosCatalogo());
+      const data = await vitrinaService.catalogoPaginado(getFiltrosCatalogo(), { signal: controller.signal });
       if (!vigente()) return;
       setItems(data.items || []);
       setCategoriasUnicas(data.categorias || []);
@@ -701,15 +711,24 @@ export default function VitrinaGrid() {
     } finally {
       if (vigente()) setCargando(false);
     }
-  }, [filtro, page, busqueda, filtroCategoria, filtroProveedor, orden, getFiltrosCatalogo]);
+  }, [getFiltrosCatalogo]);
 
   // Si cambia un filtro (excepto la pagina), volver a pagina 1
   useEffect(() => {
     setPage(1);
     setSeleccionTotalKeys(new Set());
-  }, [busqueda, filtroCategoria, filtroProveedor, orden, filtro]);
+  }, [busquedaAplicada, filtroCategoria, filtroProveedor, orden, filtro]);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => {
+    // Deja que el reset a página 1 se aplique antes de iniciar la petición.
+    let cancelada = false;
+    Promise.resolve().then(() => { if (!cancelada) cargar(); });
+    return () => {
+      cancelada = true;
+      ++ultimaCarga.current;
+      peticionCatalogo.current?.abort();
+    };
+  }, [cargar]);
 
   async function handleGuardarPrecio(item, precio) {
     if (item.tipo === 'combo') {

@@ -642,6 +642,7 @@
 }
 
 .gw-cfg-field { flex: 1 1 190px; min-width: 0; }
+.gw-cfg-field--transition { flex-basis: 100%; }
 
 .gw-cfg-label {
   display: flex;
@@ -654,6 +655,26 @@
 }
 
 .gw-cfg-row { display: flex; gap: 0.4rem; align-items: center; }
+
+.gw-transition-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.gw-transition-arrow {
+  color: var(--color-fg-subtle);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.gw-transition-help {
+  margin: 0.35rem 0 0;
+  color: var(--color-fg-muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
 
 /* Tooltip por atributo: una sola explicación, sin repetirla bajo cada fase */
 

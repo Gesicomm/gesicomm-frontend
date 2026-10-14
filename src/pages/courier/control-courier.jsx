@@ -168,6 +168,24 @@ export function ControlCourier() {
     return actualizado;
   };
 
+  const handlePrepararDesdeSeguimiento = async (envio) => {
+    const actualizado = await updateEstadoEnvio(envio.id, { estado: "Preparado" });
+    setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
+    setSeguimientoEnvio(actualizado);
+    cargarDatos();
+    setRefrescarKey(k => k + 1);
+    return actualizado;
+  };
+
+  const handleCambiarEstadoDesdeSeguimiento = async (envio, estado) => {
+    const actualizado = await updateEstadoEnvio(envio.id, { estado });
+    setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
+    setSeguimientoEnvio(actualizado);
+    cargarDatos();
+    setRefrescarKey(k => k + 1);
+    return actualizado;
+  };
+
   const handleCreateNuevoPedido = async (payload) => {
     const res = await createEnvio(payload);
     setEnvios(prev => [res, ...prev]);
@@ -390,6 +408,8 @@ export function ControlCourier() {
           setSeguimientoEnvio(null);
           setEnvioParaCompletar(envio);
         }}
+        onCambiarEstadoPedido={handleCambiarEstadoDesdeSeguimiento}
+        onPrepararPedido={handlePrepararDesdeSeguimiento}
         onDespacharPedido={handleDespacharDesdeSeguimiento}
         onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
       />

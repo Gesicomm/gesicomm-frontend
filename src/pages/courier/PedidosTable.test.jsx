@@ -154,7 +154,7 @@ test("el estado que se muestra es el de la etapa que se está mirando", async ()
   expect(estado("Cliente 5")).toHaveTextContent(/^Sin seguimiento$/);
 });
 
-test("Logística tiene el subestado Envíos RAHA y muestra timeline sin cambio manual", async () => {
+test("Logística tiene el subestado Envíos RAHA y muestra solo estados RAHA sin cambio manual", async () => {
   getConteoPorEstado.mockResolvedValue({
     Preparado: 1,
     Despachado: 0,
@@ -196,17 +196,25 @@ test("Logística tiene el subestado Envíos RAHA y muestra timeline sin cambio m
 
   await waitFor(() => expect(ultimoPedido()).toMatchObject({ logistica_raha: true }));
   const fila = await screen.findByText("Cliente 9").then((el) => el.closest("tr"));
-  expect(within(fila).getByText("En camino")).toBeInTheDocument();
-  expect(within(fila).getByText("RAHA #900000000123456 · Tienda RAHA #65 · Pedido de Mobfre · Enviado como sommix")).toBeInTheDocument();
-  expect(within(fila).queryByRole("button", { name: /Confirmado|Preparado|Despachado|En camino/ })).not.toBeInTheDocument();
+  expect(within(fila).getByText("En tránsito")).toBeInTheDocument();
+  expect(within(fila).queryByText(/Tienda RAHA/)).not.toBeInTheDocument();
+  expect(within(fila).queryByText(/Enviado como/)).not.toBeInTheDocument();
+  expect(within(fila).queryByRole("button", { name: /Confirmado|Preparado|Despachado|En tránsito/ })).not.toBeInTheDocument();
+  expect(within(fila).queryByRole("button", { name: /Ver timeline/ })).not.toBeInTheDocument();
 
-  fireEvent.click(within(fila).getByRole("button", { name: /Ver timeline/ }));
-  expect(await screen.findByText("Logística RAHA")).toBeInTheDocument();
-  expect(screen.getAllByText("Tienda RAHA")[0]).toBeInTheDocument();
-  expect(screen.getByText("Mobfre")).toBeInTheDocument();
-  expect(screen.getByText("sommix")).toBeInTheDocument();
-  expect(screen.getByText("GESICOMM-sandbox-7-9")).toBeInTheDocument();
-  expect(screen.getByText(/Estos estados vienen de RAHA/)).toBeInTheDocument();
+  fireEvent.click(fila);
+  const estados = await screen.findByLabelText("Timeline RAHA del pedido #1809");
+  expect(within(estados).getByText("Registrado")).toBeInTheDocument();
+  expect(within(estados).getByText("Despachado")).toBeInTheDocument();
+  expect(within(estados).getByText("En tránsito")).toBeInTheDocument();
+  expect(within(estados).getByText("Entregado")).toBeInTheDocument();
+  expect(within(estados).queryByText("Devuelto")).not.toBeInTheDocument();
+  expect(screen.queryByText("Estado actual RAHA")).not.toBeInTheDocument();
+  expect(screen.queryByText("Resultado")).not.toBeInTheDocument();
+  expect(screen.queryByText("Mobfre")).not.toBeInTheDocument();
+  expect(screen.queryByText("sommix")).not.toBeInTheDocument();
+  expect(screen.queryByText("GESICOMM-sandbox-7-9")).not.toBeInTheDocument();
+  expect(screen.queryByText(/Estos estados vienen de RAHA/)).not.toBeInTheDocument();
   expect(onChangeEstado).not.toHaveBeenCalled();
 });
 
@@ -248,7 +256,7 @@ test("Logística RAHA muestra cuando falta la confirmación de RAHA", async () =
 
   const fila = await screen.findByText("Cliente 10").then((el) => el.closest("tr"));
   expect(within(fila).getByText("Pendiente de confirmación RAHA")).toBeInTheDocument();
-  expect(within(fila).getByText("RAHA #900000000999999 · Tienda RAHA #65 · Pedido de Mobfre · Enviado como sommix")).toBeInTheDocument();
+  expect(within(fila).queryByText(/Tienda RAHA/)).not.toBeInTheDocument();
 });
 
 test("el teléfono va en su propia columna y ya no hay botón de WhatsApp en el cliente", async () => {
