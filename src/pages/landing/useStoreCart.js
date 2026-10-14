@@ -368,6 +368,10 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       redirigido: false,
       pedido_id: checkout.pedido_id,
       numero_pedido: checkout.numero_pedido,
+      numero_pedido_tienda: checkout.numero_pedido_tienda,
+      numero_pedido_visible: checkout.numero_pedido_visible,
+      tienda_id: checkout.tienda_id,
+      tienda_nombre: checkout.tienda_nombre,
       payment_data: checkout.payment_data,
     };
   }

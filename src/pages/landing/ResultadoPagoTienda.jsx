@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Clock, Loader } from 'lucide-react';
@@ -101,7 +102,7 @@ export default function ResultadoPagoTienda() {
         <CheckCircle2 className="mx-auto mb-4 text-emerald-500" size={48} />
         <h1 className="text-2xl font-semibold">Pago acreditado</h1>
         <p className="mt-3 text-sm text-slate-600">
-          Recibimos el pago del pedido #{estado.numero_pedido || estado.pedido_id}
+          Recibimos el pago del pedido #{numeroPedidoVisible(estado)}
           {estado.monto ? <> por <strong>{formatMoneda(estado.monto)}</strong></> : null}.
         </p>
         <p className="mt-3 text-sm text-slate-600">

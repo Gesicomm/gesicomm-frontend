@@ -1,3 +1,1 @@
-export function numeroPedidoVisible(envio) {
-  return envio?.numero_pedido || envio?.id || "—";
-}
+export { numeroPedidoVisible } from '../../lib/pedidoNumero';

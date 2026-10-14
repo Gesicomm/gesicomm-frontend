@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import React, { useState, useEffect } from "react";
 import { reportesService } from "../../services/reportesApi";
 import { formatPrecio } from "../../lib/mensajeWhatsapp";
@@ -285,7 +286,7 @@ export default function VistaPedidos({ filtros }) {
                       className={`cursor-pointer border-b border-[var(--vit-border)] transition-colors hover:bg-[var(--vit-bg-secondary)] ${pedidoExpandido?.id === p.id ? "bg-[var(--vit-bg-secondary)]" : ""}`}
                     >
                       <td className="p-4 font-mono text-[var(--vit-text)] font-bold">
-                        #{p.id}
+                        {numeroPedidoVisible(p)}
                       </td>
                       <td className="p-4 text-[var(--vit-text)]">
                         <div className="font-medium">{p.cliente}</div>
@@ -363,7 +364,7 @@ export default function VistaPedidos({ filtros }) {
             <div className="p-4 border-b border-[var(--vit-border)] flex items-center justify-between bg-[var(--vit-card-bg)] shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-[var(--vit-text)]">
-                  Pedido #{pedidoExpandido.id}
+                  Pedido {numeroPedidoVisible(pedidoExpandido)}
                 </h3>
                 <p className="text-sm text-[var(--vit-muted)]">
                   {pedidoExpandido.cliente}

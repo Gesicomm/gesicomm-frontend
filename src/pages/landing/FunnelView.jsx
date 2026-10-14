@@ -477,7 +477,7 @@ export default function FunnelView({ data, slug, productId }) {
     }
 
     if (!itemsOverride) setCarrito(new Map());
-    return { redirigido, pedido_id: resultado.pedido_id, numero_pedido: resultado.numero_pedido, payment_data: resultado.payment_data };
+    return { ...resultado, redirigido };
   }
 
   /**

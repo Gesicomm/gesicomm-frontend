@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { formatGs } from "../../lib/courier";
 import { AlertCircle, Bike, Car, Clock, CreditCard, Package, Phone, ShoppingBag, MapPin, MessageCircle, Truck } from "lucide-react";
 import { STAGE_LABELS, estadoDePedido } from "./orderLifecycle";
+import { numeroPedidoVisible } from "./pedidoNumero";
 
 function VehiculoIcon({ v }) {
   if (v === "Moto" || v === "Bicicleta") return <Bike size={13} />;
@@ -101,6 +102,7 @@ export function OrderCard({
     >
       <div className="order-card-top">
         <div>
+          <p style={{ margin: '0 0 4px', fontSize: '0.75rem', color: 'var(--color-fg-muted)', overflowWrap: 'anywhere' }}>{numeroPedidoVisible(envio)}</p>
           <h4 className="order-card-client">{nombreCliente}</h4>
           {ubicacionLabel && (
             <p className="order-card-address" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>

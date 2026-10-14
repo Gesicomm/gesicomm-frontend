@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import React, { useState, useEffect } from 'react';
 import { X, Landmark, UploadCloud, AlertCircle, CheckCircle2, Copy } from 'lucide-react';
 import { obtenerDatosTransferenciaAbastecimiento, subirComprobanteAbastecimiento } from '../../services/courierApi';
@@ -87,7 +88,7 @@ export default function TransferenciaAbastecimientoModal({ envio, open, onClose,
         <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-4 flex-shrink-0">
           <div>
             <h2 className="m-0 text-lg font-semibold text-fg">Pagar abastecimiento</h2>
-            <p className="m-0 mt-0.5 text-sm text-fg-muted">Pedido #{envio.numero_pedido || envio.id}</p>
+            <p className="m-0 mt-0.5 text-sm text-fg-muted">Pedido #{numeroPedidoVisible(envio)}</p>
           </div>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg">
             <X size={18} />

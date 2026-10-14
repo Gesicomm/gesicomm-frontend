@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import React, { useState, useEffect } from 'react';
 import { X, Package, Truck, CheckCircle2, AlertCircle, Check, Loader } from 'lucide-react';
 import { actualizarLogisticaAbastecimiento, cotizarLogisticaAbastecimiento } from '../../services/courierApi';
@@ -145,7 +146,7 @@ export default function LogisticaAbastecimientoModal({ envio, open, onClose, onP
         <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-4 flex-shrink-0">
           <div>
             <h2 className="m-0 text-lg font-semibold text-fg">Logística de Abastecimiento</h2>
-            <p className="m-0 mt-0.5 text-sm text-fg-muted">Pedido #{envio.id}</p>
+            <p className="m-0 mt-0.5 text-sm text-fg-muted">Pedido {numeroPedidoVisible(envio)}</p>
           </div>
           <button
             type="button"

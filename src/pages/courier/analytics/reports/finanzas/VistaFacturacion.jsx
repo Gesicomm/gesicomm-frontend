@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from '../../../pedidoNumero';
 import React, { useState, useEffect } from 'react';
 import { FileText, Calculator, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { reportesService } from '../../../../../services/reportesApi';
@@ -148,7 +149,7 @@ export function VistaFacturacion({ filters }) {
               ) : (
                 data.map((row) => (
                   <tr key={row.id}>
-                    <td>#{row.id}</td>
+                    <td>{numeroPedidoVisible(row)}</td>
                     <td>{row.fecha}</td>
                     <td>{row.confirmador || 'N/A'}</td>
                     <td>

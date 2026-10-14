@@ -20,7 +20,7 @@ vi.mock("../../utils/auth", () => ({ verificarSesion: vi.fn(async () => ({ id: 7
 import { getEnviosPaginados, getConteoPorEstado } from "../../services/courierApi";
 
 const pedido = (id, estado, extra = {}) => ({
-  id, numero_pedido: 1800 + id, estado, nombre_cliente: `Cliente ${id}`, telefono: "0981 111 222",
+  id, numero_pedido: 1800 + id, tienda_nombre: "Mi tienda", estado, nombre_cliente: `Cliente ${id}`, telefono: "0981 111 222",
   ciudad: "Luque", monto: 150000, costo_envio: 0, createdAt: "2026-10-11T12:00:00.000Z",
   items: [{ nombre_producto: "Mancuerna 5kg", cantidad: 1 }],
   ...extra,
@@ -82,6 +82,17 @@ test("un pedido confirmado se prepara directo desde su fila", async () => {
   await waitFor(() => expect(onChangeEstado).toHaveBeenCalledWith(1, "Preparado", expect.objectContaining({ id: 1 })));
 });
 
+test("tabla y Kanban muestran la referencia de la tienda y la búsqueda envía el texto completo", async () => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, "Confirmado", { tienda_id: 9, numero_pedido: 3, numero_pedido_tienda: 1 })], total: 1, totalPages: 1 });
+  await montar();
+  expect(screen.getByText("MIT-1001")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("textbox", { name: "Buscar por número de pedido" }), { target: { value: "MIT-1001" } });
+  await waitFor(() => expect(getEnviosPaginados).toHaveBeenLastCalledWith(expect.objectContaining({ pedido_id: "MIT-1001" })));
+  fireEvent.click(screen.getByRole("button", { name: /Kanban/ }));
+  irAEtapa("Logística");
+  expect(await screen.findByText("MIT-1001")).toBeInTheDocument();
+});
+
 test("la vista Kanban del Tablero tampoco muestra avisos de abastecimiento", async () => {
   await montar();
 
@@ -120,7 +131,7 @@ test("las etapas son Comercial, Logística y Recompra, y cada una pide solo sus 
   expect(ultimoPedido()).toMatchObject({ estados: ["Pendiente", "EnSeguimiento", "Cancelado"], incluir_seguimiento: true });
   const chips = () => screen.getAllByRole("button").filter((b) => b.classList.contains("pt-status-chip")).map((b) => b.textContent.replace(/\d+$/, ""));
   expect(chips()).toEqual(["Todos", "Pendiente", "Cancelado"]);
-  expect(encabezados()).toEqual(["#", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Estado comercial", "Seguimiento", "Acción"]);
+  expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Estado comercial", "Seguimiento", "Acción"]);
 
   irAEtapa("Logística");
   await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]));
@@ -214,7 +225,7 @@ test("Logística tiene el subestado Envíos RAHA y muestra solo estados RAHA sin
   expect(within(fila).queryByRole("button", { name: /Ver timeline/ })).not.toBeInTheDocument();
 
   fireEvent.click(fila);
-  const estados = await screen.findByLabelText("Timeline RAHA del pedido #1809");
+  const estados = await screen.findByLabelText("Timeline RAHA del pedido #MIT-2809");
   expect(within(estados).getByText("Registrado")).toBeInTheDocument();
   expect(within(estados).getByText("Despachado")).toBeInTheDocument();
   expect(within(estados).getByText("En tránsito")).toBeInTheDocument();

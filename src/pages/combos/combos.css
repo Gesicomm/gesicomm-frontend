@@ -126,10 +126,10 @@
 }
 
 .combo-cost-tab.active {
-  background: color-mix(in srgb, var(--color-bg, #fff) 92%, var(--color-fg) 8%);
-  border-color: color-mix(in srgb, var(--color-fg) 14%, transparent);
+  background: var(--color-surface-2);
+  border-color: var(--color-border-strong);
   color: var(--color-fg);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* dot de color por tipo de operación */

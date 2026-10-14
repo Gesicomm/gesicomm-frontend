@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import React from 'react';
 import { X, History } from 'lucide-react';
 import AbastecimientoTimeline from './AbastecimientoTimeline';
@@ -19,7 +20,7 @@ export default function AbastecimientoTimelineModal({ envio, open, onClose, esAd
               <span className="block text-[11px] font-bold uppercase tracking-wider text-fg-subtle">
                 {esFinal ? 'Finalizado' : 'Seguimiento de abastecimiento'}
               </span>
-              <h2 className="m-0 text-lg font-semibold text-fg">Pedido #{envio.numero_pedido || envio.id}</h2>
+              <h2 className="m-0 text-lg font-semibold text-fg">Pedido #{numeroPedidoVisible(envio)}</h2>
             </div>
           </div>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg">

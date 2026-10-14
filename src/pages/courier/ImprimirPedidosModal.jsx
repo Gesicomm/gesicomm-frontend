@@ -293,7 +293,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
                       onChange={() => toggleSelectOrder(e.id)}
                     />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      #{e.id} - {e.nombre_cliente ? `${e.nombre_cliente} ${e.apellido_cliente || ''}` : e.cliente || 'Cliente'}
+                      {numeroPedidoVisible(e)} - {e.nombre_cliente ? `${e.nombre_cliente} ${e.apellido_cliente || ''}` : e.cliente || 'Cliente'}
                     </span>
                   </label>
                 ))}

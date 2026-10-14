@@ -14,7 +14,7 @@ import { FlujosWhatsapp } from './FlujosWhatsapp';
 const VARIABLES = [
   { key: 'cliente_nombre',    grupo: 'Cliente', desc: 'Nombre del cliente',            ejemplo: 'María González' },
   { key: 'telefono',          grupo: 'Cliente', desc: 'Teléfono del cliente',          ejemplo: '0981 234 567' },
-  { key: 'pedido_id',         grupo: 'Pedido',  desc: 'Número del pedido',             ejemplo: '1842' },
+  { key: 'pedido_id',         grupo: 'Pedido',  desc: 'Número del pedido',             ejemplo: 'TIE-1001' },
   { key: 'productos',         grupo: 'Pedido',  desc: 'Lista de productos del pedido', ejemplo: 'Zapatilla Urban Black, Remera Oversize' },
   { key: 'total_gs',          grupo: 'Pedido',  desc: 'Monto total en guaraníes',      ejemplo: 'Gs. 249.000' },
   { key: 'direccion_entrega', grupo: 'Envío',   desc: 'Dirección de entrega',          ejemplo: 'Av. Mariscal López 1234, Asunción' },

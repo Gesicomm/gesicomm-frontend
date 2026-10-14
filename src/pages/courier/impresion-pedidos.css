@@ -147,6 +147,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  gap: 6px;
 }
 
 .etiqueta-header-title {
@@ -162,7 +163,8 @@
   font-size: 8pt;
   font-weight: bold;
   color: #222;
-  white-space: nowrap;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .etiqueta-row {

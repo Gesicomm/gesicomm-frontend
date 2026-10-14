@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CodigoPreview from './CodigoPreview';
@@ -358,7 +359,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       if (res?.payment_data?.payment_url) {
         // 'redirigiendo' y no 'enviando': el carrito ya está vacío y el
         // checkout mostraba "no tiene productos" mientras cargaba PagoPar.
-        setCheckoutEstado({ estado: 'redirigiendo', mensaje: 'Un momento: abrimos el pago seguro para que completes tu compra.', pedido_id: res?.pedido_id, numero_pedido: res?.numero_pedido });
+        setCheckoutEstado({ ...res, estado: 'redirigiendo', mensaje: 'Un momento: abrimos el pago seguro para que completes tu compra.' });
         window.location.href = res.payment_data.payment_url;
         return;
       }
@@ -367,16 +368,18 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         // checkout mostraba "Tu pedido todavía no tiene productos", que no
         // decía nada de lo que había pasado.
         setCheckoutEstado({
+          ...res,
           estado: 'pago_pendiente',
-          mensaje: `Recibimos tu pedido ${res?.numero_pedido || ''}, pero no pudimos abrir el pago online en este momento.`,
+          mensaje: `Recibimos tu pedido ${numeroPedidoVisible(res)}, pero no pudimos abrir el pago online en este momento.`,
           pedido_id: res?.pedido_id,
           numero_pedido: res?.numero_pedido,
         });
         return;
       }
       setCheckoutEstado({
+        ...res,
         estado: 'confirmado',
-        mensaje: `Pedido ${res?.numero_pedido || res?.pedido_id || ''} confirmado.`,
+        mensaje: `Pedido ${numeroPedidoVisible(res)} confirmado.`,
         pedido_id: res?.pedido_id,
         numero_pedido: res?.numero_pedido,
       });

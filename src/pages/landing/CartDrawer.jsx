@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, ArrowRight, Check, Loader, Sparkles, Zap, MapPin, Award, ShieldCheck, Banknote, CreditCard } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
@@ -1093,6 +1094,7 @@ export default function CartDrawer({
               <div className="lp-cart-confirmado">
                 <div className="lp-cart-confirmado-icono"><Check size={30} /></div>
                 <h3>¡Pedido recibido!</h3>
+                {resultado && <p>Pedido {numeroPedidoVisible(resultado)}</p>}
                 <p>
                   {resultado?.redirigido
                     ? 'Te vamos a escribir por WhatsApp para coordinar el pago y la entrega.'

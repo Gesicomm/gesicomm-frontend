@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import React, { useState, useEffect } from 'react';
 import { reportesService } from '../../services/reportesApi';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
@@ -128,7 +129,7 @@ export default function VistaItems({ filtros }) {
                 return (
                   <tr key={it.id} className="border-b border-[var(--vit-border)] hover:bg-[var(--vit-bg-secondary)] transition-colors">
                     <td className="p-4 font-mono font-bold text-[var(--vit-text)]">
-                      {it.Envio?.numero_pedido ? `#${it.Envio.numero_pedido}` : `#${it.envio_id}`}
+                      {numeroPedidoVisible(it.Envio)}
                     </td>
                     <td className="p-4 text-[var(--vit-text)]">
                       <div>{formatFecha(it.Envio?.fecha)}</div>

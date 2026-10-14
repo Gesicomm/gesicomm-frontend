@@ -1,3 +1,4 @@
+import { numeroPedidoVisible } from './pedidoNumero';
 /**
  * Construcción del link de WhatsApp.
  *
@@ -101,6 +102,7 @@ export function generarPreviewMensajeGeneral(plantilla, opciones = {}) {
  * @param {Array<{nombre, varianteNombre, cantidad, precio}>} items
  * @param {{numero_pedido?: number|string, pedido_id?: number|string}} pedido
  */
+
 export function armarLinkWhatsappCarrito(contacto, items, pedido = {}) {
   if (!contacto?.whatsapp || items.length === 0) return null;
 
@@ -111,8 +113,8 @@ export function armarLinkWhatsappCarrito(contacto, items, pedido = {}) {
   }).join('\n');
 
   const total = items.reduce((suma, it) => suma + it.precio * it.cantidad, 0);
-  const numero = pedido.numero_pedido || pedido.pedido_id;
-  const encabezado = numero
+  const numero = numeroPedidoVisible(pedido);
+  const encabezado = numero !== '—'
     ? `Hola, hice el pedido #${numero}.`
     : 'Hola, quiero confirmar este pedido.';
   let mensaje = `${encabezado}\n\nProductos:\n${resumen}\nTotal: ${formatPrecio(total)}`;

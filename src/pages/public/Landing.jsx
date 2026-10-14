@@ -504,7 +504,7 @@ export default function Landing() {
                         <CheckCircle2 size={16} />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-fg">Pedido #1044 Confirmado</p>
+                        <p className="text-sm font-medium text-fg">Pedido TIE-1001 Confirmado</p>
                         <p className="text-xs text-fg-subtle">Stock descontado automáticamente</p>
                       </div>
                     </div>

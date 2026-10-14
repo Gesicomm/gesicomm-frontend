@@ -60,7 +60,7 @@ function DrawerConEstado({ onConfirmarPedido }) {
 
 describe('CartDrawer upsell', () => {
   it('muestra el upsell como pop-up y confirma recién cuando la línea aceptada ya está en el carrito', async () => {
-    const confirmar = vi.fn().mockResolvedValue({ pedido_id: 1, numero_pedido: 101 });
+    const confirmar = vi.fn().mockResolvedValue({ pedido_id: 1, numero_pedido: 3, numero_pedido_tienda: 1, tienda_id: 9, tienda_nombre: 'Alibaguay' });
     render(<DrawerConEstado onConfirmarPedido={confirmar} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Finalizar compra/i }));
@@ -78,6 +78,7 @@ describe('CartDrawer upsell', () => {
     fireEvent.click(screen.getByRole('button', { name: /Sí, agregar por 120\.000 Gs/i }));
 
     await waitFor(() => expect(confirmar).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('Pedido ALI-1001')).toBeInTheDocument();
     const pedido = confirmar.mock.calls[0][0];
     expect(pedido.items.map(i => i.ofertaId)).toEqual([undefined, 77]);
     expect(pedido.form).toMatchObject({

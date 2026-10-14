@@ -1257,12 +1257,13 @@ export function PedidosTable({
 
       {/* ── Toolbar de filtros principales ── */}
       <div className="pt-toolbar" style={{ marginTop: "0.75rem" }}>
-        <div className="pt-search-wrap" style={{ flex: "0 0 160px" }}>
+        <div className="pt-search-wrap" style={{ flex: "0 1 240px" }}>
           <Package size={14} className="pt-search-icon" />
           <input
             type="text"
             className="pt-search"
-            placeholder="Nro. pedido..."
+            placeholder="ALI-1001 o número..."
+            aria-label="Buscar por número de pedido"
             value={filtros.pedido_id}
             onChange={(e) => setFiltro("pedido_id", e.target.value)}
           />
@@ -1499,7 +1500,7 @@ export function PedidosTable({
         <table className="pt-table">
           <thead>
             <tr>
-              <th className="pt-th pt-th-id">#</th>
+              <th className="pt-th pt-th-id">Pedido</th>
               <th className="pt-th">Fecha</th>
               {soloAbastecimiento ? (
                 <>
@@ -1584,7 +1585,7 @@ export function PedidosTable({
                     }}
                   >
                     <td className="pt-td pt-td-id" data-label="Pedido">
-                      <span>#{numeroPedidoVisible(e)}</span>
+                      <span>{numeroPedidoVisible(e)}</span>
                       {esAdmin && Number(e.id) !== Number(e.numero_pedido) && (
                         <span style={{ display: "block", marginTop: "2px", color: "var(--color-fg-subtle)", fontSize: "0.68rem", fontWeight: 600 }}>
                           ID {e.id}

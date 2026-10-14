@@ -60,7 +60,7 @@ const SIDEBAR_FALLBACK = [
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/importada-de-china', label: 'Importada de China', icono: 'PackageSearch', menuKey: 'importada-de-china', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/pedidos/configuracion', label: 'Flujos de WhatsApp', icono: 'Settings', menuKey: 'pedidos-configuracion', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/mi-dashboard', label: 'Dashboard', icono: 'LayoutDashboard', menuKey: 'mi-dashboard', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/costos-gastos', label: 'Control financiero', icono: 'Receipt', menuKey: 'finanzas-costos-gastos', rolesPermitidos: ['usuario', 'administrador'] },
+    { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/costos-gastos', label: 'Control financiero', icono: 'Receipt', menuKey: 'finanzas-costos-gastos', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/proveedores', label: 'Proveedores', icono: 'Truck', menuKey: 'finanzas-proveedores', rolesPermitidos: ['administrador'] },
   { contexto: 'ecommerce', seccion: 'APRENDIZAJE', path: '/academia', label: 'Academia & Cursos', icono: 'GraduationCap', menuKey: 'academia', badge: 'PRO', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'AFILIADOS', path: '/afiliados', label: 'Quiero ser afiliado', icono: 'BadgeDollarSign', menuKey: 'afiliados', requierePlan: 'founders', rolesPermitidos: ['usuario', 'administrador'] },

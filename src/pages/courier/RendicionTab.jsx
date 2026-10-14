@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { HandCoins, RefreshCw, CheckCircle2 } from "lucide-react";
 import { formatGs } from "../../lib/courier";
+import { numeroPedidoVisible } from './pedidoNumero';
 import { previsualizarLiquidacion, confirmarLiquidacion, getLiquidacionesPorCourier } from "../../services/courierApi";
 
 function hoy() {
@@ -156,7 +157,7 @@ export function RendicionTab({ couriers = [] }) {
               <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                 {desglose.detalle.map((d) => (
                   <div key={d.envio_id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: "var(--color-fg-muted)", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)", padding: "0.25rem 0" }}>
-                    <span>#{d.envio_id} · {d.cliente} · {d.estado} · {d.metodo_pago || "—"}</span>
+                    <span>{numeroPedidoVisible(d)} · {d.cliente} · {d.estado} · {d.metodo_pago || "—"}</span>
                     <span>{formatGs(d.dinero_courier)} / envío {formatGs(d.costo_envio)}{d.cargo_perdida_courier ? ` / pérdida ${formatGs(d.cargo_perdida_courier)}` : ""}</span>
                   </div>
                 ))}

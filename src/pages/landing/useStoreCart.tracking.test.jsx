@@ -16,7 +16,7 @@ vi.mock('../../lib/tiktokPixel', () => ({ trackearEventoTikTok: vi.fn() }));
 vi.mock('../../services/landingPublicaService', () => ({
   registrarEventoLanding: (...a) => registrarEventoLanding(...a),
   recalcularCarritoLanding: vi.fn().mockResolvedValue({ total: 100000, descuentos_aplicados: [] }),
-  crearCheckoutLanding: vi.fn().mockResolvedValue({ pedido_id: 9, numero_pedido: 12, purchase_event_id: 'purchase-9', monto: 100000 }),
+  crearCheckoutLanding: vi.fn().mockResolvedValue({ pedido_id: 9, numero_pedido: 12, numero_pedido_tienda: 1, tienda_id: 9, tienda_nombre: 'Alibaguay', numero_pedido_visible: 'ALI-1001', purchase_event_id: 'purchase-9', monto: 100000 }),
   validarCuponLanding: vi.fn(),
 }));
 
@@ -71,7 +71,9 @@ describe('useStoreCart — InitiateCheckout', () => {
     const { result } = renderHook(() => useStoreCart('tienda', {}, [item]), { wrapper });
     act(() => result.current.agregarAlCarrito({ item, cantidad: 2, precio: 50000 }));
     trackearEvento.mockClear();
-    await act(async () => { await result.current.confirmarPedido({ nombre_cliente: 'Ana' }); });
+    let checkout;
+    await act(async () => { checkout = await result.current.confirmarPedido({ nombre_cliente: 'Ana' }); });
+    expect(checkout).toMatchObject({ numero_pedido_visible: 'ALI-1001', numero_pedido_tienda: 1, tienda_id: 9 });
     expect(nombresTrackeados()).toEqual(['Purchase']);
     expect(trackearEvento.mock.calls[0][1]).toBe('purchase-9');
   });
