@@ -3237,6 +3237,36 @@ button.order-alert-chip:focus-visible {
   font-weight: 800;
 }
 
+.pt-raha-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.pt-raha-meta div {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-fg) 2%, transparent);
+  padding: 0.55rem 0.65rem;
+}
+
+.pt-raha-meta dt {
+  color: var(--color-fg-subtle);
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.pt-raha-meta dd {
+  overflow-wrap: anywhere;
+  margin: 0.18rem 0 0;
+  color: var(--color-fg);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
 .pt-raha-steps {
   display: grid;
   grid-template-columns: repeat(5, minmax(120px, 1fr));
@@ -3310,6 +3340,10 @@ button.order-alert-chip:focus-visible {
   }
 
   .pt-raha-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .pt-raha-meta {
     grid-template-columns: 1fr;
   }
 }

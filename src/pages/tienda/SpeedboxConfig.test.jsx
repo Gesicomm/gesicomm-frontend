@@ -69,6 +69,27 @@ describe('Speedbox settings', () => {
     fireEvent.click(within(modal).getByRole('button', { name: 'Reintentar' }));
     await waitFor(() => expect(speedboxService.reintentar).toHaveBeenCalledWith(31, true));
   });
+  it('shows the RAHA traceability fields for sent orders', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config, orders: [{
+      id: 1,
+      envio_id: 31,
+      envio: { numero_pedido: 903144 },
+      external_order_id: 'GESICOMM-sandbox-7-31',
+      order_id: '900000000123456',
+      environment: 'sandbox',
+      raha_tienda_id: '65',
+      raha_store_name: 'sommix',
+      estado: 'enviado',
+      status: 'pendiente_confirmacion',
+      remote_http_status: 201,
+    }] });
+    render(<SpeedboxConfig />);
+    expect(await screen.findByText('Tienda RAHA')).toBeInTheDocument();
+    expect(screen.getByText('#65 · sommix')).toBeInTheDocument();
+    expect(screen.getByText('GESICOMM-sandbox-7-31')).toBeInTheDocument();
+    expect(screen.getByText('900000000123456')).toBeInTheDocument();
+    expect(screen.getByText('201')).toBeInTheDocument();
+  });
   it('shows a pending order check until a real reception is recorded', async () => {
     render(<SpeedboxConfig />);
     const label = await screen.findByText('Recepción de pedido');

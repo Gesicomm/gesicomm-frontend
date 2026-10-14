@@ -335,14 +335,20 @@ function statusRahaActual(envio) {
   return envio?.raha_logistica?.status || eventos.at(-1)?.status || (envio?.raha_logistica?.order_id ? "creado" : null);
 }
 
+function detalleRaha(logistica = {}) {
+  return [
+    logistica.order_id ? `RAHA #${logistica.order_id}` : null,
+    logistica.tienda_id ? `Tienda RAHA #${logistica.tienda_id}` : null,
+  ].filter(Boolean).join(" · ") || "Gestionado por RAHA";
+}
+
 function RahaEstadoCell({ envio }) {
   const status = statusRahaActual(envio);
   const meta = RAHA_STATUS_META[status] || RAHA_STATUS_META.creado;
-  const orderId = envio?.raha_logistica?.order_id;
   return (
     <LifecycleCell
       primary={meta.label}
-      secondary={orderId ? `RAHA #${orderId}` : "Gestionado por RAHA"}
+      secondary={detalleRaha(envio?.raha_logistica)}
       alert={envio?.raha_logistica?.error || null}
       tone={meta.tone}
     />
@@ -365,6 +371,12 @@ function RahaTimeline({ envio }) {
         </div>
         <code>{logistica.order_id ? `RAHA #${logistica.order_id}` : logistica.external_order_id || "Sin ID RAHA"}</code>
       </div>
+      <dl className="pt-raha-meta">
+        <div><dt>Ambiente</dt><dd>{logistica.environment || "Sin dato"}</dd></div>
+        <div><dt>Tienda RAHA</dt><dd>{logistica.tienda_id ? `#${logistica.tienda_id}` : "Sin dato"}</dd></div>
+        <div><dt>ID externo</dt><dd>{logistica.external_order_id || "Sin dato"}</dd></div>
+        <div><dt>HTTP</dt><dd>{logistica.remote_http_status || "Sin dato"}</dd></div>
+      </dl>
       <div className="pt-raha-steps" aria-label={`Timeline RAHA del pedido #${numeroPedidoVisible(envio)}`}>
         {RAHA_STATUS_ORDER.map((status, index) => {
           const meta = RAHA_STATUS_META[status];

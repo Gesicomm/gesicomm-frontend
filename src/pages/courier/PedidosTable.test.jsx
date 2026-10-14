@@ -171,6 +171,10 @@ test("Logística tiene el subestado Envíos RAHA y muestra timeline sin cambio m
           gestionado: true,
           order_id: "900000000123456",
           external_order_id: "GESICOMM-sandbox-7-9",
+          environment: "sandbox",
+          tienda_id: "65",
+          store_name: "sommix",
+          remote_http_status: 201,
           status: "en_camino",
           eventos: [
             { id: 1, tipo: "shipment.status_changed", status: "cargado", occurred_at: "2026-10-13T12:00:00.000Z" },
@@ -191,11 +195,13 @@ test("Logística tiene el subestado Envíos RAHA y muestra timeline sin cambio m
   await waitFor(() => expect(ultimoPedido()).toMatchObject({ logistica_raha: true }));
   const fila = await screen.findByText("Cliente 9").then((el) => el.closest("tr"));
   expect(within(fila).getByText("En camino")).toBeInTheDocument();
-  expect(within(fila).getByText("RAHA #900000000123456")).toBeInTheDocument();
+  expect(within(fila).getByText("RAHA #900000000123456 · Tienda RAHA #65")).toBeInTheDocument();
   expect(within(fila).queryByRole("button", { name: /Confirmado|Preparado|Despachado|En camino/ })).not.toBeInTheDocument();
 
   fireEvent.click(within(fila).getByRole("button", { name: /Ver timeline/ }));
   expect(await screen.findByText("Logística RAHA")).toBeInTheDocument();
+  expect(screen.getAllByText("Tienda RAHA")[0]).toBeInTheDocument();
+  expect(screen.getByText("GESICOMM-sandbox-7-9")).toBeInTheDocument();
   expect(screen.getByText(/Estos estados vienen de RAHA/)).toBeInTheDocument();
   expect(onChangeEstado).not.toHaveBeenCalled();
 });
