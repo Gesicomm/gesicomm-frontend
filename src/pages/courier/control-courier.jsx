@@ -29,16 +29,22 @@ import "./courier.css";
 // Abastecimiento ya no es una pestaña de acá: vive en su propia sección
 // (/abastecimiento), porque como pestaña quedaba escondida. Delivery tampoco:
 // los couriers se cargan junto con el depósito, en Mi Tienda → Depósitos.
-const TABS_VALIDOS = new Set(["tablero", "rendicion", "analitica"]);
-const CLAVE_TAB = "gesicomm:pedidosTab";
+// Rendición es liquidación de couriers: solo tiene sentido en Gestión
+// Logística, no en Comercial (pedido del usuario, 2026-10-14).
+const TABS_POR_MENU = {
+  comercial: ["tablero", "analitica"],
+  logistica: ["tablero", "rendicion", "analitica"],
+};
+const tabsDisponiblesDe = (etapaFija) => TABS_POR_MENU[etapaFija] || ["tablero", "rendicion", "analitica"];
+const claveTabDe = (etapaFija) => `gesicomm:pedidosTab:${etapaFija || "todas"}`;
 
 // La pestaña activa nunca viaja por query string: llega como router state
-// desde otra pantalla y se recuerda en sessionStorage para el refresh.
-function tabInicial(estadoNavegacion) {
-  if (TABS_VALIDOS.has(estadoNavegacion)) return estadoNavegacion;
+// desde otra pantalla y se recuerda en sessionStorage (por página) para el refresh.
+function tabInicial(estadoNavegacion, tabsDisponibles, claveTab) {
+  if (tabsDisponibles.includes(estadoNavegacion)) return estadoNavegacion;
   try {
-    const guardada = window.sessionStorage.getItem(CLAVE_TAB);
-    if (TABS_VALIDOS.has(guardada)) return guardada;
+    const guardada = window.sessionStorage.getItem(claveTab);
+    if (tabsDisponibles.includes(guardada)) return guardada;
   } catch { /* sin storage */ }
   return "tablero";
 }
@@ -53,9 +59,11 @@ const ETAPAS_POR_MENU = {
 
 export function ControlCourier({ etapaFija } = {}) {
   const etapasProps = ETAPAS_POR_MENU[etapaFija] || {};
+  const tabsDisponibles = tabsDisponiblesDe(etapaFija);
+  const claveTab = claveTabDe(etapaFija);
   const location = useLocation();
   const navigate = useNavigate();
-  const [tab, setTab] = useState(() => tabInicial(location.state?.tab));
+  const [tab, setTab] = useState(() => tabInicial(location.state?.tab, tabsDisponibles, claveTab));
   const [fechaDesde, setFechaDesde] = useState(() => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
   const [fechaHasta, setFechaHasta] = useState(() => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
   const [couriers, setCouriers] = useState([]);
@@ -95,7 +103,7 @@ export function ControlCourier({ etapaFija } = {}) {
 
   function seleccionarTab(tabId) {
     setTab(tabId);
-    try { window.sessionStorage.setItem(CLAVE_TAB, tabId); } catch { /* sin storage */ }
+    try { window.sessionStorage.setItem(claveTab, tabId); } catch { /* sin storage */ }
   }
 
   useEffect(() => {
@@ -315,9 +323,11 @@ export function ControlCourier({ etapaFija } = {}) {
           <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
             Tablero
           </TabButton>
-          <TabButton active={tab === "rendicion"} onClick={() => seleccionarTab("rendicion")} icon={<HandCoins size={16} />}>
-            Rendición
-          </TabButton>
+          {tabsDisponibles.includes("rendicion") && (
+            <TabButton active={tab === "rendicion"} onClick={() => seleccionarTab("rendicion")} icon={<HandCoins size={16} />}>
+              Rendición
+            </TabButton>
+          )}
           <TabButton active={tab === "analitica"} onClick={() => seleccionarTab("analitica")} icon={<TrendingUp size={16} />}>
             Analítica
           </TabButton>

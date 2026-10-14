@@ -1028,6 +1028,31 @@ export function PedidosTable({
     cancelados: sumarConteos(["Cancelado"]),
     incidencias: sumarConteos(["Devuelto", "Perdido"]),
   };
+  // El resumen no puede mezclar estado comercial con logístico (pedido del
+  // usuario, 2026-10-14): cada página de menú ve solo lo suyo. Confirmado ya
+  // es logístico ("Pendiente de preparación"), y Cancelado es comercial.
+  const soloLogistica = etapasDisponibles.length === 1 && etapasDisponibles[0] === "logistica";
+  const soloComercial = etapasDisponibles.every((e) => e !== "logistica");
+  const resumenChips = soloLogistica
+    ? [
+        { key: "confirmados", label: "Pendiente de preparación", tone: "info" },
+        { key: "logistica", label: "En logística", tone: "money" },
+        { key: "entregados", label: "Entregados", tone: "success" },
+        { key: "incidencias", label: "Incidencias", tone: "danger" },
+      ]
+    : soloComercial
+    ? [
+        { key: "pendientes", label: "Pendientes", tone: "warning" },
+        { key: "cancelados", label: "Cancelados", tone: "default" },
+      ]
+    : [
+        { key: "pendientes", label: "Pendientes", tone: "warning" },
+        { key: "confirmados", label: "Pendiente de preparación", tone: "info" },
+        { key: "logistica", label: "En logística", tone: "money" },
+        { key: "entregados", label: "Entregados", tone: "success" },
+        { key: "cancelados", label: "Cancelados", tone: "default" },
+        { key: "incidencias", label: "Incidencias", tone: "danger" },
+      ];
   const estadosEtapaActiva = STAGE_TO_ESTADOS[etapaActiva] || [];
   const totalEstadosEtapaActiva = sumarConteos(estadosEtapaActiva) + (etapaActiva === "logistica" ? totalLogisticaRaha : 0);
   const chipsEtapaActiva = [
@@ -1070,12 +1095,9 @@ export function PedidosTable({
 
       {!soloAbastecimiento && (
         <section className="pt-cycle-summary" aria-label="Resumen del ciclo de pedidos">
-          <ResumenItem label="Pendientes" value={resumenCiclo.pendientes.toLocaleString("es-PY")} tone="warning" />
-          <ResumenItem label="Confirmados" value={resumenCiclo.confirmados.toLocaleString("es-PY")} tone="info" />
-          <ResumenItem label="En logística" value={resumenCiclo.logistica.toLocaleString("es-PY")} tone="money" />
-          <ResumenItem label="Entregados" value={resumenCiclo.entregados.toLocaleString("es-PY")} tone="success" />
-          <ResumenItem label="Cancelados" value={resumenCiclo.cancelados.toLocaleString("es-PY")} tone="default" />
-          <ResumenItem label="Incidencias" value={resumenCiclo.incidencias.toLocaleString("es-PY")} tone="danger" />
+          {resumenChips.map((c) => (
+            <ResumenItem key={c.key} label={c.label} value={resumenCiclo[c.key].toLocaleString("es-PY")} tone={c.tone} />
+          ))}
         </section>
       )}
 
