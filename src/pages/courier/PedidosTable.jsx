@@ -86,7 +86,7 @@ const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", 
 const RAHA_STATUS_ORDER = ["creado", "cargado", "en_camino", "entregado", "devuelto"];
 const RAHA_STATUS_META = {
   creado: { label: "Pedido creado en RAHA", detail: "RAHA recibió el pedido", tone: "info" },
-  pendiente_confirmacion: { label: "Pendiente de confirmación", detail: "RAHA todavía no confirmó el envío", tone: "warning" },
+  pendiente_confirmacion: { label: "Pendiente de confirmación RAHA", detail: "Gesicom ya avisó que el pedido es real; RAHA debe aceptarlo", tone: "warning" },
   cargado: { label: "Cargado", detail: "RAHA preparó el pedido", tone: "info" },
   en_camino: { label: "En camino", detail: "RAHA está gestionando la entrega", tone: "info" },
   entregado: { label: "Entregado", detail: "Entrega confirmada por RAHA", tone: "success" },
@@ -335,10 +335,15 @@ function statusRahaActual(envio) {
   return envio?.raha_logistica?.status || eventos.at(-1)?.status || (envio?.raha_logistica?.order_id ? "creado" : null);
 }
 
+function tiendaRahaDetalle(logistica = {}) {
+  if (!logistica.tienda_id) return null;
+  return `Tienda RAHA #${logistica.tienda_id}${logistica.store_name ? ` · ${logistica.store_name}` : ""}`;
+}
+
 function detalleRaha(logistica = {}) {
   return [
     logistica.order_id ? `RAHA #${logistica.order_id}` : null,
-    logistica.tienda_id ? `Tienda RAHA #${logistica.tienda_id}` : null,
+    tiendaRahaDetalle(logistica),
   ].filter(Boolean).join(" · ") || "Gestionado por RAHA";
 }
 
@@ -373,7 +378,7 @@ function RahaTimeline({ envio }) {
       </div>
       <dl className="pt-raha-meta">
         <div><dt>Ambiente</dt><dd>{logistica.environment || "Sin dato"}</dd></div>
-        <div><dt>Tienda RAHA</dt><dd>{logistica.tienda_id ? `#${logistica.tienda_id}` : "Sin dato"}</dd></div>
+        <div><dt>Tienda RAHA</dt><dd>{logistica.tienda_id ? `#${logistica.tienda_id}${logistica.store_name ? ` · ${logistica.store_name}` : ""}` : "Sin dato"}</dd></div>
         <div><dt>ID externo</dt><dd>{logistica.external_order_id || "Sin dato"}</dd></div>
         <div><dt>HTTP</dt><dd>{logistica.remote_http_status || "Sin dato"}</dd></div>
       </dl>

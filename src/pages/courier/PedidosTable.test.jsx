@@ -195,15 +195,55 @@ test("Logística tiene el subestado Envíos RAHA y muestra timeline sin cambio m
   await waitFor(() => expect(ultimoPedido()).toMatchObject({ logistica_raha: true }));
   const fila = await screen.findByText("Cliente 9").then((el) => el.closest("tr"));
   expect(within(fila).getByText("En camino")).toBeInTheDocument();
-  expect(within(fila).getByText("RAHA #900000000123456 · Tienda RAHA #65")).toBeInTheDocument();
+  expect(within(fila).getByText("RAHA #900000000123456 · Tienda RAHA #65 · sommix")).toBeInTheDocument();
   expect(within(fila).queryByRole("button", { name: /Confirmado|Preparado|Despachado|En camino/ })).not.toBeInTheDocument();
 
   fireEvent.click(within(fila).getByRole("button", { name: /Ver timeline/ }));
   expect(await screen.findByText("Logística RAHA")).toBeInTheDocument();
   expect(screen.getAllByText("Tienda RAHA")[0]).toBeInTheDocument();
+  expect(screen.getByText("#65 · sommix")).toBeInTheDocument();
   expect(screen.getByText("GESICOMM-sandbox-7-9")).toBeInTheDocument();
   expect(screen.getByText(/Estos estados vienen de RAHA/)).toBeInTheDocument();
   expect(onChangeEstado).not.toHaveBeenCalled();
+});
+
+test("Logística RAHA muestra cuando falta la confirmación de RAHA", async () => {
+  getConteoPorEstado.mockResolvedValue({
+    Preparado: 0,
+    Despachado: 0,
+    Reprogramado: 0,
+    Entregado: 0,
+    Devuelto: 0,
+    Perdido: 0,
+    logistica_raha: 1,
+  });
+  getEnviosPaginados.mockResolvedValue({
+    data: [
+      pedido(10, "Confirmado", {
+        raha_logistica: {
+          gestionado: true,
+          order_id: "900000000999999",
+          external_order_id: "GESICOMM-sandbox-7-10",
+          environment: "sandbox",
+          tienda_id: "65",
+          store_name: "sommix",
+          remote_http_status: 201,
+          status: "pendiente_confirmacion",
+          eventos: [],
+        },
+      }),
+    ],
+    total: 1,
+    totalPages: 1,
+  });
+
+  await montar({ esperarCliente: "Cliente 10" });
+  irAEtapa("Logística");
+  fireEvent.click(await screen.findByRole("button", { name: /^Envíos RAHA/ }));
+
+  const fila = await screen.findByText("Cliente 10").then((el) => el.closest("tr"));
+  expect(within(fila).getByText("Pendiente de confirmación RAHA")).toBeInTheDocument();
+  expect(within(fila).getByText("RAHA #900000000999999 · Tienda RAHA #65 · sommix")).toBeInTheDocument();
 });
 
 test("el teléfono va en su propia columna y ya no hay botón de WhatsApp en el cliente", async () => {
