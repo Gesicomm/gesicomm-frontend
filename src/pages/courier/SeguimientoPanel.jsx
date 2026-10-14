@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { X, MessageCircle, Clock, Check, Tag, Loader2, Ban, Circle, CheckCircle2, RotateCcw, Send, ChevronRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { X, MessageCircle, Check, Tag, Loader2, Circle, CheckCircle2, RotateCcw, Send, ChevronRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import Select, { components } from "react-select";
 import { seguimientoService } from "../../services/seguimiento.service";
 import { formatEspera } from "./variablesWhatsapp";
 import { numeroPedidoVisible } from "./pedidoNumero";
 import { formatGs } from "../../lib/courier";
-import { FLOW_TYPES } from "./orderLifecycle";
+import { FLOW_TYPES, SHIPPING_FOLLOWUP_STATUSES } from "./orderLifecycle";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -67,21 +67,6 @@ function formatMomento(iso) {
   return `${f.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' })} ${hora}`;
 }
 
-/**
- * El recordatorio del pedido tal como vino en la fila de la bandeja. De ahí
- * en adelante el panel lleva su propia copia: la fila que le pasan no se
- * vuelve a pedir mientras está abierto, así que si dependiera de ella no se
- * enteraría de lo que él mismo acaba de agendar, completar o cancelar.
- */
-function recordatorioDeEnvio(envio) {
-  if (!envio?.recordatorio_id) return null;
-  return {
-    id: envio.recordatorio_id,
-    estado: envio.recordatorio_estado,
-    ejecutar_en: envio.recordatorio_ejecutar_en,
-    nota: envio.recordatorio_nota,
-  };
-}
 
 /** A quién se le está escribiendo: sin esto el panel era "un WhatsApp" sin nombre ni pedido. */
 function contextoDelPedido(envio) {
@@ -103,20 +88,15 @@ function contextoDelPedido(envio) {
 export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConfirmarPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
   const [flujos, setFlujos] = useState([]);
   const [flujoId, setFlujoId] = useState(null);
-  const [configuracion, setConfiguracion] = useState(null);
   const [etiquetasPedido, setEtiquetasPedido] = useState([]);
   const [etiquetasDisponibles, setEtiquetasDisponibles] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [loadingAccion, setLoadingAccion] = useState(false);
   const [faseEnviando, setFaseEnviando] = useState(null);
-  const [horasProgramadas, setHorasProgramadas] = useState(null);
-  const [recordatorio, setRecordatorio] = useState(null);
   // Fase cuyo mensaje se está viendo antes de abrir WhatsApp.
   const [faseVista, setFaseVista] = useState(null);
 
   const [telefonoPersonalizado, setTelefonoPersonalizado] = useState("");
-  const [fechaCustom, setFechaCustom] = useState("");
-  const [notaRecordatorio, setNotaRecordatorio] = useState("");
 
   const cargarFlujos = useCallback(async (envioId) => {
     const resFlujos = await servicio.getFlujosPedido(envioId);
@@ -132,19 +112,14 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
     let activo = true;
 
     setCargando(true);
-    setRecordatorio(recordatorioDeEnvio(envio));
     setFaseVista(faseQueToca);
-    setNotaRecordatorio("");
-    setHorasProgramadas(null);
-    setFechaCustom("");
     setTelefonoPersonalizado(envio.telefono || "");
 
     Promise.all([
       servicio.getFlujosPedido(envio.id),
-      servicio.getConfiguracion(),
       servicio.getEtiquetasPedido(envio.id),
       servicio.getEtiquetas()
-    ]).then(([resFlujos, resConfig, resEtiqPed, resEtiqDisp]) => {
+    ]).then(([resFlujos, resEtiqPed, resEtiqDisp]) => {
       if (!activo) return;
       const lista = resFlujos || [];
       setFlujos(lista);
@@ -153,7 +128,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       const delaFase = faseQueToca ? lista.find(f => (f.fases || []).some(x => x.id === faseQueToca)) : null;
       const enUso = lista.find(f => (f.envios_totales || 0) > 0);
       setFlujoId((delaFase || enUso || lista[0])?.id ?? null);
-      setConfiguracion(resConfig || { tiempos_rapidos_horas: [1, 2, 4, 8, 24] });
       setEtiquetasPedido(resEtiqPed || []);
       setEtiquetasDisponibles(resEtiqDisp || []);
       setCargando(false);
@@ -172,28 +146,24 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
     return () => document.removeEventListener("keydown", alEscape);
   }, [open, onClose]);
 
-  // VENCIDO sigue siendo un recordatorio abierto: es el que más hace falta
-  // poder cerrar desde acá.
-  const recordatorioAbierto = recordatorio && ['PENDIENTE', 'VENCIDO'].includes(recordatorio.estado) ? recordatorio : null;
-  const recordatorioVencido = !!recordatorioAbierto && (
-    recordatorioAbierto.estado === 'VENCIDO' || new Date(recordatorioAbierto.ejecutar_en) <= new Date()
-  );
 
   const flujo = flujos.find(f => f.id === flujoId) || null;
   const fases = flujo?.fases || [];
+  const seguimientoBloqueado = flujo?.tipo === "SEGUIMIENTO_ENVIO" && !SHIPPING_FOLLOWUP_STATUSES.includes(envio?.estado);
   // La fase en la que está el pedido: la que pidió quien abrió el panel
   // mientras no esté completada; si no, la siguiente a la más avanzada que
   // ya se completó. Así, al marcar una como enviada, "Toca ahora" pasa sola
   // a la que sigue.
   const sugeridaPendiente = fases.find(f => f.id === faseQueToca && !f.completada && f.disponible !== false);
   const mayorCompletada = fases.reduce((max, f) => (f.completada ? Math.max(max, f.orden) : max), 0);
-  const faseActualId = (sugeridaPendiente || fases.find(f => f.orden > mayorCompletada && f.disponible !== false))?.id ?? null;
+  const faseActualId = seguimientoBloqueado ? null : (sugeridaPendiente || fases.find(f => f.orden > mayorCompletada && f.disponible !== false))?.id ?? null;
 
   /**
    * Abre una fase en WhatsApp. No valida ningún orden a propósito: se puede
    * abrir cualquier fase, y repetirla las veces que haga falta.
    */
   const abrirFase = async (fase) => {
+    if (seguimientoBloqueado || fase.disponible === false) return;
     setFaseEnviando(fase.id);
     try {
       const res = await servicio.crearContacto(envio.id, {
@@ -222,13 +192,12 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
    * contacto.
    */
   const completarFase = async (fase) => {
+    if (seguimientoBloqueado || fase.disponible === false) return;
     setFaseEnviando(fase.id);
     try {
       const res = await servicio.completarFase(envio.id, fase.id);
-      const cumplidos = res?.recordatorios_cumplidos || [];
       // El backend agenda solo el mensaje siguiente con la espera del flujo:
       // acá solo se muestra lo que quedó (se puede cambiar o cancelar abajo).
-      setRecordatorio(prev => res?.recordatorio || (prev && cumplidos.includes(prev.id) ? null : prev));
       if (res?.siguiente_fase) setFaseVista(res.siguiente_fase.id);
       await cargarFlujos(envio.id);
       if (onRefreshPedido) onRefreshPedido();
@@ -257,67 +226,9 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
     }
   };
 
-  const guardarNotaORecordatorio = async () => {
-    setLoadingAccion(true);
-    try {
-      if (horasProgramadas || fechaCustom) {
-        const payload = { nota: notaRecordatorio.trim() };
-        if (horasProgramadas && horasProgramadas !== 'custom') {
-          payload.horas = horasProgramadas;
-        } else if (fechaCustom) {
-          payload.ejecutar_en = new Date(fechaCustom).toISOString();
-        }
-        const agendado = await servicio.programarRecordatorio(envio.id, payload);
-        setRecordatorio(agendado);
-      } else if (notaRecordatorio.trim()) {
-        await servicio.guardarNota(envio.id, notaRecordatorio.trim());
-      }
-      setNotaRecordatorio("");
-      setHorasProgramadas(null);
-      setFechaCustom("");
-      if (onRefreshPedido) onRefreshPedido();
-    } catch (err) {
-      console.error(err);
-      alert("Ocurrió un error al guardar");
-    } finally {
-      setLoadingAccion(false);
-    }
-  };
 
-  const programarRapido = (horas) => {
-    setHorasProgramadas(horas);
-    setFechaCustom("");
-  };
 
-  const completar = async () => {
-    if (!recordatorioAbierto) return;
-    setLoadingAccion(true);
-    try {
-      await servicio.completarRecordatorio(envio.id, recordatorioAbierto.id);
-      setRecordatorio(null);
-      if (onRefreshPedido) onRefreshPedido();
-    } catch (e) {
-      console.error(e);
-      alert("Error al completar");
-    } finally {
-      setLoadingAccion(false);
-    }
-  };
 
-  const cancelarRecordatorio = async () => {
-    if (!recordatorioAbierto) return;
-    setLoadingAccion(true);
-    try {
-      await servicio.cancelarRecordatorio(envio.id, recordatorioAbierto.id);
-      setRecordatorio(null);
-      if (onRefreshPedido) onRefreshPedido();
-    } catch (e) {
-      console.error(e);
-      alert("Error al cancelar");
-    } finally {
-      setLoadingAccion(false);
-    }
-  };
 
   const agregarEtiqueta = async (optValue) => {
     if (!optValue) return;
@@ -493,7 +404,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
                           onVerMensaje={() => setFaseVista(v => (v === fase.id ? null : fase.id))}
                           enviando={faseEnviando === fase.id}
                           deshabilitado={!!faseEnviando}
-                          bloqueadaPorEstado={fase.disponible === false}
+                          bloqueadaPorEstado={seguimientoBloqueado || fase.disponible === false}
                           onAbrir={() => abrirFase(fase)}
                           onCompletar={() => completarFase(fase)}
                           onDescompletar={() => descompletarFase(fase)}
@@ -570,14 +481,14 @@ function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "0.85rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
             Fase {fase.orden} — {fase.nombre}
-            {sugerida && fase.disponible !== false && (
+            {sugerida && !bloqueadaPorEstado && (
               <span style={{ fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", borderRadius: "999px", background: "color-mix(in srgb, var(--color-primary) 18%, transparent)", color: "var(--color-primary-text)" }}>
                 Toca ahora
               </span>
             )}
           </div>
           <div style={{ fontSize: "0.75rem", color: faltaMarcar ? "var(--color-warning)" : "var(--color-fg-muted)", marginTop: "2px" }}>
-            {fase.disponible === false && <span>Espera que logística marque {fase.estado_requerido || fase.estado_activador || "Preparado"}. </span>}
+            {bloqueadaPorEstado && <span>Espera que logística marque {fase.estado_requerido || fase.estado_activador || "Preparado"}. </span>}
             {completada
               ? `Enviado ${formatMomento(fase.ultimo_envio_en)}`
               : faltaMarcar

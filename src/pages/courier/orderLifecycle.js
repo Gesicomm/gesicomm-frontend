@@ -17,7 +17,7 @@ export const FLOW_TYPES = {
   SEGUIMIENTO_ENVIO: {
     label: "Seguimiento de envío",
     stage: "seguimiento_envio",
-    hint: "El pedido entra al confirmarse. El primer mensaje se habilita al marcarlo Preparado y el aviso de despacho al marcarlo Despachado.",
+    hint: "El pedido entra cuando logística lo marca Preparado. Ahí se habilita el primer mensaje; al pasar a Despachado, el aviso de despacho.",
   },
   ESCALAMIENTO_VENTAS: {
     label: "Escalamiento de ventas",
@@ -48,12 +48,12 @@ export const STAGE_FILTERS = [
 
 export const STAGE_LABELS = { comercial: "Proceso de confirmación", seguimiento_envio: "Seguimiento de envío", logistica: "Logística", recompra: "Recompra", recuperacion: "Recuperación" };
 
-// Al confirmar, el pedido entra al seguimiento de envío de Gestión Comercial
-// y queda pendiente de preparación en Gestión Logística. Las dos bandejas
-// comparten el estado operativo; los mensajes se gestionan desde Comercial.
+// Al confirmar, el pedido queda pendiente de preparación en Gestión Logística.
+// Recién al marcarlo Preparado entra al seguimiento de envío comercial.
+// Las dos bandejas comparten el estado operativo; Comercial gestiona mensajes.
 // Al entregar, termina el seguimiento de envío y empieza Recompra.
 export const COMMERCIAL_STATUSES = ["Pendiente", "EnSeguimiento", "Cancelado"];
-export const SHIPPING_FOLLOWUP_STATUSES = ["Confirmado", "Preparado", "Despachado", "Reprogramado"];
+export const SHIPPING_FOLLOWUP_STATUSES = ["Preparado", "Despachado", "Reprogramado"];
 export const LOGISTIC_STATUSES = ["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"];
 export const RECOMPRA_STATUSES = ["Entregado"];
 export const RECOVERY_STATUSES = ["Devuelto", "Perdido"];
@@ -126,7 +126,7 @@ export const KANBAN_CONTEXTS = {
   },
   seguimiento_envio: {
     label: "Seguimiento de envío",
-    lanes: [LANES.confirmados, LANES.preparados, LANES.despachados].map((lane) => ({ ...lane, operational: true })),
+    lanes: [LANES.preparados, LANES.despachados].map((lane) => ({ ...lane, operational: true })),
   },
   logistica: {
     label: "Logística",

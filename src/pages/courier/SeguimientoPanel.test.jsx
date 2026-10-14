@@ -125,7 +125,7 @@ test("marcar enviada una fase antigua de preparación conserva el estado logíst
     recordatorios_cumplidos: [],
     siguiente_fase: { id: 302, orden: 2, nombre: "Pedido despachado" },
   });
-  const envio = pedido({ estado: "Confirmado" });
+  const envio = pedido({ estado: "Preparado" });
   const onPrepararPedido = vi.fn(async () => ({ ...envio, estado: "Preparado" }));
 
   render(<SeguimientoPanel open envio={envio} onClose={() => {}} onPrepararPedido={onPrepararPedido} />);
@@ -154,6 +154,26 @@ test("abrir el panel con un aviso antiguo enviado conserva el estado del pedido"
   await screen.findByText(/Fase 4 — Texto renombrado/);
 
   expect(onPrepararPedido).not.toHaveBeenCalled();
+});
+
+test("un pendiente de preparación bloquea los mensajes aunque lleguen fases antiguas disponibles", async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{
+    ...FLUJO_ENVIO,
+    fases: [
+      { id: 301, orden: 1, nombre: "Preparación", disponible: true, envios: 1, completada: false },
+      { id: 302, orden: 2, nombre: "Despacho", disponible: true, envios: 0, completada: false },
+    ],
+  }]);
+  render(<SeguimientoPanel open envio={pedido({ estado: "Confirmado" })} onClose={() => {}} />);
+  await screen.findByText(/Fase 1 — Preparación/);
+  for (const nombre of ["Abrir otra vez", "Abrir en WhatsApp", "Marcar como enviado", "Ya lo envié"]) {
+    const boton = screen.getByRole("button", { name: nombre });
+    expect(boton).toBeDisabled();
+    fireEvent.click(boton);
+  }
+  expect(screen.queryByText("Toca ahora")).not.toBeInTheDocument();
+  expect(seguimientoService.crearContacto).not.toHaveBeenCalled();
+  expect(seguimientoService.completarFase).not.toHaveBeenCalled();
 });
 
 test("marcar enviada una fase antigua de despacho conserva el estado logístico", async () => {

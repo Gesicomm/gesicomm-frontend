@@ -601,6 +601,7 @@ function SeguimientoCell({ envio, onAbrir }) {
   const seg = envio.seguimiento;
   if (!seg) return <span className="pt-seg-vacio">—</span>;
   const estado = estadoDelSeguimiento(seg);
+  const bloqueado = seg.etapa === "SEGUIMIENTO_ENVIO" && !SHIPPING_FOLLOWUP_STATUSES.includes(envio.estado);
   const EstadoIcono = estado.icono || Clock;
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "cliente";
   const cuerpo = (
@@ -620,7 +621,9 @@ function SeguimientoCell({ envio, onAbrir }) {
     <button
       type="button"
       className="pt-seg pt-seg--boton"
-      title="Abrir los mensajes de este pedido"
+      disabled={bloqueado}
+      title={bloqueado ? "Disponible cuando logística marque el pedido Preparado" : "Abrir los mensajes de este pedido"}
+      style={bloqueado ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
       aria-label={`Seguimiento de ${nombre}`}
       onClick={(ev) => {
         ev.stopPropagation();
@@ -659,8 +662,9 @@ const accionBtnStyle = {
 
 function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen, onAccionSiguiente, onAbrirSeguimiento, onCambiarEstado, etapa }) {
   if (["seguimiento_envio", "recuperacion"].includes(etapa)) {
+    const bloqueado = etapa === "seguimiento_envio" && !SHIPPING_FOLLOWUP_STATUSES.includes(envio.estado);
     return (
-      <button type="button" style={accionBtnStyle} onClick={(e) => { e.stopPropagation(); onAbrirSeguimiento?.(envio); }}>
+      <button type="button" disabled={bloqueado} title={bloqueado ? "Disponible cuando logística marque el pedido Preparado" : undefined} style={{ ...accionBtnStyle, ...(bloqueado ? { opacity: 0.6, cursor: "not-allowed" } : {}) }} onClick={(e) => { e.stopPropagation(); onAbrirSeguimiento?.(envio); }}>
         <MessageCircle size={13} /> Seguimiento
       </button>
     );
@@ -1119,7 +1123,6 @@ export function PedidosTable({
   const soloComercial = etapasDisponibles.every((e) => e !== "logistica");
   const resumenChips = etapaActiva === "seguimiento_envio"
     ? [
-        { key: "confirmados", label: "Pendiente de preparación", tone: "info" },
         { key: "logistica", label: "En logística", tone: "money" },
       ]
     : etapaActiva === "recuperacion"

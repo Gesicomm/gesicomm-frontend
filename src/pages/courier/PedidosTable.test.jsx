@@ -134,16 +134,19 @@ test("las etapas incluyen Seguimiento de envío y cada una pide solo sus estados
   expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado comercial", "Seguimiento", "Acción"]);
 
   irAEtapa("Seguimiento de envío");
-  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado"]));
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado"]));
+  expect(chips()).toEqual(["Preparado", "Despachado", "Reprogramado"]);
   expect(ultimoPedido()).toMatchObject({ incluir_seguimiento: true });
   expect(ultimoPedido()).not.toHaveProperty("excluir_logistica_raha");
   expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Mensaje de seguimiento", "Acción"]);
   await waitFor(() => expect(getConteoPorEstado.mock.calls.at(-1)[0]).not.toHaveProperty("separar_logistica_raha"));
 
   irAEtapa("Logística");
-  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado"]));
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado"]));
   // Sin "Todos": Envíos RAHA primero, Pendiente de preparación y el resto de los estados de siempre.
   expect(chips()).toEqual(["Envíos RAHA", "Pendiente de preparación", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
+  fireEvent.click(screen.getAllByRole("button").find((b) => b.classList.contains("pt-status-chip") && b.textContent.startsWith("Pendiente de preparación")));
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado"]));
   expect(encabezados()).toContain("Estado logístico");
   expect(encabezados()).not.toContain("Estado comercial");
   expect(encabezados()).not.toContain("Seguimiento");
@@ -475,7 +478,7 @@ test("el desplegable de Acción se cierra con Escape, clic fuera o desplazamient
 });
 
 test("Seguimiento de envío gestiona mensajes y muestra el estado logístico sin acción de preparar", async () => {
-  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, "Confirmado", { seguimiento: SEGUIMIENTO_ENVIO, accion_siguiente: VIEJO_CON_ABASTECIMIENTO.accion_siguiente })], total: 1, totalPages: 1 });
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, "Preparado", { seguimiento: SEGUIMIENTO_ENVIO, accion_siguiente: VIEJO_CON_ABASTECIMIENTO.accion_siguiente })], total: 1, totalPages: 1 });
   const { onAbrirSeguimiento, onChangeEstado } = await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: "seguimiento_envio" });
   const fila = within(screen.getByText("Cliente 1").closest("tr"));
 
@@ -483,7 +486,7 @@ test("Seguimiento de envío gestiona mensajes y muestra el estado logístico sin
     .toEqual(["Proceso de confirmación", "Seguimiento de envío", "Recompra", "Recuperación"]);
 
   expect(encabezados()).toContain("Mensaje de seguimiento");
-  expect(fila.getByText("Pendiente de preparación")).toBeInTheDocument();
+  expect(fila.getByText("Preparado")).toBeInTheDocument();
   expect(fila.getByText("1/3 · Pedido confirmado")).toBeInTheDocument();
   expect(fila.queryByRole("button", { name: /Preparar|Pendiente de preparación/ })).not.toBeInTheDocument();
   fireEvent.click(fila.getByRole("button", { name: "Seguimiento" }));
@@ -514,10 +517,28 @@ test("Logística no muestra mensajes ni accesos a WhatsApp en tabla y Kanban", a
   expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento");
 });
 
-test("al confirmar el pedido sale de confirmación y aparece en Seguimiento de envío al refrescar", async () => {
+test("seguimiento bloquea pedidos pendientes antiguos y su Kanban comienza en Preparado", async () => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, "Confirmado", { seguimiento: SEGUIMIENTO_ENVIO })], total: 1, totalPages: 1 });
+  const { onAbrirSeguimiento } = await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: "seguimiento_envio", initialEstado: "Confirmado" });
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado"]));
+  const fila = within(screen.getByText("Cliente 1").closest("tr"));
+  for (const boton of fila.getAllByRole("button", { name: /Seguimiento/ })) {
+    expect(boton).toBeDisabled();
+    fireEvent.click(boton);
+  }
+  expect(onAbrirSeguimiento).not.toHaveBeenCalled();
+  expect(screen.getAllByRole("button").filter((b) => b.classList.contains("pt-status-chip")).map((b) => b.textContent.replace(/\d+$/, "")))
+    .toEqual(["Preparado", "Despachado", "Reprogramado"]);
+  fireEvent.click(screen.getByRole("button", { name: /Kanban/ }));
+  await screen.findByRole("region", { name: "Columna Preparados" });
+  expect(screen.queryByRole("region", { name: "Columna Pendientes de preparación" })).not.toBeInTheDocument();
+  expect(screen.queryByText("Cliente 1")).not.toBeInTheDocument();
+});
+
+test("al confirmar sale de comercial y recién al prepararse aparece en Seguimiento de envío", async () => {
   let estado = "Pendiente";
   getEnviosPaginados.mockImplementation(async ({ estados }) => {
-    const data = estados.includes(estado) ? [pedido(1, estado, { seguimiento: estado === "Confirmado" ? SEGUIMIENTO_ENVIO : null })] : [];
+    const data = estados.includes(estado) ? [pedido(1, estado, { seguimiento: estado === "Preparado" ? SEGUIMIENTO_ENVIO : null })] : [];
     return { data, total: data.length, totalPages: 1 };
   });
   const props = { couriers: [], etapasDisponibles: ETAPAS_COMERCIALES };
@@ -528,12 +549,16 @@ test("al confirmar el pedido sale de confirmación y aparece en Seguimiento de e
   rerender(<PedidosTable {...props} refrescarKey={1} onAbrirSeguimiento={onAbrirSeguimiento} />);
   await waitFor(() => expect(screen.queryByText("Cliente 1")).not.toBeInTheDocument());
   irAEtapa("Seguimiento de envío");
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado"]));
+  expect(screen.queryByText("Cliente 1")).not.toBeInTheDocument();
+  estado = "Preparado";
+  rerender(<PedidosTable {...props} refrescarKey={2} onAbrirSeguimiento={onAbrirSeguimiento} />);
   const fila = within((await screen.findByText("Cliente 1")).closest("tr"));
   expect(fila.getByText("1/3 · Pedido confirmado")).toBeInTheDocument();
 
   // La entrega cierra esta etapa; el pedido ya pertenece a Recompra.
   estado = "Entregado";
-  rerender(<PedidosTable {...props} refrescarKey={2} onAbrirSeguimiento={onAbrirSeguimiento} />);
+  rerender(<PedidosTable {...props} refrescarKey={3} onAbrirSeguimiento={onAbrirSeguimiento} />);
   await waitFor(() => expect(screen.queryByText("Cliente 1")).not.toBeInTheDocument());
   irAEtapa("Recompra");
   expect(await screen.findByText("Cliente 1")).toBeInTheDocument();
