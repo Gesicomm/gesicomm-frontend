@@ -83,6 +83,58 @@ function montar(plantilla, datos) {
   return { dom, window: dom.window, document, mensajes, click };
 }
 
+describe('catálogo: presentación compartida', () => {
+  const datos = { vista: 'catalogo', tienda: { nombre: 'Tienda QA' }, productos: [airFryer, remera], catalogo: { paginado: false } };
+
+  it('mantiene la vista elegida, el contador y un único encabezado al filtrar o actualizar el preview', () => {
+    const { document, window, click, dom } = montar(PLANTILLA_CATALOGO, datos);
+    const pagina = document.querySelector('.lv-shop-page');
+    click('[data-gesicomm-catalogo-vista="lista"]');
+    expect(pagina.getAttribute('data-catalogo-vista')).toBe('lista');
+    expect(document.querySelector('[data-gesicomm-catalogo-vista="lista"]').getAttribute('aria-pressed')).toBe('true');
+    const categoria = document.querySelector('[data-gesicomm-filtro="categoria"]');
+    categoria.value = 'Cocina';
+    categoria.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(document.querySelectorAll('.lv-shop-card')).toHaveLength(1);
+    expect(document.querySelector('.gc-catalog-count').textContent).toBe('1 producto disponible');
+    window.dispatchEvent(new window.MessageEvent('message', { source: window, data: { tipo: 'gesicomm:datos', datos } }));
+    expect(document.querySelectorAll('[data-gesicomm-catalogo-tools]')).toHaveLength(1);
+    expect(pagina.getAttribute('data-catalogo-vista')).toBe('lista');
+    click('[data-gesicomm-catalogo-vista="grilla"]');
+    expect(pagina.getAttribute('data-catalogo-vista')).toBe('grilla');
+    dom.window.close();
+  });
+
+  it('abre los filtros y los cierra con Escape devolviendo el foco al botón', () => {
+    const { document, window, click, dom } = montar(PLANTILLA_CATALOGO, datos);
+    const pagina = document.querySelector('.lv-shop-page');
+    const boton = document.querySelector('.gc-catalog-filter-toggle');
+    click('.gc-catalog-filter-toggle');
+    expect(pagina.getAttribute('data-catalogo-filtros')).toBe('abiertos');
+    expect(boton.getAttribute('aria-expanded')).toBe('true');
+    document.querySelector('.lv-filters').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(pagina.getAttribute('data-catalogo-filtros')).toBe('cerrados');
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(boton);
+    dom.window.close();
+  });
+
+  it('mantiene el marco de una foto ausente o rota y recupera la imagen al cargar', () => {
+    const { document, window, dom } = montar(PLANTILLA_CATALOGO, datos);
+    const tarjetas = document.querySelectorAll('.lv-shop-card');
+    const foto = tarjetas[0].querySelector('img');
+    const marco = foto.closest('.lv-shop-media');
+    foto.dispatchEvent(new window.Event('error'));
+    expect(marco.classList.contains('is-missing-image')).toBe(true);
+    expect(foto.style.display).toBe('none');
+    foto.dispatchEvent(new window.Event('load'));
+    expect(marco.classList.contains('is-missing-image')).toBe(false);
+    expect(foto.style.display).toBe('');
+    expect(tarjetas[1].querySelector('.lv-shop-media').classList.contains('is-missing-image')).toBe(true);
+    dom.window.close();
+  });
+});
+
 describe('runtime del lienzo en blanco — inicio', () => {
   const datos = { vista: 'inicio', tienda: { nombre: 'Mi Tienda', whatsapp: '0981 123' }, productos: [airFryer, remera, malicioso], producto: null, recomendados: [] };
 

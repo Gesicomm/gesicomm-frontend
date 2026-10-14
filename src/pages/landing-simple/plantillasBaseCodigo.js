@@ -1,4 +1,5 @@
 import { ESTILOS_INICIO_CODIGO } from './estilosInicioCodigo';
+import { CATALOGO_TIENDA_CSS } from './catalogoTiendaCodigo';
 
 /**
  * Código base del lienzo en blanco: una vista de INICIO y una FICHA DE
@@ -3218,9 +3219,11 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
 </div>`;
 
 export const PLANTILLA_CATALOGO = { html: CATALOGO_HTML, css: `${TIENDA_VISTA_CSS}
-${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
+${CSS_COMPARTIDO_TIENDA}
+${CATALOGO_TIENDA_CSS}`, js: JS_COMUN };
 export const PLANTILLA_CATEGORIA = { html: CATEGORIA_HTML, css: `${TIENDA_VISTA_CSS}
-${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
+${CSS_COMPARTIDO_TIENDA}
+${CATALOGO_TIENDA_CSS}`, js: JS_COMUN };
 export const PLANTILLA_CHECKOUT = { html: CHECKOUT_HTML, css: `${TIENDA_VISTA_CSS}
 ${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
 

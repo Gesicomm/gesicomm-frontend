@@ -765,7 +765,7 @@ export function runtimeGesicomm() {
     if (campo === 'imagen') {
       var src = urlSegura(valor);
       if (el.tagName === 'IMG') {
-        var mediaReco = el.closest && el.closest('.lv-reco-media');
+        var mediaReco = el.closest && el.closest('.lv-reco-media, .lv-shop-media');
         if (mediaReco) mediaReco.classList.remove('is-missing-image');
         if (item.tipo_medio === 'video') { el.style.display = 'none'; return; }
         if (src) {
@@ -775,12 +775,12 @@ export function runtimeGesicomm() {
           if (mediaReco && !el.getAttribute('data-gesicomm-img-fallback')) {
             el.setAttribute('data-gesicomm-img-fallback', '1');
             el.addEventListener('error', function () {
-              var wrap = this.closest && this.closest('.lv-reco-media');
+              var wrap = this.closest && this.closest('.lv-reco-media, .lv-shop-media');
               if (wrap) wrap.classList.add('is-missing-image');
               this.style.display = 'none';
             });
             el.addEventListener('load', function () {
-              var wrap = this.closest && this.closest('.lv-reco-media');
+              var wrap = this.closest && this.closest('.lv-reco-media, .lv-shop-media');
               if (wrap) wrap.classList.remove('is-missing-image');
               this.style.display = '';
             });
@@ -3153,10 +3153,96 @@ export function runtimeGesicomm() {
     (select.closest('.gc-page-size') || select).style.display = catalogoVista.total > TAMANOS_PAGINA[0] ? '' : 'none';
   }
 
+  function prepararPresentacionCatalogo() {
+    var pagina = document.querySelector('.lv-shop-page');
+    var resultados = pagina && pagina.querySelector('.lv-results');
+    if (!pagina || !resultados || pagina.querySelector('[data-gesicomm-catalogo-tools]')) return;
+    var tools = document.createElement('div');
+    tools.className = 'gc-catalog-tools';
+    tools.setAttribute('data-gesicomm-catalogo-tools', '');
+    var intro = document.createElement('div');
+    var heading = document.createElement('h2');
+    heading.className = 'gc-catalog-heading';
+    heading.textContent = 'Productos';
+    intro.appendChild(heading);
+    var contador = resultados.querySelector('[data-gesicomm-total]');
+    if (contador) {
+      contador.classList.add('gc-catalog-count');
+      contador.setAttribute('aria-live', 'polite');
+      intro.appendChild(contador);
+    }
+    tools.appendChild(intro);
+    var acciones = document.createElement('div');
+    acciones.className = 'gc-catalog-actions';
+    var meta = resultados.querySelector('.lv-results-meta');
+    var limpiar = meta && meta.querySelector('a');
+    if (limpiar) {
+      limpiar.classList.add('gc-catalog-clear');
+      acciones.appendChild(limpiar);
+    }
+    if (meta && !meta.children.length) meta.remove();
+    var filtrosPanel = pagina.querySelector('.lv-filters');
+    if (filtrosPanel) {
+      if (!filtrosPanel.id) filtrosPanel.id = 'gesicomm-catalogo-filtros';
+      var filtrosBoton = document.createElement('button');
+      filtrosBoton.type = 'button';
+      filtrosBoton.className = 'gc-catalog-filter-toggle';
+      filtrosBoton.textContent = 'Filtros';
+      filtrosBoton.setAttribute('aria-controls', filtrosPanel.id);
+      filtrosBoton.setAttribute('aria-expanded', 'false');
+      filtrosBoton.addEventListener('click', function () {
+        var abrir = pagina.getAttribute('data-catalogo-filtros') !== 'abiertos';
+        pagina.setAttribute('data-catalogo-filtros', abrir ? 'abiertos' : 'cerrados');
+        filtrosBoton.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+        if (abrir) {
+          var campo = filtrosPanel.querySelector('.gc-select-ui-button') || filtrosPanel.querySelector('input, select, button');
+          if (campo) campo.focus();
+          filtrosPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+      acciones.appendChild(filtrosBoton);
+      filtrosPanel.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        pagina.setAttribute('data-catalogo-filtros', 'cerrados');
+        filtrosBoton.setAttribute('aria-expanded', 'false');
+        filtrosBoton.focus();
+      });
+    }
+    var vistas = document.createElement('div');
+    vistas.className = 'gc-catalog-views';
+    vistas.setAttribute('role', 'group');
+    vistas.setAttribute('aria-label', 'Visualización de productos');
+    var iconos = {
+      grilla: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+      lista: '<path d="M9 5h12M9 12h12M9 19h12M3 5h1M3 12h1M3 19h1"/>',
+    };
+    ['grilla', 'lista'].forEach(function (vista) {
+      var boton = document.createElement('button');
+      boton.type = 'button';
+      boton.setAttribute('data-gesicomm-catalogo-vista', vista);
+      boton.setAttribute('aria-label', vista === 'grilla' ? 'Ver en cuadrícula' : 'Ver en lista');
+      boton.title = boton.getAttribute('aria-label');
+      boton.setAttribute('aria-pressed', vista === 'grilla' ? 'true' : 'false');
+      boton.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">' + iconos[vista] + '</svg>';
+      boton.addEventListener('click', function () {
+        pagina.setAttribute('data-catalogo-vista', vista);
+        var botones = vistas.querySelectorAll('button');
+        for (var i = 0; i < botones.length; i++) {
+          botones[i].setAttribute('aria-pressed', botones[i] === boton ? 'true' : 'false');
+        }
+      });
+      vistas.appendChild(boton);
+    });
+    acciones.appendChild(vistas);
+    tools.appendChild(acciones);
+    resultados.insertBefore(tools, resultados.firstChild);
+  }
+
   function pintarControlesCatalogo() {
     var v = catalogoVista;
     var i;
     prepararTamanoPagina();
+    prepararPresentacionCatalogo();
     var totales = document.querySelectorAll('[data-gesicomm-total]');
     for (i = 0; i < totales.length; i++) {
       totales[i].textContent = v.total === 1 ? '1 producto disponible' : v.total + ' productos disponibles';

@@ -22,6 +22,7 @@
  */
 
 import { runtimeGesicomm } from './runtimeGesicomm';
+import { CATALOGO_TIENDA_CSS } from './catalogoTiendaCodigo';
 import { conMarcaTienda, cssMarcaTienda } from './marcaTiendaCodigo';
 import { typographyCss } from '../../lib/typography';
 
@@ -3151,6 +3152,7 @@ ${escaparCierreStyle(conMarcaTienda(css))}
 </style>
 <style>
 ${SYSTEM_CSS}
+${CATALOGO_TIENDA_CSS}
 </style>
 ${extras?.css ? `<style>\n${escaparCierreStyle(extras.css)}\n</style>` : ''}
 </head>
