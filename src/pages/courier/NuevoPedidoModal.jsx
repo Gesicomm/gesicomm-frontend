@@ -109,6 +109,28 @@ const CANALES_PAGOPAR_NOMBRES = [
   'Bocas de pago',
 ];
 
+/**
+ * Datos de cliente + entrega para precargar un pedido NUEVO a partir de uno
+ * ya entregado (recompra: "quiero otro producto" sobre un cliente que ya
+ * compró). A diferencia de `buildFormFromEnvio` esto no es "completar" el
+ * pedido original — los productos arrancan vacíos y el pedido es otro, así
+ * que fecha, confirmador, método de pago y observaciones no se arrastran.
+ */
+function datosClienteParaRepetir(envio) {
+  if (!envio) return {};
+  const nombreCompleto = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
+  return {
+    nombre_cliente: nombreCompleto,
+    apellido_cliente: "",
+    telefono: envio.telefono || "",
+    departamento: envio.departamento || "",
+    ciudad: envio.ciudad || "",
+    direccion: envio.direccion || "",
+    referencia: envio.referencia || "",
+    link_maps: envio.link_maps || "",
+  };
+}
+
 function buildFormFromEnvio(envio) {
   const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Asuncion' });
   const horaActual = new Date().toLocaleTimeString('es-PY', { timeZone: 'America/Asuncion', hour: '2-digit', minute: '2-digit' });
@@ -212,7 +234,7 @@ function buildFormFromEnvio(envio) {
  * "completar" los ítems y la fecha/hora original no son editables (ya
  * comprometieron stock/registro), todo lo demás sí.
  */
-export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, deliveryZonas = [], onPrecioItemActualizado, onAbrirSeguimiento }) {
+export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, clienteBase = null, deliveryZonas = [], onPrecioItemActualizado, onAbrirSeguimiento }) {
   const modoCompletar = !!envio;
   // Confirmar solo aplica a un pedido por confirmar: Pendiente, o En
   // seguimiento (un pendiente al que ya se le escribió). Sobre uno que ya
@@ -278,7 +300,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
 
   useEffect(() => {
     if (open) {
-      const inicial = buildFormFromEnvio(envio);
+      const inicial = { ...buildFormFromEnvio(envio), ...(!envio ? datosClienteParaRepetir(clienteBase) : {}) };
       setForm(inicial);
       precioAlAbrirRef.current = envio
         ? {
@@ -839,6 +861,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       oferta_codigo: oferta ? oferta.codigo : null,
       oferta_nombre: oferta ? oferta.nombre : null,
       nombre_producto: oferta ? `${producto.nombre} — ${oferta.nombre}` : producto.nombre,
+      origen_venta: oferta ? (oferta.estrategia || 'normal') : 'normal',
       cantidad: qty,
       precio_unitario: precioUnit,
       subtotal: qty * precioUnit,
@@ -2015,7 +2038,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   <div className="np-review-products">
                     {itemsParaTarifa.map((it, idx) => (
                       <div key={`${it.producto_id || idx}-review`}>
-                        <span>{it.nombre_producto}</span>
+                        <span className="np-review-product-name">
+                          <span>
+                            {nombreBaseItem(it)}
+                            {tipoLineaItem(it) && <span className="np-line-badge">{tipoLineaItem(it)}</span>}
+                          </span>
+                          {it.oferta_nombre && <small>{it.oferta_nombre}</small>}
+                        </span>
                         <strong>{Number(it.cantidad) || 1} × Gs. {Number(it.precio_unitario || 0).toLocaleString('es-PY')}</strong>
                       </div>
                     ))}

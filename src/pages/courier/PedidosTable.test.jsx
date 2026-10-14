@@ -134,15 +134,17 @@ test("las etapas incluyen Seguimiento de envío y cada una pide solo sus estados
   expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado comercial", "Seguimiento", "Acción"]);
 
   irAEtapa("Seguimiento de envío");
-  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado"]));
-  expect(chips()).toEqual(["Preparado", "Despachado", "Reprogramado"]);
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado", "Despachado", "Reprogramado"]));
+  expect(chips()).toEqual([]);
+  expect(within(screen.getByRole("region", { name: "Estados de seguimiento de envío" })).getAllByText(/Preparado|Despachado|Reprogramado/).map((chip) => chip.textContent))
+    .toEqual(["Preparado", "Despachado", "Reprogramado"]);
   expect(ultimoPedido()).toMatchObject({ incluir_seguimiento: true });
   expect(ultimoPedido()).not.toHaveProperty("excluir_logistica_raha");
   expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Mensaje de seguimiento", "Acción"]);
   await waitFor(() => expect(getConteoPorEstado.mock.calls.at(-1)[0]).not.toHaveProperty("separar_logistica_raha"));
 
   irAEtapa("Logística");
-  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado"]));
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]));
   // Sin "Todos": Envíos RAHA primero, Pendiente de preparación y el resto de los estados de siempre.
   expect(chips()).toEqual(["Envíos RAHA", "Pendiente de preparación", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
   fireEvent.click(screen.getAllByRole("button").find((b) => b.classList.contains("pt-status-chip") && b.textContent.startsWith("Pendiente de preparación")));
@@ -520,14 +522,14 @@ test("Logística no muestra mensajes ni accesos a WhatsApp en tabla y Kanban", a
 test("seguimiento bloquea pedidos pendientes antiguos y su Kanban comienza en Preparado", async () => {
   getEnviosPaginados.mockResolvedValue({ data: [pedido(1, "Confirmado", { seguimiento: SEGUIMIENTO_ENVIO })], total: 1, totalPages: 1 });
   const { onAbrirSeguimiento } = await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: "seguimiento_envio", initialEstado: "Confirmado" });
-  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado"]));
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado", "Despachado", "Reprogramado"]));
   const fila = within(screen.getByText("Cliente 1").closest("tr"));
   for (const boton of fila.getAllByRole("button", { name: /Seguimiento/ })) {
     expect(boton).toBeDisabled();
     fireEvent.click(boton);
   }
   expect(onAbrirSeguimiento).not.toHaveBeenCalled();
-  expect(screen.getAllByRole("button").filter((b) => b.classList.contains("pt-status-chip")).map((b) => b.textContent.replace(/\d+$/, "")))
+  expect(within(screen.getByRole("region", { name: "Estados de seguimiento de envío" })).getAllByText(/Preparado|Despachado|Reprogramado/).map((chip) => chip.textContent))
     .toEqual(["Preparado", "Despachado", "Reprogramado"]);
   fireEvent.click(screen.getByRole("button", { name: /Kanban/ }));
   await screen.findByRole("region", { name: "Columna Preparados" });
@@ -549,7 +551,7 @@ test("al confirmar sale de comercial y recién al prepararse aparece en Seguimie
   rerender(<PedidosTable {...props} refrescarKey={1} onAbrirSeguimiento={onAbrirSeguimiento} />);
   await waitFor(() => expect(screen.queryByText("Cliente 1")).not.toBeInTheDocument());
   irAEtapa("Seguimiento de envío");
-  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado"]));
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado", "Despachado", "Reprogramado"]));
   expect(screen.queryByText("Cliente 1")).not.toBeInTheDocument();
   estado = "Preparado";
   rerender(<PedidosTable {...props} refrescarKey={2} onAbrirSeguimiento={onAbrirSeguimiento} />);

@@ -71,6 +71,9 @@ export function ControlCourier({ etapaFija } = {}) {
   const [deliveryZonas, setDeliveryZonas] = useState([]);
   const [envios, setEnvios] = useState([]);
   const [openNuevoPedido, setOpenNuevoPedido] = useState(false);
+  // Pedido de origen cuando se abre "Nuevo pedido" desde Recompra: solo
+  // presta sus datos de cliente/entrega, no se completa ni se toca.
+  const [clienteParaRepetir, setClienteParaRepetir] = useState(null);
   const [openImprimir, setOpenImprimir] = useState(false);
   const [envioParaCompletar, setEnvioParaCompletar] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -103,6 +106,11 @@ export function ControlCourier({ etapaFija } = {}) {
   useEffect(() => {
     verificarSesion().then(setUsuarioActual).catch(() => setUsuarioActual(null));
   }, []);
+
+  function abrirNuevoPedidoDesdeRecompra(envio) {
+    setClienteParaRepetir(envio);
+    setOpenNuevoPedido(true);
+  }
 
   function abrirSeguimiento(envio) {
     if (!permiteSeguimiento) return;
@@ -189,6 +197,7 @@ export function ControlCourier({ etapaFija } = {}) {
     const res = await createEnvio(payload);
     setEnvios(prev => [res, ...prev]);
     setOpenNuevoPedido(false);
+    setClienteParaRepetir(null);
     cargarDatos();
     setRefrescarKey(k => k + 1);
   };
@@ -293,7 +302,7 @@ export function ControlCourier({ etapaFija } = {}) {
             <button
               type="button"
               className="btn-nuevo-pedido"
-              onClick={() => setOpenNuevoPedido(true)}
+              onClick={() => { setClienteParaRepetir(null); setOpenNuevoPedido(true); }}
             >
               <Plus size={18} />
               Nuevo Pedido
@@ -301,16 +310,18 @@ export function ControlCourier({ etapaFija } = {}) {
           </div>
         </div>
 
-        <nav className="courier-tabs" aria-label="Secciones de pedidos">
-          <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
-            Tablero
-          </TabButton>
-          {tabsDisponibles.includes("rendicion") && (
-            <TabButton active={tab === "rendicion"} onClick={() => seleccionarTab("rendicion")} icon={<HandCoins size={16} />}>
-              Rendición
+        {tabsDisponibles.length > 1 && (
+          <nav className="courier-tabs" aria-label="Secciones de pedidos">
+            <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
+              Tablero
             </TabButton>
-          )}
-        </nav>
+            {tabsDisponibles.includes("rendicion") && (
+              <TabButton active={tab === "rendicion"} onClick={() => seleccionarTab("rendicion")} icon={<HandCoins size={16} />}>
+                Rendición
+              </TabButton>
+            )}
+          </nav>
+        )}
       </div>
 
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
@@ -325,6 +336,7 @@ export function ControlCourier({ etapaFija } = {}) {
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
             onAbrirSeguimiento={permiteSeguimiento ? abrirSeguimiento : undefined}
+            onRepetirPedido={permiteSeguimiento ? abrirNuevoPedidoDesdeRecompra : undefined}
             refrescarKey={refrescarKey}
             {...etapasProps}
           />
@@ -337,7 +349,8 @@ export function ControlCourier({ etapaFija } = {}) {
       <NuevoPedidoModal
         open={openNuevoPedido || !!envioParaCompletar}
         envio={envioParaCompletar}
-        onClose={() => { setOpenNuevoPedido(false); setEnvioParaCompletar(null); }}
+        clienteBase={clienteParaRepetir}
+        onClose={() => { setOpenNuevoPedido(false); setEnvioParaCompletar(null); setClienteParaRepetir(null); }}
         onSubmit={handleModalSubmit}
         deliveryZonas={deliveryZonas}
         onPrecioItemActualizado={() => setRefrescarKey((k) => k + 1)}

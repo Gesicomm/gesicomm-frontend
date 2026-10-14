@@ -1166,6 +1166,18 @@ button.order-alert-chip:focus-visible {
   font-size: 0.82rem;
 }
 
+.np-review-product-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.np-review-product-name small {
+  color: var(--color-fg-muted);
+  font-size: 0.74rem;
+}
+
 .np-review-options {
   display: flex;
   flex-direction: column;
@@ -3276,6 +3288,89 @@ button.order-alert-chip:focus-visible {
 .pt-life-cell--warning strong { color: var(--color-warning); }
 .pt-life-cell--info strong { color: var(--color-info); }
 .pt-life-cell--danger strong { color: var(--color-danger); }
+.pt-life-cell--violet strong { color: #a78bfa; }
+[data-theme="light"] .pt-life-cell--violet strong { color: #7c3aed; }
+
+.pt-status-chip--legend { cursor: default; }
+.pt-status-chip__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+
+/* Paleta de seguimiento: la fila, su etiqueta y la leyenda comparten color.
+   Tintas claras sobre superficies oscuras y tintas profundas en tema claro. */
+.pt-root {
+  --pt-followup-info: #60a5fa;
+  --pt-followup-violet: #c084fc;
+  --pt-followup-warning: #fbbf24;
+  --pt-followup-teal: #2dd4bf;
+  --pt-followup-success: #4ade80;
+  --pt-followup-danger: #fb7185;
+  --pt-followup-neutral: #cbd5e1;
+  --pt-followup-fill: 18%;
+  --pt-followup-hover-fill: 24%;
+}
+
+[data-theme="light"] .pt-root {
+  --pt-followup-info: #1d4ed8;
+  --pt-followup-violet: #7e22ce;
+  --pt-followup-warning: #92400e;
+  --pt-followup-teal: #0f665e;
+  --pt-followup-success: #166534;
+  --pt-followup-danger: #be123c;
+  --pt-followup-neutral: #475569;
+  --pt-followup-fill: 12%;
+  --pt-followup-hover-fill: 18%;
+}
+
+.pt-root [data-followup-tone="info"] { --pt-followup-color: var(--pt-followup-info); }
+.pt-root [data-followup-tone="violet"] { --pt-followup-color: var(--pt-followup-violet); }
+.pt-root [data-followup-tone="warning"] { --pt-followup-color: var(--pt-followup-warning); }
+.pt-root [data-followup-tone="teal"] { --pt-followup-color: var(--pt-followup-teal); }
+.pt-root [data-followup-tone="success"] { --pt-followup-color: var(--pt-followup-success); }
+.pt-root [data-followup-tone="danger"] { --pt-followup-color: var(--pt-followup-danger); }
+.pt-root [data-followup-tone="neutral"] { --pt-followup-color: var(--pt-followup-neutral); }
+
+.pt-root .pt-row[data-followup-tone] {
+  background: color-mix(in srgb, var(--pt-followup-color) var(--pt-followup-fill), var(--color-surface));
+}
+
+.pt-root .pt-row[data-followup-tone]:hover {
+  background: color-mix(in srgb, var(--pt-followup-color) var(--pt-followup-hover-fill), var(--color-surface));
+}
+
+.pt-row[data-followup-tone] .pt-td-id {
+  box-shadow: inset 5px 0 0 var(--pt-followup-color);
+}
+
+.pt-root[data-stage="seguimiento_envio"] .pt-row .pt-life-cell > strong,
+.pt-root .pt-status-chip--legend,
+.pt-root .pt-status-chip--legend:hover {
+  color: var(--pt-followup-color);
+  background: color-mix(in srgb, var(--pt-followup-color) 14%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--pt-followup-color) 50%, var(--color-surface));
+}
+
+.pt-root[data-stage="seguimiento_envio"] .pt-row .pt-life-cell > strong {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.28rem 0.5rem;
+  border-radius: 6px;
+  line-height: 1.3;
+  box-sizing: border-box;
+}
+
+.pt-root .pt-status-chip--legend .pt-status-chip__count { opacity: 1; }
+
+@media (max-width: 760px) {
+  .pt-root .pt-row[data-followup-tone] {
+    border-left: 5px solid var(--pt-followup-color);
+  }
+  .pt-row[data-followup-tone] .pt-td-id { box-shadow: none; }
+}
 
 .pt-raha-timeline {
   padding: 1.5rem 1rem;
@@ -3771,6 +3866,25 @@ button.order-alert-chip:focus-visible {
 }
 .pt-cliente { display: flex; flex-direction: column; }
 .pt-cliente-nombre { font-weight: 500; color: var(--color-fg); overflow-wrap: anywhere; }
+.pt-reputacion-badge {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: help;
+}
+.pt-reputacion-badge.is-malo {
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  color: var(--color-danger);
+}
+.pt-reputacion-badge.is-bueno {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success);
+}
 .pt-row-actions {
   display: flex;
   align-items: center;

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
   ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Clock,
-  Columns3, Table2, SlidersHorizontal, CheckCircle2
+  Columns3, Table2, SlidersHorizontal, CheckCircle2, Plus
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
@@ -86,6 +86,22 @@ const ABASTECIMIENTO_META = {
 // detalle por producto) — se resuelven en un modal dedicado, nunca con un
 // PATCH directo del dropdown. Ver plan Gestión de Pedidos, sección 42.
 const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", Devuelto: "devolver", Perdido: "perder" };
+
+// En Seguimiento de envío los tres estados conviven en una sola lista (pedido
+// del usuario, 2026-10-14): ya no se separan en pestañas, se distinguen por
+// color de fila y del estado logístico. Despachado usa "violet" en vez de su
+// tono "info" habitual para no confundirse con Preparado.
+const SEGUIMIENTO_TONE = { Preparado: "info", Despachado: "violet", Reprogramado: "warning" };
+
+function tonoSeguimiento(envio) {
+  if (envio.raha_logistica?.gestionado) {
+    const status = statusRahaActual(envio);
+    if (status === "cargado") return "violet";
+    if (status === "en_camino") return "teal";
+    return (RAHA_STATUS_META[status] || RAHA_STATUS_META.creado).tone;
+  }
+  return SEGUIMIENTO_TONE[envio.estado] || estadoDePedido(envio, "seguimiento_envio").tone;
+}
 
 const RAHA_BASE_STATUS_ORDER = ["creado", "cargado", "en_camino"];
 const RAHA_TERMINAL_STATUS_ORDER = ["entregado", "devuelto"];
@@ -400,7 +416,7 @@ function datosContextoRaha(logistica = {}, evento = {}) {
   };
 }
 
-function RahaEstadoCell({ envio }) {
+function RahaEstadoCell({ envio, etapa }) {
   const status = statusRahaActual(envio);
   const meta = RAHA_STATUS_META[status] || RAHA_STATUS_META.creado;
   return (
@@ -408,7 +424,7 @@ function RahaEstadoCell({ envio }) {
       primary={meta.label}
       secondary={null}
       alert={envio?.raha_logistica?.error || null}
-      tone={meta.tone}
+      tone={etapa === "seguimiento_envio" ? tonoSeguimiento(envio) : meta.tone}
     />
   );
 }
@@ -495,6 +511,26 @@ function AbastecimientoBadge({ envio, onAbrirTimeline }) {
   );
 }
 
+// Reputación del cliente por teléfono (ver adjuntarReputacionCliente en el
+// backend): solo se muestra cuando ya devolvió algo clasificado alguna vez,
+// en cualquier pedido suyo — no solo en Recuperación (pedido del usuario,
+// 2026-10-14).
+function ReputacionClienteBadge({ reputacion }) {
+  if (!reputacion || (!reputacion.injustificadas && !reputacion.justificadas)) return null;
+  const malo = reputacion.injustificadas > 0;
+  const partes = [];
+  if (reputacion.injustificadas > 0) partes.push(`${reputacion.injustificadas} devolución${reputacion.injustificadas === 1 ? "" : "es"} injustificada${reputacion.injustificadas === 1 ? "" : "s"}`);
+  if (reputacion.justificadas > 0) partes.push(`${reputacion.justificadas} justificada${reputacion.justificadas === 1 ? "" : "s"}`);
+  return (
+    <span
+      className={`pt-reputacion-badge ${malo ? "is-malo" : "is-bueno"}`}
+      title={`Historial de devoluciones de este cliente: ${partes.join(" · ")}`}
+    >
+      {malo ? "Cliente a revisar" : "Devolvió antes"}
+    </span>
+  );
+}
+
 function LifecycleCell({ primary, secondary, alert, tone = "neutral" }) {
   return (
     <div className={`pt-life-cell pt-life-cell--${tone}`}>
@@ -509,11 +545,12 @@ function LifecycleCell({ primary, secondary, alert, tone = "neutral" }) {
 // muestran el operativo. Recompra muestra el escalamiento de ventas.
 function EstadoCell({ envio, etapa, onCambiarEstado }) {
   if (["logistica", "seguimiento_envio"].includes(etapa) && envio?.raha_logistica?.gestionado) {
-    return <RahaEstadoCell envio={envio} />;
+    return <RahaEstadoCell envio={envio} etapa={etapa} />;
   }
   const estado = estadoDePedido(envio, etapa);
   const courier = envio.Courier?.nombre || envio.proveedor_logistico_nombre || null;
-  const secundario = etapa === "recuperacion" ? envio.estado : estado.id === "Confirmado"
+  const motivoDevolucionLabel = { justificada: "Devuelto justificadamente", injustificada: "Devuelto injustificadamente" }[envio.motivo_devolucion] || null;
+  const secundario = etapa === "recuperacion" ? (motivoDevolucionLabel || envio.estado) : estado.id === "Confirmado"
     ? paymentLine(envio)
     : estado.id === "Entregado" && envio.metodo_pago
     ? `Cobrado: ${envio.metodo_pago}`
@@ -521,9 +558,10 @@ function EstadoCell({ envio, etapa, onCambiarEstado }) {
     ? courier
     : null;
   const alerta = estado.id === "DevolucionPendiente" ? "Revisar devolución" : null;
+  const tono = etapa === "seguimiento_envio" ? tonoSeguimiento(envio) : estado.tone;
   // Los mensajes usan el estado operativo como referencia; se cambia en Logística.
   if (["recompra", "recuperacion", "seguimiento_envio"].includes(etapa) || envio.estado === "Despachado" || !onCambiarEstado) {
-    return <LifecycleCell primary={estado.label} secondary={secundario} alert={alerta} tone={estado.tone} />;
+    return <LifecycleCell primary={estado.label} secondary={secundario} alert={alerta} tone={tono} />;
   }
   return (
     <div className="pt-life-cell">
@@ -740,6 +778,7 @@ export function PedidosTable({
   onAbrirResumen,
   onAbrirHistorial,
   onAbrirSeguimiento,
+  onRepetirPedido,
   refrescarKey = 0,
   initialPedidoId = "",
   initialEstado = TODOS_ESTADOS_ID,
@@ -1156,7 +1195,10 @@ export function PedidosTable({
   // Ya no existe el filtro "Todos" en las etapas con varios subfiltros:
   // si el estado activo no es uno de los chips, se usa el primero.
   useEffect(() => {
-    if (!soloAbastecimiento && etapaActiva === "recuperacion") {
+    // Seguimiento de envío ya no se separa por estado: siempre muestra los
+    // tres juntos (Preparado/Despachado/Reprogramado), distinguidos por
+    // color de fila en vez de por pestaña (pedido del usuario, 2026-10-14).
+    if (!soloAbastecimiento && ["recuperacion", "seguimiento_envio"].includes(etapaActiva)) {
       if (estadoActivo !== TODOS_ESTADOS_ID) setEstadoActivo(TODOS_ESTADOS_ID);
       return;
     }
@@ -1168,7 +1210,7 @@ export function PedidosTable({
   );
 
   return (
-    <div className="pt-root">
+    <div className="pt-root" data-stage={etapaActiva}>
       {!soloAbastecimiento && (
         <div className="pt-viewbar">
           <div className="pt-viewbar-copy">
@@ -1258,6 +1300,24 @@ export function PedidosTable({
             <span>Las columnas operativas no crean estados nuevos: muestran qué necesita cada pedido ahora.</span>
           </div>
         </div>
+      ) : !soloAbastecimiento && etapaActiva === "seguimiento_envio" ? (
+        // Acá ya no se separa por estado (pedido del usuario, 2026-10-14):
+        // Preparado/Despachado/Reprogramado conviven en una sola lista y se
+        // distinguen por color de fila. Esta leyenda es solo informativa.
+        <section className="pt-status-shell" aria-label="Estados de seguimiento de envío">
+          <div className="pt-status-tabs pt-status-tabs--secondary" role="note">
+            {chipsEtapaActiva.map((st) => {
+              const cfg = STATUS[st] || {};
+              return (
+                <span key={st} className="pt-status-chip pt-status-chip--legend" data-followup-tone={SEGUIMIENTO_TONE[st]}>
+                  <span className="pt-status-chip__dot" aria-hidden="true" />
+                  <span className="pt-status-chip__label">{cfg.label || st}</span>
+                  <strong className="pt-status-chip__count">{conteoDeFiltro(st)}</strong>
+                </span>
+              );
+            })}
+          </div>
+        </section>
       ) : !soloAbastecimiento && chipsEtapaActiva.length > 1 ? (
         <section className="pt-status-shell" aria-label={`Filtros secundarios de ${etapaActiva}`}>
           <div className="pt-status-tabs pt-status-tabs--secondary" role="tablist">
@@ -1670,11 +1730,13 @@ export function PedidosTable({
                   e.createdAt
                 );
                 const nombreCliente = [e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") || e.cliente || "—";
+                const tonoFila = etapaActiva === "seguimiento_envio" ? tonoSeguimiento(e) : undefined;
 
                 return [
                   <tr
                     key={e.id}
                     className="pt-row"
+                    data-followup-tone={tonoFila}
                     onClick={() => {
                       // Dentro de la pestaña de abastecimiento el clic en la
                       // fila abre el seguimiento, no el editor del pedido.
@@ -1724,6 +1786,7 @@ export function PedidosTable({
                         <td className="pt-td" data-label="Cliente">
                           <span className="pt-cliente-nombre">{nombreCliente}</span>
                           <span className="pt-depto">{[e.ciudad, e.departamento].filter(Boolean).join(" · ") || "Sin ciudad"}</span>
+                          <ReputacionClienteBadge reputacion={e.reputacion_cliente} />
                         </td>
                         <td className="pt-td pt-td-telefono" data-label="Teléfono">
                           {e.telefono || "—"}
@@ -1782,6 +1845,16 @@ export function PedidosTable({
                             onCambiarEstado={handleItemEstadoChange}
                             etapa={etapaActiva}
                           />
+                        )}
+                        {etapaActiva === "recompra" && onRepetirPedido && (
+                          <button
+                            type="button"
+                            title="Crear un nuevo pedido con los datos de este cliente"
+                            style={accionBtnStyle}
+                            onClick={(ev) => { ev.stopPropagation(); onRepetirPedido(e); }}
+                          >
+                            <Plus size={13} /> Nuevo pedido
+                          </button>
                         )}
                         {onAbrirHistorial && (
                           <button

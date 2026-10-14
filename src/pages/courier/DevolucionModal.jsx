@@ -26,6 +26,7 @@ export function DevolucionModal({ open, envio, onClose, onSubmit }) {
   const [cantidades, setCantidades] = useState({});
   const [condiciones, setCondiciones] = useState({});
   const [marcarEstado, setMarcarEstado] = useState(true);
+  const [motivoDevolucion, setMotivoDevolucion] = useState("");
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -34,6 +35,7 @@ export function DevolucionModal({ open, envio, onClose, onSubmit }) {
       setCantidades({});
       setCondiciones({});
       setMarcarEstado(true);
+      setMotivoDevolucion("");
       setError(null);
     }
   }, [open, envio]);
@@ -54,10 +56,14 @@ export function DevolucionModal({ open, envio, onClose, onSubmit }) {
       setError("Indicá al menos una cantidad a devolver");
       return;
     }
+    if (!motivoDevolucion) {
+      setError('Indicá si la devolución fue "justificada" o "injustificada"');
+      return;
+    }
     setGuardando(true);
     setError(null);
     try {
-      await onSubmit(envio.id, { items, marcar_estado: marcarEstado });
+      await onSubmit(envio.id, { items, marcar_estado: marcarEstado, motivo_devolucion: motivoDevolucion });
     } catch (err) {
       setError(err?.response?.data?.error || "Error al registrar la devolución");
     } finally {
@@ -115,6 +121,22 @@ export function DevolucionModal({ open, envio, onClose, onSubmit }) {
               </div>
             ))
           )}
+
+          <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem", fontSize: "0.85rem", color: "var(--color-fg)" }}>
+            <span>¿Por qué se devolvió?</span>
+            <select
+              className="form-input"
+              value={motivoDevolucion}
+              onChange={(e) => setMotivoDevolucion(e.target.value)}
+            >
+              <option value="">Seleccionar...</option>
+              <option value="justificada">Devuelto justificadamente</option>
+              <option value="injustificada">Devuelto injustificadamente</option>
+            </select>
+            <span style={{ fontSize: "0.72rem", color: "var(--color-fg-muted)" }}>
+              Queda guardado en este cliente: en Recuperación vas a ver si ya devolvió sin motivo antes.
+            </span>
+          </label>
 
           <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--color-fg)" }}>
             <input type="checkbox" checked={marcarEstado} onChange={(e) => setMarcarEstado(e.target.checked)} />
