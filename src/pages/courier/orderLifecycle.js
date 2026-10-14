@@ -58,6 +58,31 @@ export const LOGISTIC_STATUSES = ["Confirmado", "Preparado", "Despachado", "Repr
 export const RECOMPRA_STATUSES = ["Entregado"];
 export const RECOVERY_STATUSES = ["Devuelto", "Perdido"];
 
+/** Compatibilidad con los avisos base anteriores al estado activador. */
+export function estadoActivadorEnvio(fase) {
+  const configurado = fase?.estado_activador || fase?.transicion_estado_hasta
+    || (fase?.accion_operativa === "PREPARAR_PEDIDO" ? "Preparado"
+      : ["DESPACHAR_PEDIDO", "AVISO_EN_CAMINO"].includes(fase?.accion_operativa) ? "Despachado" : null);
+  if (configurado) return configurado;
+  const nombre = String(fase?.nombre || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/confirm|prepar/.test(nombre)) return "Preparado";
+  if (/despach|camino/.test(nombre)) return "Despachado";
+  return null;
+}
+
+export function fasesDeSeguimientoParaPedido(flujo, envio) {
+  if (flujo?.tipo !== "SEGUIMIENTO_ENVIO") return flujo?.fases || [];
+  return (flujo.fases || []).map((fase) => {
+    const activador = estadoActivadorEnvio(fase);
+    const superada = fase.superada || (activador === "Preparado" && ["Despachado", "Reprogramado"].includes(envio?.estado));
+    const coincide = !activador || (activador === "Despachado"
+      ? ["Despachado", "Reprogramado"].includes(envio?.estado)
+      : activador === envio?.estado);
+    return { ...fase, estado_activador: activador, superada,
+      disponible: fase.disponible !== false && SHIPPING_FOLLOWUP_STATUSES.includes(envio?.estado) && coincide };
+  });
+}
+
 // Nombre que se muestra para el estado Confirmado ahora que vive en
 // Logística — "Confirmado" sigue siendo el valor real en Envio.estado (no
 // se tocó la base ni envioController), esto es solo de presentación.

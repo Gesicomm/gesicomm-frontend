@@ -182,7 +182,7 @@ test("marcar enviada una fase antigua de despacho conserva el estado logístico"
     recordatorios_cumplidos: [],
     siguiente_fase: { id: 303, orden: 3, nombre: "Pedido en camino" },
   });
-  const envio = pedido({ estado: "Preparado" });
+  const envio = pedido({ estado: "Despachado" });
   const onDespacharPedido = vi.fn(async () => ({ ...envio, estado: "Despachado" }));
 
   render(<SeguimientoPanel open envio={envio} onClose={() => {}} onDespacharPedido={onDespacharPedido} />);
@@ -192,6 +192,23 @@ test("marcar enviada una fase antigua de despacho conserva el estado logístico"
 
   await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, 302));
   expect(onDespacharPedido).not.toHaveBeenCalled();
+});
+
+test.each(["Despachado", "Reprogramado"])("un pedido %s abre despacho aunque la sugerencia antigua sea confirmación", async estado => {
+  const flujo = { ...FLUJO_ENVIO, envios_totales: 0, fases: [
+    { id: 301, orden: 1, nombre: "Pedido confirmado", disponible: true, envios: 0, completada: false, mensaje_resuelto: "Confirmá tu pedido" },
+    { id: 302, orden: 2, nombre: "Pedido despachado", disponible: true, envios: 0, completada: false, mensaje_resuelto: "Tu pedido ya ha sido despachado. Atento a tu courier Express, teléfono 0982 333 444." },
+  ] };
+  seguimientoService.getFlujosPedido.mockResolvedValue([{ ...FLUJO_CONFIRMACION, tipo: "CONFIRMACION_PEDIDO_WEB" }, flujo]);
+  seguimientoService.crearContacto.mockResolvedValue({});
+  render(<SeguimientoPanel open envio={pedido({ estado })} faseSugeridaId={301} onClose={() => {}} />);
+  await screen.findByText(/Fase 2 — Pedido despachado/);
+  expect(screen.queryByText(/Fase 1 — Pedido confirmado/)).not.toBeInTheDocument();
+  expect(screen.queryByText("Confirmá tu pedido")).not.toBeInTheDocument();
+  expect(screen.getByText(/Tu pedido ya ha sido despachado/)).toBeInTheDocument();
+  expect(screen.getByText("Toca ahora")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Abrir en WhatsApp" }));
+  await waitFor(() => expect(seguimientoService.crearContacto).toHaveBeenCalledWith(50, expect.objectContaining({ fase_id: 302 })));
 });
 
 test("marcar enviada la fase Pedido en camino es solo aviso y no cambia estado", async () => {

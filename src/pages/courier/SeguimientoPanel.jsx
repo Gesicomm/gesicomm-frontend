@@ -5,7 +5,7 @@ import { seguimientoService } from "../../services/seguimiento.service";
 import { formatEspera } from "./variablesWhatsapp";
 import { numeroPedidoVisible } from "./pedidoNumero";
 import { formatGs } from "../../lib/courier";
-import { FLOW_TYPES, SHIPPING_FOLLOWUP_STATUSES } from "./orderLifecycle";
+import { FLOW_TYPES, SHIPPING_FOLLOWUP_STATUSES, fasesDeSeguimientoParaPedido } from "./orderLifecycle";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -126,8 +126,18 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       // Arranca en el flujo de la fase que toca; si no hay, en el que ya se
       // venía usando con este pedido.
       const delaFase = faseQueToca ? lista.find(f => (f.fases || []).some(x => x.id === faseQueToca)) : null;
-      const enUso = lista.find(f => (f.envios_totales || 0) > 0);
-      setFlujoId((delaFase || enUso || lista[0])?.id ?? null);
+      const tipoActual = SHIPPING_FOLLOWUP_STATUSES.includes(envio.estado) ? "SEGUIMIENTO_ENVIO"
+        : envio.estado === "Entregado" ? "ESCALAMIENTO_VENTAS"
+          : ["Devuelto", "Perdido"].includes(envio.estado) ? "RECUPERACION_CLIENTES" : null;
+      const deLaEtapa = tipoActual ? lista.filter(f => f.tipo === tipoActual) : lista;
+      const enUso = deLaEtapa.find(f => (f.envios_totales || 0) > 0);
+      const elegido = (delaFase && (!tipoActual || delaFase.tipo === tipoActual) ? delaFase : null)
+        || enUso || deLaEtapa.find(f => f.predeterminado) || deLaEtapa[0] || lista[0];
+      setFlujoId(elegido?.id ?? null);
+      const fasesElegidas = fasesDeSeguimientoParaPedido(elegido, envio);
+      const sugerida = fasesElegidas.find(f => f.id === faseQueToca && f.disponible !== false && !f.completada);
+      const mayorCompletada = fasesElegidas.reduce((max, f) => f.completada ? Math.max(max, f.orden) : max, 0);
+      setFaseVista((sugerida || fasesElegidas.find(f => f.orden > mayorCompletada && f.disponible !== false))?.id ?? null);
       setEtiquetasPedido(resEtiqPed || []);
       setEtiquetasDisponibles(resEtiqDisp || []);
       setCargando(false);
@@ -148,7 +158,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
 
   const flujo = flujos.find(f => f.id === flujoId) || null;
-  const fases = flujo?.fases || [];
+  const fases = fasesDeSeguimientoParaPedido(flujo, envio);
   const seguimientoBloqueado = flujo?.tipo === "SEGUIMIENTO_ENVIO" && !SHIPPING_FOLLOWUP_STATUSES.includes(envio?.estado);
   // La fase en la que está el pedido: la que pidió quien abrió el panel
   // mientras no esté completada; si no, la siguiente a la más avanzada que
@@ -395,7 +405,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
                     {confirmarPedidoCta}
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
-                      {fases.map(fase => (
+                      {fases.filter(fase => !fase.superada || fase.completada).map(fase => (
                         <FaseFila
                           key={fase.id}
                           fase={fase}
