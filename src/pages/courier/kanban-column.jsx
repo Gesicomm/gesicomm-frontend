@@ -19,6 +19,7 @@ export function KanbanColumn({
   onAbrirTimelineAbastecimiento,
   onAccionSiguiente,
   isAdmin,
+  etapaVista,
   readOnly = false,
   emptyText = "Sin envíos",
 }) {
@@ -81,6 +82,7 @@ export function KanbanColumn({
               onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
               onAccionSiguiente={onAccionSiguiente}
               isAdmin={isAdmin}
+              etapaVista={etapaVista}
               readOnly={readOnly}
             />
           ))

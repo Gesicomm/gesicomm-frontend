@@ -36,6 +36,7 @@ const faseNueva = (indice) => ({
   espera_sugerida_minutos: indice === 0 ? 0 : 240,
   etiqueta_id: null,
   accion_operativa: null,
+  estado_activador: null,
   transicion_estado_desde: null,
   transicion_estado_hasta: null,
 });
@@ -43,27 +44,10 @@ const faseNueva = (indice) => ({
 const ETAPA_RECOMPRA = "ESCALAMIENTO_VENTAS";
 const ETAPA_ENVIO = "SEGUIMIENTO_ENVIO";
 const TRES_DIAS = 3 * 24 * 60;
-const ACCIONES_OPERATIVAS_PROTEGIDAS = new Set(["PREPARAR_PEDIDO", "DESPACHAR_PEDIDO"]);
-
-function siguienteEstado(estado) {
-  const idx = STATUS_ORDER.indexOf(estado);
-  if (idx < 0 || idx >= STATUS_ORDER.length - 1) return "";
-  return STATUS_ORDER[idx + 1];
-}
-
-function tieneTransicionEstado(fase) {
-  return !!fase?.transicion_estado_desde && !!fase?.transicion_estado_hasta;
-}
-
-function accionOperativaDesdeTransicion(desde, hasta, accionActual = null) {
-  if (!desde && !hasta) return accionActual === "AVISO_EN_CAMINO" ? "AVISO_EN_CAMINO" : null;
-  if (desde === "Confirmado" && hasta === "Preparado") return "PREPARAR_PEDIDO";
-  if (desde === "Preparado" && hasta === "Despachado") return "DESPACHAR_PEDIDO";
-  return "CAMBIAR_ESTADO";
-}
-
-function faseProtegida(fase) {
-  return ACCIONES_OPERATIVAS_PROTEGIDAS.has(fase?.accion_operativa) || tieneTransicionEstado(fase);
+function activadorDeFase(fase) {
+  return fase?.estado_activador || fase?.transicion_estado_hasta
+    || (fase?.accion_operativa === "PREPARAR_PEDIDO" ? "Preparado"
+      : ["DESPACHAR_PEDIDO", "AVISO_EN_CAMINO"].includes(fase?.accion_operativa) ? "Despachado" : null);
 }
 
 const PROMPT_CONFIRMACION_PEDIDO_WEB = String.raw`Actúa como especialista en ventas conversacionales por WhatsApp, seguimiento de pedidos de e-commerce y persuasión aplicada.
@@ -234,6 +218,10 @@ const PROMPTS_IA_POR_TIPO = {
     objetivo: "volver a contactar clientes con pedidos entregados para feedback y recompra",
     enfoque: "empezar con experiencia post compra y luego ofrecer una nueva compra sin presionar",
   },
+  RECUPERACION_CLIENTES: {
+    objetivo: "atender a clientes con pedidos devueltos o perdidos y recuperar la relación",
+    enfoque: "escuchar qué ocurrió, buscar una solución y ofrecer retomar la compra sin prometer reintegros, reenvíos ni descuentos no confirmados",
+  },
   [CUSTOM_FLOW_TYPE]: {
     objetivo: "crear un flujo manual de WhatsApp para un caso operativo especifico",
     enfoque: "mantener mensajes claros, humanos y accionables, con esperas razonables entre fases",
@@ -267,27 +255,30 @@ function fasesInicialesPorTipo(tipo) {
       {
         ...faseNueva(0),
         nombre: "Pedido confirmado",
-        mensaje: "Hola {cliente_nombre}, tu pedido #{pedido_id} ya está confirmado y lo estamos preparando.",
-        accion_operativa: "PREPARAR_PEDIDO",
-        transicion_estado_desde: "Confirmado",
-        transicion_estado_hasta: "Preparado",
+        mensaje: "Hola {cliente_nombre}, tu pedido #{pedido_id} ha sido confirmado y ahora lo estamos preparando.",
+        estado_activador: "Preparado",
       },
       {
         ...faseNueva(1),
         nombre: "Pedido despachado",
-        mensaje: "Hola {cliente_nombre}, tu pedido #{pedido_id} ya fue despachado. Lo vas a recibir en: {direccion_entrega}.",
+        mensaje: "Hola {cliente_nombre}, tu pedido #{pedido_id} ha sido despachado. Por favor, mantenete atento a tu courier: {courier_nombre}, teléfono {courier_telefono}. Dirección de entrega: {direccion_entrega}.",
         espera_sugerida_minutos: 0,
-        accion_operativa: "DESPACHAR_PEDIDO",
-        transicion_estado_desde: "Preparado",
-        transicion_estado_hasta: "Despachado",
+        estado_activador: "Despachado",
       },
       {
         ...faseNueva(2),
         nombre: "Pedido en camino",
-        mensaje: "Hola {cliente_nombre}, tu pedido #{pedido_id} está en camino. Por favor tené el teléfono a mano para coordinar la entrega.",
+        mensaje: "Hola {cliente_nombre}, tu pedido #{pedido_id} está en camino. Tu courier es {courier_nombre}, teléfono {courier_telefono}. Por favor tené el teléfono a mano para coordinar la entrega.",
         espera_sugerida_minutos: 0,
-        accion_operativa: "AVISO_EN_CAMINO",
+        estado_activador: "Despachado",
       },
+    ];
+  }
+  if (tipo === "RECUPERACION_CLIENTES") {
+    return [
+      { ...faseNueva(0), nombre: "Contacto tras incidencia", mensaje: "Hola {cliente_nombre}, vimos que hubo un inconveniente con tu pedido #{pedido_id}. ¿Podés contarnos qué pasó para ayudarte?" },
+      { ...faseNueva(1), nombre: "Buscar una solución", espera_sugerida_minutos: 1440, mensaje: "Hola {cliente_nombre}, queremos ayudarte a resolver el inconveniente con tu pedido #{pedido_id}. ¿Cómo te gustaría que sigamos?" },
+      { ...faseNueva(2), nombre: "Retomar la compra", espera_sugerida_minutos: 4320, mensaje: "Hola {cliente_nombre}, si querés retomar tu compra de {productos}, escribinos y revisamos juntos las opciones disponibles." },
     ];
   }
   return [faseNueva(0)];
@@ -300,9 +291,10 @@ function conKeys(fases) {
     _key: `fase-${f.id}`,
     etiqueta_id: f.etiqueta_id ?? null,
     espera_sugerida_minutos: f.espera_sugerida_minutos ?? 0,
-    accion_operativa: f.accion_operativa ?? null,
-    transicion_estado_desde: f.transicion_estado_desde ?? null,
-    transicion_estado_hasta: f.transicion_estado_hasta ?? null,
+    estado_activador: activadorDeFase(f),
+    accion_operativa: null,
+    transicion_estado_desde: null,
+    transicion_estado_hasta: null,
   }));
 }
 
@@ -371,9 +363,10 @@ function aplicarJsonAlFlujo({ texto, editando, etiquetas }) {
       mensaje,
       espera_sugerida_minutos: minutosDesdeEntrada(fase) ?? (idx === 0 ? 0 : 240),
       etiqueta_id: etiquetaIdDesdeEntrada(fase, etiquetas),
-      accion_operativa: previa.accion_operativa || null,
-      transicion_estado_desde: previa.transicion_estado_desde || null,
-      transicion_estado_hasta: previa.transicion_estado_hasta || null,
+      accion_operativa: null,
+      estado_activador: fase.estado_activador === undefined ? activadorDeFase(previa) : fase.estado_activador || null,
+      transicion_estado_desde: null,
+      transicion_estado_hasta: null,
     };
   });
 
@@ -606,7 +599,6 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
 
   const quitarFase = (idx) => {
     if (editando.fases.length === 1) return;
-    if (faseProtegida(editando.fases[idx])) return;
     const quedan = editando.fases.length - 1;
     setEditando((prev) => ({ ...prev, fases: prev.fases.filter((_, i) => i !== idx) }));
     setFaseActiva((activa) => Math.min(activa > idx ? activa - 1 : activa, quedan - 1));
@@ -646,13 +638,10 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
         mensaje: f.mensaje,
         espera_sugerida_minutos: Number(f.espera_sugerida_minutos) || 0,
         etiqueta_id: f.etiqueta_id || null,
-        accion_operativa: accionOperativaDesdeTransicion(
-          f.transicion_estado_desde || null,
-          f.transicion_estado_hasta || null,
-          f.accion_operativa || null,
-        ),
-        transicion_estado_desde: f.transicion_estado_desde || null,
-        transicion_estado_hasta: f.transicion_estado_hasta || null,
+        estado_activador: f.estado_activador || null,
+        accion_operativa: null,
+        transicion_estado_desde: null,
+        transicion_estado_hasta: null,
       })),
     };
 
@@ -893,6 +882,7 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
                                 fases={fases}
                                 etiquetas={etiquetas}
                                 variables={variables}
+                                tipoFlujo={editando.tipo}
                                 activa={idx === faseActiva}
                                 arrastrando={snapshot.isDragging}
                                 dragHandleProps={dragProvided.dragHandleProps}
@@ -1185,12 +1175,10 @@ function ConnectorWait({ esperaMinutos, onChangeEspera, texto = "esperar", sufij
 /* ─── Una fase ─────────────────────────────────────────────── */
 
 const FaseCard = React.forwardRef(function FaseCard({
-  fase, idx, total, fases, etiquetas, variables, activa, arrastrando,
+  fase, idx, total, fases, etiquetas, variables, tipoFlujo, activa, arrastrando,
   dragHandleProps, onSeleccionar, onCampo, onDuplicar, onQuitar,
 }, ref) {
   const { valor, unidad } = desarmarEspera(fase.espera_sugerida_minutos);
-  const faseOperativa = faseProtegida(fase);
-  const transicionActiva = tieneTransicionEstado(fase);
 
   const cambiarEspera = (nuevoValor, nuevaUnidad) => {
     const factor = UNIDADES.find((u) => u.key === nuevaUnidad)?.factor || 1;
@@ -1205,36 +1193,6 @@ const FaseCard = React.forwardRef(function FaseCard({
     const factor = UNIDADES.find((u) => u.key === nuevaUnidad)?.factor || 1;
     const n = Math.max(0, Math.floor(Number(nuevoValor) || 0));
     onCampo(idx + 1, "espera_sugerida_minutos", n * factor);
-  };
-
-  const cambiarTransicion = (desde, hasta) => {
-    const desdeFinal = desde || null;
-    const hastaFinal = hasta || null;
-    onCampo(idx, "transicion_estado_desde", desdeFinal);
-    onCampo(idx, "transicion_estado_hasta", hastaFinal);
-    onCampo(idx, "accion_operativa", accionOperativaDesdeTransicion(desdeFinal, hastaFinal, fase.accion_operativa));
-  };
-
-  const cambiarEstadoDesde = (desde) => {
-    if (!desde) {
-      cambiarTransicion(null, null);
-      return;
-    }
-    const hastaActual = fase.transicion_estado_hasta;
-    const hasta = hastaActual && hastaActual !== desde ? hastaActual : siguienteEstado(desde);
-    cambiarTransicion(desde, hasta || null);
-  };
-
-  const cambiarEstadoHasta = (hasta) => {
-    if (!hasta) {
-      cambiarTransicion(null, null);
-      return;
-    }
-    const desdeActual = fase.transicion_estado_desde;
-    const desde = desdeActual && desdeActual !== hasta
-      ? desdeActual
-      : STATUS_ORDER[Math.max(0, STATUS_ORDER.indexOf(hasta) - 1)] || null;
-    cambiarTransicion(desde, hasta);
   };
 
   return (
@@ -1262,8 +1220,8 @@ const FaseCard = React.forwardRef(function FaseCard({
           <button
             className="gw-icon-btn gw-icon-btn--danger"
             onClick={() => onQuitar(idx)}
-            disabled={total <= 1 || faseOperativa}
-            title={faseOperativa ? "Esta fase cambia el estado del pedido: podés editarla o moverla, no eliminarla" : total > 1 ? "Eliminar fase" : "El flujo necesita al menos una fase"}
+            disabled={total <= 1}
+            title={total > 1 ? "Eliminar fase" : "El flujo necesita al menos una fase"}
           >
             <Trash2 size={14} />
           </button>
@@ -1350,53 +1308,14 @@ const FaseCard = React.forwardRef(function FaseCard({
           </select>
         </div>
 
-        <div className="gw-cfg-field gw-cfg-field--transition">
-          <div className="gw-cfg-label">
-            <Check size={12} /> Cambio de estado al marcar enviada
-            <span className="gw-tip" data-tip="Cuando marcás esta fase como enviada, el pedido cambia de estado solo si está actualmente en el estado desde.">
-              <Info size={12} />
-            </span>
-          </div>
-          <div className="gw-transition-row">
-            <select
-              className="gw-select"
-              value={fase.transicion_estado_desde || ""}
-              onChange={(e) => cambiarEstadoDesde(e.target.value)}
-              aria-label="Estado desde"
-            >
-              <option value="">Sin cambio</option>
-              {STATUS_ORDER.map((estado) => (
-                <option key={estado} value={estado}>
-                  Desde {STATUS[estado]?.label || estado}
-                </option>
-              ))}
+          <div className="gw-cfg-field gw-cfg-field--transition">
+            <label className="gw-cfg-label">Estado activador</label>
+            <select className="gw-select" aria-label="Estado activador" value={fase.estado_activador || ""} onChange={(e) => onCampo(idx, "estado_activador", e.target.value || null)}>
+              <option value="">Al iniciar esta etapa</option>
+              {STATUS_ORDER.map((estado) => <option key={estado} value={estado}>{STATUS[estado]?.label || estado}</option>)}
             </select>
-            <span className="gw-transition-arrow" aria-hidden="true">→</span>
-            <select
-              className="gw-select"
-              value={fase.transicion_estado_hasta || ""}
-              onChange={(e) => cambiarEstadoHasta(e.target.value)}
-              disabled={!transicionActiva}
-              aria-label="Estado hasta"
-            >
-              <option value="">Sin cambio</option>
-              {STATUS_ORDER.map((estado) => (
-                <option
-                  key={estado}
-                  value={estado}
-                  disabled={estado === fase.transicion_estado_desde}
-                >
-                  Hasta {STATUS[estado]?.label || estado}
-                </option>
-              ))}
-            </select>
+            <p className="gw-transition-help">El estado del pedido habilita este mensaje. Enviarlo conserva el estado logístico; los avisos de preparación se omiten si el pedido ya está despachado.</p>
           </div>
-          <p className="gw-transition-help">
-            {transicionActiva
-              ? `Si el pedido está en ${fase.transicion_estado_desde}, pasa a ${fase.transicion_estado_hasta}.`
-              : "Esta fase solo registra el mensaje y agenda el siguiente seguimiento."}
-          </p>
-        </div>
       </div>
     </div>
   );

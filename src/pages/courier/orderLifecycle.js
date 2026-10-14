@@ -16,13 +16,18 @@ export const FLOW_TYPES = {
   },
   SEGUIMIENTO_ENVIO: {
     label: "Seguimiento de envío",
-    stage: "logistica",
-    hint: "Pedidos confirmados, preparados, despachados o reprogramados. Entran solos cuando el pedido se confirma.",
+    stage: "seguimiento_envio",
+    hint: "El pedido entra al confirmarse. El primer mensaje se habilita al marcarlo Preparado y el aviso de despacho al marcarlo Despachado.",
   },
   ESCALAMIENTO_VENTAS: {
     label: "Escalamiento de ventas",
     stage: "recompra",
     hint: "Pedidos entregados. Entran solos; el primer mensaje espera los días que definas desde la entrega.",
+  },
+  RECUPERACION_CLIENTES: {
+    label: "Recuperación de clientes",
+    stage: "recuperacion",
+    hint: "Pedidos devueltos o perdidos. Entran solos al registrar la incidencia para atender al cliente y recuperar la relación.",
   },
   [CUSTOM_FLOW_TYPE]: {
     label: "Otros flujos",
@@ -34,23 +39,24 @@ export const FLOW_TYPES = {
 // No hay una etapa "Todos": un pedido se mira siempre dentro de la etapa en
 // la que está.
 export const STAGE_FILTERS = [
-  { id: "comercial", label: "Comercial" },
+  { id: "comercial", label: "Proceso de confirmación" },
+  { id: "seguimiento_envio", label: "Seguimiento de envío" },
   { id: "logistica", label: "Logística" },
   { id: "recompra", label: "Recompra" },
+  { id: "recuperacion", label: "Recuperación" },
 ];
 
-export const STAGE_LABELS = { comercial: "Comercial", logistica: "Logística", recompra: "Recompra" };
+export const STAGE_LABELS = { comercial: "Proceso de confirmación", seguimiento_envio: "Seguimiento de envío", logistica: "Logística", recompra: "Recompra", recuperacion: "Recuperación" };
 
-// Los estados de cada etapa. Comercial termina en Cancelado, o el confirmador
-// confirma y el pedido pasa directo a Logística (pedido del usuario,
-// 2026-10-14): ahí entra como "Pendiente de preparación" (el mismo estado
-// Confirmado de siempre, solo que ahora se ve y se cuenta del lado
-// logístico). Logística termina en Entregado (o Devuelto / Perdido), y un
-// entregado pasa además a Recompra, donde se le hace el escalamiento de
-// ventas.
+// Al confirmar, el pedido entra al seguimiento de envío de Gestión Comercial
+// y queda pendiente de preparación en Gestión Logística. Las dos bandejas
+// comparten el estado operativo; los mensajes se gestionan desde Comercial.
+// Al entregar, termina el seguimiento de envío y empieza Recompra.
 export const COMMERCIAL_STATUSES = ["Pendiente", "EnSeguimiento", "Cancelado"];
+export const SHIPPING_FOLLOWUP_STATUSES = ["Confirmado", "Preparado", "Despachado", "Reprogramado"];
 export const LOGISTIC_STATUSES = ["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"];
 export const RECOMPRA_STATUSES = ["Entregado"];
+export const RECOVERY_STATUSES = ["Devuelto", "Perdido"];
 
 // Nombre que se muestra para el estado Confirmado ahora que vive en
 // Logística — "Confirmado" sigue siendo el valor real en Envio.estado (no
@@ -74,11 +80,11 @@ const TONO_POR_ESTADO = {
 
 // En Recompra el pedido ya está entregado: su estado es cómo viene el
 // escalamiento de ventas (lo calcula el backend en `seguimiento`).
-function estadoDeRecompra(envio) {
+function estadoDeContacto(envio, etapa) {
   const seg = envio?.seguimiento;
-  if (seg && !seg.terminado) return { etapa: "recompra", id: "recompra_en_seguimiento", label: "En seguimiento", tone: "info" };
-  if (seg?.terminado) return { etapa: "recompra", id: "recompra_completa", label: "Seguimiento completo", tone: "success" };
-  return { etapa: "recompra", id: "recompra_sin_seguimiento", label: "Sin seguimiento", tone: "neutral" };
+  if (seg && !seg.terminado) return { etapa, id: `${etapa}_en_seguimiento`, label: "En seguimiento", tone: "info" };
+  if (seg?.terminado) return { etapa, id: `${etapa}_completa`, label: "Seguimiento completo", tone: "success" };
+  return { etapa, id: `${etapa}_sin_seguimiento`, label: "Sin seguimiento", tone: "neutral" };
 }
 
 /**
@@ -86,7 +92,7 @@ function estadoDeRecompra(envio) {
  * (Pendiente / Confirmado / Cancelado), el logístico o el de recompra.
  */
 export function estadoDePedido(envio, etapaVista) {
-  if (etapaVista === "recompra") return estadoDeRecompra(envio);
+  if (["recompra", "recuperacion"].includes(etapaVista)) return estadoDeContacto(envio, etapaVista);
   const etapa = etapaDePedido(envio);
   const estado = envio?.estado;
   if (etapa === "comercial" && estado !== "Cancelado") {
@@ -118,6 +124,10 @@ export const KANBAN_CONTEXTS = {
     label: "Comercial",
     lanes: [LANES.pendientes, LANES.cancelados],
   },
+  seguimiento_envio: {
+    label: "Seguimiento de envío",
+    lanes: [LANES.confirmados, LANES.preparados, LANES.despachados].map((lane) => ({ ...lane, operational: true })),
+  },
   logistica: {
     label: "Logística",
     lanes: [LANES.confirmados, LANES.preparados, LANES.despachados, LANES.entregados, LANES.devolucionPendiente, LANES.devueltos, LANES.perdidos],
@@ -129,6 +139,13 @@ export const KANBAN_CONTEXTS = {
     lanes: [
       { id: "recompra_pendiente", label: "Con mensajes por enviar", columnBar: "bg-blue-300", operational: true, match: (e) => Boolean(e?.seguimiento?.fase_id) },
       { id: "recompra_sin_mensajes", label: "Sin mensajes por enviar", columnBar: "bg-emerald-400", operational: true, match: (e) => !e?.seguimiento?.fase_id },
+    ],
+  },
+  recuperacion: {
+    label: "Recuperación",
+    lanes: [
+      { id: "recuperacion_pendiente", label: "Con mensajes por enviar", columnBar: "bg-amber-400", operational: true, match: (e) => Boolean(e?.seguimiento?.fase_id) },
+      { id: "recuperacion_completa", label: "Sin mensajes por enviar", columnBar: "bg-emerald-400", operational: true, match: (e) => !e?.seguimiento?.fase_id },
     ],
   },
 };

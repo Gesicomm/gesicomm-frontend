@@ -7,7 +7,7 @@ function armarTextoResumen(envio) {
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "—";
   const items = envio.items || [];
   const detalle = items.length > 0
-    ? items.map((it) => `${it.cantidad} × ${it.nombre_producto}${it.oferta_nombre ? ` (${it.oferta_nombre})` : ""}`).join("\n")
+    ? items.map((it) => `${it.cantidad} × ${it.nombre_producto}`).join("\n")
     : "—";
 
   const lineas = [

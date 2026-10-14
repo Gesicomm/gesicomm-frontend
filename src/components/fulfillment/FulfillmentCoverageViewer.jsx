@@ -1,12 +1,24 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { X, Search, MapPin, AlertCircle } from 'lucide-react';
-import api from '../../services/api';
 import { formatGs, etiquetaTiempo } from './vocabulario';
 
 const METODO = {
   ANTICIPADO: 'Pago anticipado',
   AL_RECIBIR: 'Pago contra entrega',
 };
+
+const COBERTURA_PUBLICADA = [
+  ['Área metropolitana', ['Asunción', 'Lambaré', 'Fernando de la Mora', 'Luque', 'Mariano Roque Alonso', 'Limpio', 'Areguá', 'Itauguá', 'Capiatá', 'San Lorenzo', 'Villeta', 'Guarambaré', 'J. A. Saldívar', 'Ypané', 'Ñemby', 'San Antonio', 'Villa Elisa']],
+  ['Alto Paraná', ['Ciudad del Este', 'Presidente Franco', 'Hernandarias', 'Minga Guazú']],
+  ['Interior', ['Coronel Oviedo', 'Concepción']],
+].flatMap(([departamento, ciudades]) => ciudades.map((ciudad) => ({
+  departamento, ciudad, desde: 30000, hasta: 30000, metodosPago: ['AL_RECIBIR'],
+  tramos: [
+    { rangoMin: 1, rangoMax: 500, costo: 30000, metodo: 'AL_RECIBIR' },
+    { rangoMin: 501, rangoMax: 750, costo: 29000, metodo: 'AL_RECIBIR' },
+    { rangoMin: 751, rangoMax: 1000, costo: 27000, metodo: 'AL_RECIBIR' },
+  ],
+})));
 
 function etiquetaRangoPedidos(tramo) {
   const min = Number(tramo?.rangoMin) || 0;
@@ -22,27 +34,14 @@ function etiquetaRangoPedidos(tramo) {
  *
  * Es SOLO CONSULTA y a propósito no dice qué proveedor entrega: quién hace
  * la última milla es decisión operativa de Gesicomm, no parte de lo que el
- * comercio contrata. Los precios vienen resueltos por el mismo motor que
- * cotiza el checkout, así que lo que se ve acá es lo que se cobra.
+ * comercio contrata. La lista publicada corresponde a la cobertura COD
+ * informada por RAHA; la encomienda se informa por separado al pie.
  */
 export default function FulfillmentCoverageViewer({ open, onClose }) {
-  const [cobertura, setCobertura] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
+  const cobertura = COBERTURA_PUBLICADA;
+  const cargando = false;
+  const error = null;
   const [busqueda, setBusqueda] = useState('');
-
-  useEffect(() => {
-    if (!open) return;
-    let cancelado = false;
-    setCargando(true);
-    api.get('/mi-tienda/fulfillment/cobertura')
-      .then((r) => { if (!cancelado) { setCobertura(r.data || []); setError(null); } })
-      .catch((err) => {
-        if (!cancelado) setError(err.response?.data?.message || 'No se pudo cargar la cobertura.');
-      })
-      .finally(() => { if (!cancelado) setCargando(false); });
-    return () => { cancelado = true; };
-  }, [open]);
 
   const grupos = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -70,7 +69,7 @@ export default function FulfillmentCoverageViewer({ open, onClose }) {
           <div>
             <h2 className="m-0 text-lg font-semibold text-fg">Cobertura y precios de Gesicomm</h2>
             <p className="m-0 mt-0.5 text-[13px] text-fg-muted">
-              A dónde llega la red y cuánto cuesta cada entrega. Los precios ya incluyen el servicio completo.
+              Cobertura de pago contra entrega. Tarifas por paquete según pedidos mensuales, más 2% de cobranza COD.
             </p>
           </div>
           <button
@@ -169,6 +168,9 @@ export default function FulfillmentCoverageViewer({ open, onClose }) {
             ))
           )}
         </div>
+        <footer className="flex-shrink-0 border-t border-border px-5 py-4 text-sm text-fg">
+          Para otras ciudades: <strong>Gs. 35.000</strong> por encomienda.
+        </footer>
       </div>
     </div>
   );

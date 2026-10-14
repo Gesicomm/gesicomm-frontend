@@ -154,6 +154,7 @@ export function KanbanBoard({
           onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
           onAccionSiguiente={onAccionSiguiente}
           isAdmin={isAdmin}
+          etapaVista={context}
           // Un carril que agrupa varios estados (sin `estado` propio) no puede
           // recibir tarjetas: no hay un estado real al que moverlas.
           readOnly={lane.type === "abastecimiento" || lane.operational || (Boolean(lane.match) && !lane.estado)}

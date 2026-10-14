@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutGrid, PackageCheck, Plus, Printer, HandCoins } from "lucide-react";
 import { verificarSesion } from "../../utils/auth";
@@ -50,16 +50,16 @@ function tabInicial(estadoNavegacion, tabsDisponibles, claveTab) {
   return "tablero";
 }
 
-// Qué etapas ofrece cada entrada del menú: Gestión Comercial (sin prop, uso
-// histórico de /mis-pedidos y /orders) sigue mostrando las tres; Gestión
-// Logística es la bandeja dedicada que arma /gestion-logistica.
+// Comercial gestiona la confirmación, los mensajes del envío y la recompra.
+// Logística tiene su bandeja de preparación, despacho y entrega.
 const ETAPAS_POR_MENU = {
-  comercial: { etapasDisponibles: ["comercial", "recompra"], initialEtapa: "comercial", initialEstado: undefined },
+  comercial: { etapasDisponibles: ["comercial", "seguimiento_envio", "recompra", "recuperacion"], initialEtapa: "comercial", initialEstado: undefined },
   logistica: { etapasDisponibles: ["logistica"], initialEtapa: "logistica", initialEstado: "Confirmado" },
 };
 
 export function ControlCourier({ etapaFija } = {}) {
-  const etapasProps = ETAPAS_POR_MENU[etapaFija] || {};
+  const etapasProps = ETAPAS_POR_MENU[etapaFija] || ETAPAS_POR_MENU.comercial;
+  const permiteSeguimiento = etapaFija !== "logistica";
   const tabsDisponibles = tabsDisponiblesDe(etapaFija);
   const claveTab = claveTabDe(etapaFija);
   const location = useLocation();
@@ -86,6 +86,13 @@ export function ControlCourier({ etapaFija } = {}) {
   const [faseSeguimientoId, setFaseSeguimientoId] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
 
+  useEffect(() => {
+    if (!permiteSeguimiento) {
+      setSeguimientoEnvio(null);
+      setFaseSeguimientoId(null);
+    }
+  }, [permiteSeguimiento]);
+
   // El state de navegación se consume una sola vez: si no, un refresh volvería
   // a forzar la pestaña que pidió la pantalla anterior.
   useEffect(() => {
@@ -98,6 +105,7 @@ export function ControlCourier({ etapaFija } = {}) {
   }, []);
 
   function abrirSeguimiento(envio) {
+    if (!permiteSeguimiento) return;
     setFaseSeguimientoId(envio?.seguimiento?.fase_id ?? null);
     setSeguimientoEnvio(envio);
   }
@@ -175,33 +183,6 @@ export function ControlCourier({ etapaFija } = {}) {
     setEnvioParaCompletar(null);
     cargarDatos();
     setRefrescarKey(k => k + 1);
-  };
-
-  const handleDespacharDesdeSeguimiento = async (envio) => {
-    const actualizado = await updateEstadoEnvio(envio.id, { estado: "Despachado" });
-    setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
-    setSeguimientoEnvio(actualizado);
-    cargarDatos();
-    setRefrescarKey(k => k + 1);
-    return actualizado;
-  };
-
-  const handlePrepararDesdeSeguimiento = async (envio) => {
-    const actualizado = await updateEstadoEnvio(envio.id, { estado: "Preparado" });
-    setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
-    setSeguimientoEnvio(actualizado);
-    cargarDatos();
-    setRefrescarKey(k => k + 1);
-    return actualizado;
-  };
-
-  const handleCambiarEstadoDesdeSeguimiento = async (envio, estado) => {
-    const actualizado = await updateEstadoEnvio(envio.id, { estado });
-    setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
-    setSeguimientoEnvio(actualizado);
-    cargarDatos();
-    setRefrescarKey(k => k + 1);
-    return actualizado;
   };
 
   const handleCreateNuevoPedido = async (payload) => {
@@ -343,7 +324,7 @@ export function ControlCourier({ etapaFija } = {}) {
             onAccionEspecial={(tipo, envio, extra) => setAccionEspecial({ tipo, envio, ...extra })}
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
-            onAbrirSeguimiento={abrirSeguimiento}
+            onAbrirSeguimiento={permiteSeguimiento ? abrirSeguimiento : undefined}
             refrescarKey={refrescarKey}
             {...etapasProps}
           />
@@ -360,7 +341,7 @@ export function ControlCourier({ etapaFija } = {}) {
         onSubmit={handleModalSubmit}
         deliveryZonas={deliveryZonas}
         onPrecioItemActualizado={() => setRefrescarKey((k) => k + 1)}
-        onAbrirSeguimiento={abrirSeguimiento}
+        onAbrirSeguimiento={permiteSeguimiento ? abrirSeguimiento : undefined}
       />
 
       {/* Modal de Impresión de Pedidos */}
@@ -415,7 +396,7 @@ export function ControlCourier({ etapaFija } = {}) {
         envio={historialEnvio}
         onClose={() => setHistorialEnvio(null)}
       />
-      <SeguimientoPanel
+      {permiteSeguimiento && <SeguimientoPanel
         open={!!seguimientoEnvio}
         envio={seguimientoEnvio}
         faseSugeridaId={faseSeguimientoId}
@@ -425,12 +406,8 @@ export function ControlCourier({ etapaFija } = {}) {
           // el pedido sale solo del flujo de confirmación.
           setSeguimientoEnvio(null);
           setEnvioParaCompletar(envio);
-        }}
-        onCambiarEstadoPedido={handleCambiarEstadoDesdeSeguimiento}
-        onPrepararPedido={handlePrepararDesdeSeguimiento}
-        onDespacharPedido={handleDespacharDesdeSeguimiento}
-        onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
-      />
+        }}        onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
+      />}
     </div>
   );
 }

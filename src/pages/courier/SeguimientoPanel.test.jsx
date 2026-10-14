@@ -27,7 +27,7 @@ const pedido = (extra = {}) => ({ id: 50, telefono: "0981 111 222", ...extra });
 async function montar(envio) {
   const onRefreshPedido = vi.fn();
   render(<SeguimientoPanel open envio={envio} onClose={() => {}} onRefreshPedido={onRefreshPedido} />);
-  await screen.findByText("Próximo seguimiento");
+  await waitFor(() => expect(seguimientoService.getFlujosPedido).toHaveBeenCalled());
   return { onRefreshPedido };
 }
 
@@ -37,58 +37,6 @@ beforeEach(() => {
   seguimientoService.getConfiguracion.mockResolvedValue({ tiempos_rapidos_horas: [1, 4] });
   seguimientoService.getEtiquetasPedido.mockResolvedValue([]);
   seguimientoService.getEtiquetas.mockResolvedValue([]);
-});
-
-test("un recordatorio vencido se puede completar desde el panel", async () => {
-  seguimientoService.completarRecordatorio.mockResolvedValue(undefined);
-  const { onRefreshPedido } = await montar(pedido({
-    recordatorio_id: 900,
-    recordatorio_estado: "VENCIDO",
-    recordatorio_ejecutar_en: "2026-10-10T15:00:00.000Z",
-    recordatorio_nota: 'Enviar "Recordatorio" (Fase 2) si el cliente no responde',
-  }));
-
-  expect(screen.getByText("Seguimiento vencido")).toBeInTheDocument();
-  expect(screen.getByText(/Enviar "Recordatorio" \(Fase 2\)/)).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: /Completar/ }));
-
-  await waitFor(() => expect(screen.getByText("Sin próximo seguimiento")).toBeInTheDocument());
-  expect(seguimientoService.completarRecordatorio).toHaveBeenCalledWith(50, 900);
-  expect(screen.queryByText("Seguimiento vencido")).not.toBeInTheDocument();
-  expect(onRefreshPedido).toHaveBeenCalled();
-});
-
-test("agendar un recordatorio se ve en el panel sin cerrarlo", async () => {
-  seguimientoService.programarRecordatorio.mockResolvedValue({
-    id: 901, estado: "PENDIENTE", ejecutar_en: "2099-01-01T12:00:00.000Z", nota: "",
-  });
-  await montar(pedido());
-
-  expect(screen.getByText("Sin próximo seguimiento")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "+4h" }));
-  fireEvent.click(screen.getByRole("button", { name: /Guardar nota \/ recordatorio/ }));
-
-  await waitFor(() => expect(screen.getByText("Programado para:")).toBeInTheDocument());
-  expect(seguimientoService.programarRecordatorio).toHaveBeenCalledWith(50, { nota: "", horas: 4 });
-  expect(screen.queryByText("Sin próximo seguimiento")).not.toBeInTheDocument();
-});
-
-test("cancelar un recordatorio pendiente lo saca del panel", async () => {
-  seguimientoService.cancelarRecordatorio.mockResolvedValue(undefined);
-  await montar(pedido({
-    recordatorio_id: 902,
-    recordatorio_estado: "PENDIENTE",
-    recordatorio_ejecutar_en: "2099-01-01T12:00:00.000Z",
-  }));
-
-  expect(screen.getByText("Programado para:")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: /Cancelar/ }));
-
-  await waitFor(() => expect(screen.getByText("Sin próximo seguimiento")).toBeInTheDocument());
-  expect(seguimientoService.cancelarRecordatorio).toHaveBeenCalledWith(50, 902);
 });
 
 // 2026-10-13: mientras el pedido está por confirmar, se puede confirmar desde
@@ -146,7 +94,24 @@ const FLUJO_ENVIO = {
   ],
 };
 
-test("marcar enviada la fase Pedido confirmado también prepara el pedido", async () => {
+test("los avisos activados por logística esperan su estado y enviarlos no prepara ni despacha", async () => {
+  const fases = [
+    { id: 301, orden: 1, nombre: "Preparación", estado_activador: "Preparado", disponible: true, envios: 1, completada: false },
+    { id: 302, orden: 2, nombre: "Despacho", estado_activador: "Despachado", disponible: false, envios: 0, completada: false },
+  ];
+  seguimientoService.getFlujosPedido.mockResolvedValue([{ ...FLUJO_ENVIO, fases }]);
+  seguimientoService.completarFase.mockResolvedValue({ recordatorios_cumplidos: [], siguiente_fase: { id: 302 } });
+  const onCambiarEstadoPedido = vi.fn();
+  render(<SeguimientoPanel open envio={pedido({ estado: "Preparado" })} onClose={() => {}} onCambiarEstadoPedido={onCambiarEstadoPedido} />);
+  await screen.findByText(/Fase 1 — Preparación/);
+  expect(screen.getByText(/Espera que logística marque Despachado/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Abrir en WhatsApp" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Marcar como enviado" }));
+  await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, 301));
+  expect(onCambiarEstadoPedido).not.toHaveBeenCalled();
+});
+
+test("marcar enviada una fase antigua de preparación conserva el estado logístico", async () => {
   seguimientoService.getFlujosPedido.mockResolvedValue([{
     ...FLUJO_ENVIO,
     envios_totales: 1,
@@ -169,10 +134,10 @@ test("marcar enviada la fase Pedido confirmado también prepara el pedido", asyn
   fireEvent.click(screen.getByRole("button", { name: /Marcar como enviado/ }));
 
   await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, 301));
-  expect(onPrepararPedido).toHaveBeenCalledWith(envio);
+  expect(onPrepararPedido).not.toHaveBeenCalled();
 });
 
-test("si la fase de preparación ya estaba enviada, al abrir el panel corrige el estado atrasado", async () => {
+test("abrir el panel con un aviso antiguo enviado conserva el estado del pedido", async () => {
   seguimientoService.getFlujosPedido.mockResolvedValue([{
     ...FLUJO_ENVIO,
     envios_totales: 1,
@@ -188,10 +153,10 @@ test("si la fase de preparación ya estaba enviada, al abrir el panel corrige el
   render(<SeguimientoPanel open envio={envio} onClose={() => {}} onPrepararPedido={onPrepararPedido} />);
   await screen.findByText(/Fase 4 — Texto renombrado/);
 
-  await waitFor(() => expect(onPrepararPedido).toHaveBeenCalledWith(envio));
+  expect(onPrepararPedido).not.toHaveBeenCalled();
 });
 
-test("marcar enviada la fase Pedido despachado también despacha el pedido", async () => {
+test("marcar enviada una fase antigua de despacho conserva el estado logístico", async () => {
   seguimientoService.getFlujosPedido.mockResolvedValue([FLUJO_ENVIO]);
   seguimientoService.completarFase.mockResolvedValue({
     recordatorios_cumplidos: [],
@@ -206,7 +171,7 @@ test("marcar enviada la fase Pedido despachado también despacha el pedido", asy
   fireEvent.click(screen.getByRole("button", { name: /Marcar como enviado/ }));
 
   await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, 302));
-  expect(onDespacharPedido).toHaveBeenCalledWith(envio);
+  expect(onDespacharPedido).not.toHaveBeenCalled();
 });
 
 test("marcar enviada la fase Pedido en camino es solo aviso y no cambia estado", async () => {

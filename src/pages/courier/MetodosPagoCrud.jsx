@@ -118,6 +118,7 @@ export function MetodosPagoCrud() {
             <tr>
               <th>Método</th>
               <th style={{ textAlign: 'center' }}>Comisión</th>
+              <th style={{ textAlign: 'center' }}>Cuándo se cobra</th>
               <th style={{ textAlign: 'center' }}>El dinero queda en</th>
               <th style={{ textAlign: 'center' }}>Activo</th>
               <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -144,6 +145,11 @@ export function MetodosPagoCrud() {
                 </td>
                 <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', color: 'var(--color-primary-text)' }}>
                   {Number(m.comision_porcentaje).toLocaleString('es-PY', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: m.es_anticipado ? 'var(--color-info)' : 'var(--color-fg-muted)' }}>
+                    {m.es_anticipado ? '💳 Anticipado' : '🤝 Contra entrega'}
+                  </span>
                 </td>
                 <td style={{ textAlign: 'center' }}>
                   <span style={{ fontSize: '0.75rem', color: m.custodia_cobro === 'courier' ? 'var(--color-warning)' : 'var(--color-fg-muted)' }}>
@@ -180,14 +186,14 @@ export function MetodosPagoCrud() {
             ))}
             {!loading && metodos.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
                   No hay métodos de pago cargados todavía. Creá uno con el botón de arriba.
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
                   Cargando métodos de pago...
                 </td>
               </tr>
@@ -269,6 +275,24 @@ export function MetodosPagoCrud() {
                 </div>
                 <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: 'var(--color-fg-subtle)' }}>
                   Porcentaje que se descuenta por cobrar con este método. Se usa en los reportes de rentabilidad.
+                </p>
+              </div>
+
+              <div className="form-group full">
+                <label style={{ color: 'var(--color-fg-muted)', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                  ¿Cuándo se cobra con este método?
+                </label>
+                <select
+                  className="form-input"
+                  style={{ width: '100%' }}
+                  value={form.es_anticipado ? 'anticipado' : 'contra_entrega'}
+                  onChange={(e) => setForm((f) => ({ ...f, es_anticipado: e.target.value === 'anticipado' }))}
+                >
+                  <option value="contra_entrega">Contra entrega — el cliente paga al recibir</option>
+                  <option value="anticipado">Anticipado — el cliente ya pagó antes de recibir</option>
+                </select>
+                <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: 'var(--color-fg-subtle)' }}>
+                  Define qué métodos aparecen para elegir cuando el confirmador marca un pedido como "Pago anticipado", y la tarifa de courier que corresponde.
                 </p>
               </div>
 

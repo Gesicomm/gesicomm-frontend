@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
   ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Clock,
@@ -13,12 +14,15 @@ import { numeroPedidoVisible } from "./pedidoNumero";
 import { KanbanBoard } from "./kanban-board";
 import {
   COMMERCIAL_STATUSES,
+  SHIPPING_FOLLOWUP_STATUSES,
   LOGISTIC_STATUSES,
   RECOMPRA_STATUSES,
+  RECOVERY_STATUSES,
   STAGE_FILTERS,
   STAGE_LABELS,
   estadoDePedido,
   paymentLine,
+  esPagoAnticipado,
 } from "./orderLifecycle";
 
 
@@ -123,13 +127,17 @@ const FILTROS_VACIOS = {
 
 const STAGE_TO_ESTADOS = {
   comercial: COMMERCIAL_STATUSES,
+  seguimiento_envio: SHIPPING_FOLLOWUP_STATUSES,
   logistica: LOGISTIC_STATUSES,
   recompra: RECOMPRA_STATUSES,
+  recuperacion: RECOVERY_STATUSES,
 };
 
-function EstadoBadgeDropdown({ estado, etiqueta, onChange }) {
+function EstadoBadgeDropdown({ estado, etiqueta, onChange, modoAccion = false }) {
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState(null);
   const ref = useRef(null);
+  const menuRef = useRef(null);
   const s = STATUS[estado] || { chipBg: "color-mix(in srgb, var(--color-fg) 8%, transparent)", chipText: "var(--color-fg-muted)" };
   // "En seguimiento" lo pone el sistema al marcar un mensaje como enviado: no se elige a mano.
   const validas = (TRANSICIONES_VALIDAS_FRONTEND[estado] || []).filter((st) => !ESTADOS_SIN_CHIP.has(st));
@@ -137,16 +145,52 @@ function EstadoBadgeDropdown({ estado, etiqueta, onChange }) {
 
   useEffect(() => {
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target) && !menuRef.current?.contains(e.target)) setOpen(false);
     };
     if (open) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  // El menú queda fuera del contenedor que desplaza la tabla para que
+  // también se pueda usar en la última fila sin quedar recortado.
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPosition(null);
+      return;
+    }
+    const anchor = ref.current.getBoundingClientRect();
+    const menu = menuRef.current.getBoundingClientRect();
+    const top = anchor.bottom + 4 + menu.height <= window.innerHeight - 8
+      ? anchor.bottom + 4
+      : Math.max(8, anchor.top - menu.height - 4);
+    setMenuPosition({
+      top,
+      left: Math.max(8, Math.min(anchor.right - menu.width, window.innerWidth - menu.width - 8)),
+    });
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+    <div
+      ref={ref}
+      style={{ position: "relative", display: "inline-block" }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open) {
+          e.stopPropagation();
+          setOpen(false);
+          ref.current?.querySelector("button")?.focus();
+        }
+      }}
+    >
       <button
         type="button"
+        className={modoAccion ? "pt-next-action" : undefined}
         title={sinCambios ? "Estado final: no tiene más cambios" : "Cambiar el estado del pedido"}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -154,7 +198,7 @@ function EstadoBadgeDropdown({ estado, etiqueta, onChange }) {
           e.stopPropagation();
           if (!sinCambios) setOpen((prev) => !prev);
         }}
-        style={{
+        style={modoAccion ? undefined : {
           background: s.chipBg,
           color: s.chipText,
           border: `1px solid ${s.chipText}40`,
@@ -172,7 +216,8 @@ function EstadoBadgeDropdown({ estado, etiqueta, onChange }) {
           userSelect: "none",
         }}
       >
-        <span>{etiqueta || estado || "Pendiente"}</span>
+        {modoAccion && <SlidersHorizontal size={13} />}
+        <span>{modoAccion ? "Cambiar estado" : (etiqueta || estado || "Pendiente")}</span>
         {!sinCambios && (
           <ChevronDown
             size={12}
@@ -185,12 +230,14 @@ function EstadoBadgeDropdown({ estado, etiqueta, onChange }) {
         )}
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
+          ref={menuRef}
           style={{
-            position: "absolute",
-            top: "calc(100% + 4px)",
-            right: 0,
+            position: "fixed",
+            top: menuPosition?.top ?? 0,
+            left: menuPosition?.left ?? 0,
+            visibility: menuPosition ? "visible" : "hidden",
             zIndex: 9999,
             background: "var(--color-canvas)",
             border: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)",
@@ -205,7 +252,7 @@ function EstadoBadgeDropdown({ estado, etiqueta, onChange }) {
           role="menu"
           onClick={(e) => e.stopPropagation()}
         >
-          {STATUS_ORDER.filter((st) => st === estado || validas.includes(st)).map((st) => {
+          {(modoAccion ? validas : STATUS_ORDER.filter((st) => st === estado || validas.includes(st))).map((st) => {
             const config = STATUS[st] || { chipBg: "color-mix(in srgb, var(--color-fg) 5%, transparent)", chipText: "var(--color-fg-muted)" };
             const isSelected = st === estado;
 
@@ -259,7 +306,8 @@ function EstadoBadgeDropdown({ estado, etiqueta, onChange }) {
               </button>
             );
           })}
-        </div>
+        </div>,
+        ref.current.closest(".pt-root") || document.body,
       )}
     </div>
   );
@@ -457,16 +505,15 @@ function LifecycleCell({ primary, secondary, alert, tone = "neutral" }) {
   );
 }
 
-// Se muestra UN estado, el de la etapa que se está mirando: en Comercial
-// Pendiente / Confirmado / Cancelado, en Logística el del envío, en Recompra
-// cómo viene el escalamiento de ventas.
+// Confirmación muestra el estado comercial; Seguimiento de envío y Logística
+// muestran el operativo. Recompra muestra el escalamiento de ventas.
 function EstadoCell({ envio, etapa, onCambiarEstado }) {
-  if (etapa === "logistica" && envio?.raha_logistica?.gestionado) {
+  if (["logistica", "seguimiento_envio"].includes(etapa) && envio?.raha_logistica?.gestionado) {
     return <RahaEstadoCell envio={envio} />;
   }
   const estado = estadoDePedido(envio, etapa);
   const courier = envio.Courier?.nombre || envio.proveedor_logistico_nombre || null;
-  const secundario = estado.id === "Confirmado"
+  const secundario = etapa === "recuperacion" ? envio.estado : estado.id === "Confirmado"
     ? paymentLine(envio)
     : estado.id === "Entregado" && envio.metodo_pago
     ? `Cobrado: ${envio.metodo_pago}`
@@ -474,8 +521,8 @@ function EstadoCell({ envio, etapa, onCambiarEstado }) {
     ? courier
     : null;
   const alerta = estado.id === "DevolucionPendiente" ? "Revisar devolución" : null;
-  // En Recompra el estado es el del escalamiento de ventas, no uno que se elija.
-  if (etapa === "recompra" || !onCambiarEstado) {
+  // Los mensajes usan el estado operativo como referencia; se cambia en Logística.
+  if (["recompra", "recuperacion", "seguimiento_envio"].includes(etapa) || envio.estado === "Despachado" || !onCambiarEstado) {
     return <LifecycleCell primary={estado.label} secondary={secundario} alert={alerta} tone={estado.tone} />;
   }
   return (
@@ -493,8 +540,10 @@ function EstadoCell({ envio, etapa, onCambiarEstado }) {
 
 const ENCABEZADO_ESTADO = {
   comercial: "Estado comercial",
+  seguimiento_envio: "Estado logístico",
   logistica: "Estado logístico",
   recompra: "Estado de recompra",
+  recuperacion: "Estado de recuperación",
 };
 
 const ZONA_HORARIA = "America/Asuncion";
@@ -520,6 +569,9 @@ function fechaSeguimientoVencida(seg, ahora = Date.now()) {
 
 /** Estado semáforo del mensaje que le toca al pedido. */
 function estadoDelSeguimiento(seg) {
+  if (seg.motivo === "esperando_estado") {
+    return { texto: `Espera ${seg.estado_requerido || "preparación"}`, tono: "neutral", icono: Clock };
+  }
   const hora = seg.toca_en
     ? new Date(seg.toca_en).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_HORARIA })
     : "";
@@ -605,7 +657,23 @@ const accionBtnStyle = {
   whiteSpace: "nowrap",
 };
 
-function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen, onAccionSiguiente }) {
+function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen, onAccionSiguiente, onAbrirSeguimiento, onCambiarEstado, etapa }) {
+  if (["seguimiento_envio", "recuperacion"].includes(etapa)) {
+    return (
+      <button type="button" style={accionBtnStyle} onClick={(e) => { e.stopPropagation(); onAbrirSeguimiento?.(envio); }}>
+        <MessageCircle size={13} /> Seguimiento
+      </button>
+    );
+  }
+  if (envio.estado === "Despachado" && !envio.raha_logistica?.gestionado) {
+    return (
+      <EstadoBadgeDropdown
+        estado={envio.estado}
+        modoAccion
+        onChange={(nuevoEstado) => onCambiarEstado?.(envio, nuevoEstado)}
+      />
+    );
+  }
   const accion = envio.accion_siguiente;
 
   // El backend manda la próxima acción del pedido con su estado destino.
@@ -674,13 +742,14 @@ export function PedidosTable({
   soloAbastecimiento = false,
   initialAbastecimientoEstado = "en_seguimiento",
   // Qué etapas puede elegir esta bandeja: Gestión Comercial solo ofrece
-  // Comercial/Recompra, Gestión Logística solo Logística (sin selector).
+  // Confirmación/Seguimiento de envío/Recompra; Logística solo Logística.
   etapasDisponibles = STAGE_FILTERS.map((s) => s.id),
   initialEtapa = etapasDisponibles[0],
 }) {
   const filtrosBase = useMemo(() => ({ ...FILTROS_VACIOS, pedido_id: initialPedidoId || "" }), [initialPedidoId]);
   const [estadoActivo, setEstadoActivo] = useState(initialEstado);
   const [etapaActiva, setEtapaActiva] = useState(initialEtapa);
+  const mostrarSeguimiento = !soloAbastecimiento && etapaActiva !== "logistica";
   const stageFiltersDisponibles = STAGE_FILTERS.filter((stage) => etapasDisponibles.includes(stage.id));
   // Fila expandida con el seguimiento de abastecimiento (solo en esa pestaña).
   const [timelineExpandidoId, setTimelineExpandidoId] = useState(null);
@@ -719,6 +788,16 @@ export function PedidosTable({
     setPage(1);
   }, [initialEstado]);
 
+  // Gestión Logística y Gestión Comercial renderizan el mismo componente en
+  // el mismo lugar del router: al navegar entre ellas React no lo desmonta,
+  // así que sin este efecto etapaActiva se quedaba con el valor de la página
+  // anterior (bug reportado: título y pestañas de etapa cambiaban, pero los
+  // subestados seguían siendo los de logística hasta recargar).
+  useEffect(() => {
+    setEtapaActiva(initialEtapa);
+    setPage(1);
+  }, [initialEtapa]);
+
   useEffect(() => {
     setAbastecimientoEstadoActivo(initialAbastecimientoEstado);
     setPage(1);
@@ -753,14 +832,14 @@ export function PedidosTable({
     setLoading(true);
     try {
       const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE };
-      if (!soloAbastecimiento) payload.incluir_seguimiento = true;
+      if (mostrarSeguimiento) payload.incluir_seguimiento = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (!soloAbastecimiento && etapaActiva === "logistica" && estado === TAB_RAHA_LOGISTICA_ID) {
         payload.logistica_raha = true;
       } else if (!soloAbastecimiento && estado === TAB_ABASTECIMIENTO_ID) {
         payload.abastecimiento_estado = "pagado";
       } else if (!soloAbastecimiento && estadosEtapa?.length) {
-        payload.estados = estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
+        payload.estados = etapaActiva !== "recuperacion" && estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
           ? estadosDeFiltro(estado)
           : estadosEtapa;
         if (["comercial", "logistica"].includes(etapaActiva)) payload.excluir_logistica_raha = true;
@@ -774,7 +853,7 @@ export function PedidosTable({
     } finally {
       setLoading(false);
     }
-  }, [construirPayloadBase, soloAbastecimiento, etapaActiva]);
+  }, [construirPayloadBase, soloAbastecimiento, etapaActiva, mostrarSeguimiento]);
 
   // El kanban es un tablero por estado: tiene que mostrar TODOS los estados
   // a la vez (una columna por cada uno), no solo la pestana de estado activa
@@ -785,7 +864,8 @@ export function PedidosTable({
     if (soloAbastecimiento) return;
     setKanbanLoading(true);
     try {
-      const payloadBase = { ...construirPayloadBase(f), limit: 100, incluir_seguimiento: true };
+      const payloadBase = { ...construirPayloadBase(f), limit: 100 };
+      if (mostrarSeguimiento) payloadBase.incluir_seguimiento = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (estadosEtapa?.length) payloadBase.estados = estadosEtapa;
       if (["comercial", "logistica"].includes(etapaActiva)) payloadBase.excluir_logistica_raha = true;
@@ -807,7 +887,7 @@ export function PedidosTable({
     } finally {
       setKanbanLoading(false);
     }
-  }, [construirPayloadBase, soloAbastecimiento, etapaActiva]);
+  }, [construirPayloadBase, soloAbastecimiento, etapaActiva, mostrarSeguimiento]);
 
   const handleEliminarPedido = async (envio) => {
     if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el pedido de ${envio.cliente || "Cliente"}? Esta acción no se puede deshacer y liberará cualquier stock reservado.`)) {
@@ -825,7 +905,7 @@ export function PedidosTable({
   const cargarConteos = useCallback(async (f) => {
     try {
       const payload = construirPayloadBase(f, { incluirFiltroAbastecimiento: false });
-      if (!soloAbastecimiento) payload.separar_logistica_raha = true;
+      if (!soloAbastecimiento && ["comercial", "logistica"].includes(etapaActiva)) payload.separar_logistica_raha = true;
       const res = soloAbastecimiento
         ? await getConteoPorAbastecimiento(payload)
         : await getConteoPorEstado(payload);
@@ -833,7 +913,7 @@ export function PedidosTable({
     } catch (err) {
       console.error("Error cargando conteo por estado:", err);
     }
-  }, [construirPayloadBase, soloAbastecimiento]);
+  }, [construirPayloadBase, soloAbastecimiento, etapaActiva]);
 
   // Declarado después de cargarConteos: su dependency array la referencia,
   // y con const/TDZ eso revienta con "Cannot access before initialization"
@@ -855,7 +935,11 @@ export function PedidosTable({
     }
   }, [construirPayloadBase]);
 
-  const viendoEntregados = estadoActivo === "Entregado" || etapaActiva === "recompra";
+  // Solo en Logística: la rendición courier/tienda que resume este bloque es
+  // un tema logístico, no comercial — en Recompra (Gestión Comercial) un
+  // "Entregado" es el pedido ya cerrado sobre el que se hace el escalamiento
+  // de ventas, no algo para rendir (pedido del usuario, 2026-10-14).
+  const viendoEntregados = etapaActiva === "logistica" && estadoActivo === "Entregado";
   const timerRef = useRef(null);
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -1016,7 +1100,7 @@ export function PedidosTable({
   const montoCourierEntregado = Number(resumenEntregados?.costo_total_courier || 0);
   const saldoLiquidacionEntregados = Number(resumenEntregados?.saldo_liquidacion || 0);
   const montoPendienteRendicion = Math.abs(saldoLiquidacionEntregados);
-  const tableColSpan = 9;
+  const tableColSpan = soloAbastecimiento ? 9 : (mostrarSeguimiento ? 10 : 9);
   const sumarConteos = (estados) => estados.reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
   const totalLogisticaRaha = Number(conteos.logistica_raha || 0);
   // Cada estado cuenta en un solo casillero.
@@ -1033,7 +1117,14 @@ export function PedidosTable({
   // es logístico ("Pendiente de preparación"), y Cancelado es comercial.
   const soloLogistica = etapasDisponibles.length === 1 && etapasDisponibles[0] === "logistica";
   const soloComercial = etapasDisponibles.every((e) => e !== "logistica");
-  const resumenChips = soloLogistica
+  const resumenChips = etapaActiva === "seguimiento_envio"
+    ? [
+        { key: "confirmados", label: "Pendiente de preparación", tone: "info" },
+        { key: "logistica", label: "En logística", tone: "money" },
+      ]
+    : etapaActiva === "recuperacion"
+    ? [{ key: "incidencias", label: "Pedidos con incidencia", tone: "danger" }]
+    : soloLogistica
     ? [
         { key: "confirmados", label: "Pendiente de preparación", tone: "info" },
         { key: "logistica", label: "En logística", tone: "money" },
@@ -1055,10 +1146,20 @@ export function PedidosTable({
       ];
   const estadosEtapaActiva = STAGE_TO_ESTADOS[etapaActiva] || [];
   const totalEstadosEtapaActiva = sumarConteos(estadosEtapaActiva) + (etapaActiva === "logistica" ? totalLogisticaRaha : 0);
-  const chipsEtapaActiva = [
+  const chipsEtapaActiva = etapaActiva === "recuperacion" ? [] : [
     ...(etapaActiva === "logistica" ? [TAB_RAHA_LOGISTICA_ID] : []),
     ...estadosEtapaActiva.filter((st) => !ESTADOS_SIN_CHIP.has(st)),
   ];
+  // Ya no existe el filtro "Todos" en las etapas con varios subfiltros:
+  // si el estado activo no es uno de los chips, se usa el primero.
+  useEffect(() => {
+    if (!soloAbastecimiento && etapaActiva === "recuperacion") {
+      if (estadoActivo !== TODOS_ESTADOS_ID) setEstadoActivo(TODOS_ESTADOS_ID);
+      return;
+    }
+    if (soloAbastecimiento || etapaActiva === "logistica" || chipsEtapaActiva.length <= 1) return;
+    if (!chipsEtapaActiva.includes(estadoActivo)) setEstadoActivo(chipsEtapaActiva[0]);
+  }, [soloAbastecimiento, etapaActiva, estadoActivo, chipsEtapaActiva.join("|")]);
   const conteoDeFiltro = (estado) => (
     estado === TAB_RAHA_LOGISTICA_ID ? totalLogisticaRaha : sumarConteos(estadosDeFiltro(estado))
   );
@@ -1134,6 +1235,7 @@ export function PedidosTable({
               <button
                 key={stage.id}
                 type="button"
+                data-stage={stage.id}
                 className={etapaActiva === stage.id ? "active" : ""}
                 aria-selected={etapaActiva === stage.id}
                 onClick={() => handleSelectEtapa(stage.id)}
@@ -1156,17 +1258,6 @@ export function PedidosTable({
       ) : !soloAbastecimiento && chipsEtapaActiva.length > 1 ? (
         <section className="pt-status-shell" aria-label={`Filtros secundarios de ${etapaActiva}`}>
           <div className="pt-status-tabs pt-status-tabs--secondary" role="tablist">
-            {etapaActiva !== "logistica" && (
-              <button
-                type="button"
-                onClick={() => handleSelectEstado(TODOS_ESTADOS_ID)}
-                className={`pt-status-chip ${estadoActivo === TODOS_ESTADOS_ID ? "active" : ""}`}
-                aria-selected={estadoActivo === TODOS_ESTADOS_ID}
-              >
-                <span className="pt-status-chip__label">Todos</span>
-                <strong className="pt-status-chip__count">{totalEstadosEtapaActiva}</strong>
-              </button>
-            )}
             {chipsEtapaActiva.map((st) => {
               const cfg = st === TAB_RAHA_LOGISTICA_ID ? TAB_RAHA_LOGISTICA_CFG : (STATUS[st] || {});
               const active = estadoActivo === st;
@@ -1487,9 +1578,9 @@ export function PedidosTable({
               onDropCard={handleKanbanDrop}
               onChangeEstado={handleKanbanChangeEstado}
               onAbrirDetalle={onAbrirDetalle}
-              onAbrirSeguimiento={onAbrirSeguimiento}
+              onAbrirSeguimiento={mostrarSeguimiento ? onAbrirSeguimiento : undefined}
               onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
-              onAccionSiguiente={handleAccionSiguiente}
+              onAccionSiguiente={["seguimiento_envio", "recuperacion"].includes(etapaActiva) ? undefined : handleAccionSiguiente}
               isAdmin={esAdmin}
               context={etapaActiva}
             />
@@ -1497,7 +1588,19 @@ export function PedidosTable({
         </div>
       ) : (
       <div className="pt-table-wrap">
-        <table className="pt-table">
+        <table className={`pt-table${mostrarSeguimiento || soloAbastecimiento ? " pt-table--followup" : ""}`}>
+          <colgroup>
+            <col className="pt-col-id" />
+            <col className="pt-col-date" />
+            <col className="pt-col-client" />
+            <col className="pt-col-phone" />
+            <col />
+            <col className="pt-col-total" />
+            {!soloAbastecimiento && <col className="pt-col-metodo-pago" />}
+            <col className="pt-col-state" />
+            {(mostrarSeguimiento || soloAbastecimiento) && <col className="pt-col-followup" />}
+            <col className="pt-col-action" />
+          </colgroup>
           <thead>
             <tr>
               <th className="pt-th pt-th-id">Pedido</th>
@@ -1517,8 +1620,9 @@ export function PedidosTable({
               <th className="pt-th pt-th-num">Total</th>
               {!soloAbastecimiento && (
                 <>
+                  <th className="pt-th">Método de pago</th>
                   <th className="pt-th">{ENCABEZADO_ESTADO[etapaActiva]}</th>
-                  <th className="pt-th">Seguimiento</th>
+                  {mostrarSeguimiento && <th className="pt-th">{["seguimiento_envio", "recuperacion"].includes(etapaActiva) ? "Mensaje de seguimiento" : "Seguimiento"}</th>}
                 </>
               )}
               {soloAbastecimiento && <th className="pt-th pt-th-state">Estado</th>}
@@ -1554,9 +1658,7 @@ export function PedidosTable({
                   items.length === 0
                     ? "—"
                     : items.length === 1
-                    ? `${items[0].nombre_producto}${items[0].oferta_nombre ? ` — ${items[0].oferta_nombre}` : ""}${
-                        items[0].cantidad > 1 ? ` x${items[0].cantidad}` : ""
-                      }`
+                    ? `${items[0].nombre_producto}${items[0].cantidad > 1 ? ` x${items[0].cantidad}` : ""}`
                     : `${items[0].nombre_producto} +${items.length - 1} más`;
 
                 const { fecha: fechaVisual, hora: horaVisual } = formatFechaYHora(
@@ -1640,12 +1742,16 @@ export function PedidosTable({
                     </td>
                     {!soloAbastecimiento && (
                       <>
+                        <td className="pt-td" data-label="Método de pago">
+                          <span>{e.metodo_pago || "—"}</span>
+                          {esPagoAnticipado(e) && <span className="pt-depto">Anticipado</span>}
+                        </td>
                         <td className="pt-td" data-label="Estado">
                           <EstadoCell envio={e} etapa={etapaActiva} onCambiarEstado={e.raha_logistica?.gestionado ? null : handleItemEstadoChange} />
                         </td>
-                        <td className="pt-td" data-label="Seguimiento" onClick={(ev) => ev.stopPropagation()}>
+                        {mostrarSeguimiento && <td className="pt-td" data-label={["seguimiento_envio", "recuperacion"].includes(etapaActiva) ? "Mensaje de seguimiento" : "Seguimiento"} onClick={(ev) => ev.stopPropagation()}>
                           <SeguimientoCell envio={e} onAbrir={onAbrirSeguimiento} />
-                        </td>
+                        </td>}
                       </>
                     )}
                     {soloAbastecimiento && (
@@ -1661,14 +1767,17 @@ export function PedidosTable({
                         <AbastecimientoBadge envio={e} onAbrirTimeline={onAbrirTimelineAbastecimiento} />
                       </td>
                     )}
-                    <td className="pt-td" data-label="Acción" onClick={(ev) => ev.stopPropagation()}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <td className="pt-td pt-td-action" data-label="Acción" onClick={(ev) => ev.stopPropagation()}>
+                      <div className="pt-row-actions">
                         {!(esTabRahaLogistica && e.raha_logistica?.gestionado) && (
                           <AccionPrincipal
                             envio={e}
                             onAbrirDetalle={onAbrirDetalle}
                             onAbrirResumen={onAbrirResumen}
                             onAccionSiguiente={handleAccionSiguiente}
+                            onAbrirSeguimiento={mostrarSeguimiento ? onAbrirSeguimiento : undefined}
+                            onCambiarEstado={handleItemEstadoChange}
+                            etapa={etapaActiva}
                           />
                         )}
                         {onAbrirHistorial && (

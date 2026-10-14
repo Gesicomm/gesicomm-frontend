@@ -37,6 +37,7 @@ export function OrderCard({
   onAccionSiguiente,
   isAdmin = false,
   readOnly = false,
+  etapaVista,
 }) {
   const didDragRef = useRef(false);
   const nombreCliente = envio.nombre_cliente
@@ -53,8 +54,8 @@ export function OrderCard({
   const seguimientoVencido = Boolean(envio.recordatorio_vencido);
   const seguimientoPendiente = envio.recordatorio_estado === "PENDIENTE" && envio.recordatorio_ejecutar_en;
   const necesitaSeguimiento = seguimientoVencido || (envio.estado === "EnSeguimiento" && !seguimientoPendiente);
-  const mostrarAlertas = necesitaSeguimiento || seguimientoPendiente;
-  const estado = estadoDePedido(envio);
+  const mostrarAlertas = Boolean(onAbrirSeguimiento) && (necesitaSeguimiento || seguimientoPendiente);
+  const estado = estadoDePedido(envio, etapaVista);
 
   const handleSeguimientoClick = (event) => {
     event.stopPropagation();

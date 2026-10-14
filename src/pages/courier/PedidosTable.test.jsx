@@ -50,9 +50,9 @@ async function montar(props = {}) {
   const onAbrirDetalle = vi.fn();
   const onAbrirSeguimiento = vi.fn();
   const { esperarCliente = "Cliente 1", ...tableProps } = props;
-  render(<PedidosTable couriers={[]} onChangeEstado={onChangeEstado} onAbrirDetalle={onAbrirDetalle} onAbrirSeguimiento={onAbrirSeguimiento} {...tableProps} />);
+  const rendered = render(<PedidosTable couriers={[]} onChangeEstado={onChangeEstado} onAbrirDetalle={onAbrirDetalle} onAbrirSeguimiento={onAbrirSeguimiento} {...tableProps} />);
   await screen.findByText(esperarCliente);
-  return { onChangeEstado, onAbrirDetalle, onAbrirSeguimiento };
+  return { ...rendered, onChangeEstado, onAbrirDetalle, onAbrirSeguimiento };
 }
 
 const irAEtapa = (nombre) => fireEvent.click(
@@ -73,8 +73,8 @@ test("la bandeja no muestra nada de abastecimiento, tampoco en pedidos viejos qu
   expect(screen.queryByText(/abastecimiento/i)).not.toBeInTheDocument();
 });
 
-test("un pedido confirmado se prepara directo desde su fila", async () => {
-  const { onChangeEstado } = await montar();
+test("un pedido confirmado se prepara directo desde su fila en Logística", async () => {
+  const { onChangeEstado } = await montar({ etapasDisponibles: ["logistica"], initialEtapa: "logistica", initialEstado: "Confirmado" });
   const fila = screen.getByText("Cliente 1").closest("tr");
 
   fireEvent.click(within(fila).getByRole("button", { name: /Preparar/ }));
@@ -120,25 +120,34 @@ test("la vista Kanban del Tablero tampoco muestra avisos de abastecimiento", asy
 const encabezados = () => screen.getAllByRole("columnheader").map((th) => th.textContent);
 const ultimoPedido = () => getEnviosPaginados.mock.calls.at(-1)[0];
 
-test("las etapas son Comercial, Logística y Recompra, y cada una pide solo sus estados", async () => {
+test("las etapas incluyen Seguimiento de envío y cada una pide solo sus estados", async () => {
   await montar();
 
   const etapas = within(screen.getByRole("tablist", { name: "Filtrar por etapa" })).getAllByRole("button");
-  expect(etapas.map((b) => b.textContent)).toEqual(["Comercial", "Logística", "Recompra"]);
+  expect(etapas.map((b) => b.textContent)).toEqual(["Proceso de confirmación", "Seguimiento de envío", "Logística", "Recompra", "Recuperación"]);
 
   // Se entra por Comercial, que ahora termina en Cancelado: al confirmar, el
   // pedido pasa directo a Logística como "Pendiente de preparación".
-  expect(ultimoPedido()).toMatchObject({ estados: ["Pendiente", "EnSeguimiento", "Cancelado"], incluir_seguimiento: true });
+  await waitFor(() => expect(ultimoPedido()).toMatchObject({ estados: ["Pendiente", "EnSeguimiento"], incluir_seguimiento: true }));
   const chips = () => screen.getAllByRole("button").filter((b) => b.classList.contains("pt-status-chip")).map((b) => b.textContent.replace(/\d+$/, ""));
-  expect(chips()).toEqual(["Todos", "Pendiente", "Cancelado"]);
-  expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Estado comercial", "Seguimiento", "Acción"]);
+  expect(chips()).toEqual(["Pendiente", "Cancelado"]);
+  expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado comercial", "Seguimiento", "Acción"]);
+
+  irAEtapa("Seguimiento de envío");
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado"]));
+  expect(ultimoPedido()).toMatchObject({ incluir_seguimiento: true });
+  expect(ultimoPedido()).not.toHaveProperty("excluir_logistica_raha");
+  expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Mensaje de seguimiento", "Acción"]);
+  await waitFor(() => expect(getConteoPorEstado.mock.calls.at(-1)[0]).not.toHaveProperty("separar_logistica_raha"));
 
   irAEtapa("Logística");
-  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]));
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado"]));
   // Sin "Todos": Envíos RAHA primero, Pendiente de preparación y el resto de los estados de siempre.
   expect(chips()).toEqual(["Envíos RAHA", "Pendiente de preparación", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
   expect(encabezados()).toContain("Estado logístico");
   expect(encabezados()).not.toContain("Estado comercial");
+  expect(encabezados()).not.toContain("Seguimiento");
+  await waitFor(() => expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento"));
 
   irAEtapa("Recompra");
   await waitFor(() => expect(ultimoPedido().estados).toEqual(["Entregado"]));
@@ -159,7 +168,7 @@ test("el estado que se muestra es el de la etapa que se está mirando", async ()
   });
   await montar();
 
-  const estado = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[6];
+  const estado = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[7];
   // Estado comercial: Pendiente o Cancelado (Confirmado ya es logístico).
   expect(estado("Cliente 1")).toHaveTextContent(/^Pendiente$/);
   expect(estado("Cliente 2")).toHaveTextContent("Pendiente de preparación");
@@ -309,7 +318,7 @@ test("la columna Seguimiento muestra el mensaje que toca y abre los mensajes del
   });
   const { onAbrirSeguimiento, onAbrirDetalle } = await montar();
 
-  const celda = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[7];
+  const celda = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[8];
   expect(celda("Cliente 1")).toHaveTextContent("Confirmación de pedido web");
   expect(celda("Cliente 1")).toHaveTextContent("1/3 · Confirmación");
   expect(celda("Cliente 1")).toHaveTextContent("Pendiente de envío");
@@ -354,30 +363,178 @@ test("el estado de cada fila se cambia desde su desplegable, solo hacia los paso
 
   const fila = (cliente) => screen.getByText(cliente).closest("tr");
   const abrir = (cliente) => fireEvent.click(within(fila(cliente)).getByRole("button", { name: /^(Pendiente|Pendiente de preparación|Despachado|Cancelado)$/ }));
-  const opciones = (cliente) => within(within(fila(cliente)).getByRole("menu")).getAllByRole("menuitem").map((o) => o.textContent.replace("✓", ""));
+  // El menú se monta fuera de la tabla para escapar de su scroll.
+  const opciones = () => within(screen.getByRole("menu")).getAllByRole("menuitem").map((o) => o.textContent.replace("✓", ""));
 
   // Un pendiente (aunque esté en seguimiento) se confirma o se cancela: confirmar abre los datos del pedido.
   // Las opciones NO seleccionadas del menú muestran el valor crudo del estado
   // ("Confirmado"), no el rótulo "Pendiente de preparación" — ese solo se usa
   // para el badge del estado actual (ver EstadoBadgeDropdown).
   abrir("Cliente 1");
-  expect(opciones("Cliente 1")).toEqual(["Pendiente", "Confirmado", "Cancelado"]);
-  fireEvent.click(within(fila("Cliente 1")).getByRole("menuitem", { name: "Confirmado" }));
+  expect(opciones()).toEqual(["Pendiente", "Confirmado", "Cancelado"]);
+  fireEvent.click(screen.getByRole("menuitem", { name: "Confirmado" }));
   expect(onAbrirDetalle).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
 
   // Confirmado (ahora "Pendiente de preparación") pasa a Preparado: no se saltea ese paso.
   abrir("Cliente 2");
-  expect(opciones("Cliente 2")).toEqual(["Pendiente de preparación", "Preparado", "Cancelado"]);
-  fireEvent.click(within(fila("Cliente 2")).getByRole("menuitem", { name: "Preparado" }));
+  expect(opciones()).toEqual(["Pendiente de preparación", "Preparado", "Cancelado"]);
+  fireEvent.click(screen.getByRole("menuitem", { name: "Preparado" }));
   expect(onChangeEstado).toHaveBeenCalledWith(2, "Preparado", expect.objectContaining({ id: 2 }));
 
-  // Despachado: el resultado de la entrega, cada uno con su formulario.
-  abrir("Cliente 3");
-  expect(opciones("Cliente 3")).toEqual(["Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
-  fireEvent.click(within(fila("Cliente 3")).getByRole("menuitem", { name: "Entregado" }));
+  // Despachado muestra su estado; el resultado se elige en Acción.
+  const celdasDespachado = within(fila("Cliente 3")).getAllByRole("cell");
+  expect(celdasDespachado[7]).toHaveTextContent("Despachado");
+  expect(within(celdasDespachado[7]).queryByRole("button")).not.toBeInTheDocument();
+  fireEvent.click(within(celdasDespachado.at(-1)).getByRole("button", { name: "Cambiar estado" }));
+  expect(opciones()).toEqual(["Entregado", "Reprogramado", "Devuelto", "Perdido"]);
+  fireEvent.click(screen.getByRole("menuitem", { name: "Entregado" }));
   expect(onAccionEspecial).toHaveBeenCalledWith("entregar", expect.objectContaining({ id: 3 }));
 
   // Un estado final no abre nada.
   abrir("Cliente 4");
-  expect(within(fila("Cliente 4")).queryByRole("menu")).not.toBeInTheDocument();
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+});
+
+const ETAPAS_COMERCIALES = ["comercial", "seguimiento_envio", "recompra", "recuperacion"];
+const SEGUIMIENTO_ENVIO = {
+  etapa: "SEGUIMIENTO_ENVIO", etapa_nombre: "Seguimiento de envío", flujo_id: 30,
+  fase_id: 301, fase_nombre: "Pedido confirmado", fase_posicion: 1, total_fases: 3,
+  terminado: false, cuando: "ahora", motivo: "nuevo",
+};
+
+test("Recuperación reúne Devuelto y Perdido sin subestados, abre sus mensajes y tiene Kanban propio", async () => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, "Devuelto", { seguimiento: { ...SEGUIMIENTO_ENVIO, etapa: "RECUPERACION_CLIENTES", etapa_nombre: "Recuperación de clientes", fase_nombre: "Contacto tras incidencia" } })], total: 1, totalPages: 1 });
+  const { onAbrirSeguimiento } = await montar({ etapasDisponibles: ETAPAS_COMERCIALES });
+  irAEtapa("Recuperación");
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Devuelto", "Perdido"]));
+  expect(screen.queryByRole("region", { name: "Filtros secundarios de recuperacion" })).not.toBeInTheDocument();
+  expect(ultimoPedido()).toMatchObject({ incluir_seguimiento: true });
+  expect(encabezados()).toContain("Estado de recuperación");
+  const fila = within(screen.getByText("Cliente 1").closest("tr"));
+  expect(fila.getByText("Devuelto")).toBeInTheDocument();
+  expect(fila.getByText("1/3 · Contacto tras incidencia")).toBeInTheDocument();
+  fireEvent.click(fila.getByRole("button", { name: "Seguimiento" }));
+  expect(onAbrirSeguimiento).toHaveBeenCalledWith(expect.objectContaining({ estado: "Devuelto" }));
+  fireEvent.click(screen.getByRole("button", { name: /Kanban/ }));
+  const columna = await screen.findByRole("region", { name: "Columna Con mensajes por enviar" });
+  expect(within(columna).getByText("Cliente 1")).toBeInTheDocument();
+  expect(within(columna).getByText("Recuperación")).toBeInTheDocument();
+});
+
+test.each(["Devuelto", "Perdido"])("Recuperación reúne las incidencias aunque se llegue con el filtro anterior %s", async (estadoAnterior) => {
+  getEnviosPaginados.mockImplementation(async ({ estados }) => {
+    const data = [pedido(1, "Devuelto"), pedido(2, "Perdido")].filter((p) => estados.includes(p.estado));
+    return { data, total: data.length, totalPages: 1 };
+  });
+  await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: "recuperacion", initialEstado: estadoAnterior });
+  expect(await screen.findByText("Cliente 2")).toBeInTheDocument();
+  expect(ultimoPedido().estados).toEqual(["Devuelto", "Perdido"]);
+  expect(screen.queryByRole("region", { name: "Filtros secundarios de recuperacion" })).not.toBeInTheDocument();
+});
+
+test.each([
+  ["Entregado", "entregar"],
+  ["Reprogramado", "reprogramar"],
+  ["Devuelto", "devolver"],
+  ["Perdido", "perder"],
+])("en Despachado, Acción permite elegir %s y abre su formulario", async (estado, tipoModal) => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, "Despachado")], total: 1, totalPages: 1 });
+  const onAccionEspecial = vi.fn();
+  const { onChangeEstado, onAbrirDetalle } = await montar({ etapasDisponibles: ["logistica"], initialEtapa: "logistica", initialEstado: "Despachado", onAccionEspecial });
+  const celdas = within(screen.getByText("Cliente 1").closest("tr")).getAllByRole("cell");
+  const acciones = within(celdas.at(-1));
+
+  expect(celdas[7]).toHaveTextContent(/^Despachado$/);
+  expect(within(celdas[7]).queryByRole("button")).not.toBeInTheDocument();
+  fireEvent.click(acciones.getByRole("button", { name: "Cambiar estado" }));
+  expect(screen.queryByRole("menuitem", { name: "Confirmado" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("menuitem", { name: estado }));
+
+  expect(onAccionEspecial).toHaveBeenCalledWith(tipoModal, expect.objectContaining({ id: 1, estado: "Despachado" }));
+  expect(onChangeEstado).not.toHaveBeenCalled();
+  expect(onAbrirDetalle).not.toHaveBeenCalled();
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+});
+
+test("el desplegable de Acción se cierra con Escape, clic fuera o desplazamiento de la tabla", async () => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, "Despachado")], total: 1, totalPages: 1 });
+  await montar({ etapasDisponibles: ["logistica"], initialEtapa: "logistica", initialEstado: "Despachado" });
+  const boton = screen.getByRole("button", { name: "Cambiar estado" });
+  fireEvent.click(boton);
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Entregado" }), { key: "Escape" });
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  expect(boton).toHaveFocus();
+
+  fireEvent.click(boton);
+  fireEvent.mouseDown(document.body);
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+  fireEvent.click(boton);
+  fireEvent.scroll(document.querySelector(".pt-table-wrap"));
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+});
+
+test("Seguimiento de envío gestiona mensajes y muestra el estado logístico sin acción de preparar", async () => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, "Confirmado", { seguimiento: SEGUIMIENTO_ENVIO, accion_siguiente: VIEJO_CON_ABASTECIMIENTO.accion_siguiente })], total: 1, totalPages: 1 });
+  const { onAbrirSeguimiento, onChangeEstado } = await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: "seguimiento_envio" });
+  const fila = within(screen.getByText("Cliente 1").closest("tr"));
+
+  expect(within(screen.getByRole("tablist", { name: "Filtrar por etapa" })).getAllByRole("button").map((button) => button.textContent))
+    .toEqual(["Proceso de confirmación", "Seguimiento de envío", "Recompra", "Recuperación"]);
+
+  expect(encabezados()).toContain("Mensaje de seguimiento");
+  expect(fila.getByText("Pendiente de preparación")).toBeInTheDocument();
+  expect(fila.getByText("1/3 · Pedido confirmado")).toBeInTheDocument();
+  expect(fila.queryByRole("button", { name: /Preparar|Pendiente de preparación/ })).not.toBeInTheDocument();
+  fireEvent.click(fila.getByRole("button", { name: "Seguimiento" }));
+  expect(onAbrirSeguimiento).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+  expect(onChangeEstado).not.toHaveBeenCalled();
+});
+
+test("Logística no muestra mensajes ni accesos a WhatsApp en tabla y Kanban", async () => {
+  getEnviosPaginados.mockResolvedValue({
+    data: [pedido(1, "Confirmado", {
+      seguimiento: SEGUIMIENTO_ENVIO,
+      recordatorio_estado: "PENDIENTE", recordatorio_ejecutar_en: "2026-10-15T12:00:00.000Z",
+      accion_siguiente: VIEJO_CON_ABASTECIMIENTO.accion_siguiente,
+    })], total: 1, totalPages: 1,
+  });
+  const { onAbrirSeguimiento } = await montar({ etapasDisponibles: ["logistica"], initialEtapa: "logistica", initialEstado: "Confirmado" });
+  expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Acción"]);
+  expect(screen.queryByText("1/3 · Pedido confirmado")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Preparar" })).toBeInTheDocument();
+  expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento");
+
+  fireEvent.click(screen.getByRole("button", { name: /Kanban/ }));
+  await screen.findByRole("region", { name: "Columna Pendientes de preparación" });
+  expect(screen.queryByRole("button", { name: /WhatsApp|seguimiento|mensaje/i })).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Pendientes del pedido")).not.toBeInTheDocument();
+  expect(onAbrirSeguimiento).not.toHaveBeenCalled();
+  expect(ultimoPedido()).toMatchObject({ limit: 100 });
+  expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento");
+});
+
+test("al confirmar el pedido sale de confirmación y aparece en Seguimiento de envío al refrescar", async () => {
+  let estado = "Pendiente";
+  getEnviosPaginados.mockImplementation(async ({ estados }) => {
+    const data = estados.includes(estado) ? [pedido(1, estado, { seguimiento: estado === "Confirmado" ? SEGUIMIENTO_ENVIO : null })] : [];
+    return { data, total: data.length, totalPages: 1 };
+  });
+  const props = { couriers: [], etapasDisponibles: ETAPAS_COMERCIALES };
+  const { rerender, onAbrirSeguimiento } = await montar(props);
+
+  // El guardado de la confirmación actualiza Envio.estado y refrescarKey.
+  estado = "Confirmado";
+  rerender(<PedidosTable {...props} refrescarKey={1} onAbrirSeguimiento={onAbrirSeguimiento} />);
+  await waitFor(() => expect(screen.queryByText("Cliente 1")).not.toBeInTheDocument());
+  irAEtapa("Seguimiento de envío");
+  const fila = within((await screen.findByText("Cliente 1")).closest("tr"));
+  expect(fila.getByText("1/3 · Pedido confirmado")).toBeInTheDocument();
+
+  // La entrega cierra esta etapa; el pedido ya pertenece a Recompra.
+  estado = "Entregado";
+  rerender(<PedidosTable {...props} refrescarKey={2} onAbrirSeguimiento={onAbrirSeguimiento} />);
+  await waitFor(() => expect(screen.queryByText("Cliente 1")).not.toBeInTheDocument());
+  irAEtapa("Recompra");
+  expect(await screen.findByText("Cliente 1")).toBeInTheDocument();
 });

@@ -57,35 +57,6 @@ function nombreVisibleDelFlujo(flujo) {
   return FLOW_TYPES[flujo?.tipo]?.label || flujo?.nombre || "Flujo";
 }
 
-function esFasePreparacion(fase) {
-  const transicion = transicionEstadoFase(fase);
-  return transicion
-    ? transicion.desde === "Confirmado" && transicion.hasta === "Preparado"
-    : fase?.accion_operativa === "PREPARAR_PEDIDO";
-}
-
-function esFaseDespacho(fase) {
-  const transicion = transicionEstadoFase(fase);
-  return transicion
-    ? transicion.desde === "Preparado" && transicion.hasta === "Despachado"
-    : fase?.accion_operativa === "DESPACHAR_PEDIDO";
-}
-
-function transicionEstadoFase(fase) {
-  if (fase?.transicion_estado_desde && fase?.transicion_estado_hasta) {
-    return { desde: fase.transicion_estado_desde, hasta: fase.transicion_estado_hasta };
-  }
-  if (fase?.accion_operativa === "PREPARAR_PEDIDO") return { desde: "Confirmado", hasta: "Preparado" };
-  if (fase?.accion_operativa === "DESPACHAR_PEDIDO") return { desde: "Preparado", hasta: "Despachado" };
-  return null;
-}
-
-function flujoTieneFaseCompletada(flujo, coincide) {
-  return flujo?.tipo === "SEGUIMIENTO_ENVIO"
-    && (flujo.fases || []).some((fase) => fase.completada && coincide(fase));
-}
-
-/** "hoy 18:42" si es de hoy, "28/09 18:42" si no. */
 function formatMomento(iso) {
   if (!iso) return "";
   const f = new Date(iso);
@@ -127,12 +98,9 @@ function contextoDelPedido(envio) {
  * @param {function} onConfirmarPedido  abre el pedido para confirmarlo. Se ofrece mientras está por
  *                                      confirmar, en la fase que sea: al confirmarse, el pedido sale
  *                                      solo del flujo de confirmación.
- * @param {function} onCambiarEstadoPedido cambia el pedido al estado configurado en la fase.
- * @param {function} onPrepararPedido   compatibilidad: marca el pedido como Preparado.
- * @param {function} onDespacharPedido  compatibilidad: marca el pedido como Despachado.
  * @param {object} servicio             solo para pruebas.
  */
-export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConfirmarPedido, onCambiarEstadoPedido, onPrepararPedido, onDespacharPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
+export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConfirmarPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
   const [flujos, setFlujos] = useState([]);
   const [flujoId, setFlujoId] = useState(null);
   const [configuracion, setConfiguracion] = useState(null);
@@ -180,17 +148,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       if (!activo) return;
       const lista = resFlujos || [];
       setFlujos(lista);
-      if (envio.estado === "Confirmado" && lista.some((f) => flujoTieneFaseCompletada(f, esFasePreparacion))) {
-        const cambiar = onCambiarEstadoPedido
-          ? () => onCambiarEstadoPedido(envio, "Preparado")
-          : onPrepararPedido ? () => onPrepararPedido(envio) : null;
-        cambiar?.().catch((err) => console.error(err));
-      } else if (envio.estado === "Preparado" && lista.some((f) => flujoTieneFaseCompletada(f, esFaseDespacho))) {
-        const cambiar = onCambiarEstadoPedido
-          ? () => onCambiarEstadoPedido(envio, "Despachado")
-          : onDespacharPedido ? () => onDespacharPedido(envio) : null;
-        cambiar?.().catch((err) => console.error(err));
-      }
       // Arranca en el flujo de la fase que toca; si no hay, en el que ya se
       // venía usando con este pedido.
       const delaFase = faseQueToca ? lista.find(f => (f.fases || []).some(x => x.id === faseQueToca)) : null;
@@ -206,7 +163,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
     });
 
     return () => { activo = false; };
-  }, [open, envio, servicio, faseQueToca, onCambiarEstadoPedido, onPrepararPedido, onDespacharPedido]);
+  }, [open, envio, servicio, faseQueToca]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -224,30 +181,13 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
   const flujo = flujos.find(f => f.id === flujoId) || null;
   const fases = flujo?.fases || [];
-  const faseMarcaPreparacion = (fase) => (
-    envio?.estado === "Confirmado"
-    && flujo?.tipo === "SEGUIMIENTO_ENVIO"
-    && esFasePreparacion(fase)
-  );
-  const faseMarcaDespacho = (fase) => (
-    envio?.estado === "Preparado"
-    && flujo?.tipo === "SEGUIMIENTO_ENVIO"
-    && esFaseDespacho(fase)
-  );
-  const faseDebeCambiarEstado = (fase) => {
-    if (flujo?.tipo !== "SEGUIMIENTO_ENVIO") return null;
-    const transicion = transicionEstadoFase(fase);
-    if (!transicion || envio?.estado !== transicion.desde) return null;
-    return transicion;
-  };
-
   // La fase en la que está el pedido: la que pidió quien abrió el panel
   // mientras no esté completada; si no, la siguiente a la más avanzada que
   // ya se completó. Así, al marcar una como enviada, "Toca ahora" pasa sola
   // a la que sigue.
-  const sugeridaPendiente = fases.find(f => f.id === faseQueToca && !f.completada);
+  const sugeridaPendiente = fases.find(f => f.id === faseQueToca && !f.completada && f.disponible !== false);
   const mayorCompletada = fases.reduce((max, f) => (f.completada ? Math.max(max, f.orden) : max), 0);
-  const faseActualId = (sugeridaPendiente || fases.find(f => f.orden > mayorCompletada))?.id ?? null;
+  const faseActualId = (sugeridaPendiente || fases.find(f => f.orden > mayorCompletada && f.disponible !== false))?.id ?? null;
 
   /**
    * Abre una fase en WhatsApp. No valida ningún orden a propósito: se puede
@@ -290,29 +230,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       // acá solo se muestra lo que quedó (se puede cambiar o cancelar abajo).
       setRecordatorio(prev => res?.recordatorio || (prev && cumplidos.includes(prev.id) ? null : prev));
       if (res?.siguiente_fase) setFaseVista(res.siguiente_fase.id);
-      const transicion = faseDebeCambiarEstado(fase);
-      if (transicion && onCambiarEstadoPedido) {
-        try {
-          await onCambiarEstadoPedido(envio, transicion.hasta);
-        } catch (err) {
-          console.error(err);
-          alert(err.response?.data?.error || `El mensaje quedó marcado como enviado, pero no se pudo cambiar el pedido a ${transicion.hasta}`);
-        }
-      } else if (faseMarcaPreparacion(fase) && onPrepararPedido) {
-        try {
-          await onPrepararPedido(envio);
-        } catch (err) {
-          console.error(err);
-          alert(err.response?.data?.error || "El mensaje quedó marcado como enviado, pero no se pudo cambiar el pedido a Preparado");
-        }
-      } else if (faseMarcaDespacho(fase) && onDespacharPedido) {
-        try {
-          await onDespacharPedido(envio);
-        } catch (err) {
-          console.error(err);
-          alert(err.response?.data?.error || "El mensaje quedó marcado como enviado, pero no se pudo cambiar el pedido a Despachado");
-        }
-      }
       await cargarFlujos(envio.id);
       if (onRefreshPedido) onRefreshPedido();
       // En la cola de trabajo, marcar como enviado cierra este pedido.
@@ -576,6 +493,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
                           onVerMensaje={() => setFaseVista(v => (v === fase.id ? null : fase.id))}
                           enviando={faseEnviando === fase.id}
                           deshabilitado={!!faseEnviando}
+                          bloqueadaPorEstado={fase.disponible === false}
                           onAbrir={() => abrirFase(fase)}
                           onCompletar={() => completarFase(fase)}
                           onDescompletar={() => descompletarFase(fase)}
@@ -595,82 +513,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
                 )}
               </div>
 
-              {/* Recordatorio */}
-              <div style={{ background: "var(--color-surface-2)", padding: "1rem", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
-                <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "0.9rem", color: "var(--color-fg-subtle)", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Clock size={14}/> Próximo seguimiento
-                </h3>
-
-                {recordatorioAbierto ? (
-                  <div style={{ marginBottom: "1rem", padding: "0.75rem", background: `color-mix(in srgb, var(${recordatorioVencido ? "--color-danger" : "--color-primary"}) 10%, transparent)`, borderRadius: "6px" }}>
-                    <div style={{ fontSize: "0.85rem", fontWeight: "bold", color: recordatorioVencido ? "var(--color-danger)" : "var(--color-primary-text)" }}>
-                      {recordatorioVencido ? "Seguimiento vencido" : "Programado para:"}
-                    </div>
-                    <div style={{ fontSize: "0.9rem", margin: "4px 0 0 0" }}>
-                      {recordatorioVencido ? "Era para el " : ""}{new Date(recordatorioAbierto.ejecutar_en).toLocaleString('es-PY')}
-                    </div>
-                    {recordatorioAbierto.nota && (
-                      <div style={{ fontSize: "0.8rem", color: "var(--color-fg-muted)", marginTop: "4px" }}>{recordatorioAbierto.nota}</div>
-                    )}
-
-                    <div style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
-                      <button className="btn-secondary" style={{ flex: 1, padding: "4px", fontSize: "0.8rem" }} onClick={completar} disabled={loadingAccion}><Check size={14}/> Completar</button>
-                      <button className="btn-secondary" style={{ flex: 1, padding: "4px", fontSize: "0.8rem", color: "var(--color-danger)" }} onClick={cancelarRecordatorio} disabled={loadingAccion}><Ban size={14}/> Cancelar</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ marginBottom: "1rem", fontSize: "0.85rem", color: "var(--color-fg-muted)" }}>
-                    Sin próximo seguimiento
-                  </div>
-                )}
-
-                <div style={{ borderTop: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)", paddingTop: "1rem" }}>
-                  <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "4px" }}>Nota (opcional)</label>
-
-                  <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-                    <textarea className="form-input" value={notaRecordatorio} onChange={e => setNotaRecordatorio(e.target.value)} style={{ flex: 1, minHeight: '60px', resize: 'vertical' }} placeholder="Escribe una nota..." />
-                  </div>
-
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
-                    {configuracion?.tiempos_rapidos_horas?.map(h => {
-                      const activo = horasProgramadas === h;
-                      return (
-                        <button
-                          key={h}
-                          className="btn-secondary"
-                          style={{
-                            padding: "6px 14px",
-                            fontSize: "0.8rem",
-                            borderRadius: "16px",
-                            flex: "1 1 auto",
-                            textAlign: "center",
-                            transition: "all 0.18s ease",
-                            background: activo ? "var(--color-primary)" : "var(--color-canvas)",
-                            color: activo ? "var(--color-primary-fg)" : undefined,
-                            borderColor: activo ? "var(--color-primary)" : "color-mix(in srgb, var(--color-fg) 12%, transparent)",
-                            fontWeight: activo ? 700 : 400,
-                          }}
-                          onClick={() => programarRapido(h)}
-                          disabled={loadingAccion}
-                        >
-                          {activo ? `✓ +${h}h` : `+${h}h`}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
-                    <input type="datetime-local" className="form-input" value={fechaCustom} onChange={e => { setFechaCustom(e.target.value); setHorasProgramadas(e.target.value ? 'custom' : null); }} style={{ flex: 1 }} disabled={loadingAccion}/>
-                  </div>
-
-                  {(notaRecordatorio.trim() || horasProgramadas || fechaCustom) && (
-                    <button className="btn-secondary" style={{ width: "100%", justifyContent: "center" }} onClick={guardarNotaORecordatorio} disabled={loadingAccion}>
-                      Guardar nota / recordatorio
-                    </button>
-                  )}
-                </div>
-
-              </div>
 
             </div>
           )}
@@ -703,7 +545,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
  *    principal — es lo que mueve al pedido a la fase siguiente;
  *  - completada: se puede reabrir igual, y desmarcar si fue un error.
  */
-function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, enviando, deshabilitado, onAbrir, onCompletar, onDescompletar }) {
+function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, enviando, deshabilitado, bloqueadaPorEstado = false, onAbrir, onCompletar, onDescompletar }) {
   const abierta = (fase.envios || 0) > 0;
   const completada = !!fase.completada;
   const faltaMarcar = abierta && !completada;
@@ -728,13 +570,14 @@ function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "0.85rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
             Fase {fase.orden} — {fase.nombre}
-            {sugerida && (
+            {sugerida && fase.disponible !== false && (
               <span style={{ fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", borderRadius: "999px", background: "color-mix(in srgb, var(--color-primary) 18%, transparent)", color: "var(--color-primary-text)" }}>
                 Toca ahora
               </span>
             )}
           </div>
           <div style={{ fontSize: "0.75rem", color: faltaMarcar ? "var(--color-warning)" : "var(--color-fg-muted)", marginTop: "2px" }}>
+            {fase.disponible === false && <span>Espera que logística marque {fase.estado_requerido || fase.estado_activador || "Preparado"}. </span>}
             {completada
               ? `Enviado ${formatMomento(fase.ultimo_envio_en)}`
               : faltaMarcar
@@ -756,7 +599,7 @@ function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, 
               </button>
             )}
             {!abierta && onCompletar && (
-              <button type="button" onClick={onCompletar} disabled={deshabilitado} style={{ ...enlace, color: "var(--color-fg-muted)" }} title="Si lo mandaste por fuera del sistema">
+              <button type="button" onClick={onCompletar} disabled={deshabilitado || bloqueadaPorEstado} style={{ ...enlace, color: "var(--color-fg-muted)" }} title="Si lo mandaste por fuera del sistema">
                 Ya lo envié
               </button>
             )}
@@ -765,7 +608,7 @@ function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, 
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0 }}>
           {faltaMarcar && onCompletar && (
-            <button className="btn-secondary" style={{ ...botonChico, ...verde }} onClick={onCompletar} disabled={deshabilitado} title="Confirmar que mandaste el mensaje: el pedido pasa a la fase siguiente">
+            <button className="btn-secondary" style={{ ...botonChico, ...verde }} onClick={onCompletar} disabled={deshabilitado || bloqueadaPorEstado} title="Confirmar que mandaste el mensaje: el pedido pasa a la fase siguiente">
               {enviando ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
               Marcar como enviado
             </button>
@@ -774,7 +617,7 @@ function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, 
             className="btn-secondary"
             style={{ ...botonChico, ...(!abierta ? verde : {}) }}
             onClick={onAbrir}
-            disabled={deshabilitado}
+            disabled={deshabilitado || bloqueadaPorEstado}
             title={abierta ? "Volver a abrir esta fase en WhatsApp" : "Abrir esta fase en WhatsApp"}
           >
             {enviando && !faltaMarcar

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, Loader2, Tag, Clock, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Edit2, Loader2, Tag, AlertCircle } from "lucide-react";
 import { seguimientoService } from "../../services/seguimiento.service";
 import { FlujosWhatsapp } from "./FlujosWhatsapp";
 
@@ -12,25 +12,18 @@ import { FlujosWhatsapp } from "./FlujosWhatsapp";
  */
 export function SeguimientoConfig() {
   const [etiquetas, setEtiquetas] = useState([]);
-  const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [editandoEtiqueta, setEditandoEtiqueta] = useState(null);
   const [editandoFlujo, setEditandoFlujo] = useState(false);
-  const [tiemposInput, setTiemposInput] = useState("");
 
   const cargarDatos = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [resE, resC] = await Promise.all([
-        seguimientoService.getEtiquetas(),
-        seguimientoService.getConfiguracion()
-      ]);
+      const resE = await seguimientoService.getEtiquetas();
       setEtiquetas(resE || []);
-      setConfig(resC || { tiempos_rapidos_horas: [1, 2, 4, 8, 24] });
-      setTiemposInput((resC?.tiempos_rapidos_horas || [1, 2, 4, 8, 24]).join(", "));
     } catch (e) {
       console.error(e);
       setError("Error al cargar la configuración");
@@ -42,17 +35,6 @@ export function SeguimientoConfig() {
   useEffect(() => {
     cargarDatos();
   }, []);
-
-  const saveConfig = async () => {
-    try {
-      const parsed = tiemposInput.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-      await seguimientoService.updateConfiguracion({ tiempos_rapidos_horas: parsed });
-      alert("Configuración de tiempos guardada");
-      cargarDatos();
-    } catch (e) {
-      alert("Error al guardar config");
-    }
-  };
 
   const saveEtiqueta = async (e) => {
     if (!e.nombre?.trim()) {
@@ -98,7 +80,7 @@ export function SeguimientoConfig() {
         <header style={{ marginBottom: "2rem" }}>
           <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 0.5rem 0" }}>Flujos de WhatsApp</h1>
           <p style={{ color: "var(--color-fg-muted)", margin: 0 }}>
-            Administra los flujos de mensajes de WhatsApp, las etiquetas de estado global y los tiempos de recordatorio.
+            Administra los flujos de mensajes de WhatsApp y las etiquetas de estado global.
           </p>
         </header>
       )}
@@ -173,33 +155,6 @@ export function SeguimientoConfig() {
                     Sin etiquetas configuradas
                   </div>
                 )}
-              </div>
-            </div>
-          </section>
-
-          {/* RECORDATORIOS */}
-          <section style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)", borderRadius: "12px", overflow: "hidden" }}>
-            <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--color-border)" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <Clock size={18} color="var(--color-warning)" /> Opciones de Tiempos
-              </h2>
-              <p style={{ margin: "0.25rem 0 0 0", fontSize: "0.8rem", color: "var(--color-fg-muted)" }}>Tiempos de acceso rápido (en horas) para recordatorios.</p>
-            </div>
-
-            <div style={{ padding: "1.5rem" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <label>
-                  <span style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.5rem" }}>Horas (separadas por coma)</span>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Ej: 1, 2, 4, 8, 24, 48"
-                    value={tiemposInput}
-                    onChange={e => setTiemposInput(e.target.value)}
-                    style={{ width: "100%", fontFamily: "monospace" }}
-                  />
-                </label>
-                <button className="btn-primary" onClick={saveConfig} style={{ alignSelf: "flex-start" }}>Guardar Tiempos</button>
               </div>
             </div>
           </section>
