@@ -64,7 +64,7 @@ describe('RahaPortal component', () => {
     expect(screen.getByRole('button', { name: 'Este mes' })).toBeInTheDocument();
 
     // Request list
-    expect(await screen.findByText(/#101 · Tienda Test/)).toBeInTheDocument();
+    expect(await screen.findByText(/#101 · Empresa Test S.A./)).toBeInTheDocument();
 
     // Pagination
     expect(screen.getByText(/Pág\./)).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('RahaPortal component', () => {
       </MemoryRouter>
     );
 
-    await screen.findByText(/#101 · Tienda Test/);
+    await screen.findByText(/#101 · Empresa Test S.A./);
 
     // Click on "Hoy"
     fireEvent.click(screen.getByRole('button', { name: 'Hoy' }));
@@ -112,7 +112,7 @@ describe('RahaPortal component', () => {
       </MemoryRouter>
     );
 
-    await screen.findByText(/#101 · Tienda Test/);
+    await screen.findByText(/#101 · Empresa Test S.A./);
 
     const inputDesde = screen.getByLabelText('Desde:');
     fireEvent.change(inputDesde, { target: { value: '2026-10-10' } });
@@ -146,7 +146,7 @@ describe('RahaPortal component', () => {
       </MemoryRouter>
     );
 
-    await screen.findByText(/#101 · Tienda Test/);
+    await screen.findByText(/#101 · Empresa Test S.A./);
 
     // Next page
     const btnNext = screen.getByLabelText('Página siguiente');

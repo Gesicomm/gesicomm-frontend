@@ -455,7 +455,10 @@ export default function RahaPortal() {
                     >
                       <div className="rp-item-top">
                         <span className="rp-item-tienda">
-                          #{sol.id} · {sol.tienda || sol.razon_social || 'Tienda'}
+                          #{sol.id} · {sol.razon_social || sol.tienda || 'Tienda'}
+                          {sol.tienda && sol.razon_social && sol.tienda.toLowerCase() !== sol.razon_social.toLowerCase()
+                            ? ` (${sol.tienda})`
+                            : ''}
                         </span>
                         <RahaSemaforo estado={sol.estado} compacto />
                       </div>
@@ -542,7 +545,10 @@ export default function RahaPortal() {
                   <ShieldCheck size={24} />
                   <div>
                     <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-                      Solicitud #{solicitud.id} · {solicitud.tienda?.nombre || solicitud.datos?.razon_social}
+                      Solicitud #{solicitud.id} · {solicitud.datos?.razon_social || solicitud.tienda?.nombre}
+                      {solicitud.tienda?.nombre && solicitud.datos?.razon_social && solicitud.tienda.nombre.toLowerCase() !== solicitud.datos.razon_social.toLowerCase()
+                        ? ` (${solicitud.tienda.nombre})`
+                        : ''}
                     </h2>
                     <span className={`raha-badge ${solicitud.estado}`}>
                       {ESTADOS_RAHA[solicitud.estado] || solicitud.estado}
