@@ -1,11 +1,10 @@
 ﻿import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins } from "lucide-react";
+import { LayoutGrid, PackageCheck, Plus, Printer, HandCoins } from "lucide-react";
 import { verificarSesion } from "../../utils/auth";
 import { PedidosTable } from "./PedidosTable";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
-import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
 import { ReprogramarModal } from "./ReprogramarModal";
 import { CostoViajeModal } from "./CostoViajeModal";
 import { MarcarEntregadoModal } from "./MarcarEntregadoModal";
@@ -30,12 +29,14 @@ import "./courier.css";
 // (/abastecimiento), porque como pestaña quedaba escondida. Delivery tampoco:
 // los couriers se cargan junto con el depósito, en Mi Tienda → Depósitos.
 // Rendición es liquidación de couriers: solo tiene sentido en Gestión
-// Logística, no en Comercial (pedido del usuario, 2026-10-14).
+// Logística, no en Comercial. Analítica dejó de ser una pestaña acá: ya no
+// pertenece a ningún estado (ni comercial ni logístico), es su propio menú
+// "Dashboard Operativo" (pedido del usuario, 2026-10-14).
 const TABS_POR_MENU = {
-  comercial: ["tablero", "analitica"],
-  logistica: ["tablero", "rendicion", "analitica"],
+  comercial: ["tablero"],
+  logistica: ["tablero", "rendicion"],
 };
-const tabsDisponiblesDe = (etapaFija) => TABS_POR_MENU[etapaFija] || ["tablero", "rendicion", "analitica"];
+const tabsDisponiblesDe = (etapaFija) => TABS_POR_MENU[etapaFija] || ["tablero", "rendicion"];
 const claveTabDe = (etapaFija) => `gesicomm:pedidosTab:${etapaFija || "todas"}`;
 
 // La pestaña activa nunca viaja por query string: llega como router state
@@ -328,16 +329,13 @@ export function ControlCourier({ etapaFija } = {}) {
               Rendición
             </TabButton>
           )}
-          <TabButton active={tab === "analitica"} onClick={() => seleccionarTab("analitica")} icon={<TrendingUp size={16} />}>
-            Analítica
-          </TabButton>
         </nav>
       </div>
 
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
         {tab === "tablero" ? (
           // Bandeja operativa: sin dashboard arriba, ocupa casi toda la
-          // pantalla — los indicadores generales viven en "Analítica" aparte.
+          // pantalla — los indicadores generales viven en Dashboard Operativo aparte.
           <PedidosTable
             couriers={couriers}
             onChangeEstado={handleChangeEstado}
@@ -349,10 +347,8 @@ export function ControlCourier({ etapaFija } = {}) {
             refrescarKey={refrescarKey}
             {...etapasProps}
           />
-        ) : tab === "rendicion" ? (
-          <RendicionTab couriers={couriers} />
         ) : (
-          <CentroInteligenciaComercial couriers={couriers} />
+          <RendicionTab couriers={couriers} />
         )}
       </main>
 
