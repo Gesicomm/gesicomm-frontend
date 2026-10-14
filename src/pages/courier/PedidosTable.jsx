@@ -337,13 +337,25 @@ function statusRahaActual(envio) {
 
 function tiendaRahaDetalle(logistica = {}) {
   if (!logistica.tienda_id) return null;
-  return `Tienda RAHA #${logistica.tienda_id}${logistica.store_name ? ` · ${logistica.store_name}` : ""}`;
+  return `Tienda RAHA #${logistica.tienda_id}`;
+}
+
+function tiendaGesicomDetalle(logistica = {}) {
+  if (!logistica.gesicom_store_name) return null;
+  return `Pedido de ${logistica.gesicom_store_name}`;
+}
+
+function enviadoComoDetalle(logistica = {}) {
+  if (!logistica.store_name) return null;
+  return `Enviado como ${logistica.store_name}`;
 }
 
 function detalleRaha(logistica = {}) {
   return [
     logistica.order_id ? `RAHA #${logistica.order_id}` : null,
     tiendaRahaDetalle(logistica),
+    tiendaGesicomDetalle(logistica),
+    enviadoComoDetalle(logistica),
   ].filter(Boolean).join(" · ") || "Gestionado por RAHA";
 }
 
@@ -378,7 +390,9 @@ function RahaTimeline({ envio }) {
       </div>
       <dl className="pt-raha-meta">
         <div><dt>Ambiente</dt><dd>{logistica.environment || "Sin dato"}</dd></div>
-        <div><dt>Tienda RAHA</dt><dd>{logistica.tienda_id ? `#${logistica.tienda_id}${logistica.store_name ? ` · ${logistica.store_name}` : ""}` : "Sin dato"}</dd></div>
+        <div><dt>Tienda RAHA</dt><dd>{logistica.tienda_id ? `#${logistica.tienda_id}` : "Sin dato"}</dd></div>
+        <div><dt>Tienda Gesicom</dt><dd>{logistica.gesicom_store_name || "Sin dato"}</dd></div>
+        <div><dt>Enviado a RAHA como</dt><dd>{logistica.store_name || "Sin dato"}</dd></div>
         <div><dt>ID externo</dt><dd>{logistica.external_order_id || "Sin dato"}</dd></div>
         <div><dt>HTTP</dt><dd>{logistica.remote_http_status || "Sin dato"}</dd></div>
       </dl>
