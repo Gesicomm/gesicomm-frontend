@@ -173,4 +173,15 @@ describe('RahaPortal component', () => {
       );
     });
   });
+
+  it('renders theme toggle button', async () => {
+    render(
+      <MemoryRouter>
+        <RahaPortal />
+      </MemoryRouter>
+    );
+
+    const themeBtn = await screen.findByRole('button', { name: /Cambiar a modo/i });
+    expect(themeBtn).toBeInTheDocument();
+  });
 });

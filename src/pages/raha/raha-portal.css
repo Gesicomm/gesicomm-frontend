@@ -1,10 +1,134 @@
-/* Estilos del Portal RAHA (/raha/login y /raha/solicitudes) */
+/* ==========================================================================
+   Estilos del Portal RAHA (/raha/login y /raha/solicitudes)
+   Diseño de alta fidelidad con soporte completo para Modo Claro y Modo Oscuro
+   ========================================================================== */
+
 .rp-root {
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--color-canvas, #0a0e1a);
-  color: var(--color-fg, #f1f5f9);
+  background: var(--rp-bg);
+  color: var(--rp-text-main);
   font-family: var(--font-sans, system-ui, sans-serif);
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  /* ─── Tokens modo oscuro (por defecto) ─── */
+  --rp-bg: #0a0e1a;
+  --rp-surface: #10152a;
+  --rp-header-bg: rgba(16, 21, 42, 0.85);
+  --rp-header-border: rgba(255, 255, 255, 0.08);
+  --rp-header-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  --rp-card-bg: rgba(16, 21, 42, 0.75);
+  --rp-card-border: rgba(255, 255, 255, 0.08);
+  --rp-card-border-hover: rgba(255, 255, 255, 0.16);
+  --rp-card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --rp-subcard-bg: rgba(10, 14, 26, 0.6);
+  --rp-subcard-border: rgba(255, 255, 255, 0.08);
+  --rp-input-bg: rgba(10, 14, 26, 0.75);
+  --rp-input-border: rgba(255, 255, 255, 0.12);
+  --rp-input-border-focus: #22c55e;
+  --rp-input-color: #ffffff;
+  --rp-input-placeholder: #64748b;
+  --rp-text-title: #ffffff;
+  --rp-text-main: #f1f5f9;
+  --rp-text-muted: #94a3b8;
+  --rp-text-subtle: #64748b;
+  --rp-chip-bg: rgba(255, 255, 255, 0.05);
+  --rp-chip-border: rgba(255, 255, 255, 0.08);
+  --rp-chip-color: #94a3b8;
+  --rp-chip-hover-bg: rgba(255, 255, 255, 0.1);
+  --rp-chip-hover-color: #ffffff;
+  --rp-item-hover-bg: rgba(255, 255, 255, 0.04);
+  --rp-item-selected-bg: rgba(34, 197, 94, 0.12);
+  --rp-item-selected-border: #22c55e;
+  --rp-stat-active-bg: rgba(16, 21, 42, 0.95);
+  --rp-stat-active-border: #22c55e;
+  --rp-stat-icon-amarillo-bg: rgba(250, 204, 21, 0.15);
+  --rp-stat-icon-amarillo-fg: #facc15;
+  --rp-stat-icon-verde-bg: rgba(34, 197, 94, 0.15);
+  --rp-stat-icon-verde-fg: #22c55e;
+  --rp-stat-icon-rojo-bg: rgba(239, 68, 68, 0.15);
+  --rp-stat-icon-rojo-fg: #ef4444;
+  --rp-page-btn-bg: rgba(255, 255, 255, 0.06);
+  --rp-page-btn-border: rgba(255, 255, 255, 0.1);
+  --rp-page-btn-color: #cbd5e1;
+  --rp-primary-btn-bg: #19764f;
+  --rp-primary-btn-hover: #1e8a5c;
+  --rp-primary-btn-color: #ffffff;
+  --rp-login-card-bg: rgba(16, 21, 42, 0.85);
+  --rp-login-card-border: rgba(255, 255, 255, 0.1);
+  --rp-login-bg:
+    radial-gradient(ellipse 800px 500px at 50% -10%, rgba(34, 197, 94, 0.15), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 100%, rgba(13, 27, 61, 0.4), transparent 50%),
+    #0a0e1a;
+  --rp-date-input-scheme: dark;
+  --rp-row-border: rgba(255, 255, 255, 0.06);
+
+  /* Fallbacks para tienda/raha.css */
+  --vit-text: var(--rp-text-main);
+  --vit-bg: var(--rp-subcard-bg);
+  --vit-border: var(--rp-card-border);
+  --vit-muted: var(--rp-text-muted);
+}
+
+/* ─── Tokens modo claro ─── */
+:root[data-theme='light'] .rp-root,
+.rp-root[data-theme='light'] {
+  --rp-bg: #f8fafc;
+  --rp-surface: #ffffff;
+  --rp-header-bg: rgba(255, 255, 255, 0.94);
+  --rp-header-border: #e2e8f0;
+  --rp-header-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --rp-card-bg: #ffffff;
+  --rp-card-border: #e2e8f0;
+  --rp-card-border-hover: #cbd5e1;
+  --rp-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --rp-subcard-bg: #f8fafc;
+  --rp-subcard-border: #e2e8f0;
+  --rp-input-bg: #ffffff;
+  --rp-input-border: #cbd5e1;
+  --rp-input-border-focus: #16a34a;
+  --rp-input-color: #0f172a;
+  --rp-input-placeholder: #94a3b8;
+  --rp-text-title: #0f172a;
+  --rp-text-main: #1e293b;
+  --rp-text-muted: #64748b;
+  --rp-text-subtle: #94a3b8;
+  --rp-chip-bg: #f1f5f9;
+  --rp-chip-border: #e2e8f0;
+  --rp-chip-color: #475569;
+  --rp-chip-hover-bg: #e2e8f0;
+  --rp-chip-hover-color: #0f172a;
+  --rp-item-hover-bg: #f8fafc;
+  --rp-item-selected-bg: #f0fdf4;
+  --rp-item-selected-border: #16a34a;
+  --rp-stat-active-bg: #f0fdf4;
+  --rp-stat-active-border: #16a34a;
+  --rp-stat-icon-amarillo-bg: #fef9c3;
+  --rp-stat-icon-amarillo-fg: #a16207;
+  --rp-stat-icon-verde-bg: #dcfce7;
+  --rp-stat-icon-verde-fg: #15803d;
+  --rp-stat-icon-rojo-bg: #fee2e2;
+  --rp-stat-icon-rojo-fg: #b91c1c;
+  --rp-page-btn-bg: #ffffff;
+  --rp-page-btn-border: #e2e8f0;
+  --rp-page-btn-color: #334155;
+  --rp-primary-btn-bg: #15803d;
+  --rp-primary-btn-hover: #166534;
+  --rp-primary-btn-color: #ffffff;
+  --rp-login-card-bg: #ffffff;
+  --rp-login-card-border: #e2e8f0;
+  --rp-login-bg:
+    radial-gradient(ellipse 800px 500px at 50% -10%, rgba(34, 197, 94, 0.12), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 100%, rgba(226, 232, 240, 0.7), transparent 50%),
+    #f8fafc;
+  --rp-date-input-scheme: light;
+  --rp-row-border: #f1f5f9;
+
+  /* Bridge to tienda/raha.css */
+  --vit-text: #1e293b;
+  --vit-bg: #f8fafc;
+  --vit-border: #e2e8f0;
+  --vit-muted: #64748b;
 }
 
 /* ---------- Login ---------- */
@@ -14,10 +138,7 @@
   display: grid;
   place-items: center;
   padding: 1.5rem 1rem;
-  background:
-    radial-gradient(ellipse 800px 500px at 50% -10%, rgba(34, 197, 94, 0.15), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 100%, rgba(13, 27, 61, 0.4), transparent 50%),
-    var(--color-canvas, #0a0e1a);
+  background: var(--rp-login-bg);
   position: relative;
 }
 
@@ -28,17 +149,18 @@
   gap: 1.25rem;
   padding: 2.25rem 2rem;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(16, 21, 42, 0.85);
-  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--rp-login-card-border);
+  background: var(--rp-login-card-bg);
+  box-shadow: var(--rp-card-shadow);
   backdrop-filter: blur(16px);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .rp-badge-brand {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: #19764f;
+  background: var(--rp-primary-btn-bg);
   color: #fff;
   display: grid;
   place-items: center;
@@ -49,12 +171,12 @@
   font-size: 1.4rem;
   font-weight: 700;
   margin: 0.25rem 0 0.25rem;
-  color: #fff;
+  color: var(--rp-text-title);
 }
 
 .rp-login-subtitle {
   font-size: 0.875rem;
-  color: #94a3b8;
+  color: var(--rp-text-muted);
   margin: 0;
   line-height: 1.4;
 }
@@ -64,10 +186,11 @@
   gap: 0.45rem;
 }
 
-.rp-field label {
+.rp-field label,
+.rp-field > span {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--rp-text-muted);
 }
 
 .rp-input-wrap {
@@ -79,7 +202,7 @@
 .rp-input-wrap svg {
   position: absolute;
   left: 12px;
-  color: #64748b;
+  color: var(--rp-input-placeholder);
   pointer-events: none;
 }
 
@@ -87,16 +210,20 @@
   width: 100%;
   padding: 0.7rem 0.85rem 0.7rem 2.4rem;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(10, 14, 26, 0.7);
-  color: #fff;
+  border: 1px solid var(--rp-input-border);
+  background: var(--rp-input-bg);
+  color: var(--rp-input-color);
   font-size: 0.9rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.rp-input::placeholder {
+  color: var(--rp-input-placeholder);
 }
 
 .rp-input:focus {
   outline: none;
-  border-color: #22c55e;
+  border-color: var(--rp-input-border-focus);
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
 }
 
@@ -107,7 +234,7 @@
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
   border-radius: 10px;
-  background: #19764f;
+  background: var(--rp-primary-btn-bg);
   color: #fff;
   font-weight: 600;
   font-size: 0.95rem;
@@ -117,7 +244,7 @@
 }
 
 .rp-btn-submit:hover:not(:disabled) {
-  background: #1e8a5c;
+  background: var(--rp-primary-btn-hover);
 }
 
 .rp-btn-submit:disabled {
@@ -140,10 +267,22 @@
   color: #fca5a5;
 }
 
+:root[data-theme='light'] .rp-alert-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
 .rp-alert-success {
   background: rgba(34, 197, 94, 0.15);
   border: 1px solid rgba(34, 197, 94, 0.3);
   color: #86efac;
+}
+
+:root[data-theme='light'] .rp-alert-success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
 }
 
 /* ---------- Portal Layout ---------- */
@@ -157,13 +296,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(16, 21, 42, 0.7);
+  padding: 0.85rem 2rem;
+  border-bottom: 1px solid var(--rp-header-border);
+  background: var(--rp-header-bg);
   backdrop-filter: blur(12px);
+  box-shadow: var(--rp-header-shadow);
   position: sticky;
   top: 0;
   z-index: 20;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .rp-header-brand {
@@ -176,14 +317,14 @@
   font-size: 1.15rem;
   font-weight: 700;
   margin: 0;
-  color: #fff;
+  color: var(--rp-text-title);
 }
 
 .rp-header-tag {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: #19764f;
+  background: var(--rp-primary-btn-bg);
   color: #fff;
   padding: 2px 7px;
   border-radius: 4px;
@@ -193,12 +334,36 @@
 .rp-header-user {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .rp-user-name {
   font-size: 0.875rem;
-  color: #cbd5e1;
+  color: var(--rp-text-muted);
+}
+
+.rp-user-name strong {
+  color: var(--rp-text-title);
+}
+
+.rp-btn-theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--rp-chip-bg);
+  border: 1px solid var(--rp-chip-border);
+  color: var(--rp-chip-color);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rp-btn-theme:hover {
+  background: var(--rp-chip-hover-bg);
+  color: var(--rp-chip-hover-color);
+  border-color: var(--rp-card-border-hover);
 }
 
 .rp-btn-logout {
@@ -207,17 +372,19 @@
   gap: 0.35rem;
   padding: 0.45rem 0.85rem;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #cbd5e1;
+  background: var(--rp-chip-bg);
+  border: 1px solid var(--rp-chip-border);
+  color: var(--rp-chip-color);
   font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.15s;
 }
 
 .rp-btn-logout:hover {
   background: rgba(239, 68, 68, 0.15);
   border-color: rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
+  color: #ef4444;
 }
 
 .rp-main {
@@ -241,16 +408,25 @@
 .rp-stat-card {
   padding: 1.25rem 1.5rem;
   border-radius: 14px;
-  background: rgba(16, 21, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--rp-card-bg);
+  border: 1px solid var(--rp-card-border);
+  box-shadow: var(--rp-card-shadow);
   display: flex;
   align-items: center;
   gap: 1.2rem;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.rp-stat-card:hover {
+  border-color: var(--rp-card-border-hover);
+  transform: translateY(-1px);
 }
 
 .rp-stat-card.active {
-  border-color: #22c55e;
-  background: rgba(16, 21, 42, 0.9);
+  border-color: var(--rp-stat-active-border);
+  background: var(--rp-stat-active-bg);
+  box-shadow: 0 0 0 1px var(--rp-stat-active-border);
 }
 
 .rp-stat-icon {
@@ -259,26 +435,145 @@
   border-radius: 10px;
   display: grid;
   place-items: center;
+  flex-shrink: 0;
 }
 
-.rp-stat-icon.amarillo { background: rgba(250, 204, 21, 0.15); color: #facc15; }
-.rp-stat-icon.verde { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
-.rp-stat-icon.rojo { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.rp-stat-icon.amarillo {
+  background: var(--rp-stat-icon-amarillo-bg);
+  color: var(--rp-stat-icon-amarillo-fg);
+}
+
+.rp-stat-icon.verde {
+  background: var(--rp-stat-icon-verde-bg);
+  color: var(--rp-stat-icon-verde-fg);
+}
+
+.rp-stat-icon.rojo {
+  background: var(--rp-stat-icon-rojo-bg);
+  color: var(--rp-stat-icon-rojo-fg);
+}
 
 .rp-stat-val {
   font-size: 1.6rem;
   font-weight: 700;
   line-height: 1;
-  color: #fff;
+  color: var(--rp-text-title);
 }
 
 .rp-stat-lbl {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--rp-text-muted);
   margin-top: 0.25rem;
 }
 
-/* Barra de filtros */
+/* Barra de filtros por fecha */
+.rp-date-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  background: var(--rp-card-bg);
+  border: 1px solid var(--rp-card-border);
+  box-shadow: var(--rp-card-shadow);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.rp-date-presets {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.rp-date-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--rp-text-muted);
+  margin-right: 0.25rem;
+}
+
+.rp-date-chip {
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  background: var(--rp-chip-bg);
+  border: 1px solid var(--rp-chip-border);
+  color: var(--rp-chip-color);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rp-date-chip:hover {
+  background: var(--rp-chip-hover-bg);
+  color: var(--rp-chip-hover-color);
+}
+
+.rp-date-chip.active {
+  background: var(--rp-primary-btn-bg);
+  border-color: var(--rp-primary-btn-bg);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(21, 128, 61, 0.3);
+}
+
+.rp-date-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.rp-date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--rp-text-muted);
+}
+
+.rp-date-input {
+  color-scheme: var(--rp-date-input-scheme);
+  background: var(--rp-input-bg);
+  border: 1px solid var(--rp-input-border);
+  border-radius: 7px;
+  color: var(--rp-input-color);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rp-date-input:focus {
+  border-color: var(--rp-input-border-focus);
+}
+
+.rp-btn-clear-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 7px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rp-btn-clear-date:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+}
+
+/* Barra de herramientas / buscador */
 .rp-toolbar {
   display: flex;
   gap: 1rem;
@@ -299,17 +594,28 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #64748b;
+  color: var(--rp-input-placeholder);
 }
 
 .rp-search-input {
   width: 100%;
   padding: 0.65rem 0.85rem 0.65rem 2.4rem;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(10, 14, 26, 0.7);
-  color: #fff;
+  border: 1px solid var(--rp-input-border);
+  background: var(--rp-input-bg);
+  color: var(--rp-input-color);
   font-size: 0.875rem;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.rp-search-input::placeholder {
+  color: var(--rp-input-placeholder);
+}
+
+.rp-search-input:focus {
+  outline: none;
+  border-color: var(--rp-input-border-focus);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
 }
 
 .rp-tabs {
@@ -321,9 +627,9 @@
 .rp-tab {
   padding: 0.5rem 0.95rem;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  background: var(--rp-chip-bg);
+  border: 1px solid var(--rp-chip-border);
+  color: var(--rp-chip-color);
   font-size: 0.85rem;
   cursor: pointer;
   display: flex;
@@ -333,13 +639,14 @@
 }
 
 .rp-tab:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: var(--rp-chip-hover-bg);
+  color: var(--rp-chip-hover-color);
+  border-color: var(--rp-card-border-hover);
 }
 
 .rp-tab.active {
-  background: #19764f;
-  border-color: #19764f;
+  background: var(--rp-primary-btn-bg);
+  border-color: var(--rp-primary-btn-bg);
   color: #fff;
   font-weight: 600;
 }
@@ -354,19 +661,21 @@
 
 .rp-list-col {
   border-radius: 14px;
-  background: rgba(16, 21, 42, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--rp-card-bg);
+  border: 1px solid var(--rp-card-border);
+  box-shadow: var(--rp-card-shadow);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .rp-list-header {
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--rp-row-border);
   font-size: 0.85rem;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--rp-text-muted);
   display: flex;
   justify-content: space-between;
 }
@@ -383,7 +692,7 @@
   width: 100%;
   padding: 1rem 1.25rem;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--rp-row-border);
   background: transparent;
   color: inherit;
   text-align: left;
@@ -394,12 +703,12 @@
 }
 
 .rp-list-item-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--rp-item-hover-bg);
 }
 
 .rp-list-item-btn.selected {
-  background: rgba(34, 197, 94, 0.1);
-  border-left: 3px solid #22c55e;
+  background: var(--rp-item-selected-bg);
+  border-left: 3px solid var(--rp-item-selected-border);
 }
 
 .rp-item-top {
@@ -410,21 +719,30 @@
 
 .rp-item-tienda {
   font-weight: 600;
-  color: #fff;
+  color: var(--rp-text-title);
   font-size: 0.95rem;
 }
 
 .rp-item-sub {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--rp-text-muted);
+}
+
+.rp-empty-msg {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--rp-text-muted);
+  font-size: 0.9rem;
 }
 
 .rp-detail-col {
   border-radius: 14px;
-  background: rgba(16, 21, 42, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--rp-card-bg);
+  border: 1px solid var(--rp-card-border);
+  box-shadow: var(--rp-card-shadow);
   padding: 1.75rem;
   overflow-y: auto;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .rp-detail-empty {
@@ -433,8 +751,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--rp-text-subtle);
   gap: 0.75rem;
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+
+.rp-detail-empty p {
+  margin: 0;
+  max-width: 360px;
+  line-height: 1.5;
 }
 
 /* Acciones de resolución */
@@ -442,10 +768,24 @@
   margin-top: 1.5rem;
   padding: 1.25rem;
   border-radius: 12px;
-  background: rgba(10, 14, 26, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--rp-subcard-bg);
+  border: 1px solid var(--rp-subcard-border);
   display: grid;
   gap: 1rem;
+}
+
+.rp-resolve-title {
+  margin: 0;
+  color: var(--rp-text-title);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.rp-resolve-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--rp-text-muted);
+  line-height: 1.45;
 }
 
 .rp-resolve-actions {
@@ -464,116 +804,30 @@
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.05s;
 }
 
-.rp-btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
-.rp-btn-green { background: #16a34a; color: #fff; }
-.rp-btn-amber { background: #ca8a04; color: #fff; }
-.rp-btn-red { background: #dc2626; color: #fff; }
-
-/* Barra de filtros por fecha */
-.rp-date-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.85rem;
-  flex-wrap: wrap;
-  padding: 0.65rem 1rem;
-  border-radius: 12px;
-  background: rgba(16, 21, 42, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.rp-btn-action:hover:not(:disabled) {
+  opacity: 0.92;
 }
 
-.rp-date-presets {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
+.rp-btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.rp-date-lbl {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #94a3b8;
-  margin-right: 0.25rem;
-}
-
-.rp-date-chip {
-  padding: 0.4rem 0.85rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.rp-date-chip:hover {
-  background: rgba(255, 255, 255, 0.1);
+.rp-btn-green {
+  background: #16a34a;
   color: #fff;
 }
 
-.rp-date-chip.active {
-  background: #19764f;
-  border-color: #22c55e;
+.rp-btn-amber {
+  background: #ca8a04;
   color: #fff;
-  font-weight: 600;
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
 }
 
-.rp-date-custom {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex-wrap: wrap;
-}
-
-.rp-date-input-group {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.78rem;
-  color: #94a3b8;
-}
-
-.rp-date-input {
-  color-scheme: dark;
-  background: rgba(10, 14, 26, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 7px;
-  color: #f1f5f9;
-  padding: 0.35rem 0.6rem;
-  font-size: 0.8rem;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.rp-date-input:focus {
-  border-color: #22c55e;
-}
-
-.rp-btn-clear-date {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 7px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.rp-btn-clear-date:hover {
-  background: rgba(239, 68, 68, 0.25);
+.rp-btn-red {
+  background: #dc2626;
   color: #fff;
 }
 
@@ -584,10 +838,10 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.7rem 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(10, 14, 26, 0.6);
+  border-top: 1px solid var(--rp-row-border);
+  background: var(--rp-subcard-bg);
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--rp-text-muted);
 }
 
 .rp-pagination-info {
@@ -597,12 +851,12 @@
 }
 
 .rp-pagination-info strong {
-  color: #fff;
+  color: var(--rp-text-title);
 }
 
 .rp-pagination-total {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--rp-text-subtle);
 }
 
 .rp-pagination-controls {
@@ -618,16 +872,17 @@
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #cbd5e1;
+  background: var(--rp-page-btn-bg);
+  border: 1px solid var(--rp-page-btn-border);
+  color: var(--rp-page-btn-color);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .rp-page-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--rp-chip-hover-bg);
+  color: var(--rp-chip-hover-color);
+  border-color: var(--rp-card-border-hover);
 }
 
 .rp-page-btn:disabled {
@@ -637,20 +892,152 @@
 
 .rp-page-indicator {
   font-weight: 600;
-  color: #fff;
+  color: var(--rp-text-title);
   min-width: 24px;
   text-align: center;
 }
 
 .rp-page-size-select {
-  color-scheme: dark;
-  background: rgba(10, 14, 26, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
+  color-scheme: var(--rp-date-input-scheme);
+  background: var(--rp-input-bg);
+  border: 1px solid var(--rp-input-border);
+  color: var(--rp-input-color);
   font-size: 0.75rem;
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
   outline: none;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   Integración y adaptabilidad del contenido de detalle (.raha) en Portal RAHA
+   ========================================================================== */
+.rp-portal .raha {
+  color: var(--rp-text-main);
+}
+
+.rp-portal .raha h1,
+.rp-portal .raha h2,
+.rp-portal .raha h3 {
+  color: var(--rp-text-title);
+}
+
+.rp-portal .raha-section {
+  border-bottom: 1px solid var(--rp-card-border);
+}
+
+.rp-portal .raha-fields dt {
+  color: var(--rp-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rp-portal .raha-fields dd {
+  color: var(--rp-text-title);
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+
+.rp-portal .raha-button {
+  background: var(--rp-subcard-bg);
+  color: var(--rp-text-title);
+  border: 1px solid var(--rp-card-border);
+  transition: all 0.15s;
+}
+
+.rp-portal .raha-button:hover:not(:disabled) {
+  background: var(--rp-chip-hover-bg);
+  border-color: var(--rp-card-border-hover);
+}
+
+.rp-portal .raha-icon {
+  background: var(--rp-subcard-bg);
+  color: var(--rp-text-title);
+  border: 1px solid var(--rp-card-border);
+  transition: all 0.15s;
+}
+
+.rp-portal .raha-icon:hover:not(:disabled) {
+  background: var(--rp-chip-hover-bg);
+  border-color: var(--rp-card-border-hover);
+}
+
+.rp-portal .raha-doc-group {
+  border-bottom: 1px solid var(--rp-row-border);
+}
+
+.rp-portal .raha-doc-head strong {
+  color: var(--rp-text-title);
+}
+
+.rp-portal .raha-filename {
+  color: var(--rp-text-title);
+}
+
+.rp-portal .raha-filename small {
+  color: var(--rp-text-muted);
+}
+
+.rp-portal .raha-semaforo {
+  background: var(--rp-subcard-bg);
+  border: 1px solid var(--rp-card-border);
+}
+
+.rp-portal .raha-semaforo strong {
+  color: var(--rp-text-title);
+}
+
+.rp-portal .raha-semaforo p {
+  color: var(--rp-text-muted);
+}
+
+.rp-portal .raha-luces {
+  background: #0f172a;
+  border: 1px solid #334155;
+}
+
+.rp-portal .raha-history time {
+  color: var(--rp-text-muted);
+}
+
+.rp-portal .raha-history strong {
+  color: var(--rp-text-title);
+}
+
+.rp-portal .raha-history p {
+  color: var(--rp-text-main);
+}
+
+/* Badges de estado en modo claro */
+:root[data-theme='light'] .rp-portal .raha-badge.en_revision,
+:root[data-theme='light'] .rp-portal .raha-badge.enviada_raha {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  font-weight: 600;
+}
+
+:root[data-theme='light'] .rp-portal .raha-badge.observada {
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+  font-weight: 600;
+}
+
+:root[data-theme='light'] .rp-portal .raha-badge.aprobada {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
+}
+
+:root[data-theme='light'] .rp-portal .raha-badge.rechazada {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  font-weight: 600;
 }
 
 @media (max-width: 900px) {
@@ -658,4 +1045,3 @@
     grid-template-columns: 1fr;
   }
 }
-

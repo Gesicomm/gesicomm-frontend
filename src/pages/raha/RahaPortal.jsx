@@ -12,11 +12,14 @@ import {
   FileText,
   Loader,
   LogOut,
+  Moon,
   RefreshCw,
   Search,
   ShieldCheck,
+  Sun,
   X,
 } from 'lucide-react';
+import { useTema } from '../../components/public/ThemeProvider';
 import { getRahaPortalToken, rahaPortalApi, setRahaPortalToken } from '../../services/rahaPortalApi';
 import {
   ESTADOS_RAHA,
@@ -30,6 +33,7 @@ import './raha-portal.css';
 
 export default function RahaPortal() {
   const navigate = useNavigate();
+  const { tema, alternarTema } = useTema();
   const [params, setParams] = useSearchParams();
   const solicitudId = Number(params.get('solicitud')) || null;
 
@@ -225,6 +229,15 @@ export default function RahaPortal() {
               Hola, <strong>{usuario.nombre}</strong> ({usuario.email})
             </span>
           )}
+          <button
+            type="button"
+            className="rp-btn-theme"
+            onClick={alternarTema}
+            title={tema === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+            aria-label={tema === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+          >
+            {tema === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+          </button>
           <button
             type="button"
             className="rp-btn-logout"
@@ -442,7 +455,7 @@ export default function RahaPortal() {
 
             <ul className="rp-list-items">
               {solicitudes.length === 0 && !loadingLista ? (
-                <li style={{ padding: '2rem 1.5rem', textAlign: 'center', color: '#64748b' }}>
+                <li className="rp-empty-msg">
                   No hay solicitudes que coincidan con el filtro.
                 </li>
               ) : (
@@ -629,8 +642,8 @@ export default function RahaPortal() {
                 {/* Acciones de resolución por RAHA */}
                 {esPendiente && (
                   <section className="rp-resolve-card">
-                    <h3 style={{ margin: 0, color: '#fff' }}>Evaluar solicitud para proveerse con RAHA</h3>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                    <h3 className="rp-resolve-title">Evaluar solicitud para proveerse con RAHA</h3>
+                    <p className="rp-resolve-desc">
                       Al aprobar, el semáforo del comercio pasará a Verde (Aprobado). Si requiere cambios
                       o se rechaza, indicá el motivo en la nota.
                     </p>

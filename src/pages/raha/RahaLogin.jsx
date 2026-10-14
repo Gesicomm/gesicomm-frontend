@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { KeyRound, Loader, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { KeyRound, Loader, Lock, Mail, Moon, ShieldCheck, Sun } from 'lucide-react';
+import { useTema } from '../../components/public/ThemeProvider';
 import { getRahaPortalToken, rahaPortalApi } from '../../services/rahaPortalApi';
 import './raha-portal.css';
 
 export default function RahaLogin() {
   const navigate = useNavigate();
+  const { tema, alternarTema } = useTema();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -34,6 +36,18 @@ export default function RahaLogin() {
 
   return (
     <main className="rp-root rp-login-wrap">
+      <div style={{ position: 'absolute', top: '1.25rem', right: '1.5rem', zIndex: 10 }}>
+        <button
+          type="button"
+          className="rp-btn-theme"
+          onClick={alternarTema}
+          title={tema === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+          aria-label={tema === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+        >
+          {tema === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+        </button>
+      </div>
+
       <form className="rp-login-card" onSubmit={handleSubmit}>
         <div className="rp-badge-brand">
           <ShieldCheck size={28} />
