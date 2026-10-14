@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../utils/api';
 import { apiOrigin } from '../utils/apiBase';
-import { Plus, Trash2, Store, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { Plus, Trash2, Store, CheckCircle, XCircle, Loader, User, Phone, Mail, ShieldCheck, KeyRound } from 'lucide-react';
+import { verificarSesion } from '../utils/auth';
+import PerfilModal from '../components/PerfilModal';
 import PrivacidadDatosCard from '../components/PrivacidadDatosCard';
 
 const Settings = () => {
@@ -12,6 +14,17 @@ const Settings = () => {
     const [success, setSuccess] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
 
+    const [usuario, setUsuario] = useState(null);
+    const [perfilModalAbierto, setPerfilModalAbierto] = useState(false);
+
+    useEffect(() => {
+        verificarSesion().then((u) => { if (u) setUsuario(u); });
+        const onActualizado = (e) => {
+            if (e?.detail) setUsuario((prev) => ({ ...(prev || {}), ...e.detail }));
+        };
+        window.addEventListener('usuario-actualizado', onActualizado);
+        return () => window.removeEventListener('usuario-actualizado', onActualizado);
+    }, []);
     const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
@@ -82,6 +95,55 @@ const Settings = () => {
                     {success}
                 </div>
             )}
+
+            {/* Tarjeta de Perfil y Seguridad */}
+            <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{
+                            width: '48px', height: '48px', borderRadius: '12px',
+                            background: 'rgba(61, 95, 163, 0.15)', color: '#7d9bd6',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '18px', fontWeight: 'bold', flexShrink: 0
+                        }}>
+                            {usuario?.nombre ? usuario.nombre.slice(0, 1).toUpperCase() : <User size={24} />}
+                        </div>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600 }}>{usuario?.nombre || 'Mi Perfil'}</h3>
+                                {usuario?.rol && (
+                                    <span style={{
+                                        fontSize: '0.68rem', padding: '0.15rem 0.5rem',
+                                        background: 'rgba(61, 95, 163, 0.12)', color: '#7d9bd6',
+                                        borderRadius: '4px', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em'
+                                    }}>
+                                        {usuario.rol}
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginTop: '0.35rem', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--color-fg-subtle)' }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                                    <Mail size={13} /> {usuario?.email || 'Sin correo'}
+                                </span>
+                                {usuario?.telefono && (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                                        <Phone size={13} /> {usuario.telefono}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setPerfilModalAbierto(true)}
+                        className="meta-connect-btn"
+                        style={{ fontSize: '0.85rem', padding: '0.55rem 1.1rem', display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}
+                    >
+                        <ShieldCheck size={16} />
+                        Editar perfil y contraseña
+                    </button>
+                </div>
+            </div>
 
             <div className="card">
                 {/* Cabecera de la sección */}
@@ -191,6 +253,13 @@ const Settings = () => {
             {/* Metodo 1 de /data-deletion: la pantalla que un revisor de Meta
                 sigue paso a paso durante la revision de la aplicacion. */}
             <PrivacidadDatosCard />
+
+            <PerfilModal
+                isOpen={perfilModalAbierto}
+                onClose={() => setPerfilModalAbierto(false)}
+                usuarioActual={usuario}
+                onUsuarioActualizado={(u) => setUsuario((prev) => ({ ...(prev || {}), ...u }))}
+            />
         </div>
     );
 };

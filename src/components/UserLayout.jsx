@@ -4,7 +4,7 @@ import {
   Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
   Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign, MapPin, PackageCheck,
-  PackageSearch, Circle, ChevronDown, Check, Plus
+  PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -14,6 +14,7 @@ import { tiendaService } from '../services/tiendaService';
 import NotificationBell from './NotificationBell';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
+import PerfilModal from './PerfilModal';
 import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
 import '../pages/educacion/EducacionView.css';
@@ -72,6 +73,7 @@ const UserLayout = ({ children }) => {
   const [tiendas, setTiendas] = useState([]);
   const [tiendaMenuAbierto, setTiendaMenuAbierto] = useState(false);
   const [cambiandoTienda, setCambiandoTienda] = useState(false);
+  const [perfilModalAbierto, setPerfilModalAbierto] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -82,6 +84,18 @@ const UserLayout = ({ children }) => {
   const enMarcaPersonal =
     location.pathname.startsWith('/automatizacion') ||
     sessionStorage.getItem('moduloActivo') === 'marca_personal';
+
+  useEffect(() => {
+    const handleUsuarioActualizado = (e) => {
+      if (e?.detail) {
+        setUsuario((prev) => ({ ...(prev || {}), ...e.detail }));
+      }
+    };
+    window.addEventListener('usuario-actualizado', handleUsuarioActualizado);
+    return () => {
+      window.removeEventListener('usuario-actualizado', handleUsuarioActualizado);
+    };
+  }, []);
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -509,21 +523,44 @@ const UserLayout = ({ children }) => {
         </nav>
 
         <footer className="sidebar-footer" style={{ borderTop: '1px solid var(--color-border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem' }}>
-            <div style={{
-              width: '24px', height: '24px', borderRadius: '50%',
-              background: 'rgba(61, 95, 163, 0.15)', color: '#7d9bd6',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '11px', fontWeight: 'bold'
-            }}>
-              {usuario?.nombre ? usuario.nombre.slice(0, 1).toUpperCase() : <User size={12} />}
+          <button
+            type="button"
+            onClick={() => setPerfilModalAbierto(true)}
+            className="w-full flex items-center justify-between gap-2 p-2 rounded-lg text-left transition-colors hover:bg-surface-2 group cursor-pointer border border-transparent hover:border-border bg-transparent mb-1"
+            title="Editar perfil y contraseña"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '50%',
+                background: 'rgba(61, 95, 163, 0.2)', color: '#7d9bd6',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '11px', fontWeight: 'bold', flexShrink: 0
+              }}>
+                {usuario?.nombre ? usuario.nombre.slice(0, 1).toUpperCase() : <User size={12} />}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <span style={{
+                  display: 'block',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  color: 'var(--color-fg)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {usuario?.nombre || usuario?.email || 'Mi Perfil'}
+                </span>
+                <span style={{
+                  display: 'block',
+                  fontSize: '0.68rem',
+                  color: 'var(--color-fg-subtle, #64748b)',
+                }}>
+                  Editar perfil
+                </span>
+              </div>
             </div>
-            {usuario && (
-              <span style={{ fontSize: '0.78rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>
-                {usuario.nombre || usuario.email}
-              </span>
-            )}
-          </div>
+            <ChevronRight size={13} className="text-fg-subtle group-hover:text-fg transition-colors flex-shrink-0" />
+          </button>
           <ul className="sidebar-list">
             {renderLink({ 
               path: enMarcaPersonal ? '/automatizacion/configuracion' : '/configuracion', 
@@ -629,6 +666,12 @@ const UserLayout = ({ children }) => {
           </div>
         </div>
       )}
+      <PerfilModal
+        isOpen={perfilModalAbierto}
+        onClose={() => setPerfilModalAbierto(false)}
+        usuarioActual={usuario}
+        onUsuarioActualizado={(u) => setUsuario((prev) => ({ ...(prev || {}), ...u }))}
+      />
     </div>
   );
 };

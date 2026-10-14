@@ -6,7 +6,8 @@ import {
   GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, MapPin, PackageCheck, Network, ShieldAlert
 } from 'lucide-react';
 import Logo from './public/Logo';
-import { cerrarSesion } from '../utils/auth';
+import { cerrarSesion, verificarSesion } from '../utils/auth';
+import PerfilModal from './PerfilModal';
 import ThemeToggle from './public/ThemeToggle';
 import { authTrackingService } from '../services/authTrackingService';
 import { getConteoPorAbastecimiento } from '../services/courierApi';
@@ -50,6 +51,17 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
     await cerrarSesion();
     window.location.href = '/login'; // recarga completa: limpia el estado en memoria
   };
+  const [usuario, setUsuario] = useState(null);
+  const [perfilModalAbierto, setPerfilModalAbierto] = useState(false);
+
+  useEffect(() => {
+    verificarSesion().then((u) => { if (u) setUsuario(u); });
+    const handleActualizado = (e) => {
+      if (e?.detail) setUsuario((prev) => ({ ...(prev || {}), ...e.detail }));
+    };
+    window.addEventListener('usuario-actualizado', handleActualizado);
+    return () => window.removeEventListener('usuario-actualizado', handleActualizado);
+  }, []);
   const [productosOpen, setProductosOpen] = useState(
     location.pathname.startsWith('/products') || location.pathname.startsWith('/categorias') || location.pathname.startsWith('/combos')
   );
@@ -203,7 +215,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/admin/planes', label: 'Planes', icon: <BadgeDollarSign /> })}
             {renderLink({ path: '/admin/tracking-onboarding', label: 'Onboarding y login', icon: <ShieldCheck />, badge: alertasAccesos > 0 ? alertasAccesos : null })}
             {renderLink({ path: '/admin/tracking-pagos', label: 'Tracking de pagos', icon: <CreditCard />, badge: alertasPagos > 0 ? alertasPagos : null })}
-            {renderLink({ path: '/admin/eliminacion-datos', label: 'Eliminaci�n de datos', icon: <ShieldAlert /> })}
+            {renderLink({ path: '/admin/eliminacion-datos', label: 'Eliminaci�n de datos', icon: <ShieldAlert /> })}
           </ul>
 
           {/* Operación: la infraestructura logística de la plataforma.
@@ -255,6 +267,46 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
         </nav>
 
         <footer className="flex-shrink-0 border-t border-border p-2">
+          {usuario && (
+            <button
+              type="button"
+              onClick={() => setPerfilModalAbierto(true)}
+              className="w-full flex items-center justify-between gap-2 p-2 rounded-lg text-left transition-colors hover:bg-surface-2 group cursor-pointer border border-transparent hover:border-border bg-transparent mb-1"
+              title="Editar perfil y contraseña"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
+                <div style={{
+                  width: '26px', height: '26px', borderRadius: '50%',
+                  background: 'rgba(61, 95, 163, 0.2)', color: '#7d9bd6',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '11px', fontWeight: 'bold', flexShrink: 0
+                }}>
+                  {usuario?.nombre ? usuario.nombre.slice(0, 1).toUpperCase() : <User size={13} />}
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{
+                    display: 'block',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    color: 'var(--color-fg)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {usuario?.nombre || usuario?.email || 'Mi Perfil'}
+                  </span>
+                  <span style={{
+                    display: 'block',
+                    fontSize: '0.68rem',
+                    color: 'var(--color-fg-subtle, #64748b)',
+                  }}>
+                    Editar perfil
+                  </span>
+                </div>
+              </div>
+              <ChevronRight size={13} className="text-fg-subtle group-hover:text-fg transition-colors flex-shrink-0" />
+            </button>
+          )}
           <ul className="m-0 flex list-none flex-col gap-1 p-0">
             {renderLink({ path: '/settings', label: 'Configuración', icon: <Settings /> })}
             {renderLink({ path: '/admin/parametros', label: 'Parámetros del sistema', icon: <KeyRound /> })}
@@ -271,6 +323,13 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
           </ul>
         </footer>
       </aside>
+
+      <PerfilModal
+        isOpen={perfilModalAbierto}
+        onClose={() => setPerfilModalAbierto(false)}
+        usuarioActual={usuario}
+        onUsuarioActualizado={(u) => setUsuario((prev) => ({ ...(prev || {}), ...u }))}
+      />
     </>
   );
 };
