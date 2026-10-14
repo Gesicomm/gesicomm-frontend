@@ -10,7 +10,12 @@ const config = { environment: 'sandbox', credentials_configured: true, webhook_c
   production_webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=production&token=12345678901234567890123456789012',
   sandbox_webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=sandbox&token=12345678901234567890123456789012',
   public_key: 'sbx_saved_public', has_private_key: true,
-  connection: { tienda_id: '54', courier_id: 2, activo: true, has_private_key: true }, checks: { spec: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
+  connection: { environment: 'sandbox', tienda_id: '54', courier_id: 2, activo: true, public_key: 'sbx_saved_public', has_private_key: true },
+  connections: [
+    { environment: 'sandbox', tienda_id: '54', courier_id: 2, activo: true, public_key: 'sbx_saved_public', has_private_key: true },
+    { environment: 'production', tienda_id: 'prod-54', courier_id: null, activo: true, public_key: 'sbx_live_saved', has_private_key: true },
+  ],
+  checks: { spec: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
 beforeEach(() => {
   cleanup(); vi.clearAllMocks();
   HTMLDialogElement.prototype.showModal = function showModal() { this.setAttribute('open', ''); };
@@ -42,15 +47,15 @@ describe('Speedbox settings', () => {
   it('saves activation without asking for a local courier', async () => {
     render(<SpeedboxConfig />);
     await screen.findByText(/RAHA gestiona su propio despacho/);
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ activo: true, public_key: 'sbx_saved_public' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar producción' }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ environment: 'production', activo: true, public_key: 'sbx_live_saved' }));
     expect(screen.queryByLabelText('Courier RAHA')).not.toBeInTheDocument();
   });
   it('keeps inputs after a validation failure', async () => {
     speedboxService.guardar.mockRejectedValue({ response: { data: { message: 'Configura el token privado del webhook en el servidor.' } } });
     render(<SpeedboxConfig />);
     await screen.findByText(/RAHA gestiona su propio despacho/);
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar sandbox' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Configura el token privado del webhook en el servidor.');
     expect(screen.getByLabelText('Public key')).toHaveValue('sbx_saved_public');
   });
@@ -93,11 +98,19 @@ describe('Speedbox settings', () => {
     fireEvent.change(publicInput, { target: { value: ' sbx_public ' } });
     fireEvent.change(screen.getByLabelText('Private key'), { target: { value: ' private_secret ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Probar autenticación' }));
-    await waitFor(() => expect(speedboxService.probar).toHaveBeenCalledWith({ public_key: 'sbx_public', private_key: 'private_secret' }));
+    await waitFor(() => expect(speedboxService.probar).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret' }));
     fireEvent.click(screen.getByRole('button', { name: 'Enviar pedido sandbox' }));
-    await waitFor(() => expect(speedboxService.enviarPrueba).toHaveBeenCalledWith({ public_key: 'sbx_public', private_key: 'private_secret' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ activo: true, public_key: 'sbx_public', private_key: 'private_secret' }));
+    await waitFor(() => expect(speedboxService.enviarPrueba).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar sandbox' }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ environment: 'sandbox', activo: true, public_key: 'sbx_public', private_key: 'private_secret' }));
+  });
+
+  it('stores production credentials separately from sandbox', async () => {
+    render(<SpeedboxConfig />);
+    fireEvent.change(await screen.findByLabelText('Public key producción'), { target: { value: ' sbx_live_public ' } });
+    fireEvent.change(screen.getByLabelText('Private key producción'), { target: { value: ' live_private ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar producción' }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ environment: 'production', activo: true, public_key: 'sbx_live_public', private_key: 'live_private' }));
   });
 
   it('copies the webhook URL for RAHA', async () => {

@@ -30,9 +30,15 @@ function productionWebhookFromData(data) {
   }
 }
 
+function connectionByEnvironment(data, environment) {
+  return (data?.connections || []).find(conn => conn.environment === environment)
+    || (data?.connection?.environment === environment ? data.connection : null);
+}
+
 export default function SpeedboxConfig() {
   const [data, setData] = useState(null);
   const [active, setActive] = useState(false);
+  const [productionActive, setProductionActive] = useState(false);
   const [busy, setBusy] = useState('cargar');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -41,6 +47,8 @@ export default function SpeedboxConfig() {
   const [selectedOrder, setSelectedOrder] = useState('');
   const [publicKey, setPublicKey] = useState('');
   const [privateKey, setPrivateKey] = useState('');
+  const [productionPublicKey, setProductionPublicKey] = useState('');
+  const [productionPrivateKey, setProductionPrivateKey] = useState('');
   const dialogRef = useRef(null);
   const financeDialogRef = useRef(null);
   const [movement, setMovement] = useState(null);
@@ -60,19 +68,29 @@ export default function SpeedboxConfig() {
     const config = await speedboxService.obtener();
     setData(config);
     if (resetForm) {
-      setActive(Boolean(config.connection?.activo));
-      setPublicKey(config.public_key || config.connection?.public_key || '');
+      const sandbox = connectionByEnvironment(config, 'sandbox') || config.connection;
+      const production = connectionByEnvironment(config, 'production');
+      setActive(Boolean(sandbox?.activo));
+      setProductionActive(Boolean(production?.activo));
+      setPublicKey(sandbox?.public_key || config.public_key || '');
+      setProductionPublicKey(production?.public_key || '');
       setPrivateKey('');
+      setProductionPrivateKey('');
     }
   }
   useEffect(() => {
     let mounted = true;
     speedboxService.obtener().then(config => {
       if (!mounted) return;
+      const sandbox = connectionByEnvironment(config, 'sandbox') || config.connection;
+      const production = connectionByEnvironment(config, 'production');
       setData(config);
-      setActive(Boolean(config.connection?.activo));
-      setPublicKey(config.public_key || config.connection?.public_key || '');
+      setActive(Boolean(sandbox?.activo));
+      setProductionActive(Boolean(production?.activo));
+      setPublicKey(sandbox?.public_key || config.public_key || '');
+      setProductionPublicKey(production?.public_key || '');
       setPrivateKey('');
+      setProductionPrivateKey('');
     }).catch(err => { if (mounted) setError(err.response?.data?.message || 'No se pudo cargar RAHA.'); })
       .finally(() => { if (mounted) setBusy(''); });
     return () => { mounted = false; };
@@ -85,12 +103,22 @@ export default function SpeedboxConfig() {
     finally { setBusy(''); }
   }
   const disabled = Boolean(busy);
+  const sandboxConnection = connectionByEnvironment(data, 'sandbox') || data?.connection;
+  const productionConnection = connectionByEnvironment(data, 'production');
   const credentials = { public_key: publicKey.trim(), private_key: privateKey.trim() };
+  const productionCredentials = { public_key: productionPublicKey.trim(), private_key: productionPrivateKey.trim() };
   const credentialsPayload = () => ({
+    environment: 'sandbox',
     ...(credentials.public_key ? { public_key: credentials.public_key } : {}),
     ...(credentials.private_key ? { private_key: credentials.private_key } : {}),
   });
-  const credentialsAvailable = Boolean(credentials.public_key && (credentials.private_key || data?.has_private_key || data?.connection?.has_private_key));
+  const productionCredentialsPayload = () => ({
+    environment: 'production',
+    ...(productionCredentials.public_key ? { public_key: productionCredentials.public_key } : {}),
+    ...(productionCredentials.private_key ? { private_key: productionCredentials.private_key } : {}),
+  });
+  const credentialsAvailable = Boolean(credentials.public_key && (credentials.private_key || sandboxConnection?.has_private_key));
+  const productionCredentialsAvailable = Boolean(productionCredentials.public_key && (productionCredentials.private_key || productionConnection?.has_private_key));
   const uncertain = retryOrder && ['incierto', 'enviando'].includes(retryOrder.estado);
   const wallet = (data?.events || []).filter(event => event.tipo === 'wallet.transaction');
   const reviews = (data?.events || []).filter(event => event.estado === 'revision' && event.tipo !== 'wallet.transaction');
@@ -143,19 +171,22 @@ export default function SpeedboxConfig() {
         </div>
         <dl className="spb-summary">
           <div><dt>Endpoint sandbox</dt><dd>{data.sandbox_endpoint || 'https://speedboxpy.com/api/speedbox_sandbox.php'}</dd></div>
-          <div><dt>Tienda RAHA sandbox</dt><dd>{data.connection?.tienda_id || 'Sin vincular'}</dd></div>
+          <div><dt>Tienda RAHA sandbox</dt><dd>{sandboxConnection?.tienda_id || 'Sin vincular'}</dd></div>
           <div><dt>Credenciales</dt><dd>{credentialsAvailable ? 'Guardadas o listas para validar' : 'Pendientes'}</dd></div>
           <div><dt>Webhook producción</dt><dd>{productionWebhookUrl ? 'Disponible' : data.webhook_configured ? 'Falta URL pública' : 'Pendiente'}</dd></div>
-          <div><dt>Automatización producción</dt><dd>{data.automatic_enabled && data.connection?.activo ? 'Activa' : 'Pausada'}</dd></div>
+          <div><dt>Automatización producción</dt><dd>{data.automatic_enabled && productionConnection?.activo ? 'Activa' : 'Pausada'}</dd></div>
         </dl>
+        <div className="spb-actions">
+          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('save-sandbox', () => speedboxService.guardar({ activo: active, ...credentialsPayload() }), 'Credenciales sandbox guardadas.', true)}><Save size={16} /> Guardar sandbox</button>
+        </div>
       </section>
       <section className="spb-section"><h3>Checks de conexión</h3>
         <ul className="spb-checks">{Object.entries(labels).map(([key, label]) => <li key={key}><span className={data.checks[key] ? 'spb-check-ok' : 'spb-check-pending'}>{data.checks[key] ? <Check size={15} /> : <span aria-hidden="true">-</span>}</span><span>{label}</span><span className="spb-muted">{data.checks[key] ? 'Verificado' : 'Pendiente'}</span></li>)}</ul>
         <div className="spb-step-grid">
           <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('spec', () => speedboxService.probar(credentialsPayload()), 'Autenticación verificada.')}><ShieldCheck size={16} /> Probar autenticación</button>
           <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('store', () => speedboxService.vincular(credentialsPayload()), 'Tienda sandbox vinculada.')}><Link2 size={16} /> Vincular tienda sandbox</button>
-          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !data.connection?.tienda_id} onClick={() => run('order-test', () => speedboxService.enviarPrueba(credentialsPayload()), 'Pedido sandbox recibido por RAHA.')}><Send size={16} /> Enviar pedido sandbox</button>
-          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !data.connection?.tienda_id} onClick={() => run('updates', () => speedboxService.sincronizar(credentialsPayload()), 'Estados y billetera consultados.')}><RefreshCw size={16} /> Consultar estados</button>
+          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !sandboxConnection?.tienda_id} onClick={() => run('order-test', () => speedboxService.enviarPrueba(credentialsPayload()), 'Pedido sandbox recibido por RAHA.')}><Send size={16} /> Enviar pedido sandbox</button>
+          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !sandboxConnection?.tienda_id} onClick={() => run('updates', () => speedboxService.sincronizar(credentialsPayload()), 'Estados y billetera consultados.')}><RefreshCw size={16} /> Consultar estados</button>
         </div>
         <div className="spb-webhook-box">
           <div><strong>Webhook producción para pegar en RAHA</strong><p className="spb-muted">Usá este enlace en el portal RAHA de producción. Gesicom identifica la tienda por tienda_id u order_id.</p></div>
@@ -168,18 +199,27 @@ export default function SpeedboxConfig() {
       </section>
       <section className="spb-section">
         <div className="spb-heading"><h3>Automatización producción</h3><span className={`spb-badge ${data.environment === 'sandbox' ? 'spb-sandbox' : ''}`}>{data.environment === 'sandbox' ? 'Sandbox' : 'Producción'}</span></div>
+        <div className="spb-fields">
+          <label className="spb-field" htmlFor="spb-production-public-key">Public key producción<input id="spb-production-public-key" value={productionPublicKey} disabled={disabled} autoComplete="off" onChange={event => setProductionPublicKey(event.target.value)} placeholder="sbx_live_..." /></label>
+          <label className="spb-field" htmlFor="spb-production-private-key">Private key producción<input id="spb-production-private-key" value={productionPrivateKey} disabled={disabled} autoComplete="off" type="password" onChange={event => setProductionPrivateKey(event.target.value)} placeholder={productionConnection?.has_private_key ? 'Private key producción guardada. Pegá una nueva para reemplazarla.' : 'Pegá la private key de producción'} /></label>
+        </div>
+        <dl className="spb-summary">
+          <div><dt>Tienda RAHA producción</dt><dd>{productionConnection?.tienda_id || 'Sin vincular'}</dd></div>
+          <div><dt>Credenciales producción</dt><dd>{productionCredentialsAvailable ? 'Guardadas o listas para operar' : 'Pendientes'}</dd></div>
+        </dl>
         <div className="spb-automation-row">
           <p className="spb-muted">RAHA gestiona su propio despacho. Gesicom solo envía a RAHA los pedidos que contengan productos de su catálogo cuando la integración está activa.</p>
-          <label className="spb-checkbox"><input type="checkbox" checked={active} disabled={disabled || !data.connection?.tienda_id} onChange={event => setActive(event.target.checked)} /> Integración activa</label>
+          <label className="spb-checkbox"><input type="checkbox" checked={productionActive} disabled={disabled || !productionConnection?.tienda_id} onChange={event => setProductionActive(event.target.checked)} /> Integración activa</label>
         </div>
         <div className="spb-actions">
-          <button type="button" className="spb-button spb-primary" disabled={disabled || (active && (!data.connection?.tienda_id || !credentialsAvailable))} onClick={() => run('save', () => speedboxService.guardar({ activo: active, ...credentialsPayload() }), 'Configuración guardada.', true)}><Save size={16} /> Guardar</button>
+          <button type="button" className="spb-button" disabled={disabled || !productionCredentialsAvailable} onClick={() => run('store-production', () => speedboxService.vincular(productionCredentialsPayload()), 'Tienda producción vinculada.', true)}><Link2 size={16} /> Vincular tienda producción</button>
+          <button type="button" className="spb-button spb-primary" disabled={disabled || (productionActive && (!productionConnection?.tienda_id || !productionCredentialsAvailable))} onClick={() => run('save-production', () => speedboxService.guardar({ activo: productionActive, ...productionCredentialsPayload() }), 'Configuración producción guardada.', true)}><Save size={16} /> Guardar producción</button>
           <button type="button" className="spb-button" disabled={disabled} title="Actualizar panel" aria-label="Actualizar panel" onClick={() => run('refresh', () => load(), 'Panel actualizado.')}><RefreshCw size={16} /></button>
         </div>
       </section>
       {reviews.length > 0 && <section className="spb-section"><h3>Pendientes de revision</h3><ul className="spb-reviews">{reviews.map(event => <li key={event.id}><strong>RAHA {event.order_id}</strong><span>{event.detalle}</span></li>)}</ul></section>}
       <section className="spb-section"><h3>Pedidos enviados</h3>
-        {(data.available_orders || []).length > 0 && <div className="spb-fields"><label className="spb-field" htmlFor="spb-pedido">Pedido confirmado<select id="spb-pedido" value={selectedOrder} disabled={disabled} onChange={event => setSelectedOrder(event.target.value)}><option value="">Seleccionar pedido</option>{data.available_orders.map(order => <option key={order.id} value={order.id}>#{order.numero_pedido} - {order.cliente}</option>)}</select></label><button type="button" className="spb-button" disabled={disabled || !selectedOrder || !data.connection?.activo} onClick={async () => { if (await run('send', () => speedboxService.enviar(Number(selectedOrder)), 'Pedido enviado.')) setSelectedOrder(''); }}><Send size={16} /> Enviar pedido</button></div>}
+        {(data.available_orders || []).length > 0 && <div className="spb-fields"><label className="spb-field" htmlFor="spb-pedido">Pedido confirmado<select id="spb-pedido" value={selectedOrder} disabled={disabled} onChange={event => setSelectedOrder(event.target.value)}><option value="">Seleccionar pedido</option>{data.available_orders.map(order => <option key={order.id} value={order.id}>#{order.numero_pedido} - {order.cliente}</option>)}</select></label><button type="button" className="spb-button" disabled={disabled || !selectedOrder || !productionConnection?.activo} onClick={async () => { if (await run('send', () => speedboxService.enviar(Number(selectedOrder)), 'Pedido enviado.')) setSelectedOrder(''); }}><Send size={16} /> Enviar pedido</button></div>}
         {data.orders.length === 0 ? <p className="spb-muted">Sin pedidos registrados.</p> : <div className="spb-table-scroll"><table className="spb-table"><thead><tr><th>Pedido Gesicomm</th><th>ID RAHA</th><th>Envio</th><th>Estado RAHA</th><th>Detalle</th><th aria-label="Acciones" /></tr></thead><tbody>{data.orders.map(order => <tr key={order.id}><td>#{order.envio?.numero_pedido || order.envio_id}</td><td>{order.order_id || '-'}</td><td>{order.estado}</td><td>{order.status || '-'}</td><td className="spb-error-cell">{order.error || '-'}</td><td>{['error', 'incierto', 'enviando'].includes(order.estado) && <button type="button" className="spb-button" title="Reintentar pedido" aria-label={`Reintentar pedido ${order.envio_id}`} disabled={disabled} onClick={() => { setRetryOrder(order); setAcknowledged(false); }}><RefreshCw size={15} /></button>}</td></tr>)}</tbody></table></div>}</section>
       <section className="spb-section"><h3>Importes por pedido</h3>
         <div className="spb-table-scroll"><table className="spb-table"><thead><tr><th>Pedido</th><th>Venta</th><th>Envio</th><th>Fulfillment</th><th>Abastecimiento</th><th>Pago proveedor</th><th>Cobro cliente</th><th>Liquidacion</th></tr></thead><tbody>{data.orders.filter(order => order.finanzas).map(order => <tr key={order.id}><td>#{order.envio?.numero_pedido || order.envio_id}</td><td>{money(order.finanzas.venta)}</td><td>{money(order.finanzas.envio_cliente)}<br /><span className="spb-muted">A cargo: {order.finanzas.delivery_a_cargo}</span></td><td>{money(order.finanzas.fulfillment)}</td><td>{money(order.finanzas.costo_abastecimiento)}</td><td>{estado(order.finanzas.pago_proveedor)}</td><td>{estado(order.finanzas.cobro_cliente)}</td><td>{estado(order.finanzas.estado_financiero)}</td></tr>)}</tbody></table></div>
