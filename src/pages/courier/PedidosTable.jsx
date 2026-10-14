@@ -673,10 +673,15 @@ export function PedidosTable({
   initialEstado = TODOS_ESTADOS_ID,
   soloAbastecimiento = false,
   initialAbastecimientoEstado = "en_seguimiento",
+  // Qué etapas puede elegir esta bandeja: Gestión Comercial solo ofrece
+  // Comercial/Recompra, Gestión Logística solo Logística (sin selector).
+  etapasDisponibles = STAGE_FILTERS.map((s) => s.id),
+  initialEtapa = etapasDisponibles[0],
 }) {
   const filtrosBase = useMemo(() => ({ ...FILTROS_VACIOS, pedido_id: initialPedidoId || "" }), [initialPedidoId]);
   const [estadoActivo, setEstadoActivo] = useState(initialEstado);
-  const [etapaActiva, setEtapaActiva] = useState(STAGE_FILTERS[0].id);
+  const [etapaActiva, setEtapaActiva] = useState(initialEtapa);
+  const stageFiltersDisponibles = STAGE_FILTERS.filter((stage) => etapasDisponibles.includes(stage.id));
   // Fila expandida con el seguimiento de abastecimiento (solo en esa pestaña).
   const [timelineExpandidoId, setTimelineExpandidoId] = useState(null);
   const [abastecimientoEstadoActivo, setAbastecimientoEstadoActivo] = useState(initialAbastecimientoEstado);
@@ -1100,10 +1105,10 @@ export function PedidosTable({
             })}
           </div>
         </div>
-      ) : (
+      ) : stageFiltersDisponibles.length > 1 ? (
         <section className="pt-stage-shell" aria-label="Etapas del ciclo de venta">
           <div className="pt-stage-tabs" role="tablist" aria-label="Filtrar por etapa">
-            {STAGE_FILTERS.map((stage) => (
+            {stageFiltersDisponibles.map((stage) => (
               <button
                 key={stage.id}
                 type="button"
@@ -1116,7 +1121,7 @@ export function PedidosTable({
             ))}
           </div>
         </section>
-      )}
+      ) : null}
 
       {!soloAbastecimiento && estaEnKanban ? (
         <div className="pt-kanban-context" role="note">
@@ -1129,15 +1134,17 @@ export function PedidosTable({
       ) : !soloAbastecimiento && chipsEtapaActiva.length > 1 ? (
         <section className="pt-status-shell" aria-label={`Filtros secundarios de ${etapaActiva}`}>
           <div className="pt-status-tabs pt-status-tabs--secondary" role="tablist">
-            <button
-              type="button"
-              onClick={() => handleSelectEstado(TODOS_ESTADOS_ID)}
-              className={`pt-status-chip ${estadoActivo === TODOS_ESTADOS_ID ? "active" : ""}`}
-              aria-selected={estadoActivo === TODOS_ESTADOS_ID}
-            >
-              <span className="pt-status-chip__label">Todos</span>
-              <strong className="pt-status-chip__count">{totalEstadosEtapaActiva}</strong>
-            </button>
+            {etapaActiva !== "logistica" && (
+              <button
+                type="button"
+                onClick={() => handleSelectEstado(TODOS_ESTADOS_ID)}
+                className={`pt-status-chip ${estadoActivo === TODOS_ESTADOS_ID ? "active" : ""}`}
+                aria-selected={estadoActivo === TODOS_ESTADOS_ID}
+              >
+                <span className="pt-status-chip__label">Todos</span>
+                <strong className="pt-status-chip__count">{totalEstadosEtapaActiva}</strong>
+              </button>
+            )}
             {chipsEtapaActiva.map((st) => {
               const cfg = st === TAB_RAHA_LOGISTICA_ID ? TAB_RAHA_LOGISTICA_CFG : (STATUS[st] || {});
               const active = estadoActivo === st;

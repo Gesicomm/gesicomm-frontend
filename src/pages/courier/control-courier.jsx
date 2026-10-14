@@ -43,7 +43,16 @@ function tabInicial(estadoNavegacion) {
   return "tablero";
 }
 
-export function ControlCourier() {
+// Qué etapas ofrece cada entrada del menú: Gestión Comercial (sin prop, uso
+// histórico de /mis-pedidos y /orders) sigue mostrando las tres; Gestión
+// Logística es la bandeja dedicada que arma /gestion-logistica.
+const ETAPAS_POR_MENU = {
+  comercial: { etapasDisponibles: ["comercial", "recompra"], initialEtapa: "comercial", initialEstado: undefined },
+  logistica: { etapasDisponibles: ["logistica"], initialEtapa: "logistica", initialEstado: "Confirmado" },
+};
+
+export function ControlCourier({ etapaFija } = {}) {
+  const etapasProps = ETAPAS_POR_MENU[etapaFija] || {};
   const location = useLocation();
   const navigate = useNavigate();
   const [tab, setTab] = useState(() => tabInicial(location.state?.tab));
@@ -273,8 +282,10 @@ export function ControlCourier() {
               <PackageCheck size={22} />
             </div>
             <div>
-              <h1 className="prod-title">Pedidos</h1>
-              <p className="prod-subtitle">Confirmación, despacho y rendición</p>
+              <h1 className="prod-title">{etapaFija === "logistica" ? "Gestión Logística" : "Gestión Comercial"}</h1>
+              <p className="prod-subtitle">
+                {etapaFija === "logistica" ? "Preparación, despacho y rendición" : "Confirmación y seguimiento de pedidos"}
+              </p>
             </div>
           </div>
 
@@ -326,6 +337,7 @@ export function ControlCourier() {
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
             onAbrirSeguimiento={abrirSeguimiento}
             refrescarKey={refrescarKey}
+            {...etapasProps}
           />
         ) : tab === "rendicion" ? (
           <RendicionTab couriers={couriers} />

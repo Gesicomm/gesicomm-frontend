@@ -32,7 +32,7 @@ export const STATUS = {
     chipText: "var(--color-warning)",
   },
   "Confirmado": {
-    label: "Confirmado",
+    label: "Pendiente de preparación",
     columnBar: "bg-teal-400",
     chipBg: "color-mix(in srgb, var(--color-info) 14%, transparent)",
     chipText: "var(--color-info)",

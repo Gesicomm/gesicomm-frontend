@@ -66,8 +66,10 @@ test("la bandeja no muestra nada de abastecimiento, tampoco en pedidos viejos qu
   expect(screen.queryByText(/pendiente de pago|pagar/i)).not.toBeInTheDocument();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
-  // Tampoco junto al chip de confirmados, donde estaba la pestaña "Seguimiento Abastecimiento".
-  await screen.findByRole("button", { name: /^Confirmado\s*2$/ });
+  // Tampoco junto al chip de Pendiente de preparación (ex Confirmados, ahora en Logística),
+  // donde estaba la pestaña "Seguimiento Abastecimiento".
+  irAEtapa("Logística");
+  await screen.findByRole("button", { name: /^Pendiente de preparación\s*2$/ });
   expect(screen.queryByText(/abastecimiento/i)).not.toBeInTheDocument();
 });
 
@@ -88,15 +90,22 @@ test("la vista Kanban del Tablero tampoco muestra avisos de abastecimiento", asy
   await waitFor(() => expect(getEnviosPaginados).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 })));
   // Regresión: esta vista se caía entera ("Cannot read properties of
   // undefined (reading 'label')") porque algunos carriles llegaban sin rótulo.
-  const confirmados = await screen.findByRole("region", { name: "Columna Confirmados" });
-  expect(within(confirmados).getByText("Cliente 1")).toBeInTheDocument();
+  // Comercial ya no tiene a los Confirmados (se mudaron a Logística): el carril
+  // Pendientes se renderiza igual aunque quede vacío con estos datos de prueba.
   expect(screen.getByRole("region", { name: "Columna Pendientes" })).toBeInTheDocument();
+  expect(screen.queryByText(/abastecimiento/i)).not.toBeInTheDocument();
+
+  irAEtapa("Logística");
+  const confirmados = await screen.findByRole("region", { name: "Columna Pendientes de preparación" });
+  expect(within(confirmados).getByText("Cliente 1")).toBeInTheDocument();
   expect(screen.queryByText(/abastecimiento/i)).not.toBeInTheDocument();
 });
 
-// Tablero por etapas (2026-10-13): Comercial (Pendiente / Confirmado /
-// Cancelado) → Logística (Preparado … Entregado / Devuelto / Perdido) →
-// Recompra (los entregados). No hay etapa "Todos".
+// Tablero por etapas (2026-10-14): Comercial (Pendiente / Cancelado) →
+// Logística (Pendiente de preparación [ex Confirmado] … Entregado / Devuelto
+// / Perdido) → Recompra (los entregados). Confirmar pasa el pedido directo a
+// Logística; Comercial no tiene "Todos" de Confirmado y Logística no tiene
+// pestaña "Todos".
 const encabezados = () => screen.getAllByRole("columnheader").map((th) => th.textContent);
 const ultimoPedido = () => getEnviosPaginados.mock.calls.at(-1)[0];
 
@@ -106,15 +115,17 @@ test("las etapas son Comercial, Logística y Recompra, y cada una pide solo sus 
   const etapas = within(screen.getByRole("tablist", { name: "Filtrar por etapa" })).getAllByRole("button");
   expect(etapas.map((b) => b.textContent)).toEqual(["Comercial", "Logística", "Recompra"]);
 
-  // Se entra por Comercial, que llega hasta Confirmado.
-  expect(ultimoPedido()).toMatchObject({ estados: ["Pendiente", "EnSeguimiento", "Confirmado", "Cancelado"], incluir_seguimiento: true });
+  // Se entra por Comercial, que ahora termina en Cancelado: al confirmar, el
+  // pedido pasa directo a Logística como "Pendiente de preparación".
+  expect(ultimoPedido()).toMatchObject({ estados: ["Pendiente", "EnSeguimiento", "Cancelado"], incluir_seguimiento: true });
   const chips = () => screen.getAllByRole("button").filter((b) => b.classList.contains("pt-status-chip")).map((b) => b.textContent.replace(/\d+$/, ""));
-  expect(chips()).toEqual(["Todos", "Pendiente", "Confirmado", "Cancelado"]);
+  expect(chips()).toEqual(["Todos", "Pendiente", "Cancelado"]);
   expect(encabezados()).toEqual(["#", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Estado comercial", "Seguimiento", "Acción"]);
 
   irAEtapa("Logística");
-  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]));
-  expect(chips()).toEqual(["Todos", "Envíos RAHA", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
+  await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]));
+  // Sin "Todos": Envíos RAHA primero, Pendiente de preparación y el resto de los estados de siempre.
+  expect(chips()).toEqual(["Envíos RAHA", "Pendiente de preparación", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
   expect(encabezados()).toContain("Estado logístico");
   expect(encabezados()).not.toContain("Estado comercial");
 
@@ -138,13 +149,13 @@ test("el estado que se muestra es el de la etapa que se está mirando", async ()
   await montar();
 
   const estado = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[6];
-  // Estado comercial: Pendiente, Confirmado o Cancelado.
+  // Estado comercial: Pendiente o Cancelado (Confirmado ya es logístico).
   expect(estado("Cliente 1")).toHaveTextContent(/^Pendiente$/);
-  expect(estado("Cliente 2")).toHaveTextContent("Confirmado");
+  expect(estado("Cliente 2")).toHaveTextContent("Pendiente de preparación");
   // Estado logístico: el del envío, incluido Entregado.
   expect(estado("Cliente 3")).toHaveTextContent("Despachado");
   expect(estado("Cliente 3")).toHaveTextContent("Raja");
-  expect(estado("Cliente 3")).not.toHaveTextContent("Confirmado");
+  expect(estado("Cliente 3")).not.toHaveTextContent("Pendiente de preparación");
   expect(estado("Cliente 4")).toHaveTextContent("Entregado");
 
   // En Recompra el mismo entregado muestra cómo viene su escalamiento de ventas.
@@ -311,7 +322,10 @@ test("Pendiente incluye a los pedidos que están en seguimiento, sin chip aparte
   await montar();
 
   expect(screen.queryByRole("button", { name: /Seguimiento Contacto/i })).not.toBeInTheDocument();
-  const chipPendiente = await screen.findByRole("button", { name: /^Pendiente/ });
+  // Acotado a los chips de filtro: el badge de la fila también puede decir
+  // "Pendiente de preparación" (Confirmado, ahora en Logística) y matchea el mismo regex.
+  const filtrosSecundarios = await screen.findByRole("region", { name: "Filtros secundarios de comercial" });
+  const chipPendiente = within(filtrosSecundarios).getByRole("button", { name: /^Pendiente\d+$/ });
   expect(chipPendiente).toHaveTextContent("5");
   fireEvent.click(chipPendiente);
 
@@ -328,18 +342,21 @@ test("el estado de cada fila se cambia desde su desplegable, solo hacia los paso
   const { onChangeEstado, onAbrirDetalle } = await montar({ onAccionEspecial });
 
   const fila = (cliente) => screen.getByText(cliente).closest("tr");
-  const abrir = (cliente) => fireEvent.click(within(fila(cliente)).getByRole("button", { name: /^(Pendiente|Confirmado|Despachado|Cancelado)$/ }));
+  const abrir = (cliente) => fireEvent.click(within(fila(cliente)).getByRole("button", { name: /^(Pendiente|Pendiente de preparación|Despachado|Cancelado)$/ }));
   const opciones = (cliente) => within(within(fila(cliente)).getByRole("menu")).getAllByRole("menuitem").map((o) => o.textContent.replace("✓", ""));
 
   // Un pendiente (aunque esté en seguimiento) se confirma o se cancela: confirmar abre los datos del pedido.
+  // Las opciones NO seleccionadas del menú muestran el valor crudo del estado
+  // ("Confirmado"), no el rótulo "Pendiente de preparación" — ese solo se usa
+  // para el badge del estado actual (ver EstadoBadgeDropdown).
   abrir("Cliente 1");
   expect(opciones("Cliente 1")).toEqual(["Pendiente", "Confirmado", "Cancelado"]);
   fireEvent.click(within(fila("Cliente 1")).getByRole("menuitem", { name: "Confirmado" }));
   expect(onAbrirDetalle).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
 
-  // Confirmado pasa a Preparado: no se saltea ese paso.
+  // Confirmado (ahora "Pendiente de preparación") pasa a Preparado: no se saltea ese paso.
   abrir("Cliente 2");
-  expect(opciones("Cliente 2")).toEqual(["Confirmado", "Preparado", "Cancelado"]);
+  expect(opciones("Cliente 2")).toEqual(["Pendiente de preparación", "Preparado", "Cancelado"]);
   fireEvent.click(within(fila("Cliente 2")).getByRole("menuitem", { name: "Preparado" }));
   expect(onChangeEstado).toHaveBeenCalledWith(2, "Preparado", expect.objectContaining({ id: 2 }));
 

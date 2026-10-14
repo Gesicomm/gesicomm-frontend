@@ -445,7 +445,10 @@ function App() {
           <RequireTienda><UserLayout><CambiarPrecios /></UserLayout></RequireTienda>
         } />
         <Route path="/mis-pedidos" element={
-          <RequireTienda><UserLayout><ControlCourier /></UserLayout></RequireTienda>
+          <RequireTienda><UserLayout><ControlCourier etapaFija="comercial" /></UserLayout></RequireTienda>
+        } />
+        <Route path="/gestion-logistica" element={
+          <RequireTienda><UserLayout><ControlCourier etapaFija="logistica" /></UserLayout></RequireTienda>
         } />
         <Route path="/pedidos/configuracion" element={
           <RequireTienda><UserLayout><SeguimientoConfig /></UserLayout></RequireTienda>

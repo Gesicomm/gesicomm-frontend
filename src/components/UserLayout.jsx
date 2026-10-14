@@ -4,7 +4,7 @@ import {
   Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
   Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign, MapPin, PackageCheck,
-  PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus
+  PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus, Boxes
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -42,6 +42,7 @@ const ICONOS_SIDEBAR = {
   PackageCheck,
   PackageSearch,
   Circle,
+  Boxes,
 };
 
 const SIDEBAR_FALLBACK = [
@@ -51,7 +52,8 @@ const SIDEBAR_FALLBACK = [
   { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-catalogo', label: 'Productos', icono: 'Grid', menuKey: 'mi-catalogo', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'MARKETING', path: '/landing', label: 'Páginas de venta', icono: 'Sparkles', menuKey: 'landing', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'MARKETING', path: '/mis-anuncios', label: 'Publicidad', icono: 'Megaphone', menuKey: 'mis-anuncios', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-pedidos', label: 'Pedidos', icono: 'ShoppingCart', menuKey: 'mis-pedidos', dangerBadgeKey: 'seguimientos_vencidos' },
+  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-pedidos', label: 'Gestión Comercial', icono: 'ShoppingCart', menuKey: 'mis-pedidos', dangerBadgeKey: 'seguimientos_vencidos' },
+  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/gestion-logistica', label: 'Gestión Logística', icono: 'Boxes', menuKey: 'gestion-logistica' },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/inventario', label: 'Inventario / Ingresos', icono: 'PackageCheck', menuKey: 'inventario', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icono: 'Truck', menuKey: 'mis-abastecimientos', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/importada-de-china', label: 'Importada de China', icono: 'PackageSearch', menuKey: 'importada-de-china', rolesPermitidos: ['usuario', 'administrador'] },

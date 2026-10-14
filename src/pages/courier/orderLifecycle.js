@@ -41,15 +41,23 @@ export const STAGE_FILTERS = [
 
 export const STAGE_LABELS = { comercial: "Comercial", logistica: "Logística", recompra: "Recompra" };
 
-// Los estados de cada etapa. Comercial termina en Confirmado (o Cancelado):
-// recién después el pedido pasa a Logística. Logística termina en Entregado
-// (o Devuelto / Perdido), y un entregado pasa además a Recompra, donde se le
-// hace el escalamiento de ventas.
-export const COMMERCIAL_STATUSES = ["Pendiente", "EnSeguimiento", "Confirmado", "Cancelado"];
-export const LOGISTIC_STATUSES = ["Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"];
+// Los estados de cada etapa. Comercial termina en Cancelado, o el confirmador
+// confirma y el pedido pasa directo a Logística (pedido del usuario,
+// 2026-10-14): ahí entra como "Pendiente de preparación" (el mismo estado
+// Confirmado de siempre, solo que ahora se ve y se cuenta del lado
+// logístico). Logística termina en Entregado (o Devuelto / Perdido), y un
+// entregado pasa además a Recompra, donde se le hace el escalamiento de
+// ventas.
+export const COMMERCIAL_STATUSES = ["Pendiente", "EnSeguimiento", "Cancelado"];
+export const LOGISTIC_STATUSES = ["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"];
 export const RECOMPRA_STATUSES = ["Entregado"];
 
-/** La etapa a la que pertenece el estado del pedido (un entregado se ve también en Recompra). */
+// Nombre que se muestra para el estado Confirmado ahora que vive en
+// Logística — "Confirmado" sigue siendo el valor real en Envio.estado (no
+// se tocó la base ni envioController), esto es solo de presentación.
+export const ESTADO_DISPLAY_LABEL = { Confirmado: "Pendiente de preparación" };
+
+/** La etapa a la que pertenece el estado del pedido (un confirmado o entregado se ve del lado logístico; un entregado además en Recompra). */
 export function etapaDePedido(envio) {
   return LOGISTIC_STATUSES.includes(envio?.estado) ? "logistica" : "comercial";
 }
@@ -81,13 +89,13 @@ export function estadoDePedido(envio, etapaVista) {
   if (etapaVista === "recompra") return estadoDeRecompra(envio);
   const etapa = etapaDePedido(envio);
   const estado = envio?.estado;
-  if (etapa === "comercial" && !["Confirmado", "Cancelado"].includes(estado)) {
+  if (etapa === "comercial" && estado !== "Cancelado") {
     return { etapa, id: "Pendiente", label: "Pendiente", tone: "warning" };
   }
   if (estado === "Devuelto" && !envio?.devolucion_recibida_at) {
     return { etapa, id: "DevolucionPendiente", label: "Devolución pendiente", tone: "danger" };
   }
-  return { etapa, id: estado, label: estado, tone: TONO_POR_ESTADO[estado] || "neutral" };
+  return { etapa, id: estado, label: ESTADO_DISPLAY_LABEL[estado] || estado, tone: TONO_POR_ESTADO[estado] || "neutral" };
 }
 
 const esEstado = (...ids) => (e) => ids.includes(estadoDePedido(e).id);
@@ -95,7 +103,7 @@ const esEstado = (...ids) => (e) => ids.includes(estadoDePedido(e).id);
 const LANES = {
   pendientes: { id: "pendiente", label: "Pendientes", columnBar: "bg-amber-400", match: esEstado("Pendiente") },
   cancelados: { id: "cancelado", label: "Cancelados", columnBar: "bg-red-400", match: esEstado("Cancelado") },
-  confirmados: { id: "confirmado", label: "Confirmados", columnBar: "bg-teal-400", match: esEstado("Confirmado") },
+  confirmados: { id: "confirmado", label: "Pendientes de preparación", columnBar: "bg-teal-400", match: esEstado("Confirmado") },
   preparados: { id: "Preparado", label: "Preparados", columnBar: "bg-purple-400", estado: "Preparado", match: esEstado("Preparado") },
   // Un reprogramado sigue en la calle: va en la misma columna que los despachados.
   despachados: { id: "Despachado", label: "Despachados", columnBar: "bg-blue-400", estado: "Despachado", match: esEstado("Despachado", "Reprogramado") },
@@ -108,11 +116,11 @@ const LANES = {
 export const KANBAN_CONTEXTS = {
   comercial: {
     label: "Comercial",
-    lanes: [LANES.pendientes, LANES.confirmados, LANES.cancelados],
+    lanes: [LANES.pendientes, LANES.cancelados],
   },
   logistica: {
     label: "Logística",
-    lanes: [LANES.preparados, LANES.despachados, LANES.entregados, LANES.devolucionPendiente, LANES.devueltos, LANES.perdidos],
+    lanes: [LANES.confirmados, LANES.preparados, LANES.despachados, LANES.entregados, LANES.devolucionPendiente, LANES.devueltos, LANES.perdidos],
   },
   // En recompra el pedido ya está entregado: lo que cambia es si todavía
   // tiene mensajes de escalamiento de ventas por enviar.
