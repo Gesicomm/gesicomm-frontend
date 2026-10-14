@@ -6,6 +6,7 @@ import { speedboxService } from '../../services/speedboxService';
 vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: vi.fn(), guardar: vi.fn(), vincular: vi.fn(), probar: vi.fn(), enviarPrueba: vi.fn(), sincronizar: vi.fn(), reintentar: vi.fn(), enviar: vi.fn(), conciliar: vi.fn() } }));
 const config = { environment: 'sandbox', credentials_configured: true, webhook_configured: true, automatic_enabled: true,
   sandbox_endpoint: 'https://speedboxpy.com/api/speedbox_sandbox.php', production_request_url: 'https://speedboxpy.com/speedbox_api_cliente.php',
+  create_store_endpoint: '/api/integraciones/speedbox/store',
   webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=sandbox&token=12345678901234567890123456789012',
   production_webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=production&token=12345678901234567890123456789012',
   sandbox_webhook_url: 'https://api.example.test/api/webhooks/speedbox?environment=sandbox&token=12345678901234567890123456789012',
@@ -15,7 +16,7 @@ const config = { environment: 'sandbox', credentials_configured: true, webhook_c
     { environment: 'sandbox', tienda_id: '54', courier_id: 2, activo: true, public_key: 'sbx_saved_public', has_private_key: true },
     { environment: 'production', tienda_id: 'prod-54', courier_id: null, activo: true, public_key: 'sbx_live_saved', has_private_key: true },
   ],
-  checks: { spec: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
+  checks: { spec: true, store: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
 beforeEach(() => {
   cleanup(); vi.clearAllMocks();
   HTMLDialogElement.prototype.showModal = function showModal() { this.setAttribute('open', ''); };
@@ -96,6 +97,13 @@ describe('Speedbox settings', () => {
     expect(label.parentElement).toHaveTextContent('Pendiente');
   });
 
+  it('shows the RAHA store creation endpoint and calls it from the validation panel', async () => {
+    render(<SpeedboxConfig />);
+    expect(await screen.findByText('/api/integraciones/speedbox/store')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Crear tienda sandbox en RAHA' }));
+    await waitFor(() => expect(speedboxService.vincular).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_saved_public' }));
+  });
+
   it('opens the official RAHA portal without leaking session or personal data', async () => {
     speedboxService.obtener.mockResolvedValue({ ...config, production_request_url: 'https://speedboxpy.com/speedbox_api_cliente.php' });
     render(<SpeedboxConfig />);
@@ -120,6 +128,8 @@ describe('Speedbox settings', () => {
     fireEvent.change(screen.getByLabelText('Private key'), { target: { value: ' private_secret ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Probar autenticación' }));
     await waitFor(() => expect(speedboxService.probar).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear tienda sandbox en RAHA' }));
+    await waitFor(() => expect(speedboxService.vincular).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret' }));
     fireEvent.click(screen.getByRole('button', { name: 'Enviar pedido sandbox' }));
     await waitFor(() => expect(speedboxService.enviarPrueba).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret' }));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar sandbox' }));

@@ -5,7 +5,13 @@ import { speedboxService } from '../../services/speedboxService';
 import { apiOrigin } from '../../utils/apiBase';
 import './speedbox.css';
 
-const labels = { spec: 'Autenticación y especificación', order: 'Recepción de pedido', updates: 'Consulta de estados y billetera', webhook: 'Webhook de cambio de estado' };
+const labels = {
+  spec: 'Autenticación y especificación',
+  store: 'Creación de tienda RAHA',
+  order: 'Recepción de pedido',
+  updates: 'Consulta de estados y billetera',
+  webhook: 'Webhook de cambio de estado',
+};
 const money = value => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(value);
 const conceptos = { pago_proveedor: 'Pago al proveedor', costo_abastecimiento: 'Costo de abastecimiento', envio: 'Envio', cobro_cliente: 'Cobro al cliente', otro: 'Otro' };
 const estado = value => (value || '-').replaceAll('_', ' ');
@@ -173,6 +179,7 @@ export default function SpeedboxConfig() {
         </div>
         <dl className="spb-summary">
           <div><dt>Endpoint sandbox</dt><dd>{data.sandbox_endpoint || 'https://speedboxpy.com/api/speedbox_sandbox.php'}</dd></div>
+          <div><dt>Endpoint Gesicom para crear tienda</dt><dd>{data.create_store_endpoint || '/api/integraciones/speedbox/store'}</dd></div>
           <div><dt>Tienda RAHA sandbox</dt><dd>{sandboxConnection?.tienda_id || 'Sin vincular'}</dd></div>
           <div><dt>Credenciales</dt><dd>{credentialsAvailable ? 'Guardadas o listas para validar' : 'Pendientes'}</dd></div>
           <div><dt>Webhook producción</dt><dd>{productionWebhookUrl ? 'Disponible' : data.webhook_configured ? 'Falta URL pública' : 'Pendiente'}</dd></div>
@@ -186,7 +193,7 @@ export default function SpeedboxConfig() {
         <ul className="spb-checks">{Object.entries(labels).map(([key, label]) => <li key={key}><span className={data.checks[key] ? 'spb-check-ok' : 'spb-check-pending'}>{data.checks[key] ? <Check size={15} /> : <span aria-hidden="true">-</span>}</span><span>{label}</span><span className="spb-muted">{data.checks[key] ? 'Verificado' : 'Pendiente'}</span></li>)}</ul>
         <div className="spb-step-grid">
           <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('spec', () => speedboxService.probar(credentialsPayload()), 'Autenticación verificada.')}><ShieldCheck size={16} /> Probar autenticación</button>
-          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('store', () => speedboxService.vincular(credentialsPayload()), 'Tienda sandbox vinculada.')}><Link2 size={16} /> Vincular tienda sandbox</button>
+          <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('store', () => speedboxService.vincular(credentialsPayload()), 'Tienda sandbox creada o vinculada en RAHA.')}><Link2 size={16} /> Crear tienda sandbox en RAHA</button>
           <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !sandboxConnection?.tienda_id} onClick={() => run('order-test', () => speedboxService.enviarPrueba(credentialsPayload()), 'Pedido sandbox recibido por RAHA.')}><Send size={16} /> Enviar pedido sandbox</button>
           <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable || !sandboxConnection?.tienda_id} onClick={() => run('updates', () => speedboxService.sincronizar(credentialsPayload()), 'Estados y billetera consultados.')}><RefreshCw size={16} /> Consultar estados</button>
         </div>
@@ -214,7 +221,7 @@ export default function SpeedboxConfig() {
           <label className="spb-checkbox"><input type="checkbox" checked={productionActive} disabled={disabled || !productionConnection?.tienda_id} onChange={event => setProductionActive(event.target.checked)} /> Integración activa</label>
         </div>
         <div className="spb-actions">
-          <button type="button" className="spb-button" disabled={disabled || !productionCredentialsAvailable} onClick={() => run('store-production', () => speedboxService.vincular(productionCredentialsPayload()), 'Tienda producción vinculada.', true)}><Link2 size={16} /> Vincular tienda producción</button>
+          <button type="button" className="spb-button" disabled={disabled || !productionCredentialsAvailable} onClick={() => run('store-production', () => speedboxService.vincular(productionCredentialsPayload()), 'Tienda producción creada o vinculada en RAHA.', true)}><Link2 size={16} /> Crear tienda producción en RAHA</button>
           <button type="button" className="spb-button spb-primary" disabled={disabled || (productionActive && (!productionConnection?.tienda_id || !productionCredentialsAvailable))} onClick={() => run('save-production', () => speedboxService.guardar({ activo: productionActive, ...productionCredentialsPayload() }), 'Configuración producción guardada.', true)}><Save size={16} /> Guardar producción</button>
           <button type="button" className="spb-button" disabled={disabled} title="Actualizar panel" aria-label="Actualizar panel" onClick={() => run('refresh', () => load(), 'Panel actualizado.')}><RefreshCw size={16} /></button>
         </div>
