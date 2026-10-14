@@ -926,10 +926,13 @@ html[data-gesicomm-preview-device="desktop"] :where([data-gesicomm-base="product
   gap: 4px !important;
   text-align: center !important;
 }
-:where(.commerce-header .brand-logo, .commerce-header [data-gesicomm-tienda="logo"]) {
-  width: var(--gc-logo-tamano, 76px) !important;
+/* El tamaño controla el alto; el ancho conserva la proporción del archivo.
+   Un logo horizontal no debe reducirse a un ícono cuadrado. */
+.commerce-header img.brand-logo,
+.commerce-header img[data-gesicomm-tienda="logo"] {
+  width: auto !important;
   height: var(--gc-logo-tamano, 76px) !important;
-  max-width: none !important;
+  max-width: min(calc(var(--gc-logo-tamano, 76px) * 3), 24vw) !important;
   max-height: none !important;
   object-fit: contain !important;
   transform: rotate(var(--gc-logo-rotacion, 0deg)) !important;
@@ -1892,7 +1895,14 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 :where(.commerce-header .header-actions) {
   align-items: center !important;
 }
-:where(.commerce-header .search-toggle, .commerce-header .cart-button) {
+.commerce-header .header-main {
+  position: relative !important;
+}
+/* El panel se ancla al borde inferior de toda la fila del encabezado. */
+.commerce-header .header-actions {
+  position: static !important;
+}
+.commerce-header .search-toggle, .commerce-header .cart-button {
   width: 44px !important;
   min-width: 44px !important;
   height: 44px !important;
@@ -1908,33 +1918,59 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 :where(.commerce-header .menu-toggle) {
   display: none !important;
 }
-:where(.commerce-header .search-wrap) {
-  position: relative !important;
+.commerce-header .search-wrap {
+  position: static !important;
   display: inline-flex !important;
   flex: 0 0 auto !important;
   min-width: 0 !important;
   align-items: center !important;
 }
-:where(.commerce-header .search-toggle) {
+.commerce-header .search-toggle {
+  position: relative !important;
   color: currentColor !important;
   background: transparent !important;
   border: 0 !important;
   border-radius: 10px !important;
+  font-size: 0 !important;
 }
-:where(.commerce-header .search-toggle:hover, .commerce-header .search-toggle[aria-expanded="true"]) {
+/* Una lupa dibujada localmente también funciona en HTML guardado que depende
+   de una fuente de iconos o de un script externo bloqueado por el iframe. */
+.commerce-header .search-toggle::before,
+.commerce-header .search-box button[type="submit"]::before {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+  background: currentColor !important;
+  content: "" !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M20 20l-4.5-4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M20 20l-4.5-4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+}
+.commerce-header .search-toggle > *,
+.commerce-header .search-box button[type="submit"] > * {
+  display: none !important;
+}
+.commerce-header .search-toggle:hover, .commerce-header .search-toggle[aria-expanded="true"] {
   color: var(--tienda-destacado, var(--gc-primario, currentColor)) !important;
   background: color-mix(in srgb, currentColor 10%, transparent) !important;
 }
 /* Oculto por defecto sin depender del atributo [hidden] del HTML guardado:
    landings ya publicadas antes de este cambio pueden no tenerlo, y eso
    pintaba el buscador superpuesto al header hasta que corria el JS. */
-:where(.commerce-header .search-box, .commerce-header form.search-box) {
+.commerce-header .search-box,
+.commerce-header form.search-box,
+.commerce-header .search-wrap:not(.is-open) .search-box,
+.commerce-header .search-wrap .search-box[hidden],
+.commerce-header #gesicomm-search-panel.search-box {
   display: none !important;
 }
-:where(.commerce-header .search-wrap.is-open .search-box, .commerce-header .search-wrap.is-open form.search-box) {
+.commerce-header .search-wrap.is-open .search-box:not([hidden]),
+.commerce-header .search-wrap.is-open form.search-box:not([hidden]),
+.commerce-header .search-wrap.is-open #gesicomm-search-panel.search-box:not([hidden]) {
   position: absolute !important;
   top: calc(100% + 10px) !important;
-  right: 0 !important;
+  right: 28px !important;
+  left: auto !important;
+  bottom: auto !important;
   transform: none !important;
   z-index: 70 !important;
   width: min(360px, calc(100vw - 40px)) !important;
@@ -1946,31 +1982,36 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   border-radius: 10px !important;
   box-shadow: 0 18px 45px color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #082947)) 22%, transparent) !important;
 }
-:where(.commerce-header .search-box input) {
+.commerce-header .search-box input {
   min-width: 0 !important;
   flex: 1 1 auto !important;
   color: var(--gc-texto, var(--tienda-texto, #071a33)) !important;
   background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
   caret-color: var(--gc-primario, var(--tienda-primario, #0d6efd)) !important;
 }
-:where(.commerce-header .search-box input)::placeholder {
+.commerce-header .search-box input::placeholder {
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #64748b)) !important;
 }
-:where(.commerce-header .search-box button) {
+.commerce-header .search-box button {
   flex: 0 0 50px !important;
   color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
   background: var(--gc-primario, var(--tienda-primario, #0d6efd)) !important;
 }
-:where(.commerce-header [data-gesicomm-search-close]) {
+.commerce-header .search-box button[type="submit"] {
+  display: grid !important;
+  place-items: center !important;
+  font-size: 0 !important;
+}
+.commerce-header .search-box [data-gesicomm-search-close] {
   display: none !important;
 }
-:where(.commerce-header .search-wrap.is-open) {
+.commerce-header .search-wrap.is-open {
   z-index: 80 !important;
 }
-:where(.commerce-header [data-gesicomm-search-results]) {
+.commerce-header [data-gesicomm-search-results] {
   position: absolute !important;
   top: calc(100% + 60px) !important;
-  right: 0 !important;
+  right: 28px !important;
   z-index: 69 !important;
   width: min(360px, calc(100vw - 40px)) !important;
   max-height: min(360px, calc(100vh - 120px)) !important;
@@ -1981,13 +2022,13 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   border-radius: 12px !important;
   box-shadow: 0 18px 45px color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #082947)) 20%, transparent) !important;
 }
-:where(.commerce-header [data-gesicomm-search-results][hidden]) {
+.commerce-header [data-gesicomm-search-results][hidden] {
   display: none !important;
 }
-:where(.commerce-header [data-gesicomm-search-results]:empty) {
+.commerce-header [data-gesicomm-search-results]:empty {
   display: none !important;
 }
-:where(.commerce-header .search-result-item) {
+.commerce-header .search-result-item {
   display: grid !important;
   grid-template-columns: 46px minmax(0, 1fr) !important;
   align-items: center !important;
@@ -2002,11 +2043,11 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   text-align: left !important;
   cursor: pointer !important;
 }
-:where(.commerce-header .search-result-item:hover, .commerce-header .search-result-item:focus-visible) {
+.commerce-header .search-result-item:hover, .commerce-header .search-result-item:focus-visible {
   background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #0d6efd)) 11%, var(--gc-superficie, #fff)) !important;
   outline: none !important;
 }
-:where(.commerce-header .search-result-thumb) {
+.commerce-header .search-result-thumb {
   width: 46px !important;
   height: 46px !important;
   border: 1px solid color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #0d6efd)) 24%, var(--tienda-linea, #e4eaf0)) !important;
@@ -2014,7 +2055,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   object-fit: cover !important;
   background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #0d6efd)) 6%, var(--gc-superficie, #fff)) !important;
 }
-:where(.commerce-header .search-result-name) {
+.commerce-header .search-result-name {
   display: block !important;
   overflow: hidden !important;
   color: var(--tienda-primario-texto, var(--gc-texto, #071a33)) !important;
@@ -2024,7 +2065,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
-:where(.commerce-header .search-result-meta) {
+.commerce-header .search-result-meta {
   display: block !important;
   margin-top: 3px !important;
   color: var(--tienda-destacado, var(--tienda-primario-texto, var(--gc-texto-suave, #64748b))) !important;
@@ -2154,9 +2195,11 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
     align-items: center !important;
     gap: 6px !important;
   }
-  :where(.commerce-header .brand-logo, .commerce-header [data-gesicomm-tienda="logo"]) {
-    width: min(var(--gc-logo-tamano, 76px), 42px) !important;
+  .commerce-header img.brand-logo,
+  .commerce-header img[data-gesicomm-tienda="logo"] {
+    width: auto !important;
     height: min(var(--gc-logo-tamano, 76px), 42px) !important;
+    max-width: min(calc(var(--gc-logo-tamano, 76px) * 3), 34vw) !important;
   }
   :where(.commerce-header [data-gesicomm-tienda="nombre"]) {
     margin-left: 8px !important;
@@ -2178,7 +2221,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
     justify-items: center !important;
     align-self: center !important;
   }
-  :where(.commerce-header .search-wrap) {
+  .commerce-header .search-wrap {
     position: relative !important;
     width: 36px !important;
     height: 40px !important;
@@ -2186,7 +2229,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
     place-items: center !important;
     align-self: center !important;
   }
-  :where(.commerce-header .search-toggle, .commerce-header .cart-button, .commerce-header .menu-toggle) {
+  .commerce-header .search-toggle, .commerce-header .cart-button, .commerce-header .menu-toggle {
     flex: 0 0 36px !important;
     align-self: center !important;
     display: grid !important;
@@ -2206,10 +2249,10 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
     -webkit-appearance: none !important;
     appearance: none !important;
   }
-  :where(.commerce-header .search-toggle) {
+  .commerce-header .search-toggle {
     font-size: 0 !important;
   }
-  :where(.commerce-header .search-toggle)::before {
+  .commerce-header .search-toggle::before {
     display: block !important;
     position: absolute !important;
     left: 50% !important;
@@ -2315,7 +2358,9 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   :where(.commerce-header .header-nav.is-open) {
     transform: translateX(0) !important;
   }
-  :where(.commerce-header .search-wrap.is-open .search-box, .commerce-header .search-wrap.is-open form.search-box) {
+  .commerce-header .search-wrap.is-open .search-box:not([hidden]),
+  .commerce-header .search-wrap.is-open form.search-box:not([hidden]),
+  .commerce-header .search-wrap.is-open #gesicomm-search-panel.search-box:not([hidden]) {
     position: fixed !important;
     top: calc(env(safe-area-inset-top, 0px) + var(--gc-trust-bar-alto, 0px) + var(--gc-header-alto, 64px) + 8px) !important;
     right: 12px !important;
@@ -2326,14 +2371,14 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
     z-index: 95 !important;
     border-radius: 14px !important;
   }
-  :where(.commerce-header .search-wrap.is-open)::before {
+  .commerce-header .search-wrap.is-open::before {
     position: fixed !important;
     inset: 0 !important;
     z-index: 90 !important;
     background: rgba(2, 6, 23, .48) !important;
     content: "" !important;
   }
-  :where(.commerce-header [data-gesicomm-search-close]) {
+  .commerce-header .search-box [data-gesicomm-search-close] {
     display: grid !important;
     flex: 0 0 44px !important;
     width: 44px !important;
@@ -2341,8 +2386,9 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
     color: var(--gc-texto, #10202f) !important;
     background: transparent !important;
     border: 0 !important;
+    font-size: 20px !important;
   }
-  :where(.commerce-header .search-wrap.is-open [data-gesicomm-search-results]) {
+  .commerce-header .search-wrap.is-open [data-gesicomm-search-results] {
     position: fixed !important;
     left: 12px !important;
     right: 12px !important;

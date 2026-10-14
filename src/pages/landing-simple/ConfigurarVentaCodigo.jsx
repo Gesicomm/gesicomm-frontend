@@ -398,7 +398,9 @@ function normalizarEncabezadoInicio(encabezado = {}) {
   return {
     mostrar_logo: encabezado.mostrar_logo !== false,
     mostrar_nombre: encabezado.mostrar_nombre !== false,
-    logo_tamano: limitarNumero(encabezado.logo_tamano, 28, 128, ENCABEZADO_INICIO_DEFAULT.logo_tamano),
+    logo_tamano: encabezado.logo_tamano == null || encabezado.logo_tamano === ''
+      ? ENCABEZADO_INICIO_DEFAULT.logo_tamano
+      : limitarNumero(encabezado.logo_tamano, 28, 128, ENCABEZADO_INICIO_DEFAULT.logo_tamano),
     logo_rotacion: limitarNumero(encabezado.logo_rotacion, -180, 180, ENCABEZADO_INICIO_DEFAULT.logo_rotacion),
     logo_posicion: encabezado.logo_posicion === 'centro' ? 'centro' : ENCABEZADO_INICIO_DEFAULT.logo_posicion,
     variante: VARIANTES_ENCABEZADO.includes(encabezado.variante) ? encabezado.variante : ENCABEZADO_INICIO_DEFAULT.variante,
@@ -6362,7 +6364,6 @@ function Miniatura({ item }) {
     ? <img src={src} alt="" className="w-10 h-10 rounded-lg object-cover bg-surface-2 shrink-0" loading="lazy" />
     : <span className="w-10 h-10 rounded-lg bg-surface-2 shrink-0" />;
 }
-
 
 
 

@@ -1280,6 +1280,67 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     expect(document.activeElement).toBe(input);
   });
 
+  it.each(['inicio', 'catalogo', 'categoria', 'producto', 'checkout'])('respeta el nombre oculto y el menú completo en preview y publicada: %s', vista => {
+    const venta = { inicio: {
+      encabezado: { mostrar_nombre: false, logo_tamano: 100 },
+      menu_links: ['INICIO', 'PRODUCTOS', 'PROMOCIONES', 'NOSOTROS', 'CONTACTO'].map((texto, i) => ({ texto, destino: i === 1 ? '/catalogo' : '#inicio', visible: true })),
+    } };
+    const versiones = [
+      datosRuntimePreview({ tienda: { nombre: 'Llevalofacil' }, venta, vista }),
+      datosRuntimePublico({ tienda: { nombre: 'Llevalofacil' }, content: { venta } }, null, null, { vista }),
+    ];
+    for (const datosVersion of versiones) {
+      const { document, dom } = montar(PLANTILLA_INICIO, datosVersion);
+      expect(document.querySelector('.commerce-header [data-gesicomm-tienda="nombre"]').style.display).toBe('none');
+      expect([...document.querySelectorAll('#nav-links a')].map(a => a.textContent)).toEqual(['INICIO', 'PRODUCTOS', 'PROMOCIONES', 'NOSOTROS', 'CONTACTO']);
+      dom.window.close();
+    }
+  });
+
+  it('recupera la lupa en un encabezado guardado que solo trae el formulario', () => {
+    const codigo = {
+      html: '<header class="commerce-header aliba-encabezado"><div class="header-main"><div class="header-actions"><div class="search-wrap"><form id="gesicomm-search-panel" class="search-box"><input type="search" data-gesicomm-buscar><button type="submit">Buscar</button></form></div></div></div></header>',
+      css: '.aliba-encabezado #gesicomm-search-panel.search-box{display:flex!important;position:relative!important;inset:auto!important}',
+      js: '',
+    };
+    const { document, click, dom } = montar(codigo, datos);
+    const panel = document.querySelector('#gesicomm-search-panel');
+    const toggle = document.querySelector('[data-gesicomm-search-toggle]');
+    expect(toggle).toBeTruthy();
+    expect(toggle.getAttribute('aria-controls')).toBe(panel.id);
+    expect(panel.hidden).toBe(true);
+    click('[data-gesicomm-search-toggle]');
+    expect(panel.hidden).toBe(false);
+    expect(document.activeElement).toBe(panel.querySelector('input'));
+    click('[data-gesicomm-search-toggle]');
+    expect(panel.hidden).toBe(true);
+    dom.window.close();
+  });
+
+  it.each([null, '', undefined])('usa el tamaño predeterminado del logo cuando el valor guardado es %s', logo_tamano => {
+    const { document, dom } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: { inicio: { encabezado: { logo_tamano } } },
+    });
+    expect(document.querySelector('.commerce-header').style.getPropertyValue('--gc-logo-tamano')).toBe('76px');
+    dom.window.close();
+  });
+
+  it('conserva el tamaño elegido para el logo al actualizar los datos del preview', () => {
+    const { document, window, dom } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: { inicio: { encabezado: { logo_tamano: 128 } } },
+    });
+    const header = document.querySelector('.commerce-header');
+    expect(header.style.getPropertyValue('--gc-logo-tamano')).toBe('128px');
+    window.dispatchEvent(new window.MessageEvent('message', {
+      source: window,
+      data: { tipo: 'gesicomm:datos', datos: { ...datos, venta: { inicio: { encabezado: { logo_tamano: 100 } } } } },
+    }));
+    expect(header.style.getPropertyValue('--gc-logo-tamano')).toBe('100px');
+    dom.window.close();
+  });
+
   it('abre el buscador debajo de la lupa para no tapar el encabezado', () => {
     const { document } = montar(PLANTILLA_INICIO, datos);
     const estilos = [...document.querySelectorAll('style')].map(el => el.textContent).join('\n');

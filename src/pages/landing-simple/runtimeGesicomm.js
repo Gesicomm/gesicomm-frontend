@@ -1298,7 +1298,7 @@ export function runtimeGesicomm() {
 
   function encabezadoConfig() {
     var e = inicioConfig().encabezado || {};
-    var tamano = Number(e.logo_tamano);
+    var tamano = e.logo_tamano == null || e.logo_tamano === '' ? NaN : Number(e.logo_tamano);
     var rotacion = Number(e.logo_rotacion);
     // "embebido" superpone el header a la FOTO del banner del Inicio — fuera
     // de esa página (categoría, producto, checkout) no hay banner detrás, así
@@ -2874,6 +2874,18 @@ export function runtimeGesicomm() {
     var wrap = document.querySelector('.commerce-header .search-wrap');
     var toggle = wrap && wrap.querySelector('[data-gesicomm-search-toggle]');
     var panel = wrap && (wrap.querySelector('#gesicomm-search-panel') || wrap.querySelector('.search-box'));
+    // Diseños guardados pueden traer solo el formulario, sin el botón que
+    // lo despliega. Se recupera el control sin reemplazar el HTML de la tienda.
+    if (wrap && panel && !toggle) {
+      toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'search-toggle';
+      toggle.setAttribute('data-gesicomm-search-toggle', '');
+      toggle.setAttribute('aria-label', 'Buscar');
+      if (!panel.id) panel.id = 'gesicomm-search-panel';
+      toggle.setAttribute('aria-controls', panel.id);
+      wrap.insertBefore(toggle, panel);
+    }
     if (!toggle || !panel || toggle.getAttribute('data-gesicomm-search-ready') === 'true') return;
     toggle.setAttribute('data-gesicomm-search-ready', 'true');
     if (!panel.querySelector('[data-gesicomm-search-close]')) {
