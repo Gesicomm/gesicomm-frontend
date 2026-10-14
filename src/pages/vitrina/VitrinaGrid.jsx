@@ -9,6 +9,7 @@ import {
 import { productService } from '../../services/productService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
+import { compactarItemsLanding } from '../../lib/landingItems';
 import CuponesModal from './CuponesModal';
 import CargaMasivaProductosModal from '../productos/CargaMasivaProductosModal';
 import CurrencyInput from '../../components/CurrencyInput';
@@ -520,17 +521,9 @@ export default function VitrinaGrid() {
     setErrorGenerarLanding(null);
     const arrayItems = Array.from(seleccionados).map(k => {
       const [tipo, id] = k.split(':');
-      const item = seleccionadosData.get(k) || items.find(i => i.tipo === tipo && Number(i.id) === Number(id));
       return {
         tipo,
         referencia_id: parseInt(id),
-        nombre: item?.nombre || '',
-        descripcion: item?.descripcion || '',
-        categoria: item?.categoria || '',
-        imagen: item?.imagen || null,
-        precio_efectivo: item?.precio_efectivo ?? item?.precio_usuario ?? item?.precio_total ?? item?.precio_base ?? item?.precio ?? null,
-        precio_base: item?.precio_base ?? null,
-        productos_incluidos: item?.productos_incluidos || [],
       };
     });
 
@@ -550,7 +543,7 @@ export default function VitrinaGrid() {
       return;
     }
 
-    sessionStorage.setItem('gesicomm:prefilledLandingItems', JSON.stringify(arrayItems));
+    sessionStorage.setItem('gesicomm:prefilledLandingItems', JSON.stringify(compactarItemsLanding(arrayItems)));
     navigate('/landing');
   };
 

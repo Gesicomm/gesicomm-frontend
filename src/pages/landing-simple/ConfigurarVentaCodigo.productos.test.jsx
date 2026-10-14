@@ -16,9 +16,9 @@ const cargarOfertas = vi.fn().mockResolvedValue([]);
 const datosPreview = () => JSON.parse(screen.getAllByTestId('preview-datos')[0].textContent);
 afterEach(cleanup);
 
-function montar(inicial = null, catalogoFuente = catalogo) {
+function montar(inicial = null, catalogoFuente = catalogo, landing = null) {
   const confirmar = vi.fn().mockResolvedValue(true);
-  render(<ConfigurarVentaCodigo catalogo={catalogoFuente} inicial={inicial || { seleccion: catalogoFuente.productos }} onConfirmar={confirmar} cargarOfertas={cargarOfertas} onVolver={vi.fn()} />);
+  render(<ConfigurarVentaCodigo catalogo={catalogoFuente} inicial={inicial || { seleccion: catalogoFuente.productos }} landing={landing} onConfirmar={confirmar} cargarOfertas={cargarOfertas} onVolver={vi.fn()} />);
   fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
   return confirmar;
 }
@@ -243,5 +243,30 @@ describe('Presentación de los productos del lienzo', () => {
     expect(confirmar.mock.calls[0][0].venta.seleccion).toBe('todos');
     expect(confirmar.mock.calls[0][0].items).toHaveLength(1);
     expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ id: 2, precio_ancla: 1300000 });
+  });
+
+  it('usa el límite del backend para guardar 4000 y conserva una personalización al final', () => {
+    const grande = { productos: Array.from({ length: 4000 }, (_, i) => ({
+      tipo: 'producto', id: i + 1, slug: `prod-${i + 1}`, nombre: `Producto ${i + 1}`, precio_efectivo: 10000,
+    })), combos: [] };
+    const confirmar = montar({
+      seleccion: grande.productos,
+      venta: { configurado: true, seleccion: 'manual', presentacion_productos: { 'producto:4000': { v: 2, titulo_comercial: 'Último producto personalizado' } } },
+    }, grande, { limites: { items_manual: 5000 } });
+    const guardar = screen.getByRole('button', { name: 'Guardar' });
+    expect(guardar).toBeEnabled();
+    fireEvent.click(guardar);
+    expect(confirmar.mock.calls[0][0].items).toHaveLength(4000);
+    expect(confirmar.mock.calls[0][0].venta.presentacion_productos).toEqual({
+      'producto:4000': { v: 2, titulo_comercial: 'Último producto personalizado' },
+    });
+  });
+
+  it('mantiene 500 como límite si el backend no concede una ampliación', () => {
+    const grande = { productos: Array.from({ length: 501 }, (_, i) => ({ tipo: 'producto', id: i + 1, nombre: `Producto ${i + 1}` })), combos: [] };
+    const confirmar = montar(null, grande);
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled();
+    expect(screen.getByText(/Esta landing tiene más de 500 productos/)).toBeInTheDocument();
+    expect(confirmar).not.toHaveBeenCalled();
   });
 });

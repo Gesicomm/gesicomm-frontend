@@ -54,6 +54,21 @@ export const STAGE_LABELS = { comercial: "Proceso de confirmación", seguimiento
 // Al entregar, termina el seguimiento de envío y empieza Recompra.
 export const COMMERCIAL_STATUSES = ["Pendiente", "EnSeguimiento", "Cancelado"];
 export const SHIPPING_FOLLOWUP_STATUSES = ["Preparado", "Despachado", "Reprogramado"];
+export const RAHA_STATUS_META = {
+  creado: { label: 'Pendiente de confirmación', tone: 'warning' },
+  pendiente_confirmacion: { label: 'Pendiente de confirmación', tone: 'warning' },
+  cargado: { label: 'Preparado', tone: 'info' },
+  en_camino: { label: 'Despachado', tone: 'info' },
+  entregado: { label: 'Entregado', tone: 'success' },
+  devuelto: { label: 'Devuelto', tone: 'danger' },
+};
+
+export function estadoParaSeguimiento(envio) {
+  if (["Cancelado", "Perdido", "Devuelto", "Entregado"].includes(envio?.estado)) return envio.estado;
+  if (envio?.estado_seguimiento) return envio.estado_seguimiento;
+  if (!envio?.raha_logistica?.gestionado) return envio?.estado;
+  return ({ pendiente_confirmacion: "Pendiente", creado: "Pendiente", cargado: "Preparado", en_camino: "Despachado", entregado: "Entregado", devuelto: "Devuelto" })[envio.raha_logistica.status] || envio?.estado;
+}
 export const LOGISTIC_STATUSES = ["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"];
 export const RECOMPRA_STATUSES = ["Entregado"];
 export const RECOVERY_STATUSES = ["Devuelto", "Perdido"];
@@ -72,14 +87,15 @@ export function estadoActivadorEnvio(fase) {
 
 export function fasesDeSeguimientoParaPedido(flujo, envio) {
   if (flujo?.tipo !== "SEGUIMIENTO_ENVIO") return flujo?.fases || [];
+  const estado = estadoParaSeguimiento(envio);
   return (flujo.fases || []).map((fase) => {
     const activador = estadoActivadorEnvio(fase);
-    const superada = fase.superada || (activador === "Preparado" && ["Despachado", "Reprogramado"].includes(envio?.estado));
+    const superada = fase.superada || (activador === "Preparado" && ["Despachado", "Reprogramado"].includes(estado));
     const coincide = !activador || (activador === "Despachado"
-      ? ["Despachado", "Reprogramado"].includes(envio?.estado)
-      : activador === envio?.estado);
+      ? ["Despachado", "Reprogramado"].includes(estado)
+      : activador === estado);
     return { ...fase, estado_activador: activador, superada,
-      disponible: fase.disponible !== false && SHIPPING_FOLLOWUP_STATUSES.includes(envio?.estado) && coincide };
+      disponible: fase.disponible !== false && SHIPPING_FOLLOWUP_STATUSES.includes(estado) && coincide };
   });
 }
 
@@ -118,8 +134,8 @@ function estadoDeContacto(envio, etapa) {
  */
 export function estadoDePedido(envio, etapaVista) {
   if (["recompra", "recuperacion"].includes(etapaVista)) return estadoDeContacto(envio, etapaVista);
-  const etapa = etapaDePedido(envio);
-  const estado = envio?.estado;
+  const estado = envio?.raha_logistica?.gestionado ? estadoParaSeguimiento(envio) : envio?.estado;
+  const etapa = etapaDePedido({ ...envio, estado });
   if (etapa === "comercial" && estado !== "Cancelado") {
     return { etapa, id: "Pendiente", label: "Pendiente", tone: "warning" };
   }
@@ -151,7 +167,8 @@ export const KANBAN_CONTEXTS = {
   },
   seguimiento_envio: {
     label: "Seguimiento de envío",
-    lanes: [LANES.preparados, LANES.despachados].map((lane) => ({ ...lane, operational: true })),
+    lanes: [LANES.preparados, LANES.despachados].map((lane) => ({ ...lane, operational: true,
+      match: (envio) => lane.match({ ...envio, estado: estadoParaSeguimiento(envio) }) })),
   },
   logistica: {
     label: "Logística",

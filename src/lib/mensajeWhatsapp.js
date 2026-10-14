@@ -128,6 +128,65 @@ export function armarLinkWhatsappCarrito(contacto, items, pedido = {}) {
  * Genera un preview del mensaje de WhatsApp con datos de ejemplo.
  * Usado por el builder en /mi-tienda para mostrar cómo se va a ver.
  */
+const MENSAJE_CONFIRMACION_DEFAULT = 'Hola {cliente}, tu pedido #{pedido} ha sido confirmado. Lo vamos a preparar ahora.';
+
+/**
+ * Plantilla de confirmación de pedido: Tienda.mensaje_confirmacion_pedido,
+ * con {cliente}, {pedido}, {producto} y {total}. Se ofrece enviar por
+ * WhatsApp al confirmar un pedido en NuevoPedidoModal (pedido del usuario,
+ * 2026-10-14) — no se arma a partir de las otras plantillas (consulta de
+ * producto / general) porque esas no tienen contexto de pedido.
+ */
+function aplicarPlantillaConfirmacion(plantilla, datos) {
+  let msg = String(plantilla || MENSAJE_CONFIRMACION_DEFAULT);
+  if (datos.cliente != null) msg = msg.replace(/\{cliente\}/gi, datos.cliente);
+  if (datos.pedido != null) msg = msg.replace(/\{pedido\}/gi, datos.pedido);
+  if (datos.producto != null) msg = msg.replace(/\{producto\}/gi, datos.producto);
+  if (datos.total != null) msg = msg.replace(/\{total\}/gi, formatPrecio(datos.total));
+  return msg;
+}
+
+/** Preview de la confirmación de pedido en /mi-tienda, con datos de ejemplo. */
+export function generarPreviewMensajeConfirmacion(plantilla) {
+  return aplicarPlantillaConfirmacion(plantilla, {
+    cliente: 'Martín',
+    pedido: '1001',
+    producto: 'Chomba Lacoste Clásica',
+    total: 150000,
+  });
+}
+
+/**
+ * Mensaje de confirmación con los datos REALES del pedido que se acaba de
+ * confirmar — lo que arma el pop-up de NuevoPedidoModal antes de enviarlo
+ * (el operador todavía puede editarlo a mano ahí).
+ * @param {string} plantilla
+ * @param {{cliente, pedido, producto, total}} datos
+ */
+export function generarMensajeConfirmacion(plantilla, datos) {
+  return aplicarPlantillaConfirmacion(plantilla, datos);
+}
+
+/**
+ * El teléfono del CLIENTE (Envio.telefono) se carga en formato local
+ * paraguayo ("0981...") y no trae el código de país como sí lo exige
+ * Tienda.whatsapp — mismo criterio que normalizarTelefonoWhatsapp en
+ * PedidosTable.jsx. Sin esto, el link de confirmación le erraba el número a
+ * cualquier pedido cuyo teléfono no viniera ya con "595" adelante.
+ */
+function normalizarTelefonoCliente(tel) {
+  const limpio = soloDigitos(tel);
+  if (!limpio) return '';
+  return limpio.startsWith('0') ? `595${limpio.slice(1)}` : limpio;
+}
+
+/** Link de WhatsApp al CLIENTE a partir de un texto ya armado (el pop-up de confirmación permite editarlo antes de enviar). */
+export function armarLinkWhatsappTexto(telefonoCliente, texto) {
+  const numero = normalizarTelefonoCliente(telefonoCliente);
+  if (!numero || !String(texto || '').trim()) return null;
+  return `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+}
+
 export function generarPreviewMensaje(plantilla, opciones = {}) {
   const url = opciones.url || 'tu-tienda.gesicomm.com';
   const datos = {
@@ -155,4 +214,4 @@ export function generarPreviewMensaje(plantilla, opciones = {}) {
   return msg;
 }
 
-export { formatPrecio };
+export { formatPrecio, MENSAJE_CONFIRMACION_DEFAULT };

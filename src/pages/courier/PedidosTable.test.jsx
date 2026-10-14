@@ -232,7 +232,7 @@ test("Logística tiene el subestado Envíos RAHA y muestra solo estados RAHA sin
 
   await waitFor(() => expect(ultimoPedido()).toMatchObject({ logistica_raha: true }));
   const fila = await screen.findByText("Cliente 9").then((el) => el.closest("tr"));
-  expect(within(fila).getByText("En tránsito")).toBeInTheDocument();
+  expect(within(fila).getByText("Despachado")).toBeInTheDocument();
   expect(within(fila).queryByText(/Tienda RAHA/)).not.toBeInTheDocument();
   expect(within(fila).queryByText(/Enviado como/)).not.toBeInTheDocument();
   expect(within(fila).queryByRole("button", { name: /Confirmado|Preparado|Despachado|En tránsito/ })).not.toBeInTheDocument();
@@ -240,9 +240,9 @@ test("Logística tiene el subestado Envíos RAHA y muestra solo estados RAHA sin
 
   fireEvent.click(fila);
   const estados = await screen.findByLabelText("Timeline RAHA del pedido #MIT-2809");
-  expect(within(estados).getByText("Registrado")).toBeInTheDocument();
+  expect(within(estados).getByText("Pendiente de confirmación")).toBeInTheDocument();
   expect(within(estados).getByText("Despachado")).toBeInTheDocument();
-  expect(within(estados).getByText("En tránsito")).toBeInTheDocument();
+  expect(within(estados).getByText("Preparado")).toBeInTheDocument();
   expect(within(estados).getByText("Entregado")).toBeInTheDocument();
   expect(within(estados).queryByText("Devuelto")).not.toBeInTheDocument();
   expect(screen.queryByText("Estado actual RAHA")).not.toBeInTheDocument();
@@ -291,7 +291,7 @@ test("Logística RAHA muestra cuando falta la confirmación de RAHA", async () =
   fireEvent.click(await screen.findByRole("button", { name: /^Envíos RAHA/ }));
 
   const fila = await screen.findByText("Cliente 10").then((el) => el.closest("tr"));
-  expect(within(fila).getByText("Pendiente de confirmación RAHA")).toBeInTheDocument();
+  expect(within(fila).getByText("Pendiente de confirmación")).toBeInTheDocument();
   expect(within(fila).queryByText(/Tienda RAHA/)).not.toBeInTheDocument();
 });
 
@@ -517,6 +517,50 @@ test("Logística no muestra mensajes ni accesos a WhatsApp en tabla y Kanban", a
   expect(onAbrirSeguimiento).not.toHaveBeenCalled();
   expect(ultimoPedido()).toMatchObject({ limit: 100 });
   expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento");
+});
+
+test('pendiente RAHA se reúne con los pendientes comunes y espera la confirmación', async () => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, 'Confirmado', { raha_logistica: { gestionado: true, status: 'pendiente_confirmacion' } })], total: 1, totalPages: 1 });
+  getConteoPorEstado.mockResolvedValue({ Pendiente: 3, Preparado: 0, Despachado: 0, Reprogramado: 0 });
+  await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'comercial' });
+  const fila = screen.getByText('Cliente 1').closest('tr');
+  expect(within(fila).getByText('Pendiente de confirmación')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /^Pendiente\s*3$/ })).toBeInTheDocument();
+  expect(screen.queryByText('Pendiente de confirmación RAHA')).not.toBeInTheDocument();
+  expect(ultimoPedido()).toMatchObject({ seguimiento_comercial: true, estados: ['Pendiente', 'EnSeguimiento'] });
+  expect(ultimoPedido()).not.toHaveProperty('excluir_logistica_raha');
+  expect(getConteoPorEstado.mock.calls.at(-1)[0]).toMatchObject({ seguimiento_comercial: true });
+  expect(within(fila).getByText('Espera confirmación')).toBeInTheDocument();
+  expect(within(fila).queryByRole('button', { name: 'Preparar' })).not.toBeInTheDocument();
+});
+
+test('Kanban reúne el despachado RAHA en Preparados aunque el estado local siga Confirmado', async () => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, 'Confirmado', { raha_logistica: { gestionado: true, status: 'cargado' }, seguimiento: SEGUIMIENTO_ENVIO })], total: 1, totalPages: 1 });
+  await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'seguimiento_envio' });
+  fireEvent.click(screen.getByRole('button', { name: /Kanban/ }));
+  const columna = await screen.findByRole('region', { name: 'Columna Preparados' });
+  expect(within(columna).getByText('Cliente 1')).toBeInTheDocument();
+  expect(ultimoPedido()).toMatchObject({ seguimiento_comercial: true });
+});
+
+test.each([['cargado', 'Preparado', 'info'], ['en_camino', 'Despachado', 'violet']])('RAHA %s usa la etiqueta y color del estado común %s', async (status, label, tone) => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, 'Confirmado', { raha_logistica: { gestionado: true, status }, seguimiento: SEGUIMIENTO_ENVIO })], total: 1, totalPages: 1 });
+  await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'seguimiento_envio' });
+  const fila = screen.getByText('Cliente 1').closest('tr');
+  expect(fila).toHaveAttribute('data-followup-tone', tone);
+  expect(within(fila).getByText(label)).toBeInTheDocument();
+  const leyenda = screen.getByRole('region', { name: 'Estados de seguimiento de envío' });
+  expect(leyenda.querySelectorAll('.pt-status-chip')).toHaveLength(3);
+  expect(leyenda).not.toHaveTextContent('RAHA');
+});
+
+test('Recompra RAHA ofrece seguimiento aunque todavía quede una acción local de preparación', async () => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(1, 'Confirmado', { raha_logistica: { gestionado: true, status: 'entregado' }, accion_siguiente: VIEJO_CON_ABASTECIMIENTO.accion_siguiente })], total: 1, totalPages: 1 });
+  const { onAbrirSeguimiento } = await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'recompra' });
+  expect(screen.queryByRole('button', { name: 'Preparar' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Seguimiento', exact: true }));
+  expect(onAbrirSeguimiento).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+  expect(ultimoPedido()).toMatchObject({ estados: ['Entregado'], seguimiento_comercial: true });
 });
 
 test("seguimiento bloquea pedidos pendientes antiguos y su Kanban comienza en Preparado", async () => {

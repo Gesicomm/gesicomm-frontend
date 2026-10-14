@@ -5,7 +5,7 @@ import { seguimientoService } from "../../services/seguimiento.service";
 import { formatEspera } from "./variablesWhatsapp";
 import { numeroPedidoVisible } from "./pedidoNumero";
 import { formatGs } from "../../lib/courier";
-import { FLOW_TYPES, SHIPPING_FOLLOWUP_STATUSES, fasesDeSeguimientoParaPedido } from "./orderLifecycle";
+import { FLOW_TYPES, SHIPPING_FOLLOWUP_STATUSES, fasesDeSeguimientoParaPedido, estadoParaSeguimiento } from "./orderLifecycle";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -126,9 +126,10 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       // Arranca en el flujo de la fase que toca; si no hay, en el que ya se
       // venía usando con este pedido.
       const delaFase = faseQueToca ? lista.find(f => (f.fases || []).some(x => x.id === faseQueToca)) : null;
-      const tipoActual = SHIPPING_FOLLOWUP_STATUSES.includes(envio.estado) ? "SEGUIMIENTO_ENVIO"
-        : envio.estado === "Entregado" ? "ESCALAMIENTO_VENTAS"
-          : ["Devuelto", "Perdido"].includes(envio.estado) ? "RECUPERACION_CLIENTES" : null;
+      const estado = estadoParaSeguimiento(envio);
+      const tipoActual = SHIPPING_FOLLOWUP_STATUSES.includes(estado) ? "SEGUIMIENTO_ENVIO"
+        : estado === "Entregado" ? "ESCALAMIENTO_VENTAS"
+          : ["Devuelto", "Perdido"].includes(estado) ? "RECUPERACION_CLIENTES" : null;
       const deLaEtapa = tipoActual ? lista.filter(f => f.tipo === tipoActual) : lista;
       const enUso = deLaEtapa.find(f => (f.envios_totales || 0) > 0);
       const elegido = (delaFase && (!tipoActual || delaFase.tipo === tipoActual) ? delaFase : null)
@@ -159,7 +160,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
   const flujo = flujos.find(f => f.id === flujoId) || null;
   const fases = fasesDeSeguimientoParaPedido(flujo, envio);
-  const seguimientoBloqueado = flujo?.tipo === "SEGUIMIENTO_ENVIO" && !SHIPPING_FOLLOWUP_STATUSES.includes(envio?.estado);
+  const seguimientoBloqueado = flujo?.tipo === "SEGUIMIENTO_ENVIO" && !SHIPPING_FOLLOWUP_STATUSES.includes(estadoParaSeguimiento(envio));
   // La fase en la que está el pedido: la que pidió quien abrió el panel
   // mientras no esté completada; si no, la siguiente a la más avanzada que
   // ya se completó. Así, al marcar una como enviada, "Toca ahora" pasa sola
@@ -278,7 +279,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
   if (!open || !envio) return null;
 
   const { cliente, productos } = contextoDelPedido(envio);
-  const porConfirmar = ["Pendiente", "EnSeguimiento"].includes(envio.estado);
+  const porConfirmar = !envio.raha_logistica?.gestionado && ["Pendiente", "EnSeguimiento"].includes(envio.estado);
   const opcionesFlujo = flujos.map(f => ({ value: f.id, label: nombreVisibleDelFlujo(f) }));
   const confirmarPedidoCta = porConfirmar && onConfirmarPedido ? (
     <div style={{

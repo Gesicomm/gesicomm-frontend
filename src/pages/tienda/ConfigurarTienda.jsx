@@ -14,7 +14,7 @@ import { tiendaService } from '../../services/tiendaService';
 import { planesService } from '../../services/planesService';
 import { useDebounce } from '../../hooks/useDebounce';
 import { getMediaUrl } from '../../services/api';
-import { generarPreviewMensaje, generarPreviewMensajeGeneral } from '../../lib/mensajeWhatsapp';
+import { generarPreviewMensaje, generarPreviewMensajeGeneral, generarPreviewMensajeConfirmacion, MENSAJE_CONFIRMACION_DEFAULT } from '../../lib/mensajeWhatsapp';
 import { listaFuentes, typographyStyle } from '../../lib/typography';
 import PagoParConfig from './PagoParConfig';
 import SpeedboxConfig from './SpeedboxConfig';
@@ -49,6 +49,8 @@ const FORM_INICIAL = {
   mensaje_contacto: 'Hola, me interesa {producto}',
   // Vacío = el lienzo manda "Hola, quiero hacer una consulta."
   mensaje_consulta_general: '',
+  // Vacío = NuevoPedidoModal usa MENSAJE_CONFIRMACION_DEFAULT al ofrecer el popup.
+  mensaje_confirmacion_pedido: '',
   nombre_contacto: '',
   canal_contacto: 'whatsapp',
   email: '',
@@ -138,6 +140,14 @@ const VARIABLES_MENSAJE_GENERAL = [
 ];
 
 const MENSAJE_GENERAL_PLACEHOLDER = 'Hola, quiero hacer una consulta.';
+
+// El pedido ya existe: variables de ESE pedido, no del catálogo.
+const VARIABLES_CONFIRMACION_PEDIDO = [
+  { variable: '{cliente}', desc: 'Nombre del cliente', ejemplo: 'Martín' },
+  { variable: '{pedido}', desc: 'Número de pedido', ejemplo: '1001' },
+  { variable: '{producto}', desc: 'Producto(s) del pedido', ejemplo: 'Chomba Lacoste Clásica' },
+  { variable: '{total}', desc: 'Total del pedido', ejemplo: 'Gs 150.000' },
+];
 
 /**
  * Una plantilla de WhatsApp (textarea + variables + burbuja de preview).
@@ -230,6 +240,7 @@ export default function ConfigurarTienda() {
   const ultimaConsulta = useRef(0);
   const textareaRef = useRef(null);
   const textareaGeneralRef = useRef(null);
+  const textareaConfirmacionRef = useRef(null);
 
   // El logo va por su propio endpoint (multipart) y se guarda al instante,
   // independiente de "Guardar cambios".
@@ -288,6 +299,7 @@ export default function ConfigurarTienda() {
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
           mensaje_consulta_general: data.mensaje_consulta_general || '',
+          mensaje_confirmacion_pedido: data.mensaje_confirmacion_pedido || '',
           nombre_contacto: data.nombre_contacto || '',
           canal_contacto: data.canal_contacto || 'whatsapp',
           email: data.email || data.email_contacto || '',
@@ -539,6 +551,10 @@ export default function ConfigurarTienda() {
   const previewMensajeGeneral = useMemo(() =>
     generarPreviewMensajeGeneral(form.mensaje_consulta_general, { url: urlPublica }),
   [form.mensaje_consulta_general, urlPublica]);
+
+  const previewMensajeConfirmacion = useMemo(() =>
+    generarPreviewMensajeConfirmacion(form.mensaje_confirmacion_pedido),
+  [form.mensaje_confirmacion_pedido]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -1331,8 +1347,8 @@ export default function ConfigurarTienda() {
 
                   <section className="tn-group">
                     <div className="tn-group-head">
-                      <h3>Mensajes de WhatsApp para consultas</h3>
-                      <p>Dos textos editables según desde dónde te escribe el cliente. Los pedidos usan otro mensaje con número, productos y total.</p>
+                      <h3>Mensajes de WhatsApp para consultas y pedidos</h3>
+                      <p>Tres textos editables: consulta de producto, consulta general y confirmación de pedido.</p>
                     </div>
                     <div className="tn-group-body tn-msg-plantillas">
                       <PlantillaWhatsapp
@@ -1359,6 +1375,19 @@ export default function ConfigurarTienda() {
                         urlPublica={urlPublica}
                         preview={previewMensajeGeneral}
                         ayudaVacio={`Si lo dejás vacío se envía “${MENSAJE_GENERAL_PLACEHOLDER}”`}
+                      />
+                      <PlantillaWhatsapp
+                        titulo="Confirmación de pedido"
+                        uso="Se ofrece enviar al confirmar un pedido en Gestión Comercial: un pop-up te deja mandarlo (o editarlo antes) con los datos de ese pedido."
+                        textareaRef={textareaConfirmacionRef}
+                        valor={form.mensaje_confirmacion_pedido}
+                        onChange={v => handleChange('mensaje_confirmacion_pedido', v)}
+                        placeholder={`Ej: ${MENSAJE_CONFIRMACION_DEFAULT}`}
+                        variables={VARIABLES_CONFIRMACION_PEDIDO}
+                        onInsertar={v => insertarVariable(v, 'mensaje_confirmacion_pedido', textareaConfirmacionRef)}
+                        urlPublica={urlPublica}
+                        preview={previewMensajeConfirmacion}
+                        ayudaVacio={`Si lo dejás vacío se envía “${MENSAJE_CONFIRMACION_DEFAULT}”`}
                       />
                     </div>
                   </section>

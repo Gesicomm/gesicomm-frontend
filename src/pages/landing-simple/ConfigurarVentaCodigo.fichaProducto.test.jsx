@@ -62,12 +62,12 @@ describe('Los bloques de la ficha arrancan con los datos del producto', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     const payload = confirmar.mock.calls[0][0];
-    const guardado = payload.venta.presentacion_productos['producto:1'];
+    const guardado = payload.venta.presentacion_productos['producto:1'] || {};
     ['beneficios', 'confianza', 'opiniones', 'preguntas', 'incluye_pedido'].forEach(campo => expect(guardado).not.toHaveProperty(campo));
     // Ficha v2: lo que el comercio no tocó no viaja (ni siquiera vacío), así
     // sigue valiendo el texto del producto y un '' queda para "lo borré".
     ['insignia_principal', 'opiniones_titulo', 'urgencia_titulo'].forEach(campo => expect(guardado).not.toHaveProperty(campo));
-    expect(guardado.v).toBe(2);
+    expect(payload.venta.presentacion_productos).not.toHaveProperty('producto:1');
     expect(payload.items[0]).not.toHaveProperty('ficha_datos');
   });
 

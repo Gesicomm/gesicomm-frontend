@@ -94,6 +94,48 @@ const FLUJO_ENVIO = {
   ],
 };
 
+test.each([['cargado', 301, 'Pedido confirmado'], ['en_camino', 302, 'Pedido despachado']])('RAHA %s abre y completa la fase común correspondiente', async (status, faseId, nombre) => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{
+    ...FLUJO_ENVIO, envios_totales: 0, fases: [
+      { id: 301, orden: 1, nombre: 'Pedido confirmado', disponible: faseId === 301, envios: 0, completada: false },
+      { id: 302, orden: 2, nombre: 'Pedido despachado', disponible: faseId === 302, envios: 0, completada: false },
+    ],
+  }]);
+  seguimientoService.crearContacto.mockResolvedValue({});
+  seguimientoService.completarFase.mockResolvedValue({});
+  render(<SeguimientoPanel open envio={pedido({ estado: 'Confirmado', raha_logistica: { gestionado: true, status } })} onClose={() => {}} />);
+  await screen.findByText(new RegExp(`Fase ${faseId === 301 ? 1 : 2} — ${nombre}`));
+  const abrir = screen.getAllByRole('button', { name: 'Abrir en WhatsApp' }).find(b => !b.disabled);
+  expect(abrir).toBeDefined();
+  fireEvent.click(abrir);
+  await waitFor(() => expect(seguimientoService.crearContacto).toHaveBeenCalledWith(50, expect.objectContaining({ fase_id: faseId })));
+  fireEvent.click(screen.getAllByRole('button', { name: 'Ya lo envié' }).find(b => !b.disabled));
+  await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, faseId));
+});
+
+test('RAHA pendiente no habilita avisos de preparado ni despachado aunque vengan disponibles', async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{ ...FLUJO_ENVIO, fases: [
+    { id: 301, orden: 1, nombre: 'Pedido confirmado', disponible: true, envios: 0, completada: false },
+    { id: 302, orden: 2, nombre: 'Pedido despachado', disponible: true, envios: 0, completada: false },
+  ] }]);
+  render(<SeguimientoPanel open envio={pedido({ estado: 'Confirmado', raha_logistica: { gestionado: true, status: 'pendiente_confirmacion' } })} onClose={() => {}} />);
+  await screen.findByText(/Fase 1 — Pedido confirmado/);
+  for (const boton of screen.getAllByRole('button', { name: 'Abrir en WhatsApp' })) expect(boton).toBeDisabled();
+  expect(seguimientoService.crearContacto).not.toHaveBeenCalled();
+});
+
+test('un entregado RAHA abre Recompra aunque el estado local aún sea Despachado', async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([FLUJO_ENVIO, {
+    id: 40, tipo: 'ESCALAMIENTO_VENTAS', nombre: 'Escalamiento de ventas', predeterminado: true,
+    fases: [{ id: 401, orden: 1, nombre: '¿Cómo te fue?', disponible: true, completada: false, envios: 0 }],
+  }]);
+  render(<SeguimientoPanel open envio={pedido({ estado: 'Despachado', raha_logistica: { gestionado: true, status: 'entregado' } })} onClose={() => {}} />);
+  await screen.findByText(/Fase 1 — ¿Cómo te fue/);
+  expect(screen.getByText('Escalamiento de ventas')).toBeInTheDocument();
+  expect(screen.queryByText(/Fase 7 — Aviso custom/)).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Abrir en WhatsApp' })).toBeEnabled();
+});
+
 test("los avisos activados por logística esperan su estado y enviarlos no prepara ni despacha", async () => {
   const fases = [
     { id: 301, orden: 1, nombre: "Preparación", estado_activador: "Preparado", disponible: true, envios: 1, completada: false },

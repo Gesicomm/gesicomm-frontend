@@ -14,6 +14,7 @@ import { ResumenPedidoPanel } from "./ResumenPedidoPanel";
 import { HistorialPedidoPanel } from "./HistorialPedidoPanel";
 import { RendicionTab } from "./RendicionTab";
 import { SeguimientoPanel } from "./SeguimientoPanel";
+import { ConfirmacionPedidoWhatsappModal } from "./ConfirmacionPedidoWhatsappModal";
 import {
   getCouriers,
   getEnvios,
@@ -23,6 +24,7 @@ import {
   registrarDevolucion,
   registrarPerdida,
 } from "../../services/courierApi";
+import { tiendaService } from "../../services/tiendaService";
 import "./courier.css";
 
 // Abastecimiento ya no es una pestaña de acá: vive en su propia sección
@@ -88,6 +90,14 @@ export function ControlCourier({ etapaFija } = {}) {
   // El mensaje del flujo que le tocaba al pedido cuando se abrió el panel.
   const [faseSeguimientoId, setFaseSeguimientoId] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
+  // Plantilla + número de WhatsApp de la tienda, para el pop-up de
+  // confirmación de pedido (ver ConfirmacionPedidoWhatsappModal).
+  const [tiendaContacto, setTiendaContacto] = useState(null);
+  const [confirmacionWhatsapp, setConfirmacionWhatsapp] = useState(null);
+
+  useEffect(() => {
+    tiendaService.obtener().then(setTiendaContacto).catch(() => setTiendaContacto(null));
+  }, []);
 
   useEffect(() => {
     if (!permiteSeguimiento) {
@@ -189,6 +199,12 @@ export function ControlCourier({ etapaFija } = {}) {
     const actualizado = await updateEstadoEnvio(payload.id, payload);
     setEnvios(prev => prev.map(e => e.id === payload.id ? actualizado : e));
     setEnvioParaCompletar(null);
+    // payload.estado solo viaja cuando el modal de verdad confirmó el
+    // pedido (ver vaAConfirmar en NuevoPedidoModal) — no en una edición
+    // sobre un pedido que ya había avanzado antes.
+    if (payload.estado === "Confirmado") {
+      setConfirmacionWhatsapp(actualizado);
+    }
     cargarDatos();
     setRefrescarKey(k => k + 1);
   };
@@ -355,6 +371,14 @@ export function ControlCourier({ etapaFija } = {}) {
         deliveryZonas={deliveryZonas}
         onPrecioItemActualizado={() => setRefrescarKey((k) => k + 1)}
         onAbrirSeguimiento={permiteSeguimiento ? abrirSeguimiento : undefined}
+      />
+
+      {/* Pop-up para avisar por WhatsApp apenas se confirma un pedido */}
+      <ConfirmacionPedidoWhatsappModal
+        open={!!confirmacionWhatsapp}
+        envio={confirmacionWhatsapp}
+        tienda={tiendaContacto}
+        onClose={() => setConfirmacionWhatsapp(null)}
       />
 
       {/* Modal de Impresión de Pedidos */}

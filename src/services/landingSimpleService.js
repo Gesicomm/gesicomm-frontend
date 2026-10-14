@@ -1,4 +1,5 @@
 import API from './api';
+import { compactarItemsLanding } from '../lib/landingItems';
 
 // Servicio de "Landing simple" — 3 templates rígidos (Fitness/Beauty/Tech).
 // Mismo estilo que landingService.js, pero apuntando al módulo nuevo:
@@ -9,7 +10,7 @@ export const landingSimpleService = {
 
   listar: () => API.get('/mis-landings-simples').then(r => r.data),
   listarPaymentLogos: () => API.get('/mis-landings-simples/payment-logos').then(r => r.data),
-  crear: (templateId, colores = null, items = []) => API.post('/mis-landings-simples', { template_id: templateId, items, ...(colores ? { colores } : {}) }).then(r => r.data),
+  crear: (templateId, colores = null, items = []) => API.post('/mis-landings-simples', { template_id: templateId, items: compactarItemsLanding(items), ...(colores ? { colores } : {}) }).then(r => r.data),
   // `venta` es lo que se armó en el panel de ofertas del wizard (qué
   // ofertas se muestran, combos, recomendados, tipo de venta): viaja junto
   // con el prompt para que la primera generación ya traiga esos bloques.
@@ -29,12 +30,15 @@ export const landingSimpleService = {
   actualizarBloquesVenta: (id) =>
     API.post(`/mis-landings-simples/${id}/bloques-venta`).then(r => r.data),
   crearDesdeOnboarding: (templateSlug, items) =>
-    API.post('/mis-landings-simples/onboarding', { template_slug: templateSlug, items }).then(r => r.data),
+    API.post('/mis-landings-simples/onboarding', { template_slug: templateSlug, items: compactarItemsLanding(items) }).then(r => r.data),
   // Lienzo en blanco (kind='codigo'): no lleva template_id — el template
   // de código es uno solo y lo resuelve el backend por slug.
-  crearLienzoBlanco: (items = []) => API.post('/mis-landings-simples/lienzo-blanco', { items }).then(r => r.data),
+  crearLienzoBlanco: (items = []) => API.post('/mis-landings-simples/lienzo-blanco', { items: compactarItemsLanding(items) }).then(r => r.data),
   obtener: (id) => API.get(`/mis-landings-simples/${id}`).then(r => r.data),
-  actualizar: (id, payload) => API.put(`/mis-landings-simples/${id}`, payload).then(r => r.data),
+  actualizar: (id, payload) => API.put(`/mis-landings-simples/${id}`, {
+    ...payload,
+    ...(payload.items !== undefined ? { items: compactarItemsLanding(payload.items) } : {}),
+  }).then(r => r.data),
   eliminar: (id) => API.delete(`/mis-landings-simples/${id}`).then(r => r.data),
   cambiarEstado: (id, activo, opciones = {}) => API.patch(`/mis-landings-simples/${id}/estado`, {
     activo,

@@ -665,6 +665,7 @@ export default function ConfigurarVentaCodigo({
   onAbrirCodigo = null,
 }) {
   const ventaInicial = inicial?.venta || {};
+  const limiteProductosManual = Number(landing?.limites?.items_manual) || MAX_PRODUCTOS_MANUAL;
   const [subidasPendientes, setSubidasPendientes] = useState(0);
   async function subirImagenLanding(archivo) {
     setSubidasPendientes(n => n + 1);
@@ -914,7 +915,7 @@ export default function ConfigurarVentaCodigo({
       precio_ancla: Object.prototype.hasOwnProperty.call(anclas, claveItem(i)) ? (Number(anclas[claveItem(i)]) || null) : (i.precio_ancla ?? null),
     }));
   }, [esRegla, catalogoActual, modo, categorias, incluirCombos, tipo, manual, porClave, principal, presentacion, anclas]);
-  const excedeManual = !esRegla && seleccion.length > MAX_PRODUCTOS_MANUAL;
+  const excedeManual = !esRegla && seleccion.length > limiteProductosManual;
   const categoriasLandingDisponibles = useMemo(() => {
     const conteo = new Map();
     seleccion.forEach(i => { if (i.categoria) conteo.set(i.categoria, (conteo.get(i.categoria) || 0) + 1); });
@@ -1570,7 +1571,7 @@ export default function ConfigurarVentaCodigo({
     inicio_comercial: inicioActual,
     paquetes: confPaquetes,
     catalogo_filtros: filtrosCatalogo,
-    presentacion_productos: Object.fromEntries(Object.entries(presentacion).slice(0, 500).map(([key, value]) => [key, {
+    presentacion_productos: Object.fromEntries(Object.entries(presentacion).map(([key, value]) => [key, {
       v: 2,
       ...Object.fromEntries(CAMPOS_TEXTO_FICHA.filter(campo => value[campo] != null).map(campo => [campo, value[campo]])),
       ...(value.ficha_bloques && typeof value.ficha_bloques === 'object' ? { ficha_bloques: value.ficha_bloques } : {}),
@@ -1585,7 +1586,7 @@ export default function ConfigurarVentaCodigo({
       ...(Array.isArray(value.botones_contacto) ? { botones_contacto: value.botones_contacto.filter(b => b && (b.label || b.tipo || b.valor)).slice(0, 4) } : {}),
       ...(Array.isArray(value.opiniones) ? { opiniones: value.opiniones.filter(o => o && (o.nombre || o.comentario)).slice(0, 6) } : {}),
       ...(Array.isArray(value.preguntas) ? { preguntas: value.preguntas.filter(p => p && (p.pregunta || p.respuesta)).slice(0, 10) } : {}),
-    }])),
+    }]).filter(([, value]) => Object.keys(value).some(key => key !== 'v')).slice(0, 500)),
     // El producto que abre la landing en "Directo en un producto" (con una
     // regla no hay items guardados que lo pongan primero).
     principal_id: abrirEn === 'producto'
@@ -1912,7 +1913,7 @@ export default function ConfigurarVentaCodigo({
   // Lo que impide guardar, dicho como qué falta hacer.
   const bloqueo = (() => {
     if (modo === 'categoria' && !categorias.size) return 'Elegí al menos una categoría.';
-    if (excedeManual) return `Esta landing tiene más de ${MAX_PRODUCTOS_MANUAL} productos. Reducí la selección desde Productos.`;
+    if (excedeManual) return `Esta landing tiene más de ${limiteProductosManual} productos. Reducí la selección desde Productos.`;
     if (esRegla && seleccion.filter(i => i.precio_ancla != null || i.etiqueta || i.envio_incluido || i.mostrar_en_inicio === false || i.cta_texto || i.urgencia_texto || i.titulo_comercial || i.mensaje_comercial || i.insignia_principal || i.insignia_secundaria).length > MAX_PRODUCTOS_MANUAL) return `Podés personalizar hasta ${MAX_PRODUCTOS_MANUAL} productos; el resto sigue entrando con la configuración del catálogo.`;
     return null;
   })();
@@ -6364,8 +6365,6 @@ function Miniatura({ item }) {
     ? <img src={src} alt="" className="w-10 h-10 rounded-lg object-cover bg-surface-2 shrink-0" loading="lazy" />
     : <span className="w-10 h-10 rounded-lg bg-surface-2 shrink-0" />;
 }
-
-
 
 
 

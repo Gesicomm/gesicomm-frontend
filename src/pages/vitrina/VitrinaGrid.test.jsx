@@ -481,6 +481,28 @@ describe('VitrinaGrid Component', () => {
     window.history.replaceState(null, '', '/');
   });
 
+  it('publica la selección de 4000 desde Vitrina guardando solo sus referencias', async () => {
+    sessionStorage.clear();
+    const productos = Array.from({ length: 4000 }, (_, i) => ({
+      id: i + 1, tipo: 'producto', nombre: `Producto volumen ${i + 1}`,
+      descripcion: 'Descripción extensa '.repeat(100), imagen: 'https://cdn.test/foto.jpg', precio_base: 50000,
+    }));
+    vitrinaService.catalogoPaginado.mockImplementation(async filtros => ({
+      items: filtros.limit === 4000 ? productos : productos.slice(0, 10),
+      total: 4000, totalPages: 400, categorias: [], proveedores: [],
+    }));
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto volumen 1');
+    fireEvent.click(screen.getByRole('button', { name: /Seleccionar todo/i }));
+    await waitFor(() => expect(within(screen.getByRole('region', { name: 'Productos seleccionados' })).getByText('4000')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Publicar productos en la web/i }));
+    const guardados = JSON.parse(sessionStorage.getItem('gesicomm:prefilledLandingItems'));
+    expect(guardados).toHaveLength(4000);
+    expect(guardados.at(-1)).toEqual({ tipo: 'producto', referencia_id: 4000 });
+    expect(new TextEncoder().encode(JSON.stringify(guardados)).length).toBeLessThan(200 * 1024);
+    sessionStorage.clear();
+  });
+
   it('Cambiar precios sin selección abre el catálogo completo', async () => {
     renderWithRouter(<VitrinaGrid />);
     await screen.findByText('Producto de Prueba');

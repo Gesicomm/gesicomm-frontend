@@ -21,6 +21,8 @@ import {
   STAGE_FILTERS,
   STAGE_LABELS,
   estadoDePedido,
+  estadoParaSeguimiento,
+  RAHA_STATUS_META,
   paymentLine,
   esPagoAnticipado,
 } from "./orderLifecycle";
@@ -94,26 +96,11 @@ const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", 
 const SEGUIMIENTO_TONE = { Preparado: "info", Despachado: "violet", Reprogramado: "warning" };
 
 function tonoSeguimiento(envio) {
-  if (envio.raha_logistica?.gestionado) {
-    const status = statusRahaActual(envio);
-    if (status === "cargado") return "violet";
-    if (status === "en_camino") return "teal";
-    return (RAHA_STATUS_META[status] || RAHA_STATUS_META.creado).tone;
-  }
-  return SEGUIMIENTO_TONE[envio.estado] || estadoDePedido(envio, "seguimiento_envio").tone;
+  return SEGUIMIENTO_TONE[estadoParaSeguimiento(envio)] || estadoDePedido(envio, "seguimiento_envio").tone;
 }
 
 const RAHA_BASE_STATUS_ORDER = ["creado", "cargado", "en_camino"];
 const RAHA_TERMINAL_STATUS_ORDER = ["entregado", "devuelto"];
-const RAHA_STATUS_META = {
-  creado: { label: "Registrado", tone: "info" },
-  pendiente_confirmacion: { label: "Pendiente de confirmación RAHA", tone: "warning" },
-  cargado: { label: "Despachado", tone: "info" },
-  en_camino: { label: "En tránsito", tone: "info" },
-  entregado: { label: "Entregado", tone: "success" },
-  devuelto: { label: "Devuelto", tone: "danger" },
-};
-
 const TRANSICIONES_VALIDAS_FRONTEND = {
   Pendiente: ['EnSeguimiento', 'Confirmado', 'Cancelado'],
   EnSeguimiento: ['Confirmado', 'Cancelado'],
@@ -417,14 +404,13 @@ function datosContextoRaha(logistica = {}, evento = {}) {
 }
 
 function RahaEstadoCell({ envio, etapa }) {
-  const status = statusRahaActual(envio);
-  const meta = RAHA_STATUS_META[status] || RAHA_STATUS_META.creado;
+  const estado = estadoDePedido(envio, etapa);
   return (
     <LifecycleCell
-      primary={meta.label}
-      secondary={null}
+      primary={estado.id === "Pendiente" ? "Pendiente de confirmación" : estado.label}
+      secondary="RAHA"
       alert={envio?.raha_logistica?.error || null}
-      tone={etapa === "seguimiento_envio" ? tonoSeguimiento(envio) : meta.tone}
+      tone={etapa === "seguimiento_envio" ? tonoSeguimiento(envio) : estado.tone}
     />
   );
 }
@@ -544,7 +530,7 @@ function LifecycleCell({ primary, secondary, alert, tone = "neutral" }) {
 // Confirmación muestra el estado comercial; Seguimiento de envío y Logística
 // muestran el operativo. Recompra muestra el escalamiento de ventas.
 function EstadoCell({ envio, etapa, onCambiarEstado }) {
-  if (["logistica", "seguimiento_envio"].includes(etapa) && envio?.raha_logistica?.gestionado) {
+  if (["comercial", "logistica", "seguimiento_envio"].includes(etapa) && envio?.raha_logistica?.gestionado) {
     return <RahaEstadoCell envio={envio} etapa={etapa} />;
   }
   const estado = estadoDePedido(envio, etapa);
@@ -639,7 +625,7 @@ function SeguimientoCell({ envio, onAbrir }) {
   const seg = envio.seguimiento;
   if (!seg) return <span className="pt-seg-vacio">—</span>;
   const estado = estadoDelSeguimiento(seg);
-  const bloqueado = seg.etapa === "SEGUIMIENTO_ENVIO" && !SHIPPING_FOLLOWUP_STATUSES.includes(envio.estado);
+  const bloqueado = seg.etapa === "SEGUIMIENTO_ENVIO" && !SHIPPING_FOLLOWUP_STATUSES.includes(estadoParaSeguimiento(envio));
   const EstadoIcono = estado.icono || Clock;
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "cliente";
   const cuerpo = (
@@ -699,8 +685,11 @@ const accionBtnStyle = {
 };
 
 function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen, onAccionSiguiente, onAbrirSeguimiento, onCambiarEstado, etapa }) {
-  if (["seguimiento_envio", "recuperacion"].includes(etapa)) {
-    const bloqueado = etapa === "seguimiento_envio" && !SHIPPING_FOLLOWUP_STATUSES.includes(envio.estado);
+  if (envio.raha_logistica?.gestionado && estadoParaSeguimiento(envio) === "Pendiente") {
+    return <span className="pt-seg-vacio">Espera confirmación</span>;
+  }
+  if (["seguimiento_envio", "recompra", "recuperacion"].includes(etapa)) {
+    const bloqueado = etapa === "seguimiento_envio" && !SHIPPING_FOLLOWUP_STATUSES.includes(estadoParaSeguimiento(envio));
     return (
       <button type="button" disabled={bloqueado} title={bloqueado ? "Disponible cuando logística marque el pedido Preparado" : undefined} style={{ ...accionBtnStyle, ...(bloqueado ? { opacity: 0.6, cursor: "not-allowed" } : {}) }} onClick={(e) => { e.stopPropagation(); onAbrirSeguimiento?.(envio); }}>
         <MessageCircle size={13} /> Seguimiento
@@ -876,6 +865,7 @@ export function PedidosTable({
     try {
       const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE };
       if (mostrarSeguimiento) payload.incluir_seguimiento = true;
+      if (!soloAbastecimiento && etapaActiva !== "logistica") payload.seguimiento_comercial = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (!soloAbastecimiento && etapaActiva === "logistica" && estado === TAB_RAHA_LOGISTICA_ID) {
         payload.logistica_raha = true;
@@ -885,7 +875,7 @@ export function PedidosTable({
         payload.estados = etapaActiva !== "recuperacion" && estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
           ? estadosDeFiltro(estado)
           : estadosEtapa;
-        if (["comercial", "logistica"].includes(etapaActiva)) payload.excluir_logistica_raha = true;
+        if (etapaActiva === "logistica") payload.excluir_logistica_raha = true;
       } else if (!soloAbastecimiento && estado && estado !== TODOS_ESTADOS_ID) {
         payload.estados = estadosDeFiltro(estado);
       }
@@ -909,9 +899,10 @@ export function PedidosTable({
     try {
       const payloadBase = { ...construirPayloadBase(f), limit: 100 };
       if (mostrarSeguimiento) payloadBase.incluir_seguimiento = true;
+      if (etapaActiva !== "logistica") payloadBase.seguimiento_comercial = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (estadosEtapa?.length) payloadBase.estados = estadosEtapa;
-      if (["comercial", "logistica"].includes(etapaActiva)) payloadBase.excluir_logistica_raha = true;
+      if (etapaActiva === "logistica") payloadBase.excluir_logistica_raha = true;
 
       const acumulado = [];
       let pageToLoad = 1;
@@ -948,7 +939,8 @@ export function PedidosTable({
   const cargarConteos = useCallback(async (f) => {
     try {
       const payload = construirPayloadBase(f, { incluirFiltroAbastecimiento: false });
-      if (!soloAbastecimiento && ["comercial", "logistica"].includes(etapaActiva)) payload.separar_logistica_raha = true;
+      if (!soloAbastecimiento && etapaActiva === "logistica") payload.separar_logistica_raha = true;
+      if (!soloAbastecimiento && etapaActiva !== "logistica") payload.seguimiento_comercial = true;
       const res = soloAbastecimiento
         ? await getConteoPorAbastecimiento(payload)
         : await getConteoPorEstado(payload);
