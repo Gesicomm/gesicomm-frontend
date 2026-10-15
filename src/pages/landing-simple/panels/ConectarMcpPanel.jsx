@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { landingSimpleService } from '../../../services/landingSimpleService';
+import { apiBaseURL } from '../../../utils/apiBase';
 
 export default function ConectarMcpPanel({ tienda, landing, onSincronizar }) {
   const [token, setToken] = useState('');
@@ -25,7 +26,11 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar }) {
 
   const landingId = landing?.id || '';
   const tiendaId = tienda?.id || landing?.tienda_id || '';
-  const apiUrl = window.location.origin ? `${window.location.origin}/api` : 'http://localhost:5000/api';
+  const apiUrl = (() => {
+    const base = apiBaseURL();
+    if (base && base.startsWith('http')) return base;
+    return window.location.origin ? `${window.location.origin}/api` : 'http://localhost:5000/api';
+  })();
   const mcpLocalPath = 'C:/Proyectos/Gesicom/packages/gesicomm-mcp/bin/cli.js';
 
   async function handleGenerarToken() {
