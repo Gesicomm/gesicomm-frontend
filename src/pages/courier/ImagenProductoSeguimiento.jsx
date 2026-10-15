@@ -12,13 +12,7 @@ export function ImagenProductoSeguimiento({ imagen, envioId, servicio }) {
 
   const cargarImagen = async () => {
     if (servicio.getImagenProducto) {
-      try {
-        return await servicio.getImagenProducto(envioId, imagen.item_id);
-      } catch (err) {
-        // Las imágenes externas se leen en el navegador, sin convertir el
-        // servidor en un proxy de URLs arbitrarias.
-        if (err.response?.status !== 422) throw err;
-      }
+      return servicio.getImagenProducto(envioId, imagen.item_id);
     }
     const respuesta = await fetch(url, { signal: AbortSignal.timeout(15000) });
     if (!respuesta.ok) throw new Error('No se pudo descargar la imagen.');
@@ -33,8 +27,14 @@ export function ImagenProductoSeguimiento({ imagen, envioId, servicio }) {
       await copiarImagen(cargarImagen);
       setCopiada(true);
     } catch (err) {
-      setError(err.message?.startsWith('Este navegador')
-        ? err.message : 'No se pudo copiar la imagen. Abrila y usá la opción Copiar imagen del navegador.');
+      let mensaje = err.response?.data;
+      if (mensaje instanceof Blob) {
+        try { mensaje = JSON.parse(await mensaje.text()); } catch { mensaje = null; }
+      }
+      setError(err.name === 'NotAllowedError'
+        ? 'El navegador bloqueó la copia. Permití el acceso al portapapeles para este sitio y volvé a intentar.'
+        : mensaje?.error || mensaje?.message || (err.message?.startsWith('Este navegador')
+          ? err.message : 'No se pudo copiar la imagen. Abrila y usá la opción Copiar imagen del navegador.'));
     } finally {
       setCopiando(false);
     }

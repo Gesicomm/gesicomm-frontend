@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Plus, Printer, HandCoins } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LayoutGrid, PackageCheck, Plus, Printer, HandCoins, MessageCircle } from "lucide-react";
 import { verificarSesion } from "../../utils/auth";
 import { PedidosTable } from "./PedidosTable";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
@@ -314,6 +314,13 @@ export function ControlCourier({ etapaFija } = {}) {
               <Printer size={16} />
               Imprimir Pedidos
             </button>
+
+            {permiteSeguimiento && ['usuario', 'administrador'].includes(usuarioActual?.rol) && (
+              <Link to="/pedidos/configuracion" className="courier-flow-action">
+                <MessageCircle size={22} strokeWidth={2.2} aria-hidden="true" />
+                Flujos de WhatsApp
+              </Link>
+            )}
 
             <button
               type="button"

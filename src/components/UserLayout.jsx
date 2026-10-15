@@ -58,7 +58,6 @@ const SIDEBAR_FALLBACK = [
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/inventario', label: 'Inventario / Ingresos', icono: 'PackageCheck', menuKey: 'inventario', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icono: 'Truck', menuKey: 'mis-abastecimientos', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/importada-de-china', label: 'Importada de China', icono: 'PackageSearch', menuKey: 'importada-de-china', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/pedidos/configuracion', label: 'Flujos de WhatsApp', icono: 'Settings', menuKey: 'pedidos-configuracion', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/mi-dashboard', label: 'Dashboard', icono: 'LayoutDashboard', menuKey: 'mi-dashboard', rolesPermitidos: ['usuario', 'administrador'] },
     { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/costos-gastos', label: 'Control financiero', icono: 'Receipt', menuKey: 'finanzas-costos-gastos', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/proveedores', label: 'Proveedores', icono: 'Truck', menuKey: 'finanzas-proveedores', rolesPermitidos: ['administrador'] },
@@ -239,7 +238,8 @@ const UserLayout = ({ children }) => {
   };
 
   const renderLink = (item) => {
-    const active = isActive(item.path) || (item.prefix && isActivePrefix(item.prefix));
+    const active = isActive(item.path) || (item.prefix && isActivePrefix(item.prefix))
+      || (item.path === '/mis-pedidos' && isActive('/pedidos/configuracion'));
     const menuKey = item.menuKey || item.path.replace('/', '');
     const bloqueo = checkBloqueo(menuKey);
     const danger = !bloqueo && item.danger;
@@ -338,6 +338,10 @@ const UserLayout = ({ children }) => {
     const modulosBase = progresoSidebar?.modulos === null ? SIDEBAR_FALLBACK : progresoSidebar.modulos;
     const grupos = modulosBase
       .filter((item) => item.contexto === contexto)
+      // La configuración de flujos se abre desde Gestión Comercial.
+      // Filtrar también el catálogo del servidor conserva la ubicación
+      // cuando una cuenta aún recibe el módulo anterior en el sidebar.
+      .filter((item) => (item.menuKey || item.menu_key) !== 'pedidos-configuracion' && item.path !== '/pedidos/configuracion')
       .filter(moduloEsVisible)
       .reduce((acc, item) => {
         const seccion = usuario?.rol === 'solo_pedidos' && item.menuKey === 'mis-pedidos'

@@ -47,12 +47,29 @@ test('sin soporte de portapapeles ofrece abrir la imagen y no descarga el archiv
   expect(servicio.getImagenProducto).not.toHaveBeenCalled();
 });
 
-test('las imágenes externas usan la descarga del navegador cuando el servidor devuelve 422', async () => {
-  const servicio = { getImagenProducto: vi.fn().mockRejectedValue({ response: { status: 422 } }) };
-  const fetchImagen = vi.fn(async () => ({ ok: true, blob: async () => png }));
+test('las imágenes externas se copian con el PNG del servidor sin depender del CORS del origen', async () => {
+  const servicio = { getImagenProducto: vi.fn().mockResolvedValue(png) };
+  const fetchImagen = vi.fn();
   vi.stubGlobal('fetch', fetchImagen);
   render(<ImagenProductoSeguimiento imagen={{ ...imagen, url: 'https://imagenes.example/clima.png' }} envioId={50} servicio={servicio} />);
   fireEvent.click(screen.getByRole('button', { name: `Copiar imagen de ${imagen.nombre}` }));
   await screen.findByRole('status');
-  expect(fetchImagen).toHaveBeenCalledWith('https://imagenes.example/clima.png', expect.any(Object));
+  expect(servicio.getImagenProducto).toHaveBeenCalledWith(50, 20);
+  expect(fetchImagen).not.toHaveBeenCalled();
+});
+
+test('muestra el motivo real del error del servidor y no confirma una copia fallida', async () => {
+  const servicio = { getImagenProducto: vi.fn().mockRejectedValue({ response: { data: { error: 'No se pudo descargar la imagen del producto.' } } }) };
+  render(<ImagenProductoSeguimiento imagen={imagen} envioId={50} servicio={servicio} />);
+  fireEvent.click(screen.getByRole('button', { name: `Copiar imagen de ${imagen.nombre}` }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo descargar la imagen del producto.');
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});
+
+test('distingue el bloqueo del portapapeles de un error en la descarga', async () => {
+  write.mockRejectedValue(new DOMException('Write permission denied', 'NotAllowedError'));
+  render(<ImagenProductoSeguimiento imagen={imagen} envioId={50} servicio={{ getImagenProducto: vi.fn().mockResolvedValue(png) }} />);
+  fireEvent.click(screen.getByRole('button', { name: `Copiar imagen de ${imagen.nombre}` }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('El navegador bloqueó la copia');
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
 });

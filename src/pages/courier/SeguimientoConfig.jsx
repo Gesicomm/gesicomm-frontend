@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, Loader2, Tag, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Edit2, Loader2, Tag, AlertCircle, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 import { seguimientoService } from "../../services/seguimiento.service";
 import { FlujosWhatsapp } from "./FlujosWhatsapp";
 
@@ -78,6 +79,9 @@ export function SeguimientoConfig() {
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1.5rem", color: "var(--color-fg)" }}>
       {!editandoFlujo && (
         <header style={{ marginBottom: "2rem" }}>
+          <Link to="/mis-pedidos" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--color-primary-text)', fontSize: '0.85rem', marginBottom: '1rem', textDecoration: 'none' }}>
+            <ArrowLeft size={15} /> Volver a Gestión Comercial
+          </Link>
           <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 0.5rem 0" }}>Flujos de WhatsApp</h1>
           <p style={{ color: "var(--color-fg-muted)", margin: 0 }}>
             Administra los flujos de mensajes de WhatsApp y las etiquetas de estado global.

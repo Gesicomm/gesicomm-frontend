@@ -122,6 +122,76 @@
   justify-content: flex-end;
 }
 
+.courier-header-actions > :is(button, a) {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 224px;
+  width: 224px;
+  height: 48px;
+  min-height: 48px;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.courier-header-actions > :is(button, a) svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.courier-flow-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 50px;
+  padding: 0.8rem 1.4rem;
+  border: 1px solid #066a3b;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #078449, #066a3b);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgb(6 106 59 / 22%), inset 0 1px 0 rgb(255 255 255 / 15%);
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.courier-flow-action svg { flex-shrink: 0; }
+
+@media (hover: hover) {
+  .courier-flow-action:hover {
+    background: linear-gradient(135deg, #08864a, #087d45);
+    color: #fff;
+    box-shadow: 0 7px 18px rgb(6 106 59 / 30%), inset 0 1px 0 rgb(255 255 255 / 18%);
+    transform: translateY(-2px);
+  }
+}
+
+.courier-flow-action:focus-visible {
+  outline: 3px solid var(--color-success);
+  outline-offset: 4px;
+}
+
+.courier-flow-action:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 5px rgb(6 106 59 / 22%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .courier-flow-action { transition: none; }
+  .courier-flow-action:hover { transform: none; }
+}
+
 /* Tabs Superiores */
 .courier-tabs {
   display: grid;
@@ -161,8 +231,9 @@
     justify-content: stretch;
   }
 
-  .courier-header-actions > button {
-    flex: 1 1 160px;
+  .courier-header-actions > :is(button, a) {
+    flex: 1 1 100%;
+    width: 100%;
     justify-content: center;
   }
 }
