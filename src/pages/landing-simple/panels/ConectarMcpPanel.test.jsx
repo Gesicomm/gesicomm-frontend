@@ -22,6 +22,7 @@ describe('ConectarMcpPanel', () => {
     expect(screen.getByText(/Claude Code \(CLI\)/i)).toBeInTheDocument();
     expect(screen.getByText(/OpenAI Codex \(CLI\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Claude Desktop/i)).toBeInTheDocument();
+    expect(screen.getByText(/Codex Desktop/i)).toBeInTheDocument();
   });
 
   it('permite generar un token y muestra el comando con el token', async () => {
@@ -45,10 +46,10 @@ describe('ConectarMcpPanel', () => {
     expect(screen.getByText(/jwt_mock_token_12345/i)).toBeInTheDocument();
   });
 
-  it('cambia entre clientes (Claude, Codex, Claude Desktop)', () => {
+  it('cambia entre clientes (Claude, Codex, Claude Desktop, Codex Desktop)', () => {
     render(<ConectarMcpPanel tienda={{ id: 5 }} landing={{ id: 12 }} />);
 
-    const tabCodex = screen.getByRole('button', { name: /OpenAI Codex/i });
+    const tabCodex = screen.getByRole('button', { name: /OpenAI Codex \(CLI\)/i });
     fireEvent.click(tabCodex);
 
     expect(screen.getByText(/codex mcp add gesicomm/i)).toBeInTheDocument();
@@ -57,6 +58,12 @@ describe('ConectarMcpPanel', () => {
     fireEvent.click(tabDesktop);
 
     expect(screen.getByText(/claude_desktop_config\.json/i)).toBeInTheDocument();
+
+    const tabCodexDesktop = screen.getByRole('button', { name: /Codex Desktop/i });
+    fireEvent.click(tabCodexDesktop);
+
+    expect(screen.getAllByText(/config\.toml/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/\[mcp_servers\.gesicomm\]/i)).toBeInTheDocument();
   });
 
   it('llama a onSincronizar al presionar el botón de sincronización', async () => {

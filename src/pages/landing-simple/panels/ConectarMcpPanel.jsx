@@ -19,13 +19,14 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar }) {
   const [cargandoToken, setCargandoToken] = useState(false);
   const [copiado, setCopiado] = useState('');
   const [error, setError] = useState('');
-  const [tabCliente, setTabCliente] = useState('claude'); // 'claude' | 'codex' | 'desktop'
+  const [tabCliente, setTabCliente] = useState('claude'); // 'claude' | 'desktop' | 'codex' | 'codex-desktop'
   const [sincronizando, setSincronizando] = useState(false);
+  const [modoDev, setModoDev] = useState(false);
 
   const landingId = landing?.id || '';
   const tiendaId = tienda?.id || landing?.tienda_id || '';
   const apiUrl = window.location.origin ? `${window.location.origin}/api` : 'http://localhost:5000/api';
-  const mcpScriptPath = 'C:/Proyectos/Gesicom/packages/gesicomm-mcp/bin/cli.js';
+  const mcpLocalPath = 'C:/Proyectos/Gesicom/packages/gesicomm-mcp/bin/cli.js';
 
   async function handleGenerarToken() {
     setError('');
@@ -64,14 +65,19 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar }) {
     }
   }
 
-  const comandoClaude = `claude mcp add gesicomm node ${mcpScriptPath} -e GESICOMM_API_URL=${apiUrl} -e GESICOMM_TOKEN=${token || '<TU_TOKEN>'} -e GESICOMM_LANDING_ID=${landingId}`;
-  const comandoCodex = `codex mcp add gesicomm --env GESICOMM_API_URL=${apiUrl} --env GESICOMM_TOKEN=${token || '<TU_TOKEN>'} --env GESICOMM_LANDING_ID=${landingId} -- node ${mcpScriptPath}`;
+  const comandoClaude = modoDev
+    ? `claude mcp add gesicomm node ${mcpLocalPath} -e GESICOMM_API_URL=${apiUrl} -e GESICOMM_TOKEN=${token || '<TU_TOKEN>'} -e GESICOMM_LANDING_ID=${landingId}`
+    : `claude mcp add gesicomm npx -y gesicomm-mcp -e GESICOMM_API_URL=${apiUrl} -e GESICOMM_TOKEN=${token || '<TU_TOKEN>'} -e GESICOMM_LANDING_ID=${landingId}`;
+
+  const comandoCodex = modoDev
+    ? `codex mcp add gesicomm --env GESICOMM_API_URL=${apiUrl} --env GESICOMM_TOKEN=${token || '<TU_TOKEN>'} --env GESICOMM_LANDING_ID=${landingId} -- node ${mcpLocalPath}`
+    : `codex mcp add gesicomm --env GESICOMM_API_URL=${apiUrl} --env GESICOMM_TOKEN=${token || '<TU_TOKEN>'} --env GESICOMM_LANDING_ID=${landingId} -- npx -y gesicomm-mcp`;
 
   const jsonDesktop = JSON.stringify({
     mcpServers: {
       gesicomm: {
-        command: 'node',
-        args: [mcpScriptPath],
+        command: modoDev ? 'node' : 'npx',
+        args: modoDev ? [mcpLocalPath] : ['-y', 'gesicomm-mcp'],
         env: {
           GESICOMM_API_URL: apiUrl,
           GESICOMM_TOKEN: token || '<TU_TOKEN>',
@@ -80,6 +86,26 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar }) {
       },
     },
   }, null, 2);
+
+  const tomlCodexDesktop = modoDev
+    ? `[mcp_servers.gesicomm]
+command = "node"
+args = ["${mcpLocalPath}"]
+enabled = true
+
+[mcp_servers.gesicomm.env]
+GESICOMM_API_URL = "${apiUrl}"
+GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"
+GESICOMM_LANDING_ID = "${landingId}"`
+    : `[mcp_servers.gesicomm]
+command = "npx"
+args = ["-y", "gesicomm-mcp"]
+enabled = true
+
+[mcp_servers.gesicomm.env]
+GESICOMM_API_URL = "${apiUrl}"
+GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"
+GESICOMM_LANDING_ID = "${landingId}"`;
 
   return (
     <div className="space-y-5 rounded-2xl border border-border bg-surface p-5 text-fg shadow-sm">
@@ -174,7 +200,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar }) {
         <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">2 · Conectar con tu Asistente</span>
 
         {/* Selector de Cliente */}
-        <div className="flex gap-2 border-b border-border pb-2">
+        <div className="flex flex-wrap gap-2 border-b border-border pb-2">
           <button
             type="button"
             onClick={() => setTabCliente('claude')}
@@ -188,17 +214,6 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar }) {
           </button>
           <button
             type="button"
-            onClick={() => setTabCliente('codex')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              tabCliente === 'codex'
-                ? 'bg-primary text-primary-fg'
-                : 'text-fg-muted hover:text-fg hover:bg-surface'
-            }`}
-          >
-            <Bot size={13} /> OpenAI Codex (CLI)
-          </button>
-          <button
-            type="button"
             onClick={() => setTabCliente('desktop')}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
               tabCliente === 'desktop'
@@ -207,6 +222,28 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar }) {
             }`}
           >
             <Code2 size={13} /> Claude Desktop
+          </button>
+          <button
+            type="button"
+            onClick={() => setTabCliente('codex')}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+              tabCliente === 'codex'
+                ? 'bg-primary text-primary-fg'
+                : 'text-fg-muted hover:text-fg hover:bg-surface'
+            }`}
+          >
+            <Terminal size={13} /> OpenAI Codex (CLI)
+          </button>
+          <button
+            type="button"
+            onClick={() => setTabCliente('codex-desktop')}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+              tabCliente === 'codex-desktop'
+                ? 'bg-primary text-primary-fg'
+                : 'text-fg-muted hover:text-fg hover:bg-surface'
+            }`}
+          >
+            <Bot size={13} /> Codex Desktop
           </button>
         </div>
 
@@ -266,6 +303,45 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar }) {
             </div>
           </div>
         )}
+
+        {tabCliente === 'codex-desktop' && (
+          <div className="space-y-2">
+            <p className="text-xs text-fg-muted">
+              Pegá esta configuración en tu archivo <code className="text-primary font-mono text-[11px]">~/.codex/config.toml</code> (en Windows: <code className="text-primary font-mono text-[11px]">%USERPROFILE%\.codex\config.toml</code>), o agregalo en la app desde <strong>Settings › MCP Servers</strong>:
+            </p>
+            <div className="relative">
+              <pre className="overflow-x-auto rounded-lg border border-border bg-surface p-3 font-mono text-xs text-fg whitespace-pre-wrap">
+                {tomlCodexDesktop}
+              </pre>
+              <button
+                type="button"
+                onClick={() => copiarTexto(tomlCodexDesktop, 'codex-desktop')}
+                className="absolute right-2 top-2 inline-flex items-center gap-1 rounded bg-surface border border-border px-2 py-1 text-[11px] font-semibold text-fg hover:border-border-strong"
+              >
+                {copiado === 'codex-desktop' ? <Check size={12} className="text-success" /> : <Copy size={12} />}
+                {copiado === 'codex-desktop' ? 'Copiado' : 'Copiar TOML'}
+              </button>
+            </div>
+            <p className="text-[11px] text-fg-muted flex items-center gap-1">
+              <Sparkles size={12} className="text-primary" />
+              <span>Tip: Si ya ejecutaste el comando de la pestaña <strong>OpenAI Codex (CLI)</strong>, Codex Desktop lo sincroniza automáticamente.</span>
+            </p>
+          </div>
+        )}
+
+        {/* Toggle para desarrollo local vs comando npx universal */}
+        <div className="flex items-center justify-between pt-2 border-t border-border/60">
+          <p className="text-[11px] text-fg-muted">
+            ⚡ Se ejecuta con <strong>npx</strong> directamente en cualquier computadora (Windows, Mac, Linux).
+          </p>
+          <button
+            type="button"
+            onClick={() => setModoDev(d => !d)}
+            className="text-[11px] text-fg-muted hover:text-fg underline ml-auto shrink-0"
+          >
+            {modoDev ? 'Cambiar a comando universal (npx)' : 'Ver comando con ruta local de archivo'}
+          </button>
+        </div>
       </div>
 
       {/* Qué pedirle a la IA */}
