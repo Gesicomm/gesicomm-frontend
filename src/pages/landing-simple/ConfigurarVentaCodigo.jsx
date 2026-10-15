@@ -21,6 +21,7 @@ import CodigoPreview from './CodigoPreview';
 import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado, marcarFichaPersonalizada, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
+import EditorColeccionesInicio from './EditorColeccionesInicio';
 import OrganizadorProductos, { BADGES_OFERTA, MAX_PRODUCTOS_CONTADOR, conEtiqueta, sinEtiqueta } from './OrganizadorProductos';
 import { conGlobalesHeredados } from './globalesCodigo';
 import { extraerFragmentoHtml, reemplazarFragmentoHtml, extraerSeccionCss, reemplazarSeccionCss, bindsDeTiendaPerdidos } from './seccionesCodigo';
@@ -593,6 +594,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       items: Array.isArray(productosCategoria.items) ? productosCategoria.items : [],
       limite: Number(productosCategoria.limite) > 0 ? Number(productosCategoria.limite) : 8,
       columnas: Math.max(1, Math.min(8, Math.floor(Number(productosCategoria.columnas) || 4))),
+      formato: productosCategoria.formato === 'carrusel' ? 'carrusel' : 'filas',
     },
     marca: {
       activo: marca.activo !== false,
@@ -609,6 +611,20 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       activo: testimoniosConfig.activo === true,
       items: testimoniosItems,
     },
+    // Bloque "Colecciones": null = la landing nunca lo configuró y se ve
+    // como siempre (categorías, tope del HTML). Ver normalizarColecciones.
+    colecciones: normalizarColeccionesInicio(inicio.colecciones),
+  };
+}
+
+// Espejo de limpiarColeccionesInicio (backend).
+function normalizarColeccionesInicio(c) {
+  if (!c || typeof c !== 'object') return null;
+  return {
+    modo: c.modo === 'colecciones' ? 'colecciones' : 'categorias',
+    items: Array.isArray(c.items) ? c.items.filter(v => typeof v === 'string' && v.trim()).slice(0, 24) : [],
+    columnas: Math.max(1, Math.min(6, Math.floor(Number(c.columnas) || 4))),
+    limite: Math.max(1, Math.min(24, Math.floor(Number(c.limite) || 4))),
   };
 }
 
@@ -1019,6 +1035,24 @@ export default function ConfigurarVentaCodigo({
       return { ...delProducto, ...propio, content_id: contentIdPanel(i) };
     });
   }, [seleccion, presentacion, fichasProducto]);
+  // Colecciones de la landing (etiquetas), con cuántos productos tiene cada
+  // una; "Oferta" entra sola si hay productos con descuento, como en el
+  // runtime (etiquetasDisponiblesCatalogo).
+  const coleccionesLandingDisponibles = useMemo(() => {
+    const conteo = new Map();
+    const sumar = (nombre) => {
+      const ya = [...conteo.keys()].find(k => normalizarTexto(k) === normalizarTexto(nombre));
+      conteo.set(ya || nombre, (conteo.get(ya || nombre) || 0) + 1);
+    };
+    candidatosDatosProducto.forEach((i) => {
+      const etiquetas = String(i.etiqueta || '').split(',').map(t => t.trim()).filter(Boolean);
+      etiquetas.forEach(sumar);
+      const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
+      const ancla = Number(i.precio_ancla ?? i.precio_tachado) || 0;
+      if (ancla > precio && precio > 0 && !etiquetas.some(t => normalizarTexto(t) === 'oferta')) sumar('Oferta');
+    });
+    return [...conteo.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'));
+  }, [candidatosDatosProducto]);
   const productoConfigActual = useMemo(
     () => candidatosDatosProducto.find(i => i.content_id === productoEditando) || null,
     [candidatosDatosProducto, productoEditando],
@@ -2511,6 +2545,14 @@ export default function ConfigurarVentaCodigo({
                         onAgregar={agregarTestimonioInicio}
                         onQuitar={quitarTestimonioInicio}
                         onSubir={onSubirImagen ? subirImagenLanding : null}
+                      />
+                    ),
+                    colecciones: (
+                      <EditorColeccionesInicio
+                        config={inicioComercial.colecciones}
+                        categorias={categoriasInicioDisponibles}
+                        colecciones={coleccionesLandingDisponibles}
+                        onCambiar={c => cambiarInicio('colecciones', c)}
                       />
                     ),
                     marca: (
@@ -4619,7 +4661,15 @@ function EditorProductosCategoria({ config, enLanding, incluirCombos, onCambiar,
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block">
-          <span className="block text-xs font-medium text-fg-muted mb-1">Productos por fila (escritorio)</span>
+          <span className="block text-xs font-medium text-fg-muted mb-1">Mostrar productos como</span>
+          <select value={config.formato || 'filas'} onChange={e => onCambiar({ formato: e.target.value })}
+            className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary">
+            <option value="filas">Filas</option>
+            <option value="carrusel">Carrusel</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="block text-xs font-medium text-fg-muted mb-1">{config.formato === 'carrusel' ? 'Productos a la vista (escritorio)' : 'Productos por fila (escritorio)'}</span>
           <select value={config.columnas || 4} onChange={e => onCambiar({ columnas: Number(e.target.value) })}
             className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary">
             {[1, 2, 3, 4, 5, 6, 7, 8].map(n => <option key={n} value={n}>{n}</option>)}
@@ -4634,7 +4684,9 @@ function EditorProductosCategoria({ config, enLanding, incluirCombos, onCambiar,
           />
         </label>
       </div>
-      <p className="text-xs text-fg-muted">Hasta {Math.ceil((config.limite || 8) / (config.columnas || 4))} filas en escritorio, según los productos disponibles. En tablet y móvil se muestran menos columnas para facilitar la lectura.</p>
+      <p className="text-xs text-fg-muted">{config.formato === 'carrusel'
+        ? 'Una fila horizontal: deslizá o usá las flechas para ver los demás productos. En tablet y móvil se muestran menos tarjetas a la vez.'
+        : `Hasta ${Math.ceil((config.limite || 8) / (config.columnas || 4))} filas en escritorio, según los productos disponibles. En tablet y móvil se muestran menos columnas para facilitar la lectura.`}</p>
       <CampoTexto label="Subtítulo" value={config.subtitulo} onChange={v => onCambiar({ subtitulo: v })} placeholder="Explorá nuestra selección" maxLength={160} />
       <div>
         <p className="mb-1.5 text-xs font-medium text-fg-muted">Elegí qué productos entran (se agrupan solos por categoría)</p>
@@ -5281,7 +5333,7 @@ function EditorPromoCatalogoProducto({
         <input
           aria-label="Etiquetas para filtrar (separadas por coma)"
           value={item.etiqueta || ''}
-          maxLength={140}
+          maxLength={50}
           placeholder="Oferta, Flash sale, Envío gratis"
           className="mt-1 h-9 w-full rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
           onChange={e => onCambiar('etiqueta', e.target.value)}
@@ -6158,5 +6210,4 @@ function Miniatura({ item }) {
     ? <img src={src} alt="" className="w-10 h-10 rounded-lg object-cover bg-surface-2 shrink-0" loading="lazy" />
     : <span className="w-10 h-10 rounded-lg bg-surface-2 shrink-0" />;
 }
-
 

@@ -55,6 +55,16 @@ async function abrirBloqueProductos() {
 }
 
 describe('Bloque Productos del inicio en una tienda grande', () => {
+  it.each(['carrusel', 'filas'])('envía el formato %s a la vista previa y al guardado', async formato => {
+    const confirmar = montar();
+    await abrirBloqueProductos();
+    fireEvent.change(screen.getByLabelText('Mostrar productos como'), { target: { value: formato } });
+    expect(datosPreview().venta.inicio.productos_categoria.formato).toBe(formato);
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(confirmar).toHaveBeenCalled());
+    expect(confirmar.mock.calls[0][0].venta.inicio.productos_categoria.formato).toBe(formato);
+  });
+
   it('pide al servidor de a 10 y pagina', async () => {
     montar();
     await abrirBloqueProductos();

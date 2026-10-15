@@ -4,7 +4,7 @@ import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
   ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, SlidersHorizontal, Grid,
-  Store, Trash2, FileSpreadsheet, EyeOff
+  Store, Trash2, FileSpreadsheet, EyeOff, Clock, Tags, X
 } from 'lucide-react';
 import { productService } from '../../services/productService';
 import { vitrinaService } from '../../services/vitrinaService';
@@ -16,6 +16,7 @@ import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
 import { verificarSesion } from '../../utils/auth';
 import { ImagenProductoHover } from '../landing-simple/templates/sections.jsx';
+import { ModalColeccion, ModalOfertaMasiva } from '../landing-simple/OrganizadorProductos';
 import './vitrina.css';
 
 /* ─── Constantes ─────────────────────────────────────────────────────── */
@@ -232,7 +233,38 @@ function CategoriaSeleccionModal({ abierto, productos, categorias, onClose, onGu
 }
 
 /* ─── Componente: card ────────────────────────────────────────────────── */
-function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, filtro, seleccionable = true }) {
+// Cómo está el producto en la landing: descuento, contador, badge y
+// colecciones (lo arma organizacionDeLanding en el backend). La × del
+// descuento y la de cada colección lo quitan sin seleccionar nada.
+function MarcasLanding({ item, onQuitar }) {
+  const m = item.en_landing;
+  if (!m) return null;
+  const precio = Number(item.precio_efectivo) || 0;
+  const ancla = Number(m.precio_ancla ?? item.precio_tachado) || 0;
+  const descuento = ancla > precio && precio > 0 ? Math.round((1 - precio / ancla) * 100) : 0;
+  if (!descuento && !m.contador && !m.badge && !m.colecciones?.length) return null;
+  const quitar = (e, accion, extra = {}) => { e.stopPropagation(); onQuitar(item, accion, extra); };
+  return (
+    <div className="vit-card-marcas" onClick={e => e.stopPropagation()}>
+      {descuento > 0 && (
+        <span className="vit-marca vit-marca--oferta">
+          -{descuento}%
+          <button type="button" aria-label={`Quitar oferta de ${item.nombre}`} title="Quitar oferta" onClick={e => quitar(e, 'quitar_oferta')}><X size={10} /></button>
+        </span>
+      )}
+      {m.contador && <span className="vit-marca vit-marca--contador"><Clock size={10} /> Contador</span>}
+      {m.badge && <span className="vit-marca vit-marca--badge"><Tag size={10} /> {m.badge}</span>}
+      {(m.colecciones || []).map(c => (
+        <span key={c} className="vit-marca">
+          {c}
+          <button type="button" aria-label={`Quitar ${item.nombre} de ${c}`} title={`Quitar de ${c}`} onClick={e => quitar(e, 'quitar_coleccion', { coleccion: c })}><X size={10} /></button>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, filtro, seleccionable = true, onQuitarMarca = null }) {
   const esCombo = item.tipo === 'combo';
   const badge   = getBadgeConfig(item);
   const sinStock = item.stock === 0 && !esCombo;
@@ -314,6 +346,8 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
           )}
         </div>
 
+        {onQuitarMarca && <MarcasLanding item={item} onQuitar={onQuitarMarca} />}
+
         {/* Costo y piso: datos de referencia, no lo accionable — van
             compactos en una fila y no compiten con el input de venta. */}
         <dl className="vit-costos">
@@ -382,6 +416,10 @@ export default function VitrinaGrid() {
   const [errorGenerarLanding, setErrorGenerarLanding] = useState(null);
   const [modalCategoriaAbierto, setModalCategoriaAbierto] = useState(false);
   const [mensajeCategoria, setMensajeCategoria] = useState(null);
+  // Organizar productos de la landing (vista "Productos en mi landing").
+  const [coleccionesLanding, setColeccionesLanding] = useState([]);
+  const [modalOrganizar, setModalOrganizar] = useState(null); // 'oferta' | 'coleccion' | 'quitar_coleccion'
+  const [organizando, setOrganizando] = useState(false);
 
   const [searchParams] = useSearchParams();
   const enOnboarding = searchParams.get('onboarding') === 'productos';
@@ -618,6 +656,45 @@ export default function VitrinaGrid() {
     }
   }
 
+  async function organizarLanding(accion, extra = {}, objetivo = itemsSeleccionados) {
+    const itemsAOrganizar = objetivo
+      .map(item => ({ tipo: item?.tipo, id: Number(item?.id ?? item?.referencia_id) }))
+      .filter(item => ['producto', 'combo'].includes(item.tipo) && Number.isInteger(item.id) && item.id > 0);
+    if (!itemsAOrganizar.length || organizando) return;
+    setOrganizando(true);
+    setErrorGenerarLanding(null);
+    try {
+      const r = await vitrinaService.organizarLanding({ accion, items: itemsAOrganizar, ...extra });
+      const n = r?.actualizados ?? itemsAOrganizar.length;
+      const qué = {
+        oferta: 'en oferta',
+        quitar_oferta: 'sin oferta',
+        coleccion: `en “${extra.coleccion}”`,
+        quitar_coleccion: `fuera de “${extra.coleccion}”`,
+        quitar_todo: 'sin oferta, badge ni colecciones',
+      }[accion];
+      const avisos = [
+        r?.sin_lugar ? `${r.sin_lugar} ya tiene${r.sin_lugar === 1 ? '' : 'n'} demasiadas colecciones (máx. 50 letras en total) y quedó igual.` : '',
+        r?.contador_lleno ? `El contador admite hasta 12 productos: ${r.contador_lleno} quedó con descuento pero sin cuenta regresiva.` : '',
+      ].filter(Boolean).join(' ');
+      setMensajeCategoria(`${n} producto${n === 1 ? '' : 's'} ${qué}.${avisos ? ` ${avisos}` : ''}`);
+      setModalOrganizar(null);
+      if (objetivo === itemsSeleccionados) limpiarSeleccion();
+      await cargar();
+    } catch (err) {
+      setErrorGenerarLanding(err.response?.data?.message || err.message || 'No se pudieron organizar los productos.');
+    } finally {
+      setOrganizando(false);
+    }
+  }
+
+  // Filas con la forma que esperan los modales de Organizar productos.
+  const filasOrganizar = useMemo(() => itemsSeleccionados.map((item) => {
+    const precio = Number(item.precio_efectivo) || 0;
+    const ancla = Number(item.en_landing?.precio_ancla ?? item.precio_tachado) || 0;
+    return { item, contentId: getItemKey(item), precio, ancla, etiquetas: item.en_landing?.colecciones || [] };
+  }), [itemsSeleccionados]);
+
   async function guardarCategoriaSeleccion(payload) {
     const resultado = await vitrinaService.categorizarProductos(payload);
     setModalCategoriaAbierto(false);
@@ -695,6 +772,7 @@ export default function VitrinaGrid() {
       const data = await vitrinaService.catalogoPaginado(getFiltrosCatalogo(), { signal: controller.signal });
       if (!vigente()) return;
       setItems(data.items || []);
+      setColeccionesLanding(data.colecciones_landing || []);
       setCategoriasUnicas(data.categorias || []);
       setProveedoresUnicos(data.proveedores || []);
       setTotalPages(data.totalPages || 1);
@@ -815,6 +893,36 @@ export default function VitrinaGrid() {
             <button type="button" className="vit-seleccion-cancelar" onClick={limpiarSeleccion}>
               Quitar selección
             </button>
+            {esVistaLanding && (
+              <>
+                <button type="button" className="vit-seleccion-cancelar vit-seleccion-combo" onClick={() => setModalOrganizar('oferta')} disabled={organizando}>
+                  <Clock size={15} /> Marcar como oferta
+                </button>
+                <button type="button" className="vit-seleccion-cancelar vit-seleccion-combo" onClick={() => setModalOrganizar('coleccion')} disabled={organizando}>
+                  <Tags size={15} /> Agregar a colección
+                </button>
+                <button
+                  type="button"
+                  className="vit-seleccion-cancelar vit-seleccion-combo"
+                  onClick={() => setModalOrganizar('quitar_coleccion')}
+                  disabled={organizando || !filasOrganizar.some(f => f.etiquetas.length)}
+                >
+                  Quitar de colección
+                </button>
+                <button type="button" className="vit-seleccion-cancelar vit-seleccion-combo" onClick={() => organizarLanding('quitar_oferta')} disabled={organizando}>
+                  Quitar oferta
+                </button>
+                <button
+                  type="button"
+                  className="vit-seleccion-cancelar vit-seleccion-combo"
+                  onClick={() => organizarLanding('quitar_todo')}
+                  disabled={organizando}
+                  title="Saca descuento, contador, badge y colecciones. Siguen publicados."
+                >
+                  {organizando ? <Loader size={15} className="spin-icon" /> : <X size={15} />} Quitar todo
+                </button>
+              </>
+            )}
             {esVistaLanding && (
               <button
                 type="button"
@@ -1052,6 +1160,7 @@ export default function VitrinaGrid() {
               onEditarProducto={(id) => navigate(`/products/${id}/editar`)}
               filtro={filtro}
               seleccionable
+              onQuitarMarca={esVistaLanding ? (it, accion, extra) => organizarLanding(accion, extra, [it]) : null}
             />
           ))}
         </div>
@@ -1098,6 +1207,31 @@ export default function VitrinaGrid() {
         onClose={() => setModalCategoriaAbierto(false)}
         onGuardar={guardarCategoriaSeleccion}
       />
+      {modalOrganizar === 'oferta' && (
+        <ModalOfertaMasiva
+          filas={filasOrganizar}
+          enContador={new Set(filasOrganizar.filter(f => f.item.en_landing?.contador).map(f => f.contentId))}
+          contadorFinAt=""
+          contadorTitulo=""
+          onCerrar={() => setModalOrganizar(null)}
+          onAplicar={({ pct, badge, finAt, titulo }) => organizarLanding('oferta', {
+            pct,
+            badge,
+            // El modal da hora local (datetime-local): el backend guarda ISO.
+            fin_at: finAt ? new Date(finAt).toISOString() : null,
+            titulo,
+          })}
+        />
+      )}
+      {(modalOrganizar === 'coleccion' || modalOrganizar === 'quitar_coleccion') && (
+        <ModalColeccion
+          quitar={modalOrganizar === 'quitar_coleccion'}
+          filas={filasOrganizar}
+          colecciones={coleccionesLanding}
+          onCerrar={() => setModalOrganizar(null)}
+          onAplicar={nombre => organizarLanding(modalOrganizar, { coleccion: nombre })}
+        />
+      )}
     </div>
   );
 }

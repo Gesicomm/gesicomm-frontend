@@ -73,6 +73,7 @@ const CONTRATO_POR_BLOQUE = {
     queConstruir: 'Vitrina de productos de esta sección (el comercio elige cuáles desde el panel). Puede tener buscador y tabs propios.',
     listas: `- Lista "productos_categoria": binds "etiqueta", "imagen", "categoria", "nombre", "descripcion", "precio", "precio_antes".
 - data-gesicomm-ver en la tarjeta/imagen/nombre: abre la ficha del producto. data-gesicomm-comprar en el botón: agrega al carrito.
+- Conservá el contenedor data-gesicomm-bloque="productos_categoria" y la lista del mismo nombre: el comercio elige Filas o Carrusel desde el panel. Gesicomm aplica las columnas, el desplazamiento y las flechas; no fuerces un formato desde tu CSS o JavaScript.
 - Textos de título editables: data-gesicomm-venta="productos_categoria_kicker" / "_titulo" / "_subtitulo".`,
   },
   ofertas_urgencia: {

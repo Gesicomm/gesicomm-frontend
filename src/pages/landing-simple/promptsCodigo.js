@@ -87,6 +87,8 @@ El <template> debe ser hijo directo (o nieto) del elemento con data-gesicomm-lis
 ## Motor comercial editable de Inicio
 El comercio puede configurar Inicio desde Gesicomm: banners, categorías, vitrinas por categoría, ofertas, novedades, colecciones y más vendidos curados. Tu diseño puede mostrarlo como carrusel, grilla, filas horizontales, editorial, masonry o cualquier composición, pero mantené estas primitivas:
 
+- Productos seleccionados: conservá un contenedor data-gesicomm-bloque="productos_categoria" con su lista data-gesicomm-lista="productos_categoria". El comercio elige Filas o Carrusel, cantidad total y columnas desde el panel; Gesicomm aplica ese formato y las flechas. No lo reemplaces por una grilla fija ni un carrusel propio.
+
 - Banners editables:
   <section data-gesicomm-lista="banners_inicio"><template>...</template></section>
   Usá binds "titulo", "subtitulo", "etiqueta", "cta_texto", "imagen", "video" y "enlace". El enlace puede ser un destino interno como #ofertas, #categorias, #mas-vendidos, #novedades o #colecciones, o la página separada /catalogo para ver todos los productos.

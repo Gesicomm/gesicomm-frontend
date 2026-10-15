@@ -203,16 +203,70 @@ html[data-gesicomm-preview-device="mobile"] *::-webkit-scrollbar {
 [data-gesicomm-bloque="productos_categoria"] [data-gesicomm-lista="productos_categoria"] {
   display: grid !important;
   grid-template-columns: repeat(var(--pc-columnas, 4), minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  --pc-visibles: var(--pc-columnas, 4);
 }
 @media (max-width: 1100px) {
   [data-gesicomm-bloque="productos_categoria"] [data-gesicomm-lista="productos_categoria"] {
     grid-template-columns: repeat(var(--pc-columnas-tablet, 4), minmax(0, 1fr)) !important;
+    --pc-visibles: var(--pc-columnas-tablet, 4);
   }
 }
 @media (max-width: 760px) {
   [data-gesicomm-bloque="productos_categoria"] [data-gesicomm-lista="productos_categoria"] {
     grid-template-columns: repeat(var(--pc-columnas-mobile, 2), minmax(0, 1fr)) !important;
+    --pc-visibles: var(--pc-columnas-mobile, 2);
   }
+}
+[data-gesicomm-bloque="productos_categoria"][data-pc-formato="carrusel"] [data-gesicomm-lista="productos_categoria"] {
+  grid-template-columns: none !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: calc((100% - (var(--pc-visibles) - 1) * 16px) / var(--pc-visibles)) !important;
+  overflow-x: auto !important;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  padding-bottom: 12px;
+}
+[data-pc-formato="carrusel"] [data-gesicomm-lista="productos_categoria"] > * {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+[data-gesicomm-pc-controles] {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+[data-gesicomm-pc-controles][hidden] { display: none !important; }
+/* Bloque "Colecciones" con tarjetas por fila elegidas en el editor
+   (prepararBloqueColecciones, runtime). Sin data-col-columnas queda la
+   grilla del HTML de la tienda. */
+[data-gesicomm-bloque="colecciones"][data-col-columnas] [data-gesicomm-lista="categorias"] {
+  display: grid !important;
+  grid-template-columns: repeat(var(--col-columnas, 4), minmax(0, 1fr)) !important;
+}
+[data-gesicomm-bloque="colecciones"][data-col-columnas] [data-gesicomm-lista="categorias"] > * {
+  display: flex !important;
+}
+@media (max-width: 1100px) {
+  [data-gesicomm-bloque="colecciones"][data-col-columnas] [data-gesicomm-lista="categorias"] {
+    grid-template-columns: repeat(var(--col-columnas-tablet, 3), minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 760px) {
+  [data-gesicomm-bloque="colecciones"][data-col-columnas] [data-gesicomm-lista="categorias"] {
+    grid-template-columns: repeat(var(--col-columnas-mobile, 2), minmax(0, 1fr)) !important;
+  }
+}
+[data-gesicomm-pc-controles] button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  background: var(--gc-fondo, var(--tienda-fondo, #fff));
+  color: var(--gc-texto, var(--tienda-texto, #10202f));
+  font-size: 24px;
+  cursor: pointer;
 }
 /* La cantidad total la limita el runtime; ninguna plantilla debe esconder
    las filas siguientes en móvil. */

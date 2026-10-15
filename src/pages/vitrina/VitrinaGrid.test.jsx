@@ -15,6 +15,7 @@ vi.mock('../../services/vitrinaService', () => ({
     guardarPrecioCombo: vi.fn(),
     categorizarProductos: vi.fn(),
     despublicarLanding: vi.fn(),
+    organizarLanding: vi.fn(),
   },
 }));
 
@@ -285,6 +286,43 @@ describe('VitrinaGrid Component', () => {
       expect(screen.queryByRole('region', { name: 'Productos seleccionados' })).toBeNull();
     });
     expect(await screen.findByText('Todavía no tenés productos seleccionados para vender en tu landing.')).toBeInTheDocument();
+  });
+  it('en Productos en mi landing marca varios como oferta, muestra sus marcas y quita una colección con la ×', async () => {
+    const enLanding = {
+      items: [
+        { id: 1, tipo: 'producto', nombre: 'Producto en Landing', precio_base: 50000, precio_efectivo: 80000, stock: 10,
+          en_landing: { precio_ancla: 100000, colecciones: ['Novedades'], badge: 'Oferta', contador: true } },
+        { id: 2, tipo: 'producto', nombre: 'Otro en Landing', precio_base: 50000, precio_efectivo: 60000, stock: 10, en_landing: { precio_ancla: null, colecciones: [], badge: '', contador: false } },
+      ],
+      colecciones_landing: ['Novedades'],
+      categorias: [], proveedores: [], totalPages: 1, total: 2,
+    };
+    vitrinaService.catalogoPaginado
+      .mockResolvedValueOnce({ items: [], categorias: [], proveedores: [], totalPages: 1, total: 0 })
+      .mockResolvedValue(enLanding);
+    vitrinaService.organizarLanding.mockResolvedValue({ actualizados: 2, sin_lugar: 0, contador_lleno: 0 });
+    renderWithRouter(<VitrinaGrid />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Productos en mi landing', exact: true }));
+    expect(await screen.findByText('Producto en Landing')).toBeInTheDocument();
+    expect(screen.getByText('-20%')).toBeInTheDocument();
+    expect(screen.getByText('Contador')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar Producto en Landing de Novedades' }));
+    await waitFor(() => expect(vitrinaService.organizarLanding).toHaveBeenCalledWith({
+      accion: 'quitar_coleccion', coleccion: 'Novedades', items: [{ tipo: 'producto', id: 1 }],
+    }));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Seleccionar Producto en Landing/i }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Seleccionar Otro en Landing/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Marcar como oferta/ }));
+    const modal = within(screen.getByRole('dialog', { name: 'Marcar como oferta' }));
+    fireEvent.click(within(modal.getByRole('group', { name: 'Descuento' })).getByRole('button', { name: '30%' }));
+    fireEvent.click(modal.getByRole('button', { name: /Aplicar a 2/ }));
+    await waitFor(() => expect(vitrinaService.organizarLanding).toHaveBeenLastCalledWith(expect.objectContaining({
+      accion: 'oferta', pct: 30, items: [{ tipo: 'producto', id: 1 }, { tipo: 'producto', id: 2 }],
+      fin_at: expect.stringMatching(/T/),
+    })));
+    expect(await screen.findByText(/2 productos en oferta/)).toBeInTheDocument();
   });
   it('activa solamenteMios al presionar "Productos propios" y restablece al presionar "Todos"', async () => {
     renderWithRouter(<VitrinaGrid />);

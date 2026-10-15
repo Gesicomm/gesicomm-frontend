@@ -17,6 +17,7 @@ import { precioDeVenta } from './PrecioAnclaItem';
  */
 
 export const MAX_PRODUCTOS_CONTADOR = 12; // espejo de limpiarUrgencia (backend)
+export const MAX_ETIQUETA = 50; // landing_items.etiqueta es STRING(50)
 
 export const COLECCIONES_SUGERIDAS = ['Ofertas del día', 'Novedades', 'Más vendidos', 'Recomendados', 'Liquidación'];
 export const BADGES_OFERTA = ['Oferta', 'Oferta del día', 'Solo por hoy', 'Liquidación', 'Hot sale'];
@@ -61,7 +62,9 @@ const normalizar = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
 export function conEtiqueta(etiqueta, nombre) {
   const lista = etiquetasDe({ etiqueta });
   if (lista.some(t => normalizar(t) === normalizar(nombre))) return lista.join(', ');
-  return [...lista, nombre.trim()].join(', ').slice(0, 140);
+  // landing_items.etiqueta es STRING(50): si no entra, queda como estaba.
+  const siguiente = [...lista, nombre.trim()].join(', ');
+  return siguiente.length > MAX_ETIQUETA ? lista.join(', ') : siguiente;
 }
 export function sinEtiqueta(etiqueta, nombre) {
   return etiquetasDe({ etiqueta }).filter(t => normalizar(t) !== normalizar(nombre)).join(', ');
@@ -445,7 +448,7 @@ function Rotulo({ children, ayuda }) {
   );
 }
 
-function ModalOfertaMasiva({ filas, enContador, contadorFinAt, contadorTitulo, onCerrar, onAplicar }) {
+export function ModalOfertaMasiva({ filas, enContador, contadorFinAt, contadorTitulo, onCerrar, onAplicar }) {
   const contadorVigente = contadorFinAt && new Date(contadorFinAt).getTime() > Date.now();
   const [pct, setPct] = useState('');
   const [badge, setBadge] = useState('Oferta');
@@ -576,7 +579,7 @@ function ModalOfertaMasiva({ filas, enContador, contadorFinAt, contadorTitulo, o
   );
 }
 
-function ModalColeccion({ quitar, filas, colecciones, onCerrar, onAplicar }) {
+export function ModalColeccion({ quitar, filas, colecciones, onCerrar, onAplicar }) {
   const deLosMarcados = useMemo(() => {
     const vistas = [];
     filas.forEach(f => f.etiquetas.forEach((t) => { if (!vistas.some(v => normalizar(v) === normalizar(t))) vistas.push(t); }));

@@ -722,6 +722,42 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(tabs).toEqual(['Todos', 'Cocina', 'Ropa']);
   });
 
+  it.each(['filas', 'carrusel'])('productos: aplica %s en preview y en la página pública, y permite cambiar sin recargar', formato => {
+    const venta = { inicio: { productos_categoria: { formato, columnas: 4, limite: 20 } } };
+    const productosPanel = Array.from({ length: 20 }, (_, i) => ({
+      tipo: 'producto', id: i + 1, slug: 'p-' + i, nombre: 'Producto ' + i,
+      precio_efectivo: 10000, categoria: 'Cocina', stock: 10,
+    }));
+    const versiones = [
+      datosRuntimePreview({ productos: productosPanel, venta, vista: 'inicio' }),
+      datosRuntimePublico({ items: productosPanel.map(p => ({ ...p, content_id: p.slug })), content: { venta } }, 'tienda', null, { vista: 'inicio' }),
+    ];
+    for (const version of versiones) {
+      const { dom, document, window, click } = montar(PLANTILLA_INICIO, version);
+      const seccion = document.querySelector('#productos-categoria');
+      const lista = seccion.querySelector('[data-gesicomm-lista="productos_categoria"]');
+      expect(seccion.getAttribute('data-pc-formato')).toBe(formato);
+      expect(lista.querySelectorAll('.product-card')).toHaveLength(20);
+      expect(seccion.querySelector('[data-gesicomm-pc-controles]').hidden).toBe(formato !== 'carrusel');
+      if (formato === 'carrusel') {
+        const pasos = [];
+        lista.scrollBy = opciones => pasos.push(opciones.left);
+        Object.defineProperty(lista, 'clientWidth', { value: 1000 });
+        click('[aria-label="Productos siguientes"]');
+        click('[aria-label="Productos anteriores"]');
+        expect(pasos).toEqual([1000, -1000]);
+      }
+      const nuevo = formato === 'filas' ? 'carrusel' : 'filas';
+      window.dispatchEvent(new window.MessageEvent('message', { source: window, data: {
+        tipo: 'gesicomm:datos', datos: { ...version, venta: { inicio: { productos_categoria: { ...venta.inicio.productos_categoria, formato: nuevo } } } },
+      } }));
+      expect(seccion.getAttribute('data-pc-formato')).toBe(nuevo);
+      expect(seccion.querySelectorAll('[data-gesicomm-pc-controles]')).toHaveLength(1);
+      expect(seccion.querySelector('[data-gesicomm-pc-controles]').hidden).toBe(nuevo !== 'carrusel');
+      dom.window.close();
+    }
+  });
+
   it('productos por categoría: muestra veinte productos con ocho columnas y conserva el límite al buscar', () => {
     const productos = Array.from({ length: 25 }, (_, i) => ({ ...airFryer, id: 'producto-' + i, nombre: 'Producto ' + i }));
     const { document, window } = montar(PLANTILLA_INICIO, {
@@ -785,6 +821,51 @@ describe('runtime del lienzo en blanco — inicio', () => {
 
     click('[data-gesicomm-pc-categoria=""]');
     expect(nombres()).toEqual(['Air Fryer 2.6L', 'Remera', 'Licuadora']);
+  });
+
+  describe('bloque Colecciones del inicio', () => {
+    const productosCol = [
+      { ...airFryer, etiqueta: 'Novedades', precio_antes: null, descuento_pct: 0 },
+      { ...remera, etiqueta: 'Ofertas del día', precio_antes: null, descuento_pct: 0 },
+      { ...airFryer, id: 'licuadora', nombre: 'Licuadora', etiqueta: 'Novedades', precio_antes: null, descuento_pct: 0 },
+    ];
+    const tarjetas = document => [...document.querySelectorAll('[data-gesicomm-bloque="colecciones"] [data-gesicomm-lista="categorias"] > :not(template)')];
+
+    it('sin configurar sigue mostrando categorías, sin tocar la grilla', () => {
+      const { document } = montar(PLANTILLA_INICIO, { ...datos, productos: productosCol });
+      const bloque = document.querySelector('[data-gesicomm-bloque="colecciones"]');
+      expect(bloque).toBeTruthy();
+      expect(tarjetas(document).map(t => t.getAttribute('data-gesicomm-categoria-ir'))).toEqual(['Cocina', 'Ropa']);
+      expect(bloque.hasAttribute('data-col-columnas')).toBe(false);
+    });
+
+    it('muestra mis colecciones elegidas con su total y columnas, y la tarjeta abre el catálogo filtrado', () => {
+      const { document, click, mensajes } = montar(PLANTILLA_INICIO, {
+        ...datos,
+        productos: productosCol,
+        venta: { inicio: { colecciones: { modo: 'colecciones', items: ['Novedades', 'Ofertas del día', 'Vacía'], columnas: 3, limite: 2 } } },
+      });
+      const lista = tarjetas(document);
+      expect(lista.map(t => t.getAttribute('data-gesicomm-coleccion-ir'))).toEqual(['Novedades', 'Ofertas del día']);
+      expect(lista[0].textContent).toContain('Novedades');
+      const bloque = document.querySelector('[data-gesicomm-bloque="colecciones"]');
+      expect(bloque.getAttribute('data-col-columnas')).toBe('3');
+      expect(bloque.style.getPropertyValue('--col-columnas-mobile')).toBe('2');
+
+      click('[data-gesicomm-coleccion-ir="Novedades"]');
+      expect(mensajes.filter(m => m.tipo === 'gesicomm:navegar').at(-1)).toEqual({
+        tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'catalogo', filtro: { etiqueta: 'Novedades', categoria: '' },
+      });
+    });
+
+    it('en modo categorías respeta cuáles y en qué orden', () => {
+      const { document } = montar(PLANTILLA_INICIO, {
+        ...datos,
+        productos: productosCol,
+        venta: { inicio: { colecciones: { modo: 'categorias', items: ['Ropa'], columnas: 4, limite: 8 } } },
+      });
+      expect(tarjetas(document).map(t => t.getAttribute('data-gesicomm-categoria-ir'))).toEqual(['Ropa']);
+    });
   });
 
   it('productos por categoría: incluye buscador propio sin tocar el catálogo completo', () => {

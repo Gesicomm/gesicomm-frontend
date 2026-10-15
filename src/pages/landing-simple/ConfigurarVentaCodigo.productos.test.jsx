@@ -280,6 +280,20 @@ describe('Presentación de los productos del lienzo', () => {
     expect(venta.urgencia.productos).toEqual([]);
   });
 
+  it('bloque Colecciones del inicio: elige mis colecciones, cuáles, por fila y total, y lo guarda', () => {
+    const confirmar = montar({ seleccion: [{ ...catalogo.productos[0], etiqueta: 'Novedades, Día de la madre' }, catalogo.productos[1]] });
+    fireEvent.click(screen.getByRole('button', { name: /^d*s*Colecciones$/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Mis colecciones/ }));
+    // Cacerola trae precio tachado del catálogo: "Oferta" aparece sola.
+    expect(screen.getByLabelText('Mostrar Oferta')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Mostrar Novedades'));
+    fireEvent.change(screen.getByLabelText('Tarjetas por fila'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('Total de tarjetas'), { target: { value: '6' } });
+    expect(datosPreview().venta.inicio.colecciones).toEqual({ modo: 'colecciones', items: ['Novedades'], columnas: 3, limite: 6 });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(confirmar.mock.calls[0][0].venta.inicio.colecciones).toEqual({ modo: 'colecciones', items: ['Novedades'], columnas: 3, limite: 6 });
+  });
+
   it('agrega y quita productos de una colección (etiqueta de la landing)', () => {
     const confirmar = montar();
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));

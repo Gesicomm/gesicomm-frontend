@@ -33,6 +33,11 @@ export const vitrinaService = {
   despublicarLanding: (items = []) =>
     API.post('/vitrina/landing/despublicar', { items }).then(r => r.data),
 
+  // Oferta, colección o quitar todo sobre productos que ya están en la
+  // landing activa. payload: { accion, items, pct?, badge?, fin_at?, titulo?, coleccion? }
+  organizarLanding: (payload) =>
+    API.post('/vitrina/landing/organizar', payload).then(r => r.data),
+
   guardarPrecioCombo: (id, precio) =>
     API.put(`/vitrina/combos/${id}/precio`, { precio }).then(r => r.data),
 

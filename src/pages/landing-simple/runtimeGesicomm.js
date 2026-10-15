@@ -1660,6 +1660,30 @@ export function runtimeGesicomm() {
       seccion.style.setProperty('--pc-columnas-tablet', Math.min(4, columnas));
       seccion.style.setProperty('--pc-columnas-mobile', Math.min(2, columnas));
       seccion.setAttribute('data-pc-compacto', columnas >= 6 ? 'true' : 'false');
+      var carrusel = productosCategoriaConfig().formato === 'carrusel';
+      seccion.setAttribute('data-pc-formato', carrusel ? 'carrusel' : 'filas');
+      var listasProductos = seccion.querySelectorAll('[data-gesicomm-lista="productos_categoria"]');
+      listasProductos.forEach(function (lista) {
+        lista.setAttribute('tabindex', '0');
+        lista.setAttribute('aria-label', carrusel ? 'Carrusel de productos seleccionados' : 'Productos seleccionados');
+        var controles = lista.previousElementSibling;
+        if (!controles || !controles.hasAttribute('data-gesicomm-pc-controles')) {
+          controles = document.createElement('div');
+          controles.setAttribute('data-gesicomm-pc-controles', '');
+          [-1, 1].forEach(function (direccion) {
+            var boton = document.createElement('button');
+            boton.type = 'button';
+            boton.setAttribute('aria-label', direccion < 0 ? 'Productos anteriores' : 'Productos siguientes');
+            boton.textContent = direccion < 0 ? '‹' : '›';
+            boton.addEventListener('click', function () {
+              lista.scrollBy({ left: direccion * lista.clientWidth, behavior: 'smooth' });
+            });
+            controles.appendChild(boton);
+          });
+          lista.parentNode.insertBefore(controles, lista);
+        }
+        controles.hidden = !carrusel;
+      });
     }
     var vacio = document.querySelector('[data-gesicomm-pc-vacio]');
     if (vacio) vacio.hidden = productosCategoriaBase().length === 0 || productosCategoriaFiltrados().length > 0;
@@ -1758,6 +1782,61 @@ export function runtimeGesicomm() {
       var base = porNombre[c.nombre] || { nombre: c.nombre, categoria: c.nombre, cantidad: 0, cantidad_texto: '0 productos', imagen: '', etiqueta: 'Categoria' };
       return c.imagen ? Object.assign({}, base, { imagen: c.imagen }) : base;
     });
+  }
+
+  // Bloque "Colecciones" del Inicio (panel EditorColeccionesInicio): qué
+  // tarjetas, cuáles, cuántas por fila y en total. Sin venta.inicio.colecciones
+  // (landing que nunca lo configuró) devuelve null y el bloque queda como
+  // siempre: categorías con el tope de su HTML.
+  function coleccionesInicioConfig() {
+    var c = inicioConfig().colecciones;
+    return c && typeof c === 'object' ? c : null;
+  }
+
+  function coleccionesInicio(el) {
+    var conf = coleccionesInicioConfig();
+    if (!conf) return null;
+    var elegidas = Array.isArray(conf.items) ? conf.items.filter(Boolean) : [];
+    var base;
+    if (conf.modo === 'colecciones') {
+      var visibles = productos.filter(function (p) { return p.mostrar_en_inicio !== false; });
+      var nombres = elegidas.length ? elegidas : etiquetasDisponiblesCatalogo(visibles);
+      base = nombres.map(function (nombre) {
+        var suyos = visibles.filter(function (p) { return productoPasaEtiqueta(p, nombre); });
+        var imagenes = [];
+        suyos.forEach(function (p) {
+          var img = urlSegura(p.imagen || p.url_imagen);
+          if (img && imagenes.indexOf(img) === -1) imagenes.push(img);
+        });
+        return {
+          nombre: textoEtiquetaFiltro(nombre), coleccion: nombre, cantidad: suyos.length,
+          cantidad_texto: suyos.length + (suyos.length === 1 ? ' producto' : ' productos'),
+          imagen: imagenes[0] || '', imagenes: imagenes, etiqueta: 'Colección',
+        };
+      }).filter(function (c) { return c.cantidad > 0; });
+    } else {
+      base = categoriasCuradasDe(el) || categoriasDeProductos();
+      if (elegidas.length) {
+        var porNombre = {};
+        base.forEach(function (c) { porNombre[c.nombre] = c; });
+        base = elegidas.map(function (n) { return porNombre[n]; }).filter(Boolean);
+      }
+    }
+    var limite = Number(conf.limite) > 0 ? Number(conf.limite) : 4;
+    return base.slice(0, limite);
+  }
+
+  // Columnas del bloque: solo con la config guardada (el CSS que las usa se
+  // activa con data-col-columnas; sin él, la grilla es la del HTML).
+  function prepararBloqueColecciones() {
+    var bloque = document.querySelector('[data-gesicomm-bloque="colecciones"]');
+    var conf = coleccionesInicioConfig();
+    if (!bloque || !conf) return;
+    var columnas = Math.max(1, Math.min(6, Math.floor(Number(conf.columnas) || 4)));
+    bloque.setAttribute('data-col-columnas', String(columnas));
+    bloque.style.setProperty('--col-columnas', columnas);
+    bloque.style.setProperty('--col-columnas-tablet', Math.min(3, columnas));
+    bloque.style.setProperty('--col-columnas-mobile', Math.min(2, columnas));
   }
 
   function categoriasMenu() {
@@ -2023,7 +2102,13 @@ export function runtimeGesicomm() {
       case 'checkout_items': base = (datos.carrito && datos.carrito.items) || []; break;
       case 'checkout_bumps': base = datos.checkout_bumps || []; break;
       case 'checkout_recomendados': base = datos.checkout_recomendados || []; break;
-      case 'categorias': base = categoriasCuradasDe(el) || categoriasDeProductos(); break;
+      case 'categorias': {
+        // Ya resuelto y con su propio total: no pasa por el límite del HTML.
+        var delBloque = el.closest && el.closest('[data-gesicomm-bloque="colecciones"]') ? coleccionesInicio(el) : null;
+        if (delBloque) { prepararBloqueColecciones(); return delBloque; }
+        base = categoriasCuradasDe(el) || categoriasDeProductos();
+        break;
+      }
       case 'menu_categorias': base = categoriasMenu(); break;
       case 'banners_inicio': base = bannersInicio(); break;
       case 'banners_intermedios': base = bannersIntermedios(); break;
@@ -2208,7 +2293,8 @@ export function runtimeGesicomm() {
           // No son productos: no se compran ni se abren (salvo un producto
           // del combo que esté en la landing, que abre su ficha).
           if (elemento.content_id) h.setAttribute('data-gesicomm-item', elemento.content_id);
-          if (nombre === 'categorias') h.setAttribute('data-gesicomm-categoria-ir', elemento.nombre);
+          if (nombre === 'categorias' && elemento.coleccion) h.setAttribute('data-gesicomm-coleccion-ir', elemento.coleccion);
+          else if (nombre === 'categorias') h.setAttribute('data-gesicomm-categoria-ir', elemento.nombre);
           if (nombre === 'menu_categorias') h.setAttribute('data-gesicomm-categoria-ir', elemento.nombre);
           if (nombre === 'secciones_inicio') h.setAttribute('data-gesicomm-seccion-id', elemento.id);
           if (nombre === 'checkout_bumps') {
@@ -4083,6 +4169,11 @@ export function runtimeGesicomm() {
       // Sin return: el mismo link puede tener además un data-gesicomm-evento.
     }
 
+    if ((el = t.closest('[data-gesicomm-coleccion-ir]'))) {
+      e.preventDefault();
+      enviar({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'catalogo', filtro: { etiqueta: el.getAttribute('data-gesicomm-coleccion-ir'), categoria: '' } });
+      return;
+    }
     if ((el = t.closest('[data-gesicomm-link]'))) {
       var paginaTienda = paginaDeEnlace(el);
       if (paginaTienda) {

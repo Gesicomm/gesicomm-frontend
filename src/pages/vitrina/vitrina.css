@@ -1420,3 +1420,44 @@
 .user-layout-container .settings-container {
   padding: 2rem 2.25rem 4rem;
 }
+
+/* ─── Marcas de la landing (vista "Productos en mi landing") ─────────── */
+.vit-card-marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: -0.35rem 0 0.85rem;
+  cursor: default;
+}
+
+.vit-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.2rem 0.15rem 0.5rem;
+  border: 1px solid var(--vit-border);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--vit-muted);
+  background: var(--vit-surface);
+}
+.vit-marca:not(:has(button)) { padding-right: 0.5rem; }
+
+.vit-marca button {
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+}
+.vit-marca button:hover { opacity: 1; background: var(--vit-card-hover-bg); }
+
+.vit-marca--oferta { color: var(--vit-ok); border-color: color-mix(in srgb, var(--vit-ok) 40%, transparent); }
+.vit-marca--contador { color: #f59e0b; border-color: color-mix(in srgb, #f59e0b 40%, transparent); }
+.vit-marca--badge { color: var(--vit-accent-fg); }
