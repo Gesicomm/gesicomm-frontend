@@ -587,19 +587,20 @@ ${fichaPropia(fichaDe)}` : VISTA_PRODUCTO;
 
 /**
  * @param {'inicio'|'producto'|'categoria'|'checkout'} vista
- * @param {{tienda, venta, productos, estilo?: string, base?: {html, css, js}}} datos
+ * @param {{tienda, venta, productos, estilo?: string, base?: {html, css, js}, documentoCompleto?: boolean}} datos
  *   productos: items del catálogo del panel, en el orden de la landing.
  *   estilo: indicaciones libres de diseño que escribe el comercio.
  *   base: si viene, el prompt incluye el código base de esa vista.
+ *   documentoCompleto: pide un único HTML con estilos y scripts integrados.
  */
-export function armarPromptVista(vista, { tienda, venta, productos = [], fichaDe = null, estilo = '', base = null }) {
+export function armarPromptVista(vista, { tienda, venta, productos = [], fichaDe = null, estilo = '', base = null, documentoCompleto = false }) {
   const especifico = promptEspecificoVista(vista, fichaDe);
   const estiloTexto = estilo.trim()
     ? `\n\n## Estilo visual pedido\n${estilo.trim()}`
     : '\n\n## Estilo visual\nModerno, limpio y confiable, con los colores de la marca de la tienda. Tipografía legible, bordes redondeados y buen espacio.';
   const esFicha = vista === 'producto';
   const esCheckout = vista === 'checkout';
-  return `${PROMPT_MAESTRO}
+  const prompt = `${PROMPT_MAESTRO}
 
 ${contexto({
     tienda,
@@ -609,4 +610,8 @@ ${contexto({
   })}
 
 ${especifico}${estiloTexto}${bloqueCodigoBase(base, { compacto: esFicha || esCheckout })}`;
+  if (!documentoCompleto) return prompt;
+  return prompt
+    .replace(/Devolvé exactamente tres bloques de código[^\n]+/, 'Devolvé un único bloque html con el documento completo: HTML y todo el CSS dentro de <style>, y el JavaScript necesario dentro de <script>. No separes la respuesta en bloques CSS o JavaScript. Sin explicaciones entre medio.')
+    .replace('devolvé igual los tres bloques html/css/js', 'devolvé un único documento HTML con todo el CSS y JavaScript incluidos');
 }

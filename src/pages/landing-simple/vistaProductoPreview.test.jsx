@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { JSDOM } from 'jsdom';
 import ConfigurarVentaCodigo from './ConfigurarVentaCodigo';
+import { usarCatalogoPaginado } from './catalogoPaginadoFalso';
 import { construirDocumentoCodigo } from './construirDocumentoCodigo';
 
 /**
@@ -17,6 +18,7 @@ vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue(
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../services/landingSimpleService', () => ({ landingSimpleService: { listarPaymentLogos: vi.fn().mockResolvedValue([]) } }));
 vi.mock('./CodigoPreview', () => ({ default: props => { capturado.props = props; return <output data-testid="preview" />; } }));
+vi.mock('../../services/vitrinaService', async () => ({ vitrinaService: { catalogoPaginado: (await import('./catalogoPaginadoFalso')).catalogoPaginadoFalso } }));
 
 const catalogo = { productos: [
   { tipo: 'producto', id: 1, slug: 'cacerola', nombre: 'Cacerola', categoria: 'Cocina', precio_efectivo: 850000 },
@@ -26,10 +28,11 @@ afterEach(cleanup);
 
 function montar() {
   const confirmar = vi.fn().mockResolvedValue(true);
+  usarCatalogoPaginado(catalogo.productos);
   render(<ConfigurarVentaCodigo catalogo={catalogo} inicial={{ seleccion: catalogo.productos }} onConfirmar={confirmar} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
   fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
+  // Al entrar a "Vista producto" queda elegido el primero: la cacerola.
   fireEvent.click(screen.getAllByRole('tab', { name: 'Vista producto' })[0]);
-  fireEvent.change(screen.getByRole('combobox', { name: 'Producto a editar' }), { target: { value: 'cacerola' } });
   return confirmar;
 }
 
@@ -225,10 +228,10 @@ describe('Vista producto: cada campo llega a la preview', () => {
     }
   }, 20000);
 
-  it('lo editado se guarda y otro producto no se contamina', () => {
+  it('lo editado se guarda y otro producto no se contamina', async () => {
     const confirmar = montar();
     escribir(within(bloque('Nombre comercial')).getByLabelText('Nombre comercial'), 'Solo de la cacerola');
-    fireEvent.change(screen.getByRole('combobox', { name: 'Producto a editar' }), { target: { value: 'olla' } });
+    fireEvent.click(await screen.findByRole('button', { name: /^Olla/, pressed: false }));
     expect(ficha().txt('h1[data-gesicomm-bind="nombre"]')).not.toBe('Solo de la cacerola');
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     const presentacion = confirmar.mock.calls[0][0].venta.presentacion_productos;

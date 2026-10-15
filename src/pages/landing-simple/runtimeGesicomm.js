@@ -1496,6 +1496,10 @@ export function runtimeGesicomm() {
   // propio, nunca el de `filtros`: esa es la categoría del catálogo
   // completo, no debe mezclarse con esta grilla chica del inicio.
   var pcCategoriaActiva = '';
+  // Colección activa (etiqueta del producto en la landing, ver
+  // OrganizadorProductos en el editor). Excluye a la categoría: es una
+  // pestaña u otra.
+  var pcColeccionActiva = '';
   var pcBusqueda = '';
 
   function urlContactoProducto(boton) {
@@ -1589,6 +1593,7 @@ export function runtimeGesicomm() {
   function productosCategoriaFiltrados() {
     var base = productosCategoriaBase();
     if (pcCategoriaActiva) base = base.filter(function (p) { return String(p.categoria || '') === pcCategoriaActiva; });
+    if (pcColeccionActiva) base = base.filter(function (p) { return productoPasaEtiqueta(p, pcColeccionActiva); });
     if (pcBusqueda) {
       base = base.filter(function (p) {
         return normalizar([
@@ -1648,26 +1653,49 @@ export function runtimeGesicomm() {
 
   function pintarProductosCategoria() {
     var seccion = document.querySelector('[data-gesicomm-bloque="productos_categoria"]');
-    if (seccion) seccion.hidden = productosCategoriaBase().length === 0;
+    if (seccion) {
+      seccion.hidden = productosCategoriaBase().length === 0;
+      var columnas = Math.max(1, Math.min(8, Math.floor(Number(productosCategoriaConfig().columnas) || 4)));
+      seccion.style.setProperty('--pc-columnas', columnas);
+      seccion.style.setProperty('--pc-columnas-tablet', Math.min(4, columnas));
+      seccion.style.setProperty('--pc-columnas-mobile', Math.min(2, columnas));
+      seccion.setAttribute('data-pc-compacto', columnas >= 6 ? 'true' : 'false');
+    }
     var vacio = document.querySelector('[data-gesicomm-pc-vacio]');
     if (vacio) vacio.hidden = productosCategoriaBase().length === 0 || productosCategoriaFiltrados().length > 0;
     var cont = document.querySelector('[data-gesicomm-pc-tabs]');
     if (!cont) return;
     var cats = categoriasProductosCategoria();
     if (pcCategoriaActiva && cats.indexOf(pcCategoriaActiva) === -1) pcCategoriaActiva = '';
+    // Colecciones primero (Ofertas, Novedades, "Ofertas del día"…): son lo
+    // que el comercio armó a propósito; después las categorías.
+    var colecciones = etiquetasDisponiblesCatalogo(productosCategoriaBase());
+    if (pcColeccionActiva && !colecciones.some(function (c) { return normalizar(c) === normalizar(pcColeccionActiva); })) pcColeccionActiva = '';
     cont.textContent = '';
-    cont.style.display = cats.length > 1 ? '' : 'none';
-    var opciones = [''].concat(cats);
+    cont.style.display = cats.length > 1 || colecciones.length ? '' : 'none';
+    for (var c = 0; c < colecciones.length; c++) {
+      var tabCol = document.createElement('button');
+      tabCol.type = 'button';
+      tabCol.textContent = textoEtiquetaFiltro(colecciones[c]);
+      tabCol.setAttribute('data-gesicomm-pc-coleccion', colecciones[c]);
+      tabCol.className = 'pc-tab pc-tab--coleccion';
+      var colActiva = normalizar(colecciones[c]) === normalizar(pcColeccionActiva);
+      tabCol.classList.toggle('is-active', colActiva);
+      tabCol.setAttribute('aria-pressed', colActiva ? 'true' : 'false');
+      cont.appendChild(tabCol);
+    }
+    var opciones = [''].concat(cats.length > 1 ? cats : []);
     for (var i = 0; i < opciones.length; i++) {
       var boton = document.createElement('button');
       boton.type = 'button';
       boton.textContent = opciones[i] || 'Todos';
       boton.setAttribute('data-gesicomm-pc-categoria', opciones[i]);
       boton.className = 'pc-tab';
-      var activo = opciones[i] === pcCategoriaActiva;
+      var activo = opciones[i] === pcCategoriaActiva && !(opciones[i] === '' && pcColeccionActiva);
       boton.classList.toggle('is-active', activo);
       boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
-      cont.appendChild(boton);
+      if (opciones[i] === '') cont.insertBefore(boton, cont.firstChild);
+      else cont.appendChild(boton);
     }
   }
 
@@ -3971,6 +3999,14 @@ export function runtimeGesicomm() {
     if ((el = t.closest('[data-gesicomm-pc-categoria]'))) {
       e.preventDefault();
       pcCategoriaActiva = el.getAttribute('data-gesicomm-pc-categoria') || '';
+      pcColeccionActiva = '';
+      repintarProductosCategoria();
+      return;
+    }
+    if ((el = t.closest('[data-gesicomm-pc-coleccion]'))) {
+      e.preventDefault();
+      pcColeccionActiva = el.getAttribute('data-gesicomm-pc-coleccion') || '';
+      pcCategoriaActiva = '';
       repintarProductosCategoria();
       return;
     }

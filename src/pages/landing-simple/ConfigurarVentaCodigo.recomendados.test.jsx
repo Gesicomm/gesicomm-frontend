@@ -3,11 +3,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import ConfigurarVentaCodigo from './ConfigurarVentaCodigo';
 import { productService } from '../../services/productService';
+import { usarCatalogoPaginado } from './catalogoPaginadoFalso';
 
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../services/landingSimpleService', () => ({ landingSimpleService: { listarPaymentLogos: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../services/productService', () => ({ productService: { detalle: vi.fn(), faq: vi.fn() } }));
+vi.mock('../../services/vitrinaService', async () => ({ vitrinaService: { catalogoPaginado: (await import('./catalogoPaginadoFalso')).catalogoPaginadoFalso } }));
 vi.mock('./CodigoPreview', () => ({ default: ({ datos }) => <output data-testid="preview-datos">{JSON.stringify(datos)}</output> }));
 
 const catalogo = { productos: [
@@ -22,13 +24,20 @@ describe('Elegir productos recomendados a mano', () => {
   it('marca el producto como recomendado sin sacar la vista previa de la ficha que se está editando', async () => {
     productService.detalle.mockResolvedValue({});
     productService.faq.mockResolvedValue([]);
+    usarCatalogoPaginado(catalogo.productos);
     render(<ConfigurarVentaCodigo catalogo={catalogo} inicial={{ seleccion: catalogo.productos }} onConfirmar={vi.fn()} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
     fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Vista producto' }));
     await waitFor(() => expect(datosPreview().producto?.id).toBe('mouse'));
 
     fireEvent.click(screen.getAllByRole('radio', { name: /Elegidos por vos/, hidden: true })[0]);
-    fireEvent.click(screen.getAllByRole('button', { name: /Teclado/, pressed: false, hidden: true })[0]);
+    // Dos buscadores paginados: el de la ficha arriba y el de recomendados abajo.
+    const botones = await waitFor(() => {
+      const encontrados = screen.getAllByRole('button', { name: /^Teclado/, pressed: false, hidden: true });
+      expect(encontrados).toHaveLength(2);
+      return encontrados;
+    });
+    fireEvent.click(botones[1]);
 
     await waitFor(() => expect(datosPreview().recomendados.map(p => p.id)).toEqual(['teclado']));
     expect(datosPreview().vista).toBe('producto');

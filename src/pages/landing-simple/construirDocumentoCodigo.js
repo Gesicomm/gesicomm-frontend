@@ -190,6 +190,57 @@ html[data-gesicomm-preview-device="mobile"] *::-webkit-scrollbar {
   background: transparent !important;
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
+/* La selección mantiene un marco de lectura cómodo aunque page-content
+   ocupe todo el viewport. También alcanza el HTML de tiendas ya guardadas. */
+[data-gesicomm-bloque="productos_categoria"],
+[data-gesicomm-bloque="colecciones"] {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 1280px !important;
+  margin-inline: auto !important;
+}
+[data-gesicomm-bloque="productos_categoria"] [data-gesicomm-lista="productos_categoria"] {
+  display: grid !important;
+  grid-template-columns: repeat(var(--pc-columnas, 4), minmax(0, 1fr)) !important;
+}
+@media (max-width: 1100px) {
+  [data-gesicomm-bloque="productos_categoria"] [data-gesicomm-lista="productos_categoria"] {
+    grid-template-columns: repeat(var(--pc-columnas-tablet, 4), minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 760px) {
+  [data-gesicomm-bloque="productos_categoria"] [data-gesicomm-lista="productos_categoria"] {
+    grid-template-columns: repeat(var(--pc-columnas-mobile, 2), minmax(0, 1fr)) !important;
+  }
+}
+/* La cantidad total la limita el runtime; ninguna plantilla debe esconder
+   las filas siguientes en móvil. */
+[data-gesicomm-lista="productos_categoria"] > .product-card {
+  display: flex !important;
+}
+@media (min-width: 1101px) {
+  [data-pc-compacto="true"] [data-gesicomm-lista] .product-card > .product-image {
+    height: 140px !important;
+    min-height: 140px !important;
+  }
+  [data-pc-compacto="true"] [data-gesicomm-lista] .product-card > .product-content {
+    padding: 10px !important;
+    gap: 8px;
+  }
+  [data-pc-compacto="true"] [data-gesicomm-lista] .product-card h3 {
+    font-size: 13px !important;
+  }
+  [data-pc-compacto="true"] [data-gesicomm-lista] .product-card .product-footer .price {
+    font-size: 17px !important;
+    line-height: 1.2 !important;
+    overflow-wrap: anywhere;
+  }
+  [data-pc-compacto="true"] [data-gesicomm-lista] .product-card .button-primary {
+    padding-inline: 6px !important;
+    font-size: 12px !important;
+  }
+}
 :where(main.container[data-gesicomm-base="producto"], main[data-gesicomm-base="producto_unico"], main[data-gesicomm-base="combos"], .lv-page) {
   width: 100% !important;
   max-width: none !important;

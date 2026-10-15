@@ -9,6 +9,7 @@ import {
 import { ofertaService } from '../../services/ofertaService';
 import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
+import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
@@ -20,8 +21,10 @@ import CodigoPreview from './CodigoPreview';
 import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado, marcarFichaPersonalizada, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
+import OrganizadorProductos, { BADGES_OFERTA, MAX_PRODUCTOS_CONTADOR, conEtiqueta, sinEtiqueta } from './OrganizadorProductos';
 import { conGlobalesHeredados } from './globalesCodigo';
 import { extraerFragmentoHtml, reemplazarFragmentoHtml, extraerSeccionCss, reemplazarSeccionCss, bindsDeTiendaPerdidos } from './seccionesCodigo';
+import { armarPromptVista } from './promptsCodigo';
 import { armarPromptSeccionInicio } from './promptsSeccionInicio';
 import { armarPromptFichaProducto, bloquesFichaFaltantes, faltantesFicha } from './promptsFichaProducto';
 
@@ -114,6 +117,28 @@ const CANTIDADES_RECO = [2, 3, 4, 6, 8];
 const MAX_RECOMENDADOS_MANUALES = Math.max(...CANTIDADES_RECO);
 // Con catálogos enormes, el preview no necesita más que esto para verse igual.
 const MAX_PRODUCTOS_PREVIEW = 120;
+
+// Los content_id que la configuración nombra. Espejo de
+// LandingService.contentIdsReferidosLienzo (backend): lo que la página tiene
+// que poder pintar aunque no caiga en el primer lote.
+function contentIdsReferidosVenta(venta = {}) {
+  const ids = new Set();
+  const lista = v => (Array.isArray(v) ? v : []);
+  const sumar = (v) => {
+    const id = typeof v === 'string' ? v.trim() : (v && typeof v === 'object' ? String(v.id || v.content_id || '').trim() : '');
+    if (id) ids.add(id);
+  };
+  const inicio = venta.inicio || venta.inicio_comercial || {};
+  if (Number(venta.principal_id) > 0) sumar(`producto-${Number(venta.principal_id)}`);
+  lista(venta.destacados).forEach(sumar);
+  lista(inicio.secciones).forEach(s => lista(s?.productos).forEach(sumar));
+  lista(inicio.productos_categoria?.items).forEach(sumar);
+  [venta.urgencia?.producto_id, venta.prueba_social?.producto_id].forEach(sumar);
+  lista(venta.urgencia?.productos).forEach(sumar);
+  lista(venta.recomendados?.items).forEach(sumar);
+  lista(venta.checkout_recomendados?.items).forEach(sumar);
+  return ids;
+}
 const FILTROS_CATALOGO = [
   ['buscador', 'Buscador'], ['categoria', 'Categoría'],
   ['precio', 'Rango de precios'], ['disponibilidad', 'Disponibilidad'], ['promociones', 'Promociones'], ['orden', 'Ordenar productos'],
@@ -233,12 +258,6 @@ function seccionConfigDeVista(vista) {
   if (vista === 'categoria' || vista === 'catalogo') return 'categorias';
   return 'inicio';
 }
-
-const PARTES_CODIGO = [
-  ['html', 'HTML'],
-  ['css', 'CSS'],
-  ['js', 'JavaScript'],
-];
 
 const clave = item => `${item.tipo}:${item.id}`;
 
@@ -573,6 +592,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       subtitulo: productosCategoria.subtitulo || '',
       items: Array.isArray(productosCategoria.items) ? productosCategoria.items : [],
       limite: Number(productosCategoria.limite) > 0 ? Number(productosCategoria.limite) : 8,
+      columnas: Math.max(1, Math.min(8, Math.floor(Number(productosCategoria.columnas) || 4))),
     },
     marca: {
       activo: marca.activo !== false,
@@ -771,8 +791,6 @@ export default function ConfigurarVentaCodigo({
   const [recoSubtitulo, setRecoSubtitulo] = useState(() => textosRecomendados(ventaInicial.recomendados).subtitulo);
   const [recoCta, setRecoCta] = useState(() => textosRecomendados(ventaInicial.recomendados).cta_texto);
   const [recoMostrar, setRecoMostrar] = useState(() => textosRecomendados(ventaInicial.recomendados).mostrar);
-  const [recoBusqueda, setRecoBusqueda] = useState('');
-  const [recoCategoria, setRecoCategoria] = useState('');
   const checkoutRecoInicial = ventaInicial.checkout_recomendados || {};
   const [checkoutRecoActivo, setCheckoutRecoActivo] = useState(checkoutRecoInicial.activo !== false);
   const [checkoutRecoItems, setCheckoutRecoItems] = useState(() => (
@@ -790,8 +808,6 @@ export default function ConfigurarVentaCodigo({
       ? checkoutRecoInicial.precio_antes
       : {}
   ));
-  const [checkoutRecoBusqueda, setCheckoutRecoBusqueda] = useState('');
-  const [checkoutRecoCategoria, setCheckoutRecoCategoria] = useState('');
 
   // Countdown de oferta y estadísticas: pueden ser datos reales confirmados
   // o contenido de ejemplo/generado por IA. Si quedan sin confirmar, publicar
@@ -845,7 +861,6 @@ export default function ConfigurarVentaCodigo({
   // ancho para verla sin ruido. Se vuelve con el mismo botón.
   const [panelesOcultos, setPanelesOcultos] = useState(false);
   const [seccionConfig, setSeccionConfig] = useState('inicio'); // 'inicio' | 'categorias' | 'fichas' | 'checkout' | 'ofertas' | 'combos'
-  const [codigoModal, setCodigoModal] = useState(null);
   const [categoriaPreview, setCategoriaPreview] = useState('');
   const [productoEditando, setProductoEditando] = useState(null); // content_id
   const [promoEditando, setPromoEditando] = useState(null); // content_id
@@ -957,17 +972,17 @@ export default function ConfigurarVentaCodigo({
     () => new Set(seleccion.filter(i => i.tipo === 'producto').map(i => Number(i.id))),
     [seleccion],
   );
-  const candidatosDestacados = useMemo(
-    () => seleccion.slice(0, 300).map(i => ({ ...i, content_id: contentIdPanel(i) })),
-    [seleccion],
-  );
-  const idsCandidatosDestacados = useMemo(
-    () => new Set(candidatosDestacados.map(i => i.content_id)),
-    [candidatosDestacados],
-  );
+  // Toda la selección de la landing por content_id (sin tope): los buscadores
+  // paginados (Productos, destacados, recomendados…) la usan para saber qué
+  // resultado se puede elegir.
+  const itemsLandingPorContentId = useMemo(() => {
+    const mapa = new Map();
+    seleccion.forEach(i => mapa.set(contentIdPanel(i), i));
+    return mapa;
+  }, [seleccion]);
   const destacadosValidos = useMemo(
-    () => destacados.filter(id => idsCandidatosDestacados.has(id)).slice(0, MAX_DESTACADOS),
-    [destacados, idsCandidatosDestacados],
+    () => destacados.filter(id => itemsLandingPorContentId.has(id)).slice(0, MAX_DESTACADOS),
+    [destacados, itemsLandingPorContentId],
   );
   // El catálogo del panel viene liviano: sin beneficios, garantías, opiniones
   // ni preguntas del producto. Se piden a demanda para la ficha que se ve o
@@ -994,7 +1009,7 @@ export default function ConfigurarVentaCodigo({
   const candidatosDatosProducto = useMemo(() => {
     const productos = seleccion.filter(i => i.tipo === 'producto');
     const base = productos.length ? productos : seleccion;
-    return base.slice(0, 300).map(i => {
+    return base.map(i => {
       const ficha = fichasProducto[claveItem(i)];
       const delProducto = { ...ficha, ...presentacionDelProducto(ficha?.ficha_datos) };
       // Un texto que la landing guardó vacío no pisa el del producto: la
@@ -1009,10 +1024,6 @@ export default function ConfigurarVentaCodigo({
     [candidatosDatosProducto, productoEditando],
   );
   const categoriaPreviewEsTodas = !categoriaPreview;
-  const productosCategoriaActual = useMemo(
-    () => categoriaPreviewEsTodas ? candidatosDatosProducto : candidatosDatosProducto.filter(i => i.categoria === categoriaPreviewValida),
-    [candidatosDatosProducto, categoriaPreviewEsTodas, categoriaPreviewValida],
-  );
   const resolverContentIdProducto = useCallback((id) => {
     const buscado = String(id || '');
     if (!buscado) return '';
@@ -1027,10 +1038,6 @@ export default function ConfigurarVentaCodigo({
     });
     return encontrado ? (encontrado.content_id || contentIdPanel(encontrado)) : buscado;
   }, [candidatosDatosProducto]);
-  const productoCategoriaEditando = useMemo(
-    () => productosCategoriaActual.find(i => i.content_id === productoEditando) || null,
-    [productosCategoriaActual, productoEditando],
-  );
   const productoPromoEditando = useMemo(
     () => candidatosDatosProducto.find(i => i.content_id === promoEditando) || null,
     [candidatosDatosProducto, promoEditando],
@@ -1055,6 +1062,13 @@ export default function ConfigurarVentaCodigo({
     () => new Set(candidatosDatosProducto.map(i => i.content_id)),
     [candidatosDatosProducto],
   );
+  // Los mismos candidatos indexados para los buscadores paginados de la ficha
+  // y de promos: lo que devuelve el servidor se cruza contra esto.
+  const datosProductoPorContentId = useMemo(
+    () => new Map(candidatosDatosProducto.map(i => [i.content_id, i])),
+    [candidatosDatosProducto],
+  );
+  const datosProductoConCombos = candidatosDatosProducto.some(i => i.tipo !== 'producto');
   const urgenciaProductoValido = idsDatosProducto.has(urgenciaProductoId)
     ? urgenciaProductoId
     : (candidatosDatosProducto[0]?.content_id || '');
@@ -1092,6 +1106,101 @@ export default function ConfigurarVentaCodigo({
   function quitarOfertaCatalogo(contentId) {
     setUrgenciaProductos(prev => prev.filter(id => id !== contentId));
     setAvisoPreview('');
+  }
+
+  // Organizar productos (pestaña Categorías): marcar varios de una. Ver
+  // OrganizadorProductos.jsx — todo cae en lo que la landing ya guarda.
+  function aplicarOfertaMasiva(items, { pct, badge, finAt, titulo }) {
+    if (pct) {
+      setAnclas(prev => {
+        const siguiente = { ...prev };
+        items.forEach(item => {
+          const ancla = precioAnclaPorDescuentoPromo(Number(precioDeVenta(item)) || Number(precioPanel(item)) || 0, pct);
+          if (ancla) siguiente[claveItem(item)] = ancla;
+        });
+        return siguiente;
+      });
+    }
+    setPresentacion(prev => {
+      const siguiente = { ...prev };
+      items.forEach(item => { siguiente[claveItem(item)] = { ...prev[claveItem(item)], insignia_principal: badge || '' }; });
+      return siguiente;
+    });
+    if (finAt) {
+      const ids = items.map(i => i.content_id || contentIdPanel(i));
+      setUrgenciaActiva(true);
+      setUrgenciaProductos(prev => [...prev, ...ids.filter(id => !prev.includes(id))].slice(0, MAX_PRODUCTOS_CONTADOR));
+      setUrgenciaFinAt(finAt);
+      // Lo eligió el comercio recién, con fecha concreta: es real.
+      setUrgenciaConfirmar(true);
+      if (titulo) setUrgenciaTitulo(titulo);
+    }
+    setVistaPreview('categoria');
+    setAvisoPreview(`${items.length} producto${items.length === 1 ? '' : 's'} en oferta.`);
+    setResaltado(null);
+  }
+
+  // Quitar partes de la oferta/colección de varios productos (barra de
+  // acciones o la × de cada marca en Organizar productos).
+  //   descuento: sin precio tachado EN ESTA LANDING. Si el producto trae uno
+  //     propio del catálogo, vaciar el de la landing lo hacía volver (el
+  //     runtime cae a precio_tachado): se fija igual al precio, que no se
+  //     muestra como descuento.
+  //   badge: solo el que puso una oferta ("Nuevo" o uno propio queda), salvo
+  //     que se pida quitar el badge explícitamente.
+  //   colecciones: 'todas' o lista de nombres. "Oferta" como etiqueta también
+  //     cuenta como oferta para el catálogo, así que quitar la oferta la saca.
+  function limpiarMasivo(items, { descuento = false, contador = false, badge = false, badgeOferta = false, colecciones = null } = {}) {
+    const ids = new Set(items.map(i => i.content_id || contentIdPanel(i)));
+    if (descuento) {
+      setAnclas(prev => {
+        const siguiente = { ...prev };
+        items.forEach(item => {
+          const precio = Number(precioDeVenta(item)) || Number(precioPanel(item)) || 0;
+          siguiente[claveItem(item)] = Number(item.precio_tachado) > precio && precio > 0 ? String(precio) : '';
+        });
+        return siguiente;
+      });
+    }
+    if (badge || badgeOferta || colecciones || descuento) {
+      setPresentacion(prev => {
+        const siguiente = { ...prev };
+        items.forEach(item => {
+          const k = claveItem(item);
+          const cambio = {};
+          const insignia = prev[k]?.insignia_principal ?? item.insignia_principal ?? '';
+          if (badge || (badgeOferta && BADGES_OFERTA.includes(insignia))) cambio.insignia_principal = '';
+          let etiqueta = prev[k]?.etiqueta ?? item.etiqueta ?? '';
+          if (colecciones === 'todas') etiqueta = '';
+          else if (Array.isArray(colecciones)) colecciones.forEach(n => { etiqueta = sinEtiqueta(etiqueta, n); });
+          if (descuento) etiqueta = sinEtiqueta(etiqueta, 'Oferta');
+          cambio.etiqueta = etiqueta;
+          siguiente[k] = { ...prev[k], ...cambio };
+        });
+        return siguiente;
+      });
+    }
+    if (contador) setUrgenciaProductos(prev => prev.filter(id => !ids.has(id)));
+    setVistaPreview('categoria');
+    setAvisoPreview(`Cambios quitados de ${items.length} producto${items.length === 1 ? '' : 's'}.`);
+    setResaltado(null);
+  }
+
+  function coleccionMasiva(items, nombre, quitar) {
+    setPresentacion(prev => {
+      const siguiente = { ...prev };
+      items.forEach(item => {
+        const k = claveItem(item);
+        const actual = prev[k]?.etiqueta ?? item.etiqueta ?? '';
+        siguiente[k] = { ...prev[k], etiqueta: quitar ? sinEtiqueta(actual, nombre) : conEtiqueta(actual, nombre) };
+      });
+      return siguiente;
+    });
+    setVistaPreview('categoria');
+    setAvisoPreview(quitar
+      ? `${items.length} producto${items.length === 1 ? '' : 's'} fuera de “${nombre}”.`
+      : `${items.length} producto${items.length === 1 ? '' : 's'} en “${nombre}”.`);
+    setResaltado(null);
   }
 
   function alternarOfertaCatalogo(contentId) {
@@ -1404,42 +1513,6 @@ export default function ConfigurarVentaCodigo({
     const porId = new Map(candidatosReco.map(i => [i.content_id, i]));
     return recoItems.map(id => porId.get(id)).filter(Boolean);
   }, [candidatosReco, recoItems]);
-  const categoriasRecoDisponibles = useMemo(() => (
-    [...new Set(candidatosReco.map(i => i.categoria).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, 'es'))
-  ), [candidatosReco]);
-  const candidatosRecoFiltrados = useMemo(() => {
-    const q = recoBusqueda.trim().toLowerCase();
-    const filtrados = candidatosReco.filter(i => {
-      if (recoCategoria && i.categoria !== recoCategoria) return false;
-      if (!q) return true;
-      const texto = [
-        i.nombre,
-        i.titulo_comercial,
-        i.categoria,
-        i.marca,
-        i.sku,
-        i.codigo,
-      ].filter(Boolean).join(' ').toLowerCase();
-      return texto.includes(q);
-    });
-    return filtrados.slice(0, 80);
-  }, [candidatosReco, recoBusqueda, recoCategoria]);
-  const totalCandidatosRecoFiltrados = useMemo(() => {
-    const q = recoBusqueda.trim().toLowerCase();
-    return candidatosReco.filter(i => {
-      if (recoCategoria && i.categoria !== recoCategoria) return false;
-      if (!q) return true;
-      return [
-        i.nombre,
-        i.titulo_comercial,
-        i.categoria,
-        i.marca,
-        i.sku,
-        i.codigo,
-      ].filter(Boolean).join(' ').toLowerCase().includes(q);
-    }).length;
-  }, [candidatosReco, recoBusqueda, recoCategoria]);
   const idsCandidatosReco = useMemo(
     () => new Set(candidatosReco.map(i => i.content_id)),
     [candidatosReco],
@@ -1462,39 +1535,28 @@ export default function ConfigurarVentaCodigo({
     const porId = new Map(candidatosReco.map(i => [i.content_id, i]));
     return checkoutRecoItemsValidos.map(id => porId.get(id)).filter(Boolean);
   }, [candidatosReco, checkoutRecoItemsValidos]);
-  const candidatosCheckoutRecoFiltrados = useMemo(() => {
-    const q = checkoutRecoBusqueda.trim().toLowerCase();
-    const filtrados = candidatosReco.filter(i => {
-      if (i.tipo !== 'producto') return false;
-      if (checkoutRecoCategoria && i.categoria !== checkoutRecoCategoria) return false;
-      if (!q) return true;
-      return [
-        i.nombre,
-        i.titulo_comercial,
-        i.categoria,
-        i.marca,
-        i.sku,
-        i.codigo,
-      ].filter(Boolean).join(' ').toLowerCase().includes(q);
+  // Los dos se eligen con el buscador paginado: la vista previa se queda en
+  // la pantalla donde aparecen y resalta la sección.
+  function alternarRecomendado(contentId) {
+    setRecoItems(prev => {
+      if (prev.includes(contentId)) return prev.filter(x => x !== contentId);
+      if (prev.length >= MAX_RECOMENDADOS_MANUALES) return prev;
+      return [...prev, contentId];
     });
-    return filtrados.slice(0, 80);
-  }, [candidatosReco, checkoutRecoBusqueda, checkoutRecoCategoria]);
-  const totalCandidatosCheckoutRecoFiltrados = useMemo(() => {
-    const q = checkoutRecoBusqueda.trim().toLowerCase();
-    return candidatosReco.filter(i => {
-      if (i.tipo !== 'producto') return false;
-      if (checkoutRecoCategoria && i.categoria !== checkoutRecoCategoria) return false;
-      if (!q) return true;
-      return [
-        i.nombre,
-        i.titulo_comercial,
-        i.categoria,
-        i.marca,
-        i.sku,
-        i.codigo,
-      ].filter(Boolean).join(' ').toLowerCase().includes(q);
-    }).length;
-  }, [candidatosReco, checkoutRecoBusqueda, checkoutRecoCategoria]);
+    setVistaPreview('producto');
+    setAvisoPreview('');
+    setResaltado({ lista: 'recomendados', n: 0 });
+  }
+  function alternarCheckoutReco(contentId) {
+    setCheckoutRecoItems(prev => {
+      if (prev.includes(contentId)) return prev.filter(x => x !== contentId);
+      if (prev.length >= MAX_RECOMENDADOS_MANUALES) return prev;
+      return [...prev, contentId];
+    });
+    setVistaPreview('checkout');
+    setAvisoPreview('');
+    setResaltado({ lista: 'checkout_recomendados', n: Date.now() });
+  }
   const candidatosOfertaLimitada = useMemo(
     () => candidatosReco.filter(i => i.mostrar_en_inicio !== false),
     [candidatosReco],
@@ -1793,10 +1855,21 @@ export default function ConfigurarVentaCodigo({
           ? codigoCheckoutPreview
           : codigoInicioPreview;
 
-  const productosPreview = useMemo(
-    () => seleccion.slice(0, MAX_PRODUCTOS_PREVIEW).map(i => (fichasProducto[claveItem(i)] ? { ...fichasProducto[claveItem(i)], ...i } : i)),
-    [seleccion, fichasProducto],
-  );
+  // Los primeros MAX_PRODUCTOS_PREVIEW y, además, los que la configuración
+  // nombra (productos por categoría, destacados, vitrinas…) aunque estén más
+  // abajo en la lista — igual que primeraPaginaLienzo en el backend. Sin
+  // esto, un producto elegido en "Productos" que cae después del corte no
+  // aparecía en la vista previa (ni su categoría en las pestañas).
+  // También el de la ficha que se está mirando: se elige con el buscador
+  // paginado y puede ser cualquiera del catálogo.
+  const productosPreview = useMemo(() => {
+    const referidos = contentIdsReferidosVenta(ventaActual);
+    const enFicha = resolverContentIdProducto(productoPreview);
+    const lista = seleccion.filter((i, idx) => idx < MAX_PRODUCTOS_PREVIEW
+      || referidos.has(contentIdPanel(i)) || referidos.has(`${i.tipo}-${i.id}`)
+      || (enFicha && contentIdPanel(i) === enFicha));
+    return lista.map(i => (fichasProducto[claveItem(i)] ? { ...fichasProducto[claveItem(i)], ...i } : i));
+  }, [seleccion, fichasProducto, ventaActual, productoPreview, resolverContentIdProducto]);
   const productoFicha = useMemo(() => {
     const productosSolos = productosPreview.filter(p => p.tipo === 'producto');
     const contentId = resolverContentIdProducto(productoPreview);
@@ -2062,113 +2135,14 @@ export default function ConfigurarVentaCodigo({
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
-                <label className="relative block">
-                  <span className="sr-only">Buscar productos recomendados</span>
-                  <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-                  <input
-                    value={recoBusqueda}
-                    onChange={e => setRecoBusqueda(e.target.value)}
-                    placeholder="Buscar por producto, SKU, marca o categoría"
-                    className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-                  />
-                </label>
-                <label className="block">
-                  <span className="sr-only">Filtrar por categoría</span>
-                  <select
-                    value={recoCategoria}
-                    onChange={e => setRecoCategoria(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-                  >
-                    <option value="">Todas las categorías</option>
-                    {categoriasRecoDisponibles.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                  </select>
-                </label>
-              </div>
-              {(recoBusqueda || recoCategoria) && (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface-2/60 px-3 py-2 text-xs text-fg-muted">
-                  <span>
-                    {totalCandidatosRecoFiltrados.toLocaleString('es-PY')} resultado{totalCandidatosRecoFiltrados === 1 ? '' : 's'}
-                    {totalCandidatosRecoFiltrados > candidatosRecoFiltrados.length ? ` · mostrando primeros ${candidatosRecoFiltrados.length}` : ''}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => { setRecoBusqueda(''); setRecoCategoria(''); }}
-                    className="font-medium text-primary-text hover:underline"
-                  >
-                    Limpiar filtros
-                  </button>
-                </div>
-              )}
             </div>
-            <div className="grid max-h-[440px] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-              {candidatosRecoFiltrados.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border-strong px-4 py-6 text-center text-sm text-fg-muted sm:col-span-2">
-                  No encontramos productos con esos filtros.
-                </div>
-              ) : candidatosRecoFiltrados.map(i => {
-                const elegido = recoItems.includes(i.content_id);
-                const bloqueadoPorLimite = !elegido && recoItemsValidos.length >= MAX_RECOMENDADOS_MANUALES;
-                const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
-                const anclaKey = claveItem(i);
-                const img = imagenPanel(i);
-                return (
-                  <div
-                    key={i.content_id}
-                    className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : bloqueadoPorLimite ? 'border-border bg-surface opacity-55' : 'border-border bg-surface hover:border-border-strong'}`}
-                  >
-                    <button
-                      type="button"
-                      aria-pressed={elegido}
-                      disabled={bloqueadoPorLimite}
-                      onClick={() => {
-                        setRecoItems(prev => {
-                          if (prev.includes(i.content_id)) return prev.filter(x => x !== i.content_id);
-                          if (prev.length >= MAX_RECOMENDADOS_MANUALES) return prev;
-                          return [...prev, i.content_id];
-                        });
-                        // La vista previa no cambia de producto: se queda en la ficha que
-                        // se está editando y resalta su sección de recomendados.
-                        setVistaPreview('producto');
-                        setAvisoPreview('');
-                        setResaltado({ lista: 'recomendados', n: 0 });
-                      }}
-                      className="flex w-full items-start gap-3 text-left disabled:cursor-not-allowed"
-                    >
-                      <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
-                        {img
-                          ? <img src={img} alt="" className="h-full w-full object-contain" loading="lazy" />
-                          : <ShoppingBag size={20} className="text-fg-subtle" />}
-                        <span className={`absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full border text-[11px] ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border bg-surface text-fg-subtle'}`}>
-                          {elegido ? <Check size={13} /> : null}
-                        </span>
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="line-clamp-2 text-sm font-semibold leading-snug text-fg">{i.titulo_comercial || i.nombre}</span>
-                        <span className="mt-1 flex flex-wrap items-center gap-2 text-[12px]">
-                          <span className="font-mono font-semibold text-fg">{formatearGs(precio) || 'Sin precio'}</span>
-                          {Number(i.precio_ancla) > precio && <span className="font-mono text-fg-muted line-through">{formatearGs(i.precio_ancla)}</span>}
-                        </span>
-                        <span className="mt-1 block truncate text-[11px] text-fg-muted">{i.tipo === 'combo' ? 'Combo' : (i.categoria || 'Producto')}</span>
-                      </span>
-                    </button>
-                    <PrecioAncla
-                      venta={precio}
-                      valor={anclas[anclaKey] ?? ''}
-                      onCambiar={v => {
-                        setAnclas(prev => ({ ...prev, [anclaKey]: v }));
-                        // La vista previa no cambia de producto: se queda en la ficha que
-                        // se está editando y resalta su sección de recomendados.
-                        setVistaPreview('producto');
-                        setAvisoPreview('');
-                        setResaltado({ lista: 'recomendados', n: 0 });
-                      }}
-                      id={`reco-ancla-${i.content_id}`}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+            <SelectorProductosPaginado
+              elegidos={recoItemsValidos}
+              enLanding={itemsLandingPorContentId}
+              incluirCombos={incluirCombos}
+              maximo={MAX_RECOMENDADOS_MANUALES}
+              onAlternar={alternarRecomendado}
+            />
             {recomendadosElegidos.length > 0 && (
               <div className="mt-4 rounded-xl border border-border bg-surface">
                 <div className="px-3 py-2.5 border-b border-border">
@@ -2376,17 +2350,18 @@ export default function ConfigurarVentaCodigo({
                       <p className="text-sm text-fg-muted">Agregá productos desde Productos para configurar sus fichas.</p>
                     ) : (
                       <div className="space-y-3">
-                        <label className="block">
-                          <span className="block text-sm font-medium text-fg mb-1.5">Producto a editar</span>
-                          <select
-                            value={productoConfigActual?.content_id || ''}
-                            onChange={e => seleccionarProductoConfig(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-fg outline-none focus:border-primary"
-                          >
-                            <option value="" disabled>Seleccioná un producto</option>
-                            {candidatosDatosProducto.map(item => <option key={item.content_id} value={item.content_id}>{item.nombre}</option>)}
-                          </select>
-                        </label>
+                        <div>
+                          <p className="block text-sm font-medium text-fg mb-1.5">
+                            Producto a editar{productoConfigActual ? `: ${productoConfigActual.nombre}` : ''}
+                          </p>
+                          <SelectorProductosPaginado
+                            elegidos={productoConfigActual ? [productoConfigActual.content_id] : []}
+                            enLanding={datosProductoPorContentId}
+                            incluirCombos={datosProductoConCombos}
+                            mostrarElegidos={false}
+                            onAlternar={seleccionarProductoConfig}
+                          />
+                        </div>
                         <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
                           <p className="text-xs font-semibold text-fg">Ahora editás solo este producto</p>
                           <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">Imágenes, reseñas, textos, beneficios, compra, pagos, opiniones y recomendaciones quedan separados de los otros productos.</p>
@@ -2516,7 +2491,8 @@ export default function ConfigurarVentaCodigo({
                     productos_categoria: (
                       <EditorProductosCategoria
                         config={inicioComercial.productos_categoria}
-                        candidatos={candidatosDestacados}
+                        enLanding={itemsLandingPorContentId}
+                        incluirCombos={incluirCombos}
                         onCambiar={cambiarProductosCategoria}
                         onAlternarItem={alternarItemProductosCategoria}
                       />
@@ -2565,7 +2541,8 @@ export default function ConfigurarVentaCodigo({
                     ),
                     destacados: (
                       <EditorProductosDestacados
-                        candidatosDestacados={candidatosDestacados}
+                        enLanding={itemsLandingPorContentId}
+                        incluirCombos={incluirCombos}
                         destacadosValidos={destacadosValidos}
                         seleccionLength={seleccion.length}
                         onAlternar={alternarDestacado}
@@ -2670,6 +2647,8 @@ export default function ConfigurarVentaCodigo({
                   >
                     <EditorPromosCatalogo
                       productos={candidatosDatosProducto}
+                      productosPorContentId={datosProductoPorContentId}
+                      incluirCombos={datosProductoConCombos}
                       productoEditando={productoConfigActual}
                       ofertasSeleccionadas={urgenciaProductosValidos}
                       anclas={anclas}
@@ -2702,84 +2681,33 @@ export default function ConfigurarVentaCodigo({
               )}
 
               {seccionConfig === 'categorias' && (
-                <>
-                  <Bloque
-                    titulo="Categorías"
-                    ayuda="La página de categoría toma las categorías reales de esta landing. Elegí una categoría para ver y editar sus productos."
-                    verDonde={() => verDonde('categoria', null)}
-                  >
-                    {candidatosDatosProducto.length === 0 ? (
-                      <p className="text-sm text-fg-muted">Esta landing todavía no tiene productos para mostrar.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
-                        <button
-                          type="button"
-                          onClick={() => { setCategoriaPreview(''); setVistaPreview('categoria'); setAvisoPreview('Preview de todas las categorías.'); setResaltado(null); }}
-                          className={`rounded-lg border px-3 py-2.5 text-left hover:border-border-strong ${categoriaPreviewEsTodas ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface'}`}
-                        >
-                          <span className="block text-sm font-semibold text-fg truncate">Todas las categorías</span>
-                          <span className="block text-xs text-fg-muted">{candidatosDatosProducto.length} producto{candidatosDatosProducto.length === 1 ? '' : 's'}</span>
-                        </button>
-                        {categoriasLandingDisponibles.map(([cat, count]) => (
-                          <button
-                            key={cat}
-                            type="button"
-                            onClick={() => { setCategoriaPreview(cat); setVistaPreview('categoria'); setAvisoPreview(`Preview de categoría: ${cat}.`); setResaltado(null); }}
-                            className={`rounded-lg border px-3 py-2.5 text-left hover:border-border-strong ${categoriaPreview === cat ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface'}`}
-                          >
-                            <span className="block text-sm font-semibold text-fg truncate">{cat}</span>
-                            <span className="block text-xs text-fg-muted">{count} producto{count === 1 ? '' : 's'}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </Bloque>
-
-                  {productosCategoriaActual.length > 0 && (
-                    <Bloque
-                      titulo={categoriaPreviewEsTodas ? 'Productos de todas las categorías' : `Productos de ${categoriaPreviewValida}`}
-                      ayuda={categoriaPreviewEsTodas
-                        ? 'Editá precio anterior, descuento, badge, etiquetas de filtro y countdown de todos los productos de esta landing.'
-                        : 'Editá precio anterior, descuento, badge, etiquetas de filtro y countdown de los productos de esta categoría.'}
-                      verDonde={() => verDonde('categoria', null)}
-                    >
-                      <EditorPromosCatalogo
-                        productos={productosCategoriaActual}
-                        productoEditando={productoCategoriaEditando}
-                        ofertasSeleccionadas={urgenciaProductosValidos}
-                        anclas={anclas}
-                        ofertaFinAt={urgenciaFinAt}
-                      ofertaTitulo={urgenciaTitulo}
-                      ofertaTexto={urgenciaTexto}
-                      ofertaCta={urgenciaCta}
-                        onEditar={contentId => abrirPromoProducto(contentId, 'categoria')}
-                        onAncla={(item, valor) => {
-                          setAnclas(prev => ({ ...prev, [claveItem(item)]: valor }));
-                          setVistaPreview('categoria');
-                          setProductoPreview(item.content_id);
-                          setAvisoPreview('');
-                          setResaltado(null);
-                        }}
-                        onCambiar={(item, campo, valor) => cambiarPresentacion(item, campo, valor)}
-                        onOfertaFinAt={cambiarUrgenciaFinAt}
-                        onOfertaTitulo={setUrgenciaTitulo}
-                        onOfertaTexto={setUrgenciaTexto}
-                        onOfertaCta={setUrgenciaCta}
-                        onAlternarOferta={contentId => {
-                          activarOfertaCatalogo(contentId);
-                          setVistaPreview('categoria');
-                          setResaltado(null);
-                        }}
-                        onQuitarOferta={quitarOfertaCatalogo}
-                        onDespublicar={item => {
-                          quitarManual(item);
-                          setVistaPreview('categoria');
-                          if (!categoriaPreviewEsTodas) setCategoriaPreview(prev => prev || categoriaPreviewValida);
-                        }}
-                      />
-                    </Bloque>
-                  )}
-                </>
+                <Bloque
+                  titulo="Organizar productos"
+                  ayuda="Marcá varios productos y ponelos en oferta (con descuento, badge y contador) o en una colección como “Ofertas del día”. Elegir una categoría también cambia la vista previa."
+                  verDonde={() => verDonde('categoria', null)}
+                >
+                  <OrganizadorProductos
+                    productos={candidatosDatosProducto}
+                    enContador={urgenciaProductosValidos}
+                    contadorFinAt={urgenciaActiva ? urgenciaFinAt : ''}
+                    contadorTitulo={urgenciaTitulo}
+                    categoriaActiva={categoriaPreviewEsTodas ? '' : categoriaPreviewValida}
+                    onCategoria={(cat) => {
+                      setCategoriaPreview(cat);
+                      setVistaPreview('categoria');
+                      setAvisoPreview(cat ? `Preview de categoría: ${cat}.` : 'Preview de todas las categorías.');
+                      setResaltado(null);
+                    }}
+                    onAplicarOferta={aplicarOfertaMasiva}
+                    onLimpiar={limpiarMasivo}
+                    onColeccion={coleccionMasiva}
+                    onEditar={contentId => abrirPromoProducto(contentId, 'categoria')}
+                    onDespublicar={item => {
+                      quitarManual(item);
+                      setVistaPreview('categoria');
+                    }}
+                  />
+                </Bloque>
               )}
 
               {seccionConfig === 'checkout' && (
@@ -2927,96 +2855,14 @@ export default function ConfigurarVentaCodigo({
                                     </button>
                                   )}
                                 </div>
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
-                                  <label className="relative block">
-                                    <span className="sr-only">Buscar recomendados del checkout</span>
-                                    <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-                                    <input
-                                      value={checkoutRecoBusqueda}
-                                      onChange={e => setCheckoutRecoBusqueda(e.target.value)}
-                                      placeholder="Buscar producto para el checkout"
-                                      className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-                                    />
-                                  </label>
-                                  <label className="block">
-                                    <span className="sr-only">Filtrar por categoría</span>
-                                    <select
-                                      value={checkoutRecoCategoria}
-                                      onChange={e => setCheckoutRecoCategoria(e.target.value)}
-                                      className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-                                    >
-                                      <option value="">Todas las categorías</option>
-                                      {categoriasRecoDisponibles.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                    </select>
-                                  </label>
-                                </div>
-                                {(checkoutRecoBusqueda || checkoutRecoCategoria) && (
-                                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-fg-muted">
-                                    <span>
-                                      {totalCandidatosCheckoutRecoFiltrados.toLocaleString('es-PY')} resultado{totalCandidatosCheckoutRecoFiltrados === 1 ? '' : 's'}
-                                      {totalCandidatosCheckoutRecoFiltrados > candidatosCheckoutRecoFiltrados.length ? ` · mostrando primeros ${candidatosCheckoutRecoFiltrados.length}` : ''}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => { setCheckoutRecoBusqueda(''); setCheckoutRecoCategoria(''); }}
-                                      className="font-medium text-primary-text hover:underline"
-                                    >
-                                      Limpiar filtros
-                                    </button>
-                                  </div>
-                                )}
                               </div>
-
-                              <div className="grid max-h-[420px] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                                {candidatosCheckoutRecoFiltrados.length === 0 ? (
-                                  <div className="rounded-xl border border-dashed border-border-strong px-4 py-6 text-center text-sm text-fg-muted sm:col-span-2">
-                                    No encontramos productos con esos filtros.
-                                  </div>
-                                ) : candidatosCheckoutRecoFiltrados.map(i => {
-                                  const elegido = checkoutRecoItemsValidos.includes(i.content_id);
-                                  const bloqueadoPorLimite = !elegido && checkoutRecoItemsValidos.length >= MAX_RECOMENDADOS_MANUALES;
-                                  const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
-                                  const img = imagenPanel(i);
-                                  return (
-                                    <div
-                                      key={i.content_id}
-                                      className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : bloqueadoPorLimite ? 'border-border bg-surface opacity-55' : 'border-border bg-surface hover:border-border-strong'}`}
-                                    >
-                                      <button
-                                        type="button"
-                                        aria-pressed={elegido}
-                                        disabled={bloqueadoPorLimite}
-                                        onClick={() => {
-                                          setCheckoutRecoItems(prev => {
-                                            if (prev.includes(i.content_id)) return prev.filter(x => x !== i.content_id);
-                                            if (prev.length >= MAX_RECOMENDADOS_MANUALES) return prev;
-                                            return [...prev, i.content_id];
-                                          });
-                                          setVistaPreview('checkout');
-                                          setAvisoPreview('');
-                                          setResaltado({ lista: 'checkout_recomendados', n: Date.now() });
-                                        }}
-                                        className="flex w-full items-start gap-3 text-left disabled:cursor-not-allowed"
-                                      >
-                                        <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
-                                          {img
-                                            ? <img src={img} alt="" className="h-full w-full object-contain" loading="lazy" />
-                                            : <ShoppingBag size={20} className="text-fg-subtle" />}
-                                          <span className={`absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full border text-[11px] ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border bg-surface text-fg-subtle'}`}>
-                                            {elegido ? <Check size={13} /> : null}
-                                          </span>
-                                        </span>
-                                        <span className="min-w-0 flex-1">
-                                          <span className="line-clamp-2 text-sm font-semibold leading-snug text-fg">{i.titulo_comercial || i.nombre}</span>
-                                          <span className="mt-1 block font-mono text-[12px] font-semibold text-fg">{formatearGs(precio) || 'Sin precio'}</span>
-                                          <span className="mt-1 block truncate text-[11px] text-fg-muted">{i.categoria || 'Producto'}</span>
-                                        </span>
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
+                              <SelectorProductosPaginado
+                                elegidos={checkoutRecoItemsValidos}
+                                enLanding={itemsLandingPorContentId}
+                                incluirCombos={false}
+                                maximo={MAX_RECOMENDADOS_MANUALES}
+                                onAlternar={alternarCheckoutReco}
+                              />
                               {checkoutRecoElegidos.length > 0 && (
                                 <div className="rounded-xl border border-border bg-surface">
                                   <div className="px-3 py-2.5 border-b border-border">
@@ -3252,113 +3098,14 @@ export default function ConfigurarVentaCodigo({
                                 </button>
                               )}
                             </div>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
-                              <label className="relative block">
-                                <span className="sr-only">Buscar productos recomendados</span>
-                                <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-                                <input
-                                  value={recoBusqueda}
-                                  onChange={e => setRecoBusqueda(e.target.value)}
-                                  placeholder="Buscar por producto, SKU, marca o categoría"
-                                  className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-                                />
-                              </label>
-                              <label className="block">
-                                <span className="sr-only">Filtrar por categoría</span>
-                                <select
-                                  value={recoCategoria}
-                                  onChange={e => setRecoCategoria(e.target.value)}
-                                  className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-                                >
-                                  <option value="">Todas las categorías</option>
-                                  {categoriasRecoDisponibles.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                </select>
-                              </label>
-                            </div>
-                            {(recoBusqueda || recoCategoria) && (
-                              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface-2/60 px-3 py-2 text-xs text-fg-muted">
-                                <span>
-                                  {totalCandidatosRecoFiltrados.toLocaleString('es-PY')} resultado{totalCandidatosRecoFiltrados === 1 ? '' : 's'}
-                                  {totalCandidatosRecoFiltrados > candidatosRecoFiltrados.length ? ` · mostrando primeros ${candidatosRecoFiltrados.length}` : ''}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => { setRecoBusqueda(''); setRecoCategoria(''); }}
-                                  className="font-medium text-primary-text hover:underline"
-                                >
-                                  Limpiar filtros
-                                </button>
-                              </div>
-                            )}
                           </div>
-                          <div className="grid max-h-[440px] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                            {candidatosRecoFiltrados.length === 0 ? (
-                              <div className="rounded-xl border border-dashed border-border-strong px-4 py-6 text-center text-sm text-fg-muted sm:col-span-2">
-                                No encontramos productos con esos filtros.
-                              </div>
-                            ) : candidatosRecoFiltrados.map(i => {
-                              const elegido = recoItems.includes(i.content_id);
-                              const bloqueadoPorLimite = !elegido && recoItemsValidos.length >= MAX_RECOMENDADOS_MANUALES;
-                              const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
-                              const anclaKey = claveItem(i);
-                              const img = imagenPanel(i);
-                              return (
-                                <div
-                                  key={i.content_id}
-                                  className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : bloqueadoPorLimite ? 'border-border bg-surface opacity-55' : 'border-border bg-surface hover:border-border-strong'}`}
-                                >
-                                  <button
-                                    type="button"
-                                    aria-pressed={elegido}
-                                    disabled={bloqueadoPorLimite}
-                                    onClick={() => {
-                                      setRecoItems(prev => {
-                                        if (prev.includes(i.content_id)) return prev.filter(x => x !== i.content_id);
-                                        if (prev.length >= MAX_RECOMENDADOS_MANUALES) return prev;
-                                        return [...prev, i.content_id];
-                                      });
-                                      // La vista previa no cambia de producto: se queda en la ficha que
-                                      // se está editando y resalta su sección de recomendados.
-                                      setVistaPreview('producto');
-                                      setAvisoPreview('');
-                                      setResaltado({ lista: 'recomendados', n: 0 });
-                                    }}
-                                    className="flex w-full items-start gap-3 text-left disabled:cursor-not-allowed"
-                                  >
-                                    <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
-                                      {img
-                                        ? <img src={img} alt="" className="h-full w-full object-contain" loading="lazy" />
-                                        : <ShoppingBag size={20} className="text-fg-subtle" />}
-                                      <span className={`absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full border text-[11px] ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border bg-surface text-fg-subtle'}`}>
-                                        {elegido ? <Check size={13} /> : null}
-                                      </span>
-                                    </span>
-                                    <span className="min-w-0 flex-1">
-                                      <span className="line-clamp-2 text-sm font-semibold leading-snug text-fg">{i.titulo_comercial || i.nombre}</span>
-                                      <span className="mt-1 flex flex-wrap items-center gap-2 text-[12px]">
-                                        <span className="font-mono font-semibold text-fg">{formatearGs(precio) || 'Sin precio'}</span>
-                                        {Number(i.precio_ancla) > precio && <span className="font-mono text-fg-muted line-through">{formatearGs(i.precio_ancla)}</span>}
-                                      </span>
-                                      <span className="mt-1 block truncate text-[11px] text-fg-muted">{i.tipo === 'combo' ? 'Combo' : (i.categoria || 'Producto')}</span>
-                                    </span>
-                                  </button>
-                                  <PrecioAncla
-                                    venta={precio}
-                                    valor={anclas[anclaKey] ?? ''}
-                                    onCambiar={v => {
-                                      setAnclas(prev => ({ ...prev, [anclaKey]: v }));
-                                      // La vista previa no cambia de producto: se queda en la ficha que
-                                      // se está editando y resalta su sección de recomendados.
-                                      setVistaPreview('producto');
-                                      setAvisoPreview('');
-                                      setResaltado({ lista: 'recomendados', n: 0 });
-                                    }}
-                                    id={`reco-ancla-${i.content_id}`}
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <SelectorProductosPaginado
+                            elegidos={recoItemsValidos}
+                            enLanding={itemsLandingPorContentId}
+                            incluirCombos={incluirCombos}
+                            maximo={MAX_RECOMENDADOS_MANUALES}
+                            onAlternar={alternarRecomendado}
+                          />
                           {recomendadosElegidos.length > 0 && (
                             <div className="mt-4 rounded-xl border border-border bg-surface">
                               <div className="px-3 py-2.5 border-b border-border">
@@ -3435,21 +3182,17 @@ export default function ConfigurarVentaCodigo({
               ) : (
               <Bloque
                 titulo="Código avanzado"
-                ayuda="HTML, CSS y JavaScript quedan guardados acá abajo. Abrilo solo cuando quieras pegar código generado por ChatGPT."
+                ayuda="Copiá el prompt maestro para la IA y pegá abajo el código completo de tu página."
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-fg">Editor libre de páginas</p>
-                    <p className="mt-1 text-[13px] text-fg-muted">Inicio, catálogo, categoría, ficha producto y checkout en un cuadro chico con scroll.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCodigoModal({ vista: vistaPreview === 'producto' || vistaPreview === 'catalogo' || vistaPreview === 'categoria' || vistaPreview === 'checkout' ? vistaPreview : 'inicio', parte: 'todo' })}
-                    className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg bg-surface border border-border text-sm font-semibold text-fg hover:border-border-strong"
-                  >
-                    <FileCode2 size={15} /> Editar código
-                  </button>
-                </div>
+                <InstruccionesIaPagina
+                  codigos={codigos}
+                  tipo={tipo}
+                  tienda={tienda}
+                  venta={ventaActual}
+                  productos={seleccion}
+                  vistaInicial={vistaPreview}
+                  onCambiarCodigo={onCambiarCodigo}
+                />
               </Bloque>
               )}
             </div>
@@ -3514,18 +3257,6 @@ export default function ConfigurarVentaCodigo({
           </div>
           <div className="flex-1 min-h-0 flex flex-col">{vistaPrevia}</div>
         </div>
-      )}
-
-      {codigoModal && (
-        <CodigoAvanzadoModal
-          modal={codigoModal}
-          onModal={setCodigoModal}
-          codigos={codigos}
-          tipo={tipo}
-          onCambiar={onCambiarCodigo}
-          onRestaurar={onRestaurarCodigo}
-          onCerrar={() => setCodigoModal(null)}
-        />
       )}
 
       {productoPromoEditando && (
@@ -3593,9 +3324,10 @@ function dividirCodigoPegado(texto) {
     if (lang === 'css' && salida.css === undefined) salida.css = cuerpo;
     if (['js', 'javascript'].includes(lang) && salida.js === undefined) salida.js = cuerpo;
   }
-  if (Object.keys(salida).length) return salida;
+  const tieneBloques = Object.keys(salida).length > 0;
+  if (tieneBloques && salida.html === undefined) return salida;
 
-  let html = fuente.trim();
+  let html = (tieneBloques ? salida.html : fuente).trim();
   const estilos = [];
   html = html.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (_, css) => {
     estilos.push(css.trim());
@@ -3606,96 +3338,90 @@ function dividirCodigoPegado(texto) {
     scripts.push(js.trim());
     return '';
   });
-  if (estilos.length) salida.css = estilos.join('\n\n');
-  if (scripts.length) salida.js = scripts.join('\n\n');
+  if (estilos.length) salida.css = [...estilos, salida.css].filter(Boolean).join('\n\n');
+  if (scripts.length) salida.js = [...scripts, salida.js].filter(Boolean).join('\n\n');
   if (/<[a-z!][\s\S]*>/i.test(html)) salida.html = html.trim();
   return salida;
 }
 
-function CodigoAvanzadoModal({ modal, onModal, codigos, tipo, onCambiar, onRestaurar, onCerrar }) {
-  const vista = VISTAS_CODIGO_TIENDA.find(v => v.key === modal?.vista) || VISTAS_CODIGO_TIENDA[0];
-  const parte = modal?.parte || 'todo';
-  const codigo = codigos?.[vista.key] || vista.base(tipo);
-  const valor = codigo?.[parte] || '';
-  const valorTodo = modal?.pegado ?? ['html', 'css', 'js']
-    .filter(key => codigo?.[key])
-    .map(key => `\`\`\`${key}\n${codigo[key]}\n\`\`\``)
-    .join('\n\n');
-  const cambiarTexto = texto => {
-    if (parte === 'todo') {
-      onModal({ ...modal, pegado: texto, parte: 'todo', vista: vista.key });
-      const dividido = dividirCodigoPegado(texto);
-      Object.entries(dividido).forEach(([key, value]) => onCambiar?.(vista.key, key, value));
+export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos, vistaInicial = 'inicio', onCambiarCodigo }) {
+  const [vistaKey, setVistaKey] = useState(() => VISTAS_CODIGO_TIENDA.some(v => v.key === vistaInicial) ? vistaInicial : 'inicio');
+  const [pegado, setPegado] = useState('');
+  const [copiado, setCopiado] = useState(false);
+  const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
+  const vista = VISTAS_CODIGO_TIENDA.find(v => v.key === vistaKey);
+  const codigo = codigos?.[vistaKey] || vista.base(tipo);
+  const prompt = useMemo(() => armarPromptVista(vistaKey, {
+    tienda, venta, productos, base: codigo, documentoCompleto: true,
+  }), [vistaKey, tienda, venta, productos, codigo]);
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopiado(true);
+      setError('');
+    } catch {
+      setError('No se pudo copiar. Podés seleccionar el prompt maestro de la guía y copiarlo manualmente.');
+    }
+  }
+
+  function aplicar() {
+    const dividido = dividirCodigoPegado(pegado);
+    if (!dividido.html?.trim()) {
+      setError('Pegá el código completo de la página, con su HTML y CSS dentro de <style>.');
       return;
     }
-    onCambiar?.(vista.key, parte, texto);
-  };
+    const html = vistaKey === 'producto'
+      ? marcarFichaPersonalizada(dividido.html)
+      : marcarPersonalizado(dividido.html);
+    onCambiarCodigo(vistaKey, 'html', html);
+    onCambiarCodigo(vistaKey, 'css', dividido.css ?? '');
+    onCambiarCodigo(vistaKey, 'js', dividido.js ?? '');
+    setPegado('');
+    setError('');
+    setAviso(`El diseño de ${vista.label} ya está aplicado en la vista previa. Guardá para publicarlo.`);
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-3 py-6" role="dialog" aria-modal="true" aria-label="Editar código avanzado">
-      <div className="flex max-h-[82vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-2xl">
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-          <div className="min-w-0">
-            <p className="flex items-center gap-2 text-sm font-semibold text-fg"><FileCode2 size={15} /> Código avanzado</p>
-            <p className="mt-0.5 text-xs text-fg-muted truncate">Pegá HTML, CSS o JavaScript de ChatGPT y revisá la preview antes de guardar.</p>
-          </div>
-          <button type="button" onClick={onCerrar} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-fg-muted hover:text-fg" aria-label="Cerrar editor de código">
-            <X size={15} />
-          </button>
-        </div>
-
-        <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[180px_minmax(0,1fr)]">
-          <div className="border-b border-border bg-surface-2/60 p-3 md:border-b-0 md:border-r">
-            <div className="grid grid-cols-2 gap-1 md:grid-cols-1">
-              {VISTAS_CODIGO_TIENDA.map(item => {
-                const Icono = item.icono;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => onModal({ vista: item.key, parte })}
-                    className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition-colors ${vista.key === item.key ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
-                  >
-                    <Icono size={14} /> <span className="truncate">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex min-h-0 flex-col p-3">
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <div role="tablist" aria-label="Parte del código" className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5">
-                {PARTES_CODIGO.map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    role="tab"
-                    aria-selected={parte === key}
-                    onClick={() => onModal({ vista: vista.key, parte: key })}
-                    className={`h-8 rounded-md px-3 text-xs font-semibold ${parte === key ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => onRestaurar?.(vista.key)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-semibold text-fg-muted hover:text-fg"
-              >
-                <RefreshCw size={13} /> Base
-              </button>
-            </div>
-            <textarea
-              value={valor}
-              onChange={e => onCambiar?.(vista.key, parte, e.target.value)}
-              spellCheck={false}
-              className="h-72 min-h-0 w-full resize-none overflow-auto rounded-lg border border-border bg-surface-2 px-3 py-2 font-mono text-xs leading-relaxed text-fg outline-none focus:border-primary"
-            />
-          </div>
-        </div>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <label htmlFor="ia-pagina-vista" className="block text-sm font-semibold text-fg">Página a diseñar</label>
+        <select id="ia-pagina-vista" value={vistaKey} onChange={e => {
+          setVistaKey(e.target.value); setPegado(''); setCopiado(false); setError(''); setAviso('');
+        }} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg">
+          {VISTAS_CODIGO_TIENDA.map(v => <option key={v.key} value={v.key}>{v.label}</option>)}
+        </select>
       </div>
+      <div className="space-y-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3">
+        <p className="text-sm font-semibold text-fg">1 · Instrucciones para la IA · Prompt maestro</p>
+        <p className="text-[13px] leading-relaxed text-fg-muted">
+          La guía explica toda la lógica comercial de Gesicomm: productos y precios reales, banners, categorías, vitrinas, ofertas, combos, recomendados, carrito, checkout y seguimiento de ventas. Incluye la configuración de tu tienda y el diseño actual de esta página.
+        </p>
+        <p className="text-[13px] leading-relaxed text-fg-muted">
+          Copiá las instrucciones en ChatGPT, Claude o Gemini y contale cómo querés el diseño. La IA debe devolverte un único HTML completo con el CSS incluido dentro de &lt;style&gt;. Copiá toda su respuesta y pegala abajo.
+        </p>
+        <button type="button" onClick={copiar} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 text-sm font-semibold text-fg hover:border-border-strong">
+          {copiado ? <Check size={15} /> : <Copy size={15} />}{copiado ? 'Instrucciones copiadas' : 'Copiar prompt maestro'}
+        </button>
+        <details>
+          <summary className="cursor-pointer text-xs font-semibold text-fg-muted">Ver guía completa y prompt maestro</summary>
+          <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-surface p-3 text-xs text-fg">{prompt}</pre>
+        </details>
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="ia-pagina-respuesta" className="block text-sm font-semibold text-fg">2 · Pegá acá el código completo de la IA</label>
+        <p className="text-xs text-fg-muted">Un solo campo para todo el HTML y CSS. Si incluye JavaScript, pegalo también en la misma respuesta.</p>
+        <textarea id="ia-pagina-respuesta" value={pegado} onChange={e => { setPegado(e.target.value); setError(''); setAviso(''); }}
+          rows={6} spellCheck={false} placeholder="Pegá acá la respuesta completa de la IA (HTML con CSS incluido)"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-xs text-fg outline-none focus:border-primary" />
+        <button type="button" onClick={aplicar} disabled={!pegado.trim() || !onCambiarCodigo}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-semibold text-primary-fg disabled:opacity-45">
+          <Sparkles size={15} /> Aplicar a la página
+        </button>
+      </div>
+      {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
+      {aviso && <p role="status" className="text-[13px] text-success">{aviso}</p>}
     </div>
   );
 }
@@ -4557,7 +4283,7 @@ export function InstruccionesIaFicha({ codigos, onCambiarCodigo, onRestaurarCodi
 }
 
 // Mini-editor de código (HTML/CSS) de UNA sola sección de Inicio, con el
-// mismo flujo de copiar/pegar que "Código avanzado" (CodigoAvanzadoModal)
+// mismo flujo de copiar/pegar que "Código avanzado" (InstruccionesIaPagina)
 // pero scoped a esta sección nomás — ver seccionesCodigo.js y
 // promptsSeccionInicio.js. No depende de ninguna IA conectada: arma un
 // prompt de texto para copiar y pegar en ChatGPT/Claude/Gemini, igual que
@@ -4883,56 +4609,189 @@ function EditorTestimonioInicio({ item, numero, onCambiar, onQuitar, onSubir }) 
   );
 }
 
-function EditorProductosCategoria({ config, candidatos, onCambiar, onAlternarItem }) {
+function EditorProductosCategoria({ config, enLanding, incluirCombos, onCambiar, onAlternarItem }) {
   return (
     <div className="space-y-3">
       <p className="text-xs text-fg-muted">Por defecto se muestran todos los productos, agrupados por categoría. Elegí productos abajo solo si querés mostrar una selección puntual en vez de todo el catálogo.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_110px] gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <CampoTexto label="Rótulo (kicker)" value={config.kicker} onChange={v => onCambiar({ kicker: v })} placeholder="PRODUCTOS" maxLength={40} />
         <CampoTexto label="Título" value={config.titulo} onChange={v => onCambiar({ titulo: v })} placeholder="Productos seleccionados" maxLength={100} />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block">
-          <span className="block text-xs font-medium text-fg-muted mb-1">Cantidad</span>
+          <span className="block text-xs font-medium text-fg-muted mb-1">Productos por fila (escritorio)</span>
+          <select value={config.columnas || 4} onChange={e => onCambiar({ columnas: Number(e.target.value) })}
+            className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="block text-xs font-medium text-fg-muted mb-1">Total de productos visibles</span>
           <input
             type="number" min="1" max="48" value={config.limite}
-            onChange={e => onCambiar({ limite: Math.max(1, Math.min(48, Number(e.target.value) || 8)) })}
+            onChange={e => onCambiar({ limite: Math.max(1, Math.min(48, Math.floor(Number(e.target.value) || 8))) })}
             className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
           />
         </label>
       </div>
+      <p className="text-xs text-fg-muted">Hasta {Math.ceil((config.limite || 8) / (config.columnas || 4))} filas en escritorio, según los productos disponibles. En tablet y móvil se muestran menos columnas para facilitar la lectura.</p>
       <CampoTexto label="Subtítulo" value={config.subtitulo} onChange={v => onCambiar({ subtitulo: v })} placeholder="Explorá nuestra selección" maxLength={160} />
       <div>
         <p className="mb-1.5 text-xs font-medium text-fg-muted">Elegí qué productos entran (se agrupan solos por categoría)</p>
-        {candidatos.length === 0 ? (
-          <p className="text-sm text-fg-muted">Primero elegí los productos de la landing.</p>
-        ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-                {candidatos.map(i => {
-                  const elegido = (config.items || []).includes(i.content_id);
-                  const imagen = getMediaUrl(i.imagen);
-                  return (
-                    <button
-                      key={i.content_id}
-                      type="button"
-                      aria-pressed={elegido}
-                      onClick={() => onAlternarItem(i.content_id)}
-                      className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${elegido ? 'border-accent bg-accent/[0.08]' : 'border-border hover:border-border-strong hover:bg-surface-2'}`}
-                    >
-                      <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
-                        {imagen ? <img src={imagen} alt="" className="h-full w-full object-contain" /> : <ShoppingBag size={16} className="text-fg-muted" />}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-fg">{i.nombre}</span>
-                        <span className="block truncate text-xs text-fg-muted">{i.categoria || 'Sin categoría'}</span>
-                      </span>
-                      <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border'}`}>
-                        {elegido && <Check size={13} />}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+        <SelectorProductosPaginado
+          elegidos={config.items || []}
+          enLanding={enLanding}
+          incluirCombos={incluirCombos}
+          onAlternar={onAlternarItem}
+        />
+      </div>
+    </div>
+  );
+}
+
+const POR_PAGINA_SELECTOR = 10;
+
+// Buscador de productos del bloque "Productos": la búsqueda, la categoría y
+// la página las resuelve el servidor (vitrina/catalogo-paginado), de a 10, así
+// se llega a cualquiera de un catálogo de miles sin bajarlo entero.
+// Solo se puede elegir lo que vende esta landing (enLanding): lo demás se ve
+// pero queda deshabilitado, porque la página publicada no podría mostrarlo.
+// Lo reusan todos los selectores de productos del editor (destacados,
+// recomendados, ficha, promos, ofertas); `maximo` bloquea sumar más elegidos
+// y `mostrarElegidos={false}` saca los chips cuando se elige de a uno.
+function SelectorProductosPaginado({ elegidos, enLanding, incluirCombos, onAlternar, maximo = Infinity, mostrarElegidos = true }) {
+  const [texto, setTexto] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const [categoria, setCategoria] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [resultado, setResultado] = useState({ items: [], total: 0, totalPages: 1, categorias: [] });
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const limpio = texto.trim();
+      setBusqueda((prev) => {
+        if (prev !== limpio) setPagina(1);
+        return limpio;
+      });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [texto]);
+
+  useEffect(() => {
+    const control = new AbortController();
+    setCargando(true);
+    setError('');
+    vitrinaService.catalogoPaginado({
+      page: pagina,
+      limit: POR_PAGINA_SELECTOR,
+      busqueda,
+      filtroCategoria: categoria,
+      tipo: incluirCombos ? 'todos' : 'producto',
+      orden: 'nombre',
+      solamenteMios: false,
+    }, { signal: control.signal })
+      .then((data) => {
+        setResultado({
+          items: Array.isArray(data?.items) ? data.items : [],
+          total: Number(data?.total) || 0,
+          totalPages: Math.max(1, Number(data?.totalPages) || 1),
+          categorias: Array.isArray(data?.categorias) ? data.categorias : [],
+        });
+      })
+      .catch(() => {
+        if (!control.signal.aborted) setError('No se pudieron cargar los productos.');
+      })
+      .finally(() => { if (!control.signal.aborted) setCargando(false); });
+    return () => control.abort();
+  }, [pagina, busqueda, categoria, incluirCombos]);
+
+  const elegidosSet = new Set(elegidos);
+  const lleno = elegidos.length >= maximo;
+  return (
+    <div className="space-y-2">
+      {mostrarElegidos && elegidos.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {elegidos.map((id) => {
+            const item = enLanding.get(id);
+            return (
+              <span key={id} className="inline-flex max-w-full items-center gap-1 rounded-full border border-accent bg-accent/[0.08] py-0.5 pl-2.5 pr-1 text-xs text-fg">
+                <span className="truncate">{item?.nombre || id}</span>
+                <button type="button" onClick={() => onAlternar(id)} aria-label={`Quitar ${item?.nombre || id}`}
+                  className="grid h-4 w-4 shrink-0 place-items-center rounded-full hover:bg-surface-2">
+                  <X size={11} />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-2">
+        <label className="relative block">
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
+          <input
+            type="search" value={texto} onChange={e => setTexto(e.target.value)} placeholder="Buscar producto"
+            className="w-full h-9 rounded-lg border border-border bg-surface-2 pl-8 pr-3 text-sm text-fg outline-none focus:border-primary"
+          />
+        </label>
+        <select value={categoria} onChange={e => { setCategoria(e.target.value); setPagina(1); }}
+          className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary">
+          <option value="">Todas las categorías</option>
+          {resultado.categorias.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      {error ? (
+        <p className="text-sm text-danger">{error}</p>
+      ) : !cargando && resultado.items.length === 0 ? (
+        <p className="text-sm text-fg-muted">No hay productos que coincidan.</p>
+      ) : (
+        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 ${cargando ? 'opacity-60' : ''}`}>
+          {resultado.items.map((i) => {
+            const contentId = contentIdPanel(i);
+            const disponible = enLanding.has(contentId);
+            const elegido = elegidosSet.has(contentId);
+            const bloqueado = !elegido && (!disponible || lleno);
+            const imagen = getMediaUrl(i.imagen);
+            return (
+              <button
+                key={contentId}
+                type="button"
+                aria-pressed={elegido}
+                disabled={bloqueado}
+                title={!disponible ? 'Este producto no está entre los productos de esta landing' : bloqueado ? `Ya elegiste el máximo de ${maximo}` : undefined}
+                onClick={() => onAlternar(contentId)}
+                className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${elegido ? 'border-accent bg-accent/[0.08]' : 'border-border hover:border-border-strong hover:bg-surface-2'}`}
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
+                  {imagen ? <img src={imagen} alt="" className="h-full w-full object-contain" /> : <ShoppingBag size={16} className="text-fg-muted" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-fg">{i.nombre}</span>
+                  <span className="block truncate text-xs text-fg-muted">{disponible ? (i.categoria || 'Sin categoría') : 'No está en esta landing'}</span>
+                </span>
+                <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border'}`}>
+                  {elegido && <Check size={13} />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-2 text-xs text-fg-muted">
+        <span>{cargando ? 'Cargando…' : `${resultado.total} producto${resultado.total === 1 ? '' : 's'}`}</span>
+        <div className="flex items-center gap-2">
+          <button type="button" aria-label="Página anterior" disabled={pagina <= 1 || cargando} onClick={() => setPagina(p => Math.max(1, p - 1))}
+            className="h-8 rounded-lg border border-border px-2.5 text-fg disabled:opacity-40">
+            <ArrowLeft size={13} />
+          </button>
+          <span>Página {pagina} de {resultado.totalPages}</span>
+          <button type="button" aria-label="Página siguiente" disabled={pagina >= resultado.totalPages || cargando} onClick={() => setPagina(p => p + 1)}
+            className="h-8 rounded-lg border border-border px-2.5 text-fg disabled:opacity-40">
+            <ArrowRight size={13} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -5204,8 +5063,8 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
   );
 }
 
-function EditorProductosDestacados({ candidatosDestacados, destacadosValidos, seleccionLength, onAlternar, onVer }) {
-  if (candidatosDestacados.length === 0) {
+function EditorProductosDestacados({ enLanding, incluirCombos, destacadosValidos, seleccionLength, onAlternar, onVer }) {
+  if (seleccionLength === 0) {
     return <p className="text-sm text-fg-muted">Primero elegí los productos de la landing.</p>;
   }
   return (
@@ -5216,41 +5075,24 @@ function EditorProductosDestacados({ candidatosDestacados, destacadosValidos, se
           Marcá hasta {MAX_DESTACADOS}. Ahora hay {destacadosValidos.length || Math.min(4, seleccionLength)} producto{(destacadosValidos.length || Math.min(4, seleccionLength)) === 1 ? '' : 's'} en portada.
         </p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-        {candidatosDestacados.map(i => {
-          const elegido = destacadosValidos.includes(i.content_id);
-          const imagen = getMediaUrl(i.imagen);
-          return (
-            <button
-              key={i.content_id}
-              type="button"
-              aria-pressed={elegido}
-              onClick={() => {
-                onAlternar(i.content_id);
-                onVer();
-              }}
-              className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${elegido ? 'border-accent bg-accent/[0.08]' : 'border-border hover:border-border-strong hover:bg-surface-2'}`}
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
-                {imagen ? <img src={imagen} alt="" className="h-full w-full object-contain" /> : <ShoppingBag size={16} className="text-fg-muted" />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-fg">{i.nombre}</span>
-                <span className="block truncate text-xs text-fg-muted">{i.categoria || 'Sin categoría'}</span>
-              </span>
-              <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border'}`}>
-                {elegido && <Check size={13} />}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <SelectorProductosPaginado
+        elegidos={destacadosValidos}
+        enLanding={enLanding}
+        incluirCombos={incluirCombos}
+        maximo={MAX_DESTACADOS}
+        onAlternar={(contentId) => {
+          onAlternar(contentId);
+          onVer();
+        }}
+      />
     </div>
   );
 }
 
 function EditorPromosCatalogo({
   productos,
+  productosPorContentId,
+  incluirCombos,
   productoEditando,
   ofertasSeleccionadas,
   anclas,
@@ -5269,43 +5111,24 @@ function EditorPromosCatalogo({
   onOfertaCta,
   onDespublicar,
 }) {
-  const [busqueda, setBusqueda] = useState('');
-  const productosFiltrados = useMemo(() => {
-    const q = normalizarTexto(busqueda);
-    if (!q) return productos;
-    return productos.filter(item => normalizarTexto([
-      item.titulo_comercial,
-      item.nombre,
-      item.categoria,
-      item.slug,
-    ].filter(Boolean).join(' ')).includes(q));
-  }, [productos, busqueda]);
-  const productosVisibles = productosFiltrados.slice(0, 24);
-  useEffect(() => {
-    setBusqueda('');
-  }, [productos]);
+  // Se elige con el buscador paginado; abajo quedan a mano el que se está
+  // editando y los que ya tienen countdown.
+  const productosVisibles = useMemo(() => {
+    const ids = [productoEditando?.content_id, ...ofertasSeleccionadas].filter(Boolean);
+    return [...new Set(ids)].map(id => productosPorContentId.get(id)).filter(Boolean);
+  }, [productoEditando, ofertasSeleccionadas, productosPorContentId]);
   if (!productos.length) {
     return <p className="text-sm text-fg-muted">Primero elegí productos para la landing o usá una regla de catálogo.</p>;
   }
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <label className="relative block flex-1">
-          <span className="sr-only">Buscar productos</span>
-          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-          <input
-            type="search"
-            value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
-            aria-label="Buscar productos"
-            placeholder="Buscar producto"
-            className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-fg outline-none transition-colors placeholder:text-fg-muted focus:border-primary"
-          />
-        </label>
-        <span className="text-xs text-fg-muted">
-          {productosFiltrados.length} de {productos.length} producto{productos.length === 1 ? '' : 's'}
-        </span>
-      </div>
+      <SelectorProductosPaginado
+        elegidos={productoEditando ? [productoEditando.content_id] : []}
+        enLanding={productosPorContentId}
+        incluirCombos={incluirCombos}
+        mostrarElegidos={false}
+        onAlternar={onEditar}
+      />
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {productosVisibles.map(item => {
           const contentId = item.content_id || contentIdPanel(item);
@@ -5355,8 +5178,6 @@ function EditorPromosCatalogo({
           );
         })}
       </div>
-      {productosFiltrados.length === 0 && <p className="text-sm text-fg-muted">No hay productos que coincidan con la búsqueda.</p>}
-      {productosFiltrados.length > 24 && <p className="text-xs text-fg-muted">Mostrando los primeros 24 productos configurables. Usá el buscador para encontrar uno específico.</p>}
     </div>
   );
 }
@@ -6188,7 +6009,6 @@ function ProductosIncluidos({ lista, vacio }) {
 // mismo editor real de la ficha de producto, así una oferta creada desde la
 // IA es idéntica a una creada desde Productos.
 export function PanelOfertas({ producto, estrategia = null, productos, enLanding, onElegir, onCambiarProducto, onCerrar, onComboCreado, landingPreview = null, permitirCombo = false }) {
-  const [busqueda, setBusqueda] = useState('');
   const [armandoCombo, setArmandoCombo] = useState(false);
   const tipoElegido = LABEL_TIPO_OFERTA_RAPIDA[estrategia] || null;
 
@@ -6200,12 +6020,12 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
     return () => window.removeEventListener('keydown', alTeclear);
   }, [onCerrar]);
 
-  const visibles = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    const lista = q ? productos.filter(p => p.nombre?.toLowerCase().includes(q)) : productos;
-    // Los de esta landing primero: son los que tiene sentido ofertar.
-    return [...lista].sort((a, b) => Number(enLanding.has(Number(b.id))) - Number(enLanding.has(Number(a.id))));
-  }, [productos, busqueda, enLanding]);
+  // El producto se elige con el buscador paginado; solo se puede ofertar uno
+  // de los que vende la landing (`productos`).
+  const productosPorContentId = useMemo(
+    () => new Map(productos.filter(p => enLanding.has(Number(p.id))).map(p => [contentIdPanel(p), p])),
+    [productos, enLanding],
+  );
 
   if ((producto && (estrategia === 'combo' || armandoCombo)) || (!producto && estrategia === 'combo' && permitirCombo)) {
     return (
@@ -6274,27 +6094,16 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
                       : estrategia === 'upsell' ? 'Elegí el producto principal que dispara el upsell.'
                         : 'Elegí qué producto querés editar. Las ofertas se muestran cuando el cliente compra ese producto.'}
               </p>
-              <Buscador valor={busqueda} onChange={setBusqueda} placeholder="Buscar producto" etiqueta="Buscar producto" />
-              <ul className="mt-3 rounded-xl border border-border divide-y divide-border bg-surface">
-                {visibles.length === 0 && <li className="px-4 py-6 text-center text-sm text-fg-muted">Ningún producto coincide con “{busqueda}”.</li>}
-                {visibles.slice(0, 200).map(p => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => onElegir(p)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                    >
-                      <Miniatura item={p} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm text-fg truncate">{p.nombre}</span>
-                        <span className="block text-xs text-fg-muted">{p.categoria || 'Sin categoría'}</span>
-                      </span>
-                      {enLanding.has(Number(p.id)) && <span className="text-[11px] font-medium text-success shrink-0">En esta landing</span>}
-                      <ArrowRight size={15} className="text-fg-muted shrink-0" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <SelectorProductosPaginado
+                elegidos={[]}
+                enLanding={productosPorContentId}
+                incluirCombos={false}
+                mostrarElegidos={false}
+                onAlternar={(contentId) => {
+                  const elegido = productosPorContentId.get(contentId);
+                  if (elegido) onElegir(elegido);
+                }}
+              />
             </div>
           )}
         </div>
@@ -6343,29 +6152,11 @@ function Interruptor({ activo, onChange, etiqueta }) {
   );
 }
 
-function Buscador({ valor, onChange, placeholder, etiqueta }) {
-  return (
-    <label className="flex-1 flex items-center gap-2 h-10 rounded-lg border border-border bg-surface px-3 focus-within:border-primary">
-      <Search size={15} className="text-fg-muted shrink-0" />
-      <input
-        type="search"
-        value={valor}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label={etiqueta}
-        className="flex-1 min-w-0 bg-transparent text-sm text-fg placeholder:text-fg-muted/70 outline-none"
-      />
-    </label>
-  );
-}
-
 function Miniatura({ item }) {
   const src = item.imagen ? getMediaUrl(item.imagen) : null;
   return src
     ? <img src={src} alt="" className="w-10 h-10 rounded-lg object-cover bg-surface-2 shrink-0" loading="lazy" />
     : <span className="w-10 h-10 rounded-lg bg-surface-2 shrink-0" />;
 }
-
-
 
 

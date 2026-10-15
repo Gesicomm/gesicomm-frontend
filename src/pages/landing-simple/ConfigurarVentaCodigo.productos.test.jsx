@@ -2,11 +2,13 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import ConfigurarVentaCodigo from './ConfigurarVentaCodigo';
+import { usarCatalogoPaginado } from './catalogoPaginadoFalso';
 
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../services/landingSimpleService', () => ({ landingSimpleService: { listarPaymentLogos: vi.fn().mockResolvedValue([]) } }));
 vi.mock('./CodigoPreview', () => ({ default: ({ datos }) => <output data-testid="preview-datos">{JSON.stringify(datos)}</output> }));
+vi.mock('../../services/vitrinaService', async () => ({ vitrinaService: { catalogoPaginado: (await import('./catalogoPaginadoFalso')).catalogoPaginadoFalso } }));
 
 const catalogo = { productos: [
   { tipo: 'producto', id: 1, slug: 'cacerola', nombre: 'Cacerola', categoria: 'Cocina', precio_efectivo: 850000, precio_tachado: 900000 },
@@ -18,15 +20,18 @@ afterEach(cleanup);
 
 function montar(inicial = null, catalogoFuente = catalogo, landing = null) {
   const confirmar = vi.fn().mockResolvedValue(true);
+  usarCatalogoPaginado(catalogoFuente.productos);
   render(<ConfigurarVentaCodigo catalogo={catalogoFuente} inicial={inicial || { seleccion: catalogoFuente.productos }} landing={landing} onConfirmar={confirmar} cargarOfertas={cargarOfertas} onVolver={vi.fn()} />);
   fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
   return confirmar;
 }
 
-function abrirFichaProducto(nombre) {
+// Al entrar a "Vista producto" queda elegido el primero (Cacerola); otro se
+// elige en el buscador paginado, que responde asíncrono.
+async function abrirFichaProducto(nombre) {
   fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Vista producto' }));
-  const select = screen.getByRole('combobox', { name: 'Producto a editar' });
-  fireEvent.change(select, { target: { value: nombre === 'Olla' ? 'olla' : 'cacerola' } });
+  if (nombre === 'Cacerola') return;
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${nombre}`), pressed: false }));
 }
 
 function bloqueFicha(titulo) {
@@ -151,11 +156,10 @@ describe('Presentación de los productos del lienzo', () => {
     expect(tabs.queryByRole('tab', { name: 'Productos' })).toBeNull();
 
     fireEvent.click(tabs.getByRole('tab', { name: 'Categorías' }));
-    fireEvent.click(screen.getByRole('button', { name: /Cocina\s*2 productos/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Cocina\s*2$/ }));
 
-    expect(screen.getByText('Productos de Cocina')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Editar promo' })).toHaveLength(2);
-    fireEvent.click(screen.getAllByRole('button', { name: /^Despublicar$/i })[0]);
+    expect(screen.getAllByRole('button', { name: /^Editar promo de/ })).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Despublicar Cacerola' }));
 
     expect(screen.queryByText('Cacerola')).toBeNull();
     expect(datosPreview().productos.map(i => i.id)).toEqual(['olla']);
@@ -176,19 +180,18 @@ describe('Presentación de los productos del lienzo', () => {
 
     const tabs = within(screen.getByRole('tablist', { name: 'Área de configuración' }));
     fireEvent.click(tabs.getByRole('tab', { name: 'Categorías' }));
-    fireEvent.click(screen.getByRole('button', { name: /Todas las categorías\s*3 productos/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Todas\s*3$/ }));
 
-    expect(screen.getByText('Productos de todas las categorías')).toBeInTheDocument();
     expect(screen.getByText('Cacerola')).toBeInTheDocument();
     expect(screen.getByText('Batidora')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Buscar productos'), { target: { value: 'bati' } });
     expect(screen.getByText('Batidora')).toBeInTheDocument();
     expect(screen.queryByText('Cacerola')).toBeNull();
-    expect(screen.getAllByRole('button', { name: 'Editar promo' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /^Editar promo de/ })).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole('button', { name: /Cocina\s*2 productos/i }));
-    expect(screen.getByText('Productos de Cocina')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Buscar productos'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Cocina\s*2$/ }));
     expect(screen.getByText('Cacerola')).toBeInTheDocument();
     expect(screen.queryByText('Batidora')).toBeNull();
     fireEvent.change(screen.getByLabelText('Buscar productos'), { target: { value: 'olla' } });
@@ -199,13 +202,107 @@ describe('Presentación de los productos del lienzo', () => {
   it('al despublicar desde una regla dinámica pasa a manual y el producto desaparece', () => {
     const confirmar = montar({ venta: { seleccion: 'todos', configurado: true }, seleccion: [] });
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
-    fireEvent.click(screen.getByRole('button', { name: /Cocina\s*2 productos/i }));
-    fireEvent.click(screen.getAllByRole('button', { name: /^Despublicar$/i })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /^Cocina\s*2$/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Despublicar Cacerola' }));
     expect(screen.queryByText('Cacerola')).toBeNull();
     expect(datosPreview().productos.map(i => i.id)).toEqual(['olla']);
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(confirmar.mock.calls[0][0].venta.seleccion).toBe('manual');
     expect(confirmar.mock.calls[0][0].items.map(i => i.id)).toEqual([2]);
+  });
+
+  it('marca varios productos como oferta de una: descuento, badge y contador "Solo por hoy"', () => {
+    const confirmar = montar();
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Marcar todos los productos de la lista' }));
+    fireEvent.click(screen.getByRole('button', { name: /Marcar como oferta/ }));
+
+    const modal = within(screen.getByRole('dialog', { name: 'Marcar como oferta' }));
+    fireEvent.click(within(modal.getByRole('group', { name: 'Descuento' })).getByRole('button', { name: '20%' }));
+    const duracion = within(modal.getByRole('group', { name: 'Duración' }));
+    fireEvent.click(duracion.getByRole('button', { name: 'Solo por hoy' }));
+    fireEvent.click(duracion.getByRole('button', { name: 'Ofertas del día' }));
+    fireEvent.click(modal.getByRole('button', { name: /Aplicar a 2/ }));
+
+    expect(screen.queryByRole('dialog', { name: 'Marcar como oferta' })).toBeNull();
+    const [cacerola, olla] = datosPreview().productos;
+    expect(cacerola).toMatchObject({ precio: 850000, precio_antes: 1062500, descuento_pct: 20, insignia_principal: 'Solo por hoy' });
+    expect(olla).toMatchObject({ precio: 950000, precio_antes: 1187500, descuento_pct: 20 });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    const { items, venta } = confirmar.mock.calls[0][0];
+    expect(items.map(i => i.precio_ancla)).toEqual([1062500, 1187500]);
+    expect(venta.presentacion_productos['producto:2']).toMatchObject({ insignia_principal: 'Solo por hoy' });
+    expect(venta.urgencia).toMatchObject({ activo: true, estado: 'confirmado', titulo: 'Ofertas del día', productos: ['cacerola', 'olla'] });
+    const fin = new Date(venta.urgencia.fin_at);
+    expect(fin.getHours()).toBe(23);
+    expect(fin.getMinutes()).toBe(59);
+    expect(fin.toDateString()).toBe(new Date().toDateString());
+  });
+
+  it('la × del descuento lo quita aunque el producto traiga precio tachado propio', () => {
+    const confirmar = montar();
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
+    // Cacerola trae precio_tachado 900000 del catálogo: antes, vaciar el de la landing lo hacía volver.
+    expect(datosPreview().productos[0].precio_antes).toBe(900000);
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar descuento de Cacerola' }));
+    expect(datosPreview().productos[0]).toMatchObject({ precio_antes: null, descuento_pct: 0 });
+    expect(screen.queryByRole('button', { name: 'Quitar descuento de Cacerola' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: 850000 });
+  });
+
+  it('"Quitar todo" saca descuento, contador, badge y colecciones de los marcados', () => {
+    const confirmar = montar({ seleccion: [{ ...catalogo.productos[0], etiqueta: 'Oferta, Novedades' }, catalogo.productos[1]] });
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Marcar todos los productos de la lista' }));
+    fireEvent.click(screen.getByRole('button', { name: /Marcar como oferta/ }));
+    const modal = within(screen.getByRole('dialog', { name: 'Marcar como oferta' }));
+    fireEvent.click(within(modal.getByRole('group', { name: 'Descuento' })).getByRole('button', { name: '30%' }));
+    fireEvent.click(modal.getByRole('button', { name: /Aplicar a 2/ }));
+    expect(screen.getByRole('button', { name: 'Quitar contador de Olla' })).toBeInTheDocument();
+
+    // La × de una marca suelta solo esa parte.
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar Cacerola de Novedades' }));
+    expect(datosPreview().productos[0].etiqueta).toBe('Oferta');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Marcar todos los productos de la lista' }));
+    fireEvent.click(screen.getByRole('button', { name: /Quitar todo/ }));
+    const [cacerola, olla] = datosPreview().productos;
+    expect(cacerola).toMatchObject({ precio_antes: null, descuento_pct: 0 });
+    expect(olla).toMatchObject({ precio_antes: null, descuento_pct: 0 });
+    expect(cacerola.etiqueta || '').toBe('');
+    expect(cacerola.insignia_principal || '').toBe('');
+    expect(screen.queryByRole('button', { name: /^Quitar (contador|badge|descuento) de/ })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    const { venta } = confirmar.mock.calls[0][0];
+    expect(venta.urgencia.productos).toEqual([]);
+  });
+
+  it('agrega y quita productos de una colección (etiqueta de la landing)', () => {
+    const confirmar = montar();
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Marcar Olla' }));
+    fireEvent.click(screen.getByRole('button', { name: /Agregar a colección/ }));
+    const modal = within(screen.getByRole('dialog', { name: 'Agregar a una colección' }));
+    fireEvent.change(modal.getByLabelText('Nombre de la colección'), { target: { value: 'Día de la madre' } });
+    fireEvent.click(modal.getByRole('button', { name: /Crear “Día de la madre”/ }));
+
+    // Aparece como filtro de la lista y filtra.
+    fireEvent.click(screen.getByRole('button', { name: /^Día de la madre\s*1$/ }));
+    expect(screen.getByText('Olla')).toBeInTheDocument();
+    expect(screen.queryByText('Cacerola')).toBeNull();
+    expect(datosPreview().productos[1].etiqueta).toBe('Día de la madre');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(confirmar.mock.calls[0][0].items[1]).toMatchObject({ etiqueta: 'Día de la madre' });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Marcar Olla' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar de colección' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Quitar de una colección' })).getByRole('button', { name: /^Quitar$/ }));
+    expect(screen.getByText('Cacerola')).toBeInTheDocument();
+    expect(datosPreview().productos[1].etiqueta || '').toBe('');
   });
 
   it('mantiene y guarda banners aunque exista inicio_comercial viejo vacío', () => {
@@ -234,9 +331,9 @@ describe('Presentación de los productos del lienzo', () => {
     expect(ventaGuardada.inicio.banners[0]).toMatchObject({ titulo: 'Banner guardado', imagen: 'https://cdn.test/banner-nuevo.webp' });
     expect(ventaGuardada.inicio_comercial.banners).toEqual(ventaGuardada.inicio.banners);
   });
-  it('guarda ajustes por producto sin cerrar una regla dinámica', () => {
+  it('guarda ajustes por producto sin cerrar una regla dinámica', async () => {
     const confirmar = montar({ venta: { seleccion: 'todos', configurado: true }, seleccion: [] });
-    abrirFichaProducto('Olla');
+    await abrirFichaProducto('Olla');
     const precio = bloqueFicha('Precio y oferta');
     fireEvent.change(within(precio).getByLabelText('Precio anterior'), { target: { value: '1300000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));

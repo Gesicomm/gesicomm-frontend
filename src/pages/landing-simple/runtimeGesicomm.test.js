@@ -722,6 +722,23 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(tabs).toEqual(['Todos', 'Cocina', 'Ropa']);
   });
 
+  it('productos por categoría: muestra veinte productos con ocho columnas y conserva el límite al buscar', () => {
+    const productos = Array.from({ length: 25 }, (_, i) => ({ ...airFryer, id: 'producto-' + i, nombre: 'Producto ' + i }));
+    const { document, window } = montar(PLANTILLA_INICIO, {
+      ...datos, productos,
+      venta: { inicio: { productos_categoria: { columnas: 8, limite: 20 } } },
+    });
+    const seccion = document.querySelector('#productos-categoria');
+    expect(seccion.querySelectorAll('.product-card')).toHaveLength(20);
+    expect(seccion.style.getPropertyValue('--pc-columnas')).toBe('8');
+    expect(seccion.style.getPropertyValue('--pc-columnas-mobile')).toBe('2');
+    const input = seccion.querySelector('input');
+    input.value = 'Producto 2';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    expect(seccion.querySelectorAll('.product-card')).toHaveLength(6);
+    expect(seccion.style.getPropertyValue('--pc-columnas')).toBe('8');
+  });
+
   it('productos por categoría: la tab de una categoría filtra sin tocar el estado del catálogo completo', () => {
     const { document, click } = montar(PLANTILLA_INICIO, {
       ...datos,
@@ -738,6 +755,36 @@ describe('runtime del lienzo en blanco — inicio', () => {
 
     click('[data-gesicomm-pc-categoria=""]');
     expect(nombres()).toEqual(['Air Fryer 2.6L', 'Remera']);
+  });
+
+  it('productos por categoría: las colecciones (etiquetas) son pestañas que filtran, antes de las categorías', () => {
+    const { document, click } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      productos: [
+        { ...airFryer, etiqueta: 'Novedades', precio_antes: null, descuento_pct: 0 },
+        { ...remera, etiqueta: 'Ofertas del día, Novedades', precio_antes: null, descuento_pct: 0 },
+        { ...airFryer, id: 'licuadora', nombre: 'Licuadora', etiqueta: '', precio_antes: null, descuento_pct: 0 },
+      ],
+      venta: { inicio: { productos_categoria: { activo: true, items: ['air-fryer-26l', 'remera', 'licuadora'], limite: 8 } } },
+    });
+    const nombres = () => [...document.querySelectorAll('#productos-categoria [data-gesicomm-bind="nombre"]')].map(el => el.textContent);
+    const tabs = () => [...document.querySelectorAll('[data-gesicomm-pc-tabs] button')].map(el => el.textContent);
+    expect(tabs()).toEqual(['Todos', 'Novedades', 'Ofertas del día', 'Cocina', 'Ropa']);
+
+    click('[data-gesicomm-pc-coleccion="Novedades"]');
+    expect(nombres()).toEqual(['Air Fryer 2.6L', 'Remera']);
+    expect(document.querySelector('[data-gesicomm-pc-coleccion="Novedades"]').classList.contains('is-active')).toBe(true);
+    expect(document.querySelector('[data-gesicomm-pc-categoria=""]').classList.contains('is-active')).toBe(false);
+
+    click('[data-gesicomm-pc-coleccion="Ofertas del día"]');
+    expect(nombres()).toEqual(['Remera']);
+
+    // Una categoría reemplaza a la colección, no se suman.
+    click('[data-gesicomm-pc-categoria="Cocina"]');
+    expect(nombres()).toEqual(['Air Fryer 2.6L', 'Licuadora']);
+
+    click('[data-gesicomm-pc-categoria=""]');
+    expect(nombres()).toEqual(['Air Fryer 2.6L', 'Remera', 'Licuadora']);
   });
 
   it('productos por categoría: incluye buscador propio sin tocar el catálogo completo', () => {
