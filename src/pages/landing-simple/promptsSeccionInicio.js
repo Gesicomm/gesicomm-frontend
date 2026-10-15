@@ -77,8 +77,9 @@ const CONTRATO_POR_BLOQUE = {
 - Textos de título editables: data-gesicomm-venta="productos_categoria_kicker" / "_titulo" / "_subtitulo".`,
   },
   ofertas_urgencia: {
-    queConstruir: 'Oferta flash con countdown: urgencia real + grilla de productos en oferta.',
-    listas: `- Countdown: <div data-gesicomm-countdown><span data-gesicomm-countdown-parte="horas">:<span data-gesicomm-countdown-parte="minutos">:<span data-gesicomm-countdown-parte="segundos"></div> — NUNCA un countdown en JS propio ni una fecha fija.
+    queConstruir: 'Oferta flash con countdown: urgencia real + carrusel de productos en oferta.',
+    listas: `- Conservá el bloque data-gesicomm-bloque="ofertas_urgencia" y su lista "productos_ofertas": Gesicomm la convierte en carrusel con flechas y muestra todos los productos elegidos con descuento, aunque un diseño anterior tenga límite cuatro.
+- Countdown: <div data-gesicomm-countdown><span data-gesicomm-countdown-parte="horas">:<span data-gesicomm-countdown-parte="minutos">:<span data-gesicomm-countdown-parte="segundos"></div> — NUNCA un countdown en JS propio ni una fecha fija.
 - Textos editables: data-gesicomm-venta="urgencia_titulo" / "_texto" / "_cta".
 - Lista "productos_ofertas" (SOLO productos con descuento real): binds "descuento", "imagen", "nombre", "precio", "precio_antes". data-gesicomm-ver y data-gesicomm-comprar en cada tarjeta.`,
   },

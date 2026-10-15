@@ -4,8 +4,9 @@ import {
   Eye, EyeOff, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
   ChevronsUpDown, ChevronsDownUp,
   Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, Trash2, ExternalLink, Save, Settings2, Copy, Sparkles,
-  GripVertical, Lock, PanelLeftClose, PanelLeftOpen,
+  GripVertical, Lock, PanelLeftClose, PanelLeftOpen, Cpu, Terminal,
 } from 'lucide-react';
+import ConectarMcpPanel from './panels/ConectarMcpPanel';
 import { ofertaService } from '../../services/ofertaService';
 import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
@@ -904,6 +905,35 @@ export default function ConfigurarVentaCodigo({
   useEffect(() => {
     verificarSesion().then(setUsuarioActual).catch(() => setUsuarioActual(null));
   }, []);
+
+  const recargarLandingDesdeServidor = useCallback(async () => {
+    if (!landing?.id || !onCambiarCodigo) return;
+    try {
+      const actualizada = await landingSimpleService.obtener(landing.id);
+      if (actualizada?.content?.codigo) {
+        onCambiarCodigo('inicio', 'html', actualizada.content.codigo.html || '');
+        onCambiarCodigo('inicio', 'css', actualizada.content.codigo.css || '');
+        onCambiarCodigo('inicio', 'js', actualizada.content.codigo.js || '');
+      }
+      const vistas = actualizada?.content?.vistas || {};
+      Object.keys(vistas).forEach(vk => {
+        if (vk === 'productos') {
+          Object.entries(vistas.productos || {}).forEach(([cid, c]) => {
+            onCambiarCodigo(`propia:${cid}`, 'html', c?.html || '');
+            onCambiarCodigo(`propia:${cid}`, 'css', c?.css || '');
+            onCambiarCodigo(`propia:${cid}`, 'js', c?.js || '');
+          });
+        } else if (vk !== 'legales') {
+          onCambiarCodigo(vk, 'html', vistas[vk]?.html || '');
+          onCambiarCodigo(vk, 'css', vistas[vk]?.css || '');
+          onCambiarCodigo(vk, 'js', vistas[vk]?.js || '');
+        }
+      });
+      setAvisoPreview('Vista previa sincronizada con los cambios de Claude / Codex.');
+    } catch {
+      setError('No se pudo sincronizar la landing desde el servidor.');
+    }
+  }, [landing?.id, onCambiarCodigo]);
 
   const [combosCreados, setCombosCreados] = useState([]);
   const catalogoActual = useMemo(() => ({ ...catalogo, combos: Array.from(new Map([
@@ -2285,6 +2315,19 @@ export default function ConfigurarVentaCodigo({
               <Settings2 size={14} /> <span className="hidden sm:inline">Código avanzado</span>
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setSeccionConfig(s => s === 'mcp' ? 'inicio' : 'mcp')}
+            title="Conectar con Claude o Codex mediante MCP (Model Context Protocol)"
+            className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold transition-colors ${
+              seccionConfig === 'mcp'
+                ? 'bg-primary text-primary-fg shadow-sm'
+                : 'text-fg-muted hover:bg-surface-2 hover:text-fg'
+            }`}
+          >
+            <Cpu size={14} className={seccionConfig === 'mcp' ? 'text-primary-fg' : 'text-primary'} />
+            <span className="hidden sm:inline">Conectar MCP</span>
+          </button>
           {publicUrl && (
             <a
               href={publicUrl} target="_blank" rel="noreferrer"
@@ -3206,7 +3249,18 @@ export default function ConfigurarVentaCodigo({
                 </>
               )}
 
-              {seccionConfig === 'fichas' && onCambiarCodigo ? (
+              {seccionConfig === 'mcp' ? (
+                <Bloque
+                  titulo="Conexión MCP con Claude & Codex"
+                  ayuda="Conectá tu asistente inteligente directamente a tu tienda y landing por Model Context Protocol."
+                >
+                  <ConectarMcpPanel
+                    tienda={tienda}
+                    landing={landing}
+                    onSincronizar={recargarLandingDesdeServidor}
+                  />
+                </Bloque>
+              ) : seccionConfig === 'fichas' && onCambiarCodigo ? (
                 <Bloque
                   titulo="Instrucciones para la IA"
                   ayuda="Cambiá el diseño de la ficha con ChatGPT, Claude o Gemini, sin tocar código. Vale para la ficha de todos los productos de esta tienda."
@@ -3234,6 +3288,8 @@ export default function ConfigurarVentaCodigo({
                   productos={seleccion}
                   vistaInicial={vistaPreview}
                   onCambiarCodigo={onCambiarCodigo}
+                  landing={landing}
+                  onRecargarLanding={recargarLandingDesdeServidor}
                 />
               </Bloque>
               )}
@@ -3386,7 +3442,8 @@ function dividirCodigoPegado(texto) {
   return salida;
 }
 
-export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos, vistaInicial = 'inicio', onCambiarCodigo }) {
+export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos, vistaInicial = 'inicio', onCambiarCodigo, landing = null, onRecargarLanding = null }) {
+  const [metodoIa, setMetodoIa] = useState('hibrido'); // 'hibrido' | 'mcp'
   const [vistaKey, setVistaKey] = useState(() => VISTAS_CODIGO_TIENDA.some(v => v.key === vistaInicial) ? vistaInicial : 'inicio');
   const [pegado, setPegado] = useState('');
   const [copiado, setCopiado] = useState(false);
@@ -3427,43 +3484,79 @@ export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos,
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <label htmlFor="ia-pagina-vista" className="block text-sm font-semibold text-fg">Página a diseñar</label>
-        <select id="ia-pagina-vista" value={vistaKey} onChange={e => {
-          setVistaKey(e.target.value); setPegado(''); setCopiado(false); setError(''); setAviso('');
-        }} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg">
-          {VISTAS_CODIGO_TIENDA.map(v => <option key={v.key} value={v.key}>{v.label}</option>)}
-        </select>
-      </div>
-      <div className="space-y-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3">
-        <p className="text-sm font-semibold text-fg">1 · Instrucciones para la IA · Prompt maestro</p>
-        <p className="text-[13px] leading-relaxed text-fg-muted">
-          La guía explica toda la lógica comercial de Gesicomm: productos y precios reales, banners, categorías, vitrinas, ofertas, combos, recomendados, carrito, checkout y seguimiento de ventas. Incluye la configuración de tu tienda y el diseño actual de esta página.
-        </p>
-        <p className="text-[13px] leading-relaxed text-fg-muted">
-          Copiá las instrucciones en ChatGPT, Claude o Gemini y contale cómo querés el diseño. La IA debe devolverte un único HTML completo con el CSS incluido dentro de &lt;style&gt;. Copiá toda su respuesta y pegala abajo.
-        </p>
-        <button type="button" onClick={copiar} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 text-sm font-semibold text-fg hover:border-border-strong">
-          {copiado ? <Check size={15} /> : <Copy size={15} />}{copiado ? 'Instrucciones copiadas' : 'Copiar prompt maestro'}
+      {/* Selector de Método IA: Híbrido vs MCP */}
+      <div className="flex rounded-xl border border-border bg-surface-2/60 p-1 gap-1">
+        <button
+          type="button"
+          onClick={() => setMetodoIa('hibrido')}
+          className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+            metodoIa === 'hibrido'
+              ? 'bg-surface text-fg shadow-sm'
+              : 'text-fg-muted hover:text-fg'
+          }`}
+        >
+          Copiar / Pegar (Híbrido)
         </button>
-        <details>
-          <summary className="cursor-pointer text-xs font-semibold text-fg-muted">Ver guía completa y prompt maestro</summary>
-          <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-surface p-3 text-xs text-fg">{prompt}</pre>
-        </details>
-      </div>
-      <div className="space-y-2">
-        <label htmlFor="ia-pagina-respuesta" className="block text-sm font-semibold text-fg">2 · Pegá acá el código completo de la IA</label>
-        <p className="text-xs text-fg-muted">Un solo campo para todo el HTML y CSS. Si incluye JavaScript, pegalo también en la misma respuesta.</p>
-        <textarea id="ia-pagina-respuesta" value={pegado} onChange={e => { setPegado(e.target.value); setError(''); setAviso(''); }}
-          rows={6} spellCheck={false} placeholder="Pegá acá la respuesta completa de la IA (HTML con CSS incluido)"
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-xs text-fg outline-none focus:border-primary" />
-        <button type="button" onClick={aplicar} disabled={!pegado.trim() || !onCambiarCodigo}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-semibold text-primary-fg disabled:opacity-45">
-          <Sparkles size={15} /> Aplicar a la página
+        <button
+          type="button"
+          onClick={() => setMetodoIa('mcp')}
+          className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+            metodoIa === 'mcp'
+              ? 'bg-primary text-primary-fg shadow-sm'
+              : 'text-fg-muted hover:text-fg'
+          }`}
+        >
+          <Cpu size={13} /> Conectar MCP (Claude / Codex)
         </button>
       </div>
-      {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
-      {aviso && <p role="status" className="text-[13px] text-success">{aviso}</p>}
+
+      {metodoIa === 'mcp' ? (
+        <ConectarMcpPanel
+          tienda={tienda}
+          landing={landing}
+          onSincronizar={onRecargarLanding}
+        />
+      ) : (
+        <>
+          <div className="space-y-2">
+            <label htmlFor="ia-pagina-vista" className="block text-sm font-semibold text-fg">Página a diseñar</label>
+            <select id="ia-pagina-vista" value={vistaKey} onChange={e => {
+              setVistaKey(e.target.value); setPegado(''); setCopiado(false); setError(''); setAviso('');
+            }} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg">
+              {VISTAS_CODIGO_TIENDA.map(v => <option key={v.key} value={v.key}>{v.label}</option>)}
+            </select>
+          </div>
+          <div className="space-y-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3">
+            <p className="text-sm font-semibold text-fg">1 · Instrucciones para la IA · Prompt maestro</p>
+            <p className="text-[13px] leading-relaxed text-fg-muted">
+              La guía explica toda la lógica comercial de Gesicomm: productos y precios reales, banners, categorías, vitrinas, ofertas, combos, recomendados, carrito, checkout y seguimiento de ventas. Incluye la configuración de tu tienda y el diseño actual de esta página.
+            </p>
+            <p className="text-[13px] leading-relaxed text-fg-muted">
+              Copiá las instrucciones en ChatGPT, Claude o Gemini y contale cómo querés el diseño. La IA debe devolverte un único HTML completo con el CSS incluido dentro de &lt;style&gt;. Copiá toda su respuesta y pegala abajo.
+            </p>
+            <button type="button" onClick={copiar} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 text-sm font-semibold text-fg hover:border-border-strong">
+              {copiado ? <Check size={15} /> : <Copy size={15} />}{copiado ? 'Instrucciones copiadas' : 'Copiar prompt maestro'}
+            </button>
+            <details>
+              <summary className="cursor-pointer text-xs font-semibold text-fg-muted">Ver guía completa y prompt maestro</summary>
+              <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-surface p-3 text-xs text-fg">{prompt}</pre>
+            </details>
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="ia-pagina-respuesta" className="block text-sm font-semibold text-fg">2 · Pegá acá el código completo de la IA</label>
+            <p className="text-xs text-fg-muted">Un solo campo para todo el HTML y CSS. Si incluye JavaScript, pegalo también en la misma respuesta.</p>
+            <textarea id="ia-pagina-respuesta" value={pegado} onChange={e => { setPegado(e.target.value); setError(''); setAviso(''); }}
+              rows={6} spellCheck={false} placeholder="Pegá acá la respuesta completa de la IA (HTML con CSS incluido)"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-xs text-fg outline-none focus:border-primary" />
+            <button type="button" onClick={aplicar} disabled={!pegado.trim() || !onCambiarCodigo}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-semibold text-primary-fg disabled:opacity-45">
+              <Sparkles size={15} /> Aplicar a la página
+            </button>
+          </div>
+          {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
+          {aviso && <p role="status" className="text-[13px] text-success">{aviso}</p>}
+        </>
+      )}
     </div>
   );
 }
@@ -5710,6 +5803,7 @@ function EditorUrgenciaInicio({ titulo, texto, cta, finAt, confirmar, onTitulo, 
         <input
           type="datetime-local"
           value={finAt}
+          onInput={e => onFinAt(e.currentTarget.value)}
           onChange={e => onFinAt(e.target.value)}
           className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
         />
@@ -6210,4 +6304,21 @@ function Miniatura({ item }) {
     ? <img src={src} alt="" className="w-10 h-10 rounded-lg object-cover bg-surface-2 shrink-0" loading="lazy" />
     : <span className="w-10 h-10 rounded-lg bg-surface-2 shrink-0" />;
 }
+
+function Buscador({ valor, onChange, placeholder, etiqueta }) {
+  return (
+    <label className="flex-1 flex items-center gap-2 h-10 rounded-lg border border-border bg-surface px-3 focus-within:border-primary">
+      <Search size={15} className="text-fg-muted shrink-0" />
+      <input
+        type="search"
+        value={valor}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={etiqueta}
+        className="flex-1 min-w-0 bg-transparent text-sm text-fg placeholder:text-fg-muted/70 outline-none"
+      />
+    </label>
+  );
+}
+
 
