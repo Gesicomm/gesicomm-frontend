@@ -3,7 +3,7 @@ import {
   Loader, ArrowRight, ArrowLeft, Search, Check, AlertTriangle, Infinity as InfinityIcon, Tag, Plus, Pencil, X,
   Eye, EyeOff, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
   ChevronsUpDown, ChevronsDownUp,
-  Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, Trash2, ExternalLink, Save, Settings2, Copy, Sparkles,
+  Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, RotateCcw, Trash2, ExternalLink, Save, Settings2, Copy, Sparkles,
   GripVertical, Lock, PanelLeftClose, PanelLeftOpen, Cpu, Terminal,
 } from 'lucide-react';
 import ConectarMcpPanel from './panels/ConectarMcpPanel';
@@ -724,13 +724,32 @@ export default function ConfigurarVentaCodigo({
   const [busquedaCategoria, setBusquedaCategoria] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('producto_gesicom');
   const [usuarioActual, setUsuarioActual] = useState(null);
-  const esGeneradoIa = Boolean(
+  const [desbloqueadoManual, setDesbloqueadoManual] = useState(false);
+  const [confirmarResetInicio, setConfirmarResetInicio] = useState(false);
+  const [avisoResetInicio, setAvisoResetInicio] = useState('');
+
+  const esGeneradoIa = !desbloqueadoManual && Boolean(
     landing?.content?.generado_por_ia ||
     landing?.content?.origen === 'mcp' ||
     landing?.content?.bloques_inicio_bloqueados ||
     landing?.content?.codigo?.generado_por_mcp ||
     codigos?.inicio?.generado_por_mcp
   );
+
+  function resetearPaginaInicio() {
+    const base = plantillaInicioPara(tipo);
+    setDesbloqueadoManual(true);
+    setConfirmarResetInicio(false);
+    if (onRestaurarCodigo) {
+      onRestaurarCodigo('inicio');
+    }
+    if (onCambiarCodigo) {
+      onCambiarCodigo('inicio', 'html', base.html);
+      onCambiarCodigo('inicio', 'css', base.css || '');
+      onCambiarCodigo('inicio', 'js', base.js || '');
+    }
+    setAvisoResetInicio('Página de Inicio reseteada a la plantilla por defecto. Todos los bloques estándar están desbloqueados para editar.');
+  }
 
   const [crossActivo, setCrossActivo] = useState(ventaInicial.cross_sell?.activo !== false);
   const [ofertasElegidas, setOfertasElegidas] = useState(() => new Set(ventaInicial.cross_sell?.ofertas || []));
@@ -2532,7 +2551,7 @@ export default function ConfigurarVentaCodigo({
                 verDonde={() => verDonde('inicio', null)}
               >
                 {esGeneradoIa ? (
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm space-y-2.5">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm space-y-3">
                     <div className="flex items-center gap-2 font-semibold text-primary-text">
                       <Lock size={15} />
                       <span>Bloques estándar bloqueados (Generada con IA / MCP)</span>
@@ -2543,9 +2562,70 @@ export default function ConfigurarVentaCodigo({
                     <p className="text-xs text-fg-muted/80">
                       💡 Para modificar o reorganizar elementos, editalo en el código HTML o pedile cambios directamente a la IA conectada al MCP (Claude Desktop, Cursor o cualquier cliente compatible).
                     </p>
+                    <div className="pt-2 border-t border-primary/15 flex flex-col gap-2">
+                      <p className="text-xs text-fg-muted">
+                        ¿Querés volver a usar la plantilla estándar para editar sus bloques y funcionalidades?
+                      </p>
+                      {confirmarResetInicio ? (
+                        <div className="rounded-lg border border-danger/30 bg-danger/10 p-3 space-y-2">
+                          <p className="text-xs font-semibold text-danger">
+                            ¿Confirmás resetear la página a la plantilla por defecto?
+                          </p>
+                          <p className="text-[11px] text-fg-muted leading-relaxed">
+                            Se desbloquearán todos los bloques estándar para que puedas reorganizarlos y configurarlos visualmente, reemplazando el diseño personalizado actual de Inicio.
+                          </p>
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={resetearPaginaInicio}
+                              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-danger text-danger-fg text-xs font-semibold hover:bg-danger-hover"
+                            >
+                              <RotateCcw size={13} /> Sí, resetear página
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmarResetInicio(false)}
+                              className="h-8 px-3 rounded-lg border border-border bg-surface text-xs font-semibold text-fg-muted hover:text-fg"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmarResetInicio(true)}
+                          className="inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-lg border border-primary/30 bg-surface text-xs font-semibold text-primary hover:border-primary hover:bg-primary/5 transition-colors"
+                        >
+                          <RotateCcw size={13} /> Resetear página a plantilla por defecto
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ) : (
-                <EditorBloquesInicio
+                  <>
+                    {avisoResetInicio && (
+                      <div className="mb-3 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs text-success flex items-center justify-between">
+                        <span>{avisoResetInicio}</span>
+                        <button type="button" onClick={() => setAvisoResetInicio('')} className="text-success hover:opacity-75">×</button>
+                      </div>
+                    )}
+                    {!inicioEsBase && onRestaurarCodigo && (
+                      <div className="mb-3 flex items-center justify-between p-2.5 rounded-lg border border-border bg-surface-2/40">
+                        <span className="text-xs text-fg-muted">El código de Inicio tiene personalizaciones.</span>
+                        {confirmarResetInicio ? (
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={resetearPaginaInicio} className="h-7 px-2.5 rounded bg-danger text-danger-fg text-xs font-semibold">Sí, resetear</button>
+                            <button type="button" onClick={() => setConfirmarResetInicio(false)} className="h-7 px-2 rounded border border-border text-xs text-fg-muted">Cancelar</button>
+                          </div>
+                        ) : (
+                          <button type="button" onClick={() => setConfirmarResetInicio(true)} className="inline-flex items-center gap-1 text-xs text-fg-muted hover:text-fg">
+                            <RotateCcw size={12} /> Resetear a plantilla por defecto
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <EditorBloquesInicio
                   bloques={inicioComercial.bloques}
                   onReordenar={reordenarBloqueInicio}
                   onAlternar={alternarBloqueInicio}
@@ -2721,6 +2801,7 @@ export default function ConfigurarVentaCodigo({
                     ),
                   }}
                 />
+                </>
                 )}
               </Bloque>
 
@@ -3317,6 +3398,8 @@ export default function ConfigurarVentaCodigo({
                   productos={seleccion}
                   vistaInicial={vistaPreview}
                   onCambiarCodigo={onCambiarCodigo}
+                  onRestaurarCodigo={onRestaurarCodigo}
+                  onResetearInicio={resetearPaginaInicio}
                   landing={landing}
                   onRecargarLanding={recargarLandingDesdeServidor}
                 />
@@ -3471,15 +3554,22 @@ function dividirCodigoPegado(texto) {
   return salida;
 }
 
-export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos, vistaInicial = 'inicio', onCambiarCodigo, landing = null, onRecargarLanding = null }) {
+export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos, vistaInicial = 'inicio', onCambiarCodigo, onRestaurarCodigo = null, onResetearInicio = null, landing = null, onRecargarLanding = null }) {
   const [metodoIa, setMetodoIa] = useState('hibrido'); // 'hibrido' | 'mcp'
   const [vistaKey, setVistaKey] = useState(() => VISTAS_CODIGO_TIENDA.some(v => v.key === vistaInicial) ? vistaInicial : 'inicio');
   const [pegado, setPegado] = useState('');
   const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
+  const [confirmarReset, setConfirmarReset] = useState(false);
   const vista = VISTAS_CODIGO_TIENDA.find(v => v.key === vistaKey);
   const codigo = codigos?.[vistaKey] || vista.base(tipo);
+  const esBase = useMemo(() => {
+    if (!codigo?.html?.trim()) return true;
+    if (vistaKey === 'inicio') return esBaseIntacta(codigo.html);
+    if (vistaKey === 'producto') return esFichaProductoBase(codigo.html);
+    return false;
+  }, [codigo?.html, vistaKey]);
   const prompt = useMemo(() => armarPromptVista(vistaKey, {
     tienda, venta, productos, base: codigo, documentoCompleto: true,
   }), [vistaKey, tienda, venta, productos, codigo]);
@@ -3584,6 +3674,46 @@ export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos,
           </div>
           {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
           {aviso && <p role="status" className="text-[13px] text-success">{aviso}</p>}
+
+          {(!esBase || vistaKey === 'inicio') && (onRestaurarCodigo || onResetearInicio) && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+              <span className="text-xs text-fg-muted">¿Querés volver a la plantilla por defecto?</span>
+              {confirmarReset ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (vistaKey === 'inicio' && onResetearInicio) {
+                        onResetearInicio();
+                      } else if (onRestaurarCodigo) {
+                        onRestaurarCodigo(vistaKey);
+                      }
+                      setConfirmarReset(false);
+                      setAviso(`La página ${vista.label} volvió a la plantilla base. Guardá para publicarla.`);
+                    }}
+                    className="h-8 px-3 rounded-lg bg-danger text-danger-fg text-xs font-semibold"
+                  >
+                    Sí, resetear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmarReset(false)}
+                    className="h-8 px-3 rounded-lg border border-border text-xs font-semibold text-fg-muted hover:text-fg"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmarReset(true)}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-xs font-semibold text-fg-muted hover:text-fg"
+                >
+                  <RotateCcw size={13} /> Resetear a plantilla por defecto
+                </button>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

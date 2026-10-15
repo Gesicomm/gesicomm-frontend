@@ -440,6 +440,9 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         ...(mismoCodigo(landing?.content?.codigo, codigosAGuardar.inicio) ? {} : { codigo: codigosAGuardar.inicio }),
         vistas: vistasCambiadas(codigosAGuardar, landing?.content?.vistas, propiasBorradas, legalesAGuardar),
         ...(ventaAGuardar ? { venta: ventaAGuardar } : {}),
+        generado_por_ia: Boolean(landing?.content?.generado_por_ia),
+        bloques_inicio_bloqueados: Boolean(landing?.content?.bloques_inicio_bloqueados),
+        origen: landing?.content?.origen ?? 'plantilla',
         // Única puerta hacia venta.urgencia/prueba_social "confirmado" (ver
         // landingSimple.service.js): separado de `venta` a propósito, así un
         // guardado normal (editar la fecha) nunca confirma por accidente.
@@ -629,7 +632,21 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     const actual = codigos[claveVista];
     const tieneAlgo = actual.html.trim() || actual.css.trim() || actual.js.trim();
     if (tieneAlgo && !window.confirm('Esto reemplaza el HTML, CSS y JS de esta vista por el código base. ¿Seguir?')) return;
-    setCodigos(prev => ({ ...prev, [claveVista]: baseDe(vista, venta?.tipo, paginaLegal, tienda) }));
+    const nuevaBase = baseDe(vista, venta?.tipo, paginaLegal, tienda);
+    setCodigos(prev => ({ ...prev, [claveVista]: nuevaBase }));
+    if (vista === 'inicio') {
+      setLanding(prev => {
+        if (!prev) return prev;
+        const nuevoContent = { ...(prev.content || {}) };
+        nuevoContent.generado_por_ia = false;
+        nuevoContent.bloques_inicio_bloqueados = false;
+        if (nuevoContent.origen === 'mcp') nuevoContent.origen = 'plantilla';
+        if (nuevoContent.codigo) {
+          nuevoContent.codigo = { ...nuevoContent.codigo, ...nuevaBase, generado_por_mcp: false };
+        }
+        return { ...prev, content: nuevoContent };
+      });
+    }
     setSinGuardar(true);
     setAviso('Código base cargado. Guardá para publicarlo.');
   }
@@ -801,7 +818,25 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           setAviso('Código actualizado desde Configurar tienda. Guardá para publicarlo.');
         }}
         onRestaurarCodigo={(vistaCodigo) => {
-          setCodigos(prev => ({ ...prev, [vistaCodigo]: baseDe(vistaCodigo, venta?.tipo, paginaLegal, tienda) }));
+          const nuevaBase = baseDe(vistaCodigo, venta?.tipo, paginaLegal, tienda);
+          setCodigos(prev => ({ ...prev, [vistaCodigo]: nuevaBase }));
+          if (vistaCodigo === 'inicio') {
+            setLanding(prev => {
+              if (!prev) return prev;
+              const nuevoContent = { ...(prev.content || {}) };
+              nuevoContent.generado_por_ia = false;
+              nuevoContent.bloques_inicio_bloqueados = false;
+              if (nuevoContent.origen === 'mcp') nuevoContent.origen = 'plantilla';
+              if (nuevoContent.codigo) {
+                nuevoContent.codigo = {
+                  ...nuevoContent.codigo,
+                  ...nuevaBase,
+                  generado_por_mcp: false,
+                };
+              }
+              return { ...prev, content: nuevoContent };
+            });
+          }
           setSinGuardar(true);
           setAviso('Vista restaurada a la base. Guardá para publicarlo.');
         }}
