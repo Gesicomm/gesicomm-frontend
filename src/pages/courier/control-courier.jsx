@@ -4,6 +4,7 @@ import { LayoutGrid, PackageCheck, Plus, Printer, HandCoins, MessageCircle } fro
 import { verificarSesion } from "../../utils/auth";
 import { PedidosTable } from "./PedidosTable";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
+import { VentaWhatsAppModal } from "./VentaWhatsAppModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { ReprogramarModal } from "./ReprogramarModal";
 import { CostoViajeModal } from "./CostoViajeModal";
@@ -219,6 +220,14 @@ export function ControlCourier({ etapaFija } = {}) {
     setRefrescarKey(k => k + 1);
   };
 
+  const handleCreateVentaWhatsApp = async (payload) => {
+    const res = await createEnvio(payload);
+    setEnvios(prev => [res, ...prev]);
+    setOpenVentaWhatsApp(false);
+    cargarDatos();
+    setRefrescarKey(k => k + 1);
+  };
+
   const handleModalSubmit = (payload, modoCompletar) => (
     modoCompletar ? handleConfirmarPedido(payload) : handleCreateNuevoPedido(payload)
   );
@@ -388,6 +397,15 @@ export function ControlCourier({ etapaFija } = {}) {
         deliveryZonas={deliveryZonas}
         onPrecioItemActualizado={() => setRefrescarKey((k) => k + 1)}
         onAbrirSeguimiento={permiteSeguimiento ? abrirSeguimiento : undefined}
+      />
+
+      {/* Alta rápida de un pedido que llega por WhatsApp: nombre, teléfono y
+          productos nomás. Entra al flujo de seguimiento "Venta por WhatsApp"
+          (ver esOrigenWhatsapp en flujosBase.js) por el origen fijo que manda. */}
+      <VentaWhatsAppModal
+        open={openVentaWhatsApp}
+        onClose={() => setOpenVentaWhatsApp(false)}
+        onSubmit={handleCreateVentaWhatsApp}
       />
 
       {/* Pop-up para avisar por WhatsApp apenas se confirma un pedido */}
