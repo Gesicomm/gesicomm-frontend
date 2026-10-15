@@ -205,6 +205,24 @@ html[data-gesicomm-preview-device="mobile"] *::-webkit-scrollbar {
   max-width: none !important;
   margin-inline: auto !important;
 }
+/* Las vitrinas de código libre también pueden vivir fuera de page-content.
+   El marco pertenece a la sección: queda visible incluso al deslizar el carrusel. */
+section:has([data-gesicomm-lista^="productos"], [data-gesicomm-lista="solo_productos"]):not([data-gesicomm-bloque="ofertas_urgencia"]) {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  padding-inline: 16px !important;
+}
+/* page-content ya aporta su margen: no sumarlo por segunda vez. */
+:where(.storefront) .page-content > section:has([data-gesicomm-lista^="productos"], [data-gesicomm-lista="solo_productos"]):not([data-gesicomm-bloque="ofertas_urgencia"]) {
+  padding-inline: 0 !important;
+}
+section:not([data-gesicomm-bloque="ofertas_urgencia"]) > :is([data-gesicomm-lista^="productos"], [data-gesicomm-lista="solo_productos"]) {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-inline: 0 !important;
+}
 [data-gesicomm-bloque="productos_categoria"] [data-gesicomm-lista="productos_categoria"] {
   display: grid !important;
   grid-template-columns: repeat(var(--pc-columnas, 4), minmax(0, 1fr)) !important;
