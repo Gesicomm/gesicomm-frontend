@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { PedidosTable } from "./PedidosTable";
+import { estadoParaSeguimiento, esperandoConfirmacionLogistica } from './orderLifecycle';
 
 // El abastecimiento Gesicom por pedido ya no existe (2026-10-11): la tienda no
 // paga ni espera mercadería para vender. La bandeja no tiene que mostrar nada
@@ -519,19 +520,36 @@ test("Logística no muestra mensajes ni accesos a WhatsApp en tabla y Kanban", a
   expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento");
 });
 
-test('pendiente RAHA se reúne con los pendientes comunes y espera la confirmación', async () => {
+test('pendiente RAHA espera en seguimiento de envío sin regresar a confirmación comercial', async () => {
   getEnviosPaginados.mockResolvedValue({ data: [pedido(1, 'Confirmado', { raha_logistica: { gestionado: true, status: 'pendiente_confirmacion' } })], total: 1, totalPages: 1 });
-  getConteoPorEstado.mockResolvedValue({ Pendiente: 3, Preparado: 0, Despachado: 0, Reprogramado: 0 });
-  await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'comercial' });
+  getConteoPorEstado.mockResolvedValue({ Confirmado: 1, Preparado: 0, Despachado: 0, Reprogramado: 0 });
+  await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'seguimiento_envio' });
   const fila = screen.getByText('Cliente 1').closest('tr');
   expect(within(fila).getByText('Pendiente de confirmación')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /^Pendiente\s*3$/ })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Estados de seguimiento de envío' })).toHaveTextContent('Pendiente de confirmación1');
   expect(screen.queryByText('Pendiente de confirmación RAHA')).not.toBeInTheDocument();
-  expect(ultimoPedido()).toMatchObject({ seguimiento_comercial: true, estados: ['Pendiente', 'EnSeguimiento'] });
+  expect(ultimoPedido()).toMatchObject({ seguimiento_comercial: true, incluir_pendientes_logisticos: true, estados: ['Preparado', 'Despachado', 'Reprogramado'] });
   expect(ultimoPedido()).not.toHaveProperty('excluir_logistica_raha');
   expect(getConteoPorEstado.mock.calls.at(-1)[0]).toMatchObject({ seguimiento_comercial: true });
   expect(within(fila).getByText('Espera confirmación')).toBeInTheDocument();
   expect(within(fila).queryByRole('button', { name: 'Preparar' })).not.toBeInTheDocument();
+});
+
+test('al enviar a RAHA el pedido confirmado queda solo en seguimiento de envío, también en Kanban', async () => {
+  const pedidos = [pedido(1, 'Confirmado', { raha_logistica: { gestionado: true, status: 'pendiente_confirmacion' } }), pedido(2, 'Pendiente')];
+  getEnviosPaginados.mockImplementation(async ({ estados, incluir_pendientes_logisticos }) => {
+    const data = pedidos.filter(p => estados.includes(estadoParaSeguimiento(p)) || (incluir_pendientes_logisticos && esperandoConfirmacionLogistica(p)));
+    return { data, total: data.length, totalPages: 1 };
+  });
+  getConteoPorEstado.mockResolvedValue({ Pendiente: 1, Confirmado: 1 });
+  await montar({ esperarCliente: 'Cliente 2', etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'comercial' });
+  expect(screen.queryByText('Cliente 1')).not.toBeInTheDocument();
+  irAEtapa('Seguimiento de envío');
+  await screen.findByText('Cliente 1');
+  expect(screen.queryByText('Cliente 2')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /Kanban/ }));
+  const esperando = await screen.findByRole('region', { name: 'Columna Pendientes de confirmación' });
+  expect(within(esperando).getByText('Cliente 1')).toBeInTheDocument();
 });
 
 test('Kanban reúne el despachado RAHA en Preparados aunque el estado local siga Confirmado', async () => {
@@ -544,6 +562,7 @@ test('Kanban reúne el despachado RAHA en Preparados aunque el estado local siga
 });
 
 test.each([['cargado', 'Preparado', 'info'], ['en_camino', 'Despachado', 'violet']])('RAHA %s usa la etiqueta y color del estado común %s', async (status, label, tone) => {
+  getConteoPorEstado.mockResolvedValue({ Preparado: 1, Despachado: 1, Confirmado: 0 });
   getEnviosPaginados.mockResolvedValue({ data: [pedido(1, 'Confirmado', { raha_logistica: { gestionado: true, status }, seguimiento: SEGUIMIENTO_ENVIO })], total: 1, totalPages: 1 });
   await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'seguimiento_envio' });
   const fila = screen.getByText('Cliente 1').closest('tr');

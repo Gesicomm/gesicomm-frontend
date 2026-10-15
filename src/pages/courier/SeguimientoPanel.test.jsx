@@ -124,6 +124,14 @@ test('RAHA pendiente no habilita avisos de preparado ni despachado aunque vengan
   expect(seguimientoService.crearContacto).not.toHaveBeenCalled();
 });
 
+test('RAHA pendiente permanece en seguimiento de envío y oculta confirmación comercial', async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([FLUJO_ENVIO, { ...FLUJO_CONFIRMACION, tipo: 'CONFIRMACION_PEDIDO_WEB' }]);
+  render(<SeguimientoPanel open envio={pedido({ estado: 'Confirmado', raha_logistica: { gestionado: true, status: 'pendiente_confirmacion' } })} faseSugeridaId={302} onClose={() => {}} onConfirmarPedido={vi.fn()} />);
+  await screen.findByText(/Fase 7 — Aviso custom/);
+  expect(screen.queryByText(/Fase 2 — Recordatorio/)).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Confirmar pedido' })).not.toBeInTheDocument();
+});
+
 test('un entregado RAHA abre Recompra aunque el estado local aún sea Despachado', async () => {
   seguimientoService.getFlujosPedido.mockResolvedValue([FLUJO_ENVIO, {
     id: 40, tipo: 'ESCALAMIENTO_VENTAS', nombre: 'Escalamiento de ventas', predeterminado: true,

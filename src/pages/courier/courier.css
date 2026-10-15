@@ -3306,7 +3306,6 @@ button.order-alert-chip:focus-visible {
   --pt-followup-info: #60a5fa;
   --pt-followup-violet: #c084fc;
   --pt-followup-warning: #fbbf24;
-  --pt-followup-teal: #2dd4bf;
   --pt-followup-success: #4ade80;
   --pt-followup-danger: #fb7185;
   --pt-followup-neutral: #cbd5e1;
@@ -3318,7 +3317,6 @@ button.order-alert-chip:focus-visible {
   --pt-followup-info: #1d4ed8;
   --pt-followup-violet: #7e22ce;
   --pt-followup-warning: #92400e;
-  --pt-followup-teal: #0f665e;
   --pt-followup-success: #166534;
   --pt-followup-danger: #be123c;
   --pt-followup-neutral: #475569;
@@ -3329,7 +3327,6 @@ button.order-alert-chip:focus-visible {
 .pt-root [data-followup-tone="info"] { --pt-followup-color: var(--pt-followup-info); }
 .pt-root [data-followup-tone="violet"] { --pt-followup-color: var(--pt-followup-violet); }
 .pt-root [data-followup-tone="warning"] { --pt-followup-color: var(--pt-followup-warning); }
-.pt-root [data-followup-tone="teal"] { --pt-followup-color: var(--pt-followup-teal); }
 .pt-root [data-followup-tone="success"] { --pt-followup-color: var(--pt-followup-success); }
 .pt-root [data-followup-tone="danger"] { --pt-followup-color: var(--pt-followup-danger); }
 .pt-root [data-followup-tone="neutral"] { --pt-followup-color: var(--pt-followup-neutral); }

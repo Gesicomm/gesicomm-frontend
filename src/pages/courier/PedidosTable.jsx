@@ -22,6 +22,7 @@ import {
   STAGE_LABELS,
   estadoDePedido,
   estadoParaSeguimiento,
+  esperandoConfirmacionLogistica,
   RAHA_STATUS_META,
   paymentLine,
   esPagoAnticipado,
@@ -93,13 +94,13 @@ const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", 
 // del usuario, 2026-10-14): ya no se separan en pestañas, se distinguen por
 // color de fila y del estado logístico. Despachado usa "violet" en vez de su
 // tono "info" habitual para no confundirse con Preparado.
-const SEGUIMIENTO_TONE = { Preparado: "info", Despachado: "violet", Reprogramado: "warning" };
+const SEGUIMIENTO_TONE = { Confirmado: "neutral", Preparado: "info", Despachado: "violet", Reprogramado: "warning" };
 
 function tonoSeguimiento(envio) {
   return SEGUIMIENTO_TONE[estadoParaSeguimiento(envio)] || estadoDePedido(envio, "seguimiento_envio").tone;
 }
 
-const RAHA_BASE_STATUS_ORDER = ["creado", "cargado", "en_camino"];
+const RAHA_BASE_STATUS_ORDER = ["pendiente_confirmacion", "cargado", "en_camino"];
 const RAHA_TERMINAL_STATUS_ORDER = ["entregado", "devuelto"];
 const TRANSICIONES_VALIDAS_FRONTEND = {
   Pendiente: ['EnSeguimiento', 'Confirmado', 'Cancelado'],
@@ -384,7 +385,7 @@ function eventosEstadoRaha(envio) {
 
 function statusRahaActual(envio) {
   const eventos = eventosEstadoRaha(envio);
-  return envio?.raha_logistica?.status || eventos.at(-1)?.status || (envio?.raha_logistica?.order_id ? "creado" : null);
+  return envio?.raha_logistica?.status || eventos.at(-1)?.status || "pendiente_confirmacion";
 }
 
 function primerTexto(...valores) {
@@ -422,7 +423,7 @@ function RahaTimeline({ envio }) {
     eventosPorStatus.set(evento.status, evento);
   });
   const statusActual = statusRahaActual(envio);
-  const statusNormalizado = statusActual === "pendiente_confirmacion" ? "creado" : statusActual;
+  const statusNormalizado = statusActual;
   const fechaFallback = envio?.raha_logistica?.status_at || envio?.raha_logistica?.updated_at || envio?.raha_logistica?.created_at;
   const statusCompletado = (status) => {
     if (RAHA_TERMINAL_STATUS_ORDER.includes(status)) return status === statusNormalizado;
@@ -430,7 +431,7 @@ function RahaTimeline({ envio }) {
     const indiceActualBase = RAHA_BASE_STATUS_ORDER.indexOf(statusNormalizado);
     if (indiceActualBase >= 0) return indiceBase <= indiceActualBase;
     if (RAHA_TERMINAL_STATUS_ORDER.includes(statusNormalizado)) return indiceBase >= 0;
-    return status === "creado";
+    return status === "pendiente_confirmacion";
   };
   const pasos = [...RAHA_BASE_STATUS_ORDER, statusNormalizado === "devuelto" ? "devuelto" : "entregado"];
   const renderStep = (status, hasNextComplete = false) => {
@@ -685,7 +686,7 @@ const accionBtnStyle = {
 };
 
 function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen, onAccionSiguiente, onAbrirSeguimiento, onCambiarEstado, etapa }) {
-  if (envio.raha_logistica?.gestionado && estadoParaSeguimiento(envio) === "Pendiente") {
+  if (esperandoConfirmacionLogistica(envio)) {
     return <span className="pt-seg-vacio">Espera confirmación</span>;
   }
   if (["seguimiento_envio", "recompra", "recuperacion"].includes(etapa)) {
@@ -866,6 +867,7 @@ export function PedidosTable({
       const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE };
       if (mostrarSeguimiento) payload.incluir_seguimiento = true;
       if (!soloAbastecimiento && etapaActiva !== "logistica") payload.seguimiento_comercial = true;
+      if (!soloAbastecimiento && etapaActiva === "seguimiento_envio") payload.incluir_pendientes_logisticos = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (!soloAbastecimiento && etapaActiva === "logistica" && estado === TAB_RAHA_LOGISTICA_ID) {
         payload.logistica_raha = true;
@@ -900,6 +902,7 @@ export function PedidosTable({
       const payloadBase = { ...construirPayloadBase(f), limit: 100 };
       if (mostrarSeguimiento) payloadBase.incluir_seguimiento = true;
       if (etapaActiva !== "logistica") payloadBase.seguimiento_comercial = true;
+      if (etapaActiva === "seguimiento_envio") payloadBase.incluir_pendientes_logisticos = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (estadosEtapa?.length) payloadBase.estados = estadosEtapa;
       if (etapaActiva === "logistica") payloadBase.excluir_logistica_raha = true;
@@ -941,6 +944,7 @@ export function PedidosTable({
       const payload = construirPayloadBase(f, { incluirFiltroAbastecimiento: false });
       if (!soloAbastecimiento && etapaActiva === "logistica") payload.separar_logistica_raha = true;
       if (!soloAbastecimiento && etapaActiva !== "logistica") payload.seguimiento_comercial = true;
+      if (!soloAbastecimiento && etapaActiva === "seguimiento_envio") payload.incluir_pendientes_logisticos = true;
       const res = soloAbastecimiento
         ? await getConteoPorAbastecimiento(payload)
         : await getConteoPorEstado(payload);
@@ -1142,7 +1146,7 @@ export function PedidosTable({
   const resumenCiclo = {
     pendientes: sumarConteos(["Pendiente", "EnSeguimiento"]),
     confirmados: sumarConteos(["Confirmado"]),
-    logistica: sumarConteos(["Preparado", "Despachado", "Reprogramado"]),
+    logistica: sumarConteos(["Preparado", "Despachado", "Reprogramado"]) + (etapaActiva === "seguimiento_envio" ? Number(conteos.Confirmado || 0) : 0),
     entregados: sumarConteos(["Entregado"]),
     cancelados: sumarConteos(["Cancelado"]),
     incidencias: sumarConteos(["Devuelto", "Perdido"]),
@@ -1181,6 +1185,7 @@ export function PedidosTable({
   const estadosEtapaActiva = STAGE_TO_ESTADOS[etapaActiva] || [];
   const totalEstadosEtapaActiva = sumarConteos(estadosEtapaActiva) + (etapaActiva === "logistica" ? totalLogisticaRaha : 0);
   const chipsEtapaActiva = etapaActiva === "recuperacion" ? [] : [
+    ...(etapaActiva === "seguimiento_envio" && Number(conteos.Confirmado) > 0 ? ['Confirmado'] : []),
     ...(etapaActiva === "logistica" ? [TAB_RAHA_LOGISTICA_ID] : []),
     ...estadosEtapaActiva.filter((st) => !ESTADOS_SIN_CHIP.has(st)),
   ];
@@ -1303,7 +1308,7 @@ export function PedidosTable({
               return (
                 <span key={st} className="pt-status-chip pt-status-chip--legend" data-followup-tone={SEGUIMIENTO_TONE[st]}>
                   <span className="pt-status-chip__dot" aria-hidden="true" />
-                  <span className="pt-status-chip__label">{cfg.label || st}</span>
+                  <span className="pt-status-chip__label">{st === 'Confirmado' ? 'Pendiente de confirmación' : cfg.label || st}</span>
                   <strong className="pt-status-chip__count">{conteoDeFiltro(st)}</strong>
                 </span>
               );

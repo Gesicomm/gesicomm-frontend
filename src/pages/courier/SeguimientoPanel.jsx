@@ -5,7 +5,7 @@ import { seguimientoService } from "../../services/seguimiento.service";
 import { formatEspera } from "./variablesWhatsapp";
 import { numeroPedidoVisible } from "./pedidoNumero";
 import { formatGs } from "../../lib/courier";
-import { FLOW_TYPES, SHIPPING_FOLLOWUP_STATUSES, fasesDeSeguimientoParaPedido, estadoParaSeguimiento } from "./orderLifecycle";
+import { FLOW_TYPES, SHIPPING_FOLLOWUP_STATUSES, fasesDeSeguimientoParaPedido, estadoParaSeguimiento, esperandoConfirmacionLogistica } from "./orderLifecycle";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -57,6 +57,10 @@ function nombreVisibleDelFlujo(flujo) {
   return FLOW_TYPES[flujo?.tipo]?.label || flujo?.nombre || "Flujo";
 }
 
+function flujosParaPedido(flujos, esRaha) {
+  return (flujos || []).filter(f => !esRaha || !['CONFIRMACION_PEDIDO_WEB', 'VENTA_WHATSAPP'].includes(f.tipo));
+}
+
 function formatMomento(iso) {
   if (!iso) return "";
   const f = new Date(iso);
@@ -86,6 +90,7 @@ function contextoDelPedido(envio) {
  * @param {object} servicio             solo para pruebas.
  */
 export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConfirmarPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
+  const esRaha = Boolean(envio?.raha_logistica?.gestionado);
   const [flujos, setFlujos] = useState([]);
   const [flujoId, setFlujoId] = useState(null);
   const [etiquetasPedido, setEtiquetasPedido] = useState([]);
@@ -100,9 +105,10 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
   const cargarFlujos = useCallback(async (envioId) => {
     const resFlujos = await servicio.getFlujosPedido(envioId);
-    setFlujos(resFlujos || []);
-    return resFlujos || [];
-  }, [servicio]);
+    const lista = flujosParaPedido(resFlujos, esRaha);
+    setFlujos(lista);
+    return lista;
+  }, [servicio, esRaha]);
 
   // Con qué fase se abre el panel (para elegir el flujo y mostrar su mensaje).
   const faseQueToca = faseSugeridaId ?? envio?.recordatorio_fase_id ?? null;
@@ -121,15 +127,17 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       servicio.getEtiquetas()
     ]).then(([resFlujos, resEtiqPed, resEtiqDisp]) => {
       if (!activo) return;
-      const lista = resFlujos || [];
+      const lista = flujosParaPedido(resFlujos, esRaha);
       setFlujos(lista);
       // Arranca en el flujo de la fase que toca; si no hay, en el que ya se
       // venía usando con este pedido.
       const delaFase = faseQueToca ? lista.find(f => (f.fases || []).some(x => x.id === faseQueToca)) : null;
       const estado = estadoParaSeguimiento(envio);
-      const tipoActual = SHIPPING_FOLLOWUP_STATUSES.includes(estado) ? "SEGUIMIENTO_ENVIO"
+      const tipoActual = SHIPPING_FOLLOWUP_STATUSES.includes(estado) || esperandoConfirmacionLogistica(envio) ? "SEGUIMIENTO_ENVIO"
         : estado === "Entregado" ? "ESCALAMIENTO_VENTAS"
-          : ["Devuelto", "Perdido"].includes(estado) ? "RECUPERACION_CLIENTES" : null;
+          : ["Devuelto", "Perdido"].includes(estado) ? "RECUPERACION_CLIENTES"
+            : ["Pendiente", "EnSeguimiento"].includes(estado)
+              ? (String(envio.origen || "").toUpperCase().includes("WHATSAPP") ? "VENTA_WHATSAPP" : "CONFIRMACION_PEDIDO_WEB") : null;
       const deLaEtapa = tipoActual ? lista.filter(f => f.tipo === tipoActual) : lista;
       const enUso = deLaEtapa.find(f => (f.envios_totales || 0) > 0);
       const elegido = (delaFase && (!tipoActual || delaFase.tipo === tipoActual) ? delaFase : null)
@@ -148,7 +156,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
     });
 
     return () => { activo = false; };
-  }, [open, envio, servicio, faseQueToca]);
+  }, [open, envio, servicio, faseQueToca, esRaha]);
 
   useEffect(() => {
     if (!open) return undefined;
