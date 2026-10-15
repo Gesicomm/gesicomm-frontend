@@ -1,6 +1,6 @@
 import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import CodigoPreview from './CodigoPreview';
 import { PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esCheckoutBase } from './plantillasBaseCodigo';
 import { datosRuntimePublico, urlProducto, itemPublicoARuntime, urlPaginaTienda, PAGINAS_TIENDA, ofertaCruzadaVisible } from './datosRuntime';
@@ -136,6 +136,15 @@ function resolverItemCheckout(items, pedido) {
 
 export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, data = null, slug, productId = null, modoLegal = false, vistaCodigo = null, categorySlug = null }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = useMemo(() => new URLSearchParams(location?.search || ''), [location?.search]);
+  const filtroUrl = useMemo(() => {
+    const et = searchParams.get('etiqueta') || searchParams.get('badge') || '';
+    const cat = searchParams.get('categoria') || '';
+    const bus = searchParams.get('busqueda') || searchParams.get('q') || '';
+    if (!et && !cat && !bus) return null;
+    return { etiqueta: et, categoria: cat, busqueda: bus };
+  }, [searchParams]);
   // Ficha de producto: una sola plantilla (content.vistas.producto) que el
   // runtime llena con el producto de la URL. Si el comercio todavía no la
   // escribió se usa la ficha base: ningún producto se queda sin página.
@@ -236,8 +245,9 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       carrito: Array.from(cartState.carrito.values()),
       checkoutEstado,
       geografia,
+      filtro: filtroUrl,
     }) : null),
-    [data, slug, productoPublico, vistaActual, categorySlug, cartState.carrito, checkoutEstado, geografia],
+    [data, slug, productoPublico, vistaActual, categorySlug, cartState.carrito, checkoutEstado, geografia, filtroUrl],
   );
   const tieneProductosEnCodigo = useMemo(() => codigoTieneProductos(codigo), [codigo?.html]);
   const tieneContactoEnCodigo = useMemo(() => codigoTieneContacto(codigo), [codigo?.html]);

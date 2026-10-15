@@ -954,6 +954,7 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
       paginado: !!(meta.paginado || paginacion.total != null || totalPaginasCatalogo > 1 || totalCatalogo > porPaginaCatalogo),
     },
     paginas: paginasDeTienda(slug),
+    filtro: opciones.filtro || null,
     productos: catalogo,
     producto,
     carrito: resumenCarritoRuntime(opciones.carrito || []),
@@ -998,7 +999,7 @@ function coloresTiendaPreview(tienda, landing = null) {
 }
 
 /** Datos del runtime para el preview del editor, con el catálogo del panel. */
-export function datosRuntimePreview({ productos = [], tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], pagoparConectado = null, bloquesEditor = null }) {
+export function datosRuntimePreview({ productos = [], tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], pagoparConectado = null, bloquesEditor = null, filtro = null }) {
   // Ofertas de la tienda (panel) agrupadas por su producto, ya filtradas
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
@@ -1057,6 +1058,7 @@ export function datosRuntimePreview({ productos = [], tienda, landing = null, ve
     // propio runtime, sin servidor.
     catalogo: { total: catalogo.length, por_pagina: 20, paginado: false },
     paginas: { checkout: '#' },
+    filtro: filtro || null,
     productos: catalogo,
     producto,
     carrito: resumenCarritoRuntime(carritoPreview),

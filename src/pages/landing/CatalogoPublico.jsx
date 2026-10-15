@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { obtenerCatalogoLandingPublica, registrarVisitaLanding } from '../../services/landingPublicaService';
 import { useDocumentSeo, faviconDeLanding } from '../../hooks/useDocumentSeo';
 import { galeriaTarjetaDeItem, mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
@@ -29,7 +29,16 @@ export default function CatalogoPublico() {
   const navigate = useNavigate();
   const [estadoCarga, setEstadoCarga] = useState('cargando');
   const [data, setData] = useState(null);
-  const [filtros, setFiltros] = useState(FILTROS_INICIALES);
+  const [searchParams] = useSearchParams();
+  const etiquetaUrl = searchParams.get('etiqueta') || searchParams.get('badge') || '';
+  const categoriaUrl = searchParams.get('categoria') || '';
+  const busquedaUrl = searchParams.get('q') || searchParams.get('busqueda') || '';
+  const [filtros, setFiltros] = useState(() => ({
+    ...FILTROS_INICIALES,
+    ...(etiquetaUrl ? { etiqueta: etiquetaUrl } : {}),
+    ...(categoriaUrl ? { categoria: categoriaUrl } : {}),
+    ...(busquedaUrl ? { busqueda: busquedaUrl } : {}),
+  }));
   const [pagina, setPagina] = useState(1);
   // Distinto del spinner de pantalla completa: esto es solo un dim sutil de
   // la grilla mientras se pide una página/filtro nuevo, para no perder el

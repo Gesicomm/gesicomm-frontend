@@ -2670,3 +2670,44 @@ describe('ficha — propuesta de valor y badge del producto', () => {
     expect(datos.productos[0].descripcion).toBe('Corta');
   });
 });
+
+describe('navegación de ofertas y carruseles', () => {
+  it('data-gesicomm-filtro-etiqueta fuera del catálogo navega al catálogo con el filtro', () => {
+    const plantilla = { html: '<div class="banner"><button data-gesicomm-filtro-etiqueta="Oferta">Ver todas las ofertas</button></div>', css: '', js: '' };
+    const datos = { vista: 'inicio', productos: [airFryer], tienda: {} };
+    const { mensajes, click } = montar(plantilla, datos);
+    click('[data-gesicomm-filtro-etiqueta]');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:navegar').at(-1)).toEqual({
+      tipo: 'gesicomm:navegar',
+      destino: 'pagina',
+      pagina: 'catalogo',
+      filtro: { etiqueta: 'Oferta', categoria: '' },
+    });
+  });
+
+  it('data-gesicomm-ofertas-ir navega al catálogo con filtro Oferta', () => {
+    const plantilla = { html: '<div class="banner"><a href="#" data-gesicomm-ofertas-ir>Ver ofertas</a></div>', css: '', js: '' };
+    const datos = { vista: 'inicio', productos: [airFryer], tienda: {} };
+    const { mensajes, click } = montar(plantilla, datos);
+    click('[data-gesicomm-ofertas-ir]');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:navegar').at(-1)).toEqual({
+      tipo: 'gesicomm:navegar',
+      destino: 'pagina',
+      pagina: 'catalogo',
+      filtro: { etiqueta: 'Oferta', categoria: '' },
+    });
+  });
+
+  it('data-gesicomm-link con /catalogo?etiqueta=Oferta extrae el filtro sin fallar por about:srcdoc', () => {
+    const plantilla = { html: '<nav><a href="/catalogo?etiqueta=Oferta" data-gesicomm-link="catalogo">Ofertas</a></nav>', css: '', js: '' };
+    const datos = { vista: 'inicio', productos: [airFryer], tienda: {} };
+    const { mensajes, click } = montar(plantilla, datos);
+    click('a[data-gesicomm-link]');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:navegar').at(-1)).toEqual({
+      tipo: 'gesicomm:navegar',
+      destino: 'pagina',
+      pagina: 'catalogo',
+      filtro: { etiqueta: 'Oferta', categoria: '' },
+    });
+  });
+});

@@ -98,12 +98,20 @@ export function runtimeGesicomm() {
   }
   var porPagina = tamanoPagina();
   var filtros = { busqueda: '', categoria: datos.categoria && datos.categoria.nombre ? datos.categoria.nombre : '', marca: '', etiqueta: '', precioMin: '', precioMax: '', disponibilidad: 'todos', soloDescuento: '', orden: '', pagina: 1 };
+  if (datos.filtro) {
+    if (datos.filtro.etiqueta) filtros.etiqueta = datos.filtro.etiqueta;
+    if (datos.filtro.badge && !filtros.etiqueta) filtros.etiqueta = datos.filtro.badge;
+    if (datos.filtro.categoria) filtros.categoria = datos.filtro.categoria;
+    if (datos.filtro.busqueda) filtros.busqueda = datos.filtro.busqueda;
+  }
   try {
-    var paramsIniciales = new URLSearchParams(window.location.search || '');
-    if (paramsIniciales.get('etiqueta')) filtros.etiqueta = paramsIniciales.get('etiqueta');
-    if (paramsIniciales.get('badge')) filtros.etiqueta = paramsIniciales.get('badge');
-    if (paramsIniciales.get('categoria')) filtros.categoria = paramsIniciales.get('categoria');
-    if (paramsIniciales.get('busqueda')) filtros.busqueda = paramsIniciales.get('busqueda');
+    var rawUrl = (typeof datos.pagina_url === 'string' && datos.pagina_url) || (typeof window !== 'undefined' && window.location ? window.location.href : '');
+    var baseValida = /^https?:\/\//i.test(rawUrl) ? rawUrl : 'https://gesicomm.local';
+    var paramsIniciales = new URL(rawUrl || '', baseValida).searchParams;
+    if (!filtros.etiqueta && paramsIniciales.get('etiqueta')) filtros.etiqueta = paramsIniciales.get('etiqueta');
+    if (!filtros.etiqueta && paramsIniciales.get('badge')) filtros.etiqueta = paramsIniciales.get('badge');
+    if (!filtros.categoria && paramsIniciales.get('categoria')) filtros.categoria = paramsIniciales.get('categoria');
+    if (!filtros.busqueda && paramsIniciales.get('busqueda')) filtros.busqueda = paramsIniciales.get('busqueda');
   } catch (e) { /* URLSearchParams no disponible: usa los filtros por defecto */ }
   var catalogoVista = {
     items: productos.slice(),
@@ -4088,6 +4096,20 @@ export function runtimeGesicomm() {
       moverCarruselRecomendados(1);
       return;
     }
+    if ((el = t.closest('[data-gesicomm-carrusel-prev], [data-gesicomm-slider-prev]'))) {
+      e.preventDefault();
+      var wrapPrev = el.closest('[data-gesicomm-carrusel-wrap], .carousel-container, .slider-wrap, .bento-carousel, section') || el.parentElement;
+      var trackPrev = wrapPrev ? wrapPrev.querySelector('[data-gesicomm-carrusel], [data-gesicomm-slider], [data-gesicomm-lista], .carousel-track, .slider-track') : null;
+      if (trackPrev) trackPrev.scrollBy({ left: -(trackPrev.clientWidth * 0.75), behavior: 'smooth' });
+      return;
+    }
+    if ((el = t.closest('[data-gesicomm-carrusel-next], [data-gesicomm-slider-next]'))) {
+      e.preventDefault();
+      var wrapNext = el.closest('[data-gesicomm-carrusel-wrap], .carousel-container, .slider-wrap, .bento-carousel, section') || el.parentElement;
+      var trackNext = wrapNext ? wrapNext.querySelector('[data-gesicomm-carrusel], [data-gesicomm-slider], [data-gesicomm-lista], .carousel-track, .slider-track') : null;
+      if (trackNext) trackNext.scrollBy({ left: (trackNext.clientWidth * 0.75), behavior: 'smooth' });
+      return;
+    }
     if ((el = t.closest('[data-gesicomm-cupon-aplicar]'))) {
       e.preventDefault();
       aplicarCupon();
@@ -4184,9 +4206,16 @@ export function runtimeGesicomm() {
       for (var bc = 0; bc < botonesCerrar.length; bc++) botonesCerrar[bc].setAttribute('aria-expanded', 'false');
     }
 
-    if ((el = t.closest('[data-gesicomm-filtro-etiqueta]'))) {
+    if ((el = t.closest('[data-gesicomm-filtro-etiqueta], [data-gesicomm-etiqueta-ir], [data-gesicomm-ofertas-ir]'))) {
       e.preventDefault();
-      var etiquetaRapida = el.getAttribute('data-gesicomm-filtro-etiqueta') || '';
+      var etiquetaRapida = el.getAttribute('data-gesicomm-filtro-etiqueta')
+        || el.getAttribute('data-gesicomm-etiqueta-ir')
+        || (el.hasAttribute('data-gesicomm-ofertas-ir') ? 'Oferta' : '');
+      if (!etiquetaRapida && el.getAttribute('data-gesicomm-filtro-etiqueta') === '') etiquetaRapida = '';
+      if (!document.querySelector('[data-gesicomm-lista="catalogo"]')) {
+        enviar({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'catalogo', filtro: { etiqueta: etiquetaRapida || 'Oferta', categoria: '' } });
+        return;
+      }
       filtros.etiqueta = normalizar(filtros.etiqueta) === normalizar(etiquetaRapida) ? '' : etiquetaRapida;
       filtros.pagina = 1;
       actualizarCatalogo('reemplazar');
@@ -4225,13 +4254,20 @@ export function runtimeGesicomm() {
         e.preventDefault();
         var filtroLink = {};
         try {
-          var urlLink = new URL(el.getAttribute('href') || '', window.location.href);
+          var rawHref = el.getAttribute('href') || '';
+          var baseRef = (typeof datos.pagina_url === 'string' && datos.pagina_url) || 'https://gesicomm.local';
+          var baseValidaRef = /^https?:\/\//i.test(baseRef) ? baseRef : 'https://gesicomm.local';
+          var urlLink = new URL(rawHref, baseValidaRef);
           if (urlLink.searchParams.get('etiqueta')) filtroLink.etiqueta = urlLink.searchParams.get('etiqueta');
           if (urlLink.searchParams.get('badge')) filtroLink.etiqueta = urlLink.searchParams.get('badge');
           if (urlLink.searchParams.get('categoria')) filtroLink.categoria = urlLink.searchParams.get('categoria');
           else if (filtroLink.etiqueta) filtroLink.categoria = '';
+          if (urlLink.searchParams.get('busqueda') || urlLink.searchParams.get('q')) filtroLink.busqueda = urlLink.searchParams.get('busqueda') || urlLink.searchParams.get('q');
         } catch (err) { /* href relativo raro: navega sin filtro extra */ }
-        if (paginaTienda === 'catalogo' && !filtroLink.etiqueta && el.closest('[data-gesicomm-bloque="ofertas_urgencia"]')) {
+        if (el.getAttribute('data-gesicomm-filtro-etiqueta')) {
+          filtroLink.etiqueta = el.getAttribute('data-gesicomm-filtro-etiqueta');
+        }
+        if (paginaTienda === 'catalogo' && !filtroLink.etiqueta && (el.closest('[data-gesicomm-bloque="ofertas_urgencia"]') || el.hasAttribute('data-gesicomm-ofertas-ir'))) {
           filtroLink.etiqueta = 'Oferta';
           filtroLink.categoria = '';
         }

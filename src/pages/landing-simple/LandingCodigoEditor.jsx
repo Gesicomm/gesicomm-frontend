@@ -691,7 +691,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     productoId: productoPreviewId,
     ofertas: ofertasTienda,
     pagoparConectado,
-  }), [seleccion, tienda, landing, venta, vista, productoPreviewId, ofertasTienda, pagoparConectado]);
+    filtro: vista === 'catalogo' ? filtroPreview : null,
+  }), [seleccion, tienda, landing, venta, vista, productoPreviewId, ofertasTienda, pagoparConectado, filtroPreview]);
   const codigoPreviewCrudo = codigosPreview[claveVista] || codigosPreview[vista];
   const codigoInicioPreview = codigosPreview.inicio?.html ? codigosPreview.inicio : plantillaInicioPara(venta?.tipo);
   const codigoPreviewHeredado = ['catalogo', 'categoria', 'checkout', 'producto'].includes(vista)
@@ -720,6 +721,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const alCarritoPreview = useCallback(() => {
     setAviso('Preview: en la landing publicada esto abre el carrito.');
   }, []);
+  const [filtroPreview, setFiltroPreview] = useState(null);
   const alNavegarPreview = useCallback((p) => {
     if (p?.destino === 'pagina') {
       if (p.pagina === 'checkout') {
@@ -728,6 +730,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       }
       if (p.pagina === 'catalogo') {
         setVista('catalogo');
+        setFiltroPreview(p.filtro || null);
         return;
       }
       setAviso(`Preview: en la landing publicada este link abre «${PAGINAS_TIENDA[p.pagina] || p.pagina}».`);
