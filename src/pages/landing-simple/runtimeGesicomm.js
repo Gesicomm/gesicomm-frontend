@@ -2222,11 +2222,15 @@ export function runtimeGesicomm() {
     }
     var categoria = el.getAttribute('data-gesicomm-categoria');
     if (categoria && nombre.indexOf('ofertas') !== 0 && !LISTAS_DE_DATOS[nombre] && nombre !== 'variantes' && nombre !== 'imagenes') {
-      var cat = categoria.toLowerCase().trim();
+      var catNorm = normalizar(categoria).trim().replace(/[^a-z0-9]+/g, ' ').trim();
       base = base.filter(function (p) {
-        var pCat = typeof p.categoria === 'object' && p.categoria ? (p.categoria.nombre || '') : String(p.categoria || '');
-        var pSlug = typeof p.categoria === 'object' && p.categoria ? (p.categoria.slug || '') : '';
-        return pCat.toLowerCase().trim() === cat || (pSlug && pSlug.toLowerCase().trim() === cat);
+        var pCatRaw = typeof p.categoria === 'object' && p.categoria ? (p.categoria.nombre || '') : String(p.categoria || '');
+        var pSlugRaw = typeof p.categoria === 'object' && p.categoria ? (p.categoria.slug || '') : '';
+        var pNorm = normalizar(pCatRaw).trim().replace(/[^a-z0-9]+/g, ' ').trim();
+        var pSlugNorm = normalizar(pSlugRaw).trim().replace(/[^a-z0-9]+/g, ' ').trim();
+        if (pNorm === catNorm || (pSlugNorm && pSlugNorm === catNorm)) return true;
+        if (pNorm && catNorm && (catNorm.indexOf(pNorm) !== -1 || pNorm.indexOf(catNorm) !== -1)) return true;
+        return false;
       });
     }
     var esFlash = nombre === 'productos_ofertas' && el.closest('[data-gesicomm-bloque="ofertas_urgencia"]');
