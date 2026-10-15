@@ -78,7 +78,7 @@ function SegmentOption({ active, onSelect, children }) {
       onKeyDown={handleKeyDown}
       className={`rounded-md px-3 py-2.5 text-center text-sm font-bold transition-all ${
         active
-          ? 'bg-[#0d1b3d] text-white shadow-[0_8px_22px_rgba(13,27,61,0.18)]'
+          ? "bg-primary text-primary-fg shadow-sm"
           : 'text-fg-muted hover:bg-surface-2 hover:text-fg'
       }`}
     >

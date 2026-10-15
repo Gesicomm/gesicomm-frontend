@@ -31,7 +31,7 @@ export default function FulfillmentEmptyState({ candidatos = [], onListo }) {
 
   return (
     <div className="rounded-xl border border-border bg-surface p-8 text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary-text">
         <Warehouse size={22} />
       </div>
       <h2 className="m-0 text-lg font-semibold text-fg">Configurá la red de Fulfillment de Gesicomm</h2>
@@ -62,7 +62,7 @@ export default function FulfillmentEmptyState({ candidatos = [], onListo }) {
                   <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border ${
                     activo ? 'border-primary bg-primary' : 'border-fg-muted'
                   }`}>
-                    {activo && <Check size={10} className="text-white" />}
+                    {activo && <Check size={10} className="text-fg" />}
                   </span>
                   <span>
                     <span className="block text-sm font-medium text-fg">{c.nombre}</span>
@@ -84,7 +84,7 @@ export default function FulfillmentEmptyState({ candidatos = [], onListo }) {
             type="button"
             disabled={!elegido || guardando}
             onClick={designar}
-            className="mx-auto mt-5 flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+            className="mx-auto mt-5 flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
           >
             Configurar centro
             <ArrowRight size={15} />

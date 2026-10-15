@@ -11,124 +11,60 @@
   font-family: var(--font-sans, system-ui, sans-serif);
   transition: background-color 0.2s ease, color 0.2s ease;
 
-  /* ─── Tokens modo oscuro (por defecto) ─── */
-  --rp-bg: #0a0e1a;
-  --rp-surface: #10152a;
-  --rp-header-bg: rgba(16, 21, 42, 0.85);
-  --rp-header-border: rgba(255, 255, 255, 0.08);
-  --rp-header-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
-  --rp-card-bg: rgba(16, 21, 42, 0.75);
-  --rp-card-border: rgba(255, 255, 255, 0.08);
-  --rp-card-border-hover: rgba(255, 255, 255, 0.16);
-  --rp-card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  --rp-subcard-bg: rgba(10, 14, 26, 0.6);
-  --rp-subcard-border: rgba(255, 255, 255, 0.08);
-  --rp-input-bg: rgba(10, 14, 26, 0.75);
-  --rp-input-border: rgba(255, 255, 255, 0.12);
-  --rp-input-border-focus: #22c55e;
-  --rp-input-color: #ffffff;
-  --rp-input-placeholder: #64748b;
-  --rp-text-title: #ffffff;
-  --rp-text-main: #f1f5f9;
-  --rp-text-muted: #94a3b8;
-  --rp-text-subtle: #64748b;
-  --rp-chip-bg: rgba(255, 255, 255, 0.05);
-  --rp-chip-border: rgba(255, 255, 255, 0.08);
-  --rp-chip-color: #94a3b8;
-  --rp-chip-hover-bg: rgba(255, 255, 255, 0.1);
-  --rp-chip-hover-color: #ffffff;
-  --rp-item-hover-bg: rgba(255, 255, 255, 0.04);
-  --rp-item-selected-bg: rgba(34, 197, 94, 0.12);
-  --rp-item-selected-border: #22c55e;
-  --rp-stat-active-bg: rgba(16, 21, 42, 0.95);
-  --rp-stat-active-border: #22c55e;
-  --rp-stat-icon-amarillo-bg: rgba(250, 204, 21, 0.15);
-  --rp-stat-icon-amarillo-fg: #facc15;
-  --rp-stat-icon-verde-bg: rgba(34, 197, 94, 0.15);
-  --rp-stat-icon-verde-fg: #22c55e;
-  --rp-stat-icon-rojo-bg: rgba(239, 68, 68, 0.15);
-  --rp-stat-icon-rojo-fg: #ef4444;
-  --rp-page-btn-bg: rgba(255, 255, 255, 0.06);
-  --rp-page-btn-border: rgba(255, 255, 255, 0.1);
-  --rp-page-btn-color: #cbd5e1;
-  --rp-primary-btn-bg: #19764f;
-  --rp-primary-btn-hover: #1e8a5c;
-  --rp-primary-btn-color: #ffffff;
-  --rp-login-card-bg: rgba(16, 21, 42, 0.85);
-  --rp-login-card-border: rgba(255, 255, 255, 0.1);
+  /* Roles compartidos con el panel; claros y oscuros heredan del mismo tema. */
+  --rp-bg: var(--color-canvas);
+  --rp-surface: var(--color-surface);
+  --rp-header-bg: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  --rp-header-border: var(--color-border);
+  --rp-header-shadow: 0 4px 20px -2px rgb(8 17 31 / 12%);
+  --rp-card-bg: var(--color-surface);
+  --rp-card-border: var(--color-border);
+  --rp-card-border-hover: var(--color-border-strong);
+  --rp-card-shadow: 0 10px 30px -5px rgb(8 17 31 / 15%);
+  --rp-subcard-bg: var(--color-surface-2);
+  --rp-subcard-border: var(--color-border);
+  --rp-input-bg: var(--color-canvas);
+  --rp-input-border: var(--color-border-strong);
+  --rp-input-border-focus: var(--color-primary);
+  --rp-input-color: var(--color-fg);
+  --rp-input-placeholder: var(--color-fg-subtle);
+  --rp-text-title: var(--color-fg);
+  --rp-text-main: var(--color-fg);
+  --rp-text-muted: var(--color-fg-muted);
+  --rp-text-subtle: var(--color-fg-subtle);
+  --rp-chip-bg: var(--color-surface-2);
+  --rp-chip-border: var(--color-border);
+  --rp-chip-color: var(--color-fg-muted);
+  --rp-chip-hover-bg: var(--color-surface-3);
+  --rp-chip-hover-color: var(--color-fg);
+  --rp-item-hover-bg: var(--color-surface-2);
+  --rp-item-selected-bg: var(--bg-primary-soft);
+  --rp-item-selected-border: var(--color-primary);
+  --rp-stat-active-bg: var(--bg-primary-soft);
+  --rp-stat-active-border: var(--color-primary);
+  --rp-stat-icon-amarillo-bg: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  --rp-stat-icon-amarillo-fg: var(--color-warning);
+  --rp-stat-icon-verde-bg: color-mix(in srgb, var(--color-success) 12%, transparent);
+  --rp-stat-icon-verde-fg: var(--color-success);
+  --rp-stat-icon-rojo-bg: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  --rp-stat-icon-rojo-fg: var(--color-danger);
+  --rp-page-btn-bg: var(--color-surface-2);
+  --rp-page-btn-border: var(--color-border);
+  --rp-page-btn-color: var(--color-fg-muted);
+  --rp-primary-btn-bg: var(--color-primary);
+  --rp-primary-btn-hover: var(--color-primary-hover);
+  --rp-primary-btn-color: var(--color-primary-fg);
+  --rp-login-card-bg: var(--color-surface);
+  --rp-login-card-border: var(--color-border);
   --rp-login-bg:
-    radial-gradient(ellipse 800px 500px at 50% -10%, rgba(34, 197, 94, 0.15), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 100%, rgba(13, 27, 61, 0.4), transparent 50%),
-    #0a0e1a;
-  --rp-date-input-scheme: dark;
-  --rp-row-border: rgba(255, 255, 255, 0.06);
-
-  /* Fallbacks para tienda/raha.css */
-  --vit-text: var(--rp-text-main);
-  --vit-bg: var(--rp-subcard-bg);
-  --vit-border: var(--rp-card-border);
-  --vit-muted: var(--rp-text-muted);
-}
-
-/* ─── Tokens modo claro ─── */
-:root[data-theme='light'] .rp-root,
-.rp-root[data-theme='light'] {
-  --rp-bg: #f8fafc;
-  --rp-surface: #ffffff;
-  --rp-header-bg: rgba(255, 255, 255, 0.94);
-  --rp-header-border: #e2e8f0;
-  --rp-header-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-  --rp-card-bg: #ffffff;
-  --rp-card-border: #e2e8f0;
-  --rp-card-border-hover: #cbd5e1;
-  --rp-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
-  --rp-subcard-bg: #f8fafc;
-  --rp-subcard-border: #e2e8f0;
-  --rp-input-bg: #ffffff;
-  --rp-input-border: #cbd5e1;
-  --rp-input-border-focus: #16a34a;
-  --rp-input-color: #0f172a;
-  --rp-input-placeholder: #94a3b8;
-  --rp-text-title: #0f172a;
-  --rp-text-main: #1e293b;
-  --rp-text-muted: #64748b;
-  --rp-text-subtle: #94a3b8;
-  --rp-chip-bg: #f1f5f9;
-  --rp-chip-border: #e2e8f0;
-  --rp-chip-color: #475569;
-  --rp-chip-hover-bg: #e2e8f0;
-  --rp-chip-hover-color: #0f172a;
-  --rp-item-hover-bg: #f8fafc;
-  --rp-item-selected-bg: #f0fdf4;
-  --rp-item-selected-border: #16a34a;
-  --rp-stat-active-bg: #f0fdf4;
-  --rp-stat-active-border: #16a34a;
-  --rp-stat-icon-amarillo-bg: #fef9c3;
-  --rp-stat-icon-amarillo-fg: #a16207;
-  --rp-stat-icon-verde-bg: #dcfce7;
-  --rp-stat-icon-verde-fg: #15803d;
-  --rp-stat-icon-rojo-bg: #fee2e2;
-  --rp-stat-icon-rojo-fg: #b91c1c;
-  --rp-page-btn-bg: #ffffff;
-  --rp-page-btn-border: #e2e8f0;
-  --rp-page-btn-color: #334155;
-  --rp-primary-btn-bg: #15803d;
-  --rp-primary-btn-hover: #166534;
-  --rp-primary-btn-color: #ffffff;
-  --rp-login-card-bg: #ffffff;
-  --rp-login-card-border: #e2e8f0;
-  --rp-login-bg:
-    radial-gradient(ellipse 800px 500px at 50% -10%, rgba(34, 197, 94, 0.12), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 100%, rgba(226, 232, 240, 0.7), transparent 50%),
-    #f8fafc;
-  --rp-date-input-scheme: light;
-  --rp-row-border: #f1f5f9;
-
-  /* Bridge to tienda/raha.css */
-  --vit-text: #1e293b;
-  --vit-bg: #f8fafc;
-  --vit-border: #e2e8f0;
-  --vit-muted: #64748b;
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 60%),
+    var(--color-canvas);
+  --rp-date-input-scheme: var(--app-color-scheme);
+  --rp-row-border: var(--color-border);
+  --vit-text: var(--color-fg);
+  --vit-bg: var(--color-canvas);
+  --vit-border: var(--color-border);
+  --vit-muted: var(--color-fg-muted);
 }
 
 /* ---------- Login ---------- */
@@ -161,10 +97,10 @@
   height: 48px;
   border-radius: 12px;
   background: var(--rp-primary-btn-bg);
-  color: #fff;
+  color: var(--color-fg);
   display: grid;
   place-items: center;
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 .rp-login-title {
@@ -224,7 +160,7 @@
 .rp-input:focus {
   outline: none;
   border-color: var(--rp-input-border-focus);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .rp-btn-submit {
@@ -235,7 +171,7 @@
   padding: 0.75rem 1.25rem;
   border-radius: 10px;
   background: var(--rp-primary-btn-bg);
-  color: #fff;
+  color: var(--rp-primary-btn-color);
   font-weight: 600;
   font-size: 0.95rem;
   border: none;
@@ -262,27 +198,27 @@
 }
 
 .rp-alert-error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
+  color: var(--color-danger);
 }
 
 :root[data-theme='light'] .rp-alert-error {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #b91c1c;
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .rp-alert-success {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  color: #86efac;
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
+  color: var(--color-success);
 }
 
 :root[data-theme='light'] .rp-alert-success {
-  background: #f0fdf4;
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
   border-color: #bbf7d0;
-  color: #15803d;
+  color: var(--color-success);
 }
 
 /* ---------- Portal Layout ---------- */
@@ -325,7 +261,7 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   background: var(--rp-primary-btn-bg);
-  color: #fff;
+  color: var(--color-fg);
   padding: 2px 7px;
   border-radius: 4px;
   font-weight: 700;
@@ -382,9 +318,9 @@
 }
 
 .rp-btn-logout:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+  color: var(--color-danger);
 }
 
 .rp-main {
@@ -517,9 +453,9 @@
 .rp-date-chip.active {
   background: var(--rp-primary-btn-bg);
   border-color: var(--rp-primary-btn-bg);
-  color: #fff;
+  color: var(--color-fg);
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(21, 128, 61, 0.3);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-success) 30%, transparent);
 }
 
 .rp-date-custom {
@@ -559,9 +495,9 @@
   gap: 0.3rem;
   padding: 0.35rem 0.65rem;
   border-radius: 7px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #ef4444;
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+  color: var(--color-danger);
   font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
@@ -569,8 +505,8 @@
 }
 
 .rp-btn-clear-date:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: #dc2626;
+  background: color-mix(in srgb, var(--color-danger) 20%, transparent);
+  color: var(--color-danger);
 }
 
 /* Barra de herramientas / buscador */
@@ -615,7 +551,7 @@
 .rp-search-input:focus {
   outline: none;
   border-color: var(--rp-input-border-focus);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 18%, transparent);
 }
 
 .rp-tabs {
@@ -647,7 +583,7 @@
 .rp-tab.active {
   background: var(--rp-primary-btn-bg);
   border-color: var(--rp-primary-btn-bg);
-  color: #fff;
+  color: var(--color-fg);
   font-weight: 600;
 }
 
@@ -817,18 +753,18 @@
 }
 
 .rp-btn-green {
-  background: #16a34a;
-  color: #fff;
+  background: var(--color-success);
+  color: var(--color-success-fg);
 }
 
 .rp-btn-amber {
   background: #ca8a04;
-  color: #fff;
+  color: var(--color-fg);
 }
 
 .rp-btn-red {
-  background: #dc2626;
-  color: #fff;
+  background: var(--color-danger);
+  color: var(--color-danger-fg);
 }
 
 /* Paginación */
@@ -994,8 +930,8 @@
 }
 
 .rp-portal .raha-luces {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
 }
 
 .rp-portal .raha-history time {
@@ -1020,23 +956,23 @@
 }
 
 :root[data-theme='light'] .rp-portal .raha-badge.observada {
-  background: #fef9c3;
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
   color: #854d0e;
   border: 1px solid #fef08a;
   font-weight: 600;
 }
 
 :root[data-theme='light'] .rp-portal .raha-badge.aprobada {
-  background: #dcfce7;
-  color: #15803d;
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  color: var(--color-success);
   border: 1px solid #bbf7d0;
   font-weight: 600;
 }
 
 :root[data-theme='light'] .rp-portal .raha-badge.rechazada {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
   font-weight: 600;
 }
 

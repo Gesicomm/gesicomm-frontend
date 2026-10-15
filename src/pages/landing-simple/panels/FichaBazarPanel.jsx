@@ -494,8 +494,8 @@ const CAMPOS = {
             <div className="flex items-center gap-1.5">
               <input className={`${MINI} flex-1 min-w-0`} value={it.nombre || ''} placeholder="Sofía" onChange={e => lista.editar('items', i, { nombre: e.target.value })} />
               <select className={`${MINI} w-[72px] shrink-0`} value={it.calificacion ?? 5} onChange={e => lista.editar('items', i, { calificacion: Number(e.target.value) })}>
-                {[5, 4, 3, 2, 1].map(k => <option key={k} value={k} className="bg-neutral-900">{k} ★</option>)}
-                <option value={0} className="bg-neutral-900">Sin ★</option>
+                {[5, 4, 3, 2, 1].map(k => <option key={k} value={k} className="bg-canvas">{k} ★</option>)}
+                <option value={0} className="bg-canvas">Sin ★</option>
               </select>
             </div>
             <textarea rows={2} className={`${MINI} w-full`} value={it.comentario || ''} placeholder="Lo que contó la clienta." onChange={e => lista.editar('items', i, { comentario: e.target.value })} />

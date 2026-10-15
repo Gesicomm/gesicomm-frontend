@@ -48,7 +48,7 @@ export default function ImagenesProductoLanding({ item, onCambiar, onSubirImagen
     </div>
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {fotos.map((url, idx) => <div key={url} className="rounded-xl border border-border bg-surface overflow-hidden">
-        <img src={url} alt={`Foto ${idx + 1} de ${item.nombre}`} className="h-24 w-full object-contain bg-white" />
+        <img src={url} alt={`Foto ${idx + 1} de ${item.nombre}`} className="h-24 w-full object-contain bg-surface" />
         <div className="p-2 flex items-center justify-between gap-1">
           <button type="button" disabled={subiendo || idx === 0} aria-label={`Usar foto ${idx + 1} como portada`} onClick={() => onCambiar('imagenes_landing', [url, ...fotos.filter(f => f !== url)])} className="inline-flex items-center gap-1 text-xs text-primary-text disabled:text-fg-muted"><Star size={13} />{idx === 0 ? 'Portada' : 'Elegir portada'}</button>
           <button type="button" disabled={subiendo} aria-label={`Quitar foto ${idx + 1} de esta landing`} onClick={() => onCambiar('imagenes_landing', fotos.filter(f => f !== url))} className="p-1 rounded text-fg-muted hover:text-danger"><X size={14} /></button>

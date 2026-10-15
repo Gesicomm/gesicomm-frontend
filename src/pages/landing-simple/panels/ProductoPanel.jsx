@@ -205,14 +205,14 @@ export default function ProductoPanel({
                     title="Arrastrar para ordenar"
                   >
                     <MiniaturaMediaProducto medio={medio} alt="" />
-                    <span className="absolute top-0.5 right-0.5 bg-black/55 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="absolute top-0.5 right-0.5 bg-fg/55 text-fg rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <GripVertical size={10} />
                     </span>
                     {esImagen && normalizado.esPrincipal && <span className="absolute top-0.5 left-0.5 bg-fg rounded-full p-0.5"><Star size={9} className="text-canvas" fill="var(--color-canvas)" /></span>}
                     {(esImagen ? imagenesEditables : true) && (
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                      <div className="absolute inset-0 bg-brand-ink/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                         {esImagen && !normalizado.esPrincipal && imagenId && (
-                          <button type="button" onClick={() => onMarcarPrincipal(imagenId)} title="Marcar como principal" className="p-1 rounded bg-fg hover:bg-fg/80">
+                          <button type="button" onClick={() => onMarcarPrincipal(imagenId)} title="Marcar como principal" className="p-1 rounded bg-fg hover:bg-brand-ink/80">
                             <Star size={11} />
                           </button>
                         )}
@@ -220,7 +220,7 @@ export default function ProductoPanel({
                           type="button"
                           onClick={() => (esImagen && imagenId ? onEliminarImagen(imagenId) : onEliminarMedio?.(index))}
                           title={esImagen ? 'Eliminar' : 'Quitar video'}
-                          className="p-1 rounded bg-fg hover:bg-fg/80"
+                          className="p-1 rounded bg-fg hover:bg-brand-ink/80"
                         >
                           <Trash2 size={11} />
                         </button>
@@ -420,7 +420,7 @@ export default function ProductoPanel({
               <label className="text-xs font-semibold text-fg/60">Productos relacionados</label>
 
               {relacionadosAutomatico ? (
-                <p className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
+                <p className="text-xs text-warning/80 bg-warning/10 border border-warning/20 rounded-lg px-2 py-1.5">
                   Se muestran productos de la misma categoría. Agregá productos específicos abajo para personalizar.
                 </p>
               ) : (
@@ -633,8 +633,8 @@ export default function ProductoPanel({
             >
               {guardando ? <Loader size={14} className="animate-spin" /> : <Save size={14} />} Guardar cambios
             </button>
-            {aviso && <p className="text-xs text-emerald-400">{aviso}</p>}
-            {error && <p className="text-xs text-red-400">{error}</p>}
+            {aviso && <p className="text-xs text-success">{aviso}</p>}
+            {error && <p className="text-xs text-danger">{error}</p>}
           </div>
         </div>
       )}
@@ -664,7 +664,7 @@ function ResumenAncla({ ancla, actual }) {
 
   if (a <= p) {
     return (
-      <p className="text-[11px] text-amber-400/90 mt-1.5 leading-relaxed">
+      <p className="text-[11px] text-warning/90 mt-1.5 leading-relaxed">
         Tiene que ser mayor que el precio de venta ({formatPrecio(p)}) para que se vea tachado. Así como está,
         la ficha no muestra ni el tachado ni el descuento.
       </p>
@@ -672,7 +672,7 @@ function ResumenAncla({ ancla, actual }) {
   }
 
   return (
-    <p className="text-[11px] text-emerald-400/90 mt-1.5 leading-relaxed">
+    <p className="text-[11px] text-success/90 mt-1.5 leading-relaxed">
       Se muestra <s className="opacity-70">{formatPrecio(a)}</s> junto a {formatPrecio(p)} — descuento del{' '}
       {Math.round((1 - p / a) * 100)}%.
     </p>

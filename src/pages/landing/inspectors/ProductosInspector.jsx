@@ -164,7 +164,7 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
                   <button 
                     type="button" 
                     onClick={() => handleQuitarProducto(idx)}
-                    className="text-red-500 hover:bg-red-50 p-1.5 rounded"
+                    className="text-danger hover:bg-danger/10 p-1.5 rounded"
                     title="Quitar de la lista"
                   >
                     ✕
@@ -209,7 +209,7 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
       
       {/* Modal para ProductPicker */}
       {modalAbierto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-ink/50 backdrop-blur-sm p-4">
           <div className="bg-[var(--vit-bg)] rounded-xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-[var(--vit-border)]">
              <div className="flex items-center justify-between p-4 border-b border-[var(--vit-border)] bg-[var(--vit-card-bg)] shrink-0">
                <div>

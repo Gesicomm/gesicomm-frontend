@@ -125,7 +125,7 @@ export default function CuponesModal({ abierto, onCerrar, catalogo }) {
   if (!abierto) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onCerrar}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-ink/80 backdrop-blur-sm p-4" onClick={onCerrar}>
       <div
         className="bg-surface-2 border border-fg/10 rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
         onClick={e => e.stopPropagation()}
@@ -254,7 +254,7 @@ export default function CuponesModal({ abierto, onCerrar, catalogo }) {
             </div>
 
             {error && (
-              <p className="field-hint" style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.5rem' }}>
+              <p className="field-hint" style={{ color: "var(--color-danger)", display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.5rem' }}>
                 <AlertCircle size={14} /> {error}
               </p>
             )}

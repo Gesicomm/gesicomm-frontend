@@ -62,20 +62,20 @@ function useDebounce(value, delay) {
 function Paginador({ pagina, totalPaginas, onCambiar }) {
   if (totalPaginas <= 1) return null;
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-surface-border">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-border">
       <p className="text-xs text-fg-muted">Página {pagina} de {totalPaginas}</p>
       <div className="flex items-center gap-2">
         <button
           onClick={() => onCambiar(pagina - 1)}
           disabled={pagina <= 1}
-          className="flex items-center gap-1 px-2 py-1 text-sm border border-surface-border rounded-md disabled:opacity-40 hover:bg-surface-2"
+          className="flex items-center gap-1 px-2 py-1 text-sm border border-border rounded-md disabled:opacity-40 hover:bg-surface-2"
         >
           <ChevronLeft size={14} /> Anterior
         </button>
         <button
           onClick={() => onCambiar(pagina + 1)}
           disabled={pagina >= totalPaginas}
-          className="flex items-center gap-1 px-2 py-1 text-sm border border-surface-border rounded-md disabled:opacity-40 hover:bg-surface-2"
+          className="flex items-center gap-1 px-2 py-1 text-sm border border-border rounded-md disabled:opacity-40 hover:bg-surface-2"
         >
           Siguiente <ChevronRight size={14} />
         </button>
@@ -134,14 +134,14 @@ export default function MisAbastecimientos() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-50 overflow-hidden">
-      <div className="px-6 py-5 bg-surface border-b border-surface-border flex items-center justify-between">
+      <div className="px-6 py-5 bg-surface border-b border-border flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-fg mb-1">Compras a Gesicomm</h1>
           <p className="text-sm text-fg-muted">
             Acá ves los productos del catálogo Gesicomm que compraste o pediste abastecer, con pago, destino y estado del proceso.
           </p>
         </div>
-        <button onClick={cargar} className="flex items-center gap-2 px-3 py-2 border border-surface-border rounded-lg text-sm font-medium text-fg hover:bg-surface-2">
+        <button onClick={cargar} className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium text-fg hover:bg-surface-2">
           <RefreshCw size={15} /> Actualizar
         </button>
       </div>
@@ -156,19 +156,19 @@ export default function MisAbastecimientos() {
                 placeholder="Buscar producto, destino o #ID..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className="pl-8 pr-3 py-2 text-sm border border-surface-border rounded-lg bg-surface outline-none focus:border-primary w-72"
+                className="pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary w-72"
               />
             </div>
             <select
               value={estado}
               onChange={(e) => setEstado(e.target.value)}
-              className="px-3 py-2 text-sm border border-surface-border rounded-lg bg-surface outline-none focus:border-primary"
+              className="px-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary"
             >
               {ESTADOS.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
             </select>
             <div>
               <p className="mb-1 text-[11px] font-semibold uppercase text-fg-muted">Destino</p>
-              <div className="flex items-center gap-1 bg-surface border border-surface-border rounded-lg p-1">
+              <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-1">
                 {[['TODOS', 'Todos'], ['GESICOMM', 'Centro Gesicomm'], ['PROPIA', 'Mi depósito']].map(([val, label]) => (
                   <button
                     key={val}
@@ -195,10 +195,10 @@ export default function MisAbastecimientos() {
             <p>No hay abastecimientos que coincidan con estos filtros.</p>
           </div>
         ) : (
-          <div className="bg-surface rounded-xl border border-surface-border overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-surface-2 border-b border-surface-border">
+                <tr className="bg-surface-2 border-b border-border">
                   <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Solicitud</th>
                   <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Producto</th>
                   <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase text-right">Pedido</th>

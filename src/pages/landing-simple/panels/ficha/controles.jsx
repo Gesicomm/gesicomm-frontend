@@ -11,7 +11,7 @@ import { getMediaUrl } from '../../../../services/api';
 export const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
 export const MINI = 'bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
 export const ETIQUETA = 'block text-[10px] font-semibold uppercase tracking-wide text-fg/40 mb-1';
-export const AVISO_REAL = 'text-[10px] text-amber-400/70 leading-relaxed';
+export const AVISO_REAL = "text-[10px] text-warning/70 leading-relaxed";
 
 /* ── Controles reutilizables ──────────────────────────────────────── */
 
@@ -50,7 +50,7 @@ export function Fila({ children, onSubir, onBajar, onQuitar }) {
         <button type="button" onClick={onBajar} className="hover:text-fg leading-none text-[10px]">▼</button>
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-1.5">{children}</div>
-      <button type="button" onClick={onQuitar} className="text-fg/25 hover:text-red-400 pt-0.5"><Trash2 size={13} /></button>
+      <button type="button" onClick={onQuitar} className="text-fg/25 hover:text-danger pt-0.5"><Trash2 size={13} /></button>
     </div>
   );
 }
@@ -183,7 +183,7 @@ export function CampoImagen({ label, valor, onChange, onSubir, respaldo, compact
             Link
           </button>
           {valor && (
-            <button type="button" onClick={() => { onChange(''); setError(''); }} className="text-[10px] text-fg/40 hover:text-red-400 px-1">
+            <button type="button" onClick={() => { onChange(''); setError(''); }} className="text-[10px] text-fg/40 hover:text-danger px-1">
               Quitar
             </button>
           )}
@@ -203,7 +203,7 @@ export function CampoImagen({ label, valor, onChange, onSubir, respaldo, compact
           <button type="button" onClick={usarLink} className={boton}>Usar</button>
         </div>
       )}
-      {error && <p className="text-[10px] text-red-400 mt-1">{error}</p>}
+      {error && <p className="text-[10px] text-danger mt-1">{error}</p>}
       {!valor && respaldo && <p className="text-[10px] text-fg/30 mt-1 leading-relaxed">{respaldo}</p>}
     </div>
   );
@@ -263,7 +263,7 @@ export function CamposUrgencia({ d, set }) {
         límite real detrás.
       </p>
       {d.activo && (
-        <p className="text-[10px] text-amber-400/90 leading-relaxed bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
+        <p className="text-[10px] text-warning/90 leading-relaxed bg-warning/10 border border-warning/20 rounded-lg px-2 py-1.5">
           Este contador es solo visual, acá en la ficha del producto. Para que el producto aparezca
           además en <b>Categorías</b> o en <b>Oferta flash</b> de una landing, activalo también ahí, en
           <b> Configurar venta → Categorías → Editar promo</b> de esa landing.

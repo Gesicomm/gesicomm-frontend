@@ -2332,7 +2332,7 @@ export default function ConfigurarVentaCodigo({
                 : 'text-fg-muted hover:bg-surface-2 hover:text-fg'
             }`}
           >
-            <Cpu size={14} className={seccionConfig === 'mcp' ? 'text-primary-fg' : 'text-primary'} />
+            <Cpu size={14} className={seccionConfig === 'mcp' ? 'text-primary-fg' : 'text-primary-text'} />
             <span className="hidden sm:inline">Conectar MCP</span>
           </button>
           {publicUrl && (
@@ -2383,7 +2383,7 @@ export default function ConfigurarVentaCodigo({
               <div className="flex items-center gap-2">
                 <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML</p>
                 {esGeneradoIa && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary uppercase tracking-wide">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary-text uppercase tracking-wide">
                     <Sparkles size={11} /> Generada con IA (MCP)
                   </span>
                 )}
@@ -2533,7 +2533,7 @@ export default function ConfigurarVentaCodigo({
               >
                 {esGeneradoIa ? (
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm space-y-2.5">
-                    <div className="flex items-center gap-2 font-semibold text-primary">
+                    <div className="flex items-center gap-2 font-semibold text-primary-text">
                       <Lock size={15} />
                       <span>Bloques estándar bloqueados (Generada con IA / MCP)</span>
                     </div>
@@ -3748,7 +3748,7 @@ function VistaPrevia({
           // No se estira a paneles más anchos porque muchas landings tienen
           // layout de escritorio con ancho máximo; forzarlas dejaba una
           // plancha blanca a la derecha que parecía código roto.
-          <div className="w-full max-w-[1280px] h-full flex flex-col rounded-xl border border-border-strong overflow-hidden bg-white shadow-xl">
+          <div className="w-full max-w-[1280px] h-full flex flex-col rounded-xl border border-border-strong overflow-hidden bg-surface shadow-xl">
             <div className="h-7 shrink-0 flex items-center gap-1.5 px-3 bg-surface border-b border-border" aria-hidden="true">
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
@@ -4432,7 +4432,7 @@ export function InstruccionesIaFicha({ codigos, onCambiarCodigo, onRestaurarCodi
           {confirmarBase ? (
             <>
               <span className="text-[13px] text-fg">¿Volver al diseño base? Se pierde el diseño propio de la ficha.</span>
-              <button type="button" onClick={() => { onRestaurarCodigo('producto'); setConfirmarBase(false); setAviso('La ficha volvió al diseño base. Guardá para publicarla.'); }} className="h-8 px-3 rounded-lg bg-danger text-white text-xs font-semibold">Sí, volver</button>
+              <button type="button" onClick={() => { onRestaurarCodigo('producto'); setConfirmarBase(false); setAviso('La ficha volvió al diseño base. Guardá para publicarla.'); }} className="h-8 px-3 rounded-lg bg-danger text-danger-fg text-xs font-semibold">Sí, volver</button>
               <button type="button" onClick={() => setConfirmarBase(false)} className="h-8 px-3 rounded-lg border border-border text-xs font-semibold text-fg-muted hover:text-fg">Cancelar</button>
             </>
           ) : (
@@ -5109,7 +5109,7 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
               <span className="block text-xs text-fg-muted">Oculta o muestra solo el logo del encabezado.</span>
             </span>
             <span className={`relative h-5 w-10 shrink-0 rounded-full transition-colors ${cfg.mostrar_logo ? 'bg-success' : 'bg-border-strong'}`}>
-              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${cfg.mostrar_logo ? 'left-[22px]' : 'left-0.5'}`} />
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-all ${cfg.mostrar_logo ? 'left-[22px]' : 'left-0.5'}`} />
             </span>
           </button>
           <button
@@ -5124,7 +5124,7 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
               <span className="block text-xs text-fg-muted">Oculta o muestra solo el nombre de la tienda.</span>
             </span>
             <span className={`relative h-5 w-10 shrink-0 rounded-full transition-colors ${cfg.mostrar_nombre ? 'bg-success' : 'bg-border-strong'}`}>
-              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${cfg.mostrar_nombre ? 'left-[22px]' : 'left-0.5'}`} />
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-all ${cfg.mostrar_nombre ? 'left-[22px]' : 'left-0.5'}`} />
             </span>
           </button>
         </div>
@@ -5185,7 +5185,7 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
                   onClick={() => onCambiar(item.id, { visible: item.visible === false })}
                   className={`mt-1 relative shrink-0 w-10 h-5 rounded-full transition-colors ${item.visible !== false ? 'bg-success' : 'bg-border-strong'}`}
                 >
-                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${item.visible !== false ? 'left-[22px]' : 'left-0.5'}`} />
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-surface shadow transition-all ${item.visible !== false ? 'left-[22px]' : 'left-0.5'}`} />
                 </button>
                 <div className="grid flex-1 grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_180px]">
                   <CampoTexto label="Texto" value={item.texto} onChange={v => onCambiar(item.id, { texto: v })} placeholder="Productos" maxLength={32} />
@@ -5230,7 +5230,7 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispo
           );
         })}
       </div>
-      <button type="button" onClick={onAgregar} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white">
+      <button type="button" onClick={onAgregar} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-fg">
         <Plus size={16} /> Agregar link
       </button>
     </div>
@@ -5359,7 +5359,7 @@ function EditorPromosCatalogo({
 function PromoCatalogoModal(props) {
   const { item, onCerrar } = props;
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4 py-6" role="dialog" aria-modal="true" aria-label={`Editar promo de ${item?.nombre || 'producto'}`}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-fg/55 px-4 py-6" role="dialog" aria-modal="true" aria-label={`Editar promo de ${item?.nombre || 'producto'}`}>
       <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
           <div className="min-w-0">
@@ -5741,7 +5741,7 @@ function ModalPromoOferta({ item, ancla, onAncla, onCambiar, onCerrar }) {
   const descuento = descuentoDesdeAnclaPromo(precio, ancla);
   const precioAntes = limpiarNumeroPromo(ancla);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" onClick={onCerrar}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-ink/40 p-4" role="dialog" aria-modal="true" onClick={onCerrar}>
       <div className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl bg-surface p-4 shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
@@ -6217,7 +6217,7 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label="Ofertas">
-      <button type="button" aria-label="Cerrar" onClick={onCerrar} className="absolute inset-0 bg-black/40 cursor-default" />
+      <button type="button" aria-label="Cerrar" onClick={onCerrar} className="absolute inset-0 bg-brand-ink/40 cursor-default" />
       <div className={`relative w-full ${producto ? 'max-w-4xl' : 'max-w-3xl'} h-full bg-canvas border-l border-border shadow-2xl flex flex-col`}>
         <div className="flex items-center justify-between gap-3 px-5 md:px-6 h-16 border-b border-border bg-surface shrink-0">
           <div className="min-w-0">
@@ -6322,7 +6322,7 @@ function Interruptor({ activo, onChange, etiqueta }) {
       onClick={() => onChange(!activo)}
       className={`relative shrink-0 w-11 h-6 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${activo ? 'bg-success' : 'bg-border-strong'}`}
     >
-      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${activo ? 'left-[22px]' : 'left-0.5'}`} />
+      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-surface shadow transition-all ${activo ? 'left-[22px]' : 'left-0.5'}`} />
     </button>
   );
 }

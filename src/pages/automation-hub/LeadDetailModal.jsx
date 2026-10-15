@@ -399,7 +399,7 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
   const plan = planes[0] || null; // un solo acuerdo por lead
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border p-4">
           <h3 className="m-0 text-base font-semibold text-fg">{lead.name}</h3>

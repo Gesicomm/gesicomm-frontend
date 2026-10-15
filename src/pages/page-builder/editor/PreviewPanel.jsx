@@ -82,7 +82,7 @@ export default function PreviewPanel({ codigo, titulo }) {
 
       <div className="flex min-h-0 flex-1 justify-center overflow-hidden p-3">
         <div
-          className={`h-full overflow-hidden rounded-lg border border-border bg-white shadow-sm transition-all ${viewport === 'desktop' ? 'w-full' : ''}`}
+          className={`h-full overflow-hidden rounded-lg border border-border bg-surface shadow-sm transition-all ${viewport === 'desktop' ? 'w-full' : ''}`}
           style={{ width: viewport === 'desktop' ? undefined : ANCHOS[viewport], maxWidth: '100%' }}
         >
           <CodigoPreview

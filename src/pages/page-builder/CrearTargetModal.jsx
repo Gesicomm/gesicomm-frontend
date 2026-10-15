@@ -57,7 +57,7 @@ export default function CrearTargetModal({ tipo, proyectoId, onCerrar, onCreado 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-2xl">
         <header className="flex items-center justify-between border-b border-border bg-canvas/50 px-5 py-4">
           <h2 className="text-base font-semibold text-fg">

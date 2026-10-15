@@ -130,8 +130,8 @@ export default function PagoParConfig() {
   return (
     <div className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-2xl p-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <svg className="w-5 h-5 text-primary-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
           </svg>
         </div>
@@ -142,7 +142,7 @@ export default function PagoParConfig() {
       </div>
 
       {mensaje && (
-        <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-sm flex gap-3">
+        <div className="mb-6 p-4 rounded-xl bg-success/10 border border-success/20 text-success text-sm flex gap-3">
           <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -151,7 +151,7 @@ export default function PagoParConfig() {
       )}
 
       {error && (
-        <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex gap-3">
+        <div className="mb-6 p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm flex gap-3">
           <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
@@ -160,7 +160,7 @@ export default function PagoParConfig() {
       )}
 
       <div className="space-y-6">
-        <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+        <div className="p-4 rounded-xl bg-warning/5 border border-warning/20 space-y-3">
           <p className="text-sm font-medium text-[var(--vit-text)]">
             Antes de cobrar, configurá esto en tu panel de PagoPar
           </p>
@@ -225,11 +225,11 @@ export default function PagoParConfig() {
               checked={isActive}
               onChange={e => setIsActive(e.target.checked)}
             />
-            <div className="w-11 h-6 bg-[var(--vit-border)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            <div className="w-11 h-6 bg-[var(--vit-border)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
           </label>
         </div>
 
-        <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <span className="block text-sm font-medium text-[var(--vit-text)]">URL de redireccionamiento</span>
@@ -240,7 +240,7 @@ export default function PagoParConfig() {
             <button
               type="button"
               onClick={copiarUrlRetorno}
-              className="self-start px-3 py-1.5 rounded-lg text-xs font-medium border border-blue-500/30 text-blue-500 hover:bg-blue-500/10 transition-colors"
+              className="self-start px-3 py-1.5 rounded-lg text-xs font-medium border border-primary/30 text-primary-text hover:bg-primary/10 transition-colors"
             >
               Copiar
             </button>
@@ -255,7 +255,7 @@ export default function PagoParConfig() {
             <label className="text-sm font-medium text-[var(--vit-muted)]">Public Key</label>
             <input 
               type="text" 
-              className="w-full bg-[var(--vit-card-bg)] text-[var(--vit-text)] border border-[var(--vit-border)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-colors placeholder:text-[var(--vit-muted)]"
+              className="w-full bg-[var(--vit-card-bg)] text-[var(--vit-text)] border border-[var(--vit-border)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-colors placeholder:text-[var(--vit-muted)]"
               placeholder="Ej: pk_test_xxxxxx"
               value={publicKey}
               onChange={e => setPublicKey(e.target.value)}
@@ -267,20 +267,20 @@ export default function PagoParConfig() {
           <label className="text-sm font-medium text-[var(--vit-muted)]">Private Key</label>
           
           {config?.has_private_key && !eliminarKey ? (
-            <div className="flex items-center justify-between p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-success/5 border border-success/20 rounded-xl">
               <div className="flex items-center gap-3">
-                <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
                 <div className="text-sm">
-                  <span className="block text-emerald-500 font-medium">Clave Privada configurada</span>
-                  <span className="block text-emerald-600/80 text-xs">Se encuentra cifrada de forma segura.</span>
+                  <span className="block text-success font-medium">Clave Privada configurada</span>
+                  <span className="block text-success/80 text-xs">Se encuentra cifrada de forma segura.</span>
                 </div>
               </div>
               <button 
                 type="button"
                 onClick={() => setEliminarKey(true)}
-                className="text-xs text-red-500 hover:text-red-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-500/10"
+                className="text-xs text-danger hover:text-danger transition-colors px-3 py-1.5 rounded-lg hover:bg-danger/10"
               >
                 Reemplazar o Eliminar
               </button>
@@ -289,7 +289,7 @@ export default function PagoParConfig() {
             <div>
               <input 
                 type="text" 
-                className="w-full bg-[var(--vit-card-bg)] text-[var(--vit-text)] border border-[var(--vit-border)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-colors placeholder:text-[var(--vit-muted)]"
+                className="w-full bg-[var(--vit-card-bg)] text-[var(--vit-text)] border border-[var(--vit-border)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-colors placeholder:text-[var(--vit-muted)]"
                 placeholder="Pegá tu private key aquí..."
                 value={privateKey}
                 onChange={e => {
@@ -306,7 +306,7 @@ export default function PagoParConfig() {
         </div>
 
         {parImposible && (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-600 text-sm flex gap-3">
+          <div className="p-4 rounded-xl bg-warning/10 border border-warning/25 text-warning text-sm flex gap-3">
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -340,10 +340,10 @@ export default function PagoParConfig() {
             onClick={handleGuardar}
             disabled={guardando || parImposible}
             title={parImposible ? 'Reemplazá también la clave privada: los dos tokens son un par.' : undefined}
-            className="px-6 py-2.5 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 transition-colors flex items-center gap-2"
+            className="px-6 py-2.5 rounded-xl text-sm font-medium bg-primary-hover text-primary-fg hover:bg-primary disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {guardando ? (
-              <span className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+              <span className="w-4 h-4 rounded-full border-2 border-fg/20 border-t-white animate-spin" />
             ) : null}
             Guardar Configuración
           </button>

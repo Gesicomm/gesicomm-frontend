@@ -272,14 +272,14 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
           <button
             type="button"
             onClick={() => actualizar('imagen_posicion', 'izquierda')}
-            className={`flex-1 py-2 rounded-md text-sm font-medium border transition-colors ${imagenPosicion === 'izquierda' ? 'border-[var(--vit-accent)] bg-[var(--vit-accent-soft)] text-[var(--vit-accent)]' : 'border-[var(--vit-border)] text-[var(--vit-muted)]'}`}
+            className={`flex-1 py-2 rounded-md text-sm font-medium border transition-colors ${imagenPosicion === 'izquierda' ? 'border-[var(--vit-accent)] bg-[var(--vit-accent-soft)] text-primary-text' : 'border-[var(--vit-border)] text-[var(--vit-muted)]'}`}
           >
             Fotos a la izquierda
           </button>
           <button
             type="button"
             onClick={() => actualizar('imagen_posicion', 'derecha')}
-            className={`flex-1 py-2 rounded-md text-sm font-medium border transition-colors ${imagenPosicion === 'derecha' ? 'border-[var(--vit-accent)] bg-[var(--vit-accent-soft)] text-[var(--vit-accent)]' : 'border-[var(--vit-border)] text-[var(--vit-muted)]'}`}
+            className={`flex-1 py-2 rounded-md text-sm font-medium border transition-colors ${imagenPosicion === 'derecha' ? 'border-[var(--vit-accent)] bg-[var(--vit-accent-soft)] text-primary-text' : 'border-[var(--vit-border)] text-[var(--vit-muted)]'}`}
           >
             Fotos a la derecha
           </button>
@@ -321,7 +321,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                   <span className="text-xs font-semibold text-[var(--vit-text)]">Nuevo pack</span>
                   <button type="button" onClick={() => setCreandoPack(false)} className="p-0.5 text-[var(--vit-muted)] hover:text-[var(--vit-text)]"><X size={14} /></button>
                 </div>
-                {errorOferta && <p className="text-xs text-red-500">{errorOferta}</p>}
+                {errorOferta && <p className="text-xs text-danger">{errorOferta}</p>}
                 <input type="text" required placeholder="Nombre (ej. Pack x2)" value={formPack.nombre} onChange={e => setFormPack(f => ({ ...f, nombre: e.target.value }))} className="h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
                 <div className="flex gap-2">
                   <div className="flex-1">
@@ -373,7 +373,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                           <button
                             type="button"
                             onClick={() => eliminarPack(o.id)}
-                            className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded"
+                            className="p-1.5 text-danger/70 hover:text-danger hover:bg-danger/10 rounded"
                             title="Eliminar pack"
                           >
                             <Trash2 size={16} />
@@ -413,7 +413,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                   <span className="text-xs font-semibold text-[var(--vit-text)]">Nuevo order bump</span>
                   <button type="button" onClick={() => setCreandoBump(false)} className="p-0.5 text-[var(--vit-muted)] hover:text-[var(--vit-text)]"><X size={14} /></button>
                 </div>
-                {errorOferta && <p className="text-xs text-red-500">{errorOferta}</p>}
+                {errorOferta && <p className="text-xs text-danger">{errorOferta}</p>}
                 <div>
                   <label className="text-[10px] text-[var(--vit-muted-2)] uppercase mb-1 block">Productos complementarios (de tu catálogo)</label>
                   {formBump.productos_ids.map((pid, idx) => (
@@ -433,7 +433,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                         <button type="button" onClick={() => {
                           const newIds = formBump.productos_ids.filter((_, i) => i !== idx);
                           setFormBump(f => ({ ...f, productos_ids: newIds }));
-                        }} className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded">
+                        }} className="p-1.5 text-danger/70 hover:text-danger hover:bg-danger/10 rounded">
                           <X size={14} />
                         </button>
                       )}
@@ -529,7 +529,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); eliminarPack(ob.id); }}
-                          className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded ml-1"
+                          className="p-1.5 text-danger/70 hover:text-danger hover:bg-danger/10 rounded ml-1"
                           title="Eliminar order bump"
                         >
                           <Trash2 size={16} />
@@ -579,7 +579,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                 />
                 <button type="button" onClick={() => moverBloque(idxBloque, -1)} disabled={idxBloque === 0} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronUp size={14} /></button>
                 <button type="button" onClick={() => moverBloque(idxBloque, 1)} disabled={idxBloque === bloques.length - 1} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronDown size={14} /></button>
-                <button type="button" onClick={() => quitarBloque(idxBloque)} className="p-1 hover:bg-red-50 text-red-500 rounded"><Trash2 size={14} /></button>
+                <button type="button" onClick={() => quitarBloque(idxBloque)} className="p-1 hover:bg-danger/10 text-danger rounded"><Trash2 size={14} /></button>
               </div>
 
               <div className="flex flex-col gap-1.5 pl-2">
@@ -593,7 +593,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                       placeholder="Ítem de la lista..."
                       className="flex-1 h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none"
                     />
-                    <button type="button" onClick={() => quitarItem(idxBloque, idxItem)} className="p-1 hover:bg-red-50 text-red-500 rounded"><Trash2 size={12} /></button>
+                    <button type="button" onClick={() => quitarItem(idxBloque, idxItem)} className="p-1 hover:bg-danger/10 text-danger rounded"><Trash2 size={12} /></button>
                   </div>
                 ))}
                 <button

@@ -21,7 +21,7 @@ function TarjetaProductoIngreso({ producto, seleccionActual, onToggleBase, onAbr
   const stock = producto.cantidad_disponible;
 
   return (
-    <div className={`border rounded-lg overflow-hidden transition-colors ${seleccionadoBase ? 'border-primary ring-1 ring-primary' : 'border-surface-border hover:border-primary/50'}`}>
+    <div className={`border rounded-lg overflow-hidden transition-colors ${seleccionadoBase ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/50'}`}>
       <button
         type="button"
         className="w-full text-left"
@@ -36,12 +36,12 @@ function TarjetaProductoIngreso({ producto, seleccionActual, onToggleBase, onAbr
             </div>
           )}
           {typeof stock === 'number' && (
-            <span className={`absolute top-1.5 left-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${stock > 0 ? 'bg-surface/90 text-fg' : 'bg-danger/90 text-white'}`}>
+            <span className={`absolute top-1.5 left-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${stock > 0 ? 'bg-surface/90 text-fg' : "bg-danger/90 text-fg"}`}>
               {stock > 0 ? `Stock ${stock}` : 'Sin stock'}
             </span>
           )}
           {seleccionadoBase && (
-            <span className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center">
+            <span className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary text-primary-fg flex items-center justify-center">
               <Check size={12} strokeWidth={3} />
             </span>
           )}
@@ -50,7 +50,7 @@ function TarjetaProductoIngreso({ producto, seleccionActual, onToggleBase, onAbr
           <p className="text-sm font-medium text-fg leading-snug line-clamp-2">{producto.nombre}</p>
           <p className="text-xs text-fg-muted mt-0.5">{producto.sku || 'Sin SKU'}</p>
           {tieneVariantes && (
-            <p className="text-xs text-primary mt-1 flex items-center gap-1">
+            <p className="text-xs text-primary-text mt-1 flex items-center gap-1">
               <Layers size={11} /> {producto.variantes_count} variante{producto.variantes_count > 1 ? 's' : ''}
             </p>
           )}
@@ -58,7 +58,7 @@ function TarjetaProductoIngreso({ producto, seleccionActual, onToggleBase, onAbr
       </button>
 
       {tieneVariantes && variantesAbiertas === producto.id && (
-        <div className="border-t border-surface-border bg-surface-50 p-2.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="border-t border-border bg-surface-50 p-2.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
           {variantesCargando ? (
             <p className="text-xs text-fg-muted">Cargando variantes...</p>
           ) : variantes.length === 0 ? (
@@ -73,7 +73,7 @@ function TarjetaProductoIngreso({ producto, seleccionActual, onToggleBase, onAbr
                     type="checkbox"
                     checked={elegida}
                     onChange={() => onToggleVariante(producto, v)}
-                    className="rounded border-surface-border text-primary focus:ring-primary"
+                    className="rounded border-border text-primary-text focus:ring-primary"
                   />
                 </label>
               );
@@ -263,7 +263,7 @@ export default function NuevoIngresoPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-50 overflow-hidden">
-      <div className="px-6 py-5 bg-surface border-b border-surface-border">
+      <div className="px-6 py-5 bg-surface border-b border-border">
         <h1 className="text-xl font-bold text-fg mb-1">Nuevo Ingreso a Fulfillment</h1>
         <p className="text-sm text-fg-muted">Enviá tu stock a los centros de Gesicomm para que nos encarguemos del picking y empaquetado.</p>
       </div>
@@ -271,22 +271,22 @@ export default function NuevoIngresoPage() {
       <div className="flex-1 overflow-auto p-6 max-w-5xl mx-auto w-full">
         {/* Stepper Header */}
         <div className="flex items-center justify-between mb-8">
-          <div className={`flex flex-col items-center ${paso >= 1 ? 'text-primary' : 'text-fg-muted'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 mb-2 ${paso >= 1 ? 'border-primary bg-primary/10' : 'border-surface-border'}`}>
+          <div className={`flex flex-col items-center ${paso >= 1 ? 'text-primary-text' : 'text-fg-muted'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 mb-2 ${paso >= 1 ? 'border-primary bg-primary/10' : 'border-border'}`}>
               <Package size={20} />
             </div>
             <span className="text-sm font-medium">1. Productos</span>
           </div>
           <div className={`flex-1 h-px mx-4 ${paso >= 2 ? 'bg-primary' : 'bg-surface-border'}`}></div>
-          <div className={`flex flex-col items-center ${paso >= 2 ? 'text-primary' : 'text-fg-muted'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 mb-2 ${paso >= 2 ? 'border-primary bg-primary/10' : 'border-surface-border'}`}>
+          <div className={`flex flex-col items-center ${paso >= 2 ? 'text-primary-text' : 'text-fg-muted'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 mb-2 ${paso >= 2 ? 'border-primary bg-primary/10' : 'border-border'}`}>
               <Warehouse size={20} />
             </div>
             <span className="text-sm font-medium">2. Destino</span>
           </div>
           <div className={`flex-1 h-px mx-4 ${paso >= 3 ? 'bg-primary' : 'bg-surface-border'}`}></div>
-          <div className={`flex flex-col items-center ${paso >= 3 ? 'text-primary' : 'text-fg-muted'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 mb-2 ${paso >= 3 ? 'border-primary bg-primary/10' : 'border-surface-border'}`}>
+          <div className={`flex flex-col items-center ${paso >= 3 ? 'text-primary-text' : 'text-fg-muted'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 mb-2 ${paso >= 3 ? 'border-primary bg-primary/10' : 'border-border'}`}>
               <CheckCircle2 size={20} />
             </div>
             <span className="text-sm font-medium">3. Revisión</span>
@@ -294,7 +294,7 @@ export default function NuevoIngresoPage() {
         </div>
 
         {/* CONTENIDO DE LOS PASOS */}
-        <div className="bg-surface border border-surface-border rounded-xl shadow-sm p-6 mb-6">
+        <div className="bg-surface border border-border rounded-xl shadow-sm p-6 mb-6">
 
           {paso === 1 && (
             <div>
@@ -302,13 +302,13 @@ export default function NuevoIngresoPage() {
 
               <div className="flex gap-6">
                 {/* Buscador + grid */}
-                <div className="w-3/5 border-r border-surface-border pr-6">
+                <div className="w-3/5 border-r border-border pr-6">
                   <div className="relative mb-4">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={18} />
                     <input
                       type="text"
                       placeholder="Buscar por nombre o SKU..."
-                      className="w-full pl-10 pr-4 py-2 bg-surface border border-surface-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                      className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
                       value={busqueda}
                       onChange={(e) => setBusqueda(e.target.value)}
                     />
@@ -344,13 +344,13 @@ export default function NuevoIngresoPage() {
                 <div className="w-2/5 pl-2">
                   <h3 className="font-medium text-sm mb-4">Productos a incluir ({seleccionados.length})</h3>
                   {seleccionados.length === 0 ? (
-                    <div className="h-40 flex flex-col items-center justify-center text-fg-muted bg-surface-50 rounded-lg border border-dashed border-surface-border">
+                    <div className="h-40 flex flex-col items-center justify-center text-fg-muted bg-surface-50 rounded-lg border border-dashed border-border">
                       <p className="text-sm">No has seleccionado ningún producto.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {seleccionados.map((sel, idx) => (
-                        <div key={`${sel.producto_id}:${sel.variante_id || 'base'}`} className="flex items-center justify-between bg-surface-50 p-3 rounded-lg border border-surface-border">
+                        <div key={`${sel.producto_id}:${sel.variante_id || 'base'}`} className="flex items-center justify-between bg-surface-50 p-3 rounded-lg border border-border">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{sel.producto.nombre}</p>
                             {sel.variante && <p className="text-xs text-fg-muted">{sel.variante.nombre}</p>}
@@ -360,7 +360,7 @@ export default function NuevoIngresoPage() {
                             <input
                               type="number"
                               min="1"
-                              className="w-16 px-2 py-1 text-sm border border-surface-border rounded bg-surface"
+                              className="w-16 px-2 py-1 text-sm border border-border rounded bg-surface"
                               value={sel.cantidad_declarada}
                               onChange={(e) => updateCantidad(idx, e.target.value)}
                             />
@@ -399,7 +399,7 @@ export default function NuevoIngresoPage() {
                   {centros.map(c => (
                     <div
                       key={c.id}
-                      className={`border rounded-xl p-4 cursor-pointer transition-all ${centroSeleccionado === c.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-surface-border hover:border-primary/50'}`}
+                      className={`border rounded-xl p-4 cursor-pointer transition-all ${centroSeleccionado === c.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50'}`}
                       onClick={() => setCentroSeleccionado(c.id)}
                     >
                       <div className="flex items-center gap-4">
@@ -422,15 +422,15 @@ export default function NuevoIngresoPage() {
             <div className="max-w-2xl mx-auto py-8">
               <h2 className="text-lg font-semibold text-fg mb-6 text-center">Resumen del Ingreso</h2>
 
-              <div className="bg-surface-50 border border-surface-border rounded-xl p-6 mb-6">
-                <div className="flex justify-between items-start mb-6 pb-6 border-b border-surface-border">
+              <div className="bg-surface-50 border border-border rounded-xl p-6 mb-6">
+                <div className="flex justify-between items-start mb-6 pb-6 border-b border-border">
                   <div>
                     <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">Destino</p>
-                    <p className="font-medium flex items-center gap-2"><Warehouse size={16} className="text-primary"/> {centros.find(c => c.id === centroSeleccionado)?.nombre}</p>
+                    <p className="font-medium flex items-center gap-2"><Warehouse size={16} className="text-primary-text"/> {centros.find(c => c.id === centroSeleccionado)?.nombre}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">Total Unidades</p>
-                    <p className="font-medium text-lg text-primary">{seleccionados.reduce((acc, s) => acc + s.cantidad_declarada, 0)}</p>
+                    <p className="font-medium text-lg text-primary-text">{seleccionados.reduce((acc, s) => acc + s.cantidad_declarada, 0)}</p>
                   </div>
                 </div>
 
@@ -478,7 +478,7 @@ export default function NuevoIngresoPage() {
               onClick={handleGenerarIngreso}
               disabled={loading}
               className="btn-primary"
-              style={{ background: '#059669' }}
+              style={{ background: "var(--color-success)" }}
             >
               {loading ? 'Procesando...' : 'Confirmar e Informar Envío'} <CheckCircle2 size={18} />
             </button>

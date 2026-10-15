@@ -2743,7 +2743,7 @@ export default function ProductForm() {
                   boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                 }}>
                   <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Activity size={16} style={{ color: 'var(--color-primary)' }} /> SIMULAR DESCUENTO SOBRE PRECIO BASE
+                    <Activity size={16} style={{ color: "var(--color-primary-text)" }} /> SIMULAR DESCUENTO SOBRE PRECIO BASE
                   </h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'center' }}>
                     <div>
@@ -2791,7 +2791,7 @@ export default function ProductForm() {
                         padding: '0.5rem 1rem',
                         fontSize: '0.85rem',
                         fontWeight: 600,
-                        color: 'var(--color-primary)',
+                        color: "var(--color-primary-text)",
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -2838,7 +2838,7 @@ export default function ProductForm() {
                                   }}
                                 >
                                   <td style={{ padding: '0.75rem 1rem', fontWeight: isSelected ? 700 : 500, color: 'var(--color-text)' }}>
-                                    {escDiscount}% {isSelected && <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)', marginLeft: '0.25rem' }}>(actual)</span>}
+                                    {escDiscount}% {isSelected && <span style={{ fontSize: '0.75rem', color: "var(--color-primary-text)", marginLeft: '0.25rem' }}>(actual)</span>}
                                   </td>
                                   <td style={{ padding: '0.75rem 1rem', color: 'var(--color-text)' }}>{fmtGs(esc.finalPrice)}</td>
                                   <td style={{ padding: '0.75rem 1rem', color: hEsc.color, fontWeight: 600 }}>{fmtGs(esc.profit)}</td>
@@ -2950,7 +2950,7 @@ export default function ProductForm() {
                         type="number"
                         min="0"
                         className="form-control"
-                        style={{ background: 'var(--color-surface, #fff)', border: '1px solid var(--color-border, #ccc)', padding: '0.4rem', textAlign: 'center', borderRadius: '6px' }}
+                        style={{ background: "var(--color-surface, var(--color-surface))", border: '1px solid var(--color-border, #ccc)', padding: '0.4rem', textAlign: 'center', borderRadius: '6px' }}
                         value={stockPorDeposito.producto?.[String(dep.id)] ?? ''}
                         onChange={(e) => cambiarStockDeposito('producto', dep.id, e.target.value)}
                       />
@@ -3010,7 +3010,7 @@ export default function ProductForm() {
                                     type="number"
                                     min="0"
                                     className="form-control"
-                                    style={{ background: 'var(--color-surface, #fff)', border: '1px solid var(--color-border, #ccc)', padding: '0.4rem', textAlign: 'center', borderRadius: '6px' }}
+                                    style={{ background: "var(--color-surface, var(--color-surface))", border: '1px solid var(--color-border, #ccc)', padding: '0.4rem', textAlign: 'center', borderRadius: '6px' }}
                                     value={stockPorDeposito[key]?.[String(dep.id)] ?? ''}
                                     disabled={!variante.id || totalVariante <= 0}
                                     onChange={(e) => cambiarStockDeposito(key, dep.id, e.target.value)}
@@ -3341,7 +3341,7 @@ export default function ProductForm() {
                 )}
 
                 <div className="variantes-info-card">
-                  <Info size={18} style={{ flexShrink: 0, marginTop: '2px', color: 'var(--color-primary)' }} />
+                  <Info size={18} style={{ flexShrink: 0, marginTop: '2px', color: "var(--color-primary-text)" }} />
                   <div>
                     <p>
                       <strong>Combinaciones automáticas:</strong> Se generan solas a partir de las Opciones. Destildá las que no desees vender como variante.

@@ -343,13 +343,13 @@
 .at-dot-logins,
 .at-bar-logins { background: var(--color-info); }
 .at-dot-onboarding,
-.at-bar-onboarding { background: #8b5cf6; }
+.at-bar-onboarding { background: var(--color-primary); }
 .at-dot-landings,
-.at-bar-landings { background: #10b981; }
+.at-bar-landings { background: var(--color-success); }
 .at-dot-pagos,
-.at-bar-pagos { background: #f59e0b; }
+.at-bar-pagos { background: var(--color-warning); }
 .at-dot-pedidos-pagos,
-.at-bar-pedidos-pagos { background: #22c55e; }
+.at-bar-pedidos-pagos { background: var(--color-success); }
 .at-dot-abastecimiento,
 .at-bar-abastecimiento { background: #14b8a6; }
 .at-dot-fallos,

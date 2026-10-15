@@ -47,7 +47,7 @@ export default function SelectorIcono({ valor, onChange, containerClassName = "r
               <button
                 key={i.key}
                 type="button"
-                className={`p-1.5 flex items-center justify-center rounded transition-colors ${valor === i.key ? 'text-primary' : ''}`}
+                className={`p-1.5 flex items-center justify-center rounded transition-colors ${valor === i.key ? 'text-primary-text' : ''}`}
                 style={{
                   backgroundColor: valor === i.key ? 'var(--bg-hover)' : 'transparent',
                   border: valor === i.key ? '1px solid var(--primary-color)' : '1px solid transparent'

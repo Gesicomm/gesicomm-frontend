@@ -863,7 +863,7 @@ export default function PresentacionProducto({
             <label className="block text-xs text-fg-muted">Cantidad de estrellas<input className={campo} type="number" min="1" max="5" step="0.1" inputMode="decimal" value={val('resenas_calificacion', DEFAULTS_PRESENTACION.resenas_calificacion)} onChange={e => onCambiar('resenas_calificacion', e.target.value)} /></label>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm">
-            <span className="font-black text-amber-500" aria-hidden="true">
+            <span className="font-black text-warning" aria-hidden="true">
               {[1, 2, 3, 4, 5].map(n => {
                 // Misma cuenta que la ficha: cada estrella se llena hasta donde llega la calificación.
                 const relleno = `${Math.max(0, Math.min(100, (ratingResenas - (n - 1)) * 100))}%`;

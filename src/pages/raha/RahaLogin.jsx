@@ -113,7 +113,7 @@ export default function RahaLogin() {
           )}
         </button>
 
-        <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', textAlign: 'center' }}>
+        <p style={{ margin: 0, fontSize: '0.75rem', color: "var(--color-fg-muted)", textAlign: 'center' }}>
           ¿Necesitás una cuenta o restablecer contraseña? Contactá al administrador de Gesicomm.
         </p>
       </form>

@@ -202,7 +202,7 @@ export default function AbastecimientoTimeline({ envio, compacto = false, esAdmi
             {onConfirmarRecepcion && (
               <button
                 type="button"
-                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
                 onClick={(ev) => { ev.stopPropagation(); onConfirmarRecepcion(envio); }}
               >
                 Confirmar recepción

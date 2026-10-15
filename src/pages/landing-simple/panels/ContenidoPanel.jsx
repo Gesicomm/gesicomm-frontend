@@ -97,7 +97,7 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
             <button
               type="button"
               onClick={() => onCampo('banner_titulo', DEFAULT_TITULO)}
-              className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium"
+              className="text-[11px] text-primary-text hover:underline flex items-center gap-1 font-medium"
             >
               <Sparkles size={11} /> Usar sugerido
             </button>
@@ -125,7 +125,7 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
             <button
               type="button"
               onClick={() => onCampo('banner_subtitulo', DEFAULT_SUBTITULO)}
-              className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium"
+              className="text-[11px] text-primary-text hover:underline flex items-center gap-1 font-medium"
             >
               <Sparkles size={11} /> Usar sugerido
             </button>
@@ -156,20 +156,20 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
             <div key={`${url}-${indice}`} className="relative h-24 rounded-lg border border-fg/10 bg-fg/5 overflow-hidden group">
               <img src={url} alt={`Banner ${indice + 1}`} className="h-full w-full object-cover" />
               {indice === 0 && (
-                <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                <span className="absolute left-2 top-2 rounded-full bg-fg/55 px-2 py-0.5 text-[10px] font-semibold text-fg backdrop-blur">
                   Portada
                 </span>
               )}
               <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <div className="flex gap-1">
-                  <button type="button" onClick={() => moverImagenHero(indice, -1)} disabled={indice === 0} className="h-7 w-7 rounded-full bg-black/55 text-white inline-flex items-center justify-center disabled:opacity-30">
+                  <button type="button" onClick={() => moverImagenHero(indice, -1)} disabled={indice === 0} className="h-7 w-7 rounded-full bg-fg/55 text-fg inline-flex items-center justify-center disabled:opacity-30">
                     <ArrowLeft size={13} />
                   </button>
-                  <button type="button" onClick={() => moverImagenHero(indice, 1)} disabled={indice === imagenesHero.length - 1} className="h-7 w-7 rounded-full bg-black/55 text-white inline-flex items-center justify-center disabled:opacity-30">
+                  <button type="button" onClick={() => moverImagenHero(indice, 1)} disabled={indice === imagenesHero.length - 1} className="h-7 w-7 rounded-full bg-fg/55 text-fg inline-flex items-center justify-center disabled:opacity-30">
                     <ArrowRight size={13} />
                   </button>
                 </div>
-                <button type="button" onClick={() => quitarImagenHero(indice)} className="h-7 w-7 rounded-full bg-red-500/85 text-white inline-flex items-center justify-center">
+                <button type="button" onClick={() => quitarImagenHero(indice)} className="h-7 w-7 rounded-full bg-danger/85 text-fg inline-flex items-center justify-center">
                   <X size={13} />
                 </button>
               </div>
@@ -242,7 +242,7 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
         {/* Atajos de URL para el CTA */}
         <div className="bg-fg/5 border border-fg/10 rounded-lg p-3 flex flex-col gap-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-fg/70">
-            <LinkIcon size={13} className="text-primary" />
+            <LinkIcon size={13} className="text-primary-text" />
             Atajos de enlace para el botón CTA:
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -255,7 +255,7 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
                   onClick={() => onCampo('banner_boton_link', atajo.value)}
                   className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
                     seleccionado
-                      ? 'bg-primary text-white font-semibold shadow-sm'
+                      ? "bg-primary text-primary-fg font-semibold shadow-sm"
                       : 'bg-fg/10 hover:bg-fg/15 text-fg/80'
                   }`}
                 >
@@ -270,7 +270,7 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
         </div>
       </div>
 
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
     </div>
   );
 }

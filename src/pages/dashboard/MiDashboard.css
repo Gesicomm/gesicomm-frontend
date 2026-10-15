@@ -12,29 +12,26 @@
 ═══════════════════════════════════════════════════════════════════════ */
 
 .md-page {
-  /* Paleta de marca Gesicom — Azul Profundo / Marfil Claro / Oro Digital /
-     Gris Pizarra. La marca no tiene un verde de "éxito": Oro Digital pasa a
-     ser el color de "plata confirmada" (encaja con el tono premium del
-     hero — fondo azul profundo, número grande en dorado). */
-  --md-bg: #0d183d;
-  --md-surface: color-mix(in srgb, #0d183d 88%, white 12%);
-  --md-surface-2: color-mix(in srgb, #0d183d 80%, white 20%);
-  --md-surface-alt: color-mix(in srgb, #0d183d 85%, white 15%);
-  --md-border: color-mix(in srgb, var(--color-fg) 10%, transparent);
-  --md-border-strong: color-mix(in srgb, var(--color-fg) 20%, transparent);
-  --md-ink: #f7f7f8;
-  --md-ink-muted: #a7adb8;
-  --md-ink-faint: #687280;
-  --md-confirmado: #ffc107;
-  --md-confirmado-soft: rgba(255, 193, 7, 0.16);
-  --md-positivo: #34d399;
-  --md-positivo-soft: rgba(52, 211, 153, 0.16);
-  --md-visitas: #7fa8d9;
-  --md-contactos: #ffc107;
-  --md-carrito: #7fa8d9;
-  --md-checkout: #ffc107;
-  --md-ratio: #ffc107;
-  --md-negativo: #f87171;
+  /* Roles conectados al tema compartido; cifras y acciones con contraste. */
+  --md-bg: var(--color-canvas);
+  --md-surface: var(--color-surface);
+  --md-surface-2: var(--color-surface-2);
+  --md-surface-alt: var(--color-surface-2);
+  --md-border: var(--color-border);
+  --md-border-strong: var(--color-border-strong);
+  --md-ink: var(--color-fg);
+  --md-ink-muted: var(--color-fg-muted);
+  --md-ink-faint: var(--color-fg-subtle);
+  --md-confirmado: var(--color-primary-text);
+  --md-confirmado-soft: var(--bg-primary-soft);
+  --md-positivo: var(--color-success);
+  --md-positivo-soft: color-mix(in srgb, var(--color-success) 12%, transparent);
+  --md-visitas: var(--color-accent-text);
+  --md-contactos: var(--color-primary-text);
+  --md-carrito: var(--color-accent-text);
+  --md-checkout: var(--color-primary-text);
+  --md-ratio: var(--color-primary-text);
+  --md-negativo: var(--color-danger);
 
   background: var(--md-bg);
   min-height: 100vh;
@@ -48,28 +45,6 @@
   gap: 1rem;
   margin: 0 auto;
   box-sizing: border-box;
-}
-
-:root[data-theme='light'] .md-page {
-  --md-bg: #f7f7f8;
-  --md-surface: #ffffff;
-  --md-surface-2: #eeeef0;
-  --md-surface-alt: #f2f2f4;
-  --md-border: #dcdde2;
-  --md-border-strong: #c5c7d0;
-  --md-ink: #0d183d;
-  --md-ink-muted: #687280;
-  --md-ink-faint: #687280;
-  --md-confirmado: #b8860b;
-  --md-confirmado-soft: rgba(184, 134, 11, 0.12);
-  --md-positivo: #059669;
-  --md-positivo-soft: rgba(5, 150, 105, 0.12);
-  --md-visitas: #3d5fa3;
-  --md-contactos: #b8860b;
-  --md-carrito: #3d5fa3;
-  --md-checkout: #b8860b;
-  --md-ratio: #b8860b;
-  --md-negativo: #dc2626;
 }
 
 .md-eyebrow {
@@ -100,7 +75,7 @@
 .md-updating-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(13, 24, 61, 0.4);
+  background: color-mix(in srgb, var(--color-surface) 40%, transparent);
   backdrop-filter: blur(2px);
   z-index: 10;
   display: flex;
@@ -113,7 +88,7 @@
 }
 
 :root[data-theme='light'] .md-updating-overlay {
-  background: rgba(255, 255, 255, 0.6);
+  background: color-mix(in srgb, var(--color-fg) 60%, transparent);
 }
 
 /* ── Header ────────────────────────────────────────────────────────── */
@@ -289,8 +264,8 @@
   text-transform: uppercase;
 }
 .md-combo-opcion:hover { background: var(--md-surface-alt); }
-.md-combo-opcion.activa { background: var(--md-confirmado); color: #fff; }
-.md-combo-opcion.activa .md-combo-opcion-meta { color: rgba(255, 255, 255, 0.8); }
+.md-combo-opcion.activa { background: var(--color-primary); color: var(--color-primary-fg); }
+.md-combo-opcion.activa .md-combo-opcion-meta { color: var(--color-fg-muted); }
 .md-combo-vacio {
   font-size: 0.78rem;
   color: var(--md-ink-faint);
@@ -552,8 +527,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: var(--md-confirmado);
-  color: var(--color-canvas);
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
   font-size: 0.82rem;
   font-weight: 700;
   padding: 0.55rem 1rem;
@@ -926,11 +901,11 @@
   z-index: 100;
   width: min(280px, calc(100vw - 32px));
   padding: 0.7rem 0.8rem;
-  background: #111827;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 16%, transparent);
   border-radius: 8px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
-  color: #f8fafc;
+  color: var(--color-fg);
   font-size: 0.75rem;
   font-weight: 400;
   line-height: 1.45;
@@ -951,20 +926,20 @@
 .md-ayuda-burbuja strong {
   display: block;
   margin-bottom: 0.25rem;
-  color: #fff;
+  color: var(--color-fg);
   font-size: 0.76rem;
   font-weight: 700;
 }
 .md-ayuda-burbuja span {
   display: block;
-  color: #dbe4f0;
+  color: var(--color-fg);
 }
 .md-ayuda-burbuja small {
   display: block;
   margin-top: 0.45rem;
   padding-top: 0.45rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  color: #facc15;
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  color: var(--color-warning);
   font-size: 0.7rem;
   font-weight: 700;
 }
@@ -1002,11 +977,11 @@
 .md-ayuda-burbuja-portal {
   z-index: 10000;
   padding: 0.7rem 0.8rem;
-  background: #111827;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 16%, transparent);
   border-radius: 8px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
-  color: #f8fafc;
+  color: var(--color-fg);
   font-size: 0.75rem;
   font-weight: 400;
   line-height: 1.45;
@@ -1019,20 +994,20 @@
 .md-ayuda-burbuja-portal strong {
   display: block;
   margin-bottom: 0.25rem;
-  color: #fff;
+  color: var(--color-fg);
   font-size: 0.76rem;
   font-weight: 700;
 }
 .md-ayuda-burbuja-portal span {
   display: block;
-  color: #dbe4f0;
+  color: var(--color-fg);
 }
 .md-ayuda-burbuja-portal small {
   display: block;
   margin-top: 0.45rem;
   padding-top: 0.45rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  color: #facc15;
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  color: var(--color-warning);
   font-size: 0.7rem;
   font-weight: 700;
 }

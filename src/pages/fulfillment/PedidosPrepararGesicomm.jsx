@@ -69,7 +69,7 @@ function DatosEntrega({ p, compacto }) {
       <p className="m-0 font-medium text-fg">{nombreCompleto(p)}</p>
       {p.telefono && (
         <div className="flex items-center gap-2 mt-1">
-          <a href={`tel:${digitos}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-fg-muted hover:text-primary" title="Llamar">
+          <a href={`tel:${digitos}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-fg-muted hover:text-primary-text" title="Llamar">
             <Phone size={11} /> {p.telefono}
           </a>
           {digitos && (
@@ -93,7 +93,7 @@ function DatosEntrega({ p, compacto }) {
         </div>
       )}
       {p.link_maps && (
-        <a href={p.link_maps} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-primary hover:underline mt-1">
+        <a href={p.link_maps} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-primary-text hover:underline mt-1">
           <ExternalLink size={11} /> Ver en el mapa
         </a>
       )}
@@ -174,9 +174,9 @@ function DetalleModal({ pedido, onClose, onAvanzar, onCambio, procesando }) {
   const toggleLinea = (idx) => setChequeados((c) => ({ ...c, [idx]: !c[idx] }));
 
   return (
-    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-lg rounded-xl bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-surface-border px-5 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4 flex-shrink-0">
           <div>
             <h2 className="m-0 text-lg font-semibold text-fg">Pedido #{numeroPedidoVisible(pedido)}</h2>
             <p className="m-0 mt-0.5 text-sm text-fg-muted">{pedido.Usuario?.nombre || 'Comercio'} · {formatFecha(pedido.created_at)}</p>
@@ -190,7 +190,7 @@ function DetalleModal({ pedido, onClose, onAvanzar, onCambio, procesando }) {
           {/* Bloque 1: Cliente */}
           <div>
             <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">Cliente</p>
-            <div className="bg-surface-50 border border-surface-border rounded-lg p-3">
+            <div className="bg-surface-50 border border-border rounded-lg p-3">
               <DatosEntrega p={pedido} />
             </div>
           </div>
@@ -198,7 +198,7 @@ function DetalleModal({ pedido, onClose, onAvanzar, onCambio, procesando }) {
           {/* Bloque 2: Preparación */}
           <div>
             <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">Preparación</p>
-            <div className="bg-surface-50 border border-surface-border rounded-lg p-3 flex items-center justify-between">
+            <div className="bg-surface-50 border border-border rounded-lg p-3 flex items-center justify-between">
               <span className="text-sm text-fg flex items-center gap-1.5"><Warehouse size={13} className="text-fg-muted" /> {centrosDe(pedido).join(', ')}</span>
               <span className="text-sm font-medium text-fg">{productos} producto{productos !== 1 ? 's' : ''} · {unidades} u.</span>
             </div>
@@ -207,7 +207,7 @@ function DetalleModal({ pedido, onClose, onAvanzar, onCambio, procesando }) {
           {/* Bloque 3: Productos (checklist de picking, no se guarda) */}
           <div>
             <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">Productos a preparar</p>
-            <div className="border border-surface-border rounded-lg divide-y divide-surface-border overflow-hidden">
+            <div className="border border-border rounded-lg divide-y divide-surface-border overflow-hidden">
               {lineas.map((l, idx) => {
                 const marcado = !!chequeados[idx];
                 return (
@@ -218,13 +218,13 @@ function DetalleModal({ pedido, onClose, onAvanzar, onCambio, procesando }) {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${marcado ? 'bg-success/5' : 'bg-surface hover:bg-surface-50'}`}
                   >
                     <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${marcado ? 'border-success bg-success' : 'border-fg-muted'}`}>
-                      {marcado && <Check size={10} className="text-white" />}
+                      {marcado && <Check size={10} className="text-fg" />}
                     </span>
                     <span className={`flex-1 text-sm ${marcado ? 'text-fg-muted line-through' : 'text-fg'}`}>
                       {l.producto.nombre}
                       {l.variante && <span className="block text-xs text-fg-muted">{l.variante.nombre}</span>}
                     </span>
-                    <span className={`text-sm font-semibold ${marcado ? 'text-fg-muted' : 'text-primary'}`}>x{l.cantidad}</span>
+                    <span className={`text-sm font-semibold ${marcado ? 'text-fg-muted' : 'text-primary-text'}`}>x{l.cantidad}</span>
                   </button>
                 );
               })}
@@ -234,7 +234,7 @@ function DetalleModal({ pedido, onClose, onAvanzar, onCambio, procesando }) {
           {/* Bloque 4: Entrega */}
           <div>
             <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2">Entrega</p>
-            <div className="bg-surface-50 border border-surface-border rounded-lg p-3 space-y-2">
+            <div className="bg-surface-50 border border-border rounded-lg p-3 space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <Truck size={13} className="text-fg-muted shrink-0" />
                 <span className="text-fg-muted">Proveedor logístico:</span>
@@ -246,7 +246,7 @@ function DetalleModal({ pedido, onClose, onAvanzar, onCambio, procesando }) {
                   <select
                     defaultValue=""
                     onChange={(e) => asignarManual(e.target.value ? Number(e.target.value) : null)}
-                    className="flex-1 text-sm border border-surface-border rounded-md bg-surface px-2 py-1 outline-none focus:border-primary"
+                    className="flex-1 text-sm border border-border rounded-md bg-surface px-2 py-1 outline-none focus:border-primary"
                   >
                     <option value="">
                       {proveedores.length === 0 ? 'Sin coincidencia exacta — no hay proveedores en la red' : 'Sin coincidencia exacta — elegir manualmente'}
@@ -275,7 +275,7 @@ function DetalleModal({ pedido, onClose, onAvanzar, onCambio, procesando }) {
           </div>
         </div>
 
-        <div className="flex-shrink-0 border-t border-surface-border px-5 py-4">
+        <div className="flex-shrink-0 border-t border-border px-5 py-4">
           <button
             type="button"
             onClick={() => onAvanzar(pedido, esPreparado ? 'Despachado' : 'Preparado')}
@@ -301,7 +301,7 @@ function PedidoCard({ p, onAbrir, onAccion, arrastrable, onDragStart, onDragEnd,
       onDragStart={arrastrable ? (e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart(p.id); } : undefined}
       onDragEnd={onDragEnd}
       onClick={() => onAbrir(p)}
-      className={`bg-surface border border-surface-border rounded-lg p-3.5 transition-colors shadow-sm ${
+      className={`bg-surface border border-border rounded-lg p-3.5 transition-colors shadow-sm ${
         arrastrable ? 'cursor-grab active:cursor-grabbing hover:border-primary/50' : 'cursor-pointer hover:border-primary/50'
       } ${dragging ? 'opacity-40' : ''}`}
     >
@@ -316,7 +316,7 @@ function PedidoCard({ p, onAbrir, onAccion, arrastrable, onDragStart, onDragEnd,
       <p className="m-0 text-sm font-medium text-fg">{nombreCompleto(p)}</p>
       <p className="m-0 text-xs text-fg-muted mt-0.5">{[p.ciudad, p.departamento].filter(Boolean).join(', ') || 'Sin ciudad'}</p>
 
-      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-surface-border">
+      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-border">
         <span className="text-xs text-fg-muted">{productos} producto{productos !== 1 ? 's' : ''} · {unidades} u.</span>
         {digitos && (
           <a
@@ -427,19 +427,19 @@ export default function PedidosPrepararGesicomm() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-50 overflow-hidden">
-      <div className="px-6 py-5 bg-surface border-b border-surface-border flex items-center justify-between flex-wrap gap-3">
+      <div className="px-6 py-5 bg-surface border-b border-border flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-fg mb-1">Pedidos a preparar</h1>
           <p className="text-sm text-fg-muted">
             {pedidos.length} pedido{pedidos.length !== 1 ? 's' : ''} activo{pedidos.length !== 1 ? 's' : ''} · {porPreparar} por preparar · {preparados} preparado{preparados !== 1 ? 's' : ''}
           </p>
         </div>
-        <button onClick={cargar} className="flex items-center gap-2 px-3 py-2 border border-surface-border rounded-lg text-sm font-medium text-fg hover:bg-surface-2">
+        <button onClick={cargar} className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium text-fg hover:bg-surface-2">
           <RefreshCw size={15} /> Actualizar
         </button>
       </div>
 
-      <div className="px-6 py-3 border-b border-surface-border bg-surface flex items-center gap-2 flex-wrap">
+      <div className="px-6 py-3 border-b border-border bg-surface flex items-center gap-2 flex-wrap">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
           <input
@@ -447,14 +447,14 @@ export default function PedidosPrepararGesicomm() {
             placeholder="Buscar por pedido, comercio, cliente o producto..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-8 pr-3 py-2 text-sm border border-surface-border rounded-lg bg-surface outline-none focus:border-primary w-72"
+            className="pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary w-72"
           />
         </div>
         {centrosDisponibles.length > 1 && (
           <select
             value={centroFiltro}
             onChange={(e) => setCentroFiltro(e.target.value)}
-            className="px-3 py-2 text-sm border border-surface-border rounded-lg bg-surface outline-none focus:border-primary"
+            className="px-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary"
           >
             <option value="TODOS">Todos los centros</option>
             {centrosDisponibles.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -488,11 +488,11 @@ export default function PedidosPrepararGesicomm() {
                   onDrop={(e) => { if (esDestinoValido) { e.preventDefault(); handleDrop(col); } }}
                   className={`border rounded-xl flex flex-col max-h-[calc(100vh-320px)] transition-colors ${
                     colSobre === col.estado ? 'border-primary bg-primary/5' :
-                    hayArrastre && !esDestinoValido ? 'border-surface-border bg-surface-50 opacity-40' :
-                    'border-surface-border bg-surface-50'
+                    hayArrastre && !esDestinoValido ? 'border-border bg-surface-50 opacity-40' :
+                    'border-border bg-surface-50'
                   }`}
                 >
-                  <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-border flex-shrink-0">
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-border flex-shrink-0">
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${col.dot}`} />
                     <h3 className="m-0 text-sm font-semibold text-fg flex-1">{col.label}</h3>
                     <span className="text-xs font-medium text-fg-muted bg-surface-2 px-1.5 py-0.5 rounded-full">{items.length}</span>

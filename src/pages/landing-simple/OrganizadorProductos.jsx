@@ -93,7 +93,7 @@ function Marca({ etiqueta, icono = null, tono = '', quitar, onQuitar }) {
   const tonos = {
     success: 'bg-success/10 text-success font-bold',
     warning: 'bg-warning/15 text-warning font-semibold',
-    primary: 'bg-primary/10 text-primary font-semibold',
+    primary: 'bg-primary/10 text-primary-text font-semibold',
   };
   return (
     <span className={`inline-flex items-center gap-1 rounded-full py-0.5 pl-2 pr-0.5 text-[11px] ${tonos[tono] || 'border border-border bg-surface-2 font-medium text-fg-muted'}`}>
@@ -103,7 +103,7 @@ function Marca({ etiqueta, icono = null, tono = '', quitar, onQuitar }) {
         onClick={(e) => { e.stopPropagation(); onQuitar(); }}
         aria-label={quitar}
         title={quitar}
-        className="grid h-4 w-4 place-items-center rounded-full opacity-70 hover:bg-black/10 hover:opacity-100"
+        className="grid h-4 w-4 place-items-center rounded-full opacity-70 hover:bg-fg/10 hover:opacity-100"
       >
         <X size={10} />
       </button>
@@ -271,7 +271,7 @@ export default function OrganizadorProductos({
           <span className="flex-1 text-xs text-fg-muted">
             {visibles.length === filas.length ? `${filas.length} producto${filas.length === 1 ? '' : 's'}` : `${visibles.length} de ${filas.length} productos`}
           </span>
-          {marcados.size > 0 && <span className="text-xs font-semibold text-primary">{marcados.size} marcado{marcados.size === 1 ? '' : 's'}</span>}
+          {marcados.size > 0 && <span className="text-xs font-semibold text-primary-text">{marcados.size} marcado{marcados.size === 1 ? '' : 's'}</span>}
         </div>
         {visibles.length === 0 ? (
           <p className="px-4 py-6 text-center text-sm text-fg-muted">No hay productos con este filtro.</p>
@@ -421,7 +421,7 @@ function Modal({ titulo, subtitulo, onCerrar, children, pie }) {
     return () => window.removeEventListener('keydown', alTeclear);
   }, [onCerrar]);
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4 py-6" role="dialog" aria-modal="true" aria-label={titulo} onMouseDown={e => { if (e.target === e.currentTarget) onCerrar(); }}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-fg/55 px-4 py-6" role="dialog" aria-modal="true" aria-label={titulo} onMouseDown={e => { if (e.target === e.currentTarget) onCerrar(); }}>
       <div className="flex max-h-full w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
           <div className="min-w-0">
@@ -604,7 +604,7 @@ export function ModalColeccion({ quitar, filas, colecciones, onCerrar, onAplicar
             type="button"
             disabled={!limpio}
             onClick={() => onAplicar(limpio)}
-            className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${quitar ? 'bg-danger text-white hover:bg-danger/90' : 'bg-primary text-primary-fg hover:bg-primary-hover'}`}
+            className={`inline-flex h-10 items-center gap-1.5 rounded-lg px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${quitar ? "bg-danger text-danger-fg hover:bg-danger/90" : 'bg-primary text-primary-fg hover:bg-primary-hover'}`}
           >
             <Check size={15} /> {quitar ? 'Quitar' : (nueva ? `Crear “${limpio}”` : 'Agregar')}
           </button>

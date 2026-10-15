@@ -232,15 +232,15 @@ const UserLayout = ({ children }) => {
           className={`sidebar-link ${active ? 'active' : ''} ${bloqueo ? 'locked-link' : ''}`}
           style={bloqueo ? { opacity: 0.65 } : {}}
         >
-          <span className="sidebar-icon" style={danger ? { color: '#ef4444' } : {}}>
-            {bloqueo ? <Lock size={14} style={{ color: '#fbbf24' }} /> : item.icon}
+          <span className="sidebar-icon" style={danger ? { color: "var(--color-danger)" } : {}}>
+            {bloqueo ? <Lock size={14} style={{ color: "var(--color-warning)" }} /> : item.icon}
           </span>
-          <span style={{ flex: 1, ...(danger ? { color: '#ef4444', fontWeight: 600 } : {}) }}>{item.label}</span>
+          <span style={{ flex: 1, ...(danger ? { color: "var(--color-danger)", fontWeight: 600 } : {}) }}>{item.label}</span>
           {bloqueo && (
             <span style={{
               fontSize: '10px',
-              background: 'rgba(245, 158, 11, 0.15)',
-              color: '#fbbf24',
+              background: "color-mix(in srgb, var(--color-warning) 15%, transparent)",
+              color: "var(--color-warning)",
               padding: '2px 6px',
               borderRadius: '4px',
               fontWeight: 700
@@ -251,8 +251,8 @@ const UserLayout = ({ children }) => {
           {item.badge && !item.badgeDanger && (
             <span style={{
               fontSize: '10px',
-              background: 'rgba(59, 130, 246, 0.2)',
-              color: '#60a5fa',
+              background: "color-mix(in srgb, var(--color-primary) 20%, transparent)",
+              color: "var(--color-primary-text)",
               padding: '2px 6px',
               borderRadius: '4px',
               fontWeight: 700
@@ -263,13 +263,13 @@ const UserLayout = ({ children }) => {
           {item.badgeDanger && (
             <span style={{
               fontSize: '10px',
-              background: 'rgba(239, 68, 68, 0.15)',
-              color: '#ef4444',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: "color-mix(in srgb, var(--color-danger) 15%, transparent)",
+              color: "var(--color-danger)",
+              border: "1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)",
               padding: '2px 6px',
               borderRadius: '4px',
               fontWeight: 700,
-              boxShadow: '0 0 6px rgba(239, 68, 68, 0.5)'
+              boxShadow: "0 0 6px color-mix(in srgb, var(--color-danger) 50%, transparent)"
             }}>
               {item.badgeDanger}
             </span>
@@ -333,7 +333,7 @@ const UserLayout = ({ children }) => {
     const secciones = Array.from(grupos.entries());
     return secciones.map(([seccion, items]) => (
       <React.Fragment key={`${contexto}-${seccion}`}>
-        <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>
+        <div className="sidebar-section-label" style={{ color: "var(--color-fg-muted)", fontSize: '10px', fontWeight: 700 }}>
           {seccion}
         </div>
         <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
@@ -349,7 +349,7 @@ const UserLayout = ({ children }) => {
     <div className="dashboard-layout user-layout-container">
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-brand-ink/60 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
           aria-hidden="true"
         />
@@ -366,7 +366,7 @@ const UserLayout = ({ children }) => {
         <header className="sidebar-header" style={{ borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
             <Logo size={26} className="text-fg" />
-            <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.68rem', color: "var(--color-fg-muted)", textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
               Panel de Usuario
             </span>
           </div>
@@ -424,7 +424,7 @@ const UserLayout = ({ children }) => {
               <span style={{
                 width: '22px', height: '22px', borderRadius: '6px', flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(61, 95, 163, 0.15)', color: '#7d9bd6', overflow: 'hidden',
+                background: "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: "var(--color-primary-text)", overflow: 'hidden',
               }}>
                 {tiendaActiva.logo_imagen
                   ? <img src={tiendaActiva.logo_imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -436,7 +436,7 @@ const UserLayout = ({ children }) => {
               }}>
                 {tiendaActiva.nombre}
               </span>
-              <ChevronDown size={14} style={{ flexShrink: 0, color: '#64748b', transform: tiendaMenuAbierto ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+              <ChevronDown size={14} style={{ flexShrink: 0, color: "var(--color-fg-muted)", transform: tiendaMenuAbierto ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
             </button>
 
             {tiendaMenuAbierto && (
@@ -474,7 +474,7 @@ const UserLayout = ({ children }) => {
                         <span style={{
                           width: '20px', height: '20px', borderRadius: '5px', flexShrink: 0,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: 'rgba(61, 95, 163, 0.15)', color: '#7d9bd6', overflow: 'hidden',
+                          background: "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: "var(--color-primary-text)", overflow: 'hidden',
                         }}>
                           {t.logo_imagen
                             ? <img src={t.logo_imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -486,7 +486,7 @@ const UserLayout = ({ children }) => {
                         }}>
                           {t.nombre}
                         </span>
-                        {t.id === tiendaActiva.id && <Check size={14} style={{ flexShrink: 0, color: '#7d9bd6' }} />}
+                        {t.id === tiendaActiva.id && <Check size={14} style={{ flexShrink: 0, color: "var(--color-primary-text)" }} />}
                       </button>
                     </li>
                   ))}
@@ -498,7 +498,7 @@ const UserLayout = ({ children }) => {
                         display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
                         padding: '0.5rem 0.6rem', borderRadius: '6px', border: 'none',
                         background: 'transparent', cursor: 'pointer', textAlign: 'left',
-                        fontSize: '0.78rem', color: 'var(--color-fg-muted, #94a3b8)',
+                        fontSize: '0.78rem', color: "var(--color-fg-muted, var(--color-fg-muted))",
                       }}
                     >
                       <Plus size={14} /> Crear otra tienda
@@ -524,7 +524,7 @@ const UserLayout = ({ children }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
               <div style={{
                 width: '24px', height: '24px', borderRadius: '50%',
-                background: 'rgba(61, 95, 163, 0.2)', color: '#7d9bd6',
+                background: "color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-primary-text)",
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '11px', fontWeight: 'bold', flexShrink: 0
               }}>
@@ -545,7 +545,7 @@ const UserLayout = ({ children }) => {
                 <span style={{
                   display: 'block',
                   fontSize: '0.68rem',
-                  color: 'var(--color-fg-subtle, #64748b)',
+                  color: "var(--color-fg-subtle, var(--color-fg-muted))",
                 }}>
                   Editar perfil
                 </span>
@@ -634,7 +634,7 @@ const UserLayout = ({ children }) => {
             <p>
               Para acceder a <strong>{modalBloqueo.menu}</strong>, primero debes completar y aprobar la evaluación del curso:
               <br />
-              <strong style={{ color: '#60a5fa', display: 'block', marginTop: '0.5rem' }}>
+              <strong style={{ color: "var(--color-primary-text)", display: 'block', marginTop: '0.5rem' }}>
                 "{modalBloqueo.tituloModulo || 'Módulo Requerido'}"
               </strong>
             </p>

@@ -162,7 +162,7 @@ export default function PasoOfertas({
                   <article key={producto.id} className="rounded-xl border border-border bg-surface p-4">
                     <div className="flex items-start gap-3">
                       {producto.imagen
-                        ? <img src={producto.imagen} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border bg-white object-contain" />
+                        ? <img src={producto.imagen} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border bg-surface object-contain" />
                         : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-2 text-fg-subtle"><Tag size={16} /></span>}
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold">{producto.nombre}</p>

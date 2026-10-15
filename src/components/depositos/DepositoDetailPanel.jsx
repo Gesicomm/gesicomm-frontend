@@ -45,7 +45,7 @@ export default function DepositoDetailPanel({
   const pendientes = courierSummary?.pendingCount || 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30 p-0 backdrop-blur-[1px]" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-fg/30 p-0 backdrop-blur-[1px]" onClick={onClose}>
       <aside
         className="h-full w-full max-w-[620px] overflow-y-auto border-l border-border bg-canvas shadow-2xl"
         role="dialog"
@@ -109,7 +109,7 @@ export default function DepositoDetailPanel({
               type="button"
               onClick={() => onAbastecer?.(deposito)}
               disabled={!deposito.activo}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
             >
               <PackagePlus size={15} />
               Abastecer depósito
@@ -141,7 +141,7 @@ export default function DepositoDetailPanel({
             <button
               type="button"
               onClick={() => (hayCouriersDisponibles ? onAssignCouriers?.(deposito) : onCreateCourier?.(deposito))}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-white hover:bg-primary-hover"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-primary-fg hover:bg-primary-hover"
             >
               {hayCouriersDisponibles ? null : <Plus size={14} />}
               {hayCouriersDisponibles ? 'Asignar' : 'Crear courier'}

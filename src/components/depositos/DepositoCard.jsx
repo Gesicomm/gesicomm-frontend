@@ -26,7 +26,7 @@ export default function DepositoCard({
         onClick={() => onManage?.(deposito)}
         className="flex min-w-0 items-start gap-3 text-left"
       >
-        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-text">
           <MapPin size={18} />
         </span>
 
@@ -81,7 +81,7 @@ export default function DepositoCard({
         <button
           type="button"
           onClick={() => onManage?.(deposito)}
-          className="flex h-8 items-center gap-1.5 rounded-md bg-surface-2 px-3 text-[13px] font-semibold text-fg transition-colors hover:bg-primary hover:text-white"
+          className="flex h-8 items-center gap-1.5 rounded-md bg-surface-2 px-3 text-[13px] font-semibold text-fg transition-colors hover:bg-primary hover:text-primary-fg"
         >
           Administrar
           <ArrowRight size={14} />

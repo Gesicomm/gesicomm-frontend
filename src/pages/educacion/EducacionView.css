@@ -4,34 +4,24 @@
    ========================================================================== */
 
 :root {
-  --aca-bg: #0b0c10;
-  --aca-card: rgba(18, 20, 29, 0.85);
-  --aca-card-border: color-mix(in srgb, var(--color-fg) 8%, transparent);
-  --aca-text-primary: #f8fafc;
-  --aca-text-secondary: #94a3b8;
-  --aca-text-muted: #64748b;
-  --aca-blue: #3b82f6;
-  --aca-purple: #2e4a85;
-  --aca-emerald: #10b981;
-  --aca-amber: #f59e0b;
-}
-
-:root[data-theme='light'] {
-  --aca-bg: #f7f7f5;
-  --aca-card: rgba(255, 255, 255, 0.95);
-  --aca-card-border: #d8d8d0;
-  --aca-text-primary: #0b1d3d;
-  --aca-text-secondary: #4b5568;
-  --aca-text-muted: #6b7280;
-  --aca-purple: #3d5fa3;
+  --aca-bg: var(--color-canvas);
+  --aca-card: var(--color-surface);
+  --aca-card-border: var(--color-border);
+  --aca-text-primary: var(--color-fg);
+  --aca-text-secondary: var(--color-fg-muted);
+  --aca-text-muted: var(--color-fg-subtle);
+  --aca-blue: var(--color-info);
+  --aca-purple: var(--color-primary-text);
+  --aca-emerald: var(--color-success);
+  --aca-amber: var(--color-warning);
 }
 
 .aca-container {
   min-height: 100vh;
   background-color: var(--aca-bg);
   background-image: 
-    radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.07) 0%, transparent 40%),
-    radial-gradient(circle at 90% 40%, rgba(46, 74, 133, 0.07) 0%, transparent 40%);
+    radial-gradient(circle at 10% 10%, color-mix(in srgb, var(--color-primary) 7%, transparent) 0%, transparent 40%),
+    radial-gradient(circle at 90% 40%, color-mix(in srgb, var(--color-primary) 7%, transparent) 0%, transparent 40%);
   color: var(--aca-text-primary);
   padding: 2rem 2.5rem;
   font-family: var(--font-sans);
@@ -68,9 +58,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: #60a5fa;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+  color: var(--color-primary-text);
   padding: 0.3rem 0.8rem;
   border-radius: 9999px;
   font-size: 0.8rem;
@@ -124,7 +114,7 @@
 .aca-progress-percent {
   font-size: 1.8rem;
   font-weight: 800;
-  color: #34d399;
+  color: var(--color-success);
   line-height: 1;
 }
 
@@ -138,7 +128,7 @@
 
 .aca-progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%);
+  background: linear-gradient(90deg, var(--color-success) 0%, var(--color-primary) 100%);
   border-radius: 9999px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -181,8 +171,8 @@
 
 .aca-module-nav-card.active {
   border-color: var(--aca-blue);
-  background: rgba(30, 35, 52, 0.95);
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+  background: color-mix(in srgb, var(--color-surface) 95%, transparent);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .aca-module-nav-card.locked {
@@ -216,7 +206,7 @@
 }
 
 .aca-module-nav-card.active .aca-nav-card-title {
-  color: white;
+  color: var(--color-fg);
 }
 
 .aca-nav-card-meta {
@@ -293,9 +283,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--color-overlay);
   backdrop-filter: blur(4px);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-brand-cloud);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -333,13 +323,13 @@
   color: var(--color-fg);
 }
 .aca-shield-icon {
-  color: #ef4444;
+  color: var(--color-danger);
   margin-bottom: 0.25rem;
   animation: aca-pulse 2s infinite ease-in-out;
 }
 @keyframes aca-pulse {
   0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.5)); }
+  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--color-danger) 50%, transparent)); }
 }
 .aca-shield-content h3 {
   margin: 0;
@@ -358,8 +348,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: #3b82f6;
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
   border: none;
   font-family: inherit;
   font-size: 0.88rem;
@@ -367,11 +357,11 @@
   padding: 0.65rem 1.4rem;
   border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--color-primary) 35%, transparent);
   transition: all 0.15s ease;
 }
 .aca-shield-resume-btn:hover {
-  background: #2563eb;
+  background: var(--color-primary);
   transform: translateY(-1px);
 }
 
@@ -385,7 +375,7 @@
   align-items: center;
   gap: 0.6rem;
   background: #16203a;
-  border: 1px solid #3d5fa3;
+  border: 1px solid var(--color-primary);
   color: var(--color-fg);
   font-size: 0.86rem;
   font-weight: 600;
@@ -444,8 +434,8 @@
 }
 
 .aca-playlist-item.playing {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: #3b82f6;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-color: var(--color-primary);
 }
 
 .aca-playlist-item-left {
@@ -468,9 +458,9 @@
 }
 
 .aca-lesson-check-circle.completed {
-  background: #10b981;
-  border-color: #10b981;
-  color: white;
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-success-fg);
 }
 
 .aca-playlist-item-title {
@@ -516,9 +506,9 @@
 }
 
 .aca-btn-complete-video.done {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: #10b981;
-  color: #34d399;
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  border-color: var(--color-success);
+  color: var(--color-success);
 }
 
 .aca-btn-take-quiz {
@@ -527,19 +517,19 @@
   gap: 0.6rem;
   padding: 0.75rem 1.6rem;
   border-radius: 12px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
+  background: var(--color-warning);
+  color: var(--color-warning-fg);
   font-size: 0.92rem;
   font-weight: 700;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.35);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-warning) 35%, transparent);
   transition: all 0.2s ease;
 }
 
 .aca-btn-take-quiz:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(217, 119, 6, 0.5);
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--color-warning) 50%, transparent);
   filter: brightness(1.08);
 }
 
@@ -550,7 +540,7 @@
 .aca-quiz-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 6, 10, 0.85);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
   backdrop-filter: blur(14px);
   display: flex;
   align-items: center;
@@ -619,8 +609,8 @@
 }
 
 .aca-quiz-option-label.selected {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: #3b82f6;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border-color: var(--color-primary);
 }
 
 .aca-quiz-modal-footer {
@@ -641,23 +631,23 @@
   width: 110px;
   height: 110px;
   border-radius: 50%;
-  background: rgba(16, 185, 129, 0.15);
-  border: 3px solid #10b981;
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  border: 3px solid var(--color-success);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2.2rem;
   font-weight: 900;
-  color: #34d399;
+  color: var(--color-success);
   margin: 0 auto 1.5rem auto;
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--color-success) 30%, transparent);
 }
 
 .aca-score-circle.failed {
-  background: rgba(244, 63, 94, 0.15);
-  border-color: #f43f5e;
-  color: #fb7185;
-  box-shadow: 0 0 30px rgba(244, 63, 94, 0.3);
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--color-danger) 30%, transparent);
 }
 
 /* Cooldown Badge & Clock */
@@ -665,18 +655,18 @@
   width: 68px;
   height: 68px;
   border-radius: 50%;
-  background: rgba(244, 63, 94, 0.12);
-  border: 2px solid rgba(244, 63, 94, 0.35);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  border: 2px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 1rem auto;
-  box-shadow: 0 0 25px rgba(244, 63, 94, 0.2);
+  box-shadow: 0 0 25px color-mix(in srgb, var(--color-danger) 20%, transparent);
 }
 
 .aca-countdown-clock {
-  background: rgba(244, 63, 94, 0.08);
-  border: 1px solid rgba(244, 63, 94, 0.25);
+  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
   border-radius: 16px;
   padding: 1.25rem 2rem;
   margin: 1.5rem auto;
@@ -697,7 +687,7 @@
   font-family: var(--font-mono);
   font-size: 2.2rem;
   font-weight: 800;
-  color: #fb7185;
+  color: var(--color-danger);
   letter-spacing: 0.08em;
   line-height: 1;
 }
@@ -719,9 +709,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.28);
-  color: #fde68a;
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 28%, transparent);
+  color: var(--color-warning);
   padding: 0.5rem 1.2rem;
   border-radius: 9999px;
   font-size: 0.85rem;
@@ -737,7 +727,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  color: #fb7185;
+  color: var(--color-danger);
   font-weight: 600;
   font-size: 0.92rem;
   margin-bottom: 0.5rem;
@@ -745,8 +735,8 @@
 
 /* Pedagogical Recommendation Box */
 .aca-recommendation-box {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(46, 74, 133, 0.08) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.22);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 8%, transparent) 0%, color-mix(in srgb, var(--color-primary) 8%, transparent) 100%);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
   border-radius: 16px;
   padding: 1.25rem 1.5rem;
   display: flex;
@@ -759,7 +749,7 @@
 .aca-rec-icon {
   font-size: 1.8rem;
   line-height: 1;
-  background: rgba(59, 130, 246, 0.15);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
   padding: 0.6rem;
   border-radius: 12px;
 }
@@ -769,7 +759,7 @@
 }
 
 .aca-rec-title {
-  color: #93c5fd;
+  color: var(--color-primary-text);
   font-size: 0.98rem;
   font-weight: 700;
   margin: 0 0 0.35rem 0;
@@ -788,15 +778,15 @@
 
 /* Cooldown Locked Button */
 .aca-btn-take-quiz.cooldown-locked {
-  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+  background: linear-gradient(135deg, var(--color-danger) 0%, #be123c 100%);
   color: #ffe4e6;
-  border: 1px solid rgba(244, 63, 94, 0.4);
-  box-shadow: 0 4px 15px rgba(225, 29, 72, 0.3);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--color-danger) 30%, transparent);
 }
 
 .aca-btn-take-quiz.cooldown-locked:hover {
   filter: brightness(1.1);
-  box-shadow: 0 6px 20px rgba(225, 29, 72, 0.45);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-danger) 45%, transparent);
 }
 
 .spin-slow {

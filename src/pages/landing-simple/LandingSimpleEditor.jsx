@@ -1300,8 +1300,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               <Smartphone size={14} />
             </button>
           </div>
-          {aviso && <span className="text-xs text-emerald-400">{aviso}</span>}
-          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-red-500/10 text-fg/40 hover:text-red-400" title="Eliminar landing">
+          {aviso && <span className="text-xs text-success">{aviso}</span>}
+          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-danger/10 text-fg/40 hover:text-danger" title="Eliminar landing">
             <Trash2 size={16} />
           </button>
           <a href={publicUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-fg/10 text-fg/40 hover:text-fg" title="Ver landing pública">
@@ -1583,7 +1583,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
         <div
           ref={containerRef}
-          className="flex-1 overflow-y-auto bg-black/30 flex justify-center w-full relative"
+          className="flex-1 overflow-y-auto bg-fg/30 flex justify-center w-full relative"
           // `contain: layout` vuelve a este div el "containing block" de sus
           // descendientes en position:fixed (CartDrawer, con inset:0 pensado
           // para tapar TODA una página publicada).
@@ -1646,7 +1646,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                 borderRadius: viewportMode === 'mobile' ? '36px' : viewportMode === 'tablet' ? '24px' : '0',
                 border: viewportMode === 'desktop' ? 'none' : '12px solid #1c2230',
                 overflow: 'hidden',
-                backgroundColor: viewportMode === 'desktop' ? 'transparent' : 'white'
+                backgroundColor: viewportMode === 'desktop' ? 'transparent' : "var(--color-fg)"
               }}
             >
               <div className="w-full h-full overflow-y-auto" ref={previewRef}>

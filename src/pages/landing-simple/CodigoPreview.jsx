@@ -138,7 +138,7 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
       srcDoc={doc}
       sandbox={SANDBOX_CODIGO}
       className={className}
-      style={{ border: 0, width: '100%', height: '100%', display: 'block', background: '#fff', ...style }}
+      style={{ border: 0, width: '100%', height: '100%', display: 'block', background: "var(--color-surface)", ...style }}
     />
   );
 }

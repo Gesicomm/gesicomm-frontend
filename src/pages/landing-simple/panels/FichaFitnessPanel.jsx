@@ -350,8 +350,8 @@ const CAMPOS = {
                 value={it.calificacion ?? 5}
                 onChange={e => lista.editar('items', i, { calificacion: Number(e.target.value) })}
               >
-                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n} className="bg-neutral-900">{n} ★</option>)}
-                <option value={0} className="bg-neutral-900">Sin ★</option>
+                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n} className="bg-canvas">{n} ★</option>)}
+                <option value={0} className="bg-canvas">Sin ★</option>
               </select>
             </div>
             <textarea
@@ -633,7 +633,7 @@ const CAMPOS = {
                 value={it.calificacion}
                 onChange={e => lista.editar('items', i, { calificacion: Number(e.target.value) })}
               >
-                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n} className="bg-neutral-900">{n} ★</option>)}
+                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n} className="bg-canvas">{n} ★</option>)}
               </select>
             </div>
             <textarea rows={2} className={MINI} value={it.comentario || ''} placeholder="Lo que contó el cliente." onChange={e => lista.editar('items', i, { comentario: e.target.value })} />

@@ -215,7 +215,7 @@ export default function ComboConfiguracion({ asTab = false }) {
       {!asTab && (
       <div className="combo-header">
         <div className="combo-header-left">
-          <div className="combo-icon-wrap" style={{ background: 'linear-gradient(135deg, #3d5fa3, #2e4a85)' }}>
+          <div className="combo-icon-wrap" style={{ background: "linear-gradient(135deg, var(--color-primary), var(--color-primary))" }}>
             <Settings size={20} />
           </div>
           <div>
@@ -230,13 +230,13 @@ export default function ComboConfiguracion({ asTab = false }) {
       )}
 
       {error && (
-        <div className="combo-warning-item" style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)' }}>
+        <div className="combo-warning-item" style={{ color: "var(--color-danger)", borderColor: "color-mix(in srgb, var(--color-danger) 20%, transparent)", background: "color-mix(in srgb, var(--color-danger) 5%, transparent)" }}>
           <AlertTriangle size={14} /> {error}
         </div>
       )}
 
       {success && (
-        <div className="combo-warning-item" style={{ color: '#10b981', borderColor: 'rgba(16,185,129,0.2)', background: 'rgba(16,185,129,0.05)' }}>
+        <div className="combo-warning-item" style={{ color: "var(--color-success)", borderColor: "color-mix(in srgb, var(--color-success) 20%, transparent)", background: "color-mix(in srgb, var(--color-success) 5%, transparent)" }}>
           ✓ Configuración guardada correctamente.
         </div>
       )}

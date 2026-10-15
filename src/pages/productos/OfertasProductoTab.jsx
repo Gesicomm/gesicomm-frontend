@@ -878,7 +878,7 @@ export default function OfertasProductoTab({
                 </div>
               </div>
 
-              <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+              <div style={{ fontSize: '0.78rem', color: "var(--color-fg-muted)" }}>
                 {(oferta.componentes || []).map(c => {
                   const detalleVariante = c.permite_elegir_variante
                     ? ' (el cliente elige)'
@@ -903,18 +903,18 @@ export default function OfertasProductoTab({
                 {promoCheckout !== null && (
                   <div className="combo-list-card-metric">
                     <span className="combo-list-card-metric-label">Promo en checkout</span>
-                    <span className="combo-list-card-metric-value" style={{ color: '#f59e0b' }}>{formatMoney(promoCheckout)}</span>
+                    <span className="combo-list-card-metric-value" style={{ color: "var(--color-warning)" }}>{formatMoney(promoCheckout)}</span>
                   </div>
                 )}
                 {ahorroPct > 0 && (
                   <div className="combo-list-card-metric">
                     <span className="combo-list-card-metric-label">Descuento</span>
-                    <span className="combo-list-card-metric-value" style={{ color: '#10b981' }}>-{ahorroPct}%</span>
+                    <span className="combo-list-card-metric-value" style={{ color: "var(--color-success)" }}>-{ahorroPct}%</span>
                   </div>
                 )}
                 <div className="combo-list-card-metric">
                   <span className="combo-list-card-metric-label">Margen</span>
-                  <span className="combo-list-card-metric-value" style={{ color: margenMostrado >= 30 ? '#10b981' : margenMostrado > 0 ? '#f59e0b' : '#ef4444' }}>
+                  <span className="combo-list-card-metric-value" style={{ color: margenMostrado >= 30 ? "var(--color-success)" : margenMostrado > 0 ? "var(--color-warning)" : "var(--color-danger)" }}>
                     {margenMostrado}%
                   </span>
                 </div>
@@ -1005,15 +1005,15 @@ export default function OfertasProductoTab({
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{productoBase.nombre}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>
+                    <div style={{ fontSize: '0.8rem', color: "var(--color-fg-muted)", marginTop: '2px' }}>
                       Precio actual: <strong style={{ color: 'var(--color-fg)' }}>{formatMoney(productoBase.precio)}</strong>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                    <div style={{ fontSize: '0.72rem', color: "var(--color-fg-muted)", marginTop: '2px' }}>
                       Este paquete es de este producto: solo cambia la cantidad.
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-                    <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Unidades</span>
+                    <span style={{ fontSize: '0.72rem', color: "var(--color-fg-muted)", textTransform: 'uppercase', fontWeight: 600 }}>Unidades</span>
                     <input
                       type="number"
                       min="1"
@@ -1073,7 +1073,7 @@ export default function OfertasProductoTab({
                   </div>
                 )}
                 {ahorroPack && ahorroPack.ahorro < 0 && (
-                  <p className="field-hint" style={{ color: '#f59e0b' }}>
+                  <p className="field-hint" style={{ color: "var(--color-warning)" }}>
                     El paquete sale más caro que comprar {unidadesPack} unidades sueltas. Revisá el precio.
                   </p>
                 )}
@@ -1086,7 +1086,7 @@ export default function OfertasProductoTab({
                   <span style={{ opacity: 0.5, fontWeight: 'normal', fontSize: '0.8rem', marginLeft: '6px' }}>(producto ancla, fijo)</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Unidades</span>
+                  <span style={{ fontSize: '0.75rem', color: "var(--color-fg-muted)", textTransform: 'uppercase', fontWeight: 600 }}>Unidades</span>
                   <input
                     type="number"
                     min="1"
@@ -1145,7 +1145,7 @@ export default function OfertasProductoTab({
                     required
                   />
                   {esAncla ? (
-                    <span style={{ width: '100px', textAlign: 'center', color: '#475569', fontSize: '0.75rem' }}>Sin descuento</span>
+                    <span style={{ width: '100px', textAlign: 'center', color: "var(--color-fg-muted)", fontSize: '0.75rem' }}>Sin descuento</span>
                   ) : (
                     <div className="combo-discount-input" style={{ width: '100px' }}>
                       <input
@@ -1336,7 +1336,7 @@ export default function OfertasProductoTab({
                 <label>Hasta <span className="hint">(opcional)</span></label>
                 <input type="date" value={form.fecha_fin} onChange={e => setForm(f => ({ ...f, fecha_fin: e.target.value }))} />
                 {form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio && (
-                  <p className="field-hint" style={{ color: '#ef4444' }}>La fecha de fin no puede ser anterior a la de inicio.</p>
+                  <p className="field-hint" style={{ color: "var(--color-danger)" }}>La fecha de fin no puede ser anterior a la de inicio.</p>
                 )}
               </div>
               </div>
@@ -1437,12 +1437,12 @@ export default function OfertasProductoTab({
                             <tr><td>Costo de productos complementarios</td><td className="text-right">{formatMoney(sBase.upsellCosts)}</td></tr>
                             <tr><td>Costos totales del producto de entrada vendido solo</td><td className="text-right">{formatMoney(resultadoSensibilidad.principal.totalCosts)}</td></tr>
                             <tr><td>Costo total del combo</td><td className="text-right">{formatMoney(sBase.totalCost)}</td></tr>
-                            <tr><td>Utilidad bruta</td><td className="text-right" style={{ color: sBase.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>{formatMoney(sBase.profit)}</td></tr>
-                            <tr><td>Margen porcentual</td><td className="text-right" style={{ color: sBase.margin >= margenMinimoDecimal ? '#10b981' : '#ef4444', fontWeight: 600 }}>{fmtPct(sBase.margin)}</td></tr>
+                            <tr><td>Utilidad bruta</td><td className="text-right" style={{ color: sBase.profit >= 0 ? "var(--color-success)" : "var(--color-danger)", fontWeight: 600 }}>{formatMoney(sBase.profit)}</td></tr>
+                            <tr><td>Margen porcentual</td><td className="text-right" style={{ color: sBase.margin >= margenMinimoDecimal ? "var(--color-success)" : "var(--color-danger)", fontWeight: 600 }}>{fmtPct(sBase.margin)}</td></tr>
                             <tr><td>Ticket promedio generado</td><td className="text-right">{formatMoney(sBase.ticket)}</td></tr>
                             <tr><td>Utilidad vendiendo solo el producto principal</td><td className="text-right">{formatMoney(resultadoSensibilidad.comparison.standaloneProfit)}</td></tr>
                             <tr><td>Utilidad vendiendo el combo</td><td className="text-right">{formatMoney(resultadoSensibilidad.comparison.comboProfit)}</td></tr>
-                            <tr><td>Diferencia de utilidad ($)</td><td className="text-right" style={{ color: resultadoSensibilidad.comparison.profitDifference >= 0 ? '#10b981' : '#ef4444' }}>{formatMoney(resultadoSensibilidad.comparison.profitDifference)}</td></tr>
+                            <tr><td>Diferencia de utilidad ($)</td><td className="text-right" style={{ color: resultadoSensibilidad.comparison.profitDifference >= 0 ? "var(--color-success)" : "var(--color-danger)" }}>{formatMoney(resultadoSensibilidad.comparison.profitDifference)}</td></tr>
                             <tr><td>Diferencia porcentual de utilidad</td><td className="text-right">{resultadoSensibilidad.comparison.profitDifferencePercentage !== null && resultadoSensibilidad.comparison.profitDifferencePercentage !== undefined ? `${resultadoSensibilidad.comparison.profitDifferencePercentage.toFixed(2)}%` : '—'}</td></tr>
                             <tr><td>Indicador visual de oferta</td><td className="text-right"><BadgeOferta status={resultadoSensibilidad.comparison.offerStatus} /></td></tr>
                             <tr><td>Rentabilidad</td><td className="text-right"><BadgeRentabilidad status={resultadoSensibilidad.comparison.profitabilityStatus} /></td></tr>
@@ -1487,13 +1487,13 @@ export default function OfertasProductoTab({
                               textAlign: 'center',
                               fontSize: '1.1rem',
                               fontWeight: 'bold',
-                              color: 'var(--color-primary)',
+                              color: "var(--color-primary-text)",
                               background: 'var(--color-surface)',
                               border: '1.5px solid var(--color-border)',
                               borderRadius: '8px'
                             }}
                           />
-                          <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-primary)' }}>%</span>
+                          <span style={{ fontWeight: 700, fontSize: '1.1rem', color: "var(--color-primary-text)" }}>%</span>
                         </div>
 
                         <div style={{
@@ -1559,7 +1559,7 @@ export default function OfertasProductoTab({
                                       borderRadius: '50%',
                                       backgroundColor: dotColor,
                                       transform: 'translate(-50%, 50%)',
-                                      border: d === descuentoSimulado ? '2px solid #fff' : 'none',
+                                      border: d === descuentoSimulado ? "2px solid var(--color-border)" : 'none',
                                       transition: 'all 0.2s',
                                       zIndex: d === descuentoSimulado ? 10 : 1
                                     }}
@@ -1583,7 +1583,7 @@ export default function OfertasProductoTab({
                                borderLeft: '1px dashed #ef4444',
                                zIndex: 0
                              }}>
-                               <div style={{ position: 'absolute', top: '-15px', transform: 'translateX(-50%)', fontSize: '0.6rem', color: '#ef4444', whiteSpace: 'nowrap' }}>
+                               <div style={{ position: 'absolute', top: '-15px', transform: 'translateX(-50%)', fontSize: '0.6rem', color: "var(--color-danger)", whiteSpace: 'nowrap' }}>
                                  Máx rec.
                                </div>
                              </div>
@@ -1602,7 +1602,7 @@ export default function OfertasProductoTab({
                         </button>
                         
                         {mostrarDetalleEscenarios && (
-                          <div style={{ overflowX: 'auto', marginTop: '1rem', background: 'rgba(0,0,0,0.1)', padding: '0.5rem', borderRadius: '4px' }}>
+                          <div style={{ overflowX: 'auto', marginTop: '1rem', background: "var(--color-surface-2)", padding: '0.5rem', borderRadius: '4px' }}>
                             <table className="combo-sensitivity-table">
                               <thead>
                                 <tr>
@@ -1638,8 +1638,8 @@ export default function OfertasProductoTab({
                       
                       {/* 9. Alerta Precio Mínimo */}
                       {resultadoSensibilidad.recommendations.filter(r => r.targetMargin === (targetMargin * 100)).map(rec => (
-                        <div key="min-alert" style={{ marginBottom: '1rem', padding: '0.75rem', borderLeft: '4px solid #ef4444', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '0 4px 4px 0' }}>
-                           <strong style={{ color: '#ef4444', display: 'block', fontSize: '0.75rem' }}>⚠ PRECIO MÍNIMO: {formatMoney(rec.suggestedPrice)}</strong>
+                        <div key="min-alert" style={{ marginBottom: '1rem', padding: '0.75rem', borderLeft: '4px solid #ef4444', background: "color-mix(in srgb, var(--color-danger) 10%, transparent)", borderRadius: '0 4px 4px 0' }}>
+                           <strong style={{ color: "var(--color-danger)", display: 'block', fontSize: '0.75rem' }}>⚠ PRECIO MÍNIMO: {formatMoney(rec.suggestedPrice)}</strong>
                            <span style={{ fontSize: '0.8rem', color: 'var(--fg)' }}>Por debajo de este precio la oferta genera menos del {(targetMargin*100).toFixed(0)}% de margen.</span>
                         </div>
                       ))}

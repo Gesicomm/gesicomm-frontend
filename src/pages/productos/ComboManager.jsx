@@ -106,11 +106,11 @@ export default function ComboManager({ combos = [], setCombos, productoPadre, er
                     <span>{final.toLocaleString()} Gs</span>
                   </div>
                   {ahorro > 0 ? (
-                    <div style={{ color: '#10b981', fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: '600' }}>
+                    <div style={{ color: "var(--color-success)", fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: '600' }}>
                       ✓ Ahorras {ahorro.toLocaleString()} Gs ({pct}%)
                     </div>
                   ) : ahorro < 0 ? (
-                    <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: '600' }}>
+                    <div style={{ color: "var(--color-danger)", fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: '600' }}>
                       ⚠️ El combo cuesta {Math.abs(ahorro).toLocaleString()} Gs más
                     </div>
                   ) : (
@@ -128,7 +128,7 @@ export default function ComboManager({ combos = [], setCombos, productoPadre, er
                     <Copy size={15} />
                   </button>
                   <button type="button" className="btn-icon" onClick={() => handleToggleActivo(combo)} title={combo.activo ? 'Desactivar' : 'Activar'}>
-                    {combo.activo ? <PowerOff size={15} color="#ef4444" /> : <Power size={15} color="#10b981" />}
+                    {combo.activo ? <PowerOff size={15} color="var(--color-danger)" /> : <Power size={15} color="var(--color-success)" />}
                   </button>
                 </div>
               </div>

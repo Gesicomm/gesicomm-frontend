@@ -202,7 +202,7 @@ function ListaTextos({ valores = [], max, textoAgregar, placeholder, onCambio })
           <button type="button" onClick={() => mv(i, -1)} disabled={i === 0} className="text-fg/20 hover:text-fg disabled:opacity-30"><ChevronDown size={14} className="rotate-180" /></button>
           <button type="button" onClick={() => mv(i, 1)} disabled={i === valores.length - 1} className="text-fg/20 hover:text-fg disabled:opacity-30"><ChevronDown size={14} /></button>
           <input className={`${MINI} flex-1 min-w-0`} value={v || ''} placeholder={placeholder} onChange={e => edit(i, e.target.value)} />
-          <button type="button" onClick={() => del(i)} className="text-fg/20 hover:text-red-400 p-1"><Trash2 size={13} /></button>
+          <button type="button" onClick={() => del(i)} className="text-fg/20 hover:text-danger p-1"><Trash2 size={13} /></button>
         </div>
       ))}
       {valores.length < max && (
@@ -218,11 +218,11 @@ function ListaEditable({ items = [], max, campo, lista, textoAgregar, nuevo, chi
   return (
     <div className="flex flex-col gap-3">
       {items.map((it, i) => (
-        <div key={i} className="flex gap-2 items-start bg-black/20 p-2.5 rounded-lg border border-fg/5 relative group">
+        <div key={i} className="flex gap-2 items-start bg-fg/20 p-2.5 rounded-lg border border-fg/5 relative group">
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">{children(it, i)}</div>
           <div className="flex flex-col items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
             <button type="button" onClick={() => lista.mover(campo, i, -1)} disabled={i === 0} className="text-fg/30 hover:text-fg disabled:opacity-10"><ChevronDown size={12} className="rotate-180" /></button>
-            <button type="button" onClick={() => lista.quitar(campo, i)} className="text-fg/30 hover:text-red-400 p-1"><Trash2 size={12} /></button>
+            <button type="button" onClick={() => lista.quitar(campo, i)} className="text-fg/30 hover:text-danger p-1"><Trash2 size={12} /></button>
             <button type="button" onClick={() => lista.mover(campo, i, 1)} disabled={i === items.length - 1} className="text-fg/30 hover:text-fg disabled:opacity-10"><ChevronDown size={12} /></button>
           </div>
         </div>
@@ -240,7 +240,7 @@ function CamposContador({ d, set }) {
   const c = d.contador || {};
   const setC = (cambios) => set({ contador: { ...c, ...cambios } });
   return (
-    <div className="mt-2 bg-black/20 p-3 rounded-xl border border-fg/5 space-y-3">
+    <div className="mt-2 bg-fg/20 p-3 rounded-xl border border-fg/5 space-y-3">
       <label className="flex items-center gap-2 text-[12px] text-fg/90 font-semibold cursor-pointer">
         <input type="checkbox" checked={!!c.activo} onChange={e => setC({ activo: e.target.checked })} className="w-4 h-4 accent-[var(--color-accent)]" />
         Contador de tiempo limitado
@@ -353,7 +353,7 @@ const CAMPOS = {
                 packs: { ...(d.packs || {}), [String(p.id)]: { ...conf, ...cambios } },
               });
               return (
-                <div key={p.id} className="bg-black/20 p-2.5 rounded-lg border border-fg/5 flex flex-col gap-1.5">
+                <div key={p.id} className="bg-fg/20 p-2.5 rounded-lg border border-fg/5 flex flex-col gap-1.5">
                   <span className="text-[11px] font-semibold text-fg/70 truncate">{p.nombre}</span>
                   <div className="grid grid-cols-2 gap-2">
                     <input className={MINI} value={conf.badge || ''} placeholder="Más vendido" onChange={e => guardarPack({ badge: e.target.value })} />

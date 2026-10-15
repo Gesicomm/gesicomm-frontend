@@ -11,11 +11,11 @@ export default function AbastecimientoTimelineModal({ envio, open, onClose, esAd
     || envio.abastecimiento_estado === 'disponible_en_gesicomm';
 
   return (
-    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-3xl rounded-xl bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-4 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <History size={18} className="text-primary" />
+            <History size={18} className="text-primary-text" />
             <div>
               <span className="block text-[11px] font-bold uppercase tracking-wider text-fg-subtle">
                 {esFinal ? 'Finalizado' : 'Seguimiento de abastecimiento'}

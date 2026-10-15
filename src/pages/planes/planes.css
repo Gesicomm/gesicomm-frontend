@@ -142,7 +142,7 @@
 }
 
 .pl-trust-row svg {
-  color: #10b981;
+  color: var(--color-success);
 }
 
 .pl-product-visual {
@@ -164,7 +164,7 @@
   position: absolute;
   inset: auto -18% -28% 42%;
   height: 46%;
-  background: linear-gradient(135deg, rgba(61, 95, 163, 0.18), rgba(14, 165, 233, 0.12));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 18%, transparent), color-mix(in srgb, var(--color-accent) 12%, transparent));
   filter: blur(36px);
   pointer-events: none;
 }
@@ -299,7 +299,7 @@
 
 .pl-visual-note svg {
   flex-shrink: 0;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .pl-section {
@@ -404,7 +404,7 @@
   min-width: 0;
   padding: 1rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
   border: 1px solid var(--vit-border);
 }
 
@@ -436,8 +436,8 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--vit-accent);
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
   font-weight: 800;
   font-size: 0.82rem;
 }
@@ -485,7 +485,7 @@
    más de aire. Un solo elemento con más peso es lo que dirige la mirada. */
 .pl-card.destacado {
   border-color: var(--vit-accent);
-  box-shadow: 0 0 0 1px var(--vit-accent), 0 18px 45px rgba(30, 58, 117, 0.14);
+  box-shadow: 0 0 0 1px var(--vit-accent), 0 18px 45px color-mix(in srgb, var(--color-primary) 14%, transparent);
   padding-top: 1.9rem;
 }
 
@@ -498,8 +498,8 @@
   transform: translateX(-50%);
   padding: 0.28rem 0.8rem;
   border-radius: 999px;
-  background: var(--vit-accent);
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -526,9 +526,9 @@
 .pl-badge-actual {
   padding: 0.18rem 0.55rem;
   border-radius: 999px;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  border: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  color: var(--color-success);
   font-size: 0.68rem;
   font-weight: 600;
   white-space: nowrap;
@@ -557,7 +557,7 @@
   color: var(--vit-text);
 }
 .pl-precio span { font-size: 0.75rem; color: var(--vit-muted-2); }
-.pl-precio-gratis { color: #10b981 !important; }
+.pl-precio-gratis { color: var(--color-success) !important; }
 
 .pl-features {
   list-style: none;
@@ -576,7 +576,7 @@
   line-height: 1.45;
   color: var(--vit-text);
 }
-.pl-features svg { flex-shrink: 0; margin-top: 0.15rem; color: #10b981; }
+.pl-features svg { flex-shrink: 0; margin-top: 0.15rem; color: var(--color-success); }
 
 .pl-cta {
   display: inline-flex;
@@ -598,11 +598,11 @@
 .pl-cta:hover:not(:disabled) { border-color: var(--vit-accent); background: var(--vit-accent-soft); }
 
 .pl-cta.primario {
-  background: var(--vit-accent);
+  background: var(--color-primary);
   border-color: var(--vit-accent);
-  color: #ffffff;
+  color: var(--color-primary-fg);
 }
-.pl-cta.primario:hover:not(:disabled) { filter: brightness(1.12); background: var(--vit-accent); }
+.pl-cta.primario:hover:not(:disabled) { filter: brightness(1.12); background: var(--color-primary); }
 
 .pl-cta:disabled { opacity: 0.5; cursor: default; }
 
@@ -671,7 +671,7 @@
   transition: background 0.15s, color 0.15s;
 }
 .pl-tabs button:hover { color: var(--vit-text); background: var(--vit-bg); }
-.pl-tabs button.activo { color: #ffffff; background: var(--vit-accent); }
+.pl-tabs button.activo { color: var(--color-primary-fg); background: var(--color-primary); }
 
 .pl-aviso {
   display: flex;
@@ -679,23 +679,23 @@
   gap: 0.55rem;
   padding: 0.85rem 1rem;
   border-radius: 10px;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  background: rgba(245, 158, 11, 0.08);
-  color: #f59e0b;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
+  color: var(--color-warning);
   font-size: 0.8rem;
   line-height: 1.5;
 }
 .pl-aviso svg { flex-shrink: 0; margin-top: 0.1rem; }
 .pl-aviso strong { display: block; margin-bottom: 0.15rem; }
 .pl-aviso-ok {
-  border-color: rgba(16, 185, 129, 0.3);
-  background: rgba(16, 185, 129, 0.09);
-  color: #10b981;
+  border-color: color-mix(in srgb, var(--color-success) 30%, transparent);
+  background: color-mix(in srgb, var(--color-success) 9%, transparent);
+  color: var(--color-success);
 }
 .pl-aviso-error {
-  border-color: rgba(239, 68, 68, 0.3);
-  background: rgba(239, 68, 68, 0.09);
-  color: #ef4444;
+  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+  background: color-mix(in srgb, var(--color-danger) 9%, transparent);
+  color: var(--color-danger);
 }
 
 .pl-editor-grid {
@@ -774,7 +774,7 @@
   cursor: not-allowed;
 }
 .pl-campo-error {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .pl-checkout-card {
@@ -924,9 +924,9 @@
 
 .pl-upgrade-missing {
   padding: 1rem;
-  border: 1px solid rgba(245, 158, 11, 0.32);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 32%, transparent);
   border-radius: 12px;
-  background: rgba(245, 158, 11, 0.07);
+  background: color-mix(in srgb, var(--color-warning) 7%, transparent);
 }
 
 .pl-upgrade-missing h2 {
@@ -978,7 +978,7 @@
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
-.pl-btn-icono:hover { color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
+.pl-btn-icono:hover { color: var(--color-danger); border-color: color-mix(in srgb, var(--color-danger) 40%, transparent); }
 
 .pl-btn-texto {
   align-self: flex-start;
@@ -1024,9 +1024,9 @@
 }
 .pl-btn:hover { border-color: var(--vit-border-hover); }
 .pl-btn.primario {
-  background: var(--vit-accent);
+  background: var(--color-primary);
   border-color: var(--vit-accent);
-  color: #ffffff;
+  color: var(--color-primary-fg);
   font-weight: 700;
 }
 .pl-btn.primario:hover { filter: brightness(1.12); }
@@ -1036,7 +1036,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  color: #10b981;
+  color: var(--color-success);
   font-size: 0.8rem;
 }
 
@@ -1091,14 +1091,14 @@
   font-weight: 800;
 }
 .pl-affiliate-status span.activo {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 25%, transparent);
 }
 .pl-affiliate-status span.pausado {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 25%, transparent);
 }
 
 .pl-affiliates-grid {
@@ -1275,7 +1275,7 @@
   position: fixed; inset: 0; z-index: 50;
   display: flex; align-items: center; justify-content: center;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-overlay);
   backdrop-filter: blur(3px);
 }
 
@@ -1294,7 +1294,7 @@
 .pl-modal-ayuda { margin: 0; font-size: 0.78rem; line-height: 1.5; color: var(--vit-muted); }
 .pl-modal-error {
   display: flex; align-items: center; gap: 0.4rem; margin: 0;
-  font-size: 0.78rem; color: #ef4444;
+  font-size: 0.78rem; color: var(--color-danger);
 }
 .pl-modal-acciones { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.4rem; }
 
@@ -1310,9 +1310,9 @@
 .pl-estado h1 { margin: 0.25rem 0 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; color: var(--vit-text); }
 .pl-estado p { margin: 0; font-size: 0.9rem; line-height: 1.6; color: var(--vit-muted); }
 .pl-estado .pl-cta { margin-top: 0.75rem; display: inline-flex; align-items: center; gap: 0.4rem; }
-.pl-estado.ok > svg { color: #10b981; }
-.pl-estado.pendiente > svg { color: #f59e0b; }
-.pl-estado.error > svg { color: #ef4444; }
+.pl-estado.ok > svg { color: var(--color-success); }
+.pl-estado.pendiente > svg { color: var(--color-warning); }
+.pl-estado.error > svg { color: var(--color-danger); }
 
 .pl-referencia { margin-top: 1rem !important; font-size: 0.72rem !important; color: var(--vit-muted-2) !important; }
 .pl-referencia code { font-family: var(--font-mono); word-break: break-all; }

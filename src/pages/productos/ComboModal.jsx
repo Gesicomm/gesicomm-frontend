@@ -114,7 +114,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
   };
 
   return (
-    <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+    <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: "color-mix(in srgb, var(--color-surface) 80%, transparent)", display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <div className="modal-content" style={{ background: 'var(--color-canvas)', width: '100%', maxWidth: '600px', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
         
         {/* HEADER */}
@@ -174,7 +174,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
                             <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{p.nombre}</div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>{parseFloat(p.precio_base).toLocaleString()} Gs</div>
                           </div>
-                          {yaAgregado && <span style={{ fontSize: '0.7rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>✓ En combo ({yaAgregado.cantidad})</span>}
+                          {yaAgregado && <span style={{ fontSize: '0.7rem', color: "var(--color-success)", background: "color-mix(in srgb, var(--color-success) 10%, transparent)", padding: '2px 6px', borderRadius: '4px' }}>✓ En combo ({yaAgregado.cantidad})</span>}
                         </div>
                       );
                     })
@@ -234,9 +234,9 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
             {finalTotal > 0 && (
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)', textAlign: 'right' }}>
                 {ahorro > 0 ? (
-                  <span style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Ahorro: {ahorro.toLocaleString()} Gs ({((ahorro / normalTotal) * 100).toFixed(2)}%)</span>
+                  <span style={{ color: "var(--color-success)", fontWeight: 'bold' }}>✓ Ahorro: {ahorro.toLocaleString()} Gs ({((ahorro / normalTotal) * 100).toFixed(2)}%)</span>
                 ) : ahorro < 0 ? (
-                  <span style={{ color: '#ef4444', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.3rem' }}>
+                  <span style={{ color: "var(--color-danger)", fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.3rem' }}>
                     ⚠️ El combo es {Math.abs(ahorro).toLocaleString()} Gs más caro
                   </span>
                 ) : (

@@ -35,7 +35,7 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
   if (!open || !envio) return null;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "var(--color-overlay)" }} onClick={onClose}>
       <div style={{ width: "380px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -61,12 +61,12 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
                       background: "var(--color-surface-2)", border: "1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)",
                       display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-primary-text)", zIndex: 1
                     }}>
-                      {h.tipo === 'CONTACTO_WHATSAPP' && <MessageCircle size={12} color="#10b981" />}
-                      {h.tipo === 'ETIQUETA' && <Tag size={12} color="#8b5cf6" />}
-                      {h.tipo === 'SEGUIMIENTO_PROGRAMADO' && <CalendarClock size={12} color="#3b82f6" />}
-                      {h.tipo === 'SEGUIMIENTO_VENCIDO' && <History size={12} color="#ef4444" />}
-                      {h.tipo === 'SEGUIMIENTO_COMPLETADO' && <CheckCircle2 size={12} color="#10b981" />}
-                      {h.tipo === 'SEGUIMIENTO_CANCELADO' && <Ban size={12} color="#64748b" />}
+                      {h.tipo === 'CONTACTO_WHATSAPP' && <MessageCircle size={12} color="var(--color-success)" />}
+                      {h.tipo === 'ETIQUETA' && <Tag size={12} color="var(--color-primary-text)" />}
+                      {h.tipo === 'SEGUIMIENTO_PROGRAMADO' && <CalendarClock size={12} color="var(--color-primary-text)" />}
+                      {h.tipo === 'SEGUIMIENTO_VENCIDO' && <History size={12} color="var(--color-danger)" />}
+                      {h.tipo === 'SEGUIMIENTO_COMPLETADO' && <CheckCircle2 size={12} color="var(--color-success)" />}
+                      {h.tipo === 'SEGUIMIENTO_CANCELADO' && <Ban size={12} color="var(--color-fg-muted)" />}
                       {(!h.tipo || h.tipo === 'HISTORIAL') && <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--color-primary-text)" }} />}
                     </div>
                     {i < historial.length - 1 && <span style={{ width: "1px", flex: 1, background: "color-mix(in srgb, var(--color-fg) 10%, transparent)", marginTop: "-4px", marginBottom: "-4px" }} />}

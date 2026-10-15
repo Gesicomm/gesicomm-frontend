@@ -54,7 +54,7 @@ export default function VistaItems({ filtros }) {
             <input
               type="text"
               placeholder="Cliente, # Pedido o Teléfono..."
-              className="w-full bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md pl-8 pr-3 py-1.5 text-sm text-[var(--vit-text)] placeholder:text-[var(--vit-muted-2)] focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
+              className="w-full bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md pl-8 pr-3 py-1.5 text-sm text-[var(--vit-text)] placeholder:text-[var(--vit-muted-2)] focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
               value={localSearch.buscador}
               onChange={e => setLocalSearch(prev => ({ ...prev, buscador: e.target.value }))}
             />
@@ -64,7 +64,7 @@ export default function VistaItems({ filtros }) {
           <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">Desde</label>
           <input
             type="date"
-            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-blue-500/50"
+            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-primary/50"
             value={localSearch.fecha_desde}
             onChange={e => setLocalSearch(prev => ({ ...prev, fecha_desde: e.target.value }))}
           />
@@ -73,7 +73,7 @@ export default function VistaItems({ filtros }) {
           <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">Hasta</label>
           <input
             type="date"
-            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-blue-500/50"
+            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-primary/50"
             value={localSearch.fecha_hasta}
             onChange={e => setLocalSearch(prev => ({ ...prev, fecha_hasta: e.target.value }))}
           />
@@ -81,7 +81,7 @@ export default function VistaItems({ filtros }) {
         { (localSearch.buscador || localSearch.fecha_desde || localSearch.fecha_hasta) && (
           <button
             onClick={() => setLocalSearch({ buscador: '', fecha_desde: '', fecha_hasta: '' })}
-            className="text-xs text-[var(--vit-muted)] hover:text-red-400 font-medium px-2 py-1.5 transition-colors"
+            className="text-xs text-[var(--vit-muted)] hover:text-danger font-medium px-2 py-1.5 transition-colors"
           >
             Limpiar
           </button>
@@ -115,7 +115,7 @@ export default function VistaItems({ filtros }) {
                 const rol = esBase ? 'Base' :
                             oferta.estrategia === 'order_bump' ? 'Order Bump' :
                             oferta.estrategia === 'upsell' ? 'Upsell' : 'Base';
-                const icono = esBase ? <Package size={13} className="inline mr-1 text-blue-400" /> :
+                const icono = esBase ? <Package size={13} className="inline mr-1 text-primary-text" /> :
                               oferta.estrategia === 'order_bump' ? <Sparkles size={13} className="inline mr-1 text-orange-400" /> :
                               <TrendingUp size={13} className="inline mr-1 text-pink-400" />;
 

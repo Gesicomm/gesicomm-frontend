@@ -151,7 +151,7 @@ export default function OfertaImagenPicker({
                   : 'Opcional. Sin imagen se usa la del producto.'}
           </p>
 
-          {error && <p style={{ margin: 0, fontSize: 11, color: '#f87171' }}>{error}</p>}
+          {error && <p style={{ margin: 0, fontSize: 11, color: "var(--color-danger)" }}>{error}</p>}
         </div>
       </div>
 

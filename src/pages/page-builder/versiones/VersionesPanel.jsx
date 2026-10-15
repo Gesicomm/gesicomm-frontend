@@ -105,7 +105,7 @@ export default function VersionesPanel({ paginaId, publicadaId, onCerrar, onCamb
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,.6)' }}
+      style={{ background: "var(--color-overlay)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}
     >
       <div
@@ -185,15 +185,15 @@ export default function VersionesPanel({ paginaId, publicadaId, onCerrar, onCamb
       {viendo && (
         <div
           className="fixed inset-0 z-[60] flex flex-col"
-          style={{ background: 'rgba(0,0,0,.85)' }}
+          style={{ background: "color-mix(in srgb, var(--color-surface) 85%, transparent)" }}
         >
-          <div className="flex items-center justify-between px-4 py-2 text-sm text-white">
+          <div className="flex items-center justify-between px-4 py-2 text-sm text-fg">
             <span>Viendo la v{viendo.version} — no se cambió nada</span>
             <button type="button" onClick={() => setViendo(null)} aria-label="Cerrar vista">
               <X size={18} />
             </button>
           </div>
-          <div className="min-h-0 flex-1 bg-white">
+          <div className="min-h-0 flex-1 bg-surface">
             <CodigoPreview codigo={viendo.codigo} titulo={`v${viendo.version}`} />
           </div>
         </div>

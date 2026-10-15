@@ -62,15 +62,15 @@ export default function HorarioPicker({ value, onChange }) {
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          border: '1px solid #e2e8f0',
+          border: "1px solid var(--color-border)",
           padding: '8px 12px',
           borderRadius: '6px',
           cursor: 'pointer',
-          background: '#fff'
+          background: "var(--color-surface)"
         }}
       >
-        <Calendar size={16} style={{ color: '#6b7280' }} />
-        <span style={{ flex: 1, color: value ? '#000' : '#9ca3af', fontSize: '14px' }}>
+        <Calendar size={16} style={{ color: "var(--color-fg-muted)" }} />
+        <span style={{ flex: 1, color: value ? "var(--color-fg)" : "var(--color-fg-muted)", fontSize: '14px' }}>
           {value || 'Seleccionar horario...'}
         </span>
         {value && (
@@ -85,7 +85,7 @@ export default function HorarioPicker({ value, onChange }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#9ca3af'
+              color: "var(--color-fg-muted)"
             }}
             title="Limpiar horario"
           >
@@ -102,8 +102,8 @@ export default function HorarioPicker({ value, onChange }) {
             top: '100%',
             left: 0,
             marginTop: '4px',
-            background: '#fff',
-            border: '1px solid #e2e8f0',
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
             borderRadius: '8px',
             padding: '16px',
             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
@@ -115,22 +115,22 @@ export default function HorarioPicker({ value, onChange }) {
           }}
         >
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: '#4b5563' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: "var(--color-fg-muted)" }}>
               Días de atención
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <select 
                 value={diaInicio} 
                 onChange={e => setDiaInicio(e.target.value)}
-                style={{ flex: 1, padding: '6px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '14px' }}
+                style={{ flex: 1, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px', fontSize: '14px' }}
               >
                 {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
-              <span style={{ color: '#6b7280', fontSize: '14px' }}>a</span>
+              <span style={{ color: "var(--color-fg-muted)", fontSize: '14px' }}>a</span>
               <select 
                 value={diaFin} 
                 onChange={e => setDiaFin(e.target.value)}
-                style={{ flex: 1, padding: '6px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '14px' }}
+                style={{ flex: 1, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px', fontSize: '14px' }}
               >
                 {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
@@ -138,7 +138,7 @@ export default function HorarioPicker({ value, onChange }) {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: '#4b5563' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: "var(--color-fg-muted)" }}>
               <Clock size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} />
               Horario
             </label>
@@ -147,14 +147,14 @@ export default function HorarioPicker({ value, onChange }) {
                 type="time" 
                 value={horaInicio}
                 onChange={e => setHoraInicio(e.target.value)}
-                style={{ flex: 1, padding: '6px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '14px' }}
+                style={{ flex: 1, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px', fontSize: '14px' }}
               />
-              <span style={{ color: '#6b7280', fontSize: '14px' }}>a</span>
+              <span style={{ color: "var(--color-fg-muted)", fontSize: '14px' }}>a</span>
               <input 
                 type="time" 
                 value={horaFin}
                 onChange={e => setHoraFin(e.target.value)}
-                style={{ flex: 1, padding: '6px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '14px' }}
+                style={{ flex: 1, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px', fontSize: '14px' }}
               />
             </div>
           </div>
@@ -166,8 +166,8 @@ export default function HorarioPicker({ value, onChange }) {
               style={{
                 padding: '6px 12px',
                 fontSize: '13px',
-                border: '1px solid #d1d5db',
-                background: '#fff',
+                border: "1px solid var(--color-border)",
+                background: "var(--color-surface)",
                 borderRadius: '4px',
                 cursor: 'pointer'
               }}
@@ -181,8 +181,8 @@ export default function HorarioPicker({ value, onChange }) {
                 padding: '6px 12px',
                 fontSize: '13px',
                 border: 'none',
-                background: '#10b981',
-                color: '#fff',
+                background: "var(--color-primary)",
+                color: "var(--color-primary-fg)",
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontWeight: 500

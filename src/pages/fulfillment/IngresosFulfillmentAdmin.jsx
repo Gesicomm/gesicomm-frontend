@@ -5,7 +5,7 @@ import { RefreshCw, Package, Warehouse } from 'lucide-react';
 import { inventarioService } from '../../services/inventario.service';
 
 const ESTADO_BADGE = {
-  BORRADOR: 'bg-surface text-fg border-surface-border',
+  BORRADOR: 'bg-surface text-fg border-border',
   PENDIENTE_ENVIO: 'bg-warning/10 text-warning-text border-warning/20',
   EN_TRANSITO: 'bg-primary/10 text-primary-text border-primary/20',
   RECIBIDO: 'bg-info/10 text-info-text border-info/20',
@@ -72,20 +72,20 @@ export default function IngresosFulfillmentAdmin() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-50 overflow-hidden">
-      <div className="px-6 py-5 bg-surface border-b border-surface-border flex items-center justify-between">
+      <div className="px-6 py-5 bg-surface border-b border-border flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-fg mb-1">Ingresos a Fulfillment</h1>
           <p className="text-sm text-fg-muted">Stock propio que los comercios envian a los centros de Gesicomm.</p>
         </div>
         <button
           onClick={cargar}
-          className="flex items-center gap-2 px-3 py-2 border border-surface-border rounded-lg text-sm font-medium text-fg hover:bg-surface-2"
+          className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium text-fg hover:bg-surface-2"
         >
           <RefreshCw size={15} /> Actualizar
         </button>
       </div>
 
-      <div className="px-6 py-3 border-b border-surface-border bg-surface flex gap-2 flex-wrap">
+      <div className="px-6 py-3 border-b border-border bg-surface flex gap-2 flex-wrap">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -93,7 +93,7 @@ export default function IngresosFulfillmentAdmin() {
             className={tab === t.id ? 'btn-primary' : 'btn-secondary'}
           >
             {t.label}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === t.id ? 'bg-white/30 text-white font-bold' : 'bg-surface-2 text-fg-muted'}`}>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === t.id ? "bg-fg/30 text-fg font-bold" : 'bg-surface-2 text-fg-muted'}`}>
               {conteoPorTab(t)}
             </span>
           </button>
@@ -101,10 +101,10 @@ export default function IngresosFulfillmentAdmin() {
       </div>
 
       <div className="flex-1 overflow-auto p-6">
-        <div className="bg-surface rounded-xl border border-surface-border overflow-hidden">
+        <div className="bg-surface rounded-xl border border-border overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-surface-2 border-b border-surface-border">
+              <tr className="bg-surface-2 border-b border-border">
                 <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">ID</th>
                 <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Comercio</th>
                 <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Centro destino</th>
@@ -141,7 +141,7 @@ export default function IngresosFulfillmentAdmin() {
                       <td className="px-4 py-3"><EstadoBadge estado={ing.estado} /></td>
                       <td className="px-4 py-3 text-xs text-fg-muted">{formatFecha(ing.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
-                        <span className="text-primary hover:underline text-sm font-medium">Ver detalle</span>
+                        <span className="text-primary-text hover:underline text-sm font-medium">Ver detalle</span>
                       </td>
                     </tr>
                   );

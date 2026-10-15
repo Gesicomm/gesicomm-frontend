@@ -85,7 +85,7 @@ export default function ProveedoresLogisticos() {
     <div className="mx-auto max-w-6xl">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-text">
             <Truck size={21} />
           </span>
           <div>
@@ -100,7 +100,7 @@ export default function ProveedoresLogisticos() {
           disabled={sinCentros}
           onClick={() => setWizardAbierto(true)}
           title={sinCentros ? 'Primero designá un centro en la red' : undefined}
-          className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
         >
           <Plus size={16} /> Nuevo proveedor
         </button>

@@ -103,7 +103,7 @@ export default function CentroDetalle() {
       </button>
 
       <header className="mb-5 flex items-start gap-3">
-        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-text">
           <Warehouse size={21} />
         </span>
         <div className="flex-1">
@@ -197,14 +197,14 @@ export default function CentroDetalle() {
               href={centro.google_maps_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:underline"
             >
               Ver en Google Maps <ExternalLink size={13} />
             </a>
           )}
           <p className="m-0 mt-5 border-t border-border pt-4 text-[13px] text-fg-muted">
             Los datos del depósito se editan en{' '}
-            <Link to="/mi-tienda/depositos" className="font-medium text-primary hover:underline">
+            <Link to="/mi-tienda/depositos" className="font-medium text-primary-text hover:underline">
               Depósitos
             </Link>
             , desde el sidebar. Acá se ven porque son los que usa la red para coordinar retiros y entregas.

@@ -1203,7 +1203,7 @@ function OfertasStep({
                             </span>
                             <input type="checkbox" checked={activa} onChange={() => alternar(oferta.id)} className="sr-only" />
                             {oferta.imagen_url ? (
-                              <img src={getMediaUrl(oferta.imagen_url)} alt="" className="h-11 w-11 shrink-0 rounded-xl border border-border bg-white object-contain" loading="lazy" />
+                              <img src={getMediaUrl(oferta.imagen_url)} alt="" className="h-11 w-11 shrink-0 rounded-xl border border-border bg-surface object-contain" loading="lazy" />
                             ) : null}
                             <span className="min-w-0 flex-1">
                               <span className="block text-sm font-semibold text-fg">{oferta.nombre}</span>
@@ -1619,7 +1619,7 @@ function ContextSummary({ productosSeleccionados, ofertasTienda, ofertasSeleccio
 function Thumb({ item }) {
   const src = item?.imagen ? getMediaUrl(item.imagen) : null;
   return src ? (
-    <img src={src} alt="" className="h-12 w-12 shrink-0 rounded-xl border border-border bg-white object-contain" loading="lazy" />
+    <img src={src} alt="" className="h-12 w-12 shrink-0 rounded-xl border border-border bg-surface object-contain" loading="lazy" />
   ) : (
     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-fg-subtle">
       {item?.tipo === 'combo' ? <Layers size={16} /> : <ShoppingBag size={16} />}
@@ -1654,7 +1654,7 @@ function MessageStack({
           {m.rol === 'bot' && <Avatar icono={Bot} />}
           <div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
             m.rol === 'user'
-              ? 'rounded-br-md bg-primary text-white'
+              ? "rounded-br-md bg-primary text-primary-fg"
               : 'rounded-bl-md bg-surface-2 text-fg ring-1 ring-border'
           }`}>
             <div className="whitespace-pre-wrap">{m.texto}</div>
@@ -2095,36 +2095,36 @@ function ProgressChecklist() {
 
 function LandingSkeleton() {
   return (
-    <div className="h-full bg-[#f7f7f8] p-8 text-[#0d1b3d]">
+    <div className="h-full bg-surface-2 p-8 text-fg">
       <div className="mx-auto max-w-4xl">
         <div className="flex items-center justify-between">
-          <div className="h-5 w-32 rounded-full bg-[#0d1b3d]/20" />
+          <div className="h-5 w-32 rounded-full bg-surface/20" />
           <div className="flex gap-3">
-            <div className="h-4 w-16 rounded-full bg-[#0d1b3d]/12" />
-            <div className="h-4 w-16 rounded-full bg-[#0d1b3d]/12" />
-            <div className="h-8 w-24 rounded-full bg-[#3b82f6]/25" />
+            <div className="h-4 w-16 rounded-full bg-surface/12" />
+            <div className="h-4 w-16 rounded-full bg-surface/12" />
+            <div className="h-8 w-24 rounded-full bg-primary/25" />
           </div>
         </div>
 
         <div className="mt-14 grid grid-cols-[1.05fr_0.95fr] gap-10">
           <div>
-            <div className="h-5 w-28 rounded-full bg-[#ffc107]/45" />
-            <div className="mt-5 h-12 w-full rounded-xl bg-[#0d1b3d]/18" />
-            <div className="mt-3 h-12 w-4/5 rounded-xl bg-[#0d1b3d]/14" />
-            <div className="mt-6 h-4 w-full rounded-full bg-[#0d1b3d]/10" />
-            <div className="mt-2 h-4 w-3/4 rounded-full bg-[#0d1b3d]/10" />
+            <div className="h-5 w-28 rounded-full bg-accent/45" />
+            <div className="mt-5 h-12 w-full rounded-xl bg-surface/18" />
+            <div className="mt-3 h-12 w-4/5 rounded-xl bg-surface/14" />
+            <div className="mt-6 h-4 w-full rounded-full bg-surface/10" />
+            <div className="mt-2 h-4 w-3/4 rounded-full bg-surface/10" />
             <div className="mt-7 flex gap-3">
-              <div className="h-11 w-36 rounded-xl bg-[#3b82f6]/28" />
-              <div className="h-11 w-28 rounded-xl bg-[#0d1b3d]/10" />
+              <div className="h-11 w-36 rounded-xl bg-primary/28" />
+              <div className="h-11 w-28 rounded-xl bg-surface/10" />
             </div>
           </div>
           <div className="h-72 rounded-3xl bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe]" />
         </div>
 
         <div className="mt-12 grid grid-cols-3 gap-4">
-          <div className="h-28 rounded-2xl bg-[#0d1b3d]/10" />
-          <div className="h-28 rounded-2xl bg-[#0d1b3d]/10" />
-          <div className="h-28 rounded-2xl bg-[#0d1b3d]/10" />
+          <div className="h-28 rounded-2xl bg-surface/10" />
+          <div className="h-28 rounded-2xl bg-surface/10" />
+          <div className="h-28 rounded-2xl bg-surface/10" />
         </div>
       </div>
     </div>

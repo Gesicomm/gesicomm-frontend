@@ -230,7 +230,7 @@ export default function SensibilidadPanel({ item, datos = null, etiquetaCostoCom
             <div className="vit-empty"><Loader size={22} className="spin-icon" /><p>Calculando...</p></div>
           ) : error ? (
             <div className="vit-empty">
-              <AlertTriangle size={26} color="#ef4444" />
+              <AlertTriangle size={26} color="var(--color-danger)" />
               <p>{error}</p>
             </div>
           ) : (
@@ -295,7 +295,7 @@ export default function SensibilidadPanel({ item, datos = null, etiquetaCostoCom
                 </div>
                 <div className="vit-sensib-metric">
                   <span className="label">Utilidad estimada</span>
-                  <span className="value" style={{ color: analisisSimulado.profit >= 0 ? '#10b981' : '#ef4444' }}>
+                  <span className="value" style={{ color: analisisSimulado.profit >= 0 ? "var(--color-success)" : "var(--color-danger)" }}>
                     {analisisSimulado.profit >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />} {formatGs(analisisSimulado.profit)}
                   </span>
                 </div>

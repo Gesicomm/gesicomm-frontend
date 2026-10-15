@@ -80,7 +80,7 @@ function CampoImagen({ valor, onChange, onUpload }) {
           <button
             type="button"
             onClick={() => onChange('')}
-            className="absolute top-2 right-2 rounded-md bg-black/60 p-1.5 text-fg opacity-0 transition-opacity group-hover:opacity-100"
+            className="absolute top-2 right-2 rounded-md bg-brand-ink/60 p-1.5 text-fg opacity-0 transition-opacity group-hover:opacity-100"
             title="Quitar imagen"
           >
             <Trash2 size={14} />
@@ -94,7 +94,7 @@ function CampoImagen({ valor, onChange, onUpload }) {
           <input type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={subiendo} onChange={handleFile} />
         </label>
       )}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
       <input
         type="text"
         className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-surface)] p-2 text-sm text-[var(--vit-text)] focus:border-[var(--vit-accent)] focus:outline-none"

@@ -264,7 +264,7 @@ function Stepper({ paso }) {
             }`}
           >
             <div className="flex items-center gap-2">
-              <div className={`flex h-6 w-6 items-center justify-center rounded-md ${activo ? 'bg-primary text-primary-fg' : completo ? 'bg-success text-white' : 'bg-surface text-fg-muted'}`}>
+              <div className={`flex h-6 w-6 items-center justify-center rounded-md ${activo ? 'bg-primary text-primary-fg' : completo ? "bg-success text-success-fg" : 'bg-surface text-fg-muted'}`}>
                 {completo ? <Check size={13} /> : <Icon size={13} />}
               </div>
               <div className="min-w-0">
@@ -594,7 +594,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex justify-end bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex justify-end bg-brand-ink/60 backdrop-blur-sm" onClick={onClose}>
       <div className="flex h-full w-full max-w-5xl flex-col bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex shrink-0 items-start justify-between gap-4 p-5">
           <div>
@@ -611,7 +611,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
         {!creado && (
           <div className="border-b border-border bg-surface-2/60 px-6 py-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary-text">
                 Paso {paso} de 4
               </span>
               <span className="text-xs font-semibold text-fg">
@@ -644,7 +644,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                         actual
                           ? 'font-bold text-fg'
                           : completado
-                          ? 'text-primary'
+                          ? 'text-primary-text'
                           : 'text-fg-subtle'
                       }`}
                     >
@@ -660,7 +660,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
         {/* Modal Body */}
         {creado ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-success border border-success/20 shadow-sm">
               <CheckCircle2 size={32} />
             </div>
             <div>
@@ -727,13 +727,13 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                         }`}
                       >
                         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${
-                          activo ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-surface text-fg-muted'
+                          activo ? 'border-primary/30 bg-primary/10 text-primary-text' : 'border-border bg-surface text-fg-muted'
                         }`}>
                           <Icon size={19} />
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className={`text-sm font-bold ${activo ? 'text-primary' : 'text-fg'}`}>{f.label}</div>
+                          <div className={`text-sm font-bold ${activo ? 'text-primary-text' : 'text-fg'}`}>{f.label}</div>
                           <div className="text-xs text-fg-muted mt-0.5">{f.desc}</div>
                         </div>
 
@@ -818,7 +818,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                       <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                         {datos.slides.map((texto, i) => (
                           <div key={i} className="flex gap-2">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary-text">
                               {i + 1}
                             </div>
                             <textarea 
@@ -867,7 +867,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                   {/* Acciones rápidas / Sugerencias de copy */}
                   <div className="mt-3.5 space-y-2">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-fg-subtle flex items-center gap-1">
-                      <Sparkles size={12} className="text-primary" /> Sugerencias rápidas
+                      <Sparkles size={12} className="text-primary-text" /> Sugerencias rápidas
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       <button
@@ -875,14 +875,14 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                         onClick={() => agregarSugerenciaCaption(`👇 Comentá "${datos.keyword.trim() || 'INFO'}" y te envío la información completa por privado. 📩`)}
                         className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-fg hover:bg-surface-3 hover:border-primary/50 transition-colors"
                       >
-                        <Plus size={11} className="text-primary" /> Agregar CTA de ManyChat
+                        <Plus size={11} className="text-primary-text" /> Agregar CTA de ManyChat
                       </button>
                       <button
                         type="button"
                         onClick={() => agregarSugerenciaCaption('#estrategia #marketingdigital #creaciondecontenido #negocios')}
                         className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-fg hover:bg-surface-3 hover:border-primary/50 transition-colors"
                       >
-                        <Plus size={11} className="text-primary" /> Agregar Hashtags
+                        <Plus size={11} className="text-primary-text" /> Agregar Hashtags
                       </button>
                     </div>
                   </div>
@@ -970,7 +970,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                         e.target.value = '';
                       }}
                     />
-                    <Upload size={24} className="mb-2 text-primary" />
+                    <Upload size={24} className="mb-2 text-primary-text" />
                     {mediaAssets.length ? (
                       <span className="text-sm font-semibold text-fg">{mediaAssets.length} archivo(s) listo(s) para este formato</span>
                     ) : (
@@ -1013,7 +1013,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                   <label className="flex items-center gap-2 text-sm font-semibold text-fg">
                     <input 
                       type="checkbox" 
-                      className="h-4 w-4 rounded border-border text-primary"
+                      className="h-4 w-4 rounded border-border text-primary-text"
                       checked={platforms.instagram}
                       onChange={(e) => setPlatforms(p => ({...p, instagram: e.target.checked}))}
                     /> Instagram {channelLabel}
@@ -1021,7 +1021,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                   <label className="flex items-center gap-2 text-sm font-semibold text-fg">
                     <input 
                       type="checkbox" 
-                      className="h-4 w-4 rounded border-border text-primary"
+                      className="h-4 w-4 rounded border-border text-primary-text"
                       checked={platforms.facebook}
                       onChange={(e) => setPlatforms(p => ({...p, facebook: e.target.checked}))}
                     /> Facebook {channelLabel}
@@ -1031,7 +1031,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                 {/* RESUMEN DE PUBLICACIÓN */}
                 <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
                   <div className="text-xs font-bold text-fg flex items-center gap-1.5">
-                    <Layers size={14} className="text-primary" /> RESUMEN
+                    <Layers size={14} className="text-primary-text" /> RESUMEN
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[11px] text-fg-muted">
                     <div><span className="font-semibold text-fg">Formato:</span> {FORMATOS.find(f => f.value === datos.format)?.label}</div>
@@ -1044,7 +1044,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                 <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-sm">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div className="text-xs font-bold text-fg flex items-center gap-1.5">
-                      <CheckCircle2 size={14} className="text-primary" /> ManyChat
+                      <CheckCircle2 size={14} className="text-primary-text" /> ManyChat
                     </div>
                     <span className="rounded-md bg-surface px-2 py-1 text-[10px] font-bold uppercase text-primary-text">
                       Preparación
@@ -1079,11 +1079,11 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
 
             {/* Manejo de Conflicto de Tracking Code Duplicado */}
             {conflicto && (
-              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-sm relative">
-                <button type="button" onClick={() => setConflicto(null)} className="absolute top-2 right-2 text-amber-500 hover:text-amber-600">
+              <div className="rounded-xl border border-warning/40 bg-warning/10 p-4 shadow-sm relative">
+                <button type="button" onClick={() => setConflicto(null)} className="absolute top-2 right-2 text-warning hover:text-warning">
                   <X size={16} />
                 </button>
-                <h4 className="text-amber-500 text-xs font-bold flex items-center gap-2 mb-1">
+                <h4 className="text-warning text-xs font-bold flex items-center gap-2 mb-1">
                   <AlertTriangle size={16} /> ¡Código de tracking duplicado!
                 </h4>
                 <p className="text-xs text-fg mb-3">
@@ -1093,7 +1093,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                   <button type="button" onClick={() => setConflicto(null)} className="text-xs bg-surface border border-border px-3 py-1.5 rounded-lg text-fg hover:bg-surface-2 font-medium">
                     Cambiar datos
                   </button>
-                  <button type="button" onClick={() => handleSubmit(true)} className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 font-bold ml-auto">
+                  <button type="button" onClick={() => handleSubmit(true)} className="text-xs bg-warning text-warning-fg px-3 py-1.5 rounded-lg hover:bg-warning font-bold ml-auto">
                     Crear de todas formas (-02, -03...)
                   </button>
                 </div>

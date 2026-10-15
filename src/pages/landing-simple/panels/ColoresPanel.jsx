@@ -93,7 +93,7 @@ export default function ColoresPanel({ draft, onCampo, templateSlug, tienda }) {
           </div>
         );
       })}
-      <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-relaxed text-fg/55">
+      <div className="rounded-xl border border-warning/20 bg-warning/10 p-3 text-xs leading-relaxed text-fg/55">
         Hoy estos colores son globales. Cambiar color por bloque es viable, pero conviene hacerlo como una capa avanzada: cada bloque heredaría la paleta global y solo guardaría overrides propios cuando el usuario los active.
       </div>
     </div>

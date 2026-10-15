@@ -32,14 +32,14 @@ export default function DepositoForm({ initialValues, onSubmit, onClose, loading
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         className="w-full max-w-2xl overflow-hidden rounded-xl bg-surface shadow-2xl flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary-text">
               <MapPin size={18} />
             </div>
             <h2 className="m-0 text-lg font-semibold text-fg">
@@ -72,9 +72,9 @@ export default function DepositoForm({ initialValues, onSubmit, onClose, loading
             <button
               type="submit"
               disabled={loading}
-              className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-70 flex items-center gap-2"
+              className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover disabled:opacity-70 flex items-center gap-2"
             >
-              {loading && <span className="loader loader-sm border-white" />}
+              {loading && <span className="loader loader-sm border-border" />}
               Guardar depósito
             </button>
           </div>

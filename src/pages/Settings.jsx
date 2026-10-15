@@ -102,7 +102,7 @@ const Settings = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{
                             width: '48px', height: '48px', borderRadius: '12px',
-                            background: 'rgba(61, 95, 163, 0.15)', color: '#7d9bd6',
+                            background: "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: "var(--color-primary-text)",
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '18px', fontWeight: 'bold', flexShrink: 0
                         }}>
@@ -114,7 +114,7 @@ const Settings = () => {
                                 {usuario?.rol && (
                                     <span style={{
                                         fontSize: '0.68rem', padding: '0.15rem 0.5rem',
-                                        background: 'rgba(61, 95, 163, 0.12)', color: '#7d9bd6',
+                                        background: "color-mix(in srgb, var(--color-primary) 12%, transparent)", color: "var(--color-primary-text)",
                                         borderRadius: '4px', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em'
                                     }}>
                                         {usuario.rol}

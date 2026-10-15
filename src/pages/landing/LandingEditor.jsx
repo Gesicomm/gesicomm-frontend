@@ -1559,11 +1559,11 @@ export default function LandingEditor() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--vit-muted)' }}>
               {!esModoProducto && (
                 <span className={`lb-estado ${publicada ? 'on' : 'off'}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span className="lb-estado-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: publicada ? '#10b981' : '#f59e0b' }} />
+                  <span className="lb-estado-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: publicada ? "var(--color-success)" : "var(--color-warning)" }} />
                   {publicada ? 'Publicada' : 'Borrador'}
                 </span>
               )}
-              {sucio && <span style={{ color: '#f59e0b' }}>• Cambios sin guardar</span>}
+              {sucio && <span style={{ color: "var(--color-warning)" }}>• Cambios sin guardar</span>}
             </div>
           </div>
         </div>
@@ -1593,7 +1593,7 @@ export default function LandingEditor() {
           {!esModoProducto && (
             <button
               type="button"
-              className="lb-btn-ghost text-red-500 px-3 py-2 ml-2"
+              className="lb-btn-ghost text-danger px-3 py-2 ml-2"
               onClick={eliminarLanding}
               disabled={ocupado}
               title="Eliminar Landing"
@@ -1706,7 +1706,7 @@ export default function LandingEditor() {
                       width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '100%',
                       height: viewportMode === 'mobile' ? '812px' : viewportMode === 'tablet' ? '1024px' : '100%',
                       minHeight: viewportMode === 'desktop' ? '100%' : 'auto',
-                      backgroundColor: 'white',
+                      backgroundColor: "var(--color-fg)",
                       boxShadow: viewportMode === 'desktop' ? 'none' : '0 0 40px rgba(0,0,0,0.15)',
                       transition: 'width 0.3s ease, height 0.3s ease',
                       margin: viewportMode === 'desktop' ? '0' : '2rem auto',
@@ -1832,7 +1832,7 @@ export default function LandingEditor() {
         />
 
         {confirmDespublicar && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-ink/50 backdrop-blur-sm px-4">
             <div className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
               <div className="p-6">
                 <h3 className="text-xl font-bold text-[var(--vit-text)] mb-2">¿Despublicar Landing?</h3>
@@ -1849,16 +1849,16 @@ export default function LandingEditor() {
         )}
 
         {confirmEliminar && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-ink/50 backdrop-blur-sm px-4">
             <div className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
               <div className="p-6">
-                <h3 className="text-xl font-bold text-red-500 mb-2">Eliminar Landing</h3>
+                <h3 className="text-xl font-bold text-danger mb-2">Eliminar Landing</h3>
                 <p className="text-[var(--vit-muted)] mb-6">
                   ¿Estás seguro de que querés eliminar esta landing definitivamente? Esta acción no se puede deshacer.
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button type="button" className="lb-btn-ghost px-4 py-2" onClick={() => setConfirmEliminar(false)}>Cancelar</button>
-                  <button type="button" className="bg-red-500 hover:bg-red-600 text-white font-medium rounded-md px-4 py-2 transition-colors" onClick={confirmarEliminarLanding}>Sí, eliminar</button>
+                  <button type="button" className="bg-danger hover:bg-danger text-danger-fg font-medium rounded-md px-4 py-2 transition-colors" onClick={confirmarEliminarLanding}>Sí, eliminar</button>
                 </div>
               </div>
             </div>

@@ -55,11 +55,11 @@ export default function CouriersDepositoModal({ deposito, open, onClose, onGuard
   };
 
   return (
-    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-lg rounded-xl bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-4 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Truck size={18} className="text-primary" />
+            <Truck size={18} className="text-primary-text" />
             <div>
               <h2 className="m-0 text-lg font-semibold text-fg">Couriers habilitados</h2>
               <p className="m-0 mt-0.5 text-sm text-fg-muted">{deposito.nombre} · {deposito.ciudad}</p>
@@ -106,7 +106,7 @@ export default function CouriersDepositoModal({ deposito, open, onClose, onGuard
                       <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
                         activo ? 'border-primary bg-primary' : 'border-fg-muted'
                       }`}>
-                        {activo && <Check size={10} className="text-white" />}
+                        {activo && <Check size={10} className="text-fg" />}
                       </span>
                       <span className="flex-1">
                         <span className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export default function CouriersDepositoModal({ deposito, open, onClose, onGuard
             <button type="button" onClick={onClose} disabled={guardando} className="rounded-md border border-border px-4 py-2 text-sm font-medium text-fg hover:bg-surface-2 disabled:opacity-50">
               Cancelar
             </button>
-            <button type="button" onClick={guardar} disabled={guardando || cargando} className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50">
+            <button type="button" onClick={guardar} disabled={guardando || cargando} className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50">
               Guardar
             </button>
           </div>

@@ -84,7 +84,7 @@ export default function FulfillmentProviderCard({ proveedor, onEditar, onElimina
             <button
               type="button"
               onClick={() => onEditar(proveedor)}
-              className="flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-[13px] font-medium text-primary hover:underline"
+              className="flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-[13px] font-medium text-primary-text hover:underline"
             >
               <Pencil size={13} /> Editar
             </button>

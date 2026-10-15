@@ -1647,7 +1647,7 @@ export function PedidosTable({
             <col className="pt-col-date" />
             <col className="pt-col-client" />
             <col className="pt-col-phone" />
-            <col />
+            <col className="pt-col-product" />
             <col className="pt-col-total" />
             {!soloAbastecimiento && <col className="pt-col-metodo-pago" />}
             <col className="pt-col-state" />

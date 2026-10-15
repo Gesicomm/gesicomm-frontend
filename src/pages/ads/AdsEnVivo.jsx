@@ -164,7 +164,7 @@ export default function AdsEnVivo() {
           <Store size={20} />
         </div>
         <p className="m-0 max-w-sm text-sm text-fg-muted">No tenés tiendas conectadas todavía. Conectá tu cuenta de Meta para ver métricas en vivo acá.</p>
-        <a href={rutaConfiguracion} className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:text-primary-hover">
+        <a href={rutaConfiguracion} className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:text-primary-text">
           Ir a Configuración <ArrowRight size={14} />
         </a>
       </div>
@@ -178,7 +178,7 @@ export default function AdsEnVivo() {
           <AlertTriangle size={20} />
         </div>
         <p className="m-0 max-w-sm text-sm text-danger">{error}</p>
-        <a href={rutaConfiguracion} className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:text-primary-hover">
+        <a href={rutaConfiguracion} className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:text-primary-text">
           Ir a Configuración <ArrowRight size={14} />
         </a>
       </div>
@@ -324,7 +324,7 @@ export default function AdsEnVivo() {
                   return (
                     <tr key={camp.id}>
                       <td style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {isWs ? <MessageCircle size={18} color="#10b981" /> : <Globe size={18} color="#3b82f6" />}
+                        {isWs ? <MessageCircle size={18} color="var(--color-success)" /> : <Globe size={18} color="var(--color-primary-text)" />}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <span style={{ fontWeight: 600, color: 'var(--color-fg)', fontSize: '0.9rem' }}>{camp.name}</span>
                           <div><span className={`badge ${badgeClass}`}>{camp.status}</span></div>

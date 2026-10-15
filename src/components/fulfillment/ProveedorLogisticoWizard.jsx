@@ -342,7 +342,7 @@ export default function ProveedorLogisticoWizard({
   const centro = centros.find((c) => c.id === centroId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-ink/50 p-4">
       <div className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-surface shadow-xl">
         <header className="flex flex-shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div>
@@ -437,7 +437,7 @@ export default function ProveedorLogisticoWizard({
                         <span className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
                           marcada ? 'border-primary bg-primary' : 'border-fg-muted'
                         }`}>
-                          {marcada && <Check size={11} className="text-white" />}
+                          {marcada && <Check size={11} className="text-fg" />}
                         </span>
                         <span>
                           <span className="block text-sm text-fg">{c.etiqueta}</span>
@@ -495,7 +495,7 @@ export default function ProveedorLogisticoWizard({
                           <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border ${
                             elegido ? 'border-primary bg-primary' : 'border-fg-muted'
                           }`}>
-                            {elegido && <Check size={10} className="text-white" />}
+                            {elegido && <Check size={10} className="text-fg" />}
                           </span>
                           <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-2 text-fg-muted">
                             <Warehouse size={17} />
@@ -575,7 +575,7 @@ export default function ProveedorLogisticoWizard({
                                 <button
                                   type="button"
                                   onClick={() => alternarExpandida(claveCiudad)}
-                                  className="cursor-pointer border-none bg-transparent p-0 text-[12px] font-medium text-primary hover:underline ml-2"
+                                  className="cursor-pointer border-none bg-transparent p-0 text-[12px] font-medium text-primary-text hover:underline ml-2"
                                 >
                                   Opciones Avanzadas
                                 </button>
@@ -620,7 +620,7 @@ export default function ProveedorLogisticoWizard({
                             <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
                               configuraciones.has('RESTO_PAIS') ? 'border-primary bg-primary' : 'border-fg-muted'
                             }`}>
-                              {configuraciones.has('RESTO_PAIS') && <Check size={11} className="text-white" />}
+                              {configuraciones.has('RESTO_PAIS') && <Check size={11} className="text-fg" />}
                             </span>
                             <span className="text-sm font-medium text-fg">Resto del país (ciudades no seleccionadas)</span>
                           </button>
@@ -638,7 +638,7 @@ export default function ProveedorLogisticoWizard({
                               <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
                                 elegida ? 'border-primary bg-primary' : 'border-fg-muted'
                               }`}>
-                                {elegida && <Check size={11} className="text-white" />}
+                                {elegida && <Check size={11} className="text-fg" />}
                               </span>
                               <span className="text-sm text-fg">{c.nombre}</span>
                             </button>
@@ -782,7 +782,7 @@ export default function ProveedorLogisticoWizard({
                                 <button
                                   type="button"
                                   onClick={() => agregarRangoPersonal(ciudadEditando, modIndex)}
-                                  className="mt-1 flex w-max cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-[12px] font-medium text-primary hover:underline"
+                                  className="mt-1 flex w-max cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-[12px] font-medium text-primary-text hover:underline"
                                 >
                                   <Plus size={13} /> Agregar rango
                                 </button>
@@ -893,7 +893,7 @@ export default function ProveedorLogisticoWizard({
               type="button"
               disabled={!puedeAvanzar()}
               onClick={() => setPaso((p) => p + 1)}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
             >
               Continuar <ArrowRight size={15} />
             </button>
@@ -902,7 +902,7 @@ export default function ProveedorLogisticoWizard({
               type="button"
               disabled={guardando}
               onClick={guardar}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
             >
               {guardando ? 'Guardando…' : (edicion ? 'Guardar cambios' : 'Crear proveedor')}
             </button>

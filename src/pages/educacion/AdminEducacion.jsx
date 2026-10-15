@@ -42,25 +42,25 @@ const UNLOCK_OPTIONS = [
     id: 'mi-landing',
     titulo: 'Landing Pages',
     desc: 'Creador visual y páginas de venta de alta conversión.',
-    icon: <Rocket size={20} color="#3b82f6" />,
+    icon: <Rocket size={20} color="var(--color-primary-text)" />,
   },
   {
     id: 'productos',
     titulo: 'Catálogo & Combos',
     desc: 'Gestión de productos, variantes y descuentos por volumen.',
-    icon: <Package size={20} color="#2e4a85" />,
+    icon: <Package size={20} color="var(--color-primary-text)" />,
   },
   {
     id: 'pedidos',
     titulo: 'Envíos & Couriers',
     desc: 'Control de logística, estados de despacho y tarifas por rango.',
-    icon: <Truck size={20} color="#10b981" />,
+    icon: <Truck size={20} color="var(--color-success)" />,
   },
   {
     id: 'ads',
     titulo: 'Meta Ads & Campañas',
     desc: 'Integración con Meta Pixel, CAPI y creador de anuncios.',
-    icon: <Megaphone size={20} color="#f59e0b" />,
+    icon: <Megaphone size={20} color="var(--color-warning)" />,
   },
   {
     id: 'reportes',
@@ -72,7 +72,7 @@ const UNLOCK_OPTIONS = [
     id: '',
     titulo: 'Módulo Libre',
     desc: 'No bloquea ningún menú del sidebar (formación general).',
-    icon: <GraduationCap size={20} color="#94a3b8" />,
+    icon: <GraduationCap size={20} color="var(--color-fg-muted)" />,
   },
 ];
 
@@ -551,7 +551,7 @@ export default function AdminEducacion() {
         {/* Dynamic Metric Counters */}
         <div className="lms-stats-grid">
           <div className="lms-stat-item">
-            <div className="lms-stat-icon-wrapper" style={{ color: '#60a5fa' }}>
+            <div className="lms-stat-icon-wrapper" style={{ color: "var(--color-primary-text)" }}>
               <Layers size={20} />
             </div>
             <div className="lms-stat-info">
@@ -560,7 +560,7 @@ export default function AdminEducacion() {
             </div>
           </div>
           <div className="lms-stat-item">
-            <div className="lms-stat-icon-wrapper" style={{ color: '#34d399' }}>
+            <div className="lms-stat-icon-wrapper" style={{ color: "var(--color-success)" }}>
               <Video size={20} />
             </div>
             <div className="lms-stat-info">
@@ -569,7 +569,7 @@ export default function AdminEducacion() {
             </div>
           </div>
           <div className="lms-stat-item">
-            <div className="lms-stat-icon-wrapper" style={{ color: '#fbbf24' }}>
+            <div className="lms-stat-icon-wrapper" style={{ color: "var(--color-warning)" }}>
               <Clock size={20} />
             </div>
             <div className="lms-stat-info">
@@ -578,7 +578,7 @@ export default function AdminEducacion() {
             </div>
           </div>
           <div className="lms-stat-item">
-            <div className="lms-stat-icon-wrapper" style={{ color: '#d4a537' }}>
+            <div className="lms-stat-icon-wrapper" style={{ color: "var(--color-accent-text)" }}>
               <HelpCircle size={20} />
             </div>
             <div className="lms-stat-info">
@@ -587,7 +587,7 @@ export default function AdminEducacion() {
             </div>
           </div>
           <div className="lms-stat-item">
-            <div className="lms-stat-icon-wrapper" style={{ color: '#f43f5e' }}>
+            <div className="lms-stat-icon-wrapper" style={{ color: "var(--color-danger)" }}>
               <Lock size={20} />
             </div>
             <div className="lms-stat-info">
@@ -603,7 +603,7 @@ export default function AdminEducacion() {
         <div className="lms-journey-line" />
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+          <div style={{ textAlign: 'center', padding: '4rem', color: "var(--color-fg-muted)" }}>
             <p>Cargando ruta de aprendizaje...</p>
           </div>
         ) : (
@@ -619,7 +619,7 @@ export default function AdminEducacion() {
                   {/* Big Numbered Node */}
                   <div
                     className="lms-step-node"
-                    style={{ borderColor: mod.color_accent || '#3b82f6' }}
+                    style={{ borderColor: mod.color_accent || "var(--color-primary)" }}
                   >
                     {index + 1}
                   </div>
@@ -669,7 +669,7 @@ export default function AdminEducacion() {
                         {mod.lecciones.map((lec, lIdx) => (
                           <div key={lec.id || lIdx} className="lms-lesson-sub-item">
                             <span className="lms-lesson-sub-title">
-                              <Video color="#60a5fa" size={12} />
+                              <Video color="var(--color-primary-text)" size={12} />
                               {lec.titulo}
                             </span>
                             <span className="lms-lesson-sub-duration">
@@ -749,7 +749,7 @@ export default function AdminEducacion() {
             {/* Modal Header with 4-Step Nav */}
             <div className="lms-studio-modal-header">
               <h2 className="lms-studio-modal-title">
-                <GraduationCap color="#3b82f6" />
+                <GraduationCap color="var(--color-primary-text)" />
                 {editingModuleId ? 'Studio: Editar Módulo' : 'Studio: Diseñar Nuevo Módulo'}
               </h2>
 
@@ -874,7 +874,7 @@ export default function AdminEducacion() {
                         <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--color-fg)' }}>
                           Paso 2: Lecciones y Videos del Módulo
                         </h3>
-                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>
+                        <p style={{ fontSize: '0.85rem', color: "var(--color-fg-muted)", margin: '0.25rem 0 0 0' }}>
                           Puedes agregar tantas clases o videos como desees (Drive, YouTube, Loom, Vimeo).
                         </p>
                       </div>
@@ -896,8 +896,8 @@ export default function AdminEducacion() {
                                   onClick={() => setPreviewLeccionIndex(idx)}
                                   style={{
                                     background: isPreviewing ? 'rgba(59, 130, 246, 0.25)' : 'color-mix(in srgb, var(--color-fg) 5%, transparent)',
-                                    border: isPreviewing ? '1px solid #3b82f6' : '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)',
-                                    color: isPreviewing ? '#60a5fa' : '#94a3b8',
+                                    border: isPreviewing ? "1px solid var(--color-primary)" : '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)',
+                                    color: isPreviewing ? "var(--color-primary-text)" : "var(--color-fg-muted)",
                                     borderRadius: '6px',
                                     fontSize: '0.72rem',
                                     padding: '2px 8px',
@@ -972,7 +972,7 @@ export default function AdminEducacion() {
                               onChange={e => handleUpdateLeccion(idx, 'url_video', e.target.value)}
                             />
                             {lec.url_video?.includes('drive.google.com') && (
-                              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: "var(--color-success)", display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 💡 <strong>Drive:</strong> Se convertirá a /preview automáticamente. Recuerda configurar el archivo en Drive como "Cualquier persona con el enlace (Lector)".
                               </p>
                             )}
@@ -1015,7 +1015,7 @@ export default function AdminEducacion() {
                     <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: 'var(--color-fg)' }}>
                       Paso 3: Desbloqueos del Ecosistema
                     </h3>
-                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '1.5rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: "var(--color-fg-muted)", marginBottom: '1.5rem' }}>
                       Selecciona qué menú o herramienta se desbloqueará en el Sidebar cuando el alumno
                       apruebe este módulo:
                     </p>
@@ -1034,7 +1034,7 @@ export default function AdminEducacion() {
                             </div>
                             <p className="lms-ecosystem-card-desc">{opt.desc}</p>
                             {isSelected && (
-                              <span style={{ fontSize: '0.75rem', color: '#d4a537', fontWeight: 'bold' }}>
+                              <span style={{ fontSize: '0.75rem', color: "var(--color-accent-text)", fontWeight: 'bold' }}>
                                 ✓ Seleccionado para desbloquear
                               </span>
                             )}
@@ -1053,7 +1053,7 @@ export default function AdminEducacion() {
                         <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--color-fg)' }}>
                           Paso 4: Constructor de Examen
                         </h3>
-                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>
+                        <p style={{ fontSize: '0.85rem', color: "var(--color-fg-muted)", margin: '0.25rem 0 0 0' }}>
                           Crea preguntas interactivas. Puedes marcar <strong>una o varias respuestas correctas</strong> por pregunta.
                         </p>
                       </div>
@@ -1100,10 +1100,10 @@ export default function AdminEducacion() {
                       <div key={pIdx} className="lms-quiz-question-card">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontWeight: 'bold', color: '#60a5fa', fontSize: '0.92rem' }}>
+                            <span style={{ fontWeight: 'bold', color: "var(--color-primary-text)", fontSize: '0.92rem' }}>
                               Pregunta #{pIdx + 1}
                             </span>
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'color-mix(in srgb, var(--color-fg) 6%, transparent)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '0.75rem', color: "var(--color-fg-muted)", background: 'color-mix(in srgb, var(--color-fg) 6%, transparent)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
                               {String(preg.respuesta_correcta || '').includes(',') ? 'Múltiples correctas' : 'Opción simple'}
                             </span>
                           </div>
@@ -1133,7 +1133,7 @@ export default function AdminEducacion() {
                             <label className="lms-form-label" style={{ margin: 0 }}>
                               Alternativas de Respuesta:
                             </label>
-                            <span style={{ fontSize: '0.75rem', color: '#60a5fa' }}>
+                            <span style={{ fontSize: '0.75rem', color: "var(--color-primary-text)" }}>
                               (Haz clic en "Marcar Correcta" para seleccionar 1 o varias)
                             </span>
                           </div>
@@ -1215,7 +1215,7 @@ export default function AdminEducacion() {
                   <span>
                     <Eye size={16} /> Simulador en Vivo (Vista del Alumno)
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: '#60a5fa' }}>Live Preview</span>
+                  <span style={{ fontSize: '0.75rem', color: "var(--color-primary-text)" }}>Live Preview</span>
                 </div>
 
                 <div className="lms-simulator-device">
@@ -1232,11 +1232,11 @@ export default function AdminEducacion() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <span style={{ fontSize: '1.5rem' }}>{formData.icono}</span>
-                        <h4 style={{ margin: 0, fontSize: '1rem', color: 'white' }}>
+                        <h4 style={{ margin: 0, fontSize: '1rem', color: "var(--color-fg)" }}>
                           {formData.titulo || 'Título del Módulo'}
                         </h4>
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: "var(--color-fg-muted)", lineHeight: 1.4 }}>
                         {formData.descripcion || 'Sin descripción ingresada aún.'}
                       </p>
                     </div>
@@ -1249,10 +1249,10 @@ export default function AdminEducacion() {
                       return (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Play size={12} fill="#38bdf8" /> Clase {safePreviewIndex + 1} de {formData.lecciones.length}
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: "var(--color-accent-text)", display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Play size={12} fill="var(--color-accent-text)" /> Clase {safePreviewIndex + 1} de {formData.lecciones.length}
                             </span>
-                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                            <span style={{ fontSize: '0.7rem', color: "var(--color-fg-muted)" }}>
                               ⏱ {activePreviewLeccion?.duracion_min || 5} min
                             </span>
                           </div>
@@ -1279,7 +1279,7 @@ export default function AdminEducacion() {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#64748b',
+                                color: "var(--color-fg-muted)",
                                 fontSize: '0.85rem',
                                 marginBottom: '1rem',
                                 textAlign: 'center',
@@ -1294,10 +1294,10 @@ export default function AdminEducacion() {
                           {/* Simulator Playlist */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginTop: '0.75rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: "var(--color-fg-muted)" }}>
                                 Contenido del Módulo ({formData.lecciones.length} clases):
                               </span>
-                              <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                              <span style={{ fontSize: '0.68rem', color: "var(--color-fg-muted)" }}>
                                 Clic para previsualizar
                               </span>
                             </div>
@@ -1317,7 +1317,7 @@ export default function AdminEducacion() {
                                     background: isCurrent ? 'rgba(59, 130, 246, 0.2)' : 'color-mix(in srgb, var(--color-fg) 3%, transparent)',
                                     padding: '0.55rem 0.75rem',
                                     borderRadius: '8px',
-                                    border: isCurrent ? '1px solid #3b82f6' : '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)',
+                                    border: isCurrent ? "1px solid var(--color-primary)" : '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)',
                                     boxShadow: isCurrent ? '0 0 12px rgba(59, 130, 246, 0.25)' : 'none',
                                     fontSize: '0.8rem',
                                     cursor: 'pointer',
@@ -1331,8 +1331,8 @@ export default function AdminEducacion() {
                                   }}
                                 >
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                                    <span style={{ color: isCurrent ? '#38bdf8' : '#64748b', display: 'flex', alignItems: 'center' }}>
-                                      {isCurrent ? <Play size={12} fill="#38bdf8" /> : '▶'}
+                                    <span style={{ color: isCurrent ? "var(--color-accent-text)" : "var(--color-fg-muted)", display: 'flex', alignItems: 'center' }}>
+                                      {isCurrent ? <Play size={12} fill="var(--color-accent-text)" /> : '▶'}
                                     </span>
                                     <span
                                       style={{
@@ -1349,7 +1349,7 @@ export default function AdminEducacion() {
                                   <span
                                     style={{
                                       fontSize: '0.7rem',
-                                      color: isCurrent ? '#93c5fd' : '#64748b',
+                                      color: isCurrent ? "var(--color-primary-text)" : "var(--color-fg-muted)",
                                       flexShrink: 0,
                                       marginLeft: '8px',
                                     }}

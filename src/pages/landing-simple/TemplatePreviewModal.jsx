@@ -64,7 +64,7 @@ export default function TemplatePreviewModal({ template, creando = false, onUsar
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`Preview de ${template.name}`}>
+    <div className="fixed inset-0 z-[100] flex flex-col bg-brand-ink/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`Preview de ${template.name}`}>
       <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-canvas border-b border-fg/10">
         <div className="min-w-0 mr-auto">
           <p className="text-sm font-semibold text-fg truncate">{template.name}</p>
@@ -118,11 +118,11 @@ export default function TemplatePreviewModal({ template, creando = false, onUsar
       <div className="flex-1 min-h-0 flex justify-center p-3 md:p-5">
         <div
           ref={scrollRef}
-          className="h-full overflow-y-auto overflow-x-hidden rounded-xl bg-white shadow-2xl transition-[width] duration-300"
+          className="h-full overflow-y-auto overflow-x-hidden rounded-xl bg-surface shadow-2xl transition-[width] duration-300"
           style={{ width: movil ? 390 : '100%', maxWidth: '100%' }}
         >
           {!demo ? (
-            <div className="flex items-center justify-center h-full text-sm text-neutral-500 p-10">
+            <div className="flex items-center justify-center h-full text-sm text-fg-muted p-10">
               Este template todavía no tiene preview.
             </div>
           ) : vista === 'tienda' ? (

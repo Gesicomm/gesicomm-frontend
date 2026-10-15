@@ -74,7 +74,7 @@ export function PantallaErrorConexion({ onReintentar }) {
           <button
             type="button"
             onClick={onReintentar}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
           >
             <RotateCcw size={15} />
             Reintentar

@@ -884,7 +884,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="text-sm font-bold truncate">{landing?.titulo || (esGeneradaIA ? 'Landing generada con IA' : 'Lienzo en blanco')}</h1>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${esGeneradaIA ? 'bg-primary/15 text-primary' : 'bg-fg/10 text-fg/55'}`}>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${esGeneradaIA ? 'bg-primary/15 text-primary-text' : 'bg-fg/10 text-fg/55'}`}>
                 {etiquetaEditor}
               </span>
             </div>
@@ -893,7 +893,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             <a href={publicUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-fg/50 hover:text-fg/80">
               {publicUrl.startsWith('http') ? publicUrl.replace(/^https?:\/\//, '') : `${window.location.host}${publicUrl}`}
               <ExternalLink size={10} />
-              {!landing?.activo && <span className="ml-1 text-amber-400/80">(sin publicar)</span>}
+              {!landing?.activo && <span className="ml-1 text-warning/80">(sin publicar)</span>}
             </a>
           </div>
         </div>
@@ -920,7 +920,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
               </button>
             ))}
           </div>
-          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-red-500/10 text-fg/40 hover:text-red-400" title="Eliminar landing">
+          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-danger/10 text-fg/40 hover:text-danger" title="Eliminar landing">
             <Trash2 size={16} />
           </button>
           <a href={publicUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-fg/10 text-fg/40 hover:text-fg" title="Ver landing pública">
@@ -946,7 +946,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       </div>
 
       {aviso && (
-        <div className="mx-6 mt-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs">{aviso}</div>
+        <div className="mx-6 mt-3 px-3 py-2 rounded-lg bg-success/10 border border-success/30 text-success text-xs">{aviso}</div>
       )}
 
       {error && (
@@ -1026,7 +1026,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             )}
 
             {tabActiva?.lenguaje ? (
-              <div className="shrink-0 border-b border-fg/10 bg-black/20">
+              <div className="shrink-0 border-b border-fg/10 bg-fg/20">
                 <textarea
                   key={`${claveVista}-${tab}`}
                   value={codigoVista[tabActiva.lenguaje] || ''}
@@ -1036,7 +1036,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   autoCapitalize="off"
                   autoCorrect="off"
                   placeholder={PLACEHOLDERS[tabActiva.lenguaje]}
-                  className="h-[230px] max-h-[34vh] min-h-[150px] w-full resize-y overflow-y-auto bg-black/40 text-fg/90 font-mono text-[12px] leading-[1.55] p-3 outline-none placeholder:text-fg/25"
+                  className="h-[230px] max-h-[34vh] min-h-[150px] w-full resize-y overflow-y-auto bg-brand-ink/40 text-fg/90 font-mono text-[12px] leading-[1.55] p-3 outline-none placeholder:text-fg/25"
                 />
                 <div className="px-3 py-2 border-t border-fg/10 flex flex-col gap-2">
                   <p className="text-[10.5px] text-fg/35 leading-snug">{AYUDAS[tabActiva.lenguaje]}</p>
@@ -1067,7 +1067,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             ) : tab === 'secciones' ? (
               esGeneradoIa ? (
                 <div className="p-8 text-center space-y-3">
-                  <div className="inline-flex p-3 rounded-full bg-primary/10 text-primary">
+                  <div className="inline-flex p-3 rounded-full bg-primary/10 text-primary-text">
                     <Lock size={22} />
                   </div>
                   <h3 className="text-sm font-semibold text-fg">Secciones bloqueadas</h3>
@@ -1125,7 +1125,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           </div>
         )}
 
-        <div className="flex-1 min-w-0 flex flex-col bg-neutral-900/40">
+        <div className="flex-1 min-w-0 flex flex-col bg-canvas/40">
           <div className="h-9 shrink-0 border-b border-fg/10 flex items-center justify-between px-3 gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-[11px] text-fg/35 shrink-0">Vista previa · {nombreEditorActual}</span>
@@ -1142,7 +1142,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             </div>
             <div className="flex items-center gap-2">
               {errorRuntime && (
-                <span className="text-[11px] text-red-300 truncate max-w-[420px]" title={errorRuntime}>
+                <span className="text-[11px] text-danger truncate max-w-[420px]" title={errorRuntime}>
                   Error en tu JavaScript: {errorRuntime}
                 </span>
               )}
@@ -1164,23 +1164,23 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             </p>
           )}
           {vista === 'inicio' && venta?.abrir_en === 'producto' && (
-            <div className="px-3 py-2 text-[12px] text-amber-200 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-3">
+            <div className="px-3 py-2 text-[12px] text-warning bg-warning/10 border-b border-warning/20 flex items-center gap-3">
               <AlertTriangle size={14} className="shrink-0" />
               <span className="flex-1">
                 Esta landing abre directo en la ficha de {seleccion.find(p => p.tipo === 'producto')?.nombre || 'tu producto principal'}: este inicio no se muestra. Diseñá la ficha.
               </span>
-              <button type="button" onClick={() => setVista('producto')} className="shrink-0 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 font-semibold">
+              <button type="button" onClick={() => setVista('producto')} className="shrink-0 px-2.5 py-1 rounded bg-warning/20 hover:bg-warning/30 font-semibold">
                 Ir a la ficha
               </button>
             </div>
           )}
           {vista === 'producto' && fichaSinOfertas && (
-            <div className="px-3 py-2 text-[12px] text-amber-200 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-3">
+            <div className="px-3 py-2 text-[12px] text-warning bg-warning/10 border-b border-warning/20 flex items-center gap-3">
               <AlertTriangle size={14} className="shrink-0" />
               <span className="flex-1">
                 Tu ficha no tiene lugar para order bump, así que esa oferta no se ve antes de comprar. Cargá la ficha base o agregá <code>data-gesicomm-lista="ofertas_bump"</code> arriba del botón principal. Los upsells no van en la ficha: Gesicomm los muestra como etapa del checkout.
               </span>
-              <button type="button" onClick={cargarBase} className="shrink-0 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 font-semibold">
+              <button type="button" onClick={cargarBase} className="shrink-0 px-2.5 py-1 rounded bg-warning/20 hover:bg-warning/30 font-semibold">
                 Usar la ficha base
               </button>
             </div>
@@ -1249,10 +1249,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
  */
 function ConfirmacionPublicacionIAModal({ pendientes, onCancelar, onAceptar }) {
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4">
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-fg/55 p-4">
       <div className="w-full max-w-md rounded-2xl border border-fg/15 bg-surface shadow-2xl">
         <div className="flex items-start gap-3 border-b border-fg/10 p-4">
-          <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-500/15 text-amber-300">
+          <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-warning/15 text-warning">
             <AlertTriangle size={18} />
           </div>
           <div className="min-w-0">
@@ -1426,7 +1426,7 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
           value={prompt}
           readOnly
           rows={12}
-          className="w-full resize-y bg-black/40 border border-fg/10 rounded-lg p-3 text-xs leading-relaxed text-fg/75 outline-none font-mono"
+          className="w-full resize-y bg-brand-ink/40 border border-fg/10 rounded-lg p-3 text-xs leading-relaxed text-fg/75 outline-none font-mono"
         />
       </div>
 
@@ -1437,7 +1437,7 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
           onChange={e => setRespuesta(e.target.value)}
           rows={7}
           placeholder="Pegá acá la respuesta completa (con los bloques ```html, ```css y ```js)."
-          className="w-full resize-y bg-black/40 border border-fg/10 rounded-lg p-3 text-xs leading-relaxed text-fg/80 outline-none font-mono"
+          className="w-full resize-y bg-brand-ink/40 border border-fg/10 rounded-lg p-3 text-xs leading-relaxed text-fg/80 outline-none font-mono"
         />
         {errorRespuesta && <p className="mt-1.5 text-xs text-danger">{errorRespuesta}</p>}
         <button

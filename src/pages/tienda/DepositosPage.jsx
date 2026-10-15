@@ -256,7 +256,7 @@ export default function DepositosPage() {
         <button
           type="button"
           onClick={handleOpenNuevo}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover shadow-sm"
+          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover shadow-sm"
         >
           <Plus size={16} />
           Agregar depósito
@@ -282,7 +282,7 @@ export default function DepositosPage() {
               type="button"
               onClick={() => setFulfillmentOpen((open) => !open)}
               aria-expanded={fulfillmentOpen}
-              className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md text-left text-fg hover:text-primary"
+              className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md text-left text-fg hover:text-primary-text"
             >
               <span className="min-w-0">
                 <span className="block text-sm font-semibold">Entrega de pedidos</span>
@@ -396,7 +396,7 @@ export default function DepositosPage() {
                 <button
                   type="button"
                   onClick={handleOpenNuevo}
-                  className="flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover shadow-sm"
+                  className="flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover shadow-sm"
                 >
                   <Plus size={16} />
                   Crear mi primer depósito

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -714,7 +714,7 @@ export default function ConfigurarTienda() {
                 padding: '0.22rem 0.65rem',
                 borderRadius: '0.375rem',
                 background: 'var(--vit-accent)',
-                color: '#ffffff',
+                color: "var(--color-fg)",
                 fontSize: '0.7rem',
                 fontWeight: 800,
                 letterSpacing: '0.06em',
@@ -1441,7 +1441,7 @@ export default function ConfigurarTienda() {
                       padding: '0.22rem 0.65rem',
                       borderRadius: '0.375rem',
                       background: 'var(--vit-accent)',
-                      color: '#ffffff',
+                      color: "var(--color-fg)",
                       fontSize: '0.7rem',
                       fontWeight: 800,
                       letterSpacing: '0.06em',
@@ -1458,7 +1458,7 @@ export default function ConfigurarTienda() {
                       gap: '0.6rem',
                       padding: '0.85rem 1.1rem',
                       borderRadius: '0.85rem',
-                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.12))',
+                      background: "linear-gradient(135deg, color-mix(in srgb, var(--color-success) 12%, transparent), color-mix(in srgb, var(--color-primary) 12%, transparent))",
                       border: '1px dashed color-mix(in srgb, var(--vit-accent) 40%, transparent)',
                       color: 'var(--vit-text)',
                       fontSize: '0.85rem',

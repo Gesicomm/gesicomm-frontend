@@ -63,7 +63,7 @@ export default function ProveedoresView() {
           <button
             type="button"
             onClick={abrirNuevo}
-            className="flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+            className="flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
           >
             <Plus size={16} /> Agregar proveedor
           </button>
@@ -185,7 +185,7 @@ function ProveedorFormModal({ registro, onClose, onGuardado }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex justify-end bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex justify-end bg-brand-ink/60 backdrop-blur-sm" onClick={onClose}>
       <div className="flex h-full w-full max-w-sm flex-col bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
           <h3 className="m-0 text-base font-semibold text-fg">
@@ -226,7 +226,7 @@ function ProveedorFormModal({ registro, onClose, onGuardado }) {
             <button type="button" onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg">
               Cancelar
             </button>
-            <button type="submit" disabled={guardando} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60">
+            <button type="submit" disabled={guardando} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-60">
               {guardando ? 'Guardando...' : 'Guardar'}
             </button>
           </div>

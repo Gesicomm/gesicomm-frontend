@@ -6,7 +6,7 @@ export default function FulfillmentCenterCard({ centro, onAbrir }) {
     <div className="rounded-xl border border-border bg-surface p-5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-text">
             <Warehouse size={18} />
           </span>
           <div>
@@ -36,7 +36,7 @@ export default function FulfillmentCenterCard({ centro, onAbrir }) {
       <button
         type="button"
         onClick={() => onAbrir?.(centro)}
-        className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        className="flex items-center gap-1.5 text-sm font-medium text-primary-text hover:underline"
       >
         Ver operación
         <ArrowRight size={14} />

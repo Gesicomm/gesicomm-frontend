@@ -117,7 +117,7 @@ GESICOMM_LANDING_ID = "${landingId}"`;
       {/* Encabezado */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-text">
             <Cpu size={20} />
           </div>
           <div>
@@ -141,7 +141,7 @@ GESICOMM_LANDING_ID = "${landingId}"`;
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-fg hover:border-border-strong disabled:opacity-50"
             title="Recargar vista previa si la IA ya guardó cambios"
           >
-            <RefreshCw size={13} className={sincronizando ? 'animate-spin text-primary' : ''} />
+            <RefreshCw size={13} className={sincronizando ? 'animate-spin text-primary-text' : ''} />
             {sincronizando ? 'Sincronizando...' : 'Sincronizar preview'}
           </button>
         )}
@@ -292,7 +292,7 @@ GESICOMM_LANDING_ID = "${landingId}"`;
 
         {tabCliente === 'desktop' && (
           <div className="space-y-2">
-            <p className="text-xs text-fg-muted">Pegá esta configuración dentro de tu archivo <code className="text-primary font-mono text-[11px]">claude_desktop_config.json</code>:</p>
+            <p className="text-xs text-fg-muted">Pegá esta configuración dentro de tu archivo <code className="text-primary-text font-mono text-[11px]">claude_desktop_config.json</code>:</p>
             <div className="relative">
               <pre className="overflow-x-auto rounded-lg border border-border bg-surface p-3 font-mono text-xs text-fg whitespace-pre-wrap">
                 {jsonDesktop}
@@ -312,7 +312,7 @@ GESICOMM_LANDING_ID = "${landingId}"`;
         {tabCliente === 'codex-desktop' && (
           <div className="space-y-2">
             <p className="text-xs text-fg-muted">
-              Pegá esta configuración en tu archivo <code className="text-primary font-mono text-[11px]">~/.codex/config.toml</code> (en Windows: <code className="text-primary font-mono text-[11px]">%USERPROFILE%\.codex\config.toml</code>), o agregalo en la app desde <strong>Settings › MCP Servers</strong>:
+              Pegá esta configuración en tu archivo <code className="text-primary-text font-mono text-[11px]">~/.codex/config.toml</code> (en Windows: <code className="text-primary-text font-mono text-[11px]">%USERPROFILE%\.codex\config.toml</code>), o agregalo en la app desde <strong>Settings › MCP Servers</strong>:
             </p>
             <div className="relative">
               <pre className="overflow-x-auto rounded-lg border border-border bg-surface p-3 font-mono text-xs text-fg whitespace-pre-wrap">
@@ -328,7 +328,7 @@ GESICOMM_LANDING_ID = "${landingId}"`;
               </button>
             </div>
             <p className="text-[11px] text-fg-muted flex items-center gap-1">
-              <Sparkles size={12} className="text-primary" />
+              <Sparkles size={12} className="text-primary-text" />
               <span>Tip: Si ya ejecutaste el comando de la pestaña <strong>OpenAI Codex (CLI)</strong>, Codex Desktop lo sincroniza automáticamente.</span>
             </p>
           </div>

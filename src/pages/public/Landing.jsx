@@ -205,7 +205,7 @@ export default function Landing() {
       {/* HERO SECTION */}
       <section className="relative overflow-hidden pt-28 pb-20 sm:pt-40 sm:pb-32">
         <GlowBlob color="var(--primary)" size="600px" top="-200px" left="-100px" />
-        <GlowBlob color="#0ea5e9" size="500px" top="100px" right="-150px" delay={2} />
+        <GlowBlob color="var(--color-accent-text)" size="500px" top="100px" right="-150px" delay={2} />
         
         <Container>
           <div className="grid items-center gap-16 lg:grid-cols-2">
@@ -408,13 +408,13 @@ export default function Landing() {
                         <div className="mb-2 h-20 rounded bg-canvas"></div>
                         <p className="text-xs font-semibold text-fg">Remera Blanca</p>
                         <p className="text-xs text-fg-muted">Gs. 85.000</p>
-                        <button className="mt-2 w-full rounded bg-primary py-1 text-[10px] font-bold text-white">Agregar</button>
+                        <button className="mt-2 w-full rounded bg-primary py-1 text-[10px] font-bold text-primary-fg">Agregar</button>
                       </div>
                       <div className="rounded border border-border p-2">
                         <div className="mb-2 h-20 rounded bg-canvas"></div>
                         <p className="text-xs font-semibold text-fg">Jeans Azul</p>
                         <p className="text-xs text-fg-muted">Gs. 220.000</p>
-                        <button className="mt-2 w-full rounded bg-primary py-1 text-[10px] font-bold text-white">Agregar</button>
+                        <button className="mt-2 w-full rounded bg-primary py-1 text-[10px] font-bold text-primary-fg">Agregar</button>
                       </div>
                     </div>
                   </div>
@@ -500,7 +500,7 @@ export default function Landing() {
                 <FloatingMockup title="Operacion">
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success text-white">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success text-success-fg">
                         <CheckCircle2 size={16} />
                       </div>
                       <div>
@@ -510,7 +510,7 @@ export default function Landing() {
                     </div>
                     <div className="ml-4 h-6 border-l-2 border-dashed border-border"></div>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning text-white">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning text-warning-fg">
                         <Package size={16} />
                       </div>
                       <div>
@@ -813,7 +813,7 @@ export default function Landing() {
               <span>¿Tenés otra consulta?</span>
               <a
                 href="mailto:contacto@gesicomm.com"
-                className="inline-flex items-center gap-2 font-medium text-primary-text hover:text-primary-hover transition-colors w-max bg-primary/5 px-4 py-2 rounded-full"
+                className="inline-flex items-center gap-2 font-medium text-primary-text hover:text-primary-text transition-colors w-max bg-primary/5 px-4 py-2 rounded-full"
               >
                 <Mail size={16} /> contacto@gesicomm.com
               </a>

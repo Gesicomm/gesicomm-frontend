@@ -352,11 +352,11 @@ export default function EducacionView() {
                       <h4 className="aca-nav-card-title">{mod.titulo}</h4>
                     </div>
                     {isLocked ? (
-                      <Lock size={16} color="#64748b" />
+                      <Lock size={16} color="var(--color-fg-muted)" />
                     ) : mod.examen_aprobado ? (
-                      <CheckCircle2 size={16} color="#10b981" />
+                      <CheckCircle2 size={16} color="var(--color-success)" />
                     ) : (
-                      <span style={{ fontSize: '0.75rem', color: '#60a5fa', fontWeight: 'bold' }}>
+                      <span style={{ fontSize: '0.75rem', color: "var(--color-primary-text)", fontWeight: 'bold' }}>
                         #{index + 1}
                       </span>
                     )}
@@ -443,7 +443,7 @@ export default function EducacionView() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#64748b',
+                    color: "var(--color-fg-muted)",
                     marginBottom: '1.5rem',
                   }}
                 >
@@ -463,7 +463,7 @@ export default function EducacionView() {
                 <div className="aca-playlist-drawer">
                   <div className="aca-playlist-header">
                     <span>Temario del Módulo ({moduloActivo.lecciones.length} Clases)</span>
-                    <span style={{ color: '#34d399' }}>
+                    <span style={{ color: "var(--color-success)" }}>
                       {moduloActivo.lecciones.filter(l => l.completada).length} / {moduloActivo.lecciones.length} Completadas
                     </span>
                   </div>
@@ -548,7 +548,7 @@ export default function EducacionView() {
           <div className="aca-quiz-modal-card">
             <div className="aca-quiz-modal-header">
               <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <Award color="#f59e0b" />
+                <Award color="var(--color-warning)" />
                 {examenData.titulo || 'Evaluación del Módulo'}
               </h3>
               <button
@@ -565,12 +565,12 @@ export default function EducacionView() {
                 /* Cooldown Lockout View */
                 <div className="aca-score-card examen-cooldown-view">
                   <div className="aca-cooldown-badge">
-                    <Clock size={32} color="#f43f5e" />
+                    <Clock size={32} color="var(--color-danger)" />
                   </div>
                   <h3 style={{ fontSize: '1.4rem', color: 'var(--color-fg)', margin: '0.75rem 0 0.5rem 0' }}>
                     Examen Bloqueado Temporalmente (4 Horas)
                   </h3>
-                  <p style={{ color: '#94a3b8', fontSize: '0.92rem', marginBottom: '1.25rem', maxWidth: '480px', margin: '0 auto 1.25rem auto' }}>
+                  <p style={{ color: "var(--color-fg-muted)", fontSize: '0.92rem', marginBottom: '1.25rem', maxWidth: '480px', margin: '0 auto 1.25rem auto' }}>
                     Has alcanzado el límite de <strong>3 intentos fallidos</strong>. Para garantizar la asimilación de los conceptos, el examen permanecerá bloqueado durante 4 horas.
                   </p>
 
@@ -593,7 +593,7 @@ export default function EducacionView() {
                 /* Question List */
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>
+                    <p style={{ color: "var(--color-fg-muted)", fontSize: '0.9rem', margin: 0 }}>
                       {examenData.descripcion ||
                         `Responde las siguientes preguntas. Necesitas al menos un ${examenData.puntaje_minimo}% para aprobar.`}
                     </p>
@@ -623,7 +623,7 @@ export default function EducacionView() {
                             {pIdx + 1}. {preg.pregunta}
                           </p>
                           {isMulti && (
-                            <span style={{ fontSize: '0.75rem', color: '#60a5fa', background: 'rgba(59,130,246,0.12)', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(59,130,246,0.25)' }}>
+                            <span style={{ fontSize: '0.75rem', color: "var(--color-primary-text)", background: "color-mix(in srgb, var(--color-primary) 12%, transparent)", padding: '0.2rem 0.5rem', borderRadius: '4px', border: "1px solid color-mix(in srgb, var(--color-primary) 25%, transparent)" }}>
                               Selección múltiple
                             </span>
                           )}
@@ -650,8 +650,8 @@ export default function EducacionView() {
                                   onChange={() => {}}
                                   style={{ accentColor: '#3b82f6' }}
                                 />
-                                <span style={{ fontSize: '0.9rem', color: selected ? 'white' : 'var(--color-fg)', fontWeight: selected ? 600 : 400 }}>
-                                  <strong style={{ color: '#93c5fd', marginRight: '0.4rem' }}>{opt.id}.</strong> {opt.texto}
+                                <span style={{ fontSize: '0.9rem', color: selected ? "var(--color-fg)" : 'var(--color-fg)', fontWeight: selected ? 600 : 400 }}>
+                                  <strong style={{ color: "var(--color-primary-text)", marginRight: '0.4rem' }}>{opt.id}.</strong> {opt.texto}
                                 </span>
                               </label>
                             );
@@ -685,7 +685,7 @@ export default function EducacionView() {
                   {resultadoExamen.bloqueado ? (
                     <div className="aca-cooldown-lock-notice">
                       <div className="aca-cooldown-header-notice">
-                        <Clock size={20} color="#f43f5e" />
+                        <Clock size={20} color="var(--color-danger)" />
                         <span>Límite de 3 intentos alcanzado · Examen bloqueado por 4 horas</span>
                       </div>
                       <div className="aca-countdown-clock small">
@@ -696,7 +696,7 @@ export default function EducacionView() {
                     <div className="aca-attempts-remaining-pill">
                       <span>
                         Te {resultadoExamen.intentos_restantes === 1 ? 'queda' : 'quedan'}{' '}
-                        <strong style={{ color: '#f59e0b' }}>
+                        <strong style={{ color: "var(--color-warning)" }}>
                           {resultadoExamen.intentos_restantes} {resultadoExamen.intentos_restantes === 1 ? 'intento' : 'intentos'}
                         </strong>{' '}
                         antes del bloqueo de 4 horas.
@@ -731,7 +731,7 @@ export default function EducacionView() {
                 </button>
               ) : !resultadoExamen ? (
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+                  <span style={{ fontSize: '0.82rem', color: "var(--color-fg-muted)" }}>
                     Intentos fallidos acumulados: {moduloActivo.progreso_usuario?.intentos_fallidos || 0} / 3
                   </span>
                   <button

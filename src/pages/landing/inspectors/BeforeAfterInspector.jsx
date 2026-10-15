@@ -47,10 +47,10 @@ export default function BeforeAfterInspector({ seccion, onUpdate, onUploadImagen
       {value ? (
         <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-md border border-[var(--vit-border)] group">
           <img src={value} alt={label} className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+          <div className="absolute inset-0 bg-brand-ink/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
             <button
               onClick={() => handleUpdate(key, '')}
-              className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+              className="p-2 bg-danger text-danger-fg rounded-full hover:bg-danger transition"
               title="Eliminar imagen"
             >
               <X size={16} />

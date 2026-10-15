@@ -51,7 +51,7 @@ export default function PublicLayout({ children }) {
 
         <PublicNavbar />
 
-        <main id="contenido" className="flex-1">
+        <main id="contenido" className="min-w-0 flex-1 overflow-x-clip">
           {children}
         </main>
 

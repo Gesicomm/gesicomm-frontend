@@ -18,20 +18,20 @@ function useDebounce(value, delay) {
 function Paginador({ pagina, totalPaginas, onCambiar }) {
   if (totalPaginas <= 1) return null;
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-surface-border">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-border">
       <p className="text-xs text-fg-muted">Página {pagina} de {totalPaginas}</p>
       <div className="flex items-center gap-2">
         <button
           onClick={() => onCambiar(pagina - 1)}
           disabled={pagina <= 1}
-          className="flex items-center gap-1 px-2 py-1 text-sm border border-surface-border rounded-md disabled:opacity-40 hover:bg-surface-2"
+          className="flex items-center gap-1 px-2 py-1 text-sm border border-border rounded-md disabled:opacity-40 hover:bg-surface-2"
         >
           <ChevronLeft size={14} /> Anterior
         </button>
         <button
           onClick={() => onCambiar(pagina + 1)}
           disabled={pagina >= totalPaginas}
-          className="flex items-center gap-1 px-2 py-1 text-sm border border-surface-border rounded-md disabled:opacity-40 hover:bg-surface-2"
+          className="flex items-center gap-1 px-2 py-1 text-sm border border-border rounded-md disabled:opacity-40 hover:bg-surface-2"
         >
           Siguiente <ChevronRight size={14} />
         </button>
@@ -42,8 +42,8 @@ function Paginador({ pagina, totalPaginas, onCambiar }) {
 
 function KpiCard({ icon, label, valor }) {
   return (
-    <div className="bg-surface border border-surface-border rounded-xl p-4 flex items-center gap-3">
-      <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+    <div className="bg-surface border border-border rounded-xl p-4 flex items-center gap-3">
+      <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary-text flex items-center justify-center shrink-0">
         {icon}
       </div>
       <div>
@@ -151,12 +151,12 @@ function TabMiInventario() {
             placeholder="Buscar producto..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-8 pr-3 py-2 text-sm border border-surface-border rounded-lg bg-surface outline-none focus:border-primary w-64"
+            className="pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary w-64"
           />
         </div>
         <div>
           <p className="mb-1 text-[11px] font-semibold uppercase text-fg-muted">Tipo de producto</p>
-          <div className="flex items-center gap-1 bg-surface border border-surface-border rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-1">
             {[['TODOS', 'Todos'], ['PROPIO', 'Producto propio'], ['GESICOMM', 'Comprado a Gesicom']].map(([val, label]) => (
               <button
                 key={val}
@@ -170,7 +170,7 @@ function TabMiInventario() {
         </div>
         <div>
           <p className="mb-1 text-[11px] font-semibold uppercase text-fg-muted">Dónde está</p>
-          <div className="flex items-center gap-1 bg-surface border border-surface-border rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-1">
             {[['TODAS', 'Todas'], ['PROPIA', 'Mi depósito'], ['GESICOMM', 'Centro Gesicom']].map(([val, label]) => (
               <button
                 key={val}
@@ -184,10 +184,10 @@ function TabMiInventario() {
         </div>
       </div>
 
-      <div className="bg-surface rounded-xl border border-surface-border overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-surface-2 border-b border-surface-border">
+            <tr className="bg-surface-2 border-b border-border">
               <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Producto</th>
               <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Tipo de stock</th>
               <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Ubicación</th>
@@ -213,7 +213,7 @@ function TabMiInventario() {
                     {s.ProductoVariante && <p className="text-xs text-fg-muted">{s.ProductoVariante.nombre}</p>}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${s.origen === 'GESICOMM' ? 'bg-primary/10 text-primary' : 'bg-surface-2 text-fg-muted'}`}>
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${s.origen === 'GESICOMM' ? 'bg-primary/10 text-primary-text' : 'bg-surface-2 text-fg-muted'}`}>
                       {etiquetaTipoStock(s.origen)}
                     </span>
                   </td>
@@ -234,7 +234,7 @@ function TabMiInventario() {
 
 function getEstadoBadge(estado) {
   const badges = {
-    BORRADOR: 'bg-surface text-fg border-surface-border',
+    BORRADOR: 'bg-surface text-fg border-border',
     PENDIENTE_ENVIO: 'bg-warning/10 text-warning-text border-warning/20',
     EN_TRANSITO: 'bg-primary/10 text-primary-text border-primary/20',
     RECIBIDO: 'bg-info/10 text-info-text border-info/20',
@@ -301,13 +301,13 @@ function TabEnviosGesicomm() {
               placeholder="Buscar por N° de envío o centro..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="pl-8 pr-3 py-2 text-sm border border-surface-border rounded-lg bg-surface outline-none focus:border-primary w-64"
+              className="pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary w-64"
             />
           </div>
           <select
             value={estado}
             onChange={(e) => setEstado(e.target.value)}
-            className="px-3 py-2 text-sm border border-surface-border rounded-lg bg-surface outline-none focus:border-primary"
+            className="px-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary"
           >
             <option value="TODOS">Todos los estados</option>
             {ESTADOS.map((e) => <option key={e} value={e}>{e.replace(/_/g, ' ')}</option>)}
@@ -319,10 +319,10 @@ function TabEnviosGesicomm() {
         </button>
       </div>
 
-      <div className="bg-surface rounded-xl border border-surface-border overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-surface-2 border-b border-surface-border">
+            <tr className="bg-surface-2 border-b border-border">
               <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Envío</th>
               <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Producto</th>
               <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Destino</th>
@@ -365,7 +365,7 @@ function TabEnviosGesicomm() {
                       <button
                         type="button"
                         onClick={() => navigate(`/inventario/${ing.id}`)}
-                        className="inline-flex items-center gap-1.5 text-primary hover:underline text-sm font-medium"
+                        className="inline-flex items-center gap-1.5 text-primary-text hover:underline text-sm font-medium"
                       >
                         <History size={14} />
                         Ver historial
@@ -388,12 +388,12 @@ export default function InventarioPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-50 overflow-hidden">
-      <div className="px-6 py-5 bg-surface border-b border-surface-border">
+      <div className="px-6 py-5 bg-surface border-b border-border">
         <h1 className="text-xl font-bold text-fg mb-1">Inventario y Fulfillment</h1>
         <p className="text-sm text-fg-muted">Gestioná tu stock almacenado en Gesicom y tus envíos de mercadería.</p>
       </div>
 
-      <div className="px-6 py-4 border-b border-surface-border bg-surface flex gap-2">
+      <div className="px-6 py-4 border-b border-border bg-surface flex gap-2">
         <button
           onClick={() => setActiveTab('inventario')}
           className={activeTab === 'inventario' ? 'btn-primary' : 'btn-secondary'}

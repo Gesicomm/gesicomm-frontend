@@ -194,7 +194,7 @@ export default function EstadisticasPanel({ landingId }) {
     return <div className="lb-empty"><Loader size={22} className="spin-icon" /><p>Cargando estadísticas...</p></div>;
   }
   if (error) {
-    return <div className="lb-empty"><AlertCircle size={22} color="#ef4444" /><p>{error}</p></div>;
+    return <div className="lb-empty"><AlertCircle size={22} color="var(--color-danger)" /><p>{error}</p></div>;
   }
 
   const ctrPct = (datos.ctr * 100).toFixed(1).replace(/\.0$/, '');

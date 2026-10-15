@@ -651,7 +651,7 @@
 .cic-modal-overlay {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, #000 68%, transparent);
+  background: color-mix(in srgb, var(--color-canvas) 68%, transparent);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;

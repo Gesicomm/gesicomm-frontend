@@ -16,7 +16,7 @@ export default function MarcaPanel({ draft, onCampo, logoUrl, subiendoLogo, onSu
       <div>
         <label className="block text-xs font-semibold text-fg/60 mb-1.5">Logo</label>
         <div className="flex items-center gap-3">
-          <div className="h-16 w-16 rounded-full bg-gray-100 border border-fg/10 flex items-center justify-center overflow-hidden shrink-0">
+          <div className="h-16 w-16 rounded-full bg-surface-2 border border-fg/10 flex items-center justify-center overflow-hidden shrink-0">
             {subiendoLogo ? <Loader size={18} className="animate-spin text-fg/50" />
               : logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
                 : <ImageIcon size={18} className="text-fg/30" />}
@@ -26,7 +26,7 @@ export default function MarcaPanel({ draft, onCampo, logoUrl, subiendoLogo, onSu
               Cambiar imagen
             </button>
             {logoUrl && (
-              <button type="button" onClick={onQuitarLogo} className="text-xs text-fg/40 hover:text-red-400 flex items-center gap-1">
+              <button type="button" onClick={onQuitarLogo} className="text-xs text-fg/40 hover:text-danger flex items-center gap-1">
                 <X size={12} /> Quitar
               </button>
             )}
@@ -49,7 +49,7 @@ export default function MarcaPanel({ draft, onCampo, logoUrl, subiendoLogo, onSu
         />
       </div>
 
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
     </div>
   );
 }

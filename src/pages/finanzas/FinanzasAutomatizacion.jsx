@@ -134,18 +134,18 @@ export default function FinanzasAutomatizacion() {
         <Kpi label="Pendiente" value={`Gs ${fmt(metrics.totalPending)}`} sublabel="Saldo de esas ventas" />
         <Kpi label="Gastos" value={`Gs ${fmt(metrics.totalExpenses)}`} sublabel={hayFiltroPrograma ? 'Gastos globales (no por programa)' : 'Gastos registrados'} />
         <Kpi label="Pagos Equipo" value={`Gs ${fmt(metrics.totalTeamPayments)}`} sublabel={hayFiltroPrograma ? 'Globales (no por programa)' : 'Comisiones/pagos realizados'} />
-        <Kpi label={METRIC_TERMS.utilidadNeta} value={`Gs ${fmt(metrics.profit)}`} sublabel={hayFiltroPrograma ? 'Cobrado del programa - gastos globales' : 'Cobrado - gastos - equipo'} tono={metrics.profit >= 0 ? "text-primary" : "text-danger"} />
+        <Kpi label={METRIC_TERMS.utilidadNeta} value={`Gs ${fmt(metrics.profit)}`} sublabel={hayFiltroPrograma ? 'Cobrado del programa - gastos globales' : 'Cobrado - gastos - equipo'} tono={metrics.profit >= 0 ? "text-primary-text" : "text-danger"} />
         <Kpi label="Alumnos" value={metrics.students} sublabel="Registros del periodo" />
         <Kpi label="Activos" value={metrics.activeStudents} sublabel="Alumnos activos" />
       </div>
 
       {/* Alertas Row */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <AlertCard count={v30} label="Vencen ≤30 días" colorClass="bg-[#FFF9C4] text-[#827717] border-[#FBC02D]/30" />
-        <AlertCard count={v15} label="Vencen ≤15 días" colorClass="bg-[#FFE0B2] text-[#E65100] border-[#F57C00]/30" />
+        <AlertCard count={v30} label="Vencen ≤30 días" colorClass="bg-warning/10 text-warning border-warning/30" />
+        <AlertCard count={v15} label="Vencen ≤15 días" colorClass="bg-warning/10 text-warning border-warning/30" />
         <AlertCard count={0} label="Programas Vencidos" colorClass="bg-danger/10 text-danger border-danger/20" />
-        <AlertCard count={v15 + v30} label="Cobros Próximos" colorClass="bg-[#FFF9C4] text-[#827717] border-[#FBC02D]/30" />
-        <AlertCard count={vHoy} label="Cobros Hoy" colorClass="bg-[#FFE0B2] text-[#E65100] border-[#F57C00]/30" />
+        <AlertCard count={v15 + v30} label="Cobros Próximos" colorClass="bg-warning/10 text-warning border-warning/30" />
+        <AlertCard count={vHoy} label="Cobros Hoy" colorClass="bg-warning/10 text-warning border-warning/30" />
         <AlertCard count={vVencidas} label="Cuotas Vencidas" colorClass="bg-danger/10 text-danger border-danger/20" />
       </div>
 
@@ -156,17 +156,17 @@ export default function FinanzasAutomatizacion() {
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={[
-                { name: 'Vendido', valor: metrics.totalSold, fill: '#8884d8' },
-                { name: 'Cobrado', valor: metrics.totalPaid, fill: '#82ca9d' },
-                { name: 'Gastos Tot.', valor: metrics.totalExpenses + metrics.totalTeamPayments, fill: '#ffc658' },
-                { name: METRIC_TERMS.utilidadNeta, valor: metrics.profit, fill: metrics.profit >= 0 ? '#82ca9d' : '#ff8042' }
+                { name: 'Vendido', valor: metrics.totalSold, fill: 'var(--color-primary)' },
+                { name: 'Cobrado', valor: metrics.totalPaid, fill: 'var(--color-success)' },
+                { name: 'Gastos Tot.', valor: metrics.totalExpenses + metrics.totalTeamPayments, fill: 'var(--color-warning)' },
+                { name: METRIC_TERMS.utilidadNeta, valor: metrics.profit, fill: metrics.profit >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }
               ]}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(val) => `${val / 1000}k`} tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
                 <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} formatter={(val) => [`Gs ${fmt(val)}`, 'Monto']} contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }} />
                 <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
-                  { [0,1,2,3].map((i) => <Cell key={i} fill={['#6366f1', '#10b981', '#f59e0b', metrics.profit >= 0 ? '#10b981' : '#ef4444'][i]} />) }
+                  { [0,1,2,3].map((i) => <Cell key={i} fill={['var(--color-primary)', 'var(--color-success)', 'var(--color-warning)', metrics.profit >= 0 ? 'var(--color-success)' : 'var(--color-danger)'][i]} />) }
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -185,7 +185,7 @@ export default function FinanzasAutomatizacion() {
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 9, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
                   <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} formatter={(val) => [`Gs ${fmt(val)}`, 'Ventas']} contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }} />
-                  <Bar dataKey="ventas" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
+                  <Bar dataKey="ventas" fill="var(--color-primary-text)" radius={[0, 4, 4, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -322,7 +322,7 @@ function NuevoAcuerdoModal({ programas, equipo, onClose, onGuardado }) {
   const lbl = 'text-[10px] font-bold uppercase text-fg-subtle mb-0.5 block';
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="border-b border-border p-5">
           <h3 className="m-0 text-base font-bold text-fg">Nuevo acuerdo comercial</h3>
@@ -416,7 +416,7 @@ function NuevoAcuerdoModal({ programas, equipo, onClose, onGuardado }) {
 
           {/* Plan de pagos */}
           <div className="border-t border-border pt-4">
-            <div className="mb-3 text-xs font-bold uppercase text-primary">Plan de Pagos</div>
+            <div className="mb-3 text-xs font-bold uppercase text-primary-text">Plan de Pagos</div>
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
                 <label className={lbl}>Cantidad de Cuotas</label>
@@ -689,7 +689,7 @@ function NuevoGastoModal({ onClose, onGuardado }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-xl rounded-xl bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="border-b border-border p-5 flex items-start justify-between">
           <div>
@@ -809,7 +809,7 @@ function TabGastos({ onRefrescar }) {
                 <td className="py-2 pr-4 font-semibold text-fg">{g.category || '—'}</td>
                 <td className="py-2 pr-4 text-fg-muted">{g.description || '—'}</td>
                 <td className="py-2 pr-4">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${g.expense_type === 'Fijo' ? 'bg-primary/15 text-primary' : g.expense_type === 'Variable' ? 'bg-warning/15 text-warning' : 'bg-danger/15 text-danger'}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${g.expense_type === 'Fijo' ? 'bg-primary/15 text-primary-text' : g.expense_type === 'Variable' ? 'bg-warning/15 text-warning' : 'bg-danger/15 text-danger'}`}>
                     {g.expense_type || 'Fijo'}
                   </span>
                 </td>
@@ -866,7 +866,7 @@ function NuevoProgramaModal({ onClose, onGuardado }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-xl rounded-xl bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="border-b border-border p-5 flex items-start justify-between">
           <div>
@@ -1003,7 +1003,7 @@ function NuevoMiembroModal({ onClose, onGuardado }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-2xl rounded-xl bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="border-b border-border p-5 flex items-start justify-between">
           <div>
@@ -1153,7 +1153,7 @@ function NuevaReglaModal({ equipo, programas, onClose, onGuardado }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-2xl rounded-xl bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="border-b border-border p-5 flex items-start justify-between">
           <div>
@@ -1291,7 +1291,7 @@ function TabComisiones({ equipo, programas, onRefrescar }) {
             <tr>
               <th className="py-2 pr-4">Persona</th>
               <th className="py-2 pr-4">Programa</th>
-              <th className="py-2 pr-4" style={{color:'var(--color-primary)'}}>Rol</th>
+              <th className="py-2 pr-4" style={{color:"var(--color-primary-text)"}}>Rol</th>
               <th className="py-2 pr-4">Tipo</th>
               <th className="py-2 pr-4">Valor</th>
               <th className="py-2 pr-4">Base</th>
@@ -1409,7 +1409,7 @@ function TabAlertas({ programas }) {
           {URGENCIAS.map(u => (
             <button key={u.v} type="button" onClick={() => aplicarUrgencia(u.v)}
               className={`h-8 rounded-md border px-2.5 text-[11px] font-semibold ${
-                urgencia === u.v ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-surface-2 text-fg-muted hover:bg-surface-3'
+                urgencia === u.v ? 'border-primary bg-primary/10 text-primary-text' : 'border-border bg-surface-2 text-fg-muted hover:bg-surface-3'
               }`}>
               {u.label}
             </button>

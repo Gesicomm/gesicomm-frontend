@@ -70,7 +70,7 @@ export default function AnnouncementInspector({ seccion, onUpdate }) {
                         />
                         <button
                           onClick={() => handleRemove(index)}
-                          className="mt-2 text-[var(--vit-muted)] hover:text-red-500 transition-colors"
+                          className="mt-2 text-[var(--vit-muted)] hover:text-danger transition-colors"
                           title="Eliminar mensaje"
                         >
                           <Trash2 size={16} />

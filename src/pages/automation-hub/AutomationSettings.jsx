@@ -194,7 +194,7 @@ export default function AutomationSettings() {
         <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-fg flex items-center gap-2">
-              <Store size={18} className="text-primary" />
+              <Store size={18} className="text-primary-text" />
               Cuentas Autorizadas
             </h2>
             <p className="text-sm text-fg-subtle">
@@ -207,7 +207,7 @@ export default function AutomationSettings() {
             {/* Tarjeta FACEBOOK */}
             <div className="flex flex-col justify-between rounded-lg border border-border bg-surface-2 p-5 gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 text-blue-600">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary-text">
                   <FacebookIcon size={20} />
                 </div>
                 <div>
@@ -236,7 +236,7 @@ export default function AutomationSettings() {
               <button
                 type="button"
                 onClick={handleConnectFacebook}
-                className="w-full mt-2 rounded-md border border-blue-600/30 bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 text-sm font-medium transition-colors"
+                className="w-full mt-2 rounded-md border border-primary/30 bg-primary/10 hover:bg-primary/10 text-primary-text px-4 py-2 text-sm font-medium transition-colors"
               >
                 Conectar Facebook
               </button>

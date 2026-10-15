@@ -88,7 +88,7 @@ export default function AbastecerseModal({ producto, open, onClose }) {
   const isFormValid = tipoLogistica === 'GESICOMM' || (tipoLogistica === 'PROPIA' && depositoSeleccionado);
 
   return (
-    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         className="w-full max-w-2xl rounded-xl bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
@@ -130,10 +130,10 @@ export default function AbastecerseModal({ producto, open, onClose }) {
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className={`flex h-4 w-4 items-center justify-center rounded-full border ${tipoLogistica === 'GESICOMM' ? 'border-primary bg-primary' : 'border-fg-muted'}`}>
-                    {tipoLogistica === 'GESICOMM' && <Check size={10} className="text-white" />}
+                    {tipoLogistica === 'GESICOMM' && <Check size={10} className="text-fg" />}
                   </div>
-                  <Truck size={16} className={tipoLogistica === 'GESICOMM' ? 'text-primary' : 'text-fg-muted'} />
-                  <h3 className={`m-0 text-[15px] font-semibold ${tipoLogistica === 'GESICOMM' ? 'text-primary' : 'text-fg'}`}>Centro Gesicomm</h3>
+                  <Truck size={16} className={tipoLogistica === 'GESICOMM' ? 'text-primary-text' : 'text-fg-muted'} />
+                  <h3 className={`m-0 text-[15px] font-semibold ${tipoLogistica === 'GESICOMM' ? 'text-primary-text' : 'text-fg'}`}>Centro Gesicomm</h3>
                 </div>
                 <p className="m-0 pl-7 text-[13px] text-fg-muted">Queda listo para que Gesicomm lo prepare cuando lo vendas.</p>
               </div>
@@ -146,10 +146,10 @@ export default function AbastecerseModal({ producto, open, onClose }) {
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className={`flex h-4 w-4 items-center justify-center rounded-full border ${tipoLogistica === 'PROPIA' ? 'border-primary bg-primary' : 'border-fg-muted'}`}>
-                    {tipoLogistica === 'PROPIA' && <Check size={10} className="text-white" />}
+                    {tipoLogistica === 'PROPIA' && <Check size={10} className="text-fg" />}
                   </div>
-                  <Building2 size={16} className={tipoLogistica === 'PROPIA' ? 'text-primary' : 'text-fg-muted'} />
-                  <h3 className={`m-0 text-[15px] font-semibold ${tipoLogistica === 'PROPIA' ? 'text-primary' : 'text-fg'}`}>Mi depósito</h3>
+                  <Building2 size={16} className={tipoLogistica === 'PROPIA' ? 'text-primary-text' : 'text-fg-muted'} />
+                  <h3 className={`m-0 text-[15px] font-semibold ${tipoLogistica === 'PROPIA' ? 'text-primary-text' : 'text-fg'}`}>Mi depósito</h3>
                 </div>
                 <p className="m-0 pl-7 text-[13px] text-fg-muted">Viaja hasta tu propio depósito para que lo gestiones vos.</p>
               </div>
@@ -168,7 +168,7 @@ export default function AbastecerseModal({ producto, open, onClose }) {
 
           {cotizando && (
             <div className="flex items-center gap-2 text-sm text-fg-muted bg-surface-2 p-3 rounded-md">
-              <Loader size={16} className="animate-spin text-primary" />
+              <Loader size={16} className="animate-spin text-primary-text" />
               Calculando costo...
             </div>
           )}
@@ -193,7 +193,7 @@ export default function AbastecerseModal({ producto, open, onClose }) {
               </div>
               <div className="flex justify-between items-center text-sm font-medium mt-3 pt-3 border-t border-border">
                 <span className="text-fg-muted">Total a pagar</span>
-                <span className="text-primary font-bold">Gs. {formatGs(cotizacion.total)}</span>
+                <span className="text-primary-text font-bold">Gs. {formatGs(cotizacion.total)}</span>
               </div>
             </div>
           )}
@@ -212,9 +212,9 @@ export default function AbastecerseModal({ producto, open, onClose }) {
             type="button"
             disabled={!isFormValid || !cotizacion?.cubierto || cotizando || creando}
             onClick={handleConfirmar}
-            className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
-            {creando && <span className="loader loader-sm border-white" />}
+            {creando && <span className="loader loader-sm border-border" />}
             Confirmar y continuar al pago
           </button>
         </div>

@@ -58,7 +58,7 @@ export default function FaqPanel({ faq, onChange }) {
               <button type="button" onClick={() => mover(idx, 1)} disabled={idx === faq.length - 1} className="p-1 rounded hover:bg-fg/10 disabled:opacity-30 text-fg/50">
                 <ChevronDown size={14} />
               </button>
-              <button type="button" onClick={() => quitar(idx)} className="p-1 rounded hover:bg-red-500/10 text-fg/40 hover:text-red-400">
+              <button type="button" onClick={() => quitar(idx)} className="p-1 rounded hover:bg-danger/10 text-fg/40 hover:text-danger">
                 <Trash2 size={14} />
               </button>
             </div>

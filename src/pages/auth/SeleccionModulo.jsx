@@ -36,9 +36,9 @@ export default function SeleccionModulo() {
         {/* Módulo E-commerce */}
         <div 
           onClick={() => seleccionarModulo('ecommerce')}
-          className="flex-1 bg-bg border border-border rounded-xl p-8 cursor-pointer transition-all hover:border-primary hover:shadow-lg group flex flex-col items-center text-center"
+          className="flex-1 bg-canvas border border-border rounded-xl p-8 cursor-pointer transition-all hover:border-primary hover:shadow-lg group flex flex-col items-center text-center"
         >
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary-text group-hover:scale-110 transition-transform">
             <ShoppingCart size={32} />
           </div>
           <h2 className="text-xl font-bold text-fg mb-3">Gestión de E-commerce</h2>

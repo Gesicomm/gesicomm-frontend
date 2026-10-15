@@ -50,7 +50,7 @@ export default function ProductoGaleriaInspector({ seccion, onUpdate, onUploadIm
         <p className="text-xs text-[var(--vit-muted-2)] mb-3">
           Si no subís ninguna, se muestran las fotos del producto del catálogo. Subiendo acá, estas reemplazan a esas SOLO en esta sección.
         </p>
-        {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+        {error && <p className="text-xs text-danger mb-2">{error}</p>}
 
         <div className="flex flex-col gap-2 mb-3">
           {imagenes.map((url, idx) => (
@@ -59,7 +59,7 @@ export default function ProductoGaleriaInspector({ seccion, onUpdate, onUploadIm
               <span className="flex-1 text-xs text-[var(--vit-muted)] truncate">Imagen {idx + 1}</span>
               <button type="button" onClick={() => mover(idx, -1)} disabled={idx === 0} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronUp size={14} /></button>
               <button type="button" onClick={() => mover(idx, 1)} disabled={idx === imagenes.length - 1} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronDown size={14} /></button>
-              <button type="button" onClick={() => quitar(idx)} className="p-1 hover:bg-red-50 text-red-500 rounded"><Trash2 size={14} /></button>
+              <button type="button" onClick={() => quitar(idx)} className="p-1 hover:bg-danger/10 text-danger rounded"><Trash2 size={14} /></button>
             </div>
           ))}
         </div>

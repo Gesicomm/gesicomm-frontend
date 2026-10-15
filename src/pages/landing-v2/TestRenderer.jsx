@@ -55,7 +55,7 @@ const testSchema = {
 export default function TestRenderer() {
   return (
     <div>
-      <div className='bg-red-500 text-white p-2 text-center text-sm font-bold'>
+      <div className="bg-danger text-danger-fg p-2 text-center text-sm font-bold">
         MODO PREVIEW - AI LANDING ENGINE V2
       </div>
       <DynamicLanding schema={testSchema} />

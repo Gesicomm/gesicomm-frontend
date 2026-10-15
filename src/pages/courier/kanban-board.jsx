@@ -23,7 +23,7 @@ const ABASTECIMIENTO_SEGUIMIENTO_LANE = {
   id: "AbastecimientoSeguimiento",
   type: "abastecimiento",
   label: "En seguimiento abastecimiento",
-  columnBar: "bg-purple-400",
+  columnBar: "bg-accent",
   emptyText: "Sin abastecimientos en seguimiento",
 }
 

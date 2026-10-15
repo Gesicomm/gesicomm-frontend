@@ -61,7 +61,7 @@ export default function RedFulfillment() {
   return (
     <div className="mx-auto max-w-6xl">
       <header className="mb-6 flex items-start gap-3">
-        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-text">
           <Network size={22} />
         </span>
         <div>

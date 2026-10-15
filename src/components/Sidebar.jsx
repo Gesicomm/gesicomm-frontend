@@ -129,7 +129,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
     <>
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-brand-ink/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -277,7 +277,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
                 <div style={{
                   width: '26px', height: '26px', borderRadius: '50%',
-                  background: 'rgba(61, 95, 163, 0.2)', color: '#7d9bd6',
+                  background: "color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-primary-text)",
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '11px', fontWeight: 'bold', flexShrink: 0
                 }}>
@@ -298,7 +298,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                   <span style={{
                     display: 'block',
                     fontSize: '0.68rem',
-                    color: 'var(--color-fg-subtle, #64748b)',
+                    color: "var(--color-fg-subtle, var(--color-fg-muted))",
                   }}>
                     Editar perfil
                   </span>

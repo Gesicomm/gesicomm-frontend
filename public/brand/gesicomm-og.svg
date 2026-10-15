@@ -5,45 +5,45 @@
   -->
   <defs>
     <radialGradient id="og-glow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#3d5fa3" stop-opacity="0.42"/>
-      <stop offset="1" stop-color="#3d5fa3" stop-opacity="0"/>
+      <stop offset="0" stop-color="#76E4FF" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#76E4FF" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="og-rule" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#3d5fa3"/>
-      <stop offset="1" stop-color="#FFC107"/>
+      <stop offset="0" stop-color="#76E4FF"/>
+      <stop offset="1" stop-color="#FF5C45"/>
     </linearGradient>
   </defs>
 
-  <rect width="1200" height="630" fill="#0A0E1A"/>
+  <rect width="1200" height="630" fill="#08111F"/>
   <ellipse cx="1010" cy="120" rx="520" ry="400" fill="url(#og-glow)"/>
 
   <!-- Isotipo a escala 1.15 sobre la caja original de 64. -->
   <g transform="translate(76 68) scale(1.15)">
     <path d="M48.27 24.31 A18.9 18.9 0 1 0 49.49 35.93 L37 35.93"
-          fill="none" stroke="#F5F5F2" stroke-width="8.3" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="49" cy="48.5" r="6.5" fill="#FFC107"/>
+          fill="none" stroke="#F7FAFC" stroke-width="8.3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="49" cy="48.5" r="6.5" fill="#FF5C45"/>
   </g>
   <text x="167" y="122"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-        font-size="34" font-weight="700" letter-spacing="-1" fill="#F5F5F2">Gesicom</text>
+        font-size="34" font-weight="700" letter-spacing="-1" fill="#F7FAFC">Gesicom</text>
 
   <text x="76" y="290"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-        font-size="64" font-weight="700" letter-spacing="-2.2" fill="#F5F5F2">Toda la operación de tu</text>
+        font-size="64" font-weight="700" letter-spacing="-2.2" fill="#F7FAFC">Toda la operación de tu</text>
   <text x="76" y="366"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-        font-size="64" font-weight="700" letter-spacing="-2.2" fill="#F5F5F2">eCommerce, en un solo lugar.</text>
+        font-size="64" font-weight="700" letter-spacing="-2.2" fill="#F7FAFC">eCommerce, en un solo lugar.</text>
 
   <text x="76" y="432"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-        font-size="27" font-weight="400" letter-spacing="-0.3" fill="#a3a8b8">Productos, pedidos, inventario, clientes, logística y campañas.</text>
+        font-size="27" font-weight="400" letter-spacing="-0.3" fill="#ADBDCE">Productos, pedidos, inventario, clientes, logística y campañas.</text>
 
   <rect x="76" y="492" width="120" height="3" rx="1.5" fill="url(#og-rule)"/>
 
   <text x="76" y="552"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-        font-size="25" font-weight="600" letter-spacing="-0.2" fill="#7d9bd6">gesicomm.com</text>
+        font-size="25" font-weight="600" letter-spacing="-0.2" fill="#76E4FF">gesicomm.com</text>
   <text x="286" y="552"
         font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-        font-size="25" font-weight="400" letter-spacing="-0.2" fill="#6B7280">Integrado con Meta Business</text>
+        font-size="25" font-weight="400" letter-spacing="-0.2" fill="#94A7BC">Integrado con Meta Business</text>
 </svg>

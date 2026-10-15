@@ -122,7 +122,7 @@ export default function NotificationBell({
             top: '2px',
             right: '2px',
             background: 'var(--color-danger)',
-            color: '#fff',
+            color: "var(--color-danger-fg)",
             fontSize: '0.65rem',
             fontWeight: 'bold',
             padding: '2px 5px',

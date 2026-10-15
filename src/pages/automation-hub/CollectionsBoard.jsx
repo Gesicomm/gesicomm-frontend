@@ -76,7 +76,7 @@ function StudentDetailModal({ tarjeta, onClose, onRegistrarCobro }) {
   const cobradoGs = pagos.filter((p) => p.status === 'Pagado').reduce((s, p) => s + Number(p.amount || 0), 0);
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-xl bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-start justify-between border-b border-border p-4">
@@ -115,8 +115,7 @@ function StudentDetailModal({ tarjeta, onClose, onRegistrarCobro }) {
             return (
               <div key={p.id} className={`flex items-center gap-3 px-4 py-3 ${esVencida ? 'bg-danger/5' : ''}`}>
                 {/* Ícono */}
-                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold
-                  ${esPagada ? 'bg-success/20 text-success' : esVencida ? 'bg-danger/20 text-danger' : 'bg-surface-2 text-fg-muted'}`}>
+                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${esPagada ? 'bg-success/20 text-success' : esVencida ? 'bg-danger/20 text-danger' : 'bg-surface-2 text-fg-muted'}`}>
                   {esPagada ? '✓' : p.installment_number}
                 </div>
                 {/* Info */}
@@ -200,7 +199,7 @@ function RegistrarCobroModal({ tarjeta, onClose, onGuardado }) {
   const inputClass = 'h-9 w-full rounded-md border border-border bg-surface-2 px-2 text-xs text-fg';
 
   return (
-    <div className="fixed inset-0 z-[1001] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1001] flex items-center justify-center bg-brand-ink/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-xl bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border p-4">
           <h3 className="m-0 text-base font-semibold text-fg">Registrar cobro — {tarjeta.name}</h3>

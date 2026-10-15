@@ -10,13 +10,8 @@
  * texto HTML para que use la misma tipografía que ya carga la app — un
  * <text> dentro del SVG dependería de la resolución de fuentes del renderer.
  *
- * La G se dibuja con `currentColor`: navy sobre fondo claro, blanco sobre
- * fondo oscuro, sin necesitar dos variantes del componente (es lo que pide
- * el manual en "Aplicación sobre fondos"). El punto es SIEMPRE el Oro
- * Digital — es el único elemento que no cambia nunca.
- *
- * Geometría según el manual, sección 02: trazo = 0,18X y punto = 0,28X
- * sobre la altura X de la G. Misma que public/brand/gesicomm-isotipo.svg.
+ * La G hereda el texto del tema y el detalle usa Signal Coral.
+ * La geometría del símbolo se conserva en esta etapa de paleta.
  */
 export default function Logo({ size = 32, conTexto = true, className = '' }) {
   return (
@@ -38,7 +33,7 @@ export default function Logo({ size = 32, conTexto = true, className = '' }) {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <circle cx="49" cy="48.5" r="6.5" fill="#FFC107" />
+        <circle cx="49" cy="48.5" r="6.5" fill="var(--color-brand-coral)" />
       </svg>
 
       {conTexto && (

@@ -70,7 +70,7 @@ function SolicitudCard({ s, onAbrir, onValidar, onRechazar, onAvanzar, procesand
       onDragStart={arrastrable ? (e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart(s.id); } : undefined}
       onDragEnd={onDragEnd}
       onClick={() => onAbrir(s)}
-      className={`bg-surface border border-surface-border rounded-lg p-3 transition-colors shadow-sm ${
+      className={`bg-surface border border-border rounded-lg p-3 transition-colors shadow-sm ${
         arrastrable ? 'cursor-grab active:cursor-grabbing hover:border-primary/50' : 'cursor-pointer hover:border-primary/50'
       } ${dragging ? 'opacity-40' : ''}`}
     >
@@ -79,7 +79,7 @@ function SolicitudCard({ s, onAbrir, onValidar, onRechazar, onAvanzar, procesand
           {arrastrable && <GripVertical size={12} className="text-fg-subtle -ml-1" />}
           <span className="text-xs font-semibold text-fg-subtle">#{s.id}</span>
         </div>
-        <span className="text-xs font-bold text-primary">Gs. {formatGs(total)}</span>
+        <span className="text-xs font-bold text-primary-text">Gs. {formatGs(total)}</span>
       </div>
       <p className="text-sm font-medium text-fg leading-snug mb-0.5">{s.producto?.nombre || 'Producto'}</p>
       <p className="text-xs text-fg-muted mb-2">x{s.cantidad} · {s.Usuario?.nombre || 'Comercio'}</p>
@@ -94,19 +94,19 @@ function SolicitudCard({ s, onAbrir, onValidar, onRechazar, onAvanzar, procesand
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-[11px] text-primary hover:underline mb-2 w-fit"
+          className="flex items-center gap-1.5 text-[11px] text-primary-text hover:underline mb-2 w-fit"
         >
           <FileText size={11} /> Ver comprobante
         </a>
       )}
 
       {s.estado === 'pago_enviado' && (
-        <div className="flex items-center gap-1.5 pt-2 border-t border-surface-border">
+        <div className="flex items-center gap-1.5 pt-2 border-t border-border">
           <button
             type="button"
             onClick={detener(onValidar)}
             disabled={procesando}
-            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-success text-white rounded-md text-xs font-medium hover:bg-success/90 disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-success text-success-fg rounded-md text-xs font-medium hover:bg-success/90 disabled:opacity-50"
           >
             <CheckCircle2 size={12} /> Validar
           </button>
@@ -114,7 +114,7 @@ function SolicitudCard({ s, onAbrir, onValidar, onRechazar, onAvanzar, procesand
             type="button"
             onClick={detener(onRechazar)}
             disabled={procesando}
-            className="flex items-center justify-center gap-1 px-2 py-1.5 bg-danger text-white rounded-md text-xs font-medium hover:bg-danger/90 disabled:opacity-50"
+            className="flex items-center justify-center gap-1 px-2 py-1.5 bg-danger text-danger-fg rounded-md text-xs font-medium hover:bg-danger/90 disabled:opacity-50"
           >
             <XCircle size={12} />
           </button>
@@ -122,11 +122,11 @@ function SolicitudCard({ s, onAbrir, onValidar, onRechazar, onAvanzar, procesand
       )}
 
       {(s.estado === 'pendiente_pago' || s.estado === 'pago_rechazado') && (
-        <p className="text-[11px] text-fg-subtle pt-2 border-t border-surface-border">Esperando al comercio.</p>
+        <p className="text-[11px] text-fg-subtle pt-2 border-t border-border">Esperando al comercio.</p>
       )}
 
       {s.estado === 'en_transito_a_deposito_cliente' && (
-        <p className="text-[11px] text-fg-subtle pt-2 border-t border-surface-border">Esperando confirmación del comercio.</p>
+        <p className="text-[11px] text-fg-subtle pt-2 border-t border-border">Esperando confirmación del comercio.</p>
       )}
 
       {CTA_AVANZAR[s.estado] && (
@@ -134,7 +134,7 @@ function SolicitudCard({ s, onAbrir, onValidar, onRechazar, onAvanzar, procesand
           type="button"
           onClick={detener(onAvanzar)}
           disabled={procesando}
-          className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 mt-2 pt-2 border-t border-surface-border bg-transparent text-primary text-xs font-medium hover:bg-primary/5 rounded-md disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 mt-2 pt-2 border-t border-border bg-transparent text-primary-text text-xs font-medium hover:bg-primary/5 rounded-md disabled:opacity-50"
         >
           {CTA_AVANZAR[s.estado]} <ArrowRight size={11} />
         </button>
@@ -284,7 +284,7 @@ export function SolicitudesAbastecimientoPanel() {
               placeholder="Buscar por comercio, producto o #ID..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="pl-8 pr-3 py-2 text-sm border border-surface-border rounded-lg bg-surface outline-none focus:border-primary w-64"
+              className="pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary w-64"
             />
           </div>
           <div className="flex gap-1 bg-surface-2 rounded-lg p-1">
@@ -304,7 +304,7 @@ export function SolicitudesAbastecimientoPanel() {
         </div>
         <div className="flex items-center gap-3">
           <p className="text-sm text-fg-muted whitespace-nowrap">{filtradas.length} de {solicitudes.length}</p>
-          <button onClick={cargar} className="flex items-center gap-2 px-3 py-2 border border-surface-border rounded-lg text-sm font-medium text-fg hover:bg-surface-2">
+          <button onClick={cargar} className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium text-fg hover:bg-surface-2">
             <RefreshCw size={15} /> Actualizar
           </button>
         </div>
@@ -328,11 +328,11 @@ export function SolicitudesAbastecimientoPanel() {
                 onDrop={(e) => { if (esDestinoValido) { e.preventDefault(); handleDrop(col.estado); } }}
                 className={`flex-shrink-0 w-[260px] border rounded-xl flex flex-col max-h-[calc(100vh-260px)] transition-colors ${
                   colSobre === col.estado ? 'border-primary bg-primary/5' :
-                  hayArrastre && !esDestinoValido ? 'border-surface-border bg-surface-50 opacity-40' :
-                  'border-surface-border bg-surface-50'
+                  hayArrastre && !esDestinoValido ? 'border-border bg-surface-50 opacity-40' :
+                  'border-border bg-surface-50'
                 }`}
               >
-                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-surface-border flex-shrink-0">
+                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border flex-shrink-0">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${col.dot}`} />
                   <h3 className="m-0 text-xs font-semibold text-fg flex-1 leading-tight">{col.label}</h3>
                   <span className="text-xs font-medium text-fg-muted bg-surface-2 px-1.5 py-0.5 rounded-full">{items.length}</span>

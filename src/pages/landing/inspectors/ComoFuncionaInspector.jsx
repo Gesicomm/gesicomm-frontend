@@ -55,7 +55,7 @@ export default function ComoFuncionaInspector({ seccion, schema, onUpdate }) {
                 <div className="flex items-center gap-1">
                   <button type="button" onClick={() => moverPaso(idx, -1)} disabled={idx === 0} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronUp size={14}/></button>
                   <button type="button" onClick={() => moverPaso(idx, 1)} disabled={idx === pasos.length - 1} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronDown size={14}/></button>
-                  <button type="button" onClick={() => quitarPaso(idx)} className="p-1 hover:bg-red-50 text-red-500 rounded ml-2"><Trash2 size={14}/></button>
+                  <button type="button" onClick={() => quitarPaso(idx)} className="p-1 hover:bg-danger/10 text-danger rounded ml-2"><Trash2 size={14}/></button>
                 </div>
               </div>
               

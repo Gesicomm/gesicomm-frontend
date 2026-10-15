@@ -63,7 +63,7 @@ export default function FulfillmentCoverageViewer({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-ink/50 p-4">
       <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-surface shadow-xl">
         <header className="flex flex-shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div>

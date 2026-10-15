@@ -183,7 +183,7 @@ function Fila({ children, onSubir, onBajar, onQuitar }) {
         <button type="button" onClick={onBajar} className="hover:text-fg leading-none text-[10px]">▼</button>
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-1.5">{children}</div>
-      <button type="button" onClick={onQuitar} className="text-fg/25 hover:text-red-400 pt-0.5"><Trash2 size={13} /></button>
+      <button type="button" onClick={onQuitar} className="text-fg/25 hover:text-danger pt-0.5"><Trash2 size={13} /></button>
     </div>
   );
 }
@@ -299,14 +299,14 @@ function AvisoVideo({ url, tieneImagen }) {
 
   const video = analizarVideo(url);
   if (!video) {
-    return <p className="text-[10px] text-amber-400/90 leading-relaxed">No parece un link válido.</p>;
+    return <p className="text-[10px] text-warning/90 leading-relaxed">No parece un link válido.</p>;
   }
 
   const nombre = NOMBRE_PLATAFORMA[video.plataforma];
 
   if (video.incrustable) {
     return (
-      <p className="text-[10px] text-emerald-400/90 leading-relaxed">
+      <p className="text-[10px] text-success/90 leading-relaxed">
         {nombre}: se reproduce en la misma página.
         {!video.miniatura && !tieneImagen && ' Agregale una portada abajo, o se ve un recuadro vacío.'}
       </p>
@@ -414,7 +414,7 @@ const CAMPOS = {
     <>
       <Texto label="Etiqueta" valor={d.etiqueta} placeholder="Oferta por tiempo limitado" onChange={v => set({ etiqueta: v })} />
       <Texto label="Texto de cuotas" valor={d.cuotas_texto} placeholder="o 3 cuotas sin interés de 56.000 Gs" onChange={v => set({ cuotas_texto: v })} />
-      <p className="text-[10px] text-amber-400/70 leading-relaxed">
+      <p className="text-[10px] text-warning/70 leading-relaxed">
         El precio tachado y el % de descuento salen del precio ancla del producto, no se escriben acá.
       </p>
       <CamposContador d={d} set={set} />
@@ -488,7 +488,7 @@ const CAMPOS = {
   especificaciones: ({ d, set, lista }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
-      <p className="text-[10px] text-amber-400/70 leading-relaxed">
+      <p className="text-[10px] text-warning/70 leading-relaxed">
         Conviene cargarlas en <b>Mis Productos → Vista del producto</b>: son del producto y sirven en todas tus
         landings. Lo que escribas acá vale solo para esta.
       </p>
@@ -612,7 +612,7 @@ const CAMPOS = {
                 value={it.calificacion}
                 onChange={e => lista.editar('items', i, { calificacion: Number(e.target.value) })}
               >
-                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n} className="bg-neutral-900">{n} ★</option>)}
+                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n} className="bg-canvas">{n} ★</option>)}
               </select>
             </div>
             <textarea rows={2} className={MINI} value={it.comentario || ''} placeholder="La calidad de sonido es increíble." onChange={e => lista.editar('items', i, { comentario: e.target.value })} />

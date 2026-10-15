@@ -96,7 +96,7 @@ export default function TemplateSelector({ onCreada, onVolver }) {
           const Icono = ICONOS[template.slug];
           return (
             <div key={template.id} className="rounded-2xl overflow-hidden border border-fg/10 bg-fg/5 flex flex-col">
-              <div className="h-56 overflow-hidden relative bg-black/40 block w-full text-left">
+              <div className="h-56 overflow-hidden relative bg-brand-ink/40 block w-full text-left">
                 {Componente ? (
                   <div aria-hidden="true" inert="" className="absolute inset-0 scale-[0.32] origin-top-left w-[312%] pointer-events-none">
                     <Componente data={demoDeTemplate(template.slug)?.tienda || DATA_PREVIEW} previewMode />

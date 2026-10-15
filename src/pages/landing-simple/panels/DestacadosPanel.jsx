@@ -139,7 +139,7 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
                     className="shrink-0 cursor-pointer"
                     title="Mostrar en el inicio"
                   />
-                  <div className="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-black/40 border border-fg/10 flex items-center justify-center text-fg/30">
+                  <div className="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-brand-ink/40 border border-fg/10 flex items-center justify-center text-fg/30">
                     {entidad?.imagen ? (
                       <img src={getMediaUrl(entidad.imagen)} alt="" className="w-full h-full object-cover" />
                     ) : (

@@ -379,7 +379,7 @@ function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle, men
   const ubicacion = [envio.direccion, envio.referencia].filter(Boolean).join(" - ");
 
   const blockMensaje = mensaje?.texto ? (
-    <div style={{ textAlign: 'center', fontSize: '9pt', fontWeight: 'bold', margin: '4px 0', padding: '3px', border: '1px dashed #000' }}>
+    <div style={{ textAlign: 'center', fontSize: '9pt', fontWeight: 'bold', margin: '4px 0', padding: '3px', border: "1px dashed var(--color-border)" }}>
       {mensaje.texto}
     </div>
   ) : null;
@@ -419,7 +419,7 @@ function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle, men
         {/* Ubicación */}
         <div className="etiqueta-box">
           <div className="etiqueta-box-title">UBICACIÓN Y ENTREGA</div>
-          <div style={{ fontSize: '8.5pt', lineHeight: 1.3, color: '#000' }}>
+          <div style={{ fontSize: '8.5pt', lineHeight: 1.3, color: "var(--color-fg)" }}>
             {ubicacion || 'Sin dirección especificada'}
           </div>
         </div>
@@ -443,7 +443,7 @@ function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle, men
               )}
             </ul>
           ) : (
-            <div style={{ fontSize: '8pt', color: '#000', display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: '8pt', color: "var(--color-fg)", display: 'flex', justifyContent: 'space-between' }}>
               <span>Envío / Pedido estándar</span>
               {Number(envio.costo_envio) > 0 && (
                 <span><strong>Delivery:</strong> {formatGs(envio.costo_envio)}</span>

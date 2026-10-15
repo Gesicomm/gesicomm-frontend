@@ -450,7 +450,8 @@ export function ControlCourier({ etapaFija } = {}) {
           // el pedido sale solo del flujo de confirmación.
           setSeguimientoEnvio(null);
           setEnvioParaCompletar(envio);
-        }}        onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
+        }}
+        onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
       />}
     </div>
   );
@@ -471,8 +472,8 @@ function TabButton({ active, onClick, icon, children, badge }) {
           position: 'absolute',
           top: '-7px',
           right: '-8px',
-          background: '#ef4444',
-          color: '#fff',
+          background: "var(--color-danger)",
+          color: "var(--color-danger-fg)",
           borderRadius: '999px',
           fontSize: '10px',
           fontWeight: 700,

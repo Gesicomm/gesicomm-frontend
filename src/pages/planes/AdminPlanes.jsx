@@ -318,7 +318,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
         </div>
 
         {errorGuardado && (
-          <div className="pl-aviso" style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#ef4444' }}>
+          <div className="pl-aviso" style={{ borderColor: "color-mix(in srgb, var(--color-danger) 30%, transparent)", background: "color-mix(in srgb, var(--color-danger) 8%, transparent)", color: "var(--color-danger)" }}>
             <AlertTriangle size={16} />
             <span>{errorGuardado}</span>
           </div>

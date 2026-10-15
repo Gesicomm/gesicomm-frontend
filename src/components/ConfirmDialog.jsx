@@ -20,7 +20,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm"
       onClick={onCancel}
       role="presentation"
     >
@@ -53,7 +53,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`rounded-md px-3.5 py-2 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={`rounded-md px-3.5 py-2 text-sm font-semibold text-fg transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
               danger ? 'bg-danger hover:bg-danger/90' : 'bg-primary hover:bg-primary-hover'
             }`}
           >

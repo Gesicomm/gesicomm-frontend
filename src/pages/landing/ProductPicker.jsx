@@ -549,7 +549,7 @@ export default function ProductPicker({
       )}
 
       {modalAbierto && createPortal(
-        <div className={`lb-modal-overlay fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${themeScopeClassName}`} style={{ zIndex: zIndexModal }}>
+        <div className={`lb-modal-overlay fixed inset-0 flex items-center justify-center bg-brand-ink/80 backdrop-blur-sm p-4 ${themeScopeClassName}`} style={{ zIndex: zIndexModal }}>
           <div className="lb-modal-panel bg-surface-2 border border-fg/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             <div className="lb-modal-header flex items-center justify-between p-4 border-b border-fg/10 bg-fg/5">
               <h3 className="text-base font-semibold text-fg">{modalTitle}</h3>
@@ -734,7 +734,7 @@ export default function ProductPicker({
               <span className="text-xs font-semibold text-fg/60">{cantidad} de {max} seleccionados</span>
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 text-fg/65 hover:text-fg text-sm font-semibold rounded-lg transition-colors">Cancelar</button>
-                <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-lg transition-colors">
+                <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-fg text-sm font-bold rounded-lg transition-colors">
                   {cantidad === 0 ? 'Agregar productos' : cantidad === 1 ? 'Agregar 1 producto' : `Agregar ${cantidad} productos`}
                 </button>
               </div>

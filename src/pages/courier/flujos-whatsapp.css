@@ -148,12 +148,12 @@
 }
 
 .gw-label-icon {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   opacity: 0.9;
 }
 
 .gw-req {
-  color: var(--color-danger, #ef4444);
+  color: var(--color-danger);
 }
 
 .gw-input--title {
@@ -391,7 +391,7 @@
 
 .gw-btn-back:hover {
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-primary-fg);
   border-color: var(--color-primary);
   transform: translateX(-2px);
 }
@@ -447,7 +447,7 @@
 }
 
 .gw-wait-icon {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   flex-shrink: 0;
 }
 
@@ -881,8 +881,8 @@
   color: var(--wa-texto);
 }
 .gw-bubble .gw-chip--bad {
-  background: color-mix(in srgb, #ef4444 30%, transparent);
-  color: #fff;
+  background: color-mix(in srgb, var(--color-danger) 30%, transparent);
+  color: var(--color-fg);
   text-decoration: none;
 }
 
@@ -984,7 +984,7 @@
   position: fixed;
   inset: 0;
   z-index: 1200;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;

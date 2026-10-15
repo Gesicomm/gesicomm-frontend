@@ -81,7 +81,7 @@ export default function ContentDetailModal({ item, onClose, onCambio, onEdit, se
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-4xl rounded-xl bg-surface shadow-2xl flex flex-col md:flex-row overflow-hidden max-h-full" onClick={(e) => e.stopPropagation()}>
         
         {/* Lado izquierdo: Detalles */}
@@ -90,17 +90,17 @@ export default function ContentDetailModal({ item, onClose, onCambio, onEdit, se
             <div>
               <h3 className="m-0 text-base font-semibold text-fg">Detalle de contenido</h3>
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold border border-blue-500/20">Instagram</span>
-                <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 text-[10px] font-bold border border-purple-500/20">{FORMATO_LABEL[item.format] || 'Contenido'}</span>
+                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary-text text-[10px] font-bold border border-primary/20">Instagram</span>
+                <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent-text text-[10px] font-bold border border-accent/20">{FORMATO_LABEL[item.format] || 'Contenido'}</span>
                 
                 {item.status === 'published' ? (
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">Publicado</span>
+                  <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-bold border border-success/20">Publicado</span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold border border-amber-500/20">Programado · {item.publish_date} {String(item.publish_time).slice(0, 5)}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-warning/10 text-warning text-[10px] font-bold border border-warning/20">Programado · {item.publish_date} {String(item.publish_time).slice(0, 5)}</span>
                 )}
 
                 {link?.linked && (
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20 flex items-center gap-1">
+                  <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-bold border border-success/20 flex items-center gap-1">
                     <CheckCircle2 size={10} /> ManyChat activo
                   </span>
                 )}
@@ -245,7 +245,7 @@ export default function ContentDetailModal({ item, onClose, onCambio, onEdit, se
                     ejecutar(() => contentApi.eliminarRemoto(item.id));
                   }
                 }}
-                className="h-10 mt-1 rounded-md bg-danger text-white text-sm font-semibold hover:bg-danger-hover transition-colors">
+                className="h-10 mt-1 rounded-md bg-danger text-danger-fg text-sm font-semibold hover:bg-danger-hover transition-colors">
                 Eliminar de la red social
               </button>
             )}

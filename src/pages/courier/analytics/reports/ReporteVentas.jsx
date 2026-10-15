@@ -166,7 +166,7 @@ export function ReporteVentas({ filters }) {
           icon={<DollarSign size={20} />} 
           title={METRIC_TERMS.ventasNetas}
           value={loadingKpis ? '…' : formatPrecio(actual.ventas_netas)} 
-          color="text-green-400" 
+          color="text-success"
           variacion={varis.ventas_netas} 
         />
         <KpiCard 
@@ -195,14 +195,14 @@ export function ReporteVentas({ filters }) {
           icon={<Users size={20} />} 
           title="Clientes" 
           value={loadingKpis ? '…' : actual.clientes} 
-          color="text-purple-400" 
+          color="text-accent-text"
           variacion={varis.clientes} 
         />
         <KpiCard 
           icon={<XCircle size={20} />} 
           title="Cancelados" 
           value={loadingKpis ? '…' : `${actual.cancelados_devueltos}`} 
-          color="text-red-400" 
+          color="text-danger"
           variacion={varis.tasa_cancelacion} 
           subtext={loadingKpis ? null : `Tasa: ${parseFloat(actual.tasa_cancelacion || 0).toFixed(1)}%`}
           reverseColors={true}
@@ -295,8 +295,8 @@ function KpiCard({ icon, title, value, color, variacion, subtext, reverseColors 
     const isNegative = variacion.variacion < 0;
     
     // Si reverseColors es true, positivo es rojo (malo), negativo es verde (bueno). Ejemplo: Tasa de cancelacion
-    const goodColor = reverseColors ? 'text-red-400' : 'text-green-400';
-    const badColor = reverseColors ? 'text-green-400' : 'text-red-400';
+    const goodColor = reverseColors ? "text-danger" : "text-success";
+    const badColor = reverseColors ? "text-success" : "text-danger";
     
     if (isPositive) {
       varColor = goodColor;

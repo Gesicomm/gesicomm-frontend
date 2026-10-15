@@ -9,7 +9,7 @@ import { inventarioService } from '../../services/inventario.service';
 import useSesion from '../../hooks/useSesion';
 
 const ESTADO_BADGE = {
-  BORRADOR: 'bg-surface text-fg border-surface-border',
+  BORRADOR: 'bg-surface text-fg border-border',
   PENDIENTE_ENVIO: 'bg-warning/10 text-warning-text border-warning/20',
   EN_TRANSITO: 'bg-primary/10 text-primary-text border-primary/20',
   RECIBIDO: 'bg-info/10 text-info-text border-info/20',
@@ -124,7 +124,7 @@ export default function IngresoDetalle() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-full text-fg-muted gap-3">
         <p>No se encontro el ingreso.</p>
-        <Link to={volverA} className="text-primary font-medium hover:underline">Volver</Link>
+        <Link to={volverA} className="text-primary-text font-medium hover:underline">Volver</Link>
       </div>
     );
   }
@@ -141,7 +141,7 @@ export default function IngresoDetalle() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-50 overflow-hidden">
-      <div className="px-6 py-5 bg-surface border-b border-surface-border">
+      <div className="px-6 py-5 bg-surface border-b border-border">
         <button
           onClick={() => navigate(volverA)}
           className="flex items-center gap-2 text-sm font-medium text-fg-muted hover:text-fg mb-3"
@@ -166,7 +166,7 @@ export default function IngresoDetalle() {
 
       <div className="flex-1 overflow-auto p-6 max-w-4xl mx-auto w-full space-y-6">
         {/* Lo primero que se responde: cuanto se mando, cuanto llego, cuanto se acepto. */}
-        <div className="bg-surface border border-surface-border rounded-xl p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-surface border border-border rounded-xl p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">Enviado</p>
             <p className="text-lg font-bold text-fg">{totalUnidades} u.</p>
@@ -188,7 +188,7 @@ export default function IngresoDetalle() {
         </div>
 
         {(ingreso.centro?.persona_contacto || ingreso.centro?.telefono_contacto || ingreso.centro?.direccion || (esAdmin && ingreso.Usuario?.correo_electronico)) && (
-          <div className="bg-surface border border-surface-border rounded-xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-surface border border-border rounded-xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {esAdmin && ingreso.Usuario && (
               <div>
                 <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">Comercio</p>
@@ -201,7 +201,7 @@ export default function IngresoDetalle() {
                 <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">Contacto en {ingreso.centro?.nombre}</p>
                 {ingreso.centro?.persona_contacto && <p className="text-sm text-fg">{ingreso.centro.persona_contacto}</p>}
                 {ingreso.centro?.telefono_contacto && (
-                  <a href={`tel:${ingreso.centro.telefono_contacto.replace(/\D/g, '')}`} className="text-xs text-primary hover:underline block">{ingreso.centro.telefono_contacto}</a>
+                  <a href={`tel:${ingreso.centro.telefono_contacto.replace(/\D/g, '')}`} className="text-xs text-primary-text hover:underline block">{ingreso.centro.telefono_contacto}</a>
                 )}
                 {ingreso.centro?.direccion && <p className="text-xs text-fg-muted">{ingreso.centro.direccion}</p>}
               </div>
@@ -209,13 +209,13 @@ export default function IngresoDetalle() {
           </div>
         )}
 
-        <div className="bg-surface border border-surface-border rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-surface-border bg-surface-2">
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border bg-surface-2">
             <h2 className="text-sm font-semibold text-fg flex items-center gap-2"><Package size={15} /> Mercaderia</h2>
           </div>
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-surface-border">
+              <tr className="border-b border-border">
                 <th className="px-4 py-2 text-xs font-semibold text-fg-muted uppercase">Producto</th>
                 <th className="px-4 py-2 text-xs font-semibold text-fg-muted uppercase text-right">Enviado</th>
                 {['RECIBIDO', 'EN_VALIDACION', 'CON_DIFERENCIAS', 'DISPONIBLE'].includes(ingreso.estado) && (
@@ -242,7 +242,7 @@ export default function IngresoDetalle() {
                         <input
                           type="number"
                           min="0"
-                          className="w-24 px-2 py-1 text-sm text-right border border-surface-border rounded bg-surface"
+                          className="w-24 px-2 py-1 text-sm text-right border border-border rounded bg-surface"
                           value={conteos[it.id] ?? ''}
                           onChange={(e) => setConteos((c) => ({ ...c, [it.id]: e.target.value }))}
                         />
@@ -262,7 +262,7 @@ export default function IngresoDetalle() {
           </table>
         </div>
 
-        <div className="bg-surface border border-surface-border rounded-xl p-5">
+        <div className="bg-surface border border-border rounded-xl p-5">
           <h2 className="text-sm font-semibold text-fg mb-3">Proximo paso</h2>
 
           {!esAdmin && ingreso.estado === 'PENDIENTE_ENVIO' && (
@@ -335,7 +335,7 @@ export default function IngresoDetalle() {
                   onClick={handleHabilitarStock}
                   disabled={procesando}
                   className="btn-primary"
-                  style={{ background: '#059669' }}
+                  style={{ background: "var(--color-success)" }}
                 >
                   {procesando ? 'Procesando...' : 'Habilitar stock'}
                 </button>
@@ -351,7 +351,7 @@ export default function IngresoDetalle() {
           )}
 
           {!esAdmin && ingreso.estado === 'BORRADOR' && (
-            <div className="flex items-start gap-3 bg-surface-2 border border-surface-border rounded-lg p-4">
+            <div className="flex items-start gap-3 bg-surface-2 border border-border rounded-lg p-4">
               <Package size={20} className="text-fg-muted mt-0.5 shrink-0" />
               <p className="text-sm text-fg-muted">Este ingreso quedo como borrador sin confirmar. Inicia uno nuevo desde "Inventario y envíos" para enviarlo.</p>
             </div>
@@ -366,8 +366,8 @@ export default function IngresoDetalle() {
         </div>
 
         {ingreso.historial && ingreso.historial.length > 0 && (
-          <div className="bg-surface border border-surface-border rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-surface-border bg-surface-2">
+          <div className="bg-surface border border-border rounded-xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-border bg-surface-2">
               <h2 className="text-sm font-semibold text-fg">Historial</h2>
             </div>
             <ul className="divide-y divide-surface-border">

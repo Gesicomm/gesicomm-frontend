@@ -109,8 +109,8 @@ export default function AdsCampanaHistorial({ campana, onVolver, onEditar, onCam
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               {campana.tipo === 'whatsapp'
-                ? <MessageCircle size={18} color="#10b981" />
-                : <Globe size={18} color="#3b82f6" />}
+                ? <MessageCircle size={18} color="var(--color-success)" />
+                : <Globe size={18} color="var(--color-primary-text)" />}
               <h2 className="m-0 text-base font-semibold text-fg">{campana.nombre_display}</h2>
               <span className="badge" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
             </div>
@@ -124,7 +124,7 @@ export default function AdsCampanaHistorial({ campana, onVolver, onEditar, onCam
                   className="cursor-pointer border-none bg-transparent p-0.5 text-fg-muted hover:text-fg"
                   title="Copiar nombre para Meta Ads Manager"
                 >
-                  {copiado ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                  {copiado ? <Check size={13} color="var(--color-success)" /> : <Copy size={13} />}
                 </button>
               </span>
               {(campana.productos || []).length > 0 && (

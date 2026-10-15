@@ -80,7 +80,7 @@ export default function TransferenciaAbastecimientoModal({ envio, open, onClose,
   };
 
   return (
-    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1050] flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         className="w-full max-w-md rounded-xl bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
@@ -112,7 +112,7 @@ export default function TransferenciaAbastecimientoModal({ envio, open, onClose,
             <>
               <div className="rounded-lg border border-border bg-surface-2 p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Landmark size={18} className="text-primary" />
+                  <Landmark size={18} className="text-primary-text" />
                   <h3 className="m-0 text-sm font-semibold text-fg">Datos para transferir</h3>
                 </div>
                 <FilaDato label="Banco" valor={datos.banco} />
@@ -161,9 +161,9 @@ export default function TransferenciaAbastecimientoModal({ envio, open, onClose,
             type="button"
             disabled={!archivo || enviando || cargando}
             onClick={handleEnviar}
-            className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+            className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
           >
-            {enviando && <span className="loader loader-sm border-white" />}
+            {enviando && <span className="loader loader-sm border-border" />}
             Enviar transferencia
           </button>
         </div>

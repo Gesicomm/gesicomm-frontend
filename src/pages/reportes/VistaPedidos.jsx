@@ -117,12 +117,12 @@ export default function VistaPedidos({ filtros }) {
     return (
       <div className="flex gap-1 flex-wrap">
         {stats.base > 0 && (
-          <Badge color="bg-blue-500/10 text-blue-400 border-blue-500/20">
+          <Badge color="bg-primary/10 text-primary-text border-primary/20">
             Base
           </Badge>
         )}
         {stats.combo > 0 && (
-          <Badge color="bg-[#3d5fa3]/10 text-[#7d9bd6] border-[#3d5fa3]/20">
+          <Badge color="bg-[var(--color-primary-text)]/10 text-[var(--color-primary-text)] border-[var(--color-primary-text)]/20">
             Combo
           </Badge>
         )}
@@ -164,7 +164,7 @@ export default function VistaPedidos({ filtros }) {
             <input
               type="text"
               placeholder="Cliente, # Pedido o Teléfono..."
-              className="w-full bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md pl-8 pr-3 py-1.5 text-sm text-[var(--vit-text)] placeholder:text-[var(--vit-muted-2)] focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
+              className="w-full bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md pl-8 pr-3 py-1.5 text-sm text-[var(--vit-text)] placeholder:text-[var(--vit-muted-2)] focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
               value={localSearch.buscador}
               onChange={(e) =>
                 setLocalSearch((prev) => ({
@@ -181,7 +181,7 @@ export default function VistaPedidos({ filtros }) {
           </label>
           <input
             type="date"
-            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-blue-500/50"
+            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-primary/50"
             value={localSearch.fecha_desde}
             onChange={(e) =>
               setLocalSearch((prev) => ({
@@ -197,7 +197,7 @@ export default function VistaPedidos({ filtros }) {
           </label>
           <input
             type="date"
-            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-blue-500/50"
+            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-primary/50"
             value={localSearch.fecha_hasta}
             onChange={(e) =>
               setLocalSearch((prev) => ({
@@ -214,7 +214,7 @@ export default function VistaPedidos({ filtros }) {
             onClick={() =>
               setLocalSearch({ buscador: "", fecha_desde: "", fecha_hasta: "" })
             }
-            className="text-xs text-[var(--vit-muted)] hover:text-red-400 font-medium px-2 py-1.5 transition-colors"
+            className="text-xs text-[var(--vit-muted)] hover:text-danger font-medium px-2 py-1.5 transition-colors"
           >
             Limpiar
           </button>
@@ -399,7 +399,7 @@ export default function VistaPedidos({ filtros }) {
                 <InfoChip
                   icon={
                     pedidoExpandido.quiere_factura ? (
-                      <FileText size={13} className="text-green-400" />
+                      <FileText size={13} className="text-success" />
                     ) : (
                       <CheckCircle size={13} />
                     )
@@ -446,7 +446,7 @@ export default function VistaPedidos({ filtros }) {
                   );
 
                   const colorTexto = esBase
-                    ? "text-blue-400"
+                    ? "text-primary-text"
                     : oferta?.estrategia === "order_bump"
                       ? "text-orange-400"
                       : "text-pink-400";
@@ -512,17 +512,17 @@ export default function VistaPedidos({ filtros }) {
                 pedidoExpandido.estado === "Confirmado" ||
                 pedidoExpandido.estado === "Empacado" ||
                 pedidoExpandido.estado === "En tránsito" ? (
-                  <div className="flex justify-between items-center text-sm font-semibold text-yellow-400 pt-1">
+                  <div className="flex justify-between items-center text-sm font-semibold text-warning pt-1">
                     <span>Pendiente de cobro</span>
                     <span>{formatPrecio(pedidoExpandido.monto)}</span>
                   </div>
                 ) : pedidoExpandido.estado === "Entregado" ? (
-                  <div className="flex justify-between items-center text-sm font-semibold text-green-400 pt-1">
+                  <div className="flex justify-between items-center text-sm font-semibold text-success pt-1">
                     <span>Cobrado</span>
                     <span>{formatPrecio(pedidoExpandido.monto)}</span>
                   </div>
                 ) : (
-                  <div className="flex justify-between items-center text-sm font-semibold text-red-400 pt-1">
+                  <div className="flex justify-between items-center text-sm font-semibold text-danger pt-1">
                     <span>No cobrado (Cancelado)</span>
                     <span>{formatPrecio(pedidoExpandido.monto)}</span>
                   </div>
@@ -570,19 +570,19 @@ function Badge({ children, color }) {
 }
 
 function BadgeStatus({ estado }) {
-  let color = "bg-gray-500/10 text-gray-400 border-gray-500/20";
+  let color = "bg-surface-2/10 text-fg-subtle border-border-strong/20";
   if (estado === "Entregado")
-    color = "bg-green-500/10 text-green-400 border-green-500/20";
+    color = "bg-success/10 text-success border-success/20";
   if (
     estado === "En tránsito" ||
     estado === "Empacado" ||
     estado === "Confirmado"
   )
-    color = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    color = "bg-primary/10 text-primary-text border-primary/20";
   if (estado === "Cancelado" || estado === "Devuelto" || estado === "Rechazado")
-    color = "bg-red-500/10 text-red-400 border-red-500/20";
+    color = "bg-danger/10 text-danger border-danger/20";
   if (estado === "Pendiente")
-    color = "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+    color = "bg-warning/10 text-warning border-warning/20";
   return (
     <span
       className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${color}`}
@@ -599,7 +599,7 @@ function InfoChip({ icon, label, value, highlight }) {
         {icon} {label}
       </div>
       <div
-        className={`text-sm font-semibold ${highlight ? "text-green-400" : "text-[var(--vit-text)]"}`}
+        className={`text-sm font-semibold ${highlight ? "text-success" : "text-[var(--vit-text)]"}`}
       >
         {value}
       </div>

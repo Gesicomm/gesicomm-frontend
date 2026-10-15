@@ -2,50 +2,31 @@
 .courier-container,
 .np-modal-container,
 .np-picker-theme {
-  --gesicom-navy: #0D1B3D;
-  --gesicom-gold: #FFC107;
-  --gesicom-ivory: #F7F7F5;
-  --gesicom-slate: #6B7280;
+  /* Compatibilidad con el módulo logístico: sin redefinir el tema global. */
+  --gesicom-navy: var(--color-brand-navy);
+  --gesicom-gold: var(--color-primary);
+  --gesicom-ivory: var(--color-brand-cloud);
+  --gesicom-slate: var(--color-fg-muted);
   --np-paper: var(--color-canvas);
-  --np-panel: var(--color-surface-2);
-  --np-panel-raised: color-mix(in srgb, var(--color-canvas) 92%, var(--color-fg) 8%);
-  --np-soft-border: color-mix(in srgb, var(--color-fg) 10%, transparent);
-  --np-brand-shadow: 0 18px 45px color-mix(in srgb, var(--gesicom-navy) 24%, transparent);
-  --color-primary: var(--gesicom-gold);
-  --color-primary-active: color-mix(in srgb, var(--gesicom-gold) 82%, var(--gesicom-navy));
-  --color-primary-fg: var(--gesicom-navy);
-  --color-primary-text: var(--gesicom-gold);
-  --vit-accent: var(--gesicom-navy);
-  --vit-accent-hover: color-mix(in srgb, var(--gesicom-navy) 84%, var(--gesicom-gold));
-  --vit-accent-soft: color-mix(in srgb, var(--gesicom-gold) 16%, transparent);
-  --vit-accent-fg: var(--gesicom-gold);
+  --np-panel: var(--color-surface);
+  --np-panel-raised: var(--color-surface-2);
+  --np-soft-border: var(--color-border);
+  --np-brand-shadow: 0 18px 45px rgb(8 17 31 / 20%);
+  --vit-accent: var(--color-primary);
+  --vit-accent-hover: var(--color-primary-hover);
+  --vit-accent-soft: var(--bg-primary-soft);
+  --vit-accent-fg: var(--color-primary-text);
   --vit-bg: var(--np-paper);
   --vit-card-bg: var(--np-panel);
   --vit-card-bg-transparent: color-mix(in srgb, var(--np-panel) 0%, transparent);
   --vit-card-hover-bg: var(--np-panel-raised);
   --vit-border: var(--np-soft-border);
-  --vit-border-hover: color-mix(in srgb, var(--gesicom-gold) 45%, var(--np-soft-border));
+  --vit-border-hover: var(--color-border-strong);
   --vit-ok: var(--color-success);
   --vit-text: var(--color-fg);
   --vit-muted: var(--color-fg-muted);
   --vit-muted-2: var(--color-fg-subtle);
   --vit-surface: var(--np-panel);
-}
-
-:root[data-theme='light'] .courier-container,
-:root[data-theme='light'] .np-modal-container,
-:root[data-theme='light'] .np-picker-theme {
-  --np-paper: var(--gesicom-ivory);
-  --np-panel: #ffffff;
-  --np-panel-raised: #fbfbfa;
-  --np-soft-border: color-mix(in srgb, var(--gesicom-navy) 12%, transparent);
-  --color-primary: var(--gesicom-navy);
-  --color-primary-active: color-mix(in srgb, var(--gesicom-navy) 86%, var(--gesicom-gold));
-  --color-primary-fg: var(--gesicom-ivory);
-  --color-primary-text: var(--gesicom-navy);
-  --vit-text: var(--gesicom-navy);
-  --vit-muted: var(--gesicom-slate);
-  --vit-muted-2: color-mix(in srgb, var(--gesicom-slate) 78%, white);
 }
 
 .courier-container {
@@ -153,16 +134,16 @@
   gap: 0.65rem;
   min-height: 50px;
   padding: 0.8rem 1.4rem;
-  border: 1px solid #066a3b;
+  border: 1px solid var(--color-primary);
   border-radius: 12px;
-  background: linear-gradient(135deg, #078449, #066a3b);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
   font-size: 0.95rem;
   font-weight: 750;
   line-height: 1.25;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgb(6 106 59 / 22%), inset 0 1px 0 rgb(255 255 255 / 15%);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 22%, transparent), inset 0 1px 0 rgb(255 255 255 / 15%);
   transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
@@ -170,8 +151,8 @@
 
 @media (hover: hover) {
   .courier-flow-action:hover {
-    background: linear-gradient(135deg, #08864a, #087d45);
-    color: #fff;
+    background: var(--color-primary-hover);
+    color: var(--color-primary-fg);
     box-shadow: 0 7px 18px rgb(6 106 59 / 30%), inset 0 1px 0 rgb(255 255 255 / 18%);
     transform: translateY(-2px);
   }
@@ -184,7 +165,7 @@
 
 .courier-flow-action:active {
   transform: translateY(0);
-  box-shadow: 0 2px 5px rgb(6 106 59 / 22%);
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -578,7 +559,7 @@ button.order-alert-chip:focus-visible {
   border-radius: 0.45rem;
   border: 1px solid color-mix(in srgb, #25d366 35%, transparent);
   background: color-mix(in srgb, #25d366 14%, transparent);
-  color: #16a34a;
+  color: var(--color-success);
   text-decoration: none;
   cursor: pointer;
   padding: 0;
@@ -727,7 +708,7 @@ button.order-alert-chip:focus-visible {
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(135deg, rgba(255, 193, 7, 0.14) 0 18%, transparent 18% 100%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 14%, transparent) 0 18%, transparent 18% 100%),
     linear-gradient(90deg, var(--gesicom-navy), color-mix(in srgb, var(--gesicom-navy) 86%, #123a76));
   border-bottom: 3px solid var(--gesicom-gold);
   padding: 1rem 1.25rem;
@@ -742,7 +723,7 @@ button.order-alert-chip:focus-visible {
   position: absolute;
   inset: 0;
   background:
-    repeating-linear-gradient(135deg, transparent 0 18px, rgba(247, 247, 245, 0.07) 19px 20px, transparent 21px 42px);
+    repeating-linear-gradient(135deg, transparent 0 18px, color-mix(in srgb, var(--color-fg) 7%, transparent) 19px 20px, transparent 21px 42px);
   pointer-events: none;
 }
 
@@ -785,8 +766,8 @@ button.order-alert-chip:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  border: 1px solid rgba(247, 247, 245, 0.24);
-  background: rgba(247, 247, 245, 0.12);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 24%, transparent);
+  background: color-mix(in srgb, var(--color-fg) 12%, transparent);
   color: var(--gesicom-ivory);
   border-radius: 0.5rem;
   padding: 0.55rem 0.8rem;
@@ -798,9 +779,9 @@ button.order-alert-chip:focus-visible {
 
 .np-close-action:hover,
 .np-close-action:focus-visible {
-  background: var(--gesicom-gold);
+  background: var(--color-primary);
   border-color: var(--gesicom-gold);
-  color: var(--gesicom-navy);
+  color: var(--color-primary-fg);
   outline: none;
 }
 
@@ -838,13 +819,13 @@ button.order-alert-chip:focus-visible {
 }
 
 .np-progress-chip.is-ready {
-  color: var(--gesicom-navy);
+  color: var(--color-fg);
   border-color: color-mix(in srgb, var(--gesicom-gold) 48%, transparent);
   background: color-mix(in srgb, var(--gesicom-gold) 18%, var(--np-panel));
 }
 
 .np-progress-chip.is-ready > span {
-  background: var(--gesicom-gold);
+  background: var(--color-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--gesicom-gold) 18%, transparent);
 }
 
@@ -1519,7 +1500,7 @@ button.order-alert-chip:focus-visible {
 
 .np-picker-theme.lb-modal-overlay {
   background:
-    linear-gradient(135deg, rgba(13, 27, 61, 0.92), rgba(13, 27, 61, 0.76)) !important;
+    linear-gradient(135deg, color-mix(in srgb, var(--color-surface) 92%, transparent), color-mix(in srgb, var(--color-surface) 76%, transparent)) !important;
 }
 
 .np-picker-theme .lb-modal-panel {
@@ -1534,7 +1515,7 @@ button.order-alert-chip:focus-visible {
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(135deg, rgba(255, 193, 7, 0.16) 0 20%, transparent 20% 100%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 16%, transparent) 0 20%, transparent 20% 100%),
     var(--gesicom-navy) !important;
   border-bottom: 3px solid var(--gesicom-gold) !important;
 }
@@ -1543,7 +1524,7 @@ button.order-alert-chip:focus-visible {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(135deg, transparent 0 20px, rgba(247, 247, 245, 0.06) 21px 22px, transparent 23px 44px);
+  background: repeating-linear-gradient(135deg, transparent 0 20px, color-mix(in srgb, var(--color-fg) 6%, transparent) 21px 22px, transparent 23px 44px);
   pointer-events: none;
 }
 
@@ -1560,14 +1541,14 @@ button.order-alert-chip:focus-visible {
 
 .np-picker-theme .lb-modal-close {
   color: var(--gesicom-ivory) !important;
-  background: rgba(247, 247, 245, 0.14) !important;
-  border: 1px solid rgba(247, 247, 245, 0.22) !important;
+  background: color-mix(in srgb, var(--color-fg) 14%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent) !important;
 }
 
 .np-picker-theme .lb-modal-close:hover,
 .np-picker-theme .lb-modal-close:focus-visible {
-  background: var(--gesicom-gold) !important;
-  color: var(--gesicom-navy) !important;
+  background: var(--color-primary) !important;
+  color: var(--color-primary-fg) !important;
   outline: none;
 }
 
@@ -1597,7 +1578,7 @@ button.order-alert-chip:focus-visible {
 .np-picker-theme .lb-segmented button.active,
 .np-picker-theme .lb-chip.active {
   background: color-mix(in srgb, var(--gesicom-gold) 18%, transparent) !important;
-  color: var(--gesicom-navy) !important;
+  color: var(--color-fg) !important;
 }
 
 .np-picker-theme .lb-grid {
@@ -1623,9 +1604,9 @@ button.order-alert-chip:focus-visible {
 }
 
 .np-picker-theme .lb-card-wrap.selected .lb-card-check {
-  background: var(--gesicom-gold);
+  background: var(--color-primary);
   border-color: var(--gesicom-gold);
-  color: var(--gesicom-navy);
+  color: var(--color-primary-fg);
 }
 
 .np-picker-theme .lb-card-media {
@@ -1633,17 +1614,17 @@ button.order-alert-chip:focus-visible {
 }
 
 .np-picker-theme .lb-card-badge.producto {
-  background: rgba(13, 27, 61, 0.86);
-  color: var(--gesicom-ivory);
+  background: var(--color-surface);
+  color: var(--color-fg);
 }
 
 .np-picker-theme .lb-card-badge.destacado {
-  background: rgba(255, 193, 7, 0.9);
-  color: var(--gesicom-navy);
+  background: color-mix(in srgb, var(--color-accent) 90%, transparent);
+  color: var(--color-fg);
 }
 
 .np-picker-theme .lb-card-price {
-  color: var(--gesicom-navy);
+  color: var(--color-fg);
 }
 
 :root:not([data-theme='light']) .np-picker-theme .lb-card-price {
@@ -1731,7 +1712,7 @@ button.order-alert-chip:focus-visible {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary) 14%, transparent);
   vertical-align: middle;
 }
@@ -2069,8 +2050,8 @@ button.order-alert-chip:focus-visible {
   justify-content: center;
   gap: 0.45rem;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--gesicom-gold) 95%, #fff), var(--gesicom-gold));
-  color: var(--gesicom-navy);
+    linear-gradient(135deg, color-mix(in srgb, var(--gesicom-gold) 95%, var(--color-brand-cloud)), var(--gesicom-gold));
+  color: var(--color-fg);
   border: 1px solid color-mix(in srgb, var(--gesicom-gold) 72%, transparent);
   padding: 0.7rem 1rem;
   border-radius: 0.6rem;
@@ -2184,7 +2165,7 @@ button.order-alert-chip:focus-visible {
 
 .text-emerald-600 { color: var(--color-success); }
 .text-red-600 { color: var(--color-danger); }
-.text-purple-600 { color: var(--color-primary); }
+.text-purple-600 { color: var(--color-primary-text); }
 .text-foreground { color: var(--color-fg); }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2581,6 +2562,20 @@ button.order-alert-chip:focus-visible {
   font-size: 0.82rem;
   font-weight: 850;
   font-variant-numeric: tabular-nums;
+}
+
+.pt-cycle-summary .pt-resumen-item {
+  min-width: 0;
+  white-space: normal;
+}
+
+.pt-cycle-summary .pt-resumen-item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pt-cycle-summary .pt-resumen-item strong {
+  flex-shrink: 0;
 }
 
 .pt-resumen-item--warning {
@@ -3359,8 +3354,8 @@ button.order-alert-chip:focus-visible {
 .pt-life-cell--warning strong { color: var(--color-warning); }
 .pt-life-cell--info strong { color: var(--color-info); }
 .pt-life-cell--danger strong { color: var(--color-danger); }
-.pt-life-cell--violet strong { color: #a78bfa; }
-[data-theme="light"] .pt-life-cell--violet strong { color: #7c3aed; }
+.pt-life-cell--violet strong { color: var(--color-accent-text); }
+[data-theme="light"] .pt-life-cell--violet strong { color: var(--color-primary-text); }
 
 .pt-status-chip--legend { cursor: default; }
 .pt-status-chip__dot {
@@ -3849,6 +3844,8 @@ button.order-alert-chip:focus-visible {
 .pt-col-date { width: 104px; }
 .pt-col-client { width: 150px; }
 .pt-col-phone { width: 140px; }
+.pt-col-product { width: 240px; }
+.pt-col-metodo-pago { width: 176px; }
 .pt-col-total { width: 116px; }
 .pt-col-state { width: 224px; }
 .pt-col-followup { width: 240px; }
@@ -4093,7 +4090,7 @@ button.order-alert-chip:focus-visible {
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(15, 23, 42, 0.62);
+  background: color-mix(in srgb, var(--color-surface) 62%, transparent);
   backdrop-filter: blur(5px);
 }
 
@@ -4200,7 +4197,7 @@ button.order-alert-chip:focus-visible {
 .pt-payment-modal__primary {
   border: 1px solid color-mix(in srgb, var(--color-danger) 55%, transparent);
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-danger-fg);
 }
 
 .pt-payment-modal__secondary {
@@ -4797,7 +4794,7 @@ td.pt-empty .pt-spinner {
 
   /* Pagination */
   .pt-pag-btn { background: var(--color-surface-2); border-color: var(--color-border); color: var(--color-fg-muted); }
-  .pt-pag-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+  .pt-pag-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary-text); }
   .pt-pag-btn.active { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-primary-fg); }
   .pt-pag-ellipsis { color: var(--color-fg-subtle); }
   .pt-pag-info { color: var(--color-fg-subtle); }

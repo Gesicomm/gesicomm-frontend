@@ -50,7 +50,7 @@ export default function CategoriasConfig({ categorias, onClose, onCambio }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex max-h-[85vh] w-full max-w-md flex-col rounded-xl border border-border bg-surface shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
           <h3 className="m-0 text-base font-semibold text-fg">Categorías financieras</h3>
@@ -66,7 +66,7 @@ export default function CategoriasConfig({ categorias, onClose, onCambio }) {
           <select value={grupo} onChange={e => setGrupo(e.target.value)} className="h-9 rounded-md border border-border bg-surface-2 px-2 text-sm text-fg">
             {GRUPOS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
           </select>
-          <button type="submit" disabled={guardando} className="flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-sm font-semibold text-white disabled:opacity-60">
+          <button type="submit" disabled={guardando} className="flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-sm font-semibold text-primary-fg disabled:opacity-60">
             <Plus size={14} /> Agregar
           </button>
           {error && <p className="w-full text-xs text-danger">{error}</p>}

@@ -43,7 +43,7 @@ function ModalCategoria({ categoria, onClose, onSave, categorias }) {
             <input value={nombre} onChange={e => setNombre(e.target.value)} autoFocus required />
           </div>
           <div className="form-group">
-            <label>Categoría padre <span style={{ color: '#64748b', fontWeight: 400 }}>(opcional)</span></label>
+            <label>Categoría padre <span style={{ color: "var(--color-fg-muted)", fontWeight: 400 }}>(opcional)</span></label>
             <select value={parentId} onChange={e => setParentId(e.target.value)}>
               <option value="">Sin padre (categoría raíz)</option>
               {categorias.filter(c => c.id !== categoria?.id).map(c =>
@@ -151,7 +151,7 @@ export default function CategoriaList() {
     <div className="prod-page">
       <div className="prod-header">
         <div className="prod-header-left">
-          <div className="prod-icon-wrap" style={{ background: 'linear-gradient(135deg,#f59e0b,#f97316)' }}>
+          <div className="prod-icon-wrap" style={{ background: "linear-gradient(135deg,var(--color-warning),#f97316)" }}>
             <Tag size={20} />
           </div>
           <div>
@@ -226,7 +226,7 @@ export default function CategoriaList() {
                     {(cat.subcategorias || []).map(sub => (
                       <tr key={sub.id} className={!sub.activo ? 'row-inactive' : ''}>
                         <td>
-                          <span style={{ paddingLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94a3b8' }}>
+                          <span style={{ paddingLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: "var(--color-fg-muted)" }}>
                             <ChevronRight size={12} />{sub.nombre}
                           </span>
                         </td>

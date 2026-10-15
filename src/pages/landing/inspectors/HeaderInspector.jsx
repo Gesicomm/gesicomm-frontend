@@ -109,7 +109,7 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
               <button
                 type="button"
                 onClick={() => updateConfig({ logo_imagen: null })}
-                className="absolute top-1 right-1 rounded-md bg-black/60 p-1.5 text-fg opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute top-1 right-1 rounded-md bg-brand-ink/60 p-1.5 text-fg opacity-0 transition-opacity group-hover:opacity-100"
               >
                 <Trash2 size={14} />
               </button>
@@ -266,7 +266,7 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
               <button
                 type="button"
                 onClick={() => removeLink(idx)}
-                className="text-red-500 hover:text-red-600 p-1 self-start transition-colors bg-red-50 hover:bg-red-100 rounded ml-1"
+                className="text-danger hover:text-danger p-1 self-start transition-colors bg-danger/10 hover:bg-danger/10 rounded ml-1"
                 title="Eliminar link"
               >
                 <Trash2 size={14} />

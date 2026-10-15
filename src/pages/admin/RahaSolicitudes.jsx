@@ -341,7 +341,7 @@ export default function RahaSolicitudes() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.75)',
+            background: "color-mix(in srgb, var(--color-surface) 75%, transparent)",
             display: 'grid',
             placeItems: 'center',
             zIndex: 1000,
@@ -350,8 +350,8 @@ export default function RahaSolicitudes() {
         >
           <div
             style={{
-              background: '#191919',
-              border: '1px solid #353535',
+              background: "var(--color-canvas)",
+              border: "1px solid var(--color-border)",
               borderRadius: 12,
               padding: 24,
               width: 'min(640px, 100%)',
@@ -366,7 +366,7 @@ export default function RahaSolicitudes() {
                 <h2 style={{ margin: 0, fontSize: 18 }}>Cuentas del Portal RAHA</h2>
                 <p className="raha-muted" style={{ margin: '4px 0 0', fontSize: 13 }}>
                   Activá cuentas para que el equipo de RAHA ingrese en{' '}
-                  <a href="/raha/login" target="_blank" rel="noreferrer" style={{ color: '#4dbf8d' }}>
+                  <a href="/raha/login" target="_blank" rel="noreferrer" style={{ color: "var(--color-success)" }}>
                     /raha/login
                   </a>{' '}
                   a evaluar solicitudes.
@@ -467,8 +467,8 @@ export default function RahaSolicitudes() {
                         <span
                           className="raha-badge"
                           style={{
-                            background: u.activo ? '#1d503a' : '#642a32',
-                            color: u.activo ? '#ccffe2' : '#ffdde1',
+                            background: u.activo ? "color-mix(in srgb, var(--color-success) 12%, transparent)" : "color-mix(in srgb, var(--color-danger) 12%, transparent)",
+                            color: u.activo ? "var(--color-success)" : "var(--color-danger)",
                           }}
                         >
                           {u.activo ? 'Activa' : 'Desactivada'}

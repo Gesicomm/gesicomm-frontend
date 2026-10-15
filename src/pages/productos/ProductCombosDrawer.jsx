@@ -89,7 +89,7 @@ export default function ProductCombosDrawer({ producto, onClose }) {
   return (
     <>
       <div 
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 900 }} 
+        style={{ position: 'fixed', inset: 0, background: "var(--color-overlay)", zIndex: 900 }}
         onClick={onClose}
       />
       
@@ -156,7 +156,7 @@ export default function ProductCombosDrawer({ producto, onClose }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                       <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{combo.nombre}</h3>
                       <span className={`badge ${combo.activo ? 'badge-active' : 'badge-archived'}`} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: combo.activo ? '#10b981' : '#ef4444' }} />
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: combo.activo ? "var(--color-success)" : "var(--color-danger)" }} />
                         {combo.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </div>
@@ -180,11 +180,11 @@ export default function ProductCombosDrawer({ producto, onClose }) {
                         <span>{final.toLocaleString()} Gs</span>
                       </div>
                       {ahorro > 0 ? (
-                        <div style={{ color: '#10b981', fontSize: '0.85rem', marginTop: '0.5rem', fontWeight: '600', textAlign: 'right' }}>
+                        <div style={{ color: "var(--color-success)", fontSize: '0.85rem', marginTop: '0.5rem', fontWeight: '600', textAlign: 'right' }}>
                           ✓ Ahorras {ahorro.toLocaleString()} Gs ({pct}%)
                         </div>
                       ) : ahorro < 0 ? (
-                        <div style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.5rem', fontWeight: '600', textAlign: 'right' }}>
+                        <div style={{ color: "var(--color-danger)", fontSize: '0.85rem', marginTop: '0.5rem', fontWeight: '600', textAlign: 'right' }}>
                           ⚠️ El combo cuesta {Math.abs(ahorro).toLocaleString()} Gs más
                         </div>
                       ) : null}
@@ -197,7 +197,7 @@ export default function ProductCombosDrawer({ producto, onClose }) {
                       <button type="button" className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => handleDuplicar(combo)}>
                         <Copy size={15} /> Duplicar
                       </button>
-                      <button type="button" className="btn-secondary" style={{ flex: 1, justifyContent: 'center', color: combo.activo ? '#ef4444' : '#10b981' }} onClick={() => handleToggleActivo(combo)}>
+                      <button type="button" className="btn-secondary" style={{ flex: 1, justifyContent: 'center', color: combo.activo ? "var(--color-danger)" : "var(--color-success)" }} onClick={() => handleToggleActivo(combo)}>
                         {combo.activo ? <PowerOff size={15} /> : <Power size={15} />}
                         {combo.activo ? ' Desactivar' : ' Activar'}
                       </button>

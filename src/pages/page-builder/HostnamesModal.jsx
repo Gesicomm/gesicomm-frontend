@@ -84,7 +84,7 @@ export default function HostnamesModal({ target, onCerrar }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,.6)' }}
+      style={{ background: "var(--color-overlay)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}
     >
       <div
@@ -119,7 +119,7 @@ export default function HostnamesModal({ target, onCerrar }) {
                 <li key={h.id} className="rounded-lg border border-border bg-canvas p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     {h.es_principal && (
-                      <Star size={13} style={{ color: 'var(--color-accent)' }} aria-label="Dirección principal" />
+                      <Star size={13} style={{ color: "var(--color-accent-text)" }} aria-label="Dirección principal" />
                     )}
                     <a
                       href={h.url} target="_blank" rel="noreferrer"

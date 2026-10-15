@@ -117,7 +117,7 @@ export default function MarcaList() {
     <div className="prod-page">
       <div className="prod-header">
         <div className="prod-header-left">
-          <div className="prod-icon-wrap" style={{ background: 'linear-gradient(135deg,#06b6d4,#3b82f6)' }}>
+          <div className="prod-icon-wrap" style={{ background: "linear-gradient(135deg,#06b6d4,var(--color-primary))" }}>
             <Briefcase size={20} />
           </div>
           <div>
@@ -178,7 +178,7 @@ export default function MarcaList() {
                   </tr>
                 ))}
                 {!cargando && marcas.length === 0 && (
-                  <tr><td colSpan={4} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
+                  <tr><td colSpan={4} style={{ textAlign: 'center', color: "var(--color-fg-muted)", padding: '2rem' }}>
                     No se encontraron marcas
                   </td></tr>
                 )}

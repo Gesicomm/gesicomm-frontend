@@ -28,7 +28,7 @@ const IconPicker = ({ value, onChange }) => {
                 <button
                   key={name}
                   type="button"
-                  className={`p-1.5 flex items-center justify-center rounded hover:bg-[var(--vit-bg)] transition-colors ${value === name ? 'text-[var(--vit-accent)] bg-[var(--vit-bg)] border border-[var(--vit-border)]' : 'text-[var(--vit-text)]'}`}
+                  className={`p-1.5 flex items-center justify-center rounded hover:bg-[var(--vit-bg)] transition-colors ${value === name ? 'text-primary-text bg-[var(--vit-bg)] border border-[var(--vit-border)]' : 'text-[var(--vit-text)]'}`}
                   onClick={() => { onChange(name); setOpen(false); }}
                   title={name}
                 >
@@ -90,7 +90,7 @@ export default function BeneficiosInspector({ seccion, onUpdate }) {
                 <div className="flex items-center gap-1">
                   <button type="button" onClick={() => moverItem(idx, -1)} disabled={idx === 0} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronUp size={14}/></button>
                   <button type="button" onClick={() => moverItem(idx, 1)} disabled={idx === beneficios.length - 1} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronDown size={14}/></button>
-                  <button type="button" onClick={() => quitarItem(idx)} className="p-1 hover:bg-red-50 text-red-500 rounded ml-2"><Trash2 size={14}/></button>
+                  <button type="button" onClick={() => quitarItem(idx)} className="p-1 hover:bg-danger/10 text-danger rounded ml-2"><Trash2 size={14}/></button>
                 </div>
               </div>
               

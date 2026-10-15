@@ -301,7 +301,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       <button
         type="button"
         className="btn-secondary"
-        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", background: "var(--color-success)", borderColor: "var(--color-success)", color: "#fff", fontWeight: 700 }}
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", background: "var(--color-success)", borderColor: "var(--color-success)", color: "var(--color-success-fg)", fontWeight: 700 }}
         onClick={() => onConfirmarPedido(envio)}
         disabled={!!faseEnviando}
       >
@@ -314,7 +314,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
   ) : null;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "var(--color-overlay)" }} onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={`Seguimiento por WhatsApp del pedido ${numeroPedidoVisible(envio)}`} style={{ width: "460px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.75rem", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <div style={{ minWidth: 0 }}>

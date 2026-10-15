@@ -99,11 +99,11 @@ export default function DepositoSelector({ onSelect, depositoSeleccionadoId }) {
               <div className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border ${
                 depositoSeleccionadoId === dep.id ? 'border-primary bg-primary' : 'border-fg-muted'
               }`}>
-                {depositoSeleccionadoId === dep.id && <Check size={10} className="text-white" />}
+                {depositoSeleccionadoId === dep.id && <Check size={10} className="text-fg" />}
               </div>
               <div className="flex-1">
                 <h4 className={`m-0 text-[13px] font-semibold ${
-                  depositoSeleccionadoId === dep.id ? 'text-primary' : 'text-fg'
+                  depositoSeleccionadoId === dep.id ? 'text-primary-text' : 'text-fg'
                 }`}>
                   {dep.nombre}
                 </h4>

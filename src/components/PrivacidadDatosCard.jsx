@@ -62,7 +62,7 @@ const PrivacidadDatosCard = () => {
         return (
             <div className="card" id="privacidad-y-datos">
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
-                    <CheckCircle size={20} color="#10b981" style={{ flexShrink: 0, marginTop: '0.15rem' }} />
+                    <CheckCircle size={20} color="var(--color-success)" style={{ flexShrink: 0, marginTop: '0.15rem' }} />
                     <div>
                         <h3 style={{ margin: 0, fontSize: '1rem' }}>Solicitud de eliminación registrada</h3>
                         <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--color-fg-muted)', lineHeight: 1.6 }}>
@@ -76,7 +76,7 @@ const PrivacidadDatosCard = () => {
                             href={`/data-deletion/estado/${resultado.solicitud.codigo}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ display: 'inline-block', marginTop: '0.9rem', fontSize: '0.85rem', color: '#7d9bd6' }}
+                            style={{ display: 'inline-block', marginTop: '0.9rem', fontSize: '0.85rem', color: "var(--color-primary-text)" }}
                         >
                             Ver el estado de mi solicitud →
                         </a>
@@ -91,7 +91,7 @@ const PrivacidadDatosCard = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
                 <div style={{
                     width: '36px', height: '36px', borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+                    background: "linear-gradient(135deg, var(--color-danger), var(--color-danger))",
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
                     <ShieldOff size={18} color="var(--color-fg)" />
@@ -108,7 +108,7 @@ const PrivacidadDatosCard = () => {
                 Podés solicitar la eliminación de tus datos personales en cualquier momento y sin costo.
                 Procesamos cada pedido en un plazo máximo de 30 días. Antes de continuar, revisá qué se
                 elimina y qué se conserva por obligación legal en{' '}
-                <a href="/data-deletion" target="_blank" rel="noopener noreferrer" style={{ color: '#7d9bd6' }}>
+                <a href="/data-deletion" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-primary-text)" }}>
                     la página de Eliminación de Datos
                 </a>.
             </p>
@@ -211,10 +211,10 @@ const PrivacidadDatosCard = () => {
 
                     <div style={{
                         display: 'flex', gap: '0.7rem', alignItems: 'flex-start',
-                        background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)',
+                        background: "color-mix(in srgb, var(--color-warning) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--color-warning) 30%, transparent)",
                         borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1.25rem'
                     }}>
-                        <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                        <AlertTriangle size={16} color="var(--color-warning)" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
                         <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-fg-muted)', lineHeight: 1.6 }}>
                             La eliminación es permanente e irreversible. Exportá lo que necesites antes de
                             confirmar: una vez procesada, no podemos recuperar la información.
@@ -236,7 +236,7 @@ const PrivacidadDatosCard = () => {
                             type="submit"
                             disabled={enviando || !password}
                             style={{
-                                background: '#ef4444', border: 'none', color: 'var(--color-fg)',
+                                background: "var(--color-danger)", border: 'none', color: "var(--color-danger-fg)",
                                 padding: '0.65rem 1.2rem', borderRadius: '8px',
                                 cursor: enviando || !password ? 'not-allowed' : 'pointer',
                                 opacity: enviando || !password ? 0.55 : 1,

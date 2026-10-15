@@ -665,7 +665,7 @@ export default function CostosGastos() {
           <button
             type="button"
             onClick={abrirNuevo}
-            className="flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+            className="flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
           >
             <Plus size={16} /> Registrar movimiento
           </button>
@@ -718,7 +718,7 @@ export default function CostosGastos() {
                 key={tab.id}
                 type="button"
                 onClick={() => cambiarTabMovimientos(tab.id)}
-                className={`h-8 rounded-md px-3 text-xs font-semibold transition-colors ${tabMovimientos === tab.id ? 'bg-primary text-white shadow-sm' : 'text-fg-muted hover:bg-surface-2 hover:text-fg'}`}
+                className={`h-8 rounded-md px-3 text-xs font-semibold transition-colors ${tabMovimientos === tab.id ? "bg-primary text-primary-fg shadow-sm" : 'text-fg-muted hover:bg-surface-2 hover:text-fg'}`}
               >
                 {tab.label}
               </button>
@@ -1062,7 +1062,7 @@ function DetalleDrawer({ registro: r, onClose, onEditar, onDuplicar, onMarcarPag
         <button type="button" onClick={onDuplicar} className="flex-1 rounded-md border border-border px-3 py-2 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg">
           Duplicar
         </button>
-        <button type="button" onClick={onEditar} className="flex-1 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-hover">
+        <button type="button" onClick={onEditar} className="flex-1 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
           Editar
         </button>
         <button type="button" onClick={onEliminar} className="rounded-md border border-danger/30 px-3 py-2 text-sm font-medium text-danger hover:bg-danger/10">
@@ -1089,7 +1089,7 @@ function EmptyState({ onRegistrar }) {
           <span key={e} className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-fg-subtle">{e}</span>
         ))}
       </div>
-      <button type="button" onClick={onRegistrar} className="mt-6 flex items-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover">
+      <button type="button" onClick={onRegistrar} className="mt-6 flex items-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
         <Plus size={16} /> Registrar primer movimiento
       </button>
     </div>

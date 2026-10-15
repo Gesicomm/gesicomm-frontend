@@ -88,7 +88,7 @@ export default function PublicNavbar() {
             </Link>
             <Link
               to="/registro"
-              className="hidden h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover sm:inline-flex"
+              className="hidden h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover sm:inline-flex"
             >
               Registrarse
             </Link>
@@ -128,7 +128,7 @@ export default function PublicNavbar() {
 
             <Link
               to="/registro"
-              className="mt-5 flex h-11 items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+              className="mt-5 flex h-11 items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
             >
               Registrarse
             </Link>

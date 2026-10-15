@@ -234,7 +234,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
   if (!open || !deposito) return null;
 
   return (
-    <div className="fixed inset-0 z-[1060] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1060] flex items-center justify-center bg-brand-ink/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 border-b border-border bg-surface px-6 py-4">
           <div className="min-w-0">
@@ -279,7 +279,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
             <div className="space-y-2" aria-busy={cargandoProductos}>
               {cargandoProductos && productos.length === 0 ? (
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-5 text-sm text-fg-muted">
-                  <Loader size={16} className="animate-spin text-primary" />
+                  <Loader size={16} className="animate-spin text-primary-text" />
                   Cargando productos...
                 </div>
               ) : productos.length === 0 ? (
@@ -302,12 +302,12 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
                       {Number(p.variantes_count) > 0 && <span>{p.variantes_count} variantes</span>}
                     </span>
                     {formatGs(precioProducto(p)) && (
-                      <span className="mt-2 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[12px] font-semibold text-primary">
+                      <span className="mt-2 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[12px] font-semibold text-primary-text">
                         {formatGs(precioProducto(p))}
                       </span>
                     )}
                   </span>
-                  {producto?.id === p.id && <Check className="flex-shrink-0 text-primary" size={17} />}
+                  {producto?.id === p.id && <Check className="flex-shrink-0 text-primary-text" size={17} />}
                 </button>
               ))}
             </div>
@@ -354,7 +354,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
                         <p className="m-0 mt-1 text-[12px] text-fg-muted">{categoriaNombre(producto, categorias)}</p>
                       )}
                       {formatGs(precioProducto(producto)) && (
-                        <p className="m-0 mt-2 text-sm font-semibold text-primary">{formatGs(precioProducto(producto))}</p>
+                        <p className="m-0 mt-2 text-sm font-semibold text-primary-text">{formatGs(precioProducto(producto))}</p>
                       )}
                     </div>
                   </div>
@@ -452,7 +452,7 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
             <button type="button" onClick={onClose} disabled={creando} className="rounded-md border border-border px-4 py-2 text-sm font-medium text-fg hover:bg-surface-2 disabled:opacity-50">
               Cancelar
             </button>
-            <button type="button" onClick={confirmar} disabled={creando || items.length === 0} className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50">
+            <button type="button" onClick={confirmar} disabled={creando || items.length === 0} className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50">
               {creando ? <Loader size={16} className="animate-spin" /> : <PackagePlus size={16} />}
               Crear pedido
             </button>

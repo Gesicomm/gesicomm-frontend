@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 const VARIANTES = {
   primario:
-    'bg-primary text-white hover:bg-primary-hover active:bg-primary-active shadow-sm',
+    'bg-primary text-primary-fg hover:bg-primary-hover active:bg-primary-active shadow-sm',
   secundario:
     'border border-border bg-surface text-fg hover:border-border-strong hover:bg-surface-2',
   fantasma:

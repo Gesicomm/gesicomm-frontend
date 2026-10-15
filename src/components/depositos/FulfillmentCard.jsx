@@ -174,7 +174,7 @@ export default function FulfillmentCard({ onCambio }) {
         } ${destacado ? 'border-dashed' : ''}`}
       >
         <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border ${elegido ? 'border-primary bg-primary' : 'border-fg-muted'}`}>
-          {elegido && <Check size={10} className="text-white" />}
+          {elegido && <Check size={10} className="text-fg" />}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-fg">{deposito.nombre}</span>
@@ -210,10 +210,10 @@ export default function FulfillmentCard({ onCambio }) {
       >
         <div className="mb-2 flex items-center gap-2">
           <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${activa ? 'border-primary bg-primary' : 'border-fg-muted'}`}>
-            {activa && <Check size={10} className="text-white" />}
+            {activa && <Check size={10} className="text-fg" />}
           </span>
-          <Icono size={16} className={activa ? 'text-primary' : 'text-fg-muted'} />
-          <h4 className={`m-0 text-[15px] font-semibold ${activa ? 'text-primary' : 'text-fg'}`}>{titulo}</h4>
+          <Icono size={16} className={activa ? 'text-primary-text' : 'text-fg-muted'} />
+          <h4 className={`m-0 text-[15px] font-semibold ${activa ? 'text-primary-text' : 'text-fg'}`}>{titulo}</h4>
         </div>
         {bajada && <p className="m-0 pl-6 text-[13px] text-fg-muted">{bajada}</p>}
         {children && <div className="mt-2 pl-6 text-[13px] text-fg-muted">{children}</div>}
@@ -267,7 +267,7 @@ export default function FulfillmentCard({ onCambio }) {
         <button
           type="button"
           onClick={() => setVerCobertura(true)}
-          className="mt-3 flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-sm font-medium text-primary hover:underline"
+          className="mt-3 flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-sm font-medium text-primary-text hover:underline"
         >
           <Eye size={14} /> Ver cobertura y precios
         </button>
@@ -276,7 +276,7 @@ export default function FulfillmentCard({ onCambio }) {
       {modalidad === 'PROPIA' && !depositosLoading && !hayFiltrosDeposito && !hayDepositosPropios && (
         <p className="mt-3 rounded-md bg-surface-2 px-4 py-3 text-[13px] text-fg-muted">
           Todavía no tenés depósitos.{' '}
-          <Link to="/mi-tienda/depositos" className="font-medium text-primary hover:underline">
+          <Link to="/mi-tienda/depositos" className="font-medium text-primary-text hover:underline">
             Creá uno <ArrowRight size={12} className="inline" />
           </Link>
         </p>
@@ -386,14 +386,14 @@ export default function FulfillmentCard({ onCambio }) {
                   setFiltrosDeposito({ ciudad: '', departamento: '' });
                   setDepositosPage(1);
                 }}
-                className="border-none bg-transparent p-0 text-[12px] font-medium text-primary hover:underline"
+                className="border-none bg-transparent p-0 text-[12px] font-medium text-primary-text hover:underline"
               >
                 Limpiar filtros
               </button>
             ) : (
               <span />
             )}
-            <Link to="/mi-tienda/depositos" className="text-[12px] font-medium text-primary hover:underline">
+            <Link to="/mi-tienda/depositos" className="text-[12px] font-medium text-primary-text hover:underline">
               Gestionar depósitos <ArrowRight size={12} className="inline" />
             </Link>
           </div>
@@ -417,7 +417,7 @@ export default function FulfillmentCard({ onCambio }) {
           type="button"
           disabled={!hayCambios || guardando}
           onClick={guardar}
-          className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+          className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
         >
           Guardar
         </button>

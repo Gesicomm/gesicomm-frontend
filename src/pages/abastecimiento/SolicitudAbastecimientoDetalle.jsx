@@ -50,7 +50,7 @@ function TransferenciaDato({ label, value, highlight = false, onCopy }) {
     <div className="min-w-0">
       <p className="text-[11px] font-semibold text-fg-muted uppercase tracking-wider mb-1">{label}</p>
       <div className="flex items-center gap-2 min-w-0">
-        <p className={`m-0 text-sm font-medium truncate ${highlight ? 'text-primary' : 'text-fg'}`}>{value}</p>
+        <p className={`m-0 text-sm font-medium truncate ${highlight ? 'text-primary-text' : 'text-fg'}`}>{value}</p>
         {onCopy && (
           <button
             type="button"
@@ -158,7 +158,7 @@ export default function SolicitudAbastecimientoDetalle() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-50 overflow-hidden">
-      <div className="px-6 py-5 bg-surface border-b border-surface-border">
+      <div className="px-6 py-5 bg-surface border-b border-border">
         <button
           onClick={() => navigate(volverA)}
           className="flex items-center gap-2 text-sm font-medium text-fg-muted hover:text-fg mb-3"
@@ -178,16 +178,16 @@ export default function SolicitudAbastecimientoDetalle() {
       </div>
 
       <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto w-full space-y-6">
-        <div className="bg-surface border border-surface-border rounded-xl p-5">
+        <div className="bg-surface border border-border rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
-            {solicitud.tipo_logistica === 'GESICOMM' ? <Truck size={16} className="text-primary" /> : <Warehouse size={16} className="text-primary" />}
+            {solicitud.tipo_logistica === 'GESICOMM' ? <Truck size={16} className="text-primary-text" /> : <Warehouse size={16} className="text-primary-text" />}
             <p className="m-0 text-sm font-medium text-fg">
               {solicitud.tipo_logistica === 'GESICOMM'
                 ? `Destino: Centro Gesicomm${solicitud.centroGesicomm ? ` (${solicitud.centroGesicomm.nombre})` : ''}`
                 : `Destino: ${solicitud.depositoDestino?.nombre || 'Depósito propio'}`}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-4 pt-3 border-t border-surface-border">
+          <div className="grid grid-cols-3 gap-4 pt-3 border-t border-border">
             <div>
               <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">Producto</p>
               <p className="text-sm font-medium text-fg">Gs. {formatGs(solicitud.costo_producto)}</p>
@@ -198,13 +198,13 @@ export default function SolicitudAbastecimientoDetalle() {
             </div>
             <div>
               <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">Total</p>
-              <p className="text-sm font-bold text-primary">Gs. {formatGs(total)}</p>
+              <p className="text-sm font-bold text-primary-text">Gs. {formatGs(total)}</p>
             </div>
           </div>
         </div>
 
         {(solicitud.depositoDestino?.persona_contacto || solicitud.depositoDestino?.telefono_contacto || solicitud.depositoDestino?.direccion || (esAdmin && solicitud.Usuario?.correo_electronico)) && (
-          <div className="bg-surface border border-surface-border rounded-xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-surface border border-border rounded-xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {esAdmin && solicitud.Usuario && (
               <div>
                 <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">Comercio</p>
@@ -217,7 +217,7 @@ export default function SolicitudAbastecimientoDetalle() {
                 <p className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1">Contacto en {solicitud.depositoDestino?.nombre}</p>
                 {solicitud.depositoDestino?.persona_contacto && <p className="text-sm text-fg">{solicitud.depositoDestino.persona_contacto}</p>}
                 {solicitud.depositoDestino?.telefono_contacto && (
-                  <a href={`tel:${solicitud.depositoDestino.telefono_contacto.replace(/\D/g, '')}`} className="text-xs text-primary hover:underline block">{solicitud.depositoDestino.telefono_contacto}</a>
+                  <a href={`tel:${solicitud.depositoDestino.telefono_contacto.replace(/\D/g, '')}`} className="text-xs text-primary-text hover:underline block">{solicitud.depositoDestino.telefono_contacto}</a>
                 )}
                 {solicitud.depositoDestino?.direccion && <p className="text-xs text-fg-muted">{solicitud.depositoDestino.direccion}</p>}
               </div>
@@ -225,7 +225,7 @@ export default function SolicitudAbastecimientoDetalle() {
           </div>
         )}
 
-        <div className="bg-surface border border-surface-border rounded-xl p-5">
+        <div className="bg-surface border border-border rounded-xl p-5">
           <h2 className="text-sm font-semibold text-fg mb-3">Próximo paso</h2>
 
           {!esAdmin && ['pendiente_pago', 'pago_rechazado'].includes(solicitud.estado) && (
@@ -236,9 +236,9 @@ export default function SolicitudAbastecimientoDetalle() {
                   <p className="text-sm text-danger-text mb-2"><strong>Rechazado:</strong> {solicitud.rechazo_motivo}</p>
                 )}
                 <p className="text-sm text-fg mb-3">Transferí Gs. {formatGs(transferencia.monto || total)} y subí el comprobante.</p>
-                <div className="rounded-lg border border-surface-border bg-surface p-4 mb-3">
+                <div className="rounded-lg border border-border bg-surface p-4 mb-3">
                   <div className="flex items-center gap-2 mb-3">
-                    <Landmark size={16} className="text-primary" />
+                    <Landmark size={16} className="text-primary-text" />
                     <p className="m-0 text-sm font-semibold text-fg">Datos para la transferencia</p>
                   </div>
                   {tieneDatosBancarios ? (
@@ -257,7 +257,7 @@ export default function SolicitudAbastecimientoDetalle() {
                   ) : (
                     <p className="text-sm text-warning-text m-0">Gesicomm todavía no configuró los datos bancarios para abastecimiento.</p>
                   )}
-                  <div className="mt-4 pt-3 border-t border-surface-border">
+                  <div className="mt-4 pt-3 border-t border-border">
                     <TransferenciaDato
                       label="Descripción / referencia a enviar"
                       value={transferencia.descripcion || transferencia.referencia}
@@ -309,11 +309,11 @@ export default function SolicitudAbastecimientoDetalle() {
               <AlertTriangle size={20} className="text-warning-text mt-0.5 shrink-0" />
               <div className="flex-1">
                 {solicitud.comprobante_url && (
-                  <p className="mb-3"><a href={solicitud.comprobante_url} target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline flex items-center gap-1.5 w-fit"><FileText size={14} /> Ver comprobante</a></p>
+                  <p className="mb-3"><a href={solicitud.comprobante_url} target="_blank" rel="noopener noreferrer" className="text-primary-text font-medium hover:underline flex items-center gap-1.5 w-fit"><FileText size={14} /> Ver comprobante</a></p>
                 )}
                 <div className="flex items-center gap-2">
-                  <button onClick={handleValidar} disabled={procesando} className="px-4 py-2 bg-success text-white rounded-lg font-medium text-sm hover:bg-success/90 disabled:opacity-50">Validar pago</button>
-                  <button onClick={handleRechazar} disabled={procesando} className="px-4 py-2 bg-danger text-white rounded-lg font-medium text-sm hover:bg-danger/90 disabled:opacity-50">Rechazar</button>
+                  <button onClick={handleValidar} disabled={procesando} className="px-4 py-2 bg-success text-success-fg rounded-lg font-medium text-sm hover:bg-success/90 disabled:opacity-50">Validar pago</button>
+                  <button onClick={handleRechazar} disabled={procesando} className="px-4 py-2 bg-danger text-danger-fg rounded-lg font-medium text-sm hover:bg-danger/90 disabled:opacity-50">Rechazar</button>
                 </div>
               </div>
             </div>
@@ -350,9 +350,9 @@ export default function SolicitudAbastecimientoDetalle() {
                     placeholder="ID del Centro"
                     value={centroInput}
                     onChange={(e) => setCentroInput(e.target.value)}
-                    className="w-32 px-3 py-2 text-sm border border-surface-border rounded-lg bg-surface"
+                    className="w-32 px-3 py-2 text-sm border border-border rounded-lg bg-surface"
                   />
-                  <button onClick={handleMarcarDisponibleGesicomm} disabled={procesando} className="px-4 py-2 bg-success text-white rounded-lg font-medium text-sm hover:bg-success/90 disabled:opacity-50">
+                  <button onClick={handleMarcarDisponibleGesicomm} disabled={procesando} className="px-4 py-2 bg-success text-success-fg rounded-lg font-medium text-sm hover:bg-success/90 disabled:opacity-50">
                     {procesando ? 'Procesando...' : 'Marcar disponible'}
                   </button>
                 </div>
@@ -384,8 +384,8 @@ export default function SolicitudAbastecimientoDetalle() {
         </div>
 
         {solicitud.historial?.length > 0 && (
-          <div className="bg-surface border border-surface-border rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-surface-border bg-surface-2">
+          <div className="bg-surface border border-border rounded-xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-border bg-surface-2">
               <h2 className="text-sm font-semibold text-fg">Historial</h2>
             </div>
             <ul className="divide-y divide-surface-border">

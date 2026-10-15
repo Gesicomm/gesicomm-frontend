@@ -76,7 +76,7 @@ export default function TestimoniosInspector({ seccion, schema, onUpdate, onUplo
                 <div className="flex items-center gap-1">
                   <button type="button" onClick={() => moverItem(idx, -1)} disabled={idx === 0} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronUp size={14}/></button>
                   <button type="button" onClick={() => moverItem(idx, 1)} disabled={idx === items.length - 1} className="p-1 hover:bg-[var(--vit-bg)] rounded disabled:opacity-30"><ChevronDown size={14}/></button>
-                  <button type="button" onClick={() => quitarItem(idx)} className="p-1 hover:bg-red-50 text-red-500 rounded ml-2"><Trash2 size={14}/></button>
+                  <button type="button" onClick={() => quitarItem(idx)} className="p-1 hover:bg-danger/10 text-danger rounded ml-2"><Trash2 size={14}/></button>
                 </div>
               </div>
               
@@ -85,7 +85,7 @@ export default function TestimoniosInspector({ seccion, schema, onUpdate, onUplo
                   {t.foto ? (
                     <>
                       <img src={getMediaUrl(t.foto)} alt="" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center">
+                      <div className="absolute inset-0 bg-brand-ink/50 hidden group-hover:flex items-center justify-center">
                         <label className="cursor-pointer text-fg">
                           <Trash2 size={14} onClick={(e) => { e.preventDefault(); actualizarItem(idx, 'foto', null); }} />
                         </label>

@@ -185,7 +185,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex justify-end bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex justify-end bg-brand-ink/60 backdrop-blur-sm" onClick={onClose}>
       <div className="flex h-full w-full max-w-lg flex-col bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
           <h3 className="m-0 text-base font-semibold text-fg">
@@ -221,7 +221,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
               <button type="button" onClick={onGuardado} className="rounded-md border border-border px-4 py-2 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg">
                 Listo por ahora
               </button>
-              <button type="button" onClick={() => { setAvanzadoAbierto(true); setPaso('formulario'); }} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover">
+              <button type="button" onClick={() => { setAvanzadoAbierto(true); setPaso('formulario'); }} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
                 Agregar detalles
               </button>
             </div>
@@ -397,7 +397,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
               <button type="button" onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg">
                 Cancelar
               </button>
-              <button type="submit" disabled={guardando} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60">
+              <button type="submit" disabled={guardando} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-60">
                 {guardando ? 'Guardando…' : 'Guardar'}
               </button>
             </div>

@@ -170,7 +170,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
   return (
     <div
       onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
+      style={{ position: 'fixed', inset: 0, background: "var(--color-overlay)", display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
     >
       <div
         style={{ width: '100%', maxWidth: '680px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)', borderRadius: '10px', color: 'var(--color-fg)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
@@ -178,7 +178,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
           <h2 style={{ margin: 0, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Sparkles size={18} color="#3d5fa3" /> {esEdicion ? 'Editar campaña' : 'Nueva campaña interna'}
+            <Sparkles size={18} color="var(--color-primary-text)" /> {esEdicion ? 'Editar campaña' : 'Nueva campaña interna'}
           </h2>
           <button type="button" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
@@ -190,9 +190,9 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
               Después cargá acá cuánto gastaste en cada rango de fechas.
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
-              <code style={{ flex: 1, fontSize: '0.85rem', color: '#34d399', wordBreak: 'break-all' }}>{resultado.nombre_interno}</code>
+              <code style={{ flex: 1, fontSize: '0.85rem', color: "var(--color-success)", wordBreak: 'break-all' }}>{resultado.nombre_interno}</code>
               <button type="button" className="btn-icon" onClick={copiarNombre} title="Copiar">
-                {copiado ? <Check size={16} color="#34d399" /> : <Copy size={16} />}
+                {copiado ? <Check size={16} color="var(--color-success)" /> : <Copy size={16} />}
               </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -207,7 +207,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
             <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 1.25rem 0' }}>
               {PASOS.map((p) => (
                 <div key={p.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                  <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? 'var(--bg-primary, #3d5fa3)' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)' }} />
+                  <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? "var(--bg-primary, var(--color-primary))" : 'color-mix(in srgb, var(--color-fg) 10%, transparent)' }} />
                   <span style={{ fontSize: '0.7rem', color: p.id === step ? 'var(--color-fg)' : 'var(--color-fg-muted)', fontWeight: p.id === step ? 600 : 400 }}>{p.id}. {p.label}</span>
                 </div>
               ))}
@@ -215,7 +215,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
             <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, minHeight: '320px' }}>
               {error && (
-                <div style={{ marginBottom: '1rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '6px', padding: '0.6rem 0.8rem', fontSize: '0.82rem' }}>
+                <div style={{ marginBottom: '1rem', background: "color-mix(in srgb, var(--color-danger) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)", color: "var(--color-danger)", borderRadius: '6px', padding: '0.6rem 0.8rem', fontSize: '0.82rem' }}>
                   {error}
                 </div>
               )}
@@ -265,7 +265,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                               onClick={() => toggleProducto(p)}
                               style={{
                                 display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer',
-                                border: seleccionado ? '2px solid #3d5fa3' : '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)',
+                                border: seleccionado ? "2px solid var(--color-primary)" : '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)',
                                 borderRadius: '8px', overflow: 'hidden', background: 'var(--color-canvas)', padding: 0,
                               }}
                             >
@@ -278,15 +278,15 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                                   </div>
                                 )}
                                 {seleccionado && (
-                                  <div style={{ position: 'absolute', top: '4px', right: '4px', background: '#3d5fa3', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Check size={12} color="#0a0a0b" />
+                                  <div style={{ position: 'absolute', top: '4px', right: '4px', background: "var(--color-primary)", borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Check size={12} color="var(--color-fg)" />
                                   </div>
                                 )}
                               </div>
                               <div style={{ padding: '0.5rem' }}>
                                 <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-fg)', lineHeight: 1.2, marginBottom: '2px' }}>{p.nombre}</div>
                                 {p.categoria_id && mapaCategorias.get(p.categoria_id) && (
-                                  <span style={{ fontSize: '0.68rem', color: '#3d5fa3' }}>{mapaCategorias.get(p.categoria_id)}</span>
+                                  <span style={{ fontSize: '0.68rem', color: "var(--color-primary-text)" }}>{mapaCategorias.get(p.categoria_id)}</span>
                                 )}
                               </div>
                             </button>
@@ -337,8 +337,8 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                   <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>¿Qué tipo de embudo usarás?</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {[
-                      { value: 'WEB', label: 'Venta Web', desc: 'Tráfico a página de destino', icon: <Globe size={22} color="#3b82f6" />, color: '#3b82f6' },
-                      { value: 'WHATSAPP', label: 'WhatsApp', desc: 'Mensajes directos', icon: <MessageCircle size={22} color="#10b981" />, color: '#10b981' },
+                      { value: 'WEB', label: 'Venta Web', desc: 'Tráfico a página de destino', icon: <Globe size={22} color="var(--color-primary-text)" />, color: '#3b82f6' },
+                      { value: 'WHATSAPP', label: 'WhatsApp', desc: 'Mensajes directos', icon: <MessageCircle size={22} color="var(--color-success)" />, color: '#10b981' },
                     ].map(opt => (
                       <button
                         type="button"
@@ -367,10 +367,10 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                   <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>¿En qué fase de venta está tu público?</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {[
-                      { value: 'PRESENTACION', label: 'Presentación', desc: 'Público frío que no te conoce', icon: <Sparkles size={20} color="#8b5cf6" /> },
-                      { value: 'EVALUACION', label: 'Evaluación', desc: 'Ya interactuaron con tu marca', icon: <Search size={20} color="#f59e0b" /> },
-                      { value: 'CONVERSION', label: 'Conversión', desc: 'Intención alta de compra', icon: <Target size={20} color="#ef4444" /> },
-                      { value: 'ASCENSION', label: 'Ascensión', desc: 'Recompra o venta cruzada', icon: <TrendingUp size={20} color="#3b82f6" /> },
+                      { value: 'PRESENTACION', label: 'Presentación', desc: 'Público frío que no te conoce', icon: <Sparkles size={20} color="var(--color-primary-text)" /> },
+                      { value: 'EVALUACION', label: 'Evaluación', desc: 'Ya interactuaron con tu marca', icon: <Search size={20} color="var(--color-warning)" /> },
+                      { value: 'CONVERSION', label: 'Conversión', desc: 'Intención alta de compra', icon: <Target size={20} color="var(--color-danger)" /> },
+                      { value: 'ASCENSION', label: 'Ascensión', desc: 'Recompra o venta cruzada', icon: <TrendingUp size={20} color="var(--color-primary-text)" /> },
                     ].map(opt => (
                       <button
                         type="button"
@@ -413,7 +413,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                           background: presupuesto === opt.value ? 'color-mix(in srgb, var(--bg-primary) 10%, transparent)' : 'var(--color-canvas)',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem', color: presupuesto === opt.value ? '#3d5fa3' : 'var(--color-fg-muted)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem', color: presupuesto === opt.value ? "var(--color-primary-text)" : 'var(--color-fg-muted)' }}>
                           {opt.icon}
                           <div style={{ fontWeight: 600, color: 'var(--color-fg)', fontSize: '0.9rem' }}>{opt.label}</div>
                         </div>

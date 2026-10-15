@@ -340,7 +340,7 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
             <span className="vit-card-meta-sep" />
           )}
           {item.stock !== undefined && !esCombo && (
-            <span className="vit-card-meta-item" style={{ color: sinStock ? '#ef4444' : undefined }}>
+            <span className="vit-card-meta-item" style={{ color: sinStock ? "var(--color-danger)" : undefined }}>
               <Archive size={11} /> Stock: {item.stock}
             </span>
           )}
@@ -384,7 +384,7 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
             <button
               type="button"
               className="vit-card-action"
-              style={{ flexShrink: 0, color: 'var(--color-primary, #2563eb)', fontWeight: 600 }}
+              style={{ flexShrink: 0, color: "var(--color-primary-text)", fontWeight: 600 }}
               onClick={(e) => { e.stopPropagation(); onEditarProducto(item.id); }}
               title="Editar producto"
             >
@@ -977,7 +977,7 @@ export default function VitrinaGrid() {
                 onClick={borrarSeleccionados}
                 disabled={borrando}
                 title="Eliminar productos seleccionados"
-                style={{ color: 'var(--color-danger, #ef4444)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                style={{ color: "var(--color-danger, var(--color-danger))", borderColor: "color-mix(in srgb, var(--color-danger) 20%, transparent)" }}
               >
                 {borrando ? <Loader size={15} className="spin-icon" /> : <Trash2 size={15} />}
                 Eliminar
@@ -1123,7 +1123,7 @@ export default function VitrinaGrid() {
         </div>
       ) : error ? (
         <div className="vit-empty">
-          <AlertCircle size={32} color="#ef4444" />
+          <AlertCircle size={32} color="var(--color-danger)" />
           <p>{error}</p>
           <button className="btn-secondary" onClick={cargar}>Reintentar</button>
         </div>

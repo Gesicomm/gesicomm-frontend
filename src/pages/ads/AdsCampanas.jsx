@@ -147,7 +147,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                       className="shrink-0 cursor-pointer border-none bg-transparent p-0.5 text-fg-muted hover:text-fg"
                       title="Copiar nombre para Meta Ads Manager"
                     >
-                      {copiadoId === c.id ? <Check size={12} color="#34d399" /> : <Copy size={12} />}
+                      {copiadoId === c.id ? <Check size={12} color="var(--color-success)" /> : <Copy size={12} />}
                     </button>
                   );
 
@@ -156,8 +156,8 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                       <td style={{ whiteSpace: 'normal', minWidth: '15rem' }}>
                         <div className="flex items-center gap-2.5">
                           {c.tipo === 'whatsapp'
-                            ? <MessageCircle size={16} className="shrink-0" color="#10b981" title="WhatsApp" />
-                            : <Globe size={16} className="shrink-0" color="#3b82f6" title="Funnel" />}
+                            ? <MessageCircle size={16} className="shrink-0" color="var(--color-success)" title="WhatsApp" />
+                            : <Globe size={16} className="shrink-0" color="var(--color-primary-text)" title="Funnel" />}
                           <div className="flex min-w-0 flex-col gap-0.5">
                             <span className="flex items-start gap-1.5">
                               <button

@@ -104,7 +104,7 @@
 }
 
 .sidebar-link.active {
-    background-color: var(--bg-primary-soft, rgba(61, 95, 163, 0.1));
+    background-color: var(--bg-primary-soft, color-mix(in srgb, var(--color-primary) 10%, transparent));
     color: var(--bg-primary);
 }
 
@@ -145,7 +145,7 @@
 
 .logout-btn:hover {
     background-color: rgba(255, 0, 0, 0.1);
-    color: #ff4d4d;
+    color: var(--color-danger);
 }
 
 /* Dashboard Main Content */
@@ -220,7 +220,7 @@
 }
 
 .data-item {
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--color-surface-2);
     padding: 1.5rem;
     border-radius: 12px;
     border: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
@@ -423,14 +423,14 @@
     height: 6px;
     border-radius: 50%;
 }
-.badge-active { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-.badge-active::before { background: #10b981; }
+.badge-active { background: color-mix(in srgb, var(--color-success) 10%, transparent); color: var(--color-success); }
+.badge-active::before { background: var(--color-success); }
 
-.badge-paused { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-.badge-paused::before { background: #f59e0b; }
+.badge-paused { background: color-mix(in srgb, var(--color-warning) 10%, transparent); color: var(--color-warning); }
+.badge-paused::before { background: var(--color-warning); }
 
 .badge-archived { background: rgba(156, 163, 175, 0.1); color: var(--color-fg-muted); }
-.badge-archived::before { background: #9ca3af; }
+.badge-archived::before { background: var(--color-surface-3); }
 
 /* Skeleton Loader */
 .skeleton-row {
@@ -530,8 +530,8 @@
     background: color-mix(in srgb, var(--color-fg) 5%, transparent);
 }
 .sidebar-sublink.active {
-    color: #7d9bd6;
-    background: rgba(61, 95, 163, 0.12);
+    color: var(--color-primary-text);
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 @keyframes fadeIn {
@@ -563,8 +563,8 @@
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    background: var(--color-primary, #2563eb);
-    color: #ffffff !important;
+    background: var(--color-primary);
+    color: var(--color-primary-fg) !important;
     border: 1px solid transparent;
     border-radius: 8px;
     padding: 0.55rem 1.1rem;
@@ -572,20 +572,20 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 .btn-primary:hover {
-    background: var(--color-primary-hover, #1d4ed8);
+    background: var(--color-primary-hover, var(--color-primary));
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
-    color: #ffffff !important;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 40%, transparent);
+    color: var(--color-primary-fg) !important;
 }
 .btn-primary:active {
     transform: translateY(0);
 }
 .btn-primary:disabled {
     background: color-mix(in srgb, var(--color-primary) 35%, var(--color-surface-2)) !important;
-    color: rgba(255, 255, 255, 0.45) !important;
+    color: var(--color-fg-muted) !important;
     border-color: transparent !important;
     opacity: 0.7;
     cursor: not-allowed !important;
@@ -617,8 +617,8 @@
 .btn-ghost {
     display: flex; align-items: center; gap: 0.4rem;
     background: transparent;
-    color: #7d9bd6;
-    border: 1px dashed rgba(61, 95, 163, 0.4);
+    color: var(--color-primary-text);
+    border: 1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
     border-radius: 8px;
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
@@ -626,7 +626,7 @@
     transition: all 0.2s;
     margin-top: 0.5rem;
 }
-.btn-ghost:hover { background: rgba(61, 95, 163, 0.08); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
 
 .btn-icon {
     background: color-mix(in srgb, var(--color-fg) 5%, transparent);
@@ -639,5 +639,5 @@
     transition: all 0.2s;
 }
 .btn-icon:hover { background: color-mix(in srgb, var(--color-fg) 10%, transparent); color: var(--color-fg); }
-.btn-icon.danger:hover { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
+.btn-icon.danger:hover { background: color-mix(in srgb, var(--color-danger) 15%, transparent); color: var(--color-danger); border-color: color-mix(in srgb, var(--color-danger) 30%, transparent); }
 

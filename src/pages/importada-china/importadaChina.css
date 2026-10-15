@@ -55,7 +55,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #10b981
+  background: var(--color-success)
 }
 
 .china-heading h1  {
@@ -534,7 +534,7 @@
   border-radius: 12px;
   background: rgb(13 27 61 / 85%);
   backdrop-filter: blur(12px);
-  color: #fff
+  color: var(--color-fg)
 }
 
 .china-visual-label span {
@@ -782,21 +782,21 @@
 }
 
 .china-form [aria-invalid=true] {
-  border-color: var(--color-danger,#ef4444)
+  border-color: var(--color-danger)
 }
 
 .china-field-error {
   font-size: 11px;
   line-height: 1.7;
-  color: var(--color-danger,#ef4444);
+  color: var(--color-danger);
   margin: 8px 0 0
 }
 
 .china-error {
   font-size: 12px;
   line-height: 1.8;
-  border: 1px solid color-mix(in srgb,var(--color-danger,#ef4444) 30%,transparent);
-  background: color-mix(in srgb,var(--color-danger,#ef4444) 6%,transparent);
+  border: 1px solid color-mix(in srgb,var(--color-danger) 30%,transparent);
+  background: color-mix(in srgb,var(--color-danger) 6%,transparent);
   padding: 12px;
   border-radius: 10px;
   margin-bottom: 16px

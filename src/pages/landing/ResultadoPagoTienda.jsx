@@ -42,18 +42,18 @@ export default function ResultadoPagoTienda() {
     };
   }, [hash]);
 
-  const contenedor = 'min-h-screen bg-white text-slate-950 flex items-center justify-center px-4 py-12';
-  const tarjeta = 'w-full max-w-md rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm';
+  const contenedor = "min-h-screen bg-surface text-fg flex items-center justify-center px-4 py-12";
+  const tarjeta = "w-full max-w-md rounded-lg border border-border bg-surface p-8 text-center shadow-sm";
 
   if (error) {
     return (
       <main className={contenedor}>
         <section className={tarjeta}>
-          <AlertCircle className="mx-auto mb-4 text-red-500" size={44} />
+          <AlertCircle className="mx-auto mb-4 text-danger" size={44} />
           <h1 className="text-2xl font-semibold">No pudimos verificar tu pago</h1>
-          <p className="mt-3 text-sm text-slate-600">{error}</p>
-          <p className="mt-5 text-xs text-slate-500">Referencia: <code>{hash}</code></p>
-          <Link className="mt-6 inline-flex rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white" to="/">
+          <p className="mt-3 text-sm text-fg-muted">{error}</p>
+          <p className="mt-5 text-xs text-fg-muted">Referencia: <code>{hash}</code></p>
+          <Link className="mt-6 inline-flex rounded-md bg-canvas px-4 py-2 text-sm font-medium text-fg" to="/">
             Volver a la tienda
           </Link>
         </section>
@@ -65,7 +65,7 @@ export default function ResultadoPagoTienda() {
     return (
       <main className={contenedor}>
         <section className={tarjeta}>
-          <Loader className="mx-auto mb-4 animate-spin text-slate-500" size={40} />
+          <Loader className="mx-auto mb-4 animate-spin text-fg-muted" size={40} />
           <h1 className="text-2xl font-semibold">Verificando tu pago...</h1>
         </section>
       </main>
@@ -78,19 +78,19 @@ export default function ResultadoPagoTienda() {
       <main className={contenedor}>
         <section className={tarjeta}>
           {agotado ? (
-            <Clock className="mx-auto mb-4 text-amber-500" size={44} />
+            <Clock className="mx-auto mb-4 text-warning" size={44} />
           ) : (
-            <Loader className="mx-auto mb-4 animate-spin text-slate-500" size={40} />
+            <Loader className="mx-auto mb-4 animate-spin text-fg-muted" size={40} />
           )}
           <h1 className="text-2xl font-semibold">
             {agotado ? 'Tu pago sigue procesándose' : 'Confirmando tu pago...'}
           </h1>
-          <p className="mt-3 text-sm text-slate-600">
+          <p className="mt-3 text-sm text-fg-muted">
             {agotado
               ? 'PagoPar todavía no confirmó la operación. Si el débito se realizó, la tienda podrá verificarlo con esta referencia.'
               : 'Esperando la confirmación de PagoPar. No cierres esta pantalla.'}
           </p>
-          <p className="mt-5 text-xs text-slate-500">Referencia: <code>{hash}</code></p>
+          <p className="mt-5 text-xs text-fg-muted">Referencia: <code>{hash}</code></p>
         </section>
       </main>
     );
@@ -99,17 +99,17 @@ export default function ResultadoPagoTienda() {
   return (
     <main className={contenedor}>
       <section className={tarjeta}>
-        <CheckCircle2 className="mx-auto mb-4 text-emerald-500" size={48} />
+        <CheckCircle2 className="mx-auto mb-4 text-success" size={48} />
         <h1 className="text-2xl font-semibold">Pago acreditado</h1>
-        <p className="mt-3 text-sm text-slate-600">
+        <p className="mt-3 text-sm text-fg-muted">
           Recibimos el pago del pedido #{numeroPedidoVisible(estado)}
           {estado.monto ? <> por <strong>{formatMoneda(estado.monto)}</strong></> : null}.
         </p>
-        <p className="mt-3 text-sm text-slate-600">
+        <p className="mt-3 text-sm text-fg-muted">
           La tienda ya puede preparar tu pedido.
         </p>
-        <p className="mt-5 text-xs text-slate-500">Referencia: <code>{hash}</code></p>
-        <Link className="mt-6 inline-flex rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white" to="/">
+        <p className="mt-5 text-xs text-fg-muted">Referencia: <code>{hash}</code></p>
+        <Link className="mt-6 inline-flex rounded-md bg-canvas px-4 py-2 text-sm font-medium text-fg" to="/">
           Volver a la tienda
         </Link>
       </section>
