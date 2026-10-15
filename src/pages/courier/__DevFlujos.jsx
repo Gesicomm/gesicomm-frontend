@@ -12,7 +12,7 @@ import { FlujosWhatsapp } from './FlujosWhatsapp';
  */
 
 const VARIABLES = [
-  { key: 'cliente_nombre',    grupo: 'Cliente', desc: 'Nombre del cliente',            ejemplo: 'María González' },
+  { key: 'cliente_nombre',    grupo: 'Cliente', desc: 'Primer nombre del cliente',     ejemplo: 'María' },
   { key: 'telefono',          grupo: 'Cliente', desc: 'Teléfono del cliente',          ejemplo: '0981 234 567' },
   { key: 'pedido_id',         grupo: 'Pedido',  desc: 'Número del pedido',             ejemplo: 'TIE-1001' },
   { key: 'productos',         grupo: 'Pedido',  desc: 'Lista de productos del pedido', ejemplo: 'Zapatilla Urban Black, Remera Oversize' },

@@ -113,15 +113,19 @@ test.each([['cargado', 301, 'Pedido confirmado'], ['en_camino', 302, 'Pedido des
   await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, faseId));
 });
 
-test('RAHA pendiente no habilita avisos de preparado ni despachado aunque vengan disponibles', async () => {
+test('la orden RAHA creada habilita su aviso de confirmado y espera el tránsito para el aviso de despacho', async () => {
+  seguimientoService.crearContacto.mockResolvedValue({});
   seguimientoService.getFlujosPedido.mockResolvedValue([{ ...FLUJO_ENVIO, fases: [
     { id: 301, orden: 1, nombre: 'Pedido confirmado', disponible: true, envios: 0, completada: false },
     { id: 302, orden: 2, nombre: 'Pedido despachado', disponible: true, envios: 0, completada: false },
   ] }]);
   render(<SeguimientoPanel open envio={pedido({ estado: 'Confirmado', raha_logistica: { gestionado: true, status: 'pendiente_confirmacion' } })} onClose={() => {}} />);
   await screen.findByText(/Fase 1 — Pedido confirmado/);
-  for (const boton of screen.getAllByRole('button', { name: 'Abrir en WhatsApp' })) expect(boton).toBeDisabled();
-  expect(seguimientoService.crearContacto).not.toHaveBeenCalled();
+  const botones = screen.getAllByRole('button', { name: 'Abrir en WhatsApp' });
+  expect(botones.filter(b => !b.disabled)).toHaveLength(1);
+  expect(botones.filter(b => b.disabled)).toHaveLength(1);
+  fireEvent.click(botones.find(b => !b.disabled));
+  await waitFor(() => expect(seguimientoService.crearContacto).toHaveBeenCalledWith(50, expect.objectContaining({ fase_id: 301 })));
 });
 
 test('RAHA pendiente permanece en seguimiento de envío y oculta confirmación comercial', async () => {

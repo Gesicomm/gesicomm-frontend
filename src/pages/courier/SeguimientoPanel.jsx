@@ -5,7 +5,8 @@ import { seguimientoService } from "../../services/seguimiento.service";
 import { formatEspera } from "./variablesWhatsapp";
 import { numeroPedidoVisible } from "./pedidoNumero";
 import { formatGs } from "../../lib/courier";
-import { FLOW_TYPES, SHIPPING_FOLLOWUP_STATUSES, fasesDeSeguimientoParaPedido, estadoParaSeguimiento, esperandoConfirmacionLogistica } from "./orderLifecycle";
+import { FLOW_TYPES, fasesDeSeguimientoParaPedido, estadoParaSeguimiento, puedeEnviarSeguimiento } from "./orderLifecycle";
+import { ImagenProductoSeguimiento } from "./ImagenProductoSeguimiento";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -133,7 +134,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       // venía usando con este pedido.
       const delaFase = faseQueToca ? lista.find(f => (f.fases || []).some(x => x.id === faseQueToca)) : null;
       const estado = estadoParaSeguimiento(envio);
-      const tipoActual = SHIPPING_FOLLOWUP_STATUSES.includes(estado) || esperandoConfirmacionLogistica(envio) ? "SEGUIMIENTO_ENVIO"
+      const tipoActual = puedeEnviarSeguimiento(envio) ? "SEGUIMIENTO_ENVIO"
         : estado === "Entregado" ? "ESCALAMIENTO_VENTAS"
           : ["Devuelto", "Perdido"].includes(estado) ? "RECUPERACION_CLIENTES"
             : ["Pendiente", "EnSeguimiento"].includes(estado)
@@ -168,7 +169,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
   const flujo = flujos.find(f => f.id === flujoId) || null;
   const fases = fasesDeSeguimientoParaPedido(flujo, envio);
-  const seguimientoBloqueado = flujo?.tipo === "SEGUIMIENTO_ENVIO" && !SHIPPING_FOLLOWUP_STATUSES.includes(estadoParaSeguimiento(envio));
+  const seguimientoBloqueado = flujo?.tipo === "SEGUIMIENTO_ENVIO" && !puedeEnviarSeguimiento(envio);
   // La fase en la que está el pedido: la que pidió quien abrió el panel
   // mientras no esté completada; si no, la siguiente a la más avanzada que
   // ya se completó. Así, al marcar una como enviada, "Toca ahora" pasa sola
@@ -418,6 +419,8 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
                         <FaseFila
                           key={fase.id}
                           fase={fase}
+                          envioId={envio.id}
+                          servicio={servicio}
                           sugerida={fase.id === faseActualId}
                           vistaAbierta={fase.id === faseVista}
                           onVerMensaje={() => setFaseVista(v => (v === fase.id ? null : fase.id))}
@@ -475,7 +478,8 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
  *    principal — es lo que mueve al pedido a la fase siguiente;
  *  - completada: se puede reabrir igual, y desmarcar si fue un error.
  */
-function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, enviando, deshabilitado, bloqueadaPorEstado = false, onAbrir, onCompletar, onDescompletar }) {
+function FaseFila({ fase, envioId, servicio, sugerida = false, vistaAbierta = false, onVerMensaje, enviando, deshabilitado, bloqueadaPorEstado = false, onAbrir, onCompletar, onDescompletar }) {
+  const imagenes = fase.imagenes_productos || [];
   const abierta = (fase.envios || 0) > 0;
   const completada = !!fase.completada;
   const faltaMarcar = abierta && !completada;
@@ -517,7 +521,7 @@ function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, 
                   : "Sin enviar"}
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "6px" }}>
-            {fase.mensaje_resuelto && onVerMensaje && (
+            {(fase.mensaje_resuelto || imagenes.length > 0) && onVerMensaje && (
               <button type="button" onClick={onVerMensaje} aria-expanded={vistaAbierta} style={enlace}>
                 {vistaAbierta ? <EyeOff size={12} /> : <Eye size={12} />}
                 {vistaAbierta ? "Ocultar mensaje" : "Ver mensaje"}
@@ -558,9 +562,10 @@ function FaseFila({ fase, sugerida = false, vistaAbierta = false, onVerMensaje, 
         </div>
       </div>
 
-      {vistaAbierta && fase.mensaje_resuelto && (
+      {vistaAbierta && (fase.mensaje_resuelto || imagenes.length > 0) && (
         <div style={{ margin: "0 12px 12px 38px", padding: "8px 10px", borderRadius: "8px", background: "color-mix(in srgb, var(--color-success) 9%, transparent)", border: "1px solid color-mix(in srgb, var(--color-success) 22%, transparent)", fontSize: "0.8rem", lineHeight: 1.45, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-          {fase.mensaje_resuelto}
+          {imagenes.map(imagen => <ImagenProductoSeguimiento key={`${envioId}-${imagen.item_id}-${imagen.url}`} imagen={imagen} envioId={envioId} servicio={servicio} />)}
+          {fase.mensaje_resuelto && <div>{fase.mensaje_resuelto}</div>}
         </div>
       )}
     </div>

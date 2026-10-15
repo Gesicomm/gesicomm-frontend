@@ -22,7 +22,7 @@ import {
   STAGE_LABELS,
   estadoDePedido,
   estadoParaSeguimiento,
-  esperandoConfirmacionLogistica,
+  puedeEnviarSeguimiento,
   RAHA_STATUS_META,
   paymentLine,
   esPagoAnticipado,
@@ -94,7 +94,7 @@ const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", 
 // del usuario, 2026-10-14): ya no se separan en pestañas, se distinguen por
 // color de fila y del estado logístico. Despachado usa "violet" en vez de su
 // tono "info" habitual para no confundirse con Preparado.
-const SEGUIMIENTO_TONE = { Confirmado: "neutral", Preparado: "info", Despachado: "violet", Reprogramado: "warning" };
+const SEGUIMIENTO_TONE = { Confirmado: "success", Preparado: "info", Despachado: "violet", Reprogramado: "warning" };
 
 function tonoSeguimiento(envio) {
   return SEGUIMIENTO_TONE[estadoParaSeguimiento(envio)] || estadoDePedido(envio, "seguimiento_envio").tone;
@@ -408,7 +408,7 @@ function RahaEstadoCell({ envio, etapa }) {
   const estado = estadoDePedido(envio, etapa);
   return (
     <LifecycleCell
-      primary={estado.id === "Pendiente" ? "Pendiente de confirmación" : estado.label}
+      primary={estado.label}
       secondary="RAHA"
       alert={envio?.raha_logistica?.error || null}
       tone={etapa === "seguimiento_envio" ? tonoSeguimiento(envio) : estado.tone}
@@ -626,7 +626,7 @@ function SeguimientoCell({ envio, onAbrir }) {
   const seg = envio.seguimiento;
   if (!seg) return <span className="pt-seg-vacio">—</span>;
   const estado = estadoDelSeguimiento(seg);
-  const bloqueado = seg.etapa === "SEGUIMIENTO_ENVIO" && !SHIPPING_FOLLOWUP_STATUSES.includes(estadoParaSeguimiento(envio));
+  const bloqueado = seg.etapa === "SEGUIMIENTO_ENVIO" && !puedeEnviarSeguimiento(envio);
   const EstadoIcono = estado.icono || Clock;
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "cliente";
   const cuerpo = (
@@ -686,11 +686,8 @@ const accionBtnStyle = {
 };
 
 function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen, onAccionSiguiente, onAbrirSeguimiento, onCambiarEstado, etapa }) {
-  if (esperandoConfirmacionLogistica(envio)) {
-    return <span className="pt-seg-vacio">Espera confirmación</span>;
-  }
   if (["seguimiento_envio", "recompra", "recuperacion"].includes(etapa)) {
-    const bloqueado = etapa === "seguimiento_envio" && !SHIPPING_FOLLOWUP_STATUSES.includes(estadoParaSeguimiento(envio));
+    const bloqueado = etapa === "seguimiento_envio" && !puedeEnviarSeguimiento(envio);
     return (
       <button type="button" disabled={bloqueado} title={bloqueado ? "Disponible cuando logística marque el pedido Preparado" : undefined} style={{ ...accionBtnStyle, ...(bloqueado ? { opacity: 0.6, cursor: "not-allowed" } : {}) }} onClick={(e) => { e.stopPropagation(); onAbrirSeguimiento?.(envio); }}>
         <MessageCircle size={13} /> Seguimiento
@@ -867,7 +864,7 @@ export function PedidosTable({
       const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE };
       if (mostrarSeguimiento) payload.incluir_seguimiento = true;
       if (!soloAbastecimiento && etapaActiva !== "logistica") payload.seguimiento_comercial = true;
-      if (!soloAbastecimiento && etapaActiva === "seguimiento_envio") payload.incluir_pendientes_logisticos = true;
+      if (!soloAbastecimiento && etapaActiva === "seguimiento_envio") payload.incluir_confirmados_raha = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (!soloAbastecimiento && etapaActiva === "logistica" && estado === TAB_RAHA_LOGISTICA_ID) {
         payload.logistica_raha = true;
@@ -902,7 +899,7 @@ export function PedidosTable({
       const payloadBase = { ...construirPayloadBase(f), limit: 100 };
       if (mostrarSeguimiento) payloadBase.incluir_seguimiento = true;
       if (etapaActiva !== "logistica") payloadBase.seguimiento_comercial = true;
-      if (etapaActiva === "seguimiento_envio") payloadBase.incluir_pendientes_logisticos = true;
+      if (etapaActiva === "seguimiento_envio") payloadBase.incluir_confirmados_raha = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (estadosEtapa?.length) payloadBase.estados = estadosEtapa;
       if (etapaActiva === "logistica") payloadBase.excluir_logistica_raha = true;
@@ -944,7 +941,7 @@ export function PedidosTable({
       const payload = construirPayloadBase(f, { incluirFiltroAbastecimiento: false });
       if (!soloAbastecimiento && etapaActiva === "logistica") payload.separar_logistica_raha = true;
       if (!soloAbastecimiento && etapaActiva !== "logistica") payload.seguimiento_comercial = true;
-      if (!soloAbastecimiento && etapaActiva === "seguimiento_envio") payload.incluir_pendientes_logisticos = true;
+      if (!soloAbastecimiento && etapaActiva === "seguimiento_envio") payload.incluir_confirmados_raha = true;
       const res = soloAbastecimiento
         ? await getConteoPorAbastecimiento(payload)
         : await getConteoPorEstado(payload);
@@ -1308,7 +1305,7 @@ export function PedidosTable({
               return (
                 <span key={st} className="pt-status-chip pt-status-chip--legend" data-followup-tone={SEGUIMIENTO_TONE[st]}>
                   <span className="pt-status-chip__dot" aria-hidden="true" />
-                  <span className="pt-status-chip__label">{st === 'Confirmado' ? 'Pendiente de confirmación' : cfg.label || st}</span>
+                  <span className="pt-status-chip__label">{st === 'Confirmado' ? 'Confirmado' : cfg.label || st}</span>
                   <strong className="pt-status-chip__count">{conteoDeFiltro(st)}</strong>
                 </span>
               );

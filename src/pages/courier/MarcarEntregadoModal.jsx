@@ -25,9 +25,11 @@ export function MarcarEntregadoModal({ open, envio, onClose, onSubmit }) {
 
   if (!open || !envio) return null;
 
+  const esAnticipado = envio.pago_anticipado === true;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!metodoPagoId) {
+    if (!esAnticipado && !metodoPagoId) {
       setError("El método de pago es obligatorio");
       return;
     }
@@ -53,13 +55,22 @@ export function MarcarEntregadoModal({ open, envio, onClose, onSubmit }) {
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <div className="np-row">
-            <label>Método de pago <span className="req">*</span></label>
-            <select className="form-input" value={metodoPagoId} onChange={(e) => setMetodoPagoId(e.target.value)} required>
-              <option value="">Seleccionar...</option>
-              {metodosPago.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-            </select>
-          </div>
+          {esAnticipado ? (
+            <div className="np-row">
+              <label>Método de pago</label>
+              <div className="form-input" style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--color-success)" }}>
+                Pago anticipado — {envio.metodo_pago || "ya registrado"}
+              </div>
+            </div>
+          ) : (
+            <div className="np-row">
+              <label>Método de pago <span className="req">*</span></label>
+              <select className="form-input" value={metodoPagoId} onChange={(e) => setMetodoPagoId(e.target.value)} required>
+                <option value="">Seleccionar...</option>
+                {metodosPago.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+              </select>
+            </div>
+          )}
 
           <div className="np-row">
             <label>Monto efectivamente cobrado</label>

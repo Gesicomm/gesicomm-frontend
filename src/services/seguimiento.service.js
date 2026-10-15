@@ -30,6 +30,11 @@ export const seguimientoService = {
     return data;
   },
 
+  getImagenProducto: async (envioId, itemId) => {
+    const { data } = await api.get(`/envios/${envioId}/seguimiento/imagenes/${itemId}`, { responseType: 'blob' });
+    return data;
+  },
+
   // Variables disponibles para los mensajes (fuente unica: el backend)
   getVariables: async () => {
     const { data } = await api.get('/seguimiento/variables');

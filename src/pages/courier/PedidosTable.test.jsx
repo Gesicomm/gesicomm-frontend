@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { PedidosTable } from "./PedidosTable";
-import { estadoParaSeguimiento, esperandoConfirmacionLogistica } from './orderLifecycle';
+import { estadoParaSeguimiento, esRahaConfirmado } from './orderLifecycle';
 
 // El abastecimiento Gesicom por pedido ya no existe (2026-10-11): la tienda no
 // paga ni espera mercadería para vender. La bandeja no tiene que mostrar nada
@@ -241,7 +241,7 @@ test("Logística tiene el subestado Envíos RAHA y muestra solo estados RAHA sin
 
   fireEvent.click(fila);
   const estados = await screen.findByLabelText("Timeline RAHA del pedido #MIT-2809");
-  expect(within(estados).getByText("Pendiente de confirmación")).toBeInTheDocument();
+  expect(within(estados).getByText("Confirmado")).toBeInTheDocument();
   expect(within(estados).getByText("Despachado")).toBeInTheDocument();
   expect(within(estados).getByText("Preparado")).toBeInTheDocument();
   expect(within(estados).getByText("Entregado")).toBeInTheDocument();
@@ -292,7 +292,7 @@ test("Logística RAHA muestra cuando falta la confirmación de RAHA", async () =
   fireEvent.click(await screen.findByRole("button", { name: /^Envíos RAHA/ }));
 
   const fila = await screen.findByText("Cliente 10").then((el) => el.closest("tr"));
-  expect(within(fila).getByText("Pendiente de confirmación")).toBeInTheDocument();
+  expect(within(fila).getByText("Confirmado")).toBeInTheDocument();
   expect(within(fila).queryByText(/Tienda RAHA/)).not.toBeInTheDocument();
 });
 
@@ -520,25 +520,28 @@ test("Logística no muestra mensajes ni accesos a WhatsApp en tabla y Kanban", a
   expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento");
 });
 
-test('pendiente RAHA espera en seguimiento de envío sin regresar a confirmación comercial', async () => {
+test('una orden RAHA creada está confirmada y ofrece seguimiento sin una confirmación adicional', async () => {
   getEnviosPaginados.mockResolvedValue({ data: [pedido(1, 'Confirmado', { raha_logistica: { gestionado: true, status: 'pendiente_confirmacion' } })], total: 1, totalPages: 1 });
   getConteoPorEstado.mockResolvedValue({ Confirmado: 1, Preparado: 0, Despachado: 0, Reprogramado: 0 });
-  await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'seguimiento_envio' });
+  const { onAbrirSeguimiento } = await montar({ etapasDisponibles: ETAPAS_COMERCIALES, initialEtapa: 'seguimiento_envio' });
   const fila = screen.getByText('Cliente 1').closest('tr');
-  expect(within(fila).getByText('Pendiente de confirmación')).toBeInTheDocument();
-  expect(screen.getByRole('region', { name: 'Estados de seguimiento de envío' })).toHaveTextContent('Pendiente de confirmación1');
+  expect(within(fila).getByText('Confirmado')).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Estados de seguimiento de envío' })).toHaveTextContent('Confirmado1');
+  expect(screen.queryByText(/Pendiente de confirmación/)).not.toBeInTheDocument();
   expect(screen.queryByText('Pendiente de confirmación RAHA')).not.toBeInTheDocument();
-  expect(ultimoPedido()).toMatchObject({ seguimiento_comercial: true, incluir_pendientes_logisticos: true, estados: ['Preparado', 'Despachado', 'Reprogramado'] });
+  expect(ultimoPedido()).toMatchObject({ seguimiento_comercial: true, incluir_confirmados_raha: true, estados: ['Preparado', 'Despachado', 'Reprogramado'] });
   expect(ultimoPedido()).not.toHaveProperty('excluir_logistica_raha');
   expect(getConteoPorEstado.mock.calls.at(-1)[0]).toMatchObject({ seguimiento_comercial: true });
-  expect(within(fila).getByText('Espera confirmación')).toBeInTheDocument();
+  fireEvent.click(within(fila).getByRole('button', { name: 'Seguimiento', exact: true }));
+  expect(onAbrirSeguimiento).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+  expect(within(fila).queryByText('Espera confirmación')).not.toBeInTheDocument();
   expect(within(fila).queryByRole('button', { name: 'Preparar' })).not.toBeInTheDocument();
 });
 
 test('al enviar a RAHA el pedido confirmado queda solo en seguimiento de envío, también en Kanban', async () => {
   const pedidos = [pedido(1, 'Confirmado', { raha_logistica: { gestionado: true, status: 'pendiente_confirmacion' } }), pedido(2, 'Pendiente')];
-  getEnviosPaginados.mockImplementation(async ({ estados, incluir_pendientes_logisticos }) => {
-    const data = pedidos.filter(p => estados.includes(estadoParaSeguimiento(p)) || (incluir_pendientes_logisticos && esperandoConfirmacionLogistica(p)));
+  getEnviosPaginados.mockImplementation(async ({ estados, incluir_confirmados_raha }) => {
+    const data = pedidos.filter(p => estados.includes(estadoParaSeguimiento(p)) || (incluir_confirmados_raha && esRahaConfirmado(p)));
     return { data, total: data.length, totalPages: 1 };
   });
   getConteoPorEstado.mockResolvedValue({ Pendiente: 1, Confirmado: 1 });
@@ -548,7 +551,7 @@ test('al enviar a RAHA el pedido confirmado queda solo en seguimiento de envío,
   await screen.findByText('Cliente 1');
   expect(screen.queryByText('Cliente 2')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /Kanban/ }));
-  const esperando = await screen.findByRole('region', { name: 'Columna Pendientes de confirmación' });
+  const esperando = await screen.findByRole('region', { name: 'Columna Confirmados' });
   expect(within(esperando).getByText('Cliente 1')).toBeInTheDocument();
 });
 

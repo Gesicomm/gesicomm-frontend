@@ -759,12 +759,10 @@
 
 .gw-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.3rem;
   margin-top: 0.7rem;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
-.gw-tabs::-webkit-scrollbar { display: none; }
 
 .gw-tab {
   flex: 0 0 auto;
