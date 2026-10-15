@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Loader, Save, Trash2, ExternalLink, Eye, EyeOff, Monitor, Tablet, Smartphone,
   PanelLeftClose, PanelLeftOpen, AlertTriangle, RefreshCw, Copy, Settings2, Home, ShoppingBag,
-  FileCode2, Wand2, Check, FileText, Tags, CreditCard, ChevronRight,
+  FileCode2, Wand2, Check, FileText, Tags, CreditCard, ChevronRight, Lock, Sparkles,
 } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { tiendaService } from '../../services/tiendaService';
@@ -475,20 +475,28 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     // base de OTRO formato, se cambia también, pero preguntando: puede tener
     // retoques del comercio.
     const htmlInicioActual = codigos.inicio?.html || '';
-    // Una base retocada por el comercio (data-gesicomm-personalizado) ya no
+    const esGeneradoIa = Boolean(
+      landing?.content?.generado_por_ia ||
+      landing?.content?.origen === 'mcp' ||
+      landing?.content?.bloques_inicio_bloqueados ||
+      landing?.content?.codigo?.generado_por_mcp ||
+      codigos.inicio?.generado_por_mcp
+    );
+    // Una base retocada por el comercio (data-gesicomm-personalizado) o generada por IA/MCP ya no
     // se reemplaza: es su diseño.
-    const baseActual = esBaseIntacta(htmlInicioActual);
-    const codigoInicialIntacto = !htmlInicioActual.trim() || htmlInicioActual.includes(MARCA_CODIGO_INICIAL);
+    const baseActual = !esGeneradoIa && esBaseIntacta(htmlInicioActual);
+    const codigoInicialIntacto = !esGeneradoIa && (!htmlInicioActual.trim() || htmlInicioActual.includes(MARCA_CODIGO_INICIAL));
     const inicioConfigurado = nuevaVenta.inicio || nuevaVenta.inicio_comercial || {};
-    const faltanSlotsBanners =
+    const faltanSlotsBanners = !esGeneradoIa && (
       (Array.isArray(inicioConfigurado.banners) && inicioConfigurado.banners.length > 0
         && !/data-gesicomm-lista=["']banners_inicio["']/.test(htmlInicioActual)) ||
       (Array.isArray(inicioConfigurado.banners_intermedios) && inicioConfigurado.banners_intermedios.length > 0
-        && !/data-gesicomm-lista=["']banners_intermedios["']/.test(htmlInicioActual));
+        && !/data-gesicomm-lista=["']banners_intermedios["']/.test(htmlInicioActual))
+    );
     // La vista previa de Configurar tienda reemplaza cualquier base Gesicomm
     // por la base actual. Al confirmar, guardamos esa misma base para no volver
     // al HTML/CSS viejo que podía seguir persistido en el editor libre.
-    const usarBase = (codigoInicialIntacto || !!baseActual || faltanSlotsBanners) && nuevaVenta.abrir_en !== 'producto';
+    const usarBase = !esGeneradoIa && (codigoInicialIntacto || !!baseActual || faltanSlotsBanners) && nuevaVenta.abrir_en !== 'producto';
     const usarFichaBase = esFichaProductoBase(codigos.producto?.html);
     const nuevosCodigos = {
       ...codigos,
@@ -647,9 +655,16 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   const publicUrl = useMemo(() => urlPublicaLanding(tienda, landing), [tienda, landing]);
+  const esGeneradoIa = Boolean(
+    landing?.content?.generado_por_ia ||
+    landing?.content?.origen === 'mcp' ||
+    landing?.content?.bloques_inicio_bloqueados ||
+    landing?.content?.codigo?.generado_por_mcp ||
+    codigos?.inicio?.generado_por_mcp
+  );
   const creationSource = creationSourceDe(landing);
-  const esGeneradaIA = creationSource === 'ai' || creationSource === 'ai_detected';
-  const etiquetaEditor = creationSource === 'ai_detected' ? 'Con IA' : esGeneradaIA ? 'Generada con IA' : 'Editor libre';
+  const esGeneradaIA = creationSource === 'ai' || creationSource === 'ai_detected' || esGeneradoIa;
+  const etiquetaEditor = esGeneradoIa ? 'Generada con IA (MCP)' : (creationSource === 'ai_detected' ? 'Con IA' : esGeneradaIA ? 'Generada con IA' : 'Editor libre');
   const accionVenta = venta?.configurado ? 'Configuración de venta' : 'Configurar venta';
 
   // Se piden al entrar al paso de código (también al volver de "Configurar
@@ -811,7 +826,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   // (hero, banner, categorías) — no tiene sentido en la ficha de producto
   // ni en las páginas legales, que son HTML libre sin esa estructura.
   const tabsVisibles = (esLegal ? TABS.filter(t => t.key !== 'prompts') : TABS)
-    .filter(t => t.key !== 'secciones' || (vista === 'inicio' && !esLegal));
+    .filter(t => t.key !== 'secciones' || (vista === 'inicio' && !esLegal && !esGeneradoIa));
   const codigoVista = codigos[claveVista] || CODIGO_VACIO;
   // Ficha guardada antes de que existieran los bloques de ofertas: las
   // ofertas marcadas nunca iban a tener dónde aparecer, sin ningún aviso.
@@ -1050,7 +1065,19 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                 </div>
               </div>
             ) : tab === 'secciones' ? (
-              <SeccionesPanel html={codigoVista.html || ''} onCambiarHtml={nuevoHtml => escribir('html', nuevoHtml)} />
+              esGeneradoIa ? (
+                <div className="p-8 text-center space-y-3">
+                  <div className="inline-flex p-3 rounded-full bg-primary/10 text-primary">
+                    <Lock size={22} />
+                  </div>
+                  <h3 className="text-sm font-semibold text-fg">Secciones bloqueadas</h3>
+                  <p className="text-xs text-fg/60 max-w-sm mx-auto leading-relaxed">
+                    Esta landing tiene una estructura personalizada generada con IA (MCP). Los controles de bloques rígidos de la plantilla están deshabilitados para proteger tu código HTML.
+                  </p>
+                </div>
+              ) : (
+                <SeccionesPanel html={codigoVista.html || ''} onCambiarHtml={nuevoHtml => escribir('html', nuevoHtml)} />
+              )
             ) : tab === 'prompts' && !esLegal ? (
               <PanelPrompts
                 vista={vista}

@@ -529,8 +529,8 @@ export function itemPublicoARuntime(item, slug, venta = null) {
     descuento_pct: item.descuento_pct || 0,
     imagen: imagenes[0] || null,
     imagenes_url: imagenes,
-    categoria: item.categoria || null,
-    categoria_url: item.categoria ? urlCategoria(slug, item.categoria) : '',
+    categoria: typeof item.categoria === 'object' && item.categoria ? (item.categoria.nombre || null) : (item.categoria || null),
+    categoria_url: item.categoria ? urlCategoria(slug, typeof item.categoria === 'object' ? item.categoria.nombre : item.categoria) : '',
     marca: typeof item.marca === 'object' ? item.marca?.nombre || null : item.marca || null,
     // La etiqueta de la landing manda; si no hay, el badge del producto
     // (ficha_datos.insignia, el "badge" del JSON de la IA).
@@ -670,8 +670,8 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto, venta = 
     descuento_pct: precioAntes ? Math.round((1 - precio / precioAntes) * 100) : 0,
     imagen: imagenes[0] || null,
     imagenes_url: imagenes,
-    categoria: item.categoria || null,
-    categoria_url: item.categoria ? urlCategoria(null, item.categoria) : '',
+    categoria: typeof item.categoria === 'object' && item.categoria ? (item.categoria.nombre || null) : (item.categoria || null),
+    categoria_url: item.categoria ? urlCategoria(null, typeof item.categoria === 'object' ? item.categoria.nombre : item.categoria) : '',
     marca: typeof item.marca === 'object' ? item.marca?.nombre || null : item.marca || null,
     // La etiqueta de la landing manda; si no hay, el badge del producto
     // (ficha_datos.insignia, el "badge" del JSON de la IA).

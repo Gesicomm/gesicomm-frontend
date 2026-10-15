@@ -724,6 +724,13 @@ export default function ConfigurarVentaCodigo({
   const [busquedaCategoria, setBusquedaCategoria] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('producto_gesicom');
   const [usuarioActual, setUsuarioActual] = useState(null);
+  const esGeneradoIa = Boolean(
+    landing?.content?.generado_por_ia ||
+    landing?.content?.origen === 'mcp' ||
+    landing?.content?.bloques_inicio_bloqueados ||
+    landing?.content?.codigo?.generado_por_mcp ||
+    codigos?.inicio?.generado_por_mcp
+  );
 
   const [crossActivo, setCrossActivo] = useState(ventaInicial.cross_sell?.activo !== false);
   const [ofertasElegidas, setOfertasElegidas] = useState(() => new Set(ventaInicial.cross_sell?.ofertas || []));
@@ -1897,9 +1904,9 @@ export default function ConfigurarVentaCodigo({
   // Si el inicio todavía es una página base (o el código de arranque), la
   // vista previa usa la base del formato elegido: cambiar de formato cambia
   // la página. Si ya tiene diseño propio, se muestra ese diseño.
-  const inicioEsBase = !codigos?.inicio?.html?.trim()
+  const inicioEsBase = !esGeneradoIa && (!codigos?.inicio?.html?.trim()
     || codigos.inicio.html.includes(MARCA_CODIGO_INICIAL)
-    || esBaseIntacta(codigos.inicio.html);
+    || esBaseIntacta(codigos.inicio.html));
   const abreEnFicha = abrirEn === 'producto';
   const codigoInicioPreview = inicioEsBase ? plantillaInicioPara(tipo) : codigos.inicio;
   const codigoCatalogoPreview = conGlobalesHeredados(codigos?.catalogo?.html ? codigos.catalogo : PLANTILLA_CATALOGO, codigoInicioPreview);
@@ -2373,7 +2380,14 @@ export default function ConfigurarVentaCodigo({
         <div hidden={panelesOcultos} className="flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto overscroll-contain">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
             <header className="mb-7">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML</p>
+              <div className="flex items-center gap-2">
+                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML</p>
+                {esGeneradoIa && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary uppercase tracking-wide">
+                    <Sparkles size={11} /> Generada con IA (MCP)
+                  </span>
+                )}
+              </div>
               <h1 className="mt-2 text-[28px] md:text-[32px] leading-tight font-bold tracking-tight text-fg">Configurar tienda</h1>
               <p className="mt-2 text-[15px] text-fg-muted">
                 Ajustá qué se ve en el inicio, cómo se presentan las fichas y qué ofertas reales tendrá la tienda.
@@ -2514,9 +2528,23 @@ export default function ConfigurarVentaCodigo({
 
               <Bloque
                 titulo="Bloques del Inicio"
-                ayuda="Todo lo que se ve en el homepage se edita acá, bloque por bloque: abrí uno para cambiar su contenido, reordená o mostrá/ocultá con los controles de la derecha."
+                ayuda={esGeneradoIa ? "Esta landing tiene diseño único generado con IA (MCP). Los bloques estándar están bloqueados para proteger tu diseño." : "Todo lo que se ve en el homepage se edita acá, bloque por bloque: abrí uno para cambiar su contenido, reordená o mostrá/ocultá con los controles de la derecha."}
                 verDonde={() => verDonde('inicio', null)}
               >
+                {esGeneradoIa ? (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm space-y-2.5">
+                    <div className="flex items-center gap-2 font-semibold text-primary">
+                      <Lock size={15} />
+                      <span>Bloques estándar bloqueados (Generada con IA / MCP)</span>
+                    </div>
+                    <p className="text-fg-muted text-xs leading-relaxed">
+                      Esta homepage fue diseñada a medida mediante el MCP de Gesicomm. Los bloques rígidos de la plantilla inicial están bloqueados para proteger tu diseño y evitar sobreescrituras accidentales.
+                    </p>
+                    <p className="text-xs text-fg-muted/80">
+                      💡 Para modificar o reorganizar elementos, editalo en el código HTML o pedile cambios directamente a la IA conectada al MCP (Claude Desktop, Cursor o cualquier cliente compatible).
+                    </p>
+                  </div>
+                ) : (
                 <EditorBloquesInicio
                   bloques={inicioComercial.bloques}
                   onReordenar={reordenarBloqueInicio}
@@ -2693,6 +2721,7 @@ export default function ConfigurarVentaCodigo({
                     ),
                   }}
                 />
+                )}
               </Bloque>
 
                 </>

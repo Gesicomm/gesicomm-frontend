@@ -2222,8 +2222,12 @@ export function runtimeGesicomm() {
     }
     var categoria = el.getAttribute('data-gesicomm-categoria');
     if (categoria && nombre.indexOf('ofertas') !== 0 && !LISTAS_DE_DATOS[nombre] && nombre !== 'variantes' && nombre !== 'imagenes') {
-      var cat = categoria.toLowerCase();
-      base = base.filter(function (p) { return String(p.categoria || '').toLowerCase() === cat; });
+      var cat = categoria.toLowerCase().trim();
+      base = base.filter(function (p) {
+        var pCat = typeof p.categoria === 'object' && p.categoria ? (p.categoria.nombre || '') : String(p.categoria || '');
+        var pSlug = typeof p.categoria === 'object' && p.categoria ? (p.categoria.slug || '') : '';
+        return pCat.toLowerCase().trim() === cat || (pSlug && pSlug.toLowerCase().trim() === cat);
+      });
     }
     var esFlash = nombre === 'productos_ofertas' && el.closest('[data-gesicomm-bloque="ofertas_urgencia"]');
     var limite = esFlash ? 48 : parseInt(el.getAttribute('data-gesicomm-limite'), 10);
