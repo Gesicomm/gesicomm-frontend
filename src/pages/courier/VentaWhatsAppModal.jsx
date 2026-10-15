@@ -134,6 +134,11 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
         telefono: telefono.trim(),
         origen: "WHATSAPP",
         estado: "Pendiente",
+        // Explícito: el endpoint lo pone en "Confirmado" por default si no
+        // viaja, y acá todavía no hay nada confirmado — recién se está
+        // armando el seguimiento del contacto por WhatsApp (mismo criterio
+        // que el checkout público, ver landing.service.js crearCheckout).
+        estado_comercial: "Pendiente",
         monto: total,
         items: items.map((it) => ({
           producto_id: it.producto_id,

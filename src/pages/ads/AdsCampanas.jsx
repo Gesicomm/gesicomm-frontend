@@ -127,6 +127,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
               <thead>
                 <tr>
                   <th>Campaña</th>
+                  <th className="text-right">Leads</th>
                   <th className="text-right">Gastado</th>
                   <th>Estado</th>
                   <th className="text-right">Acciones</th>
@@ -182,6 +183,12 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                           </div>
                         </div>
                       </td>
+                      <td
+                        className="whitespace-nowrap text-right tabular-nums"
+                        title="Pedidos con al menos un producto de esta campaña, resuelto automáticamente al crearse"
+                      >
+                        {c.leads > 0 ? c.leads : <span className="text-fg-subtle">0</span>}
+                      </td>
                       <td className="whitespace-nowrap text-right">
                         {tieneGasto ? (
                           <>
@@ -236,6 +243,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
               <tfoot>
                 <tr>
                   <td className="font-semibold text-fg">Total gastado</td>
+                  <td />
                   <td className="whitespace-nowrap text-right font-semibold tabular-nums text-fg">{formatPYG(totalVisible)}</td>
                   <td colSpan={2} />
                 </tr>
