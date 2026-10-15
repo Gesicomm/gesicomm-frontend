@@ -4,7 +4,7 @@ import {
   Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
   Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign, MapPin, PackageCheck,
-  PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus, TrendingUp
+  PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus, TrendingUp, Ship
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -41,30 +41,10 @@ const ICONOS_SIDEBAR = {
   MapPin,
   PackageCheck,
   PackageSearch,
+  Ship,
   Circle,
   TrendingUp,
 };
-
-const SIDEBAR_FALLBACK = [
-  { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-tienda', label: 'Mi tienda', icono: 'Store', menuKey: 'mi-tienda', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-tienda/depositos', label: 'Depósitos', icono: 'MapPin', menuKey: 'mi-tienda-depositos', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-tienda/couriers', label: 'Couriers', icono: 'Truck', menuKey: 'mi-tienda-couriers', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-catalogo', label: 'Productos', icono: 'Grid', menuKey: 'mi-catalogo', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'MARKETING', path: '/landing', label: 'Páginas de venta', icono: 'Sparkles', menuKey: 'landing', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'MARKETING', path: '/mis-anuncios', label: 'Publicidad', icono: 'Megaphone', menuKey: 'mis-anuncios', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-pedidos', label: 'Gestión Comercial', icono: 'ShoppingCart', menuKey: 'mis-pedidos', dangerBadgeKey: 'seguimientos_vencidos' },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/gestion-logistica', label: 'Gestión Logística', icono: 'Truck', menuKey: 'gestion-logistica' },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/dashboard-operativo', label: 'Dashboard Operativo', icono: 'TrendingUp', menuKey: 'dashboard-operativo' },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/inventario', label: 'Inventario / Ingresos', icono: 'PackageCheck', menuKey: 'inventario', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icono: 'Truck', menuKey: 'mis-abastecimientos', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/importada-de-china', label: 'Importada de China', icono: 'PackageSearch', menuKey: 'importada-de-china', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/mi-dashboard', label: 'Dashboard', icono: 'LayoutDashboard', menuKey: 'mi-dashboard', rolesPermitidos: ['usuario', 'administrador'] },
-    { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/costos-gastos', label: 'Control financiero', icono: 'Receipt', menuKey: 'finanzas-costos-gastos', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/proveedores', label: 'Proveedores', icono: 'Truck', menuKey: 'finanzas-proveedores', rolesPermitidos: ['administrador'] },
-  { contexto: 'ecommerce', seccion: 'APRENDIZAJE', path: '/academia', label: 'Academia & Cursos', icono: 'GraduationCap', menuKey: 'academia', badge: 'PRO', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'AFILIADOS', path: '/afiliados', label: 'Quiero ser afiliado', icono: 'BadgeDollarSign', menuKey: 'afiliados', requierePlan: 'founders', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'marca_personal', seccion: 'MARCA PERSONAL', path: '/automatizacion', label: 'Automation Hub', icono: 'Bot', menuKey: 'automatizacion', rolesPermitidos: ['usuario', 'administrador'] },
-];
 
 const UserLayout = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
@@ -72,7 +52,7 @@ const UserLayout = ({ children }) => {
   const [progresoSidebar, setProgresoSidebar] = useState({
     menusDesbloqueados: [],
     bloqueos: {},
-    modulos: null,
+    modulos: [],
   });
   const [modalBloqueo, setModalBloqueo] = useState(null); // { menu, moduloRequerido, moduloId }
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -184,7 +164,7 @@ const UserLayout = ({ children }) => {
       setProgresoSidebar({
         ...data,
         bloqueos: data.bloqueos || data.menusBloqueados || data.menus_bloqueados || {},
-        modulos: Array.isArray(data.modulos) ? data.modulos : null,
+        modulos: Array.isArray(data.modulos) ? data.modulos : [],
       });
     } catch (err) {
       console.error('Error al cargar progreso del sidebar:', err);
@@ -305,9 +285,7 @@ const UserLayout = ({ children }) => {
       ? vencidosCount
       : null;
     const menuKey = item.menuKey || item.menu_key;
-    const label = menuKey === 'pedidos-configuracion'
-      ? 'Flujos de WhatsApp'
-      : (item.label || item.etiqueta);
+    const label = item.label || item.etiqueta;
 
     return {
       ...item,
@@ -335,7 +313,7 @@ const UserLayout = ({ children }) => {
 
   const renderSidebarDinamico = () => {
     const contexto = enMarcaPersonal ? 'marca_personal' : 'ecommerce';
-    const modulosBase = progresoSidebar?.modulos === null ? SIDEBAR_FALLBACK : progresoSidebar.modulos;
+    const modulosBase = progresoSidebar.modulos;
     const grupos = modulosBase
       .filter((item) => item.contexto === contexto)
       // La configuración de flujos se abre desde Gestión Comercial.
@@ -352,7 +330,8 @@ const UserLayout = ({ children }) => {
         return acc;
       }, new Map());
 
-    return Array.from(grupos.entries()).map(([seccion, items]) => (
+    const secciones = Array.from(grupos.entries());
+    return secciones.map(([seccion, items]) => (
       <React.Fragment key={`${contexto}-${seccion}`}>
         <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>
           {seccion}

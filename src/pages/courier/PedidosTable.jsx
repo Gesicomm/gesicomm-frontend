@@ -506,15 +506,13 @@ function ReputacionClienteBadge({ reputacion }) {
   if (!reputacion || (!reputacion.injustificadas && !reputacion.justificadas)) return null;
   const malo = reputacion.injustificadas > 0;
   const partes = [];
-  if (reputacion.injustificadas > 0) partes.push(`${reputacion.injustificadas} devolución${reputacion.injustificadas === 1 ? "" : "es"} injustificada${reputacion.injustificadas === 1 ? "" : "s"}`);
+  if (reputacion.injustificadas > 0) partes.push(`${reputacion.injustificadas} injustificada${reputacion.injustificadas === 1 ? "" : "s"}`);
   if (reputacion.justificadas > 0) partes.push(`${reputacion.justificadas} justificada${reputacion.justificadas === 1 ? "" : "s"}`);
   return (
-    <span
-      className={`pt-reputacion-badge ${malo ? "is-malo" : "is-bueno"}`}
-      title={`Historial de devoluciones de este cliente: ${partes.join(" · ")}`}
-    >
-      {malo ? "Cliente a revisar" : "Devolvió antes"}
-    </span>
+    <div className={`pt-reputacion-badge ${malo ? "is-malo" : "is-bueno"}`}>
+      <span className="pt-reputacion-titulo">{malo ? "Cliente a revisar" : "Devolvió antes"}</span>
+      <span className="pt-reputacion-detalle">{partes.join(" · ")}</span>
+    </div>
   );
 }
 
@@ -544,11 +542,10 @@ function EstadoCell({ envio, etapa, onCambiarEstado }) {
     : estado.etapa === "logistica"
     ? courier
     : null;
-  const alerta = estado.id === "DevolucionPendiente" ? "Revisar devolución" : null;
   const tono = etapa === "seguimiento_envio" ? tonoSeguimiento(envio) : estado.tone;
   // Los mensajes usan el estado operativo como referencia; se cambia en Logística.
   if (["recompra", "recuperacion", "seguimiento_envio"].includes(etapa) || envio.estado === "Despachado" || !onCambiarEstado) {
-    return <LifecycleCell primary={estado.label} secondary={secundario} alert={alerta} tone={tono} />;
+    return <LifecycleCell primary={estado.label} secondary={secundario} tone={tono} />;
   }
   return (
     <div className="pt-life-cell">
@@ -558,7 +555,6 @@ function EstadoCell({ envio, etapa, onCambiarEstado }) {
         onChange={(nuevoEstado) => onCambiarEstado(envio, nuevoEstado)}
       />
       {secundario && <span>{secundario}</span>}
-      {alerta && <em>{alerta}</em>}
     </div>
   );
 }

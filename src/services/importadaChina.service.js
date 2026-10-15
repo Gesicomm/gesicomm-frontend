@@ -1,8 +1,8 @@
 import api from './api';
 
 export const importadaChinaService = {
-  solicitar: async ({ producto_url }) => {
-    const { data } = await api.post('/importada-china/solicitudes', { producto_url });
+  solicitar: async (solicitud) => {
+    const { data } = await api.post('/importada-china/solicitudes', solicitud);
     return data;
   },
 };

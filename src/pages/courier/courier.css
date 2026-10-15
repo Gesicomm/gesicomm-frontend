@@ -3935,15 +3935,25 @@ button.order-alert-chip:focus-visible {
 .pt-cliente { display: flex; flex-direction: column; }
 .pt-cliente-nombre { font-weight: 500; color: var(--color-fg); overflow-wrap: anywhere; }
 .pt-reputacion-badge {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   width: fit-content;
+  max-width: 100%;
   margin-top: 4px;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 8px;
+}
+.pt-reputacion-titulo {
+  font-size: 0.7rem;
   font-weight: 700;
   white-space: nowrap;
-  cursor: help;
+}
+.pt-reputacion-detalle {
+  font-size: 0.66rem;
+  font-weight: 500;
+  opacity: 0.85;
+  white-space: nowrap;
 }
 .pt-reputacion-badge.is-malo {
   background: color-mix(in srgb, var(--color-danger) 14%, transparent);

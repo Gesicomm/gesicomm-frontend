@@ -148,9 +148,6 @@ export function estadoDePedido(envio, etapaVista) {
   if (etapa === "comercial" && estado !== "Cancelado") {
     return { etapa, id: "Pendiente", label: "Pendiente", tone: "warning" };
   }
-  if (estado === "Devuelto" && !envio?.devolucion_recibida_at) {
-    return { etapa, id: "DevolucionPendiente", label: "Devolución pendiente", tone: "danger" };
-  }
   return { etapa, id: estado, label: ESTADO_DISPLAY_LABEL[estado] || estado, tone: TONO_POR_ESTADO[estado] || "neutral" };
 }
 
@@ -164,7 +161,6 @@ const LANES = {
   // Un reprogramado sigue en la calle: va en la misma columna que los despachados.
   despachados: { id: "Despachado", label: "Despachados", columnBar: "bg-blue-400", estado: "Despachado", match: esEstado("Despachado", "Reprogramado") },
   entregados: { id: "Entregado", label: "Entregados", columnBar: "bg-emerald-400", estado: "Entregado", match: esEstado("Entregado") },
-  devolucionPendiente: { id: "DevolucionPendiente", label: "Devolución pendiente", columnBar: "bg-red-400", operational: true, match: esEstado("DevolucionPendiente") },
   devueltos: { id: "Devuelto", label: "Devueltos", columnBar: "bg-stone-400", estado: "Devuelto", match: esEstado("Devuelto") },
   perdidos: { id: "Perdido", label: "Perdidos", columnBar: "bg-stone-400", estado: "Perdido", match: esEstado("Perdido") },
 };
@@ -184,7 +180,7 @@ export const KANBAN_CONTEXTS = {
   },
   logistica: {
     label: "Logística",
-    lanes: [LANES.confirmados, LANES.preparados, LANES.despachados, LANES.entregados, LANES.devolucionPendiente, LANES.devueltos, LANES.perdidos],
+    lanes: [LANES.confirmados, LANES.preparados, LANES.despachados, LANES.entregados, LANES.devueltos, LANES.perdidos],
   },
   // En recompra el pedido ya está entregado: lo que cambia es si todavía
   // tiene mensajes de escalamiento de ventas por enviar.

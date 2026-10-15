@@ -203,7 +203,7 @@ export default function NotificationBell({
                   <div style={{ fontSize: '0.9rem', fontWeight: notif.leida ? 'normal' : '600', color: 'var(--color-fg)', marginBottom: '4px' }}>
                     {notif.titulo}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)', marginBottom: '6px', whiteSpace: notif.tipo === 'IMPORTADA_CHINA_SOLICITUD' ? 'pre-line' : undefined, overflowWrap: 'anywhere' }}>
                     {notif.mensaje}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-primary-text)' }}>
