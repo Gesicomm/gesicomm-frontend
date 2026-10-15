@@ -1072,6 +1072,7 @@ export function runtimeGesicomm() {
   // se muestra un countdown generado para mantener la estructura comercial de
   // la landing. Publicar con datos no confirmados se advierte en el editor.
   var COUNTDOWN_DEMO_MS = 2 * 60 * 60 * 1000;
+  var countdownTimers = [];
   function dosDigitos(n) { return (n < 10 ? '0' : '') + n; }
 
   function countdownDemoMs(item) {
@@ -1087,35 +1088,39 @@ export function runtimeGesicomm() {
     var horas = el.querySelector('[data-gesicomm-countdown-parte="horas"]');
     var minutos = el.querySelector('[data-gesicomm-countdown-parte="minutos"]');
     var segundos = el.querySelector('[data-gesicomm-countdown-parte="segundos"]');
+    if (el.__gesicommCountdownTimer) clearInterval(el.__gesicommCountdownTimer);
+    el.setAttribute('data-gesicomm-countdown-fin', new Date(finMs).toISOString());
+    el.style.display = '';
     function pintar() {
       var restante = finMs - Date.now();
-      if (restante <= 0) return false;
-      var totalSeg = Math.floor(restante / 1000);
+      el.setAttribute('data-gesicomm-countdown-vencido', restante <= 0 ? 'true' : 'false');
+      var totalSeg = Math.max(0, Math.floor(restante / 1000));
       if (horas) horas.textContent = dosDigitos(Math.floor(totalSeg / 3600));
       if (minutos) minutos.textContent = dosDigitos(Math.floor((totalSeg % 3600) / 60));
       if (segundos) segundos.textContent = dosDigitos(totalSeg % 60);
-      return true;
+      return restante > 0;
     }
     if (!pintar()) return;
-    el.style.display = '';
-    if (el.__gesicommCountdownTimer) clearInterval(el.__gesicommCountdownTimer);
     var timer = setInterval(function () { if (!pintar()) clearInterval(timer); }, 1000);
     el.__gesicommCountdownTimer = timer;
+    countdownTimers.push(timer);
   }
 
   function finCountdown(urgencia, item) {
     if (urgencia && urgencia.activo) {
       var aplica = item
         ? productoAplicaUrgencia(item, urgencia)
-        : (!urgencia.producto_id && !urgencia.content_id && !(Array.isArray(urgencia.productos) && urgencia.productos.length) ? true : datoAplicaAlProducto(urgencia));
+        : true; // El reloj de la sección representa toda la oferta, aunque haya productos elegidos.
       var real = aplica ? Date.parse(urgencia.fin_at) : NaN;
-      if (isFinite(real) && real > Date.now()) return real;
+      if (isFinite(real)) return real; // Una fecha vencida termina en cero; no reinicia una demo de dos horas.
       if (!aplica && item) return NaN;
     }
     return Date.now() + countdownDemoMs(item);
   }
 
   function prepararCountdowns() {
+    countdownTimers.forEach(function (timer) { clearInterval(timer); });
+    countdownTimers = [];
     var els = document.querySelectorAll('[data-gesicomm-countdown]');
     if (!els.length) return;
     var urgencia = datos.venta && datos.venta.urgencia;
@@ -1131,6 +1136,33 @@ export function runtimeGesicomm() {
       if (!isFinite(finMs)) { els[i].style.display = 'none'; continue; }
       prepararCountdown(els[i], finMs);
     }
+  }
+
+  function prepararCarruselOfertas() {
+    document.querySelectorAll('[data-gesicomm-bloque="ofertas_urgencia"]').forEach(function (seccion) {
+      var lista = seccion.querySelector('[data-gesicomm-lista="productos_ofertas"]');
+      if (!lista) return;
+      lista.setAttribute('data-gesicomm-flash-carrusel', '');
+      lista.setAttribute('tabindex', '0');
+      lista.setAttribute('aria-label', 'Carrusel de ofertas flash');
+      var controles = seccion.querySelector('[data-gesicomm-flash-controles]');
+      if (!controles) {
+        controles = document.createElement('div');
+        controles.setAttribute('data-gesicomm-flash-controles', '');
+        [-1, 1].forEach(function (direccion) {
+          var boton = document.createElement('button');
+          boton.type = 'button';
+          boton.textContent = direccion < 0 ? '‹' : '›';
+          boton.setAttribute('aria-label', direccion < 0 ? 'Ofertas anteriores' : 'Ofertas siguientes');
+          boton.addEventListener('click', function () {
+            lista.scrollBy({ left: direccion * lista.clientWidth, behavior: 'smooth' });
+          });
+          controles.appendChild(boton);
+        });
+        (seccion.querySelector('.limited-offer-summary') || lista.parentNode).appendChild(controles);
+      }
+      controles.hidden = lista.querySelectorAll('[data-gesicomm-item]').length < 2;
+    });
   }
 
   function prepararHeroBanners() {
@@ -2193,7 +2225,8 @@ export function runtimeGesicomm() {
       var cat = categoria.toLowerCase();
       base = base.filter(function (p) { return String(p.categoria || '').toLowerCase() === cat; });
     }
-    var limite = parseInt(el.getAttribute('data-gesicomm-limite'), 10);
+    var esFlash = nombre === 'productos_ofertas' && el.closest('[data-gesicomm-bloque="ofertas_urgencia"]');
+    var limite = esFlash ? 48 : parseInt(el.getAttribute('data-gesicomm-limite'), 10);
     if (limite > 0) base = base.slice(0, limite);
     return base;
   }
@@ -2627,6 +2660,7 @@ export function runtimeGesicomm() {
     prepararMenuPrincipalHeader();
     prepararMenuCategoriasHeader();
     pintarProductosCategoria();
+    prepararCarruselOfertas();
     aplicarBloquesInicio();
     if (paginado && document.querySelector('[data-gesicomm-lista="catalogo"]')) pedirPagina('reemplazar');
     if (conservarScroll !== null) {
@@ -4451,6 +4485,7 @@ export function runtimeGesicomm() {
   prepararMenuPrincipalHeader();
   prepararMenuCategoriasHeader();
   pintarProductosCategoria();
+  prepararCarruselOfertas();
   aplicarBloquesInicio();
   // Catálogo grande: se pide la página 1 con el formato del servidor para
   // tener el total, las páginas y las categorías de TODO el catálogo (la

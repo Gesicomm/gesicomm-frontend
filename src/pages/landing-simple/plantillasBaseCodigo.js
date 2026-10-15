@@ -704,7 +704,7 @@ const LIMITED_OFFER_HTML = `<section id="ofertas" class="limited-offer" data-ges
         <span class="countdown-box"><b data-gesicomm-countdown-parte="segundos">--</b><small>seg</small></span>
       </div>
     </div>
-    <div class="limited-offer-products" data-gesicomm-lista="productos_ofertas" data-gesicomm-limite="4">
+    <div class="limited-offer-products" data-gesicomm-lista="productos_ofertas">
       <template>
         <article class="limited-offer-product">
           <span class="limited-offer-badge" data-gesicomm-bind="descuento"></span>

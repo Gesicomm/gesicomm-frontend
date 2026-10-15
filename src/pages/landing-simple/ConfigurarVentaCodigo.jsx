@@ -5710,6 +5710,7 @@ function EditorUrgenciaInicio({ titulo, texto, cta, finAt, confirmar, onTitulo, 
         <input
           type="datetime-local"
           value={finAt}
+          onInput={e => onFinAt(e.currentTarget.value)}
           onChange={e => onFinAt(e.target.value)}
           className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
         />

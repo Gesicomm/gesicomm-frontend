@@ -190,6 +190,11 @@ html[data-gesicomm-preview-device="mobile"] *::-webkit-scrollbar {
   background: transparent !important;
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
+/* Inicio amplio, también en diseños ya guardados: margen pequeño y adaptable. */
+:where(.storefront) .page-content {
+  box-sizing: border-box !important;
+  padding-inline: clamp(16px, 2vw, 40px) !important;
+}
 /* La selección mantiene un marco de lectura cómodo aunque page-content
    ocupe todo el viewport. También alcanza el HTML de tiendas ya guardadas. */
 [data-gesicomm-bloque="productos_categoria"],
@@ -197,7 +202,7 @@ html[data-gesicomm-preview-device="mobile"] *::-webkit-scrollbar {
   box-sizing: border-box !important;
   width: 100% !important;
   min-width: 0 !important;
-  max-width: 1280px !important;
+  max-width: none !important;
   margin-inline: auto !important;
 }
 [data-gesicomm-bloque="productos_categoria"] [data-gesicomm-lista="productos_categoria"] {
@@ -1457,15 +1462,42 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-se
   background: color-mix(in srgb, var(--flash-on-bg) 10%, transparent);
   border-color: color-mix(in srgb, var(--flash-on-bg) 60%, transparent);
 }
-section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-products {
+[data-gesicomm-bloque="ofertas_urgencia"] [data-gesicomm-flash-carrusel] {
   grid-area: products;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  align-content: center;
-  gap: 14px;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 14px !important;
   width: 100%;
-  max-width: none;
   min-width: 0;
+  max-width: 100%;
+  overflow-x: auto !important;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  align-items: stretch;
+  padding-bottom: 10px;
+}
+[data-gesicomm-flash-carrusel] > [data-gesicomm-item] {
+  scroll-snap-align: start;
+  flex: 0 0 clamp(280px, 22vw, 360px) !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+}
+[data-gesicomm-flash-controles] {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+[data-gesicomm-flash-controles][hidden] { display: none !important; }
+[data-gesicomm-flash-controles] button {
+  width: 40px; height: 40px;
+  border: 1px solid currentColor; border-radius: 50%;
+  color: inherit; background: transparent; font-size: 24px; cursor: pointer;
+}
+@media (max-width: 820px) {
+  [data-gesicomm-flash-carrusel] > [data-gesicomm-item] {
+    flex-basis: 90% !important;
+  }
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-product {
   position: relative;

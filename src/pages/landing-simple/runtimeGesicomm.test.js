@@ -497,6 +497,51 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:evento', nombre: 'Contact' }));
   });
 
+  it.each([2, 7, 24])('Flash: respeta %s horas con ocho productos en preview y publicada, incluso en HTML guardado con límite cuatro', horas => {
+    const finAt = new Date(Date.now() + (horas * 60 + 2) * 60000).toISOString();
+    const panel = Array.from({ length: 8 }, (_, i) => ({
+      tipo: 'producto', id: i + 1, slug: 'flash-' + i, nombre: 'Oferta ' + i,
+      categoria: 'Cocina', stock: 10, precio_efectivo: 80000, precio_tachado: 100000,
+    }));
+    const venta = { urgencia: { activo: true, productos: panel.map(p => p.slug), fin_at: finAt, estado: 'demo' } };
+    const versiones = [
+      datosRuntimePreview({ productos: panel, venta, vista: 'inicio' }),
+      datosRuntimePublico({ items: panel.map(p => ({ ...p, content_id: p.slug, precio: 80000, precio_antes: 100000, descuento_pct: 20 })), content: { venta } }, 'tienda', null, { vista: 'inicio' }),
+    ];
+    for (const datosVersion of versiones) {
+      const codigo = { ...PLANTILLA_INICIO, html: PLANTILLA_INICIO.html.replace('class="limited-offer-products"', 'data-gesicomm-limite="4" class="limited-offer-products"') };
+      const { dom, document, window, click } = montar(codigo, datosVersion);
+      const flash = document.querySelector('[data-gesicomm-bloque="ofertas_urgencia"]');
+      const lista = flash.querySelector('[data-gesicomm-flash-carrusel]');
+      expect(flash.querySelector('[data-gesicomm-countdown-parte="horas"]').textContent).toBe(String(horas).padStart(2, '0'));
+      expect(flash.getAttribute('data-gesicomm-countdown-fin')).toBe(finAt);
+      expect(lista.querySelectorAll('[data-gesicomm-item]')).toHaveLength(8);
+      const pasos = [];
+      Object.defineProperty(lista, 'clientWidth', { value: 1000 });
+      lista.scrollBy = opciones => pasos.push(opciones.left);
+      click('[aria-label="Ofertas siguientes"]');
+      click('[aria-label="Ofertas anteriores"]');
+      expect(pasos).toEqual([1000, -1000]);
+      const nuevaFecha = new Date(Date.now() + 47 * 3600000).toISOString();
+      window.dispatchEvent(new window.MessageEvent('message', { source: window, data: {
+        tipo: 'gesicomm:datos', datos: { ...datosVersion, venta: { ...venta, urgencia: { ...venta.urgencia, fin_at: nuevaFecha } } },
+      } }));
+      expect(flash.getAttribute('data-gesicomm-countdown-fin')).toBe(nuevaFecha);
+      expect(flash.querySelectorAll('[data-gesicomm-flash-controles]')).toHaveLength(1);
+      dom.window.close();
+    }
+  });
+
+  it('Flash: una fecha vencida queda en cero y no vuelve a dos horas', () => {
+    const { dom, document } = montar(PLANTILLA_INICIO, {
+      ...datos, venta: { urgencia: { activo: true, productos: ['air-fryer-26l'], fin_at: new Date(Date.now() - 1000).toISOString() } },
+    });
+    const flash = document.querySelector('[data-gesicomm-bloque="ofertas_urgencia"]');
+    expect(flash.getAttribute('data-gesicomm-countdown-vencido')).toBe('true');
+    expect([...flash.querySelectorAll('.countdown [data-gesicomm-countdown-parte]')].map(el => el.textContent)).toEqual(['00', '00', '00']);
+    dom.window.close();
+  });
+
   it('usa la fecha real del countdown global en Inicio', () => {
     const finAt = new Date(Date.now() + (7 * 60 + 10) * 60 * 1000).toISOString();
     const { document } = montar(PLANTILLA_INICIO, {
