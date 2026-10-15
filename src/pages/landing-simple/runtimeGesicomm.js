@@ -2615,9 +2615,10 @@ export function runtimeGesicomm() {
         marcas[k].style.display = 'none';
       }
     }
-    var categoriaEls = document.querySelectorAll('[data-gesicomm-categoria]');
+    var categoriaEls = document.querySelectorAll('[data-gesicomm-categoria]:not([data-gesicomm-lista])');
     for (var ce = 0; ce < categoriaEls.length; ce++) {
       var campoCat = categoriaEls[ce].getAttribute('data-gesicomm-categoria');
+      if (campoCat !== 'nombre' && campoCat !== 'descripcion' && campoCat !== 'slug') continue;
       var valCat = datos.categoria ? datos.categoria[campoCat] : '';
       categoriaEls[ce].textContent = valCat || '';
       categoriaEls[ce].style.display = valCat ? '' : 'none';

@@ -934,6 +934,30 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(document.querySelector('[data-gesicomm-pc-vacio]').hidden).toBe(false);
   });
 
+  it('carruseles y listas por categoría: data-gesicomm-categoria en una lista filtra los productos y no es vaciado por renderizar', () => {
+    const htmlConCarrusel = `
+      <section id="cat-cocina">
+        <h2>Cocina</h2>
+        <div data-gesicomm-lista="productos" data-gesicomm-categoria="Cocina">
+          <template>
+            <div class="card"><span data-gesicomm-bind="nombre"></span></div>
+          </template>
+        </div>
+      </section>
+    `;
+    const { document, dom } = montar({ html: htmlConCarrusel, css: '', js: '' }, {
+      ...datos,
+      vista: 'inicio',
+      productos: [airFryer, remera],
+    });
+    const lista = document.querySelector('[data-gesicomm-lista="productos"]');
+    expect(lista).toBeTruthy();
+    expect(lista.style.display).not.toBe('none');
+    const nombres = [...lista.querySelectorAll('[data-gesicomm-bind="nombre"]')].map(el => el.textContent);
+    expect(nombres).toEqual(['Air Fryer 2.6L']);
+    dom.window.close();
+  });
+
   it('bloques: reordena y oculta secciones del body sin lista guardada (compatibilidad total)', () => {
     const { document } = montar(PLANTILLA_INICIO, datos);
     // Sin venta.inicio.bloques, el orden original del HTML queda intacto.
