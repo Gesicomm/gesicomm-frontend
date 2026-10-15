@@ -73,6 +73,7 @@ export function ControlCourier({ etapaFija } = {}) {
   const [deliveryZonas, setDeliveryZonas] = useState([]);
   const [envios, setEnvios] = useState([]);
   const [openNuevoPedido, setOpenNuevoPedido] = useState(false);
+  const [openVentaWhatsApp, setOpenVentaWhatsApp] = useState(false);
   // Pedido de origen cuando se abre "Nuevo pedido" desde Recompra: solo
   // presta sus datos de cliente/entrega, no se completa ni se toca.
   const [clienteParaRepetir, setClienteParaRepetir] = useState(null);
@@ -321,6 +322,15 @@ export function ControlCourier({ etapaFija } = {}) {
                 Flujos de WhatsApp
               </Link>
             )}
+
+            <button
+              type="button"
+              className="btn-venta-whatsapp"
+              onClick={() => { setClienteParaRepetir(null); setOpenVentaWhatsApp(true); }}
+            >
+              <MessageCircle size={18} />
+              Venta por WhatsApp
+            </button>
 
             <button
               type="button"
