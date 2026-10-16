@@ -1633,7 +1633,7 @@ export function runtimeGesicomm() {
   function productosCategoriaFiltrados() {
     var base = productosCategoriaBase();
     if (pcCategoriaActiva) base = base.filter(function (p) { return String(p.categoria || '') === pcCategoriaActiva; });
-    if (pcColeccionActiva) base = base.filter(function (p) { return productoPasaEtiqueta(p, pcColeccionActiva); });
+    if (pcColeccionActiva) base = base.filter(function (p) { return productoPasaColeccionPc(p, pcColeccionActiva); });
     if (pcBusqueda) {
       base = base.filter(function (p) {
         return normalizar([
@@ -1767,6 +1767,12 @@ export function runtimeGesicomm() {
     var listas = document.querySelectorAll('[data-gesicomm-lista="productos_categoria"]');
     for (var i = 0; i < listas.length; i++) renderizarLista(listas[i]);
     pintarProductosCategoria();
+    // renderizarLista reconstruye las tarjetas desde cero, así que cualquier
+    // .gc-card-countdown que traían queda con el placeholder estático
+    // "--h --m --s" hasta que algo vuelva a llamar a prepararCountdowns().
+    // Sin esto, filtrar por categoría/colección/búsqueda congelaba el
+    // contador para siempre (las tarjetas nuevas nunca se enganchaban).
+    prepararCountdowns();
   }
 
   function categoriasDeProductos() {
@@ -2855,6 +2861,18 @@ export function runtimeGesicomm() {
   function productoPasaEtiqueta(item, etiqueta) {
     if (!etiqueta) return true;
     if (normalizar(etiqueta) === 'oferta') return Number(item.descuento_pct) > 0 || Number(item.precio_antes) > Number(item.precio) || tieneEtiqueta(item, etiqueta);
+    return tieneEtiqueta(item, etiqueta);
+  }
+
+  // Igual que productoPasaEtiqueta, pero sin el fallback por tag manual para
+  // "Oferta": la pestaña "Ofertas" de la sección de productos del Inicio
+  // exige un descuento real (precio_antes > precio). El catálogo general y
+  // su filtro por etiqueta siguen aceptando el tag manual —
+  // productoPasaEtiqueta no cambia ahí— porque ahí es una colección que el
+  // comercio arma a propósito, no una promesa de "termina pronto".
+  function productoPasaColeccionPc(item, etiqueta) {
+    if (!etiqueta) return true;
+    if (normalizar(etiqueta) === 'oferta') return Number(item.descuento_pct) > 0 || Number(item.precio_antes) > Number(item.precio);
     return tieneEtiqueta(item, etiqueta);
   }
 
