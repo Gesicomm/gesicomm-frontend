@@ -414,7 +414,7 @@ export function ControlCourier({ etapaFija } = {}) {
         lead={leadParaElegirProductos}
         onClose={() => setLeadParaElegirProductos(null)}
         onGuardar={async items => {
-          const actualizado = await updateEstadoEnvio(leadParaElegirProductos.id, { estado: leadParaElegirProductos.estado, items });
+          const actualizado = await updateEstadoEnvio(leadParaElegirProductos.id, { items });
           setEnvios(prev => prev.map(envio => envio.id === actualizado.id ? actualizado : envio));
           setLeadParaElegirProductos(null);
           setRefrescarKey(k => k + 1);
