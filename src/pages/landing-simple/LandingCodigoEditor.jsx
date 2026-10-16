@@ -287,6 +287,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [viewportMode, setViewportMode] = useState('desktop');
   const [productoPreviewId, setProductoPreviewId] = useState(null);
+  const [filtroPreview, setFiltroPreview] = useState(null);
   const [sinGuardar, setSinGuardar] = useState(false);
   // Order bumps / upsells de la tienda: sin esto la ficha del preview nunca
   // mostraba ofertas, aunque estuvieran creadas y marcadas en la venta.
@@ -738,7 +739,6 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const alCarritoPreview = useCallback(() => {
     setAviso('Preview: en la landing publicada esto abre el carrito.');
   }, []);
-  const [filtroPreview, setFiltroPreview] = useState(null);
   const alNavegarPreview = useCallback((p) => {
     if (p?.destino === 'pagina') {
       if (p.pagina === 'checkout') {
