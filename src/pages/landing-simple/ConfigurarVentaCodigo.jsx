@@ -859,6 +859,10 @@ export default function ConfigurarVentaCodigo({
   const [urgenciaFinAt, setUrgenciaFinAt] = useState(() => isoParaInputLocal(ventaInicial.urgencia?.fin_at));
   const [urgenciaProductoId, setUrgenciaProductoId] = useState(ventaInicial.urgencia?.producto_id || '');
   const [urgenciaConfirmar, setUrgenciaConfirmar] = useState(ventaInicial.urgencia?.estado === 'confirmado');
+  // Con "renovar cada visita", el runtime ignora fin_at y cuenta esta
+  // duración desde que cada visitante entra a la página (se renueva sola).
+  const [urgenciaRenovar, setUrgenciaRenovar] = useState(!!ventaInicial.urgencia?.renovar_cada_visita);
+  const [urgenciaDuracionHoras, setUrgenciaDuracionHoras] = useState(ventaInicial.urgencia?.duracion_horas || 2);
   const [urgenciaTitulo, setUrgenciaTitulo] = useState(ventaInicial.urgencia?.titulo || 'Ofertas que terminan pronto');
   const [urgenciaTexto, setUrgenciaTexto] = useState(ventaInicial.urgencia?.texto || 'Aprovechá antes de que se agoten');
   const [urgenciaCta, setUrgenciaCta] = useState(ventaInicial.urgencia?.cta_texto || 'Ver todos');
@@ -1776,6 +1780,8 @@ export default function ConfigurarVentaCodigo({
       producto_id: urgenciaProductosValidos.length ? null : (urgenciaProductoValido || null),
       productos: urgenciaProductosValidos,
       estado: urgenciaConfirmar ? 'confirmado' : 'demo',
+      renovar_cada_visita: urgenciaRenovar,
+      duracion_horas: Number(urgenciaDuracionHoras) > 0 ? Number(urgenciaDuracionHoras) : 2,
       titulo: urgenciaTitulo,
       texto: urgenciaTexto,
       cta_texto: urgenciaCta,
@@ -1796,7 +1802,7 @@ export default function ConfigurarVentaCodigo({
     tipo, abrirEn, combosPrimero, destacadosValidos, inicioActual, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
     crossActivo, ofertasElegidas, recoActivo, recoModo, recoItemsValidos, recoMax, recoTitulo, recoKicker, recoSubtitulo, recoCta, recoMostrar,
     checkoutRecoActivo, checkoutRecoItemsValidos, checkoutRecoMax, checkoutRecoTitulo, checkoutRecoKicker, checkoutRecoSubtitulo, checkoutRecoCta, checkoutRecoPreciosAntes,
-    urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, urgenciaProductosValidos, urgenciaConfirmar, urgenciaTitulo, urgenciaTexto, urgenciaCta, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
+    urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, urgenciaProductosValidos, urgenciaConfirmar, urgenciaRenovar, urgenciaDuracionHoras, urgenciaTitulo, urgenciaTexto, urgenciaCta, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
     pagoLogos, paymentLogosCatalogo,
   ]);
 
@@ -2779,11 +2785,15 @@ export default function ConfigurarVentaCodigo({
                               cta={urgenciaCta}
                               finAt={urgenciaFinAt}
                               confirmar={urgenciaConfirmar}
+                              renovar={urgenciaRenovar}
+                              duracionHoras={urgenciaDuracionHoras}
                               onTitulo={setUrgenciaTitulo}
                               onTexto={setUrgenciaTexto}
                               onCta={setUrgenciaCta}
                               onFinAt={cambiarUrgenciaFinAt}
                               onConfirmar={setUrgenciaConfirmar}
+                              onRenovar={setUrgenciaRenovar}
+                              onDuracionHoras={setUrgenciaDuracionHoras}
                             />
                             <EditorProductosOfertaLimitada
                               productos={candidatosOfertaLimitada}
@@ -5948,49 +5958,74 @@ function ModalPromoOferta({ item, ancla, onAncla, onCambiar, onCerrar }) {
   );
 }
 
-function EditorUrgenciaInicio({ titulo, texto, cta, finAt, confirmar, onTitulo, onTexto, onCta, onFinAt, onConfirmar }) {
+function EditorUrgenciaInicio({ titulo, texto, cta, finAt, confirmar, renovar, duracionHoras, onTitulo, onTexto, onCta, onFinAt, onConfirmar, onRenovar, onDuracionHoras }) {
   function fijarHoras(horas) {
     onFinAt(inputLocalEnHoras(horas));
+    onDuracionHoras(horas);
   }
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <CampoTexto label="Título del bloque" value={titulo} onChange={onTitulo} placeholder="Ofertas que terminan pronto" maxLength={80} />
       <CampoTexto label="Texto del CTA" value={cta} onChange={onCta} placeholder="Ver todos" maxLength={40} />
       <div className="sm:col-span-2"><CampoTexto label="Mensaje" value={texto} onChange={onTexto} placeholder="Aprovechá antes de que se agoten" maxLength={160} /></div>
-      <label className="block sm:col-span-2">
-        <span className="block text-xs font-medium text-fg-muted mb-1">Fecha fin</span>
-        <input
-          type="datetime-local"
-          value={finAt}
-          onInput={e => onFinAt(e.currentTarget.value)}
-          onChange={e => onFinAt(e.target.value)}
-          className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-        />
-      </label>
-      <div className="sm:col-span-2 rounded-xl border border-border bg-surface-2/60 p-3">
-        <p className="text-xs font-semibold text-fg">Duración rápida</p>
-        <p className="mt-0.5 text-[11px] text-fg-muted">Podés cargar una fecha exacta arriba o fijar el contador desde ahora.</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[
-            [2, '2 horas'],
-            [7, '7 horas'],
-            [24, '24 horas'],
-          ].map(([horas, label]) => (
-            <button
-              key={horas}
-              type="button"
-              onClick={() => fijarHoras(horas)}
-              className="h-8 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-fg hover:border-border-strong"
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
       <label className="sm:col-span-2 flex items-center gap-2 text-sm text-fg">
-        <input type="checkbox" checked={confirmar} disabled={!finAt} onChange={e => onConfirmar(e.target.checked)} className="accent-primary" />
-        Fecha real confirmada
+        <input type="checkbox" checked={renovar} onChange={e => onRenovar(e.target.checked)} className="accent-primary" />
+        Renovar sola en cada visita (en vez de una fecha fija para todos)
       </label>
+      {renovar ? (
+        <label className="block sm:col-span-2">
+          <span className="block text-xs font-medium text-fg-muted mb-1">Duración por visita (horas)</span>
+          <input
+            type="number"
+            min={1}
+            max={999}
+            value={duracionHoras}
+            onChange={e => onDuracionHoras(e.target.value.replace(/\D/g, '') || '')}
+            className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+          />
+          <span className="mt-1 block text-[11px] text-fg-muted">Cada visitante ve el contador completo desde esta cantidad de horas apenas entra; se renueva solo en cada visita.</span>
+        </label>
+      ) : (
+        <>
+          <label className="block sm:col-span-2">
+            <span className="block text-xs font-medium text-fg-muted mb-1">Fecha fin</span>
+            <input
+              type="datetime-local"
+              value={finAt}
+              onInput={e => onFinAt(e.currentTarget.value)}
+              onChange={e => onFinAt(e.target.value)}
+              className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+            />
+          </label>
+          <div className="sm:col-span-2 rounded-xl border border-border bg-surface-2/60 p-3">
+            <p className="text-xs font-semibold text-fg">Duración rápida</p>
+            <p className="mt-0.5 text-[11px] text-fg-muted">Podés cargar una fecha exacta arriba o fijar el contador desde ahora.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[
+                [2, '2 horas'],
+                [7, '7 horas'],
+                [24, '24 horas'],
+              ].map(([horas, label]) => (
+                <button
+                  key={horas}
+                  type="button"
+                  onClick={() => fijarHoras(horas)}
+                  className="h-8 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-fg hover:border-border-strong"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="sm:col-span-2 flex items-center gap-2 text-sm text-fg">
+            <input type="checkbox" checked={confirmar} disabled={!finAt} onChange={e => onConfirmar(e.target.checked)} className="accent-primary" />
+            Fecha real confirmada
+          </label>
+          <p className="sm:col-span-2 text-[11px] leading-relaxed text-fg-muted">
+            Es la misma fecha para todas las visitas. Si se vence, el contador queda en 0 hasta que la actualicés — activá "Renovar sola" arriba si preferís que no dependa de que vuelvas a cargarla.
+          </p>
+        </>
+      )}
       <p className="sm:col-span-2 text-[11px] leading-relaxed text-fg-muted">
         Esta sección muestra solo productos con oferta real, es decir, con precio anterior mayor al precio actual. Si no hay ofertas, no se publica vacía.
       </p>

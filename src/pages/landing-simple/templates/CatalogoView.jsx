@@ -1,3 +1,4 @@
+import { porcentajeDescuento } from '../porcentajeDescuento';
 import React, { useState } from 'react';
 import { ArrowRight, CheckCircle2, ImageOff, Pencil, ShoppingCart } from 'lucide-react';
 import { hexToRgba } from './themeUtils';
@@ -16,7 +17,7 @@ const pctDescuento = (antes, ahora) => {
   const precioAntes = Number(antes);
   const precioActual = Number(ahora);
   if (!(precioAntes > precioActual && precioActual > 0)) return null;
-  return Math.round(((precioAntes - precioActual) / precioAntes) * 100);
+  return porcentajeDescuento(precioAntes, precioActual).toLocaleString('es-PY', { maximumFractionDigits: 15 });
 };
 
 /**

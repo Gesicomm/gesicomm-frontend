@@ -427,7 +427,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(tarjeta.classList.contains('has-card-offer')).toBe(true);
     expect(tarjeta.classList.contains('has-card-cta')).toBe(true);
     expect(tarjeta.querySelector('.gc-product-availability').textContent).toBe('Disponible');
-    expect(tarjeta.querySelector('.gc-card-media-badges').textContent).toBe('-19%');
+    expect(tarjeta.querySelector('.gc-card-media-badges').textContent).toBe('-19,04%');
     expect(document.defaultView.getComputedStyle(boton).display).toBe('flex');
     expect(tarjeta.querySelector('.product-description').textContent).toBe('Copy interno de la ficha');
     expect(tarjeta.querySelector('.product-description').style.display).not.toBe('none');
@@ -2222,7 +2222,7 @@ describe('ficha que vende: contenido real del producto', () => {
     expect(document.querySelectorAll('#confianza-producto .pdp-trust-card')).toHaveLength(1);
     expect(document.querySelector('#confianza-producto [data-gesicomm-bind="titulo"]').textContent).toBe('Registro sanitario');
     expect([...document.querySelectorAll('.faq-item summary')].some(l => l.textContent.includes('Dosis'))).toBe(true);
-    expect(document.querySelector('.pdp-price-badge').textContent).toBe('Ahorrás 20%');
+    expect(document.querySelector('.pdp-price-badge').textContent).toBe('Ahorrás 19,52%');
     // No es combo: lo propio de un combo no se ve.
     expect(document.querySelector('.pdp-separado').style.display).toBe('none');
     expect(document.querySelector('#incluye').style.display).toBe('none');
@@ -2319,7 +2319,7 @@ describe('ficha que vende: contenido real del producto', () => {
     expect(document.querySelector('[data-gesicomm-bind="nombre"]').textContent).toBe('Kit adelgazante');
     expect(document.querySelector('[data-gesicomm-bind="precio_separado"]').textContent).toBe('Gs 509.000');
     expect(document.querySelector('[data-gesicomm-bind="precio"]').textContent).toBe('Gs 288.000');
-    expect(document.querySelector('[data-gesicomm-bind="ahorro_texto"]').textContent).toBe('Ahorrás 43%');
+    expect(document.querySelector('[data-gesicomm-bind="ahorro_texto"]').textContent).toBe('Ahorrás 43,42%');
     expect([...document.querySelectorAll('.kit-item [data-gesicomm-bind="nombre"]')].map(el => el.textContent)).toEqual(['AdelFit', 'Articumina']);
     expect(document.querySelectorAll('.kit-item.is-ready')).toHaveLength(2);
     expect(document.querySelector('.kit-item').getAttribute('data-gesicomm-item')).toBe('adelfit');
@@ -2709,5 +2709,19 @@ describe('navegación de ofertas y carruseles', () => {
       pagina: 'catalogo',
       filtro: { etiqueta: 'Oferta', categoria: '' },
     });
+  });
+});
+
+
+describe('descuentos pequeños y disponibilidad ilimitada en tarjetas', () => {
+  it('muestra decimales en un descuento pequeño y disponible con stock null', () => {
+    const producto = { ...airFryer, precio: 997434, precio_antes: 1000000, stock: null, agotado: false };
+    const { document, dom } = montar(PLANTILLA_CATALOGO_TEST, {
+      vista: 'catalogo', tienda: { nombre: 'QA' }, productos: [producto], catalogo: { paginado: false },
+    });
+    expect(document.querySelector('.gc-card-media-badges').textContent).toBe('-0,26%');
+    expect(document.querySelector('.product-card').textContent).toContain('Disponible');
+    expect(document.querySelector('.product-card').textContent).not.toContain('Sin stock');
+    dom.window.close();
   });
 });

@@ -207,6 +207,13 @@ export function runtimeGesicomm() {
     try { parent.postMessage(mensaje, '*'); } catch (e) { /* sin contenedor: nada que hacer */ }
   }
 
+  function formatoDescuento(antes, precio) {
+    var porcentaje = (antes - precio) / antes * 100;
+    if (!(porcentaje > 0) || !isFinite(porcentaje)) return '0';
+    var decimales = Math.min(15, Math.max(2, 1 - Math.floor(Math.log(porcentaje) / Math.LN10)));
+    return Number(porcentaje.toFixed(decimales)).toLocaleString('es-PY', { maximumFractionDigits: decimales });
+  }
+
   function formatoPrecio(valor) {
     var n = Number(valor);
     if (!isFinite(n) || n <= 0) return '';
@@ -738,17 +745,17 @@ export function runtimeGesicomm() {
       case 'badge_precio':
         valor = vaciado('insignia_secundaria') ? '' : item.insignia_secundaria || (!(Number(item.ahorro) > 0) ? ''
           : (Number(item.precio_antes || 0) < 750000 && Number(item.descuento_pct) > 0
-            ? 'Ahorrás ' + item.descuento_pct + '%'
+            ? 'Ahorrás ' + Number(item.descuento_pct).toLocaleString('es-PY', { maximumFractionDigits: 15 }) + '%'
             : 'Ahorrás ' + formatoPrecio(item.ahorro)));
         break;
-      case 'descuento': valor = item.insignia_secundaria || item.insignia_principal || (Number(item.descuento_pct) > 0 ? '-' + item.descuento_pct + '%' : ''); break;
+      case 'descuento': valor = item.insignia_secundaria || item.insignia_principal || (Number(item.descuento_pct) > 0 ? '-' + Number(item.descuento_pct).toLocaleString('es-PY', { maximumFractionDigits: 15 }) + '%' : ''); break;
       case 'ahorro': valor = Number(item.ahorro) > 0 ? 'Ahorrás ' + formatoPrecio(item.ahorro) : ''; break;
       // Cómo se ve más grande el mismo ahorro ("regla del 100", J. Berger):
       // en productos baratos el %, en caros el monto. Umbral ≈ USD 100.
       case 'ahorro_texto':
         valor = !(Number(item.ahorro) > 0) ? ''
           : (Number(item.precio_antes || 0) < 750000 && Number(item.descuento_pct) > 0
-            ? 'Ahorrás ' + item.descuento_pct + '%'
+            ? 'Ahorrás ' + Number(item.descuento_pct).toLocaleString('es-PY', { maximumFractionDigits: 15 }) + '%'
             : 'Ahorrás ' + formatoPrecio(item.ahorro));
         break;
       case 'stock': valor = item.stock === null || item.stock === undefined ? '' : String(item.stock); break;
@@ -936,7 +943,7 @@ export function runtimeGesicomm() {
       var media = raiz.querySelector('.product-image, .product-media, .product__media, .card__media, .catalog-card__media, .media, .thumb, .image');
       if (media && !media.querySelector('.gc-card-media-badges')) {
         var textoBadge = '';
-        if (ahorro) textoBadge = '-' + Math.round(ahorro / antes * 100) + '%';
+        if (ahorro) textoBadge = '-' + formatoDescuento(antes, precio) + '%';
         else if (item.etiqueta) textoBadge = String(item.etiqueta).split(',')[0].trim();
         else if (item.insignia_principal && item.insignia_principal !== 'Oferta') textoBadge = item.insignia_principal;
         if (textoBadge) {
@@ -955,7 +962,7 @@ export function runtimeGesicomm() {
         raiz.querySelectorAll('.product-badge').forEach(function (el) { el.style.setProperty('display', 'none', 'important'); });
         var badges = document.createElement('div'); badges.className = 'gc-commercial-badges';
         insignias.forEach(function (valor) {
-          var badge = document.createElement('span'); badge.textContent = valor === 'Oferta' ? 'Oferta · ' + Math.round(ahorro / antes * 100) + '% OFF' : valor;
+          var badge = document.createElement('span'); badge.textContent = valor === 'Oferta' ? 'Oferta · ' + formatoDescuento(antes, precio) + '% OFF' : valor;
           badges.appendChild(badge);
         });
         raiz.prepend(badges);
@@ -969,7 +976,11 @@ export function runtimeGesicomm() {
         else contenido.appendChild(saving);
       }
       var urgencia = datos.venta && datos.venta.urgencia;
-      if (productoAplicaUrgencia(item, urgencia) && urgencia.fin_at && !contenido.querySelector('.gc-card-countdown')) {
+      // Con "renovar cada visita" ya no hace falta fin_at: finCountdown()
+      // usa la duración por visita (con 2h de default) aunque no haya
+      // ninguna fecha cargada.
+      var urgenciaConDestino = urgencia && (urgencia.renovar_cada_visita || urgencia.fin_at);
+      if (productoAplicaUrgencia(item, urgencia) && urgenciaConDestino && !contenido.querySelector('.gc-card-countdown')) {
         var cardCountdown = document.createElement('div');
         cardCountdown.className = 'gc-card-countdown';
         cardCountdown.setAttribute('data-gesicomm-countdown', '');
@@ -1092,6 +1103,22 @@ export function runtimeGesicomm() {
     return total > 0 ? total : COUNTDOWN_DEMO_MS;
   }
 
+  // Duración que el comercio cargó para la sección de urgencia (horas),
+  // usada cuando NO confirmó una fecha real (ver finCountdown). 2h por
+  // defecto si no cargó nada, igual que el resto de los countdown demo.
+  function duracionUrgenciaMs(urgencia) {
+    var horas = Math.max(0, parseInt(urgencia && urgencia.duracion_horas, 10) || 0);
+    var total = horas * 3600 * 1000;
+    return total > 0 ? total : COUNTDOWN_DEMO_MS;
+  }
+
+  // Ancla de la cuenta regresiva "por visita" (ver finCountdown): se fija la
+  // primera vez que se calcula y se reutiliza mientras dure esta carga de
+  // página, para que no se reinicie cada vez que se repinta la lista (tocar
+  // una pestaña, paginar el catálogo). Una recarga real de página sí la
+  // reinicia, porque este script se vuelve a ejecutar desde cero.
+  var urgenciaDemoInicio = null;
+
   function prepararCountdown(el, finMs) {
     var horas = el.querySelector('[data-gesicomm-countdown-parte="horas"]');
     var minutos = el.querySelector('[data-gesicomm-countdown-parte="minutos"]');
@@ -1119,9 +1146,20 @@ export function runtimeGesicomm() {
       var aplica = item
         ? productoAplicaUrgencia(item, urgencia)
         : true; // El reloj de la sección representa toda la oferta, aunque haya productos elegidos.
-      var real = aplica ? Date.parse(urgencia.fin_at) : NaN;
-      if (isFinite(real)) return real; // Una fecha vencida termina en cero; no reinicia una demo de dos horas.
-      if (!aplica && item) return NaN;
+      if (aplica) {
+        if (urgencia.renovar_cada_visita) {
+          // El comercio eligió que la oferta se renueve sola: cuenta la
+          // duración configurada desde que esta página se cargó, en vez de
+          // depender de una fecha fija que termina vencida y se queda en 0
+          // para siempre.
+          if (!urgenciaDemoInicio) urgenciaDemoInicio = Date.now();
+          return urgenciaDemoInicio + duracionUrgenciaMs(urgencia);
+        }
+        var real = Date.parse(urgencia.fin_at);
+        if (isFinite(real)) return real; // Una fecha vencida termina en cero; no reinicia una demo de dos horas.
+      } else if (item) {
+        return NaN;
+      }
     }
     return Date.now() + countdownDemoMs(item);
   }

@@ -1,3 +1,4 @@
+import { porcentajeDescuento } from './porcentajeDescuento';
 import { getMediaUrl } from '../../services/api';
 import { ofertaCheckoutPublicable, detalleOfertaCheckout, precioVentaProducto } from '../landing/ofertasCheckout';
 
@@ -244,7 +245,7 @@ function conAhorro(oferta) {
   const antes = Number(oferta.precio_normal) || 0;
   const ahora = Number(oferta.precio_efectivo) || 0;
   const ahorro = antes > ahora && ahora > 0 ? antes - ahora : 0;
-  return { ...oferta, ahorro, descuento_pct: ahorro ? Math.round((ahorro / antes) * 100) : 0 };
+  return { ...oferta, ahorro, descuento_pct: ahorro ? porcentajeDescuento(antes, ahora) : 0 };
 }
 
 /** Ofertas que el HTML puede mostrar en la ficha: packs (normal) y ventas cruzadas publicables. */
@@ -646,7 +647,7 @@ export function contenidoFicha(item) {
     // Ahorro del producto o combo: lo usan los binds "ahorro" y "ahorro_texto".
     ahorro: antes > precio && precio > 0 ? antes - precio : 0,
     precio_antes: antes > precio ? antes : (item.precio_antes || null),
-    descuento_pct: antes > precio && precio > 0 ? Math.round((1 - precio / antes) * 100) : (item.descuento_pct || 0),
+    descuento_pct: antes > precio && precio > 0 ? porcentajeDescuento(antes, precio) : (item.descuento_pct || 0),
   };
 }
 
@@ -667,7 +668,7 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto, venta = 
     descripcion_larga: item.descripcion_larga || null,
     precio,
     precio_antes: precioAntes,
-    descuento_pct: precioAntes ? Math.round((1 - precio / precioAntes) * 100) : 0,
+    descuento_pct: precioAntes ? porcentajeDescuento(precioAntes, precio) : 0,
     imagen: imagenes[0] || null,
     imagenes_url: imagenes,
     categoria: typeof item.categoria === 'object' && item.categoria ? (item.categoria.nombre || null) : (item.categoria || null),
@@ -900,7 +901,7 @@ function extrasCheckoutRuntime(catalogo, carrito = [], venta = null) {
         const precioAntes = Number(preciosAntes[p.id]) || Number(p.precio_antes) || null;
         const precio = Number(p.precio) || 0;
         return precioAntes && precioAntes > precio
-          ? { ...p, precio_antes: precioAntes, descuento_pct: Math.round((1 - precio / precioAntes) * 100) }
+          ? { ...p, precio_antes: precioAntes, descuento_pct: porcentajeDescuento(precioAntes, precio) }
           : p;
       })
       .slice(0, max);
