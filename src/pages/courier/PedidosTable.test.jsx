@@ -132,7 +132,7 @@ test("las etapas incluyen Seguimiento de envío y cada una pide solo sus estados
   await waitFor(() => expect(ultimoPedido()).toMatchObject({ estados: ["Pendiente", "EnSeguimiento"], incluir_seguimiento: true }));
   const chips = () => screen.getAllByRole("button").filter((b) => b.classList.contains("pt-status-chip")).map((b) => b.textContent.replace(/\d+$/, ""));
   expect(chips()).toEqual(["Pendiente", "Cancelado"]);
-  expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado comercial", "Seguimiento", "Acción"]);
+  expect(encabezados()).toEqual(["Pedido", "Tipo", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado comercial", "Seguimiento", "Acción"]);
 
   irAEtapa("Seguimiento de envío");
   await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado", "Despachado", "Reprogramado"]));
@@ -141,7 +141,7 @@ test("las etapas incluyen Seguimiento de envío y cada una pide solo sus estados
     .toEqual(["Preparado", "Despachado", "Reprogramado"]);
   expect(ultimoPedido()).toMatchObject({ incluir_seguimiento: true });
   expect(ultimoPedido()).not.toHaveProperty("excluir_logistica_raha");
-  expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Mensaje de seguimiento", "Acción"]);
+  expect(encabezados()).toEqual(["Pedido", "Tipo", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Mensaje de seguimiento", "Acción"]);
   await waitFor(() => expect(getConteoPorEstado.mock.calls.at(-1)[0]).not.toHaveProperty("separar_logistica_raha"));
 
   irAEtapa("Logística");
@@ -174,7 +174,7 @@ test("el estado que se muestra es el de la etapa que se está mirando", async ()
   });
   await montar();
 
-  const estado = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[7];
+  const estado = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[8];
   // Estado comercial: Pendiente o Cancelado (Confirmado ya es logístico).
   expect(estado("Cliente 1")).toHaveTextContent(/^Pendiente$/);
   expect(estado("Cliente 2")).toHaveTextContent("Pendiente de preparación");
@@ -300,9 +300,9 @@ test("el teléfono va en su propia columna y ya no hay botón de WhatsApp en el 
   await montar();
 
   const celdas = within(screen.getByText("Cliente 1").closest("tr")).getAllByRole("cell");
-  expect(celdas[2]).toHaveTextContent("Cliente 1");
-  expect(celdas[2]).not.toHaveTextContent("0981");
-  expect(celdas[3]).toHaveTextContent(/^0981 111 222$/);
+  expect(celdas[3]).toHaveTextContent("Cliente 1");
+  expect(celdas[3]).not.toHaveTextContent("0981");
+  expect(celdas[4]).toHaveTextContent(/^0981 111 222$/);
   expect(screen.queryByRole("button", { name: /WhatsApp/i })).not.toBeInTheDocument();
 });
 
@@ -324,7 +324,7 @@ test("la columna Seguimiento muestra el mensaje que toca y abre los mensajes del
   });
   const { onAbrirSeguimiento, onAbrirDetalle } = await montar();
 
-  const celda = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[8];
+  const celda = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[9];
   expect(celda("Cliente 1")).toHaveTextContent("Confirmación de pedido web");
   expect(celda("Cliente 1")).toHaveTextContent("1/3 · Confirmación");
   expect(celda("Cliente 1")).toHaveTextContent("Pendiente de envío");
@@ -389,8 +389,8 @@ test("el estado de cada fila se cambia desde su desplegable, solo hacia los paso
 
   // Despachado muestra su estado; el resultado se elige en Acción.
   const celdasDespachado = within(fila("Cliente 3")).getAllByRole("cell");
-  expect(celdasDespachado[7]).toHaveTextContent("Despachado");
-  expect(within(celdasDespachado[7]).queryByRole("button")).not.toBeInTheDocument();
+  expect(celdasDespachado[8]).toHaveTextContent("Despachado");
+  expect(within(celdasDespachado[8]).queryByRole("button")).not.toBeInTheDocument();
   fireEvent.click(within(celdasDespachado.at(-1)).getByRole("button", { name: "Cambiar estado" }));
   expect(opciones()).toEqual(["Entregado", "Reprogramado", "Devuelto", "Perdido"]);
   fireEvent.click(screen.getByRole("menuitem", { name: "Entregado" }));
@@ -450,8 +450,8 @@ test.each([
   const celdas = within(screen.getByText("Cliente 1").closest("tr")).getAllByRole("cell");
   const acciones = within(celdas.at(-1));
 
-  expect(celdas[7]).toHaveTextContent(/^Despachado$/);
-  expect(within(celdas[7]).queryByRole("button")).not.toBeInTheDocument();
+  expect(celdas[8]).toHaveTextContent(/^Despachado$/);
+  expect(within(celdas[8]).queryByRole("button")).not.toBeInTheDocument();
   fireEvent.click(acciones.getByRole("button", { name: "Cambiar estado" }));
   expect(screen.queryByRole("menuitem", { name: "Confirmado" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("menuitem", { name: estado }));
@@ -506,7 +506,7 @@ test("Logística no muestra mensajes ni accesos a WhatsApp en tabla y Kanban", a
     })], total: 1, totalPages: 1,
   });
   const { onAbrirSeguimiento } = await montar({ etapasDisponibles: ["logistica"], initialEtapa: "logistica", initialEstado: "Confirmado" });
-  expect(encabezados()).toEqual(["Pedido", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Acción"]);
+  expect(encabezados()).toEqual(["Pedido", "Tipo", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Acción"]);
   expect(screen.queryByText("1/3 · Pedido confirmado")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Preparar" })).toBeInTheDocument();
   expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento");
