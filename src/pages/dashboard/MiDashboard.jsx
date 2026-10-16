@@ -1353,6 +1353,8 @@ export default function MiDashboard() {
   const visitasFormulariosCompletadas = !pixelFallo && formulariosWeb > 0 && visitasPixel < formulariosWeb;
   const visitasPagoCompletadas = !pixelFallo && Math.max(checkoutsIniciados, pagosRealizados) > 0 && visitasPixel < Math.max(checkoutsIniciados, pagosRealizados);
   const contactosWhatsapp = Number(pixel?.contactos_whatsapp || 0);
+  const leadsWeb = Number(pixel?.leads_web || 0);
+  const leadsVenta = Number(pixel?.leads_venta || 0);
   const ctrPct = !pixelFallo && visitasFormularios > 0
     ? ((contactosWhatsapp / visitasFormularios) * 100).toFixed(1).replace(/\.0$/, '')
     : '0';
@@ -1379,6 +1381,12 @@ export default function MiDashboard() {
           % conversión del embudo (Visitas a Entregados): <strong>{pixelFallo ? '—' : `${visitasFormularios > 0 ? ((canalLanding.entregados / visitasFormularios) * 100).toFixed(1) : 0}%`}</strong>
           <span className="md-funnel-div" />
           Contactos a WhatsApp: <strong>{contactosWhatsapp}</strong> ({ctrPct}% de las visitas)
+          <span className="md-funnel-div" />
+          Leads Web: <strong>{leadsWeb}</strong>
+          <Ayuda texto="Clic en el ícono de WhatsApp sin estar viendo un producto específico: inicio, categorías, contacto del pie. La persona no dijo qué le interesa." />
+          <span className="md-funnel-div" />
+          Leads Venta: <strong>{leadsVenta}</strong>
+          <Ayuda texto="Clic en 'Consultar' o 'Comprar por WhatsApp' desde la ficha de un producto (o el ícono flotante mientras lo estaba mirando). Ya sabés qué le interesa." />
           <span className="md-funnel-div" />
           Valor total en carritos: <strong>{gs(pixel?.valor_carritos || 0)}</strong>
         </>
