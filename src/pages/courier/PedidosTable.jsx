@@ -1132,7 +1132,7 @@ export function PedidosTable({
   const montoCourierEntregado = Number(resumenEntregados?.costo_total_courier || 0);
   const saldoLiquidacionEntregados = Number(resumenEntregados?.saldo_liquidacion || 0);
   const montoPendienteRendicion = Math.abs(saldoLiquidacionEntregados);
-  const tableColSpan = soloAbastecimiento ? 9 : (mostrarSeguimiento ? 10 : 9);
+  const tableColSpan = (soloAbastecimiento ? 9 : (mostrarSeguimiento ? 10 : 9)) + 1;
   const sumarConteos = (estados) => estados.reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
   const totalLogisticaRaha = Number(conteos.logistica_raha || 0);
   // Cada estado cuenta en un solo casillero.
@@ -1644,6 +1644,7 @@ export function PedidosTable({
         <table className={`pt-table${mostrarSeguimiento || soloAbastecimiento ? " pt-table--followup" : ""}`}>
           <colgroup>
             <col className="pt-col-id" />
+            <col className="pt-col-tipo" />
             <col className="pt-col-date" />
             <col className="pt-col-client" />
             <col className="pt-col-phone" />
@@ -1657,6 +1658,7 @@ export function PedidosTable({
           <thead>
             <tr>
               <th className="pt-th pt-th-id">Pedido</th>
+              <th className="pt-th pt-th-tipo">Tipo</th>
               <th className="pt-th">Fecha</th>
               {soloAbastecimiento ? (
                 <>
@@ -1721,6 +1723,17 @@ export function PedidosTable({
                 );
                 const nombreCliente = [e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") || e.cliente || "—";
                 const tonoFila = etapaActiva === "seguimiento_envio" ? tonoSeguimiento(e) : undefined;
+                // Mismo criterio que esOrigenWhatsapp del backend (ver
+                // flujosBase.js): solo mira el texto de `origen`, nada de
+                // estado. "Lead" es la palabra que pidió Martín para dejar
+                // claro que todavía no es una venta confirmada — sigue
+                // siendo el mismo Envio de siempre, esto es solo la etiqueta.
+                const esWhatsapp = String(e.origen || "").toUpperCase().includes("WHATSAPP");
+                const tipoPedido = esWhatsapp
+                  ? { label: "Lead WhatsApp", tono: "whatsapp" }
+                  : String(e.origen || "").toUpperCase() === "LANDING"
+                  ? { label: "Pedido Web", tono: "web" }
+                  : { label: "Manual", tono: "manual" };
 
                 return [
                   <tr
@@ -1748,6 +1761,9 @@ export function PedidosTable({
                           ID {e.id}
                         </span>
                       )}
+                    </td>
+                    <td className="pt-td pt-td-tipo" data-label="Tipo">
+                      <span className={`pt-tipo-badge pt-tipo-badge--${tipoPedido.tono}`}>{tipoPedido.label}</span>
                     </td>
                     <td className="pt-td pt-td-fecha" data-label="Fecha">
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>

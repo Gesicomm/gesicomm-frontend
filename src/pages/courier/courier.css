@@ -3877,6 +3877,7 @@ button.order-alert-chip:focus-visible {
 }
 .pt-table--followup { min-width: 1440px; }
 .pt-col-id { width: 110px; }
+.pt-col-tipo { width: 112px; }
 .pt-col-date { width: 104px; }
 .pt-col-client { width: 150px; }
 .pt-col-phone { width: 140px; }
@@ -5097,3 +5098,31 @@ td.pt-empty .pt-spinner {
 }
 
 .vw-btn-crear:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Columna "Tipo" de la tabla de Pedidos — distingue un lead de WhatsApp
+   (todavía sin confirmar) de un pedido que ya vino de la web. Mismo Envio de
+   siempre por abajo, esto es solo la etiqueta (ver gesicomm_leads_campana_definicion). */
+.pt-tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pt-tipo-badge--whatsapp {
+  background: color-mix(in srgb, #1f9e52 16%, transparent);
+  color: #1f9e52;
+}
+
+.pt-tipo-badge--web {
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: var(--color-primary-text);
+}
+
+.pt-tipo-badge--manual {
+  background: color-mix(in srgb, var(--color-fg) 10%, transparent);
+  color: var(--color-fg-muted);
+}
