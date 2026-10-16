@@ -20,14 +20,13 @@ const imagenProducto = (producto) => (
 );
 
 /**
- * Alta rápida de un pedido que llega por WhatsApp: solo nombre, teléfono y
+ * Alta rápida de un lead que llega por WhatsApp: solo nombre, teléfono y
  * productos con cantidad. Usa el mismo ProductPicker (catálogo visual con
  * imagen y búsqueda) que NuevoPedidoModal, para no inventar un selector
  * paralelo. La tienda la resuelve el backend solo (exigirTiendaActiva), y el
- * origen fijo "WHATSAPP" hace que el pedido entre al flujo de seguimiento
- * "Venta por WhatsApp" (ver esOrigenWhatsapp en flujosBase.js) en vez del de
- * "Confirmación de pedido web". Nace en estado "Pendiente", igual que un
- * pedido web: el stock se descuenta recién al confirmar, no acá.
+ * origen fijo "WHATSAPP" inicia consulta general si no eligió productos,
+ * o seguimiento de producto si ya los eligió, tanto orgánico como campaña.
+ * El pedido y la reserva de stock se generan recién al confirmar la compra.
  */
 export function VentaWhatsAppModal({ open, onClose, onSubmit, lead = null }) {
   const [nombreCliente, setNombreCliente] = useState("");
@@ -145,7 +144,7 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit, lead = null }) {
         // que el checkout público, ver landing.service.js crearCheckout).
         estado_comercial: "Pendiente",
         lead_tipo_manual: leadTipo,
-        es_lead: !!lead?.es_lead || leadTipo === 'organico' || items.length === 0,
+        es_lead: true,
         monto: total,
         items: items.map((it) => ({
           producto_id: it.producto_id,
@@ -227,7 +226,7 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit, lead = null }) {
                 zIndexModal={1300}
                 themeScopeClassName="np-picker-theme"
                 triggerLabel="Elegir productos"
-                modalTitle="Agregar productos al pedido"
+                modalTitle="Elegir productos de interés"
                 refrescarCatalogoAlAbrir
                 permitirCombos={false}
               />
@@ -267,12 +266,12 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit, lead = null }) {
           {error && <div className="vw-error">{error}</div>}
 
           <div className="vw-footer">
-            <span className="vw-total">{items.length ? <>{leadTipo === 'organico' || lead?.es_lead ? 'Valor de interés' : 'Total'}: <strong>Gs {formatGs(total)}</strong></> : 'Consulta general · Sin pedido todavía'}</span>
+            <span className="vw-total">{items.length ? <>Valor de interés: <strong>Gs {formatGs(total)}</strong> · Seguimiento de producto</> : 'Consulta general · Sin pedido todavía'}</span>
             <div className="vw-footer-botones">
               <button type="button" className="vw-btn-cancelar" onClick={onClose}>Cancelar</button>
               <button type="submit" className="vw-btn-crear" disabled={enviando}>
                 {enviando ? <Loader2 size={15} className="vw-spin" /> : null}
-                {lead ? (items.length ? 'Guardar productos' : 'Guardar lead') : (items.length && leadTipo === 'campana' ? 'Crear pedido' : 'Guardar lead')}
+                {lead && items.length ? 'Guardar productos' : 'Guardar lead'}
               </button>
             </div>
           </div>

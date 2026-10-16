@@ -38,13 +38,16 @@ test('sigue exigiendo los datos de contacto para guardar un lead', async () => {
 });
 
 
-test('elegir productos para un contacto orgánico no crea un pedido automáticamente', async () => {
+test.each(['Orgánico', 'Campaña WhatsApp'])('elegir productos no crea un pedido automáticamente: %s', async origen => {
   const onSubmit = vi.fn(async () => {});
   render(<VentaWhatsAppModal open onClose={() => {}} onSubmit={onSubmit} />);
   fireEvent.change(screen.getByLabelText('Nombre del cliente'), { target: { value: 'Consulta Test' } });
   fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: '0981111222' } });
+  fireEvent.click(screen.getByRole('button', { name: origen }));
   fireEvent.click(screen.getByRole('button', { name: 'Elegir silla' }));
   expect(screen.getByText(/Valor de interés/)).toBeInTheDocument();
+  expect(screen.getByText(/Seguimiento de producto/)).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Crear pedido' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Guardar lead' }));
   await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ es_lead: true, monto: 100000, items: [expect.objectContaining({ producto_id: 10 })] })));
 });
