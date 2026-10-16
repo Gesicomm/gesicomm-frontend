@@ -11,6 +11,7 @@ import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { compactarItemsLanding } from '../../lib/landingItems';
 import CuponesModal from './CuponesModal';
+import ExportarFeedMeta from '../landing-simple/ExportarFeedMeta';
 import CargaMasivaProductosModal from '../productos/CargaMasivaProductosModal';
 import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
@@ -428,6 +429,19 @@ export default function VitrinaGrid() {
   const location = useLocation();
   const [filtro, setFiltro] = useState(() => location.state?.filtro === 'mios' ? 'mios' : 'todos');
   const esVistaLanding = filtro === 'landing';
+  const [exportandoMeta, setExportandoMeta] = useState(false);
+  const exportacionMetaRef = useRef(null);
+  const botonMetaRef = useRef(null);
+  const cerrarExportacionMeta = useCallback(() => { setExportandoMeta(false); botonMetaRef.current?.focus(); }, []);
+  useEffect(() => {
+    if (!exportandoMeta) return;
+    const fuera = e => { if (!exportacionMetaRef.current?.contains(e.target)) setExportandoMeta(false); };
+    const tecla = e => { if (e.key === 'Escape') cerrarExportacionMeta(); };
+    document.addEventListener('pointerdown', fuera);
+    document.addEventListener('keydown', tecla);
+    return () => { document.removeEventListener('pointerdown', fuera); document.removeEventListener('keydown', tecla); };
+  }, [exportandoMeta, cerrarExportacionMeta]);
+  useEffect(() => { if (!esVistaLanding) setExportandoMeta(false); }, [esVistaLanding]);
   
   const [page, setPage] = useState(1);
   const [seleccionados, setSeleccionados] = useState(new Set());
@@ -852,7 +866,13 @@ export default function VitrinaGrid() {
       {/* ── Encabezado ── */}
       <div className="vit-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div className="vit-header-text">
-          <h1 className="vit-title">Catálogo de Productos</h1>
+          <div className="vit-title-row">
+            <h1 className="vit-title">Catálogo de Productos</h1>
+            {esVistaLanding && !enOnboarding && <div className="vit-meta-export-anchor" ref={exportacionMetaRef}>
+              <button ref={botonMetaRef} type="button" className="vit-meta-export-button" onClick={() => setExportandoMeta(v => !v)} aria-expanded={exportandoMeta} aria-haspopup="dialog" aria-controls="vitrina-meta-export"><FileSpreadsheet size={15} />Exportar a Meta</button>
+              {exportandoMeta && <ExportarFeedMeta onCerrar={cerrarExportacionMeta} />}
+            </div>}
+          </div>
           <p className="vit-subtitle">
             {enOnboarding
               ? 'Seleccioná los productos que querés vender. Con esa selección armamos tu landing inicial.'

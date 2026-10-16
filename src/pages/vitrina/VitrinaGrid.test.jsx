@@ -5,7 +5,12 @@ import VitrinaGrid from './VitrinaGrid';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingService } from '../../services/landingService';
 import { landingSimpleService } from '../../services/landingSimpleService';
+import { metaFeedService } from '../../services/metaFeedService';
 import { BrowserRouter } from 'react-router-dom';
+
+vi.mock('../../services/metaFeedService', () => ({ metaFeedService: {
+  estadoActual: vi.fn(), activar: vi.fn(), actualizar: vi.fn(), estado: vi.fn(),
+} }));
 
 vi.mock('../../services/vitrinaService', () => ({
   vitrinaService: {
@@ -45,6 +50,7 @@ function renderWithRouter(ui) {
 describe('VitrinaGrid Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    metaFeedService.estadoActual.mockResolvedValue({ landing_id: 91, url: 'https://tienda.example/api/l/feed-productos.csv?landing=91', activo: false, seleccionados: 1, cantidad: 0, limite: 5000, omitidos: [] });
     vitrinaService.catalogoPaginado.mockResolvedValue({
       items: [
         {
@@ -158,6 +164,27 @@ describe('VitrinaGrid Component', () => {
     const btnMisProductos = screen.getByText('Productos propios');
     expect(btnMisProductos).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Importar mis productos/i })).toBeNull();
+  });
+
+  it('ofrece el enlace de Meta únicamente desde Productos en mi landing', async () => {
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto de Prueba');
+    expect(screen.queryByRole('button', { name: 'Exportar a Meta' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Productos en mi landing', exact: true }));
+    const exportar = await screen.findByRole('button', { name: 'Exportar a Meta', exact: true });
+    expect(exportar).toHaveClass('vit-meta-export-button');
+    expect(exportar.closest('.vit-title-row')).toContainElement(screen.getByRole('heading', { name: 'Catálogo de Productos' }));
+    fireEvent.click(exportar);
+    expect(screen.getByRole('dialog', { name: 'Exportar a Meta' })).toBeInTheDocument();
+    expect(await screen.findByRole('textbox', { name: 'URL del feed de esta landing' })).toHaveValue('https://tienda.example/api/l/feed-productos.csv?landing=91');
+    expect(metaFeedService.estadoActual).toHaveBeenCalled();
+    expect(screen.getByText('Copiar enlace')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Exportar a Meta' })).not.toBeInTheDocument();
+    expect(exportar).toHaveFocus();
+    fireEvent.click(exportar);
+    fireEvent.click(screen.getByRole('button', { name: 'Productos Gesicom', exact: true }));
+    expect(screen.queryByRole('textbox', { name: 'URL del feed de esta landing' })).not.toBeInTheDocument();
   });
 
   it('muestra "Importar mis productos" junto al orden solo en Productos propios', async () => {
