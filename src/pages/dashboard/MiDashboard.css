@@ -398,6 +398,88 @@
   min-height: 100%;
 }
 
+/* ── Bloque minimizable: cabecera con botón de colapso + cuerpo plegable ── */
+.md-bloque-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.md-bloque-head .md-card-title { flex: 1; min-width: 0; }
+.md-bloque-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--md-border);
+  border-radius: 6px;
+  color: var(--md-ink-muted);
+  cursor: pointer;
+}
+.md-bloque-toggle:hover { color: var(--md-ink); border-color: var(--md-border-strong); }
+.md-bloque-toggle .md-chevron-abierto { transform: rotate(180deg); }
+.md-bloque-body { margin-top: 0.9rem; }
+
+/* ── Resumen de Pedidos: flujo operativo actual ─────────────────────── */
+.md-flujo-pedidos {
+  display: flex;
+  align-items: center;
+  margin-top: 0.9rem;
+  background: var(--md-surface-alt);
+  border: 1px solid var(--md-border);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+.md-flujo-paso {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 118px;
+  justify-content: center;
+}
+.md-flujo-icono {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.md-flujo-info { display: flex; flex-direction: column; }
+.md-flujo-val { font-size: 1.3rem; font-weight: 700; color: var(--md-ink); line-height: 1.1; }
+.md-flujo-label { font-size: 0.72rem; color: var(--md-ink-muted); margin-top: 0.15rem; font-weight: 500; white-space: nowrap; }
+.md-flujo-conector {
+  flex: 0 0 28px;
+  height: 2px;
+  background: var(--md-border-strong);
+  margin: 0 0.2rem;
+}
+.md-flujo-excepciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+.md-flujo-chip {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+}
+.md-flujo-chip strong { font-weight: 700; }
+
+@media (max-width: 860px) {
+  .md-flujo-pedidos { flex-direction: column; align-items: stretch; gap: 0.7rem; overflow-x: visible; }
+  .md-flujo-paso { justify-content: flex-start; min-width: 0; }
+  .md-flujo-conector { width: 2px; height: 16px; margin: 0 0 0 1rem; }
+}
+
 /* ── Embudo de Conversión ────────────────────────────────────────── */
 .md-funnel-card { padding-bottom: 1.1rem; }
 .md-funnel {

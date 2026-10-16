@@ -554,13 +554,18 @@ No copies productos, precios ni links a mano: usá esos atributos data-gesicomm-
 }
 
 export function bloqueCodigoBase(base, { compacto = false } = {}) {
-  if (!base) return '';
+  if (!base) {
+    return `
+
+## Diseño libre (Lienzo en blanco)
+Tenés total libertad estética y de maquetación para diseñar esta vista desde cero. No estás obligado a seguir ninguna plantilla previa ni estructura de clases rígida. Diseñá el HTML y CSS como mejor represente la identidad de la tienda o el estilo pedido, asegurándote únicamente de incluir los atributos data-gesicomm-* necesarios para que el motor comercial procese compras, pedidos y seguimiento.`;
+  }
   const total = (base.html || '').length + (base.css || '').length + (base.js || '').length;
   if (compacto || total > MAX_BASE_COMPLETA_PROMPT) return resumenCodigoBase(base);
   return `
 
 ## Código base
-Partí de este código: ya respeta todo el contrato. Cambiá el diseño y los textos como quieras, pero mantené los atributos data-gesicomm-*.
+Podés tomar este código como referencia funcional del contrato, pero rediseñalo libremente manteniendo los atributos data-gesicomm-*.
 
 \`\`\`html
 ${base.html}

@@ -1333,7 +1333,7 @@ function ConfirmacionPublicacionIAModal({ pendientes, onCancelar, onAceptar }) {
 
 function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplicar, onError, onElegirProductos }) {
   const [estilo, setEstilo] = useState('');
-  const [incluirBase, setIncluirBase] = useState(true);
+  const [incluirBase, setIncluirBase] = useState(false);
   const [copiado, setCopiado] = useState('');
   const [respuesta, setRespuesta] = useState('');
   const [errorRespuesta, setErrorRespuesta] = useState('');
@@ -1435,9 +1435,9 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
         />
       </label>
 
-      <label className="flex items-center gap-2 text-sm text-fg/70">
+      <label className="flex items-center gap-2 text-sm text-fg/70 cursor-pointer">
         <input type="checkbox" checked={incluirBase} onChange={e => setIncluirBase(e.target.checked)} />
-        Incluir referencia del código base (estructura que ya funciona)
+        Incluir código base como referencia (desmarcado = diseño 100% libre desde cero)
       </label>
 
       <div>
@@ -1447,7 +1447,7 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
         <div className="rounded-xl border border-fg/25 bg-fg/5 p-3 flex flex-col mb-3">
           <p className="text-sm font-semibold text-fg">{infoVista.titulo}</p>
           <p className="text-xs text-fg/60 mt-1">
-            Todo en uno: reglas de Gesicomm + tu tienda (nombre, colores, logo) + tus {seleccion.length} producto{seleccion.length === 1 ? '' : 's'} + lo que tiene que tener {nombreVista}{incluirBase ? ' + una referencia compacta del código base' : ''}. Pegalo en un chat nuevo y la IA ya sabe qué armar sin perderse entre bloques enormes.
+            Todo en uno: reglas de Gesicomm + tu tienda (nombre, colores, logo) + tus {seleccion.length} producto{seleccion.length === 1 ? '' : 's'} + lo que tiene que tener {nombreVista}{incluirBase ? ' + referencia del código base' : ' + diseño 100% libre desde cero'}. Pegalo en un chat nuevo y la IA ya sabe qué armar sin perderse entre bloques enormes.
           </p>
           <button
             type="button"

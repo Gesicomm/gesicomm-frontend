@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   Eye, MessageCircle, CreditCard, ArrowRight, Loader, Table2, BarChart3, Store,
-  FileText, Clock, CheckCircle2, PackageCheck, Wallet, Truck, ChevronDown, HelpCircle,
+  FileText, Clock, CheckCircle2, Package, PackageCheck, Wallet, Truck, ChevronDown, HelpCircle,
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { getMetricasDashboardPedidos } from '../../services/courierApi';
 import { METRIC_HELP, METRIC_TERMS } from '../../utils/metricGlossary';
+import { STATUS as ESTADO_PEDIDO } from '../../lib/courier';
 import './MiDashboard.css';
 
 const MESES = [
@@ -1213,6 +1214,128 @@ const EMBUDOS_TABS = [
   { id: 'pago', label: 'Pago Web' },
 ];
 
+/** Recuerda si un bloque del dashboard está minimizado — en sessionStorage,
+ * nunca en la URL (ver [[gesicomm_no_url_state]]): es una preferencia de
+ * cómo estás mirando la pantalla ahora, no un dato de negocio que otra
+ * pestaña o el backend necesiten conocer. */
+function useColapsable(id, defaultOpen = true) {
+  const key = `md-bloque-colapso:${id}`;
+  const [abierto, setAbierto] = useState(() => {
+    try {
+      const guardado = sessionStorage.getItem(key);
+      return guardado === null ? defaultOpen : guardado === '1';
+    } catch {
+      return defaultOpen;
+    }
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem(key, abierto ? '1' : '0'); } catch { /* sin storage disponible */ }
+  }, [abierto, key]);
+  return [abierto, setAbierto];
+}
+
+/** Tarjeta de bloque minimizable/maximizable — mismo `.md-card` de siempre,
+ * con un botón de colapso en la cabecera. `id` identifica al bloque para
+ * recordar su estado (ver useColapsable); tiene que ser estable y único
+ * por bloque dentro del dashboard. */
+function Bloque({ id, titulo, className = '', children, defaultOpen = true }) {
+  const [abierto, setAbierto] = useColapsable(id, defaultOpen);
+  return (
+    <section className={`md-card ${className}`.trim()}>
+      <div className="md-bloque-head">
+        <h3 className="md-card-title">{titulo}</h3>
+        <button
+          type="button"
+          className="md-bloque-toggle"
+          aria-expanded={abierto}
+          aria-label={abierto ? 'Minimizar bloque' : 'Maximizar bloque'}
+          onClick={() => setAbierto(o => !o)}
+        >
+          <ChevronDown size={16} className={abierto ? 'md-chevron-abierto' : ''} aria-hidden="true" />
+        </button>
+      </div>
+      {abierto && <div className="md-bloque-body">{children}</div>}
+    </section>
+  );
+}
+
+/** Snapshot del flujo operativo de pedidos: cuántos están HOY en cada paso
+ * (Pendiente -> Confirmado -> Preparado -> Despachado -> Entregado), no
+ * cuántos pasaron por cada paso alguna vez — por eso usa `funnel.por_estado_actual`
+ * (estado crudo de Envio) y no los contadores acumulados del embudo. Mismos
+ * nombres y colores que el Kanban de Delivery (STATUS de lib/courier), para
+ * que el mismo estado se vea igual en los dos lugares. */
+const FLUJO_PEDIDOS_PASOS = [
+  { estado: 'Pendiente', icono: <Clock size={18} /> },
+  { estado: 'Confirmado', icono: <CheckCircle2 size={18} /> },
+  { estado: 'Preparado', icono: <Package size={18} /> },
+  { estado: 'Despachado', icono: <Truck size={18} /> },
+  { estado: 'Entregado', icono: <PackageCheck size={18} /> },
+];
+// Cancelado y Devuelto son plata que se cayó del flujo — se muestran
+// siempre, aunque estén en cero, porque es justo lo que el comerciante
+// quiere monitorear de un vistazo. Reprogramado y Perdido son más raros:
+// solo ocupan espacio cuando efectivamente hay alguno.
+const FLUJO_PEDIDOS_SIEMPRE = ['Cancelado', 'Devuelto'];
+const FLUJO_PEDIDOS_SI_HAY = ['Reprogramado', 'Perdido'];
+
+function FlujoPedidos({ porEstado }) {
+  const conteo = (clave) => Number(porEstado?.[clave] || 0);
+  // "EnSeguimiento" (alguien ya le escribió pero todavía no confirmó) es el
+  // mismo pedido sin confirmar, solo en otra etapa de contacto — separarlo
+  // rompería el flujo de 5 pasos que el comerciante espera ver acá.
+  const pasos = FLUJO_PEDIDOS_PASOS.map(p => ({
+    ...p,
+    valor: p.estado === 'Pendiente' ? conteo('Pendiente') + conteo('EnSeguimiento') : conteo(p.estado),
+  }));
+  const totalFlujo = pasos.reduce((acc, p) => acc + p.valor, 0);
+  const excepciones = [
+    ...FLUJO_PEDIDOS_SIEMPRE.map(estado => ({ estado, valor: conteo(estado) })),
+    ...FLUJO_PEDIDOS_SI_HAY.map(estado => ({ estado, valor: conteo(estado) })).filter(e => e.valor > 0),
+  ];
+
+  if (totalFlujo === 0 && excepciones.every(e => e.valor === 0)) {
+    return <p className="md-empty-hint">Todavía no hay pedidos en este período.</p>;
+  }
+
+  return (
+    <>
+      <div className="md-flujo-pedidos">
+        {pasos.map((p, i) => (
+          <React.Fragment key={p.estado}>
+            {i > 0 && <div className="md-flujo-conector" />}
+            <div className="md-flujo-paso">
+              <div
+                className="md-flujo-icono"
+                style={{ color: ESTADO_PEDIDO[p.estado]?.chipText, background: ESTADO_PEDIDO[p.estado]?.chipBg }}
+              >
+                {p.icono}
+              </div>
+              <div className="md-flujo-info">
+                <span className="md-flujo-val">{p.valor}</span>
+                <span className="md-flujo-label">{ESTADO_PEDIDO[p.estado]?.label || p.estado}</span>
+              </div>
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+      {excepciones.length > 0 && (
+        <div className="md-flujo-excepciones">
+          {excepciones.map(e => (
+            <span
+              key={e.estado}
+              className="md-flujo-chip"
+              style={{ color: ESTADO_PEDIDO[e.estado]?.chipText, background: ESTADO_PEDIDO[e.estado]?.chipBg }}
+            >
+              {ESTADO_PEDIDO[e.estado]?.label || e.estado}: <strong>{e.valor}</strong>
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function MiDashboard() {
   const [periodo, setPeriodo] = useState('este_mes');
   const [mes, setMes] = useState(new Date().getMonth() + 1);
@@ -1529,11 +1652,16 @@ export default function MiDashboard() {
           <Variacion actual={kpis.facturacion_entregada} previo={comparativo?.facturacion_entregada} />
         </section>
 
-        <section className="md-card md-summary-card md-span-4">
-          <h3 className="md-card-title">
-            Resumen Ejecutivo
-            <Ayuda texto="Los números principales del período que elegiste arriba. Todo lo demás del dashboard explica de dónde salen estos." />
-          </h3>
+        <Bloque
+          id="resumen-ejecutivo"
+          className="md-summary-card md-span-4"
+          titulo={(
+            <>
+              Resumen Ejecutivo
+              <Ayuda texto="Los números principales del período que elegiste arriba. Todo lo demás del dashboard explica de dónde salen estos." />
+            </>
+          )}
+        >
           <div className="md-rentabilidad-grid">
             <div className="md-rent-item">
               <span className="md-rent-label">Pedidos <Ayuda texto="Cuántos pedidos llegaron a manos del cliente en este período." /></span>
@@ -1571,17 +1699,22 @@ export default function MiDashboard() {
               <span className="md-rent-valor">{funnel.tasa_confirmacion}%</span>
             </div>
           </div>
-        </section>
+        </Bloque>
 
       {/* ── Evolución de Ventas: la sección con más protagonismo ───────── */}
       <GraficoEvolucionFinanciera serie={tendenciasFinancieras} className="md-chart-primary md-span-8" />
 
       {/* ── Rentabilidad: agregado del período + detalle por producto ──── */}
-      <section className="md-card md-rentabilidad-card md-span-4">
-        <h3 className="md-card-title">
-          {METRIC_TERMS.rentabilidad}
-          <Ayuda texto="Se arranca con toda la plata que cobraste y se le va restando cada gasto, uno por uno. Lo que sobra abajo de todo es tu ganancia." />
-        </h3>
+      <Bloque
+        id="rentabilidad"
+        className="md-rentabilidad-card md-span-4"
+        titulo={(
+          <>
+            {METRIC_TERMS.rentabilidad}
+            <Ayuda texto="Se arranca con toda la plata que cobraste y se le va restando cada gasto, uno por uno. Lo que sobra abajo de todo es tu ganancia." />
+          </>
+        )}
+      >
         {/* La cuenta del período, de arriba hacia abajo y en el orden en que
             el comercio la lee: arrancás con lo que facturaste y le vas
             restando cada gasto hasta llegar a lo que te quedó.
@@ -1696,10 +1829,9 @@ export default function MiDashboard() {
           </details>
         )}
 
-      </section>
+      </Bloque>
 
-      <section className="md-card md-products-card md-span-12">
-        <h3 className="md-card-title">Más Vendidos</h3>
+      <Bloque id="mas-vendidos" className="md-products-card md-span-12" titulo="Más Vendidos">
         <p className="md-empty-hint md-subsection-ayuda">
           Cuánto vendiste, cuánto te costó, cuánto ganaste y cuánto perdiste con
           cada producto. Pasá el mouse por el signo de pregunta de cada columna
@@ -1721,14 +1853,19 @@ export default function MiDashboard() {
             — esa plata sí está descontada de la Utilidad Neta de arriba.
           </p>
         )}
-      </section>
+      </Bloque>
 
       {/* ── Embudo de Conversión: los 4 embudos, uno a la vez por tab ──── */}
-      <section className="md-card md-funnel-card md-span-12">
-        <h3 className="md-card-title">
-          Embudo de {METRIC_TERMS.conversion}
-          <Ayuda texto="El camino que recorre una persona hasta comprarte. En cada paso se pierde gente: el porcentaje entre paso y paso te muestra dónde se te caen más." />
-        </h3>
+      <Bloque
+        id="embudo-conversion"
+        className="md-funnel-card md-span-12"
+        titulo={(
+          <>
+            Embudo de {METRIC_TERMS.conversion}
+            <Ayuda texto="El camino que recorre una persona hasta comprarte. En cada paso se pierde gente: el porcentaje entre paso y paso te muestra dónde se te caen más." />
+          </>
+        )}
+      >
         <div className="md-tabs md-tabs-embudo">
           {EMBUDOS_TABS.map(t => (
             <button
@@ -1742,41 +1879,70 @@ export default function MiDashboard() {
           ))}
         </div>
         <EmbudoPasos {...embudosPorTab[embudoTab]} />
-      </section>
+      </Bloque>
+
+      {/* ── Resumen de Pedidos: foto del flujo operativo completo, debajo
+          del Embudo de Conversión y arriba de Rendimiento por canal/Couriers,
+          tal como lo pidió Martín ── */}
+      <Bloque
+        id="resumen-pedidos"
+        className="md-span-12"
+        titulo={(
+          <>
+            Resumen de Pedidos
+            <Ayuda texto="Cuántos pedidos tenés HOY en cada paso del flujo: Pendiente, Confirmado, Preparado, Despachado y Entregado. A diferencia del Embudo de Conversión, esto es una foto del momento, no un acumulado del período." />
+          </>
+        )}
+      >
+        <FlujoPedidos porEstado={funnel.por_estado_actual} />
+      </Bloque>
 
       {/* ── Rendimiento por canal + Couriers: comparación, no detalle ──── */}
       <div className="md-cols-2 md-span-12">
-        <section className="md-card">
-          <h3 className="md-card-title">
-            Rendimiento por canal
-            <Ayuda texto="Por dónde te entran los pedidos y cuál de esos caminos te funciona mejor." />
-          </h3>
+        <Bloque
+          id="rendimiento-canal"
+          titulo={(
+            <>
+              Rendimiento por canal
+              <Ayuda texto="Por dónde te entran los pedidos y cuál de esos caminos te funciona mejor." />
+            </>
+          )}
+        >
           <TablaRendimientoCanal filas={rendimientoCanales} />
-        </section>
+        </Bloque>
 
-        <section className="md-card">
-          <h3 className="md-card-title">
-            <Truck size={15} /> Desempeño Couriers
-            <Ayuda texto="Qué tan bien está entregando cada repartidor los pedidos que le asignaste." />
-          </h3>
+        <Bloque
+          id="desempeno-couriers"
+          titulo={(
+            <>
+              <Truck size={15} /> Desempeño Couriers
+              <Ayuda texto="Qué tan bien está entregando cada repartidor los pedidos que le asignaste." />
+            </>
+          )}
+        >
           <TablaCouriers filas={couriers} />
-        </section>
+        </Bloque>
       </div>
 
       {/* ── Productos: leads vs confirmados ─────────────────────────────── */}
-      <section className="md-card md-span-12">
-        <h3 className="md-card-title">
-          Leads vs. Confirmados por producto
-          <span className="md-card-title-sub">pixel + confirmado a mano</span>
-          <Ayuda texto="Compara la intención de compra en la tienda (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto. Solo aparecen los productos que tuvieron interés en tus páginas: lo que vendés a mano o por WhatsApp no pasa por acá, se ve en Más Vendidos." />
-        </h3>
+      <Bloque
+        id="leads-vs-confirmados"
+        className="md-span-12"
+        titulo={(
+          <>
+            Leads vs. Confirmados por producto
+            <span className="md-card-title-sub">pixel + confirmado a mano</span>
+            <Ayuda texto="Compara la intención de compra en la tienda (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto. Solo aparecen los productos que tuvieron interés en tus páginas: lo que vendés a mano o por WhatsApp no pasa por acá, se ve en Más Vendidos." />
+          </>
+        )}
+      >
         <TablaEmbudoProductos filas={embudoProductosVisibles} />
         {embudoProductos.length > 5 && (
           <button type="button" className="md-btn-ghost md-ver-todos" onClick={() => setVerTodosProductos(v => !v)}>
             {verTodosProductos ? 'Ver menos' : `Ver todos (${embudoProductos.length})`}
           </button>
         )}
-      </section>
+      </Bloque>
 
       <div className="md-footer-link md-span-12">
         <Link to="/mis-pedidos" state={{ tab: "analitica" }} className="md-btn-ghost">
