@@ -3210,6 +3210,10 @@ export function runtimeGesicomm() {
     pintarControlesCatalogo();
     actualizarTituloCategoria();
     prepararMenuCategoriasHeader();
+    // Mismo motivo que en repintarProductosCategoria: paginar, filtrar u
+    // ordenar el catálogo reconstruye las tarjetas y con ellas cualquier
+    // .gc-card-countdown, que si no se re-engancha queda en --h --m --s.
+    prepararCountdowns();
   }
 
   function textoSelectCatalogo(select) {
