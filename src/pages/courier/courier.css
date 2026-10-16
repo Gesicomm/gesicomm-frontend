@@ -4937,6 +4937,31 @@ td.pt-empty .pt-spinner {
   box-shadow: 0 0 0 1px var(--color-primary);
 }
 
+.vw-lead-tipo { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.vw-lead-tipo-opciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.vw-lead-tipo-btn {
+  flex: 1;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-canvas);
+  color: var(--color-fg-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vw-lead-tipo-btn.is-activo {
+  border-color: #1f9e52;
+  background: color-mix(in srgb, #1f9e52 14%, transparent);
+  color: #1f9e52;
+}
+
 .vw-productos { position: relative; display: flex; flex-direction: column; gap: 0.5rem; }
 
 .vw-label { font-size: 0.82rem; font-weight: 700; color: var(--color-fg-muted); }
@@ -5125,4 +5150,13 @@ td.pt-empty .pt-spinner {
 .pt-tipo-badge--manual {
   background: color-mix(in srgb, var(--color-fg) 10%, transparent);
   color: var(--color-fg-muted);
+}
+
+.pt-tipo-badge--clickable {
+  border: 1px dashed transparent;
+  cursor: pointer;
+}
+
+.pt-tipo-badge--clickable:hover {
+  border-color: #1f9e52;
 }

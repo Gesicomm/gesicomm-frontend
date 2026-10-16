@@ -6,7 +6,7 @@ import {
   Columns3, Table2, SlidersHorizontal, CheckCircle2, Plus
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
-import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
+import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio, actualizarLeadTipoManual } from "../../services/courierApi";
 import AbastecimientoTimeline from "../../components/abastecimiento/AbastecimientoTimeline";
 import { canalVentaService } from "../../services/canalVentaService";
 import { verificarSesion } from "../../utils/auth";
@@ -932,6 +932,20 @@ export function PedidosTable({
     }
   };
 
+  // Corrige a mano si un pedido de WhatsApp cuenta como Lead Orgánico o Lead
+  // Campaña (ver columna Tipo) — el vendedor sabe cosas que el matching
+  // automático por producto no puede saber (ej. llegó por recomendación
+  // aunque el producto tenga campaña activa). Alterna entre las dos, no
+  // vuelve al automático: una vez corregido, queda corregido.
+  const handleToggleLeadTipo = async (envio, actual) => {
+    try {
+      await actualizarLeadTipoManual(envio.id, actual === "campana" ? "organico" : "campana");
+      cargarPedidos();
+    } catch (err) {
+      alert("Error al corregir el tipo de lead: " + err.message);
+    }
+  };
+
   const cargarConteos = useCallback(async (f) => {
     try {
       const payload = construirPayloadBase(f, { incluirFiltroAbastecimiento: false });
@@ -1729,8 +1743,18 @@ export function PedidosTable({
                 // claro que todavía no es una venta confirmada — sigue
                 // siendo el mismo Envio de siempre, esto es solo la etiqueta.
                 const esWhatsapp = String(e.origen || "").toUpperCase().includes("WHATSAPP");
+                // Mismo dato que ya separa "Lead Orgánico" de "Lead Campaña"
+                // en el Dashboard General (ver pedidosAnalyticsService.js):
+                // si el pedido tiene al menos un MetaCampanaLead, su producto
+                // matcheó una campaña activa al crearse.
+                // El vendedor puede corregir el cálculo automático a mano
+                // (ver lead_tipo_manual en Envio.js) — su marca gana cuando
+                // existe, mismo criterio que pedidosAnalyticsService.js.
+                const leadTipoActual = e.lead_tipo_manual || ((e.campana_leads || []).length > 0 ? "campana" : "organico");
                 const tipoPedido = esWhatsapp
-                  ? { label: "Lead WhatsApp", tono: "whatsapp" }
+                  ? leadTipoActual === "campana"
+                    ? { label: "LC", tono: "whatsapp", title: "Lead Campaña WhatsApp — clic para corregir a Orgánico" }
+                    : { label: "LO", tono: "whatsapp", title: "Lead Orgánico WhatsApp — clic para corregir a Campaña" }
                   : String(e.origen || "").toUpperCase() === "LANDING"
                   ? { label: "Pedido Web", tono: "web" }
                   : { label: "Manual", tono: "manual" };
@@ -1763,7 +1787,18 @@ export function PedidosTable({
                       )}
                     </td>
                     <td className="pt-td pt-td-tipo" data-label="Tipo">
-                      <span className={`pt-tipo-badge pt-tipo-badge--${tipoPedido.tono}`}>{tipoPedido.label}</span>
+                      {esWhatsapp ? (
+                        <button
+                          type="button"
+                          className={`pt-tipo-badge pt-tipo-badge--${tipoPedido.tono} pt-tipo-badge--clickable`}
+                          title={tipoPedido.title}
+                          onClick={(ev) => { ev.stopPropagation(); handleToggleLeadTipo(e, leadTipoActual); }}
+                        >
+                          {tipoPedido.label}
+                        </button>
+                      ) : (
+                        <span className={`pt-tipo-badge pt-tipo-badge--${tipoPedido.tono}`}>{tipoPedido.label}</span>
+                      )}
                     </td>
                     <td className="pt-td pt-td-fecha" data-label="Fecha">
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>

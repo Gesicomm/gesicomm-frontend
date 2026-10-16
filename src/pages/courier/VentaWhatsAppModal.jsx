@@ -34,6 +34,10 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
   const [telefono, setTelefono] = useState("");
   const [items, setItems] = useState([]);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
+  // Lo elige el vendedor ahí mismo, al cargar el lead — no después en la
+  // tabla. "Orgánico" por default: es el caso más común (alguien escribe
+  // sin venir de un anuncio); si sabés que vino de la campaña, lo cambiás acá.
+  const [leadTipo, setLeadTipo] = useState("organico");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
@@ -42,6 +46,7 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
       setNombreCliente("");
       setTelefono("");
       setItems([]);
+      setLeadTipo("organico");
       setError("");
       return;
     }
@@ -139,6 +144,7 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
         // armando el seguimiento del contacto por WhatsApp (mismo criterio
         // que el checkout público, ver landing.service.js crearCheckout).
         estado_comercial: "Pendiente",
+        lead_tipo_manual: leadTipo,
         monto: total,
         items: items.map((it) => ({
           producto_id: it.producto_id,
@@ -184,6 +190,26 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
                 placeholder="Ej: 0981123456"
               />
             </label>
+          </div>
+
+          <div className="vw-lead-tipo">
+            <span className="vw-label">¿De dónde llegó este lead?</span>
+            <div className="vw-lead-tipo-opciones">
+              <button
+                type="button"
+                className={`vw-lead-tipo-btn ${leadTipo === "organico" ? "is-activo" : ""}`}
+                onClick={() => setLeadTipo("organico")}
+              >
+                Orgánico
+              </button>
+              <button
+                type="button"
+                className={`vw-lead-tipo-btn ${leadTipo === "campana" ? "is-activo" : ""}`}
+                onClick={() => setLeadTipo("campana")}
+              >
+                Campaña WhatsApp
+              </button>
+            </div>
           </div>
 
           <div className="vw-productos">

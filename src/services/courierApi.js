@@ -81,6 +81,16 @@ export const createEnvio = async (envioData) => {
 };
 
 /**
+ * Corrige a mano si un pedido cuenta como Lead Orgánico o Lead Campaña
+ * (columna Tipo de la tabla). `leadTipo` es 'organico' | 'campana' | null
+ * (null vuelve a confiar en el cálculo automático por producto).
+ */
+export const actualizarLeadTipoManual = async (id, leadTipo) => {
+  const { data } = await api.put(`/envios/${id}/lead-tipo`, { lead_tipo_manual: leadTipo });
+  return data;
+};
+
+/**
  * `datos` acepta estado/courier_id (uso normal, drag-and-drop o el select
  * de la card) y, cuando se confirma un pedido desde el modal único de
  * Pedido (NuevoPedidoModal.jsx en modo "completar"), también el resto de
