@@ -316,7 +316,7 @@ describe('VitrinaGrid Component', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /Seleccionar Otro en Landing/i }));
     fireEvent.click(screen.getByRole('button', { name: /Marcar como oferta/ }));
     const modal = within(screen.getByRole('dialog', { name: 'Marcar como oferta' }));
-    fireEvent.click(within(modal.getByRole('group', { name: 'Descuento' })).getByRole('button', { name: '30%' }));
+    fireEvent.click(within(modal.getByRole('group', { name: 'Precio anterior' })).getByRole('button', { name: '30%' }));
     fireEvent.click(modal.getByRole('button', { name: /Aplicar a 2/ }));
     await waitFor(() => expect(vitrinaService.organizarLanding).toHaveBeenLastCalledWith(expect.objectContaining({
       accion: 'oferta', pct: 30, items: [{ tipo: 'producto', id: 1 }, { tipo: 'producto', id: 2 }],

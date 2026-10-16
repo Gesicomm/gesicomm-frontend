@@ -133,6 +133,12 @@ export default function OrganizadorProductos({
   categoriaActiva = '',
   onCategoria,
   onAplicarOferta,
+  // Descuento REAL con vigencia (baja el precio que se cobra, no solo el
+  // tachado) — distinto de onAplicarOferta. Recibe (productos, { pct,
+  // finAt }); productos son solo los de tipo 'producto' (los combos no
+  // tienen este campo, ya traen precio_total fijo). Opcional: si no viene,
+  // la sección de descuento real del modal no se ofrece.
+  onAplicarDescuentoReal,
   onLimpiar,
   onColeccion,
   onEditar,
@@ -213,6 +219,15 @@ export default function OrganizadorProductos({
     });
   }
   const limpiar = () => setMarcados(new Set());
+  // "Quitar oferta"/"Quitar todo" también apagan el descuento real activo
+  // (si no, seguiría cobrándose hasta que venza solo, sin forma de
+  // cancelarlo antes). No tira si falla: el resto de la limpieza (ancla,
+  // badge, colección) ya se aplicó igual.
+  function quitarDescuentoRealDeMarcados() {
+    if (!onAplicarDescuentoReal) return;
+    const productos = marcadosLista.filter(f => f.item.tipo !== 'combo').map(f => f.item);
+    if (productos.length) onAplicarDescuentoReal(productos, { pct: null, finAt: null }).catch(() => {});
+  }
 
   if (!productos.length) {
     return <p className="text-sm text-fg-muted">Esta landing todavía no tiene productos para mostrar.</p>;
@@ -366,7 +381,7 @@ export default function OrganizadorProductos({
             </button>
             <button
               type="button"
-              onClick={() => { onLimpiar(marcadosLista.map(f => f.item), { descuento: true, contador: true, badgeOferta: true }); limpiar(); }}
+              onClick={() => { onLimpiar(marcadosLista.map(f => f.item), { descuento: true, contador: true, badgeOferta: true }); quitarDescuentoRealDeMarcados(); limpiar(); }}
               className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-fg-muted hover:border-border-strong hover:text-fg"
             >
               Quitar oferta
@@ -381,7 +396,7 @@ export default function OrganizadorProductos({
             </button>
             <button
               type="button"
-              onClick={() => { onLimpiar(marcadosLista.map(f => f.item), { descuento: true, contador: true, badge: true, colecciones: 'todas' }); limpiar(); }}
+              onClick={() => { onLimpiar(marcadosLista.map(f => f.item), { descuento: true, contador: true, badge: true, colecciones: 'todas' }); quitarDescuentoRealDeMarcados(); limpiar(); }}
               title="Saca descuento, contador, badge y colecciones en esta landing. El producto sigue publicado."
               className="col-span-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-danger/30 bg-surface px-3 text-xs font-semibold text-danger hover:bg-danger/[0.08]"
             >
@@ -397,8 +412,17 @@ export default function OrganizadorProductos({
           enContador={enContadorSet}
           contadorFinAt={contadorFinAt}
           contadorTitulo={contadorTitulo}
+          permiteDescuentoReal={!!onAplicarDescuentoReal}
           onCerrar={() => setModal(null)}
-          onAplicar={(cambios) => { onAplicarOferta(marcadosLista.map(f => f.item), cambios); setModal(null); limpiar(); }}
+          onAplicar={async ({ pctReal, ...cambios }) => {
+            onAplicarOferta(marcadosLista.map(f => f.item), cambios);
+            if (pctReal) {
+              const productos = marcadosLista.filter(f => f.item.tipo !== 'combo').map(f => f.item);
+              if (productos.length) await onAplicarDescuentoReal(productos, { pct: pctReal, finAt: cambios.finAt });
+            }
+            setModal(null);
+            limpiar();
+          }}
         />
       )}
       {(modal === 'coleccion' || modal === 'quitar_coleccion') && (
@@ -448,26 +472,53 @@ function Rotulo({ children, ayuda }) {
   );
 }
 
-export function ModalOfertaMasiva({ filas, enContador, contadorFinAt, contadorTitulo, onCerrar, onAplicar }) {
+export function ModalOfertaMasiva({ filas, enContador, contadorFinAt, contadorTitulo, permiteDescuentoReal = false, onCerrar, onAplicar }) {
   const contadorVigente = contadorFinAt && new Date(contadorFinAt).getTime() > Date.now();
   const [pct, setPct] = useState('');
+  const [pctReal, setPctReal] = useState('');
   const [badge, setBadge] = useState('Oferta');
   const [atajo, setAtajo] = useState(contadorVigente ? 'mantener' : 'hoy');
   const [fecha, setFecha] = useState(contadorFinAt || finDeAtajo('24h'));
   const [titulo, setTitulo] = useState(contadorTitulo || '');
+  const [aplicando, setAplicando] = useState(false);
+  const [errorAplicar, setErrorAplicar] = useState('');
 
   const pctNum = Number(String(pct).replace(',', '.'));
   const pctValido = pct === '' || (Number.isFinite(pctNum) && pctNum > 0 && pctNum < 95);
+  const pctRealNum = Number(String(pctReal).replace(',', '.'));
+  const pctRealValido = pctReal === '' || (Number.isFinite(pctRealNum) && pctRealNum > 0 && pctRealNum < 95);
   const finElegido = atajo === 'ninguno' ? '' : atajo === 'mantener' ? contadorFinAt : atajo === 'fecha' ? fecha : finDeAtajo(atajo);
   const finValido = atajo === 'ninguno' || (finElegido && new Date(finElegido).getTime() > Date.now());
+  // El descuento real SIEMPRE es por tiempo limitado (vuelve solo al precio
+  // normal al vencer): sin una fecha de fin elegida, no hay nada que aplicar.
+  const faltaFinParaReal = pctReal !== '' && (atajo === 'ninguno' || !finValido);
+  const productosSinCombo = filas.filter(f => f.item.tipo !== 'combo').length;
   const sinDescuento = pct === '' ? filas.filter(f => !(f.ancla > f.precio)).length : 0;
   const nuevosEnContador = atajo === 'ninguno' ? 0 : filas.filter(f => !enContador.has(f.contentId)).length;
   const sobran = Math.max(0, enContador.size + nuevosEnContador - MAX_PRODUCTOS_CONTADOR);
   const tituloSugerido = atajo === 'hoy' ? 'Ofertas del día' : atajo === 'finde' ? 'Ofertas del fin de semana' : 'Ofertas por tiempo limitado';
+  const puedeAplicar = pctValido && pctRealValido && finValido && !faltaFinParaReal && !aplicando;
 
   function elegirAtajo(valor) {
     setAtajo(valor);
     if (valor === 'hoy' && (badge === 'Oferta' || !badge)) setBadge('Solo por hoy');
+  }
+
+  async function aplicar() {
+    setErrorAplicar('');
+    setAplicando(true);
+    try {
+      await onAplicar({
+        pct: pct === '' ? null : pctNum,
+        pctReal: pctReal === '' ? null : pctRealNum,
+        badge: badge.trim(),
+        finAt: finElegido || null,
+        titulo: titulo.trim() || tituloSugerido,
+      });
+    } catch (err) {
+      setErrorAplicar(err?.response?.data?.message || 'No se pudo aplicar el descuento real. Probá de nuevo.');
+      setAplicando(false);
+    }
   }
 
   return (
@@ -480,17 +531,50 @@ export function ModalOfertaMasiva({ filas, enContador, contadorFinAt, contadorTi
           <button type="button" onClick={onCerrar} className="inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-fg-muted hover:bg-surface-2 hover:text-fg">Cancelar</button>
           <button
             type="button"
-            disabled={!pctValido || !finValido}
-            onClick={() => onAplicar({ pct: pct === '' ? null : pctNum, badge: badge.trim(), finAt: finElegido || null, titulo: titulo.trim() || tituloSugerido })}
+            disabled={!puedeAplicar}
+            onClick={aplicar}
             className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <Check size={15} /> Aplicar a {filas.length}
+            <Check size={15} /> {aplicando ? 'Aplicando…' : `Aplicar a ${filas.length}`}
           </button>
         </>
       )}
     >
-      <section role="group" aria-label="Descuento">
-        <Rotulo ayuda="Se calcula el precio anterior de cada producto a partir de su precio actual. Vacío = dejar el precio anterior que ya tengan.">Descuento</Rotulo>
+      {errorAplicar && <p className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">{errorAplicar}</p>}
+
+      {permiteDescuentoReal && (
+        <section role="group" aria-label="Descuento real">
+          <Rotulo ayuda="Baja de verdad lo que el cliente paga, mientras dure la fecha de abajo. Al vencer, el precio vuelve solo al normal — no es el tachado, es lo que se cobra en el checkout.">Descuento real</Rotulo>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {DESCUENTOS_RAPIDOS.map(n => <Chip key={n} activo={pctRealNum === n} onClick={() => setPctReal(String(n))}>{n}%</Chip>)}
+            <label className="relative">
+              <span className="sr-only">Otro porcentaje real</span>
+              <input
+                inputMode="numeric"
+                value={pctReal}
+                onChange={e => setPctReal(e.target.value.replace(/[^\d.,]/g, '').slice(0, 4))}
+                placeholder="Otro"
+                aria-label="Porcentaje de descuento real"
+                className={`h-8 w-20 rounded-full border bg-surface pl-3 pr-6 text-xs text-fg outline-none focus:border-primary ${pctRealValido ? 'border-border' : 'border-danger'}`}
+              />
+              <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-fg-muted">%</span>
+            </label>
+          </div>
+          {!pctRealValido && <p className="mt-1.5 text-xs text-danger">El descuento real tiene que estar entre 1% y 94%.</p>}
+          {faltaFinParaReal && <p className="mt-1.5 text-xs text-danger">Elegí hasta cuándo dura (abajo): el descuento real necesita una fecha de fin.</p>}
+          {productosSinCombo < filas.length && (
+            <p className="mt-1.5 text-xs text-warning">Los combos no tienen descuento real propio: solo se aplica a los {productosSinCombo} producto{productosSinCombo === 1 ? '' : 's'} marcado{productosSinCombo === 1 ? '' : 's'}.</p>
+          )}
+          {pctRealValido && pctReal !== '' && filas[0] && filas[0].precio > 0 && (
+            <p className="mt-1.5 text-xs text-fg-muted">
+              Ej.: {filas[0].item.nombre} pasa de {formatoGs(filas[0].precio)} a {formatoGs(Math.round(filas[0].precio * (1 - pctRealNum / 100)))} mientras dure la oferta.
+            </p>
+          )}
+        </section>
+      )}
+
+      <section role="group" aria-label="Precio anterior">
+        <Rotulo ayuda="Solo el tachado que se muestra al lado del precio — no cambia lo que el cliente paga. Se calcula a partir del precio actual. Vacío = dejar el precio anterior que ya tengan.">Precio anterior (tachado)</Rotulo>
         <div className="flex flex-wrap items-center gap-1.5">
           {DESCUENTOS_RAPIDOS.map(n => <Chip key={n} activo={pctNum === n} onClick={() => setPct(String(n))}>{n}%</Chip>)}
           <label className="relative">
@@ -500,21 +584,21 @@ export function ModalOfertaMasiva({ filas, enContador, contadorFinAt, contadorTi
               value={pct}
               onChange={e => setPct(e.target.value.replace(/[^\d.,]/g, '').slice(0, 4))}
               placeholder="Otro"
-              aria-label="Porcentaje de descuento"
+              aria-label="Porcentaje para el precio anterior"
               className={`h-8 w-20 rounded-full border bg-surface pl-3 pr-6 text-xs text-fg outline-none focus:border-primary ${pctValido ? 'border-border' : 'border-danger'}`}
             />
             <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-fg-muted">%</span>
           </label>
         </div>
-        {!pctValido && <p className="mt-1.5 text-xs text-danger">El descuento tiene que estar entre 1% y 94%.</p>}
+        {!pctValido && <p className="mt-1.5 text-xs text-danger">El porcentaje tiene que estar entre 1% y 94%.</p>}
         {sinDescuento > 0 && (
           <p className="mt-1.5 text-xs text-warning">
-            {sinDescuento} producto{sinDescuento === 1 ? '' : 's'} no tiene{sinDescuento === 1 ? '' : 'n'} precio anterior: sin un descuento no se va{sinDescuento === 1 ? '' : 'n'} a ver como oferta.
+            {sinDescuento} producto{sinDescuento === 1 ? '' : 's'} no tiene{sinDescuento === 1 ? '' : 'n'} precio anterior: sin uno no se va{sinDescuento === 1 ? '' : 'n'} a ver como oferta.
           </p>
         )}
         {pctValido && pct !== '' && filas[0] && filas[0].precio > 0 && (
           <p className="mt-1.5 text-xs text-fg-muted">
-            Ej.: {filas[0].item.nombre} queda {formatoGs(filas[0].precio)}, antes {formatoGs(Math.ceil(filas[0].precio / (1 - pctNum / 100)))}.
+            Ej.: {filas[0].item.nombre} sigue costando {formatoGs(filas[0].precio)}, con ~~{formatoGs(Math.ceil(filas[0].precio / (1 - pctNum / 100)))}~~ tachado arriba.
           </p>
         )}
       </section>
@@ -534,7 +618,7 @@ export function ModalOfertaMasiva({ filas, enContador, contadorFinAt, contadorTi
       </section>
 
       <section role="group" aria-label="Duración">
-        <Rotulo ayuda="Cuenta regresiva en la tarjeta del producto y en el bloque “Oferta flash” del inicio. Es una sola para toda la tienda: cambiarla acá también cambia la de las otras ofertas.">¿Hasta cuándo dura?</Rotulo>
+        <Rotulo ayuda={`Cuenta regresiva en la tarjeta del producto y en el bloque “Oferta flash” del inicio.${pctReal !== '' ? ' También es cuándo vence el descuento real: después de esta fecha el precio vuelve solo al normal.' : ''} Es una sola para toda la tienda: cambiarla acá también cambia la de las otras ofertas.`}>¿Hasta cuándo dura?</Rotulo>
         <div className="flex flex-wrap gap-1.5">
           {contadorVigente && <Chip activo={atajo === 'mantener'} onClick={() => setAtajo('mantener')}>Usar el actual</Chip>}
           {ATAJOS_CONTADOR.map(([k, label]) => <Chip key={k} activo={atajo === k} onClick={() => elegirAtajo(k)}>{label}</Chip>)}

@@ -663,6 +663,17 @@ export default function VitrinaGrid() {
     }
   }
 
+  // Descuento REAL con vigencia (Organizar productos → "Descuento real"):
+  // a diferencia de organizarLanding (precio_ancla, solo tachado), esto
+  // pega directo al producto — es lo que de verdad se cobra, por eso se
+  // guarda al toque en vez de esperar ninguna confirmación aparte.
+  async function aplicarDescuentoReal(items, { pct, finAt }) {
+    const ids = items.filter(i => i.tipo !== 'combo').map(i => Number(i.id ?? i.referencia_id)).filter(Number.isInteger);
+    if (!ids.length) return;
+    await productService.descuentoMasivo(ids, { pct, finAt });
+    await cargar();
+  }
+
   async function organizarLanding(accion, extra = {}, objetivo = itemsSeleccionados) {
     const itemsAOrganizar = objetivo
       .map(item => ({ tipo: item?.tipo, id: Number(item?.id ?? item?.referencia_id) }))
@@ -916,15 +927,20 @@ export default function VitrinaGrid() {
                 >
                   Quitar de colección
                 </button>
-                <button type="button" className="vit-seleccion-cancelar vit-seleccion-combo" onClick={() => organizarLanding('quitar_oferta')} disabled={organizando}>
+                <button
+                  type="button"
+                  className="vit-seleccion-cancelar vit-seleccion-combo"
+                  onClick={() => { aplicarDescuentoReal(itemsSeleccionados, { pct: null, finAt: null }).catch(() => {}); organizarLanding('quitar_oferta'); }}
+                  disabled={organizando}
+                >
                   Quitar oferta
                 </button>
                 <button
                   type="button"
                   className="vit-seleccion-cancelar vit-seleccion-combo"
-                  onClick={() => organizarLanding('quitar_todo')}
+                  onClick={() => { aplicarDescuentoReal(itemsSeleccionados, { pct: null, finAt: null }).catch(() => {}); organizarLanding('quitar_todo'); }}
                   disabled={organizando}
-                  title="Saca descuento, contador, badge y colecciones. Siguen publicados."
+                  title="Saca descuento real, descuento, contador, badge y colecciones. Siguen publicados."
                 >
                   {organizando ? <Loader size={15} className="spin-icon" /> : <X size={15} />} Quitar todo
                 </button>
@@ -1220,14 +1236,14 @@ export default function VitrinaGrid() {
           enContador={new Set(filasOrganizar.filter(f => f.item.en_landing?.contador).map(f => f.contentId))}
           contadorFinAt=""
           contadorTitulo=""
+          permiteDescuentoReal
           onCerrar={() => setModalOrganizar(null)}
-          onAplicar={({ pct, badge, finAt, titulo }) => organizarLanding('oferta', {
-            pct,
-            badge,
+          onAplicar={async ({ pct, pctReal, badge, finAt, titulo }) => {
             // El modal da hora local (datetime-local): el backend guarda ISO.
-            fin_at: finAt ? new Date(finAt).toISOString() : null,
-            titulo,
-          })}
+            const finAtIso = finAt ? new Date(finAt).toISOString() : null;
+            if (pctReal) await aplicarDescuentoReal(filasOrganizar.map(f => f.item), { pct: pctReal, finAt: finAtIso });
+            await organizarLanding('oferta', { pct, badge, fin_at: finAtIso, titulo });
+          }}
         />
       )}
       {(modalOrganizar === 'coleccion' || modalOrganizar === 'quitar_coleccion') && (

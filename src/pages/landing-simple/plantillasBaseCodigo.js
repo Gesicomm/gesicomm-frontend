@@ -171,7 +171,6 @@ h1, h2, h3, p { margin-top: 0; }
 .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .product-card { position: relative; display: flex; flex-direction: column; overflow: hidden; color: #f8fbfd; background: #18232a; border: 1px solid rgba(255,255,255,.1); border-radius: 22px; box-shadow: 0 18px 44px rgba(9, 16, 23, .18); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
 .product-card:hover { border-color: rgba(255,255,255,.28); box-shadow: 0 24px 60px rgba(9, 16, 23, .28); transform: translateY(-5px); }
-.product-card[data-agotado] { opacity: .6; }
 .product-badge { position: absolute; z-index: 3; top: 15px; left: 15px; padding: 7px 10px; color: #fff; background: #b00f3f; border-radius: 8px; font-size: .7rem; font-weight: 900; }
 .gc-commercial-badges { position: absolute; z-index: 4; top: 14px; left: 14px; right: 14px; display: flex; flex-wrap: wrap; gap: 7px; pointer-events: none; }
 .gc-commercial-badges span { padding: 6px 9px; color: #fff; background: #b00f3f; border-radius: 8px; box-shadow: 0 10px 24px rgba(176,15,63,.28); font-size: .68rem; font-weight: 900; line-height: 1; }

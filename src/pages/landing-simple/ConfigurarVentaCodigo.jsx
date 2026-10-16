@@ -1234,6 +1234,20 @@ export default function ConfigurarVentaCodigo({
     setResaltado(null);
   }
 
+  // Descuento REAL con vigencia (Organizar productos → "Descuento real"):
+  // a diferencia de aplicarOfertaMasiva (ancla, solo local hasta Guardar),
+  // esto pega directo al producto en el servidor — es un precio que se
+  // cobra de verdad, no tiene sentido dejarlo en un borrador sin guardar.
+  async function aplicarDescuentoRealMasivo(items, { pct, finAt }) {
+    const ids = items.filter(i => i.tipo !== 'combo').map(i => i.id);
+    if (!ids.length) return;
+    await productService.descuentoMasivo(ids, { pct, finAt });
+    await onRecargarCatalogo?.();
+    setAvisoPreview(pct
+      ? `Descuento real aplicado a ${ids.length} producto${ids.length === 1 ? '' : 's'} hasta ${new Date(finAt).toLocaleString('es-PY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.`
+      : `Descuento real quitado de ${ids.length} producto${ids.length === 1 ? '' : 's'}.`);
+  }
+
   // Quitar partes de la oferta/colección de varios productos (barra de
   // acciones o la × de cada marca en Organizar productos).
   //   descuento: sin precio tachado EN ESTA LANDING. Si el producto trae uno
@@ -2904,6 +2918,7 @@ export default function ConfigurarVentaCodigo({
                       setResaltado(null);
                     }}
                     onAplicarOferta={aplicarOfertaMasiva}
+                    onAplicarDescuentoReal={onRecargarCatalogo ? aplicarDescuentoRealMasivo : undefined}
                     onLimpiar={limpiarMasivo}
                     onColeccion={coleccionMasiva}
                     onEditar={contentId => abrirPromoProducto(contentId, 'categoria')}

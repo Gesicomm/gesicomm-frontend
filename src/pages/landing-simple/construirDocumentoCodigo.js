@@ -1680,6 +1680,11 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(button, a):fo
   border-color: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 42%, var(--tienda-linea, var(--line, #d7e6ef))) !important;
   box-shadow: 0 24px 56px color-mix(in srgb, var(--gc-fondo, #0f172a) 56%, transparent) !important;
 }
+/* Sin stock se comunica con el texto de disponibilidad. Atenuar la tarjeta
+   completa también lava fotos, precios y promociones de las bases guardadas. */
+[data-gesicomm-lista] .product-card[data-agotado] {
+  opacity: 1 !important;
+}
 :where([data-gesicomm-lista] .product-card > .product-image) {
   position: relative !important;
   display: grid !important;

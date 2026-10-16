@@ -3,12 +3,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import ConfigurarVentaCodigo from './ConfigurarVentaCodigo';
 import { usarCatalogoPaginado } from './catalogoPaginadoFalso';
+import { productService } from '../../services/productService';
 
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../services/landingSimpleService', () => ({ landingSimpleService: { listarPaymentLogos: vi.fn().mockResolvedValue([]) } }));
 vi.mock('./CodigoPreview', () => ({ default: ({ datos }) => <output data-testid="preview-datos">{JSON.stringify(datos)}</output> }));
 vi.mock('../../services/vitrinaService', async () => ({ vitrinaService: { catalogoPaginado: (await import('./catalogoPaginadoFalso')).catalogoPaginadoFalso } }));
+vi.mock('../../services/productService', () => ({ productService: {
+  detalle: vi.fn().mockResolvedValue({}),
+  faq: vi.fn().mockResolvedValue([]),
+  descuentoMasivo: vi.fn().mockResolvedValue({ actualizados: [], omitidos: [] }),
+} }));
 
 const catalogo = { productos: [
   { tipo: 'producto', id: 1, slug: 'cacerola', nombre: 'Cacerola', categoria: 'Cocina', precio_efectivo: 850000, precio_tachado: 900000 },
@@ -18,10 +24,10 @@ const cargarOfertas = vi.fn().mockResolvedValue([]);
 const datosPreview = () => JSON.parse(screen.getAllByTestId('preview-datos')[0].textContent);
 afterEach(cleanup);
 
-function montar(inicial = null, catalogoFuente = catalogo, landing = null) {
+function montar(inicial = null, catalogoFuente = catalogo, landing = null, extraProps = {}) {
   const confirmar = vi.fn().mockResolvedValue(true);
   usarCatalogoPaginado(catalogoFuente.productos);
-  render(<ConfigurarVentaCodigo catalogo={catalogoFuente} inicial={inicial || { seleccion: catalogoFuente.productos }} landing={landing} onConfirmar={confirmar} cargarOfertas={cargarOfertas} onVolver={vi.fn()} />);
+  render(<ConfigurarVentaCodigo catalogo={catalogoFuente} inicial={inicial || { seleccion: catalogoFuente.productos }} landing={landing} onConfirmar={confirmar} cargarOfertas={cargarOfertas} onVolver={vi.fn()} {...extraProps} />);
   fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
   return confirmar;
 }
@@ -218,7 +224,7 @@ describe('Presentación de los productos del lienzo', () => {
     fireEvent.click(screen.getByRole('button', { name: /Marcar como oferta/ }));
 
     const modal = within(screen.getByRole('dialog', { name: 'Marcar como oferta' }));
-    fireEvent.click(within(modal.getByRole('group', { name: 'Descuento' })).getByRole('button', { name: '20%' }));
+    fireEvent.click(within(modal.getByRole('group', { name: 'Precio anterior' })).getByRole('button', { name: '20%' }));
     const duracion = within(modal.getByRole('group', { name: 'Duración' }));
     fireEvent.click(duracion.getByRole('button', { name: 'Solo por hoy' }));
     fireEvent.click(duracion.getByRole('button', { name: 'Ofertas del día' }));
@@ -240,6 +246,34 @@ describe('Presentación de los productos del lienzo', () => {
     expect(fin.toDateString()).toBe(new Date().toDateString());
   });
 
+  it('descuento real: sin onRecargarCatalogo no se ofrece en el modal', () => {
+    montar();
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Marcar todos los productos de la lista' }));
+    fireEvent.click(screen.getByRole('button', { name: /Marcar como oferta/ }));
+    expect(within(screen.getByRole('dialog', { name: 'Marcar como oferta' })).queryByRole('group', { name: 'Descuento real' })).toBeNull();
+  });
+
+  it('descuento real: con onRecargarCatalogo, baja el precio de verdad y no toca el ancla', async () => {
+    const onRecargarCatalogo = vi.fn().mockResolvedValue();
+    montar(null, catalogo, null, { onRecargarCatalogo });
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Marcar todos los productos de la lista' }));
+    fireEvent.click(screen.getByRole('button', { name: /Marcar como oferta/ }));
+
+    const modal = within(screen.getByRole('dialog', { name: 'Marcar como oferta' }));
+    fireEvent.click(within(modal.getByRole('group', { name: 'Descuento real' })).getByRole('button', { name: '30%' }));
+    const duracion = within(modal.getByRole('group', { name: 'Duración' }));
+    fireEvent.click(duracion.getByRole('button', { name: '24 horas' }));
+    fireEvent.click(modal.getByRole('button', { name: /Aplicar a 2/ }));
+
+    await vi.waitFor(() => expect(productService.descuentoMasivo).toHaveBeenCalled());
+    expect(productService.descuentoMasivo).toHaveBeenCalledWith([1, 2], { pct: 30, finAt: expect.any(String) });
+    expect(onRecargarCatalogo).toHaveBeenCalled();
+    // El real no toca el precio anterior/ancla: sigue siendo el tachado propio del catálogo (900000), no cambió.
+    expect(datosPreview().productos[0].precio_antes).toBe(900000);
+  });
+
   it('la × del descuento lo quita aunque el producto traiga precio tachado propio', () => {
     const confirmar = montar();
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
@@ -258,7 +292,7 @@ describe('Presentación de los productos del lienzo', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Marcar todos los productos de la lista' }));
     fireEvent.click(screen.getByRole('button', { name: /Marcar como oferta/ }));
     const modal = within(screen.getByRole('dialog', { name: 'Marcar como oferta' }));
-    fireEvent.click(within(modal.getByRole('group', { name: 'Descuento' })).getByRole('button', { name: '30%' }));
+    fireEvent.click(within(modal.getByRole('group', { name: 'Precio anterior' })).getByRole('button', { name: '30%' }));
     fireEvent.click(modal.getByRole('button', { name: /Aplicar a 2/ }));
     expect(screen.getByRole('button', { name: 'Quitar contador de Olla' })).toBeInTheDocument();
 
