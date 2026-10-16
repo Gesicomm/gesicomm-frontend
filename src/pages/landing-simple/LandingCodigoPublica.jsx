@@ -163,25 +163,18 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   const vistaActual = vistaCodigo || (esFicha ? 'producto' : 'inicio');
   // Ficha propia de ESTE producto (si el comercio le armó una) → la general
   // → la base. Misma regla que la vista previa de Productos (fichaCodigoLanding).
-  const codigoCatalogo = data?.content?.vistas?.catalogo;
-  const codigoCategoria = data?.content?.vistas?.categoria;
-  const codigoCheckout = data?.content?.vistas?.checkout;
-  const codigoInicioHeredable = inicioHeredableDe(data?.content, codigoInicio);
-  const codigoFichaConGlobales = esFicha
-    ? codigoFichaProducto(data?.content, productoPublico.content_id, codigoInicio)
-    : null;
-  const codigoCatalogoConGlobales = conGlobalesHeredados(codigoCatalogo?.html ? codigoCatalogo : PLANTILLA_CATALOGO, codigoInicioHeredable);
-  const codigoCategoriaConGlobales = conGlobalesHeredados(codigoCategoria?.html ? codigoCategoria : PLANTILLA_CATEGORIA, codigoInicioHeredable);
-  const codigoCheckoutConGlobales = conGlobalesHeredados(
-    codigoCheckout?.html && !esCheckoutBase(codigoCheckout.html) ? codigoCheckout : PLANTILLA_CHECKOUT,
-    codigoInicioHeredable,
-  );
-  const codigo = esFicha
-    ? codigoFichaConGlobales
-    : vistaActual === 'checkout' ? codigoCheckoutConGlobales
-      : vistaActual === 'catalogo' ? codigoCatalogoConGlobales
-        : vistaActual === 'categoria' ? codigoCategoriaConGlobales
-          : codigoInicio;
+  // Preparar solo la vista visible. Antes se mezclaban HTML/CSS/JS de las
+  // tres páginas incluso al actualizar el carrito en la portada.
+  const codigo = useMemo(() => {
+    const content = data?.content;
+    if (esFicha) return codigoFichaProducto(content, productoPublico.content_id, codigoInicio);
+    if (!['catalogo', 'categoria', 'checkout'].includes(vistaActual)) return codigoInicio;
+    const guardado = content?.vistas?.[vistaActual];
+    const plantilla = vistaActual === 'catalogo' ? PLANTILLA_CATALOGO
+      : vistaActual === 'categoria' ? PLANTILLA_CATEGORIA : PLANTILLA_CHECKOUT;
+    const usarGuardado = guardado?.html && (vistaActual !== 'checkout' || !esCheckoutBase(guardado.html));
+    return conGlobalesHeredados(usarGuardado ? guardado : plantilla, inicioHeredableDe(content, codigoInicio));
+  }, [data?.content, codigoInicio, esFicha, productoPublico?.content_id, vistaActual]);
 
   const tema = useMemo(() => temaDesdeData(data), [data]);
   const contacto = useMemo(() => contactoDesdeData(data), [data]);
@@ -401,6 +394,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   // Una página del catálogo, pedida por el runtime del iframe.
   const pedirCatalogo = useCallback(async (pedido) => {
     const res = await obtenerCatalogoLandingPublica(slug, {
+      soloDatos: true,
       pagina: pedido?.pagina,
       porPagina: pedido?.porPagina || 20,
       orden: pedido?.orden === 'min-max' || pedido?.orden === 'max-min' || pedido?.orden === 'az' || pedido?.orden === 'za'

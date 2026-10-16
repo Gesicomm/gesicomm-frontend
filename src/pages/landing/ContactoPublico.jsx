@@ -38,7 +38,7 @@ export default function ContactoPublico() {
 
   useEffect(() => {
     let activo = true;
-    obtenerLandingPublica(slug)
+    obtenerLandingPublica(slug, { vista: 'contacto' })
       .then((res) => {
         if (!activo) return;
         if (res === null) return setEstado('no-encontrada');

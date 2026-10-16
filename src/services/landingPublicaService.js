@@ -26,6 +26,7 @@ import { esHostnameDeTienda } from '../lib/hostname';
 export async function obtenerLandingPublica(slug, opciones = {}) {
   const params = new URLSearchParams();
   if (opciones.tipoPagina) params.set('tipo_pagina', opciones.tipoPagina);
+  if (opciones.vista) params.set('vista', opciones.vista);
   const query = params.toString();
   const pathBase = slug ? `/api/l/${encodeURIComponent(slug)}` : '/api/l/';
   const path = query ? `${pathBase}?${query}` : pathBase;
@@ -63,7 +64,7 @@ export function limpiarCacheCatalogoPublico() {
 
 export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
   const {
-    pagina, porPagina, orden, disponibilidad, categoria, marca, etiqueta, precioMin, precioMax, busqueda, soloInicio, soloDescuento,
+    pagina, porPagina, orden, disponibilidad, categoria, marca, etiqueta, precioMin, precioMax, busqueda, soloInicio, soloDescuento, soloDatos,
   } = opciones;
   const params = new URLSearchParams({ vista: 'catalogo' });
   if (pagina) params.set('pagina', pagina);
@@ -77,6 +78,7 @@ export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
   if (marca && marca !== 'todas') params.set('marca', marca);
   if (soloInicio === true) params.set('soloInicio', 'true');
   if (soloDescuento === true) params.set('soloDescuento', 'true');
+  if (soloDatos === true) params.set('soloDatos', 'true');
   if (etiqueta && etiqueta !== 'todas') params.set('etiqueta', etiqueta);
   if (precioMin !== undefined && precioMin !== null && precioMin !== '') params.set('precioMin', precioMin);
   if (precioMax !== undefined && precioMax !== null && precioMax !== '') params.set('precioMax', precioMax);

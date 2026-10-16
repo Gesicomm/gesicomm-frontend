@@ -30,7 +30,7 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
           : obtenerLandingPublica(productId)
               .then(res => (res === null ? obtenerProductoLanding(null, productId) : res))
               .catch(() => obtenerProductoLanding(null, productId)))
-      : obtenerLandingPublica(slug);
+      : obtenerLandingPublica(slug, { vista: vistaCodigo || (categoriaVista ? 'categoria' : undefined) });
     
     promesa
       .then((res) => {
@@ -65,7 +65,7 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
       })
       .catch(() => { if (activo) setEstado('no-encontrada'); });
     return () => { activo = false; };
-  }, [slug, productId]);
+  }, [slug, productId, vistaCodigo, categoriaVista]);
 
   // PageView por cada página que se ve, no por cada carga de la landing:
   // inicio → checkout o → una categoría no cambia slug ni productId (el

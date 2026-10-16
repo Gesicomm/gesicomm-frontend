@@ -38,7 +38,7 @@ export default function LegalPagePublica({ tipoPagina }) {
     let activo = true;
     setEstado('cargando');
     setCodigoLegal(null);
-    obtenerLandingPublica(slug)
+    obtenerLandingPublica(slug, { vista: tipoPagina })
       .then(async (home) => {
         if (!activo) return;
         const guardado = home?.content?.vistas?.legales?.[tipoPagina];
