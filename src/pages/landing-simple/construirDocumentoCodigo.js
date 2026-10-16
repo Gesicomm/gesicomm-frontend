@@ -22,6 +22,7 @@
  */
 
 import { runtimeGesicomm } from './runtimeGesicomm';
+import { protegerObservadoresCodigo } from './protegerObservadoresCodigo';
 import { CATALOGO_TIENDA_CSS } from './catalogoTiendaCodigo';
 import { conMarcaTienda, cssMarcaTienda } from './marcaTiendaCodigo';
 import { typographyCss } from '../../lib/typography';
@@ -3207,6 +3208,7 @@ ${extras?.css ? `<style>\n${escaparCierreStyle(extras.css)}\n</style>` : ''}
 ${cuerpoConExtras(conBaseDeFicha(html), extras?.html)}
 ${puenteGesicomm}
 ${puenteErrores}
+<script>(${protegerObservadoresCodigo.toString()})();</script>
 <!-- El codigo del comercio va en su propio script, en el nivel mas alto y
      sin envolverlo en nada: metido dentro de un try/catch o de una
      funcion, sus declaraciones dejan de ser globales y cualquier
