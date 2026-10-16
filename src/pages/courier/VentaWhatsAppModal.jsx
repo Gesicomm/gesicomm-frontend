@@ -29,7 +29,7 @@ const imagenProducto = (producto) => (
  * "Confirmación de pedido web". Nace en estado "Pendiente", igual que un
  * pedido web: el stock se descuenta recién al confirmar, no acá.
  */
-export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
+export function VentaWhatsAppModal({ open, onClose, onSubmit, lead = null }) {
   const [nombreCliente, setNombreCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [items, setItems] = useState([]);
@@ -50,13 +50,17 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
       setError("");
       return;
     }
+    setNombreCliente(lead?.nombre_cliente || lead?.cliente || "");
+    setTelefono(lead?.telefono || "");
+    setItems([]);
+    setLeadTipo(lead?.lead_tipo_manual || (lead?.campana_leads?.length ? "campana" : "organico"));
     // Sin `sin_limite` solo llegan 10 productos (paginación por defecto de
     // ProductoService.buscar) y el picker no puede ofrecer el resto del
     // catálogo — mismo criterio que NuevoPedidoModal.
     productService.buscar({ sin_limite: true, activo: true })
       .then((data) => setProductosDisponibles(Array.isArray(data) ? data : (data?.productos || [])))
       .catch(() => setProductosDisponibles([]));
-  }, [open]);
+  }, [open, lead]);
 
   const catalogoPicker = useMemo(() => ({
     productos: productosDisponibles.map((p) => ({
@@ -128,10 +132,6 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
       setError("Ingresá el teléfono del cliente.");
       return;
     }
-    if (items.length === 0) {
-      setError("Agregá al menos un producto.");
-      return;
-    }
     setEnviando(true);
     try {
       await onSubmit({
@@ -145,6 +145,7 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
         // que el checkout público, ver landing.service.js crearCheckout).
         estado_comercial: "Pendiente",
         lead_tipo_manual: leadTipo,
+        es_lead: !!lead?.es_lead || leadTipo === 'organico' || items.length === 0,
         monto: total,
         items: items.map((it) => ({
           producto_id: it.producto_id,
@@ -154,7 +155,7 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
         })),
       });
     } catch (err) {
-      setError(err?.response?.data?.error || err?.message || "No se pudo crear el pedido.");
+      setError(err?.response?.data?.error || err?.message || "No se pudo guardar el lead.");
       setEnviando(false);
       return;
     }
@@ -213,7 +214,7 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
           </div>
 
           <div className="vw-productos">
-            <span className="vw-label">Productos</span>
+            <span className="vw-label">Productos (opcional)</span>
 
             <div className="np-picker-theme">
               <ProductPicker
@@ -233,7 +234,7 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
             </div>
 
             {items.length === 0 ? (
-              <div className="vw-sin-items">Todavía no agregaste productos.</div>
+              <div className="vw-sin-items">Podés guardar el lead sin productos. Iniciará el flujo de consulta general para ayudarle a elegir.</div>
             ) : (
               <div className="vw-lista-items">
                 {items.map((it, idx) => (
@@ -266,12 +267,12 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit }) {
           {error && <div className="vw-error">{error}</div>}
 
           <div className="vw-footer">
-            <span className="vw-total">Total: <strong>Gs {formatGs(total)}</strong></span>
+            <span className="vw-total">{items.length ? <>{leadTipo === 'organico' || lead?.es_lead ? 'Valor de interés' : 'Total'}: <strong>Gs {formatGs(total)}</strong></> : 'Consulta general · Sin pedido todavía'}</span>
             <div className="vw-footer-botones">
               <button type="button" className="vw-btn-cancelar" onClick={onClose}>Cancelar</button>
               <button type="submit" className="vw-btn-crear" disabled={enviando}>
                 {enviando ? <Loader2 size={15} className="vw-spin" /> : null}
-                Crear pedido
+                {lead ? (items.length ? 'Guardar productos' : 'Guardar lead') : (items.length && leadTipo === 'campana' ? 'Crear pedido' : 'Guardar lead')}
               </button>
             </div>
           </div>

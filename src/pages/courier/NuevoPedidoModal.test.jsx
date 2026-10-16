@@ -4,6 +4,7 @@ import { NuevoPedidoModal } from './NuevoPedidoModal';
 import { productService } from '../../services/productService';
 import { getCouriers } from '../../services/courierApi';
 import { depositoService } from '../../services/deposito.service';
+import { canalVentaService } from '../../services/canalVentaService';
 import { inventarioService } from '../../services/inventario.service';
 
 vi.mock('../../services/productService', () => ({
@@ -35,7 +36,7 @@ vi.mock('../../services/canalVentaService', () => ({
   canalVentaService: { listar: vi.fn().mockResolvedValue([]) },
 }));
 vi.mock('../../services/api', () => ({ getMediaUrl: (x) => x }));
-vi.mock('../landing/ProductPicker', () => ({ default: () => null }));
+vi.mock('../landing/ProductPicker', () => ({ default: ({ onToggle }) => <button type="button" onClick={() => onToggle({ id: 202, tipo: 'producto' })}>Elegir producto de prueba</button> }));
 
 /**
  * El modal decide dos cosas que mueven plata real y que se rompieron en
@@ -74,6 +75,59 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
 
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => cleanup());
+
+  it('el alta manual no ofrece WhatsApp como canal seleccionable', async () => {
+    canalVentaService.listar.mockResolvedValueOnce([{ id: 1, slug: 'web', nombre: 'Web' }, { id: 3, slug: 'whatsapp', nombre: 'WhatsApp' }]);
+    await abrir(null, vi.fn());
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Web' })).toBeInTheDocument());
+    expect(screen.queryByRole('option', { name: 'WhatsApp' })).not.toBeInTheDocument();
+  });
+
+  it('permite elegir productos al confirmar un lead que llegó sin productos', async () => {
+    productService.buscar.mockResolvedValueOnce({ productos: [{ id: 202, nombre: 'Producto elegido', precio_base: 100000 }] });
+    const onSubmit = vi.fn().mockResolvedValue({});
+    await abrir({ ...pedidoEntregado, id: 90, estado: 'Pendiente', origen: 'WHATSAPP', es_lead: true, monto: 0, costo_envio: 0, items: [] }, onSubmit);
+    await waitFor(() => expect(screen.getByText(/WhatsApp · Cargado/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Elegir producto de prueba' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear y confirmar pedido' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ id: 90, estado: 'Confirmado', monto: 100000, items: [expect.objectContaining({ producto_id: 202, cantidad: 1 })] }), true));
+  });
+
+  it('precarga el confirmador del lead y conserva cliente, teléfono y productos al confirmar contra entrega', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({});
+    await abrir({ ...pedidoEntregado, estado: 'EnSeguimiento', origen: 'WHATSAPP', es_lead: true }, onSubmit);
+    expect(screen.getByRole('heading', { name: /Confirmar compra · LEAD-385/ })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Juan')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('0992820631')).toBeInTheDocument();
+    expect(screen.getAllByText('Cafeteira').length).toBeGreaterThan(0);
+    expect(onSubmit).not.toHaveBeenCalled();
+    await guardar();
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ id: 385, nombre_cliente: 'Juan', telefono: '0992820631', ciudad: 'Luque', direccion: pedidoEntregado.direccion, estado: 'Confirmado', pago_anticipado: false }), true));
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('items');
+  });
+
+  it('permite confirmar un lead con pago anticipado y su método elegido', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({});
+    await abrir({ ...pedidoEntregado, estado: 'EnSeguimiento', origen: 'WHATSAPP', es_lead: true }, onSubmit);
+    fireEvent.click(screen.getByRole('checkbox', { name: /Pago anticipado/i }));
+    await waitFor(() => expect(screen.getByRole('option', { name: /POS \/ Tarjeta/ })).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/Método de pago anticipado/), { target: { value: '3' } });
+    await guardar();
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ id: 385, estado: 'Confirmado', pago_anticipado: true, metodo_pago_id: 3 }), true));
+  });
+
+  it('exige ubicación y dirección antes de confirmar un lead', async () => {
+    const onSubmit = vi.fn();
+    await abrir({ ...pedidoEntregado, estado: 'EnSeguimiento', origen: 'WHATSAPP', es_lead: true, ciudad: '', direccion: '' }, onSubmit);
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    expect(screen.getAllByText(/ciudad de destino/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/dirección de entrega/).length).toBeGreaterThan(0);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 
   it('no manda "Confirmado" sobre un pedido que ya avanzó', async () => {
     // El backend solo acepta Pendiente → Confirmado. Mandarlo siempre hacía

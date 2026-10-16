@@ -242,6 +242,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   // título y el botón lo dicen, para no prometer una acción que el backend
   // va a rechazar.
   const vaAConfirmar = modoCompletar && ["Pendiente", "EnSeguimiento"].includes(envio.estado);
+  const esWhatsapp = String(envio?.origen || '').toUpperCase().includes('WHATSAPP');
+  const editaProductosExistentes = vaAConfirmar && esWhatsapp && !envio.stock_descontado && !envio.raha_logistica?.gestionado;
+  const puedeSeleccionarProductos = !modoCompletar || editaProductosExistentes;
   // El pago online de PagoPar ya llegó solo (ver confirmacionPago.js): el
   // confirmador no puede desmarcarlo ni elegir otro método, porque el
   // negocio ya cobró con ese y ningún otro.
@@ -253,6 +256,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
 
   const [form, setForm] = useState(() => buildFormFromEnvio(null));
   const [items, setItems] = useState([]);
+  const [itemsEditados, setItemsEditados] = useState(false);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [couriers, setCouriers] = useState([]);
   const [courierIdsPorDeposito, setCourierIdsPorDeposito] = useState({});
@@ -309,7 +313,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
             incluye_delivery: inicial.incluye_delivery === true,
           }
         : null;
-      setItems([]);
+      setItems(editaProductosExistentes ? (envio.items || []).map(item => ({ ...item })) : []);
+      setItemsEditados(false);
       setItemsActuales(null);
       setPrecioEditandoId(null);
       setPrecioError(null);
@@ -389,7 +394,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   // van agregando en el formulario.
   // Normalizamos siempre el subtotal porque los items que vienen del endpoint
   // paginado no tienen el campo "subtotal" precalculado — lo calculamos acá.
-  const itemsBasePedido = modoCompletar ? (itemsActuales || envio?.items || []) : items;
+  const itemsBasePedido = puedeSeleccionarProductos ? items : (itemsActuales || envio?.items || []);
   const pedidoRaha = useMemo(() => (
     itemsBasePedido.some(item => itemEsRaha(item))
   ), [itemsBasePedido, productoPorId]);
@@ -871,6 +876,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
 
   const actualizarItemsPedido = (nuevosItems) => {
     setItems(nuevosItems);
+    setItemsEditados(true);
     setErrors(prev => ({ ...prev, items: null, producto: null }));
     aplicarTarifaConItems(nuevosItems);
   };
@@ -963,6 +969,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   // se actualiza, porque eso es un cambio real del envío.
   const precioBase = precioAlAbrirRef.current;
   const cambioAlgoDelPrecio = !precioBase
+    || itemsEditados
     || (Number(form.costo_envio) || 0) !== precioBase.costo_envio
     || deliveryLoPagaNegocio !== precioBase.incluye_delivery;
   const precioTotalVendido = modoCompletar && !cambioAlgoDelPrecio
@@ -1012,7 +1019,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
       }
     }
 
-    if (pasoId === "productos" && !modoCompletar && items.length === 0) {
+    if (pasoId === "productos" && puedeSeleccionarProductos && items.length === 0) {
       newErrors.items = "Debes agregar al menos un producto al pedido.";
     }
 
@@ -1094,7 +1101,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     // nada. Si el pedido ya avanzó, se guardan los datos y el estado no se
     // toca.
     const payload = modoCompletar
-      ? { ...comunes, id: envio.id, ...(vaAConfirmar ? { estado: "Confirmado" } : {}) }
+      ? { ...comunes, id: envio.id, ...(vaAConfirmar ? { estado: "Confirmado" } : {}), ...(editaProductosExistentes && itemsEditados ? { items } : {}) }
       : { ...comunes, items };
 
     setGuardando(true);
@@ -1210,7 +1217,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
             <span className="np-brand-mark">Gesicom<span>.</span></span>
             <h2 id="nuevo-pedido-title">
               {modoCompletar
-                ? `${vaAConfirmar ? "Completar" : "Editar"} pedido #${numeroPedidoVisible(envio)}`
+                ? (envio.es_lead ? `Confirmar compra · ${numeroPedidoVisible(envio)}` : `${vaAConfirmar ? "Completar" : "Editar"} pedido #${numeroPedidoVisible(envio)}`)
                 : "Nuevo pedido"}
             </h2>
           </div>
@@ -1348,17 +1355,18 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                   ("Organico", "organico", "Tienda Online") y los reportes
                   lo contaban como canales separados. */}
               <div className="np-row">
-                <label>Canal / Origen</label>
-                <select
+                <label htmlFor="np-canal-venta">Canal / Origen</label>
+                {modoCompletar && esWhatsapp ? <div className="form-input">WhatsApp · Cargado desde Venta por WhatsApp</div> : <select
+                  id="np-canal-venta"
                   className="form-input"
                   value={form.canal_venta_id}
                   onChange={e => setForm({ ...form, canal_venta_id: e.target.value })}
                 >
                   <option value="">Sin especificar</option>
-                  {canalesVenta.map(c => (
+                  {canalesVenta.filter(c => !`${c.slug || ''} ${c.nombre || ''}`.toUpperCase().includes('WHATSAPP')).map(c => (
                     <option key={c.id} value={c.id}>{c.nombre}</option>
                   ))}
-                </select>
+                </select>}
               </div>
 
               <div className="np-row">
@@ -1811,7 +1819,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
             </div>
 
             <div className="np-product-workbench">
-              {!modoCompletar && (
+              {puedeSeleccionarProductos && (
                 <div className="np-picker-panel">
                   <div className="np-panel-head">
                     <div>
@@ -1907,7 +1915,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                                 ) : (
                                   <span className="np-order-item-price-view">
                                     Gs. {pUnit.toLocaleString('es-PY')} c/u
-                                    {modoCompletar && (
+                                    {modoCompletar && !puedeSeleccionarProductos && (
                                       <button
                                         type="button"
                                         className="btn-icon"
@@ -1920,7 +1928,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                                   </span>
                                 )}
                               </div>
-                              {!modoCompletar && (
+                              {puedeSeleccionarProductos && (
                                 <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger" title="Quitar producto">
                                   <Trash2 size={14} />
                                 </button>
@@ -1931,7 +1939,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                             )}
 
                             <div className="np-order-item-controls">
-                              {!modoCompletar ? (
+                              {puedeSeleccionarProductos ? (
                                 <>
                                   <label>
                                     Presentación
@@ -2168,7 +2176,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                   disabled={guardando}
                   onClick={(e) => handleSubmit(e, { explicit: true })}
                 >
-                  {guardando ? "Guardando..." : (modoCompletar && !vaAConfirmar ? "Guardar cambios" : "Confirmar pedido")}
+                  {guardando ? "Guardando..." : (modoCompletar && !vaAConfirmar ? "Guardar cambios" : envio?.es_lead ? "Crear y confirmar pedido" : "Confirmar pedido")}
                 </button>
               )}
             </div>

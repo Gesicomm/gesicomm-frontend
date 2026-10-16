@@ -25,8 +25,8 @@ export const seguimientoService = {
   },
 
   // Flujos + lo que ya se abrio de cada fase EN ESTE pedido
-  getFlujosPedido: async (envioId) => {
-    const { data } = await api.get(`/envios/${envioId}/seguimiento/flujos`);
+  getFlujosPedido: async (envioId, params) => {
+    const { data } = await api.get(`/envios/${envioId}/seguimiento/flujos`, params ? { params } : undefined);
     return data;
   },
 
@@ -99,8 +99,8 @@ export const seguimientoService = {
   },
 
   // El operador confirma que mandó el mensaje de la fase: es lo que la hace avanzar.
-  completarFase: async (envioId, faseId) => {
-    const { data } = await api.post(`/envios/${envioId}/seguimiento/fases/${faseId}/completar`);
+  completarFase: async (envioId, faseId, payload) => {
+    const { data } = await api.post(`/envios/${envioId}/seguimiento/fases/${faseId}/completar`, payload);
     return data;
   },
   descompletarFase: async (envioId, faseId) => {

@@ -132,7 +132,7 @@ test("las etapas incluyen Seguimiento de envío y cada una pide solo sus estados
   await waitFor(() => expect(ultimoPedido()).toMatchObject({ estados: ["Pendiente", "EnSeguimiento"], incluir_seguimiento: true }));
   const chips = () => screen.getAllByRole("button").filter((b) => b.classList.contains("pt-status-chip")).map((b) => b.textContent.replace(/\d+$/, ""));
   expect(chips()).toEqual(["Pendiente", "Cancelado"]);
-  expect(encabezados()).toEqual(["Pedido", "Tipo", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado comercial", "Seguimiento", "Acción"]);
+  expect(encabezados()).toEqual(["Registro", "Origen", "Fecha", "Cliente", "Teléfono", "Producto / Interés", "Total", "Método de pago", "Estado comercial", "Seguimiento", "Acción"]);
 
   irAEtapa("Seguimiento de envío");
   await waitFor(() => expect(ultimoPedido().estados).toEqual(["Preparado", "Despachado", "Reprogramado"]));
@@ -630,4 +630,14 @@ test("al confirmar sale de comercial y recién al prepararse aparece en Seguimie
   await waitFor(() => expect(screen.queryByText("Cliente 1")).not.toBeInTheDocument());
   irAEtapa("Recompra");
   expect(await screen.findByText("Cliente 1")).toBeInTheDocument();
+});
+
+
+test('distingue el lead con productos de interés del pedido y separa sus contadores', async () => {
+  getEnviosPaginados.mockResolvedValue({ data: [pedido(88, 'Pendiente', { origen: 'WHATSAPP', es_lead: true, lead_tipo_manual: 'organico' })], total: 2, total_leads: 1, total_pedidos: 1, totalPages: 1 });
+  await montar({ esperarCliente: 'Cliente 88' });
+  expect(screen.getByText('LEAD-88')).toBeInTheDocument();
+  expect(screen.getByText('Lead · Sin pedido')).toBeInTheDocument();
+  expect(screen.getByText('Valor de interés')).toBeInTheDocument();
+  expect(screen.getByText('1 lead · 1 pedido')).toBeInTheDocument();
 });

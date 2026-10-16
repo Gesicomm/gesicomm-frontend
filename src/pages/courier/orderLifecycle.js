@@ -14,6 +14,16 @@ export const FLOW_TYPES = {
     stage: "comercial",
     hint: "Pedidos por confirmar que entraron por WhatsApp. Entran solos apenas se crean.",
   },
+  CONSULTA_GENERAL_WHATSAPP: {
+    label: "Consulta general por WhatsApp",
+    stage: "comercial",
+    hint: "Leads sin productos elegidos. Al elegir productos pasan al seguimiento del producto, conservando su historial.",
+  },
+  SEGUIMIENTO_PRODUCTO_WHATSAPP: {
+    label: "Seguimiento de producto por WhatsApp",
+    stage: "comercial",
+    hint: "Leads con productos de interés. Presenta descripción y beneficios del catálogo; recién se crea el pedido al confirmar la compra.",
+  },
   SEGUIMIENTO_ENVIO: {
     label: "Seguimiento de envío",
     stage: "seguimiento_envio",

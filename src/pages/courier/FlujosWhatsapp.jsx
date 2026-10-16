@@ -204,6 +204,14 @@ Cada mensaje debe buscar una acción sencilla. Una pregunta por mensaje es prefe
 Antes de entregar el resultado verifica que los 11 mensajes sean diferentes, que la conversación avance, que haya presentación del producto, beneficios, oferta, manejo de riesgo, varios intentos de cierre, que no haya datos inventados, falsa escasez ni falsa prueba social, y que el día 3 termine con una definición comercial.`;
 
 const PROMPTS_IA_POR_TIPO = {
+  SEGUIMIENTO_PRODUCTO_WHATSAPP: {
+    objetivo: "orientar al cliente sobre los productos seleccionados antes de crear un pedido",
+    enfoque: "usar {producto_descripcion} y {producto_beneficios} para traer la información real del catálogo, resolver dudas y consultar si desea comprar; no inventar beneficios ni tratar el lead como pedido confirmado",
+  },
+  CONSULTA_GENERAL_WHATSAPP: {
+    objetivo: "recibir consultas generales de personas que todavía no eligieron qué comprar",
+    enfoque: "dar la bienvenida, preguntar qué necesita y orientar sin inventar productos ni enviar resúmenes de pedido, totales o confirmaciones",
+  },
   CONFIRMACION_PEDIDO_WEB: {
     promptBase: PROMPT_CONFIRMACION_PEDIDO_WEB,
   },
@@ -250,6 +258,20 @@ const flujoNuevo = (tipo = "CONFIRMACION_PEDIDO_WEB") => ({
 });
 
 function fasesInicialesPorTipo(tipo) {
+  if (tipo === 'CONSULTA_GENERAL_WHATSAPP') {
+    return [
+      { ...faseNueva(0), nombre: 'Bienvenida', mensaje: 'Hola {cliente_nombre}, ¡gracias por escribirnos! ¿En qué podemos ayudarte hoy?' },
+      { ...faseNueva(1), nombre: 'Ayuda para elegir', espera_sugerida_minutos: 240, mensaje: 'Hola {cliente_nombre}, contanos qué estás buscando y te ayudamos a elegir.' },
+      { ...faseNueva(2), nombre: 'Retomar la consulta', espera_sugerida_minutos: 1440, mensaje: 'Hola {cliente_nombre}, ¿seguís buscando algo? Estamos para orientarte.' },
+    ];
+  }
+  if (tipo === 'SEGUIMIENTO_PRODUCTO_WHATSAPP') {
+    return [
+      { ...faseNueva(0), nombre: 'Presentación del producto', mensaje: 'Hola {cliente_nombre}, te cuento sobre {productos}:\n\n{producto_descripcion}\n\n{producto_beneficios}\n\n¿Qué te gustaría saber?' },
+      { ...faseNueva(1), nombre: 'Resolver dudas', espera_sugerida_minutos: 240, mensaje: 'Hola {cliente_nombre}, ¿tenés alguna duda sobre {productos}?' },
+      { ...faseNueva(2), nombre: 'Decisión de compra', espera_sugerida_minutos: 1440, mensaje: 'Hola {cliente_nombre}, ¿te gustaría avanzar con {productos}? Si querés comprar, armamos tu pedido.' },
+    ];
+  }
   if (tipo === ETAPA_ENVIO) {
     return [
       {

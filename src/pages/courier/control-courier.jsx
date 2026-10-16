@@ -5,6 +5,7 @@ import { verificarSesion } from "../../utils/auth";
 import { PedidosTable } from "./PedidosTable";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { VentaWhatsAppModal } from "./VentaWhatsAppModal";
+import { SeleccionProductosLead } from "./SeleccionProductosLead";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { ReprogramarModal } from "./ReprogramarModal";
 import { CostoViajeModal } from "./CostoViajeModal";
@@ -80,6 +81,7 @@ export function ControlCourier({ etapaFija } = {}) {
   const [clienteParaRepetir, setClienteParaRepetir] = useState(null);
   const [openImprimir, setOpenImprimir] = useState(false);
   const [envioParaCompletar, setEnvioParaCompletar] = useState(null);
+  const [leadParaElegirProductos, setLeadParaElegirProductos] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refrescarKey, setRefrescarKey] = useState(0);
   // Acción especial en curso desde el dropdown de estado de la bandeja —
@@ -407,6 +409,20 @@ export function ControlCourier({ etapaFija } = {}) {
         onClose={() => setOpenVentaWhatsApp(false)}
         onSubmit={handleCreateVentaWhatsApp}
       />
+      {leadParaElegirProductos && <SeleccionProductosLead
+        key={leadParaElegirProductos.id}
+        lead={leadParaElegirProductos}
+        onClose={() => setLeadParaElegirProductos(null)}
+        onGuardar={async items => {
+          const actualizado = await updateEstadoEnvio(leadParaElegirProductos.id, { estado: leadParaElegirProductos.estado, items });
+          setEnvios(prev => prev.map(envio => envio.id === actualizado.id ? actualizado : envio));
+          setLeadParaElegirProductos(null);
+          setRefrescarKey(k => k + 1);
+          setSeguimientoEnvio(actualizado);
+          setFaseSeguimientoId(null);
+          cargarDatos();
+        }}
+      />}
 
       {/* Pop-up para avisar por WhatsApp apenas se confirma un pedido */}
       <ConfirmacionPedidoWhatsappModal
@@ -478,6 +494,10 @@ export function ControlCourier({ etapaFija } = {}) {
           // el pedido sale solo del flujo de confirmación.
           setSeguimientoEnvio(null);
           setEnvioParaCompletar(envio);
+        }}
+        onElegirProductos={envio => {
+          setSeguimientoEnvio(null);
+          setLeadParaElegirProductos(envio);
         }}
         onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
       />}

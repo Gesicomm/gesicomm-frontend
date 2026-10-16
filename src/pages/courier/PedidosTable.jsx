@@ -1525,7 +1525,7 @@ export function PedidosTable({
 
         {/* Contador */}
         <span className="pt-count">
-          {loading ? "…" : `${data.total.toLocaleString("es-PY")} pedidos`}
+          {loading ? "…" : data.total_leads !== undefined ? `${data.total_leads.toLocaleString("es-PY")} ${data.total_leads === 1 ? "lead" : "leads"} · ${data.total_pedidos.toLocaleString("es-PY")} ${data.total_pedidos === 1 ? "pedido" : "pedidos"}` : `${data.total.toLocaleString("es-PY")} registros`}
         </span>
       </div>
 
@@ -1671,8 +1671,8 @@ export function PedidosTable({
           </colgroup>
           <thead>
             <tr>
-              <th className="pt-th pt-th-id">Pedido</th>
-              <th className="pt-th pt-th-tipo">Tipo</th>
+              <th className="pt-th pt-th-id">{etapaActiva === 'comercial' ? 'Registro' : 'Pedido'}</th>
+              <th className="pt-th pt-th-tipo">{etapaActiva === 'comercial' ? 'Origen' : 'Tipo'}</th>
               <th className="pt-th">Fecha</th>
               {soloAbastecimiento ? (
                 <>
@@ -1685,7 +1685,7 @@ export function PedidosTable({
                   <th className="pt-th">Teléfono</th>
                 </>
               )}
-              <th className="pt-th pt-th-product">Producto / Oferta</th>
+              <th className="pt-th pt-th-product">{etapaActiva === 'comercial' ? 'Producto / Interés' : 'Producto / Oferta'}</th>
               <th className="pt-th pt-th-num">Total</th>
               {!soloAbastecimiento && (
                 <>
@@ -1725,7 +1725,7 @@ export function PedidosTable({
                 const items = e.items || [];
                 const resumenItems =
                   items.length === 0
-                    ? "—"
+                    ? (String(e.origen || '').toUpperCase().includes('WHATSAPP') ? "Consulta general · Sin productos" : "—")
                     : items.length === 1
                     ? `${items[0].nombre_producto}${items[0].cantidad > 1 ? ` x${items[0].cantidad}` : ""}`
                     : `${items[0].nombre_producto} +${items.length - 1} más`;
@@ -1780,6 +1780,7 @@ export function PedidosTable({
                   >
                     <td className="pt-td pt-td-id" data-label="Pedido">
                       <span>{numeroPedidoVisible(e)}</span>
+                      {e.es_lead && <span className="pt-depto">Lead · Sin pedido</span>}
                       {esAdmin && Number(e.id) !== Number(e.numero_pedido) && (
                         <span style={{ display: "block", marginTop: "2px", color: "var(--color-fg-subtle)", fontSize: "0.68rem", fontWeight: 600 }}>
                           ID {e.id}
@@ -1842,7 +1843,8 @@ export function PedidosTable({
                       {resumenItems}
                     </td>
                     <td className="pt-td pt-td-num" data-label="Total">
-                      <span>{formatGs(e.monto)}</span>
+                      <span>{e.es_lead && items.length === 0 ? '—' : formatGs(e.monto)}</span>
+                      {e.es_lead && items.length > 0 && <span className="pt-depto">Valor de interés</span>}
                       {e.costo_envio > 0 && (
                         <span className="pt-delivery">+{formatGs(e.costo_envio)}</span>
                       )}

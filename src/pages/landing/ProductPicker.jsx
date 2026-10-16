@@ -362,8 +362,19 @@ export default function ProductPicker({
   refrescarCatalogoAlAbrir = false,
   permitirCombos = true,
   mostrarEtiquetas = true,
+  abierto,
+  onCerrar,
+  onConfirmar,
+  confirmando = false,
+  errorConfirmacion = '',
 }) {
-  const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalInterno, setModalInterno] = useState(false);
+  const modalAbierto = abierto ?? modalInterno;
+  const setModalAbierto = valor => {
+    if (confirmando) return;
+    if (!valor && onCerrar) onCerrar();
+    else setModalInterno(valor);
+  };
   const [catalogoBackend, setCatalogoBackend] = useState(null);
   const [cargandoCatalogoFresco, setCargandoCatalogoFresco] = useState(false);
   const [errorCatalogoFresco, setErrorCatalogoFresco] = useState('');
@@ -533,7 +544,7 @@ export default function ProductPicker({
 
   return (
     <div className={`lb-picker ${themeScopeClassName}`}>
-      {max === 1 ? (
+      {abierto === undefined && (max === 1 ? (
         // Con un solo elemento permitido, "1/1 seleccionados" es metadata,
         // no una acción — el botón de elegir es lo único que importa acá.
         <button type="button" onClick={() => setModalAbierto(true)} className="w-full mb-3 px-3 py-2 bg-fg/10 hover:bg-fg/20 text-fg text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5">
@@ -546,11 +557,11 @@ export default function ProductPicker({
             <Search size={14} /> {triggerLabel}
           </button>
         </div>
-      )}
+      ))}
 
       {modalAbierto && createPortal(
         <div className={`lb-modal-overlay fixed inset-0 flex items-center justify-center bg-brand-ink/80 backdrop-blur-sm p-4 ${themeScopeClassName}`} style={{ zIndex: zIndexModal }}>
-          <div className="lb-modal-panel bg-surface-2 border border-fg/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-label={modalTitle} className="lb-modal-panel bg-surface-2 border border-fg/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             <div className="lb-modal-header flex items-center justify-between p-4 border-b border-fg/10 bg-fg/5">
               <h3 className="text-base font-semibold text-fg">{modalTitle}</h3>
               <button type="button" onClick={() => setModalAbierto(false)} className="lb-modal-close p-1.5 text-fg/40 hover:text-fg hover:bg-fg/10 rounded-lg transition-colors"><X size={18} /></button>
@@ -734,7 +745,8 @@ export default function ProductPicker({
               <span className="text-xs font-semibold text-fg/60">{cantidad} de {max} seleccionados</span>
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 text-fg/65 hover:text-fg text-sm font-semibold rounded-lg transition-colors">Cancelar</button>
-                <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-fg text-sm font-bold rounded-lg transition-colors">
+                {errorConfirmacion && <span role="alert" className="text-sm text-red-400">{errorConfirmacion}</span>}
+                <button type="button" disabled={confirmando} onClick={() => onConfirmar ? onConfirmar() : setModalAbierto(false)} className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-fg text-sm font-bold rounded-lg transition-colors">
                   {cantidad === 0 ? 'Agregar productos' : cantidad === 1 ? 'Agregar 1 producto' : `Agregar ${cantidad} productos`}
                 </button>
               </div>

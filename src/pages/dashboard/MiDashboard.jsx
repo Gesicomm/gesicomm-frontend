@@ -1210,7 +1210,8 @@ function SelectorProducto({ productos, value, onChange, disabled }) {
 
 const EMBUDOS_TABS = [
   { id: 'formularios', label: 'Formularios Web' },
-  { id: 'whatsapp', label: 'WhatsApp' },
+  { id: 'lead_organico', label: 'Lead Orgánico' },
+  { id: 'lead_campana', label: 'Lead Campaña WhatsApp' },
   { id: 'pago', label: 'Pago Web' },
 ];
 
@@ -1439,7 +1440,13 @@ export default function MiDashboard() {
   const costosVariables = Number(kpis.gastos_variables_generales || 0);
   const utilidadBruta = Number(kpis.margen_bruto_estimado || 0);
 
-  const canalVacio = { total: 0, cancelados: 0, confirmados: 0, entregados: 0, efectividad: 0 };
+  const subFunnelVacio = { total: 0, cancelados: 0, confirmados: 0, preparados: 0, despachados: 0, entregados: 0, devueltos: 0, efectividad: 0 };
+  const canalVacio = {
+    ...subFunnelVacio,
+    lead_organico: 0, lead_campana: 0,
+    organico: subFunnelVacio,
+    campana: subFunnelVacio,
+  };
   // Los embudos de WhatsApp y de la Web se leen por slug del catálogo.
   const canalWhatsapp = ventas?.funnel?.canales?.whatsapp || canalVacio;
   const canalLanding = ventas?.funnel?.canales?.web || canalVacio;
@@ -1529,13 +1536,48 @@ export default function MiDashboard() {
         pixel?.visitas_sin_filtrar ? 'Visitas totales de la tienda: un pageview no queda asociado a un producto, así que este número no se filtra por producto.' : null,
       ].filter(Boolean).join(' '),
     },
-    whatsapp: {
+    // "WhatsApp" ya no es un tab único: cada pedido cuenta para UNA de estas
+    // dos mitades (ver lead_organico/lead_campana en pedidosAnalyticsService
+    // getResumenFunnel — automático por producto, con override manual del
+    // vendedor vía lead_tipo_manual). Mismos 5 pasos que antes, repetidos
+    // para cada mitad en vez de un solo embudo con el desglose al pie.
+    lead_organico: {
       pasos: [
-        { label: 'Leads', valor: canalWhatsapp.total, icono: <MessageCircle size={18} />, tono: 'contactos' },
-        { label: 'Pedidos Confirmados', valor: canalWhatsapp.confirmados, icono: <CheckCircle2 size={18} />, tono: 'carrito' },
-        { label: 'Pedidos Entregados', valor: canalWhatsapp.entregados, icono: <PackageCheck size={18} />, tono: 'checkout' },
+        { label: 'Leads', valor: canalWhatsapp.organico.total, icono: <MessageCircle size={18} />, tono: 'contactos' },
+        { label: 'Pedidos Confirmados', valor: canalWhatsapp.organico.confirmados, icono: <CheckCircle2 size={18} />, tono: 'carrito' },
+        { label: 'Preparados', valor: canalWhatsapp.organico.preparados, icono: <Package size={18} />, tono: 'carrito' },
+        { label: 'Despachados', valor: canalWhatsapp.organico.despachados, icono: <Truck size={18} />, tono: 'checkout' },
+        { label: 'Pedidos Entregados', valor: canalWhatsapp.organico.entregados, icono: <PackageCheck size={18} />, tono: 'checkout' },
       ],
-      pieFinal: <>Efectividad (Leads a Entregados): <strong>{canalWhatsapp.efectividad}%</strong></>,
+      pieFinal: (
+        <>
+          Efectividad (Leads a Entregados): <strong>{canalWhatsapp.organico.efectividad}%</strong>
+          <span className="md-funnel-div" />
+          Devueltos: <strong>{canalWhatsapp.organico.devueltos}</strong>
+          <span className="md-funnel-div" />
+          Cancelados: <strong>{canalWhatsapp.organico.cancelados}</strong>
+        </>
+      ),
+      nota: 'Contactos de origen orgánico, según la clasificación de Gestión Comercial. Pueden estar consultando o tener productos de interés: solo cuentan como pedidos confirmados cuando se confirma la compra.',
+    },
+    lead_campana: {
+      pasos: [
+        { label: 'Leads', valor: canalWhatsapp.campana.total, icono: <MessageCircle size={18} />, tono: 'contactos' },
+        { label: 'Pedidos Confirmados', valor: canalWhatsapp.campana.confirmados, icono: <CheckCircle2 size={18} />, tono: 'carrito' },
+        { label: 'Preparados', valor: canalWhatsapp.campana.preparados, icono: <Package size={18} />, tono: 'carrito' },
+        { label: 'Despachados', valor: canalWhatsapp.campana.despachados, icono: <Truck size={18} />, tono: 'checkout' },
+        { label: 'Pedidos Entregados', valor: canalWhatsapp.campana.entregados, icono: <PackageCheck size={18} />, tono: 'checkout' },
+      ],
+      pieFinal: (
+        <>
+          Efectividad (Leads a Entregados): <strong>{canalWhatsapp.campana.efectividad}%</strong>
+          <span className="md-funnel-div" />
+          Devueltos: <strong>{canalWhatsapp.campana.devueltos}</strong>
+          <span className="md-funnel-div" />
+          Cancelados: <strong>{canalWhatsapp.campana.cancelados}</strong>
+        </>
+      ),
+      nota: 'Contactos y pedidos de campañas de WhatsApp, según la clasificación de Gestión Comercial. Una consulta sin compra confirmada sigue siendo un lead, aunque venga de una campaña.',
     },
     // Sin "Al carrito": desde la ficha de producto se puede ir derecho a
     // pagar sin pasar por el carrito, y ese camino no dispara AddToCart. El

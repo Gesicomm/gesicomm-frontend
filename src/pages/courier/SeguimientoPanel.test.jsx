@@ -287,3 +287,80 @@ test("marcar enviada la fase Pedido en camino es solo aviso y no cambia estado",
   await waitFor(() => expect(seguimientoService.completarFase).toHaveBeenCalledWith(50, 303));
   expect(onDespacharPedido).not.toHaveBeenCalled();
 });
+
+
+test('el lead sin productos abre la selección de productos desde el seguimiento', async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{ ...FLUJO_CONFIRMACION, tipo: 'CONSULTA_GENERAL_WHATSAPP', nombre: 'Consulta general por WhatsApp' }]);
+  const envio = pedido({ estado: 'Pendiente', origen: 'WHATSAPP', items: [] });
+  const onConfirmarPedido = vi.fn();
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} onConfirmarPedido={onConfirmarPedido} />);
+  await waitFor(() => expect(seguimientoService.getFlujosPedido).toHaveBeenCalled());
+  fireEvent.click(await screen.findByRole('button', { name: /Elegir productos/ }));
+  expect(onConfirmarPedido).toHaveBeenCalledWith(envio);
+});
+
+
+test('elegir productos abre solo el selector y no la confirmación de pedido', async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{ ...FLUJO_CONFIRMACION, tipo: 'CONSULTA_GENERAL_WHATSAPP' }]);
+  const envio = pedido({ estado: 'Pendiente', origen: 'WHATSAPP', es_lead: true, items: [] });
+  const onElegirProductos = vi.fn(), onConfirmarPedido = vi.fn();
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} onElegirProductos={onElegirProductos} onConfirmarPedido={onConfirmarPedido} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Elegir productos' }));
+  expect(onElegirProductos).toHaveBeenCalledWith(envio);
+  expect(onConfirmarPedido).not.toHaveBeenCalled();
+});
+
+test('al elegir productos enfoca el flujo de producto aunque la consulta anterior tenga historial', async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([
+    { ...FLUJO_CONFIRMACION, tipo: 'CONSULTA_GENERAL_WHATSAPP' },
+    { id: 70, tipo: 'SEGUIMIENTO_PRODUCTO_WHATSAPP', nombre: 'Seguimiento de producto por WhatsApp', fases: [{ id: 701, orden: 1, nombre: 'Presentación del producto', disponible: true, mensaje_resuelto: 'Beneficios reales del catálogo' }] },
+  ]);
+  const envio = pedido({ estado: 'Pendiente', origen: 'WHATSAPP', es_lead: true, items: [{ producto_id: 10, nombre_producto: 'Silla' }] });
+  const onElegirProductos = vi.fn(), onConfirmarPedido = vi.fn();
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} onElegirProductos={onElegirProductos} onConfirmarPedido={onConfirmarPedido} />);
+  expect(await screen.findByText(/Fase 1 — Presentación del producto/)).toBeInTheDocument();
+  expect(screen.getByText('Beneficios reales del catálogo')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Cambiar productos de interés' }));
+  expect(onElegirProductos).toHaveBeenCalledWith(envio);
+  expect(onConfirmarPedido).not.toHaveBeenCalled();
+});
+
+
+test('elige un producto para el mensaje y conserva los otros productos del lead', async () => {
+  const envio = pedido({ estado: 'EnSeguimiento', origen: 'WHATSAPP', es_lead: true, items: [{ producto_id: 10, nombre_producto: 'Silla' }, { producto_id: 20, nombre_producto: 'Mesa' }] });
+  seguimientoService.getFlujosPedido.mockImplementation(async (id, params) => [{ id: 70, tipo: 'SEGUIMIENTO_PRODUCTO_WHATSAPP', nombre: 'Seguimiento de producto', fases: [{ id: 701, orden: 1, nombre: 'Beneficios', disponible: true, mensaje_resuelto: params?.producto_ids === '20' ? 'Beneficios de Mesa' : 'Beneficios de Silla y Mesa' }] }]);
+  seguimientoService.crearContacto.mockResolvedValue({});
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} />);
+  expect(await screen.findByText('Beneficios de Silla y Mesa')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Silla' }));
+  expect(await screen.findByText('Beneficios de Mesa')).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: 'Silla' })).not.toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Mesa' })).toBeChecked();
+  fireEvent.click(screen.getByRole('button', { name: 'Abrir en WhatsApp' }));
+  await waitFor(() => expect(seguimientoService.crearContacto).toHaveBeenCalledWith(50, expect.objectContaining({ fase_id: 701, producto_ids: [20] })));
+  expect(envio.items).toHaveLength(2);
+});
+
+test('no permite enviar una fase sin elegir productos para el mensaje', async () => {
+  const envio = pedido({ estado: 'EnSeguimiento', origen: 'WHATSAPP', es_lead: true, items: [{ producto_id: 10, nombre_producto: 'Silla' }, { producto_id: 20, nombre_producto: 'Mesa' }] });
+  seguimientoService.getFlujosPedido.mockResolvedValue([{ id: 70, tipo: 'SEGUIMIENTO_PRODUCTO_WHATSAPP', nombre: 'Seguimiento de producto', fases: [{ id: 701, orden: 1, nombre: 'Beneficios', disponible: true, mensaje_resuelto: 'Información' }] }]);
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} />);
+  await screen.findByText('Información');
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Silla' }));
+  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Mesa' }));
+  expect(screen.getByRole('alert')).toHaveTextContent('Elegí al menos un producto');
+  expect(screen.getByRole('button', { name: 'Abrir en WhatsApp' })).toBeDisabled();
+});
+
+
+test('Confirmar compra abre el confirmador con el lead y sus productos, sin registrar mensajes', async () => {
+  seguimientoService.getFlujosPedido.mockResolvedValue([{ id: 70, tipo: 'SEGUIMIENTO_PRODUCTO_WHATSAPP', nombre: 'Seguimiento de producto', fases: [{ id: 701, orden: 1, nombre: 'Producto', disponible: true, mensaje_resuelto: 'Información' }] }]);
+  const envio = pedido({ estado: 'EnSeguimiento', origen: 'WHATSAPP', es_lead: true, nombre_cliente: 'Ana', items: [{ producto_id: 10, nombre_producto: 'Silla' }] });
+  const onConfirmarPedido = vi.fn();
+  render(<SeguimientoPanel open envio={envio} onClose={() => {}} onConfirmarPedido={onConfirmarPedido} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Confirmar compra' }));
+  expect(onConfirmarPedido).toHaveBeenCalledWith(envio);
+  expect(seguimientoService.crearContacto).not.toHaveBeenCalled();
+  expect(seguimientoService.completarFase).not.toHaveBeenCalled();
+});

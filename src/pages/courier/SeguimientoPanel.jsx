@@ -59,7 +59,7 @@ function nombreVisibleDelFlujo(flujo) {
 }
 
 function flujosParaPedido(flujos, esRaha) {
-  return (flujos || []).filter(f => !esRaha || !['CONFIRMACION_PEDIDO_WEB', 'VENTA_WHATSAPP'].includes(f.tipo));
+  return (flujos || []).filter(f => !esRaha || !['CONFIRMACION_PEDIDO_WEB', 'VENTA_WHATSAPP', 'CONSULTA_GENERAL_WHATSAPP', 'SEGUIMIENTO_PRODUCTO_WHATSAPP'].includes(f.tipo));
 }
 
 function formatMomento(iso) {
@@ -90,7 +90,7 @@ function contextoDelPedido(envio) {
  *                                      solo del flujo de confirmación.
  * @param {object} servicio             solo para pruebas.
  */
-export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConfirmarPedido, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
+export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConfirmarPedido, onElegirProductos, faseSugeridaId = null, cola = null, servicio = seguimientoService }) {
   const esRaha = Boolean(envio?.raha_logistica?.gestionado);
   const [flujos, setFlujos] = useState([]);
   const [flujoId, setFlujoId] = useState(null);
@@ -101,15 +101,20 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
   const [faseEnviando, setFaseEnviando] = useState(null);
   // Fase cuyo mensaje se está viendo antes de abrir WhatsApp.
   const [faseVista, setFaseVista] = useState(null);
+  const [productosMensaje, setProductosMensaje] = useState(null);
+  const [actualizandoMensaje, setActualizandoMensaje] = useState(false);
+  const [errorMensaje, setErrorMensaje] = useState('');
 
   const [telefonoPersonalizado, setTelefonoPersonalizado] = useState("");
 
   const cargarFlujos = useCallback(async (envioId) => {
-    const resFlujos = await servicio.getFlujosPedido(envioId);
+    const resFlujos = productosMensaje?.length
+      ? await servicio.getFlujosPedido(envioId, { producto_ids: productosMensaje.join(',') })
+      : await servicio.getFlujosPedido(envioId);
     const lista = flujosParaPedido(resFlujos, esRaha);
     setFlujos(lista);
     return lista;
-  }, [servicio, esRaha]);
+  }, [servicio, esRaha, productosMensaje]);
 
   // Con qué fase se abre el panel (para elegir el flujo y mostrar su mensaje).
   const faseQueToca = faseSugeridaId ?? envio?.recordatorio_fase_id ?? null;
@@ -119,6 +124,9 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
     let activo = true;
 
     setCargando(true);
+    setProductosMensaje(null);
+    setActualizandoMensaje(false);
+    setErrorMensaje('');
     setFaseVista(faseQueToca);
     setTelefonoPersonalizado(envio.telefono || "");
 
@@ -138,7 +146,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
         : estado === "Entregado" ? "ESCALAMIENTO_VENTAS"
           : ["Devuelto", "Perdido"].includes(estado) ? "RECUPERACION_CLIENTES"
             : ["Pendiente", "EnSeguimiento"].includes(estado)
-              ? (String(envio.origen || "").toUpperCase().includes("WHATSAPP") ? "VENTA_WHATSAPP" : "CONFIRMACION_PEDIDO_WEB") : null;
+              ? (String(envio.origen || "").toUpperCase().includes("WHATSAPP") ? ((envio.es_lead || (Array.isArray(envio.items) && envio.items.length === 0)) ? (envio.items?.length ? "SEGUIMIENTO_PRODUCTO_WHATSAPP" : "CONSULTA_GENERAL_WHATSAPP") : "VENTA_WHATSAPP") : "CONFIRMACION_PEDIDO_WEB") : null;
       const deLaEtapa = tipoActual ? lista.filter(f => f.tipo === tipoActual) : lista;
       const enUso = deLaEtapa.find(f => (f.envios_totales || 0) > 0);
       const elegido = (delaFase && (!tipoActual || delaFase.tipo === tipoActual) ? delaFase : null)
@@ -147,7 +155,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
       const fasesElegidas = fasesDeSeguimientoParaPedido(elegido, envio);
       const sugerida = fasesElegidas.find(f => f.id === faseQueToca && f.disponible !== false && !f.completada);
       const mayorCompletada = fasesElegidas.reduce((max, f) => f.completada ? Math.max(max, f.orden) : max, 0);
-      setFaseVista((sugerida || fasesElegidas.find(f => f.orden > mayorCompletada && f.disponible !== false))?.id ?? null);
+      setFaseVista((sugerida || fasesElegidas.find(f => f.orden > mayorCompletada && f.disponible !== false) || (tipoActual === 'SEGUIMIENTO_PRODUCTO_WHATSAPP' ? fasesElegidas.find(f => f.disponible !== false) : null))?.id ?? null);
       setEtiquetasPedido(resEtiqPed || []);
       setEtiquetasDisponibles(resEtiqDisp || []);
       setCargando(false);
@@ -158,6 +166,29 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
     return () => { activo = false; };
   }, [open, envio, servicio, faseQueToca, esRaha]);
+
+  useEffect(() => {
+    if (!open || !envio || productosMensaje === null || productosMensaje.length === 0) return;
+    let activo = true;
+    servicio.getFlujosPedido(envio.id, { producto_ids: productosMensaje.join(',') }).then(lista => {
+      if (!activo) return;
+      setFlujos(flujosParaPedido(lista, esRaha));
+      setActualizandoMensaje(false);
+    }).catch(err => {
+      if (!activo) return;
+      setErrorMensaje(err?.response?.data?.error || 'No se pudo actualizar el mensaje. Volvé a elegir los productos.');
+      setActualizandoMensaje(false);
+    });
+    return () => { activo = false; };
+  }, [open, envio, productosMensaje, servicio, esRaha]);
+
+  const cambiarProductoMensaje = productoId => {
+    const actuales = productosMensaje ?? [...new Set((envio.items || []).map(item => Number(item.producto_id)).filter(Boolean))];
+    const siguientes = actuales.includes(productoId) ? actuales.filter(id => id !== productoId) : [...actuales, productoId];
+    setProductosMensaje(siguientes);
+    setActualizandoMensaje(siguientes.length > 0);
+    setErrorMensaje('');
+  };
 
   useEffect(() => {
     if (!open) return undefined;
@@ -183,12 +214,13 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
    * abrir cualquier fase, y repetirla las veces que haga falta.
    */
   const abrirFase = async (fase) => {
-    if (seguimientoBloqueado || fase.disponible === false) return;
+    if (seguimientoBloqueado || fase.disponible === false || actualizandoMensaje || errorMensaje || productosMensaje?.length === 0) return;
     setFaseEnviando(fase.id);
     try {
       const res = await servicio.crearContacto(envio.id, {
         fase_id: fase.id,
-        telefono: telefonoPersonalizado || envio.telefono
+        telefono: telefonoPersonalizado || envio.telefono,
+        ...(productosMensaje ? { producto_ids: productosMensaje } : {}),
       });
       if (res.whatsapp_url) window.open(res.whatsapp_url, '_blank');
 
@@ -212,10 +244,12 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
    * contacto.
    */
   const completarFase = async (fase) => {
-    if (seguimientoBloqueado || fase.disponible === false) return;
+    if (seguimientoBloqueado || fase.disponible === false || actualizandoMensaje || errorMensaje || productosMensaje?.length === 0) return;
     setFaseEnviando(fase.id);
     try {
-      const res = await servicio.completarFase(envio.id, fase.id);
+      const res = productosMensaje
+        ? await servicio.completarFase(envio.id, fase.id, { producto_ids: productosMensaje })
+        : await servicio.completarFase(envio.id, fase.id);
       // El backend agenda solo el mensaje siguiente con la espera del flujo:
       // acá solo se muestra lo que quedó (se puede cambiar o cancelar abajo).
       if (res?.siguiente_fase) setFaseVista(res.siguiente_fase.id);
@@ -289,6 +323,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
   const { cliente, productos } = contextoDelPedido(envio);
   const porConfirmar = !envio.raha_logistica?.gestionado && ["Pendiente", "EnSeguimiento"].includes(envio.estado);
+  const consultaGeneral = String(envio.origen || '').toUpperCase().includes('WHATSAPP') && (envio.es_lead || (Array.isArray(envio.items) && envio.items.length === 0));
   const opcionesFlujo = flujos.map(f => ({ value: f.id, label: nombreVisibleDelFlujo(f) }));
   const confirmarPedidoCta = porConfirmar && onConfirmarPedido ? (
     <div style={{
@@ -302,13 +337,14 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
         type="button"
         className="btn-secondary"
         style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", background: "var(--color-success)", borderColor: "var(--color-success)", color: "var(--color-success-fg)", fontWeight: 700 }}
-        onClick={() => onConfirmarPedido(envio)}
+        onClick={() => consultaGeneral && !envio.items?.length && onElegirProductos ? onElegirProductos(envio) : onConfirmarPedido(envio)}
         disabled={!!faseEnviando}
       >
-        <CheckCircle2 size={15} /> Confirmar pedido
+        <CheckCircle2 size={15} /> {consultaGeneral ? (envio.items?.length ? 'Confirmar compra' : 'Elegir productos') : 'Confirmar pedido'}
       </button>
+      {consultaGeneral && envio.items?.length > 0 && onElegirProductos && <button type="button" className="btn-secondary" disabled={!!faseEnviando} onClick={() => onElegirProductos(envio)} style={{ width: '100%', marginTop: '8px' }}>Cambiar productos de interés</button>}
       <p style={{ fontSize: "0.72rem", color: "var(--color-fg-muted)", margin: "7px 0 0 0", lineHeight: 1.35 }}>
-        Si el cliente ya confirmó, completás los datos del pedido y este seguimiento se cierra.
+        {consultaGeneral ? (envio.items?.length ? 'Se abrirá el confirmador con cliente, teléfono y productos. Completá ubicación, entrega y pago; al guardar se crea el pedido.' : 'Elegí los productos de interés para iniciar su seguimiento. La compra se confirma después, cuando el cliente decida avanzar.') : 'Si el cliente ya confirmó, completás los datos del pedido y este seguimiento se cierra.'}
       </p>
     </div>
   ) : null;
@@ -414,6 +450,18 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
                     {confirmarPedidoCta}
 
+                    {envio.es_lead && flujo?.tipo === 'SEGUIMIENTO_PRODUCTO_WHATSAPP' && envio.items?.length > 1 && <fieldset style={{ marginTop: '14px', padding: '10px', border: '1px solid var(--color-border)', borderRadius: '8px' }} disabled={!!faseEnviando}>
+                      <legend style={{ fontSize: '0.8rem' }}>Productos para este mensaje</legend>
+                      {[...new Map(envio.items.map(item => [Number(item.producto_id), item])).values()].map(item => <label key={item.producto_id} style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0', fontSize: '0.8rem' }}>
+                        <input type="checkbox" checked={productosMensaje === null || productosMensaje.includes(Number(item.producto_id))} onChange={() => cambiarProductoMensaje(Number(item.producto_id))} />
+                        {item.nombre_producto}
+                      </label>)}
+                      <p style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', margin: '6px 0' }}>Elegí de cuáles hablar. Los demás siguen como productos de interés.</p>
+                      {actualizandoMensaje && <span role="status">Actualizando mensaje…</span>}
+                      {productosMensaje?.length === 0 && <span role="alert">Elegí al menos un producto para enviar el mensaje.</span>}
+                      {errorMensaje && <span role="alert">{errorMensaje}</span>}
+                    </fieldset>}
+
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
                       {fases.filter(fase => !fase.superada || fase.completada).map(fase => (
                         <FaseFila
@@ -425,7 +473,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
                           vistaAbierta={fase.id === faseVista}
                           onVerMensaje={() => setFaseVista(v => (v === fase.id ? null : fase.id))}
                           enviando={faseEnviando === fase.id}
-                          deshabilitado={!!faseEnviando}
+                          deshabilitado={!!faseEnviando || actualizandoMensaje || !!errorMensaje || productosMensaje?.length === 0}
                           bloqueadaPorEstado={seguimientoBloqueado || fase.disponible === false}
                           onAbrir={() => abrirFase(fase)}
                           onCompletar={() => completarFase(fase)}

@@ -12,6 +12,30 @@ function servicioEditor() {
   };
 }
 
+test("el flujo de producto incluye descripción y beneficios y permite insertar el resumen del pedido", async () => {
+  const servicio = servicioEditor();
+  servicio.getVariables.mockResolvedValue([
+    { key: "producto_descripcion", grupo: "Producto", desc: "Descripción del producto", ejemplo: "Silla plegable" },
+    { key: "producto_beneficios", grupo: "Producto", desc: "Beneficios del producto", ejemplo: "Fácil de guardar" },
+    { key: "pedido_resumen", grupo: "Pedido", desc: "Resumen completo del pedido", ejemplo: "Pedido SOM-1044" },
+  ]);
+  render(<FlujosWhatsapp servicio={servicio} />);
+  const seccion = await screen.findByRole("region", { name: "Seguimiento de producto por WhatsApp" });
+  fireEvent.click(within(seccion).getByRole("button", { name: /Agregar flujo/ }));
+  fireEvent.click(screen.getAllByRole("button", { name: /Insertar variable/ })[0]);
+  const selector = within(screen.getByRole("dialog", { name: "Insertar variable" }));
+  expect(selector.getByRole("button", { name: /producto_descripcion/ })).toBeInTheDocument();
+  expect(selector.getByRole("button", { name: /producto_beneficios/ })).toBeInTheDocument();
+  fireEvent.click(selector.getByRole("button", { name: /pedido_resumen/ }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Nombre del flujo" }), { target: { value: "Información de productos" } });
+  fireEvent.click(screen.getByRole("button", { name: /Guardar cambios/ }));
+  await waitFor(() => expect(servicio.createFlujo).toHaveBeenCalled());
+  const mensaje = servicio.createFlujo.mock.calls[0][0].fases[0].mensaje;
+  expect(mensaje).toContain("{producto_descripcion}");
+  expect(mensaje).toContain("{producto_beneficios}");
+  expect(mensaje).toContain("{pedido_resumen}");
+});
+
 test("el editor crea Recuperación de clientes con sus mensajes y activación automática", async () => {
   const servicio = servicioEditor();
   render(<FlujosWhatsapp servicio={servicio} />);

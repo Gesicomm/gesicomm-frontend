@@ -22,3 +22,9 @@ test('respeta la referencia de la API y no usa el id técnico como correlativo',
   expect(numeroPedidoVisible({ id: 900, numero_pedido: 1, numero_pedido_visible: 'MIT-1001' })).toBe('MIT-1001');
   expect(numeroPedidoVisible({ id: 900 })).toBe('—');
 });
+
+
+test('los leads tienen referencia de contacto sin número de pedido', () => {
+  expect(numeroPedidoVisible({ id: 88, es_lead: true, numero_pedido: null, numero_pedido_tienda: null })).toBe('LEAD-88');
+  expect(numeroPedidoVisible({ id: 88, es_lead: true, numero_pedido_visible: 'ALI-1001' })).toBe('LEAD-88');
+});
