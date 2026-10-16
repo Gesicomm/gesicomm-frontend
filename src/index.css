@@ -13,8 +13,8 @@
     /* Oscuro por defecto, también antes de resolver la preferencia. */
     --color-canvas: var(--color-brand-ink);
     --color-surface: var(--color-brand-navy);
-    --color-surface-2: #152638;
-    --color-surface-3: #1e3246;
+    --color-surface-2: color-mix(in srgb, var(--color-brand-slate) 20%, var(--color-brand-ink));
+    --color-surface-3: color-mix(in srgb, var(--color-brand-slate) 32%, var(--color-brand-ink));
     --color-border: #2b4055;
     --color-border-strong: #405870;
     --color-fg: var(--color-brand-cloud);
@@ -30,6 +30,10 @@
     --color-accent-hover: #a1edff;
     --color-accent-fg: var(--color-brand-ink);
     --color-accent-text: var(--color-brand-ice);
+    --color-selection: var(--color-brand-ice);
+    --color-selection-fg: var(--color-brand-ink);
+    --color-placeholder: var(--color-brand-slate);
+    --color-placeholder-fg: var(--color-brand-cloud);
 
     --color-success: #34d399;
     --color-success-fg: var(--color-brand-ink);
@@ -64,8 +68,8 @@
     --app-color-scheme: light;
     --color-canvas: var(--color-brand-cloud);
     --color-surface: #ffffff;
-    --color-surface-2: #edf3f7;
-    --color-surface-3: #e0e9f0;
+    --color-surface-2: color-mix(in srgb, var(--color-brand-slate) 10%, var(--color-brand-cloud));
+    --color-surface-3: color-mix(in srgb, var(--color-brand-slate) 18%, var(--color-brand-cloud));
     --color-border: #d5dfe8;
     --color-border-strong: #a8b9c9;
     --color-fg: var(--color-brand-ink);

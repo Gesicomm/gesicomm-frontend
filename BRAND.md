@@ -10,13 +10,19 @@ La fuente de verdad de colores de interfaz es `src/index.css`.
 | Ink | `#08111F` | Lienzo oscuro, texto principal en claro, texto sobre coral y cyan |
 | Deep Navy | `#0D1B2A` | Tarjetas y superficies oscuras |
 | Signal Coral | `#FF5C45` | Botones principales y detalle del símbolo |
-| Electric Ice | `#76E4FF` | Acentos y destacados |
+| Electric Ice | `#76E4FF` | Navegación activa, filtros y selecciones |
 | Cloud | `#F7FAFC` | Lienzo claro y texto principal en oscuro |
-| Slate | `#64748B` | Base de neutros secundarios |
+| Slate | `#64748B` | Espacios sin imagen y base de superficies secundarias |
 
 Los seis valores originales están en `--color-brand-*`. Los roles de interfaz
 usan `--color-canvas`, `--color-surface`, `--color-fg`, `--color-primary` y
 `--color-accent`. Los colores de bordes, elevación y estados son derivados.
+
+`--color-selection` y `--color-selection-fg` dan a las selecciones un fondo
+Electric Ice con texto Ink en ambos temas. `--color-placeholder` usa Slate
+con texto Cloud para los espacios sin imagen del catálogo. Las superficies
+secundarias mezclan Slate con el lienzo del tema; Coral queda para las
+acciones principales, de modo que cada color cumple una función visible.
 
 Los fondos coral/cyan siempre llevan texto Ink. Para enlaces se usa
 `--color-primary-text` (coral profundo en claro, coral claro en oscuro).

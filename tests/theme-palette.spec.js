@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 const origin = process.env.PALETTE_BASE_URL || 'http://localhost:5173';
 const styles = [
   '/src/components/dashboard.css', '/src/pages/vitrina/vitrina.css',
+  '/src/pages/dashboard/MiDashboard.css',
   '/src/pages/productos/productos.css', '/src/pages/combos/combos.css',
   '/src/pages/combos/comboArmado.css', '/src/pages/courier/courier.css',
   '/src/pages/courier/courier-portal.css', '/src/pages/planes/planes.css',
@@ -43,6 +44,29 @@ async function contrastOf(locator) {
 }
 
 for (const theme of ['light', 'dark']) {
+  test(`celeste y gris de marca visibles y legibles (${theme})`, async ({ page }) => {
+    await prepare(page, theme);
+    const samples = [
+      ['navegación', 'sidebar', '<a class="sidebar-link active"><span>Mi catálogo</span></a>', [118, 228, 255]],
+      ['filtro', 'vit-page', '<button class="vit-filter-btn active">Todos</button>', [118, 228, 255]],
+      ['selección', 'vit-page', '<button class="vit-bulk-select-btn active">Seleccionar página</button>', [118, 228, 255]],
+      ['pestaña', 'md-page', '<button class="md-tab activo">Resumen</button>', [118, 228, 255]],
+      ['placeholder', 'vit-page', '<div class="vit-card-media-placeholder"><span>Sin imagen</span></div>', [100, 116, 139]],
+    ];
+    for (const [name, wrapper, html, background] of samples) {
+      await page.evaluate(({ name, wrapper, html }) => {
+        const section = document.createElement('section');
+        section.className = wrapper;
+        section.innerHTML = html;
+        section.querySelector('button, span').dataset.brandSample = name;
+        document.querySelector('#palette-gallery').append(section);
+      }, { name, wrapper, html });
+      const result = await contrastOf(page.locator(`[data-brand-sample="${name}"]`));
+      expect(result.ratio, `${theme}: ${name}`).toBeGreaterThanOrEqual(4.5);
+      expect(result.background.slice(0, 3)).toEqual(background);
+    }
+  });
+
   test(`roles de texto, acciones y selección legibles en todas las hojas (${theme})`, async ({ page }) => {
     await prepare(page, theme);
     const samples = [

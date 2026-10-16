@@ -141,7 +141,7 @@
   white-space: nowrap;
 }
 .md-tab:hover { color: var(--md-ink); }
-.md-tab.activo { background: var(--md-confirmado-soft); color: var(--md-confirmado); }
+.md-tab.activo { background: var(--color-selection); color: var(--color-selection-fg); }
 
 /* Mismo componente .md-tabs/.md-tab del header, reubicado dentro de la
    tarjeta "Embudo de Conversión" — solo agrega el margen que necesita ahí. */

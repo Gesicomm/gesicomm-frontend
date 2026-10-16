@@ -281,8 +281,8 @@
 }
 .vit-filter-btn:hover { color: var(--vit-text); background: color-mix(in srgb, var(--color-fg) 4%, transparent); }
 .vit-filter-btn.active {
-  background: var(--vit-accent-soft);
-  color: var(--vit-accent-fg);
+  background: var(--color-selection);
+  color: var(--color-selection-fg);
   border: none;
 }
 
@@ -334,14 +334,14 @@
 }
 
 .vit-bulk-select-btn.active {
-  color: var(--vit-accent-fg);
-  background: var(--vit-accent-soft);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vit-accent) 34%, transparent);
+  color: var(--color-selection-fg);
+  background: var(--color-selection);
+  box-shadow: inset 0 0 0 1px var(--color-selection);
 }
 
 .vit-bulk-select-btn.active span {
-  background: var(--color-primary);
-  color: var(--color-primary-fg);
+  background: var(--color-selection-fg);
+  color: var(--color-selection);
 }
 
 .vit-bulk-select-btn:disabled {
@@ -592,12 +592,10 @@
   background: var(--vit-card-hover-bg);
 }
 
-/* Seleccionada: anillo del primario + un tinte muy leve. El check dorado
-   es la confirmación puntual; el borde entero en dorado sería demasiado
-   acento repetido 12 veces en la grilla. */
+/* Electric Ice señala la selección; Coral queda reservado a las acciones. */
 .vit-card.is-selected {
-  border-color: var(--vit-accent-fg);
-  box-shadow: 0 0 0 1px var(--vit-accent), 0 10px 30px rgba(0, 0, 0, 0.45);
+  border-color: var(--color-selection);
+  box-shadow: 0 0 0 1px var(--color-selection), var(--vit-seleccion-sombra);
   background: var(--vit-card-hover-bg);
 }
 
@@ -678,8 +676,8 @@
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
-  background: linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 50%, var(--color-surface-2) 100%);
-  color: var(--vit-muted-2);
+  background: var(--color-placeholder);
+  color: var(--color-placeholder-fg);
   font-size: 0.72rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -687,12 +685,12 @@
 }
 
 .vit-card-media-placeholder.combo {
-  background: linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 50%, var(--color-surface-2) 100%);
-  color: color-mix(in srgb, var(--color-primary-text) 55%, transparent);
+  background: var(--color-placeholder);
+  color: var(--color-placeholder-fg);
 }
 
 .vit-card-media-placeholder svg {
-  opacity: 0.4;
+  opacity: 0.8;
 }
 
 /* ─── Badges ──────────────────────────────────────────────────────────── */
@@ -714,16 +712,11 @@
   white-space: nowrap;
 }
 
-.vit-card-badge.producto {
-  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
-  color: var(--color-primary-text);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
-}
-
+.vit-card-badge.producto,
 .vit-card-badge.combo {
-  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
-  color: #a8c0e8;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  border: 1px solid var(--color-accent);
 }
 
 .vit-card-badge.sin-stock {
