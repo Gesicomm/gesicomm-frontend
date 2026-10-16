@@ -540,9 +540,16 @@ export default function VitrinaGrid() {
     setSeleccionandoTodos(true);
     setErrorGenerarLanding(null);
     try {
+      // liviano: true — "seleccionar todo" puede traer miles de filas; nada
+      // de lo que hace esta barra (generar landing, cambiar precios,
+      // categorizar, armar combo, eliminar) necesita más que id/tipo/nombre,
+      // y el enriquecimiento completo (imágenes, ofertas, combos anidados)
+      // con un catálogo grande tumbó el backend por OOM (ver
+      // precioUsuario.service.js, listarCatalogoPaginado).
       const data = await vitrinaService.catalogoPaginado(getFiltrosCatalogo({
         page: 1,
         limit: Math.max(totalItems, itemsFiltrados.length, 1),
+        liviano: true,
       }));
       const itemsSeleccionTotal = data.items || [];
       agregarItemsASeleccion(itemsSeleccionTotal);
