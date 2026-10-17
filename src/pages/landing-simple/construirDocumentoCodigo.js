@@ -26,6 +26,7 @@ import { protegerObservadoresCodigo } from './protegerObservadoresCodigo';
 import { CATALOGO_TIENDA_CSS } from './catalogoTiendaCodigo';
 import { conMarcaTienda, cssMarcaTienda } from './marcaTiendaCodigo';
 import { typographyCss } from '../../lib/typography';
+import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS, actualizarCreditosGesicom } from '../landing/storeCredit';
 
 // El sandbox del iframe. allow-same-origin NO va acá y no debe agregarse:
 // combinado con allow-scripts anula el aislamiento por completo.
@@ -3208,10 +3209,12 @@ ${SYSTEM_CSS}
 ${CATALOGO_TIENDA_CSS}
 </style>
 ${extras?.css ? `<style>\n${escaparCierreStyle(extras.css)}\n</style>` : ''}
+<style>${CREDITO_GESICOM_CSS}</style>
 </head>
 <body>
 ${cuerpoConExtras(conBaseDeFicha(html), extras?.html)}
 ${puenteGesicomm}
+<script>(${actualizarCreditosGesicom.toString()})(${JSON.stringify(CREDITO_GESICOM_CONTENIDO)});</script>
 ${puenteErrores}
 <script>(${protegerObservadoresCodigo.toString()})();</script>
 <!-- El codigo del comercio va en su propio script, en el nivel mas alto y

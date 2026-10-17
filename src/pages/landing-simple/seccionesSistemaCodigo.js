@@ -14,6 +14,8 @@
  * HTML se concatena al documento sin pasar por el sanitizador del backend.
  */
 
+import { CREDITO_GESICOM_HTML, CREDITO_GESICOM_CSS } from '../landing/storeCredit';
+
 function htmlTieneSelector(html, selector) {
   return new RegExp(`(?:id|class)=["'][^"']*\\b${selector}\\b[^"']*["']`, 'i').test(html);
 }
@@ -160,7 +162,7 @@ function footerHtml(nombreComercio, basePath, contacto) {
     + `<div class="gcx-footer-col"><h3>Políticas</h3><ul>${enlacesPoliticas}</ul></div>`
     + (datosContacto ? `<div class="gcx-footer-col"><h3>Contactos</h3><ul class="gcx-footer-datos">${datosContacto}</ul></div>` : '')
     + `</div>`
-    + `<div class="gcx-footer-bottom"><p>${esc(nombreComercio)} · Tecnología de <a href="https://gesicomm.com" target="_blank" rel="noopener noreferrer">Gesicom</a></p></div>`
+    + `<div class="gcx-footer-bottom"><p>${esc(nombreComercio)} · Tecnología de ${CREDITO_GESICOM_HTML}</p></div>`
     + `</footer>`;
 }
 
@@ -235,5 +237,5 @@ export function armarSeccionesSistema({
     mostrarContacto ? contactoHtml(contacto) : '',
     mostrarFooter ? footerHtml(nombreComercio, basePath, contacto) : '',
   ].filter(Boolean).join('\n');
-  return { html, css: html ? css(acento) : '' };
+  return { html, css: html ? css(acento) + CREDITO_GESICOM_CSS : '' };
 }

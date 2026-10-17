@@ -1,48 +1,35 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import {
-  hexToRgba, componer, contraste, acentoLegible,
-} from '../landing-simple/templates/themeUtils';
+import { hexToRgba } from '../landing-simple/templates/themeUtils';
+import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS } from './storeCredit';
 
 /**
  * Footer legal de las landings y funnels públicos.
  *
- * Los colores salen del tema del template (fondo/texto/acento), nunca de la
- * paleta del panel: la landing es del comercio, no de Gesicom.
+ * El footer hereda el tema del comercio; la firma de Gesicom conserva
+ * Signal Coral y su símbolo propio.
  *
  * Sobre las opacidades: antes eran 0,4 para el texto y 0,6 para los enlaces,
  * y encima se multiplicaban por clases Tailwind (`opacity-80`, `opacity-75`),
  * así que la línea de firma terminaba al 30 %. Con un template de fondo claro
  * eso todavía se leía; sobre el fondo oscuro de Tech (#0B1220) daba 2,4:1
  * contra un mínimo AA de 4,5:1 — el footer directamente desaparecía. Ahora
- * las opacidades son legibles en ambos extremos y no se apilan.
+ * las opacidades del texto del comercio no se apilan. La firma de marca
+ * usa Coral sólido, independiente del tema.
  */
 
-// Opacidades por jerarquía, verificadas contra los 4 temas por defecto: con
-// estos valores el peor caso de los 12 (la firma sobre Beauty, que es el tema
-// de menor contraste intrínseco) queda en 5,2:1, por encima del mínimo AA de
-// 4,5:1. Bajar la firma a 0,6 la deja en 3,7:1 y ya no cumple.
+// Opacidades del texto del comercio; la marca tiene su propio color sólido.
 const ALPHA_ENLACE = 0.96;
 const ALPHA_TEXTO  = 0.88;
 const ALPHA_FIRMA  = 0.90;
 
 export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isPreview = false, style }) {
   const colorTexto = tema?.texto || '#000000';
-  // El footer no pinta fondo propio: hereda el del template. Ese es el color
-  // contra el que hay que medir contraste.
-  const colorFondo = tema?.fondo || '#FFFFFF';
+  // El footer no pinta fondo propio: hereda el del template.
 
   const linkColor  = hexToRgba(colorTexto, ALPHA_ENLACE);
   const textColor  = hexToRgba(colorTexto, ALPHA_TEXTO);
   const firmaColor = hexToRgba(colorTexto, ALPHA_FIRMA);
-
-  // El acento sólo se usa si de verdad se lee sobre este fondo; si no, cae al
-  // color de texto del tema (que por definición sí contrasta).
-  const colorMarca = acentoLegible(
-    tema?.acento,
-    colorFondo,
-    componer(colorTexto, ALPHA_ENLACE, colorFondo),
-  );
 
   const { slug } = useParams();
 
@@ -71,6 +58,7 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
       className="px-6 py-8 flex flex-col items-center"
       style={{ borderTop: `1px solid ${bordeSuave}`, color: textColor, ...style }}
     >
+      <style>{CREDITO_GESICOM_CSS}</style>
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mb-4">
         {enlaces.map(({ to, label }) => (
           <Link
@@ -90,13 +78,12 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
       <div style={{ color: firmaColor, fontSize: 'clamp(0.9rem, 1vw, 0.96rem)', fontWeight: 700 }}>
         Tecnología de{' '}
         <a
+          data-gesicomm-credit=""
           href="https://gesicomm.com"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: colorMarca, fontWeight: 900 }}
-        >
-          Gesicom
-        </a>
+          dangerouslySetInnerHTML={{ __html: CREDITO_GESICOM_CONTENIDO }}
+        />
       </div>
     </footer>
   );

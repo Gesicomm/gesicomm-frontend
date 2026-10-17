@@ -1,5 +1,6 @@
 import { ESTILOS_INICIO_CODIGO } from './estilosInicioCodigo';
 import { CATALOGO_TIENDA_CSS } from './catalogoTiendaCodigo';
+import { CREDITO_GESICOM_HTML } from '../landing/storeCredit';
 
 /**
  * Código base del lienzo en blanco: una vista de INICIO y una FICHA DE
@@ -762,7 +763,7 @@ const FOOTER_HTML = `<footer class="site-footer">
     </div>
   </div>
   <div class="container footer-bottom">
-    <span data-gesicomm-tienda="nombre">Tu tienda</span> · Tecnología de <a href="https://gesicomm.com" target="_blank" rel="noopener noreferrer">Gesicom</a>
+    <span data-gesicomm-tienda="nombre">Tu tienda</span> · Tecnología de ${CREDITO_GESICOM_HTML}
   </div>
 </footer>`;
 
