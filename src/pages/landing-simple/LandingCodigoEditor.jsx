@@ -14,6 +14,7 @@ import SeccionesPanel from './panels/SeccionesPanel';
 import Campo from './CampoTexto';
 import PhonePreviewShell from './PhonePreviewShell';
 import ConfigurarVentaCodigo, { aplicarReglaVenta } from './ConfigurarVentaCodigo';
+import { MCP_EDITOR_HABILITADO } from './mcpEditorConfig';
 import { urlPublicaLanding } from './urlPublicaLanding';
 import { datosRuntimePreview, contentIdPanel, PAGINAS_TIENDA } from './datosRuntime';
 import { usePagoparConectado } from './usePagoparConectado';
@@ -696,11 +697,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     landing?.content?.codigo?.generado_por_mcp ||
     codigos?.inicio?.generado_por_mcp
   );
-  const bloquesInicioBloqueados = esGeneradoIa && !desbloqueadoManual
+  const bloquesInicioBloqueados = MCP_EDITOR_HABILITADO && esGeneradoIa && !desbloqueadoManual
     && landing?.content?.bloques_inicio_bloqueados !== false;
   const creationSource = creationSourceDe(landing);
   const esGeneradaIA = creationSource === 'ai' || creationSource === 'ai_detected' || esGeneradoIa;
-  const etiquetaEditor = esGeneradoIa ? 'Generada con IA (MCP)' : (creationSource === 'ai_detected' ? 'Con IA' : esGeneradaIA ? 'Generada con IA' : 'Editor libre');
+  const etiquetaEditor = MCP_EDITOR_HABILITADO && esGeneradoIa ? 'Generada con IA (MCP)' : (creationSource === 'ai_detected' ? 'Con IA' : esGeneradaIA ? 'Generada con IA' : 'Editor libre');
   const accionVenta = venta?.configurado ? 'Configuración de venta' : 'Configurar venta';
 
   // Se piden al entrar al paso de código (también al volver de "Configurar

@@ -4,7 +4,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import LandingCodigoEditor from './LandingCodigoEditor';
 import { landingSimpleService } from '../../services/landingSimpleService';
+import { vitrinaService } from '../../services/vitrinaService';
 import { plantillaInicioPara } from './plantillasBaseCodigo';
+vi.mock('./mcpEditorConfig', () => ({ MCP_EDITOR_HABILITADO: true }));
 
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
 vi.mock('../../services/tiendaService', () => ({ tiendaService: { obtener: vi.fn().mockResolvedValue({ id: 5, nombre: 'Tienda' }) } }));
@@ -111,5 +113,62 @@ describe('Resetear el diseño MCP y guardar la landing publicada', () => {
     expect(screen.queryByText(/Bloques estándar bloqueados/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Desbloquear de todas formas/ })).toBeNull();
     expect(persistida.content.codigo).toEqual(codigoOriginal);
+  });
+
+  it('conserva el botón del banner quitado después de guardar y volver a entrar', async () => {
+    let persistida = inicial();
+    persistida.content = {
+      ...persistida.content, generado_por_ia: false, bloques_inicio_bloqueados: false, origen: 'plantilla',
+      codigo: plantillaInicioPara('catalogo'),
+      venta: { ...persistida.content.venta, inicio: { banners: [{ id: 'promo', titulo: 'Promoción', cta_texto: 'Ver productos' }] } },
+    };
+    landingSimpleService.actualizar.mockImplementation(async (_id, payload) => {
+      persistida = { ...persistida, content: { ...persistida.content, venta: payload.venta, codigo: payload.codigo ?? persistida.content.codigo } };
+      return structuredClone(persistida);
+    });
+    const vista = montar(persistida);
+    fireEvent.click(await screen.findByRole('button', { name: 'Banner principal', exact: true }));
+    fireEvent.change(screen.getByLabelText('CTA'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(landingSimpleService.actualizar).toHaveBeenCalled());
+    expect(persistida.content.venta.inicio.banners[0].cta_texto).toBe('');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar' }).disabled).toBe(false));
+    vista.unmount();
+    montar(persistida);
+    fireEvent.click(await screen.findByRole('button', { name: 'Banner principal', exact: true }));
+    expect(screen.getByLabelText('CTA').value).toBe('');
+  });
+
+  it('envía los productos sumados al bloque y los recupera al reabrir', async () => {
+    const productos = [
+      { id: 1, tipo: 'producto', slug: 'uno', nombre: 'Uno', precio_efectivo: 10000 },
+      { id: 2, tipo: 'producto', slug: 'dos', nombre: 'Dos', precio_efectivo: 20000 },
+    ];
+    vitrinaService.catalogo.mockResolvedValueOnce({ productos, combos: [] });
+    vitrinaService.catalogoPaginado.mockResolvedValue({ items: productos, total: 2, totalPages: 1, categorias: [] });
+    let persistida = inicial();
+    persistida.items.push({ tipo: 'producto', referencia_id: 2 });
+    persistida.content = {
+      ...persistida.content, generado_por_ia: false, bloques_inicio_bloqueados: false, origen: 'plantilla',
+      codigo: plantillaInicioPara('catalogo'),
+      venta: { ...persistida.content.venta, inicio: { productos_categoria: { items: ['uno'], limite: 8 } } },
+    };
+    landingSimpleService.actualizar.mockImplementation(async (_id, payload) => {
+      persistida = { ...persistida, items: payload.items, content: { ...persistida.content, venta: payload.venta, codigo: payload.codigo ?? persistida.content.codigo } };
+      return structuredClone(persistida);
+    });
+    const vista = montar(persistida);
+    fireEvent.click(await screen.findByRole('button', { name: 'Productos', exact: true }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Dos/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(landingSimpleService.actualizar).toHaveBeenCalled());
+    expect(persistida.content.venta.inicio.productos_categoria.items).toEqual(['uno', 'dos']);
+    expect(persistida.items.map(i => i.referencia_id)).toEqual([1, 2]);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar' }).disabled).toBe(false));
+    vista.unmount();
+    vitrinaService.catalogo.mockResolvedValueOnce({ productos, combos: [] });
+    montar(persistida);
+    fireEvent.click(await screen.findByRole('button', { name: 'Productos', exact: true }));
+    expect((await screen.findByRole('button', { name: /^Dos/, pressed: true })).disabled).toBe(false);
   });
 });

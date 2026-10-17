@@ -7,6 +7,7 @@ import {
   GripVertical, Lock, PanelLeftClose, PanelLeftOpen, Cpu, Terminal,
 } from 'lucide-react';
 import ConectarMcpPanel from './panels/ConectarMcpPanel';
+import { MCP_EDITOR_HABILITADO } from './mcpEditorConfig';
 import { ofertaService } from '../../services/ofertaService';
 import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
@@ -505,7 +506,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       titulo: b.titulo || '',
       subtitulo: b.subtitulo || '',
       etiqueta: b.etiqueta || '',
-      cta_texto: b.cta_texto || 'Ver productos',
+      cta_texto: b.cta_texto ?? 'Ver productos',
       enlace: b.enlace || '/catalogo',
       imagen: b.imagen || '',
       tipo_medio: b.tipo_medio || inferirTipoMedio(b.imagen || ''),
@@ -529,7 +530,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       titulo: b.titulo || '',
       subtitulo: b.subtitulo || '',
       etiqueta: b.etiqueta || '',
-      cta_texto: b.cta_texto || 'Ver ofertas',
+      cta_texto: b.cta_texto ?? 'Ver ofertas',
       enlace: b.enlace || '#ofertas',
       imagen: b.imagen || '',
       tipo_medio: b.tipo_medio || inferirTipoMedio(b.imagen || ''),
@@ -736,7 +737,7 @@ export default function ConfigurarVentaCodigo({
     landing?.content?.codigo?.generado_por_mcp ||
     codigos?.inicio?.generado_por_mcp
   );
-  const bloquesInicioBloqueados = esGeneradoIa && !desbloqueadoManual
+  const bloquesInicioBloqueados = MCP_EDITOR_HABILITADO && esGeneradoIa && !desbloqueadoManual
     && landing?.content?.bloques_inicio_bloqueados !== false;
 
   function resetearPaginaInicio() {
@@ -2364,7 +2365,7 @@ export default function ConfigurarVentaCodigo({
               <Settings2 size={14} /> <span className="hidden sm:inline">Código avanzado</span>
             </button>
           )}
-          <button
+          {MCP_EDITOR_HABILITADO && <button
             type="button"
             onClick={() => setSeccionConfig(s => s === 'mcp' ? 'inicio' : 'mcp')}
             title="Conectar con Claude o Codex mediante MCP (Model Context Protocol)"
@@ -2376,7 +2377,7 @@ export default function ConfigurarVentaCodigo({
           >
             <Cpu size={14} className={seccionConfig === 'mcp' ? 'text-primary-fg' : 'text-primary-text'} />
             <span className="hidden sm:inline">Conectar MCP</span>
-          </button>
+          </button>}
           {publicUrl && (
             <a
               href={publicUrl} target="_blank" rel="noreferrer"
@@ -2424,7 +2425,7 @@ export default function ConfigurarVentaCodigo({
             <header className="mb-7">
               <div className="flex items-center gap-2">
                 <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML</p>
-                {esGeneradoIa && (
+                {MCP_EDITOR_HABILITADO && esGeneradoIa && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary-text uppercase tracking-wide">
                     <Sparkles size={11} /> Generada con IA (MCP)
                   </span>
@@ -3397,7 +3398,7 @@ export default function ConfigurarVentaCodigo({
                 </>
               )}
 
-              {seccionConfig === 'mcp' ? (
+              {MCP_EDITOR_HABILITADO && seccionConfig === 'mcp' ? (
                 <Bloque
                   titulo="Conexión MCP con Claude & Codex"
                   ayuda="Conectá tu asistente inteligente directamente a tu tienda y landing por Model Context Protocol."
@@ -3642,7 +3643,7 @@ export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos,
   return (
     <div className="space-y-4">
       {/* Selector de Método IA: Híbrido vs MCP */}
-      <div className="flex rounded-xl border border-border bg-surface-2/60 p-1 gap-1">
+      {MCP_EDITOR_HABILITADO && <div className="flex rounded-xl border border-border bg-surface-2/60 p-1 gap-1">
         <button
           type="button"
           onClick={() => setMetodoIa('hibrido')}
@@ -3665,9 +3666,9 @@ export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos,
         >
           <Cpu size={13} /> Conectar MCP (Claude / Codex)
         </button>
-      </div>
+      </div>}
 
-      {metodoIa === 'mcp' ? (
+      {MCP_EDITOR_HABILITADO && metodoIa === 'mcp' ? (
         <ConectarMcpPanel
           tienda={tienda}
           landing={landing}
