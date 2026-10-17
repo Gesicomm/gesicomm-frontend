@@ -16,6 +16,7 @@ describe('firma compartida de las tiendas', () => {
     actualizarCreditosGesicom(CREDITO_GESICOM_CONTENIDO);
     const firma = document.querySelector('[data-gesicomm-credit]');
     expect(firma.querySelectorAll('svg')).toHaveLength(1);
+    expect(firma.querySelector('circle').getAttribute('fill')).toBe('#ff5c45');
     expect(firma.textContent).toBe('Gesicom');
     expect(firma.rel).toBe('noopener noreferrer');
     expect(document.querySelector('.footer-bottom').textContent).toContain('Llevalofacil · Tecnología de Gesicom');
@@ -37,6 +38,8 @@ describe('firma compartida de las tiendas', () => {
     const firma = container.querySelector('[data-gesicomm-credit]');
     expect(firma.textContent).toBe('Gesicom');
     expect(firma.querySelector('svg')).not.toBeNull();
+    expect(firma.style.getPropertyValue('--gesicom-credit-logo')).toBe(fondo === '#000000' ? '#f7fafc' : '#08111f');
+    expect(firma.querySelector('circle').getAttribute('fill')).toBe('#ff5c45');
     expect(container.textContent).toContain('Llevalofacil');
     expect(container.querySelector('style').textContent).toContain('#ff5c45');
   });

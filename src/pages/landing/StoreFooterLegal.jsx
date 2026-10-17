@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { hexToRgba } from '../landing-simple/templates/themeUtils';
+import { hexToRgba, contraste } from '../landing-simple/templates/themeUtils';
 import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS } from './storeCredit';
 
 /**
@@ -25,6 +25,8 @@ const ALPHA_FIRMA  = 0.90;
 
 export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isPreview = false, style }) {
   const colorTexto = tema?.texto || '#000000';
+  const fondo = tema?.fondo || '#ffffff';
+  const colorLogo = contraste('#08111f', fondo) >= contraste('#f7fafc', fondo) ? '#08111f' : '#f7fafc';
   // El footer no pinta fondo propio: hereda el del template.
 
   const linkColor  = hexToRgba(colorTexto, ALPHA_ENLACE);
@@ -82,6 +84,7 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
           href="https://gesicomm.com"
           target="_blank"
           rel="noopener noreferrer"
+          style={{ '--gesicom-credit-logo': colorLogo }}
           dangerouslySetInnerHTML={{ __html: CREDITO_GESICOM_CONTENIDO }}
         />
       </div>
