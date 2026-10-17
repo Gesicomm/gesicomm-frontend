@@ -4707,16 +4707,16 @@ function EditorCodigoSeccion({ tipo, codigoInicio, onCambiarCodigo, tienda, vent
         >
           {copiado ? <Check size={13} /> : <FileCode2 size={13} />} {copiado ? 'Prompt copiado' : 'Copiar prompt para IA'}
         </button>
-        <span className="text-[11px] text-fg-muted">Pegalo en ChatGPT, Claude o Gemini. La IA te va a preguntar qué querés cambiar y cómo lo querés ver antes de generar nada — respondele ahí (podés subir una imagen de referencia) y después traé el resultado acá abajo.</span>
+        <span className="text-[11px] text-fg-muted">Pegalo en ChatGPT, Claude o Gemini y contale qué querés cambiar y cómo lo querés ver. Podés sumar una imagen de referencia. Copiá la respuesta completa y pegala abajo.</span>
       </div>
 
       <div className="space-y-1.5">
-        <label className="block text-[11px] font-semibold text-fg-muted">Pegar respuesta de la IA (o editar HTML/CSS a mano abajo)</label>
+        <label className="block text-[11px] font-semibold text-fg-muted">Pegá el HTML completo de esta sección</label>
         <textarea
           value={pegado}
           onChange={e => setPegado(e.target.value)}
           rows={4}
-          placeholder="Pegá acá los bloques ```html ``` ```css ``` que te devolvió la IA"
+          placeholder="Pegá acá la respuesta completa de la IA, con el CSS incluido dentro de <style>"
           className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-xs font-mono text-fg outline-none focus:border-primary"
         />
         <button

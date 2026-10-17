@@ -1506,7 +1506,7 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
           value={respuesta}
           onChange={e => setRespuesta(e.target.value)}
           rows={7}
-          placeholder="Pegá acá la respuesta completa (con los bloques ```html, ```css y ```js)."
+          placeholder="Pegá acá el HTML completo de la IA, con los estilos y scripts incluidos."
           className="w-full resize-y bg-brand-ink/40 border border-fg/10 rounded-lg p-3 text-xs leading-relaxed text-fg/80 outline-none font-mono"
         />
         {errorRespuesta && <p className="mt-1.5 text-xs text-danger">{errorRespuesta}</p>}

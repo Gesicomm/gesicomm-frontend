@@ -241,7 +241,7 @@ El logo va con <img data-gesicomm-tienda="logo" alt=""> y el nombre con <span da
 - El footer tiene que tener estos links (son obligatorios para cobrar con PagoPar y para aprobar anuncios en Meta), escritos así, con su data-gesicomm-link: <a href="/contacto" data-gesicomm-link="contacto">, <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">, <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">, <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">, <a href="/politica-envio" data-gesicomm-link="politica-envio">, <a href="/aviso-legal" data-gesicomm-link="aviso-legal">. Gesicomm corrige la URL según dónde se publique la landing; no pongas dominios. En el footer poné también el contenedor de redes <div data-gesicomm-redes></div>.
 
 ## Formato de tu respuesta
-Devolvé exactamente tres bloques de código, en este orden: \`\`\`html (solo el contenido del <body>, sin <html>/<head>/<body>), \`\`\`css y \`\`\`js. Sin explicaciones entre medio.`;
+Devolvé un único bloque html con el documento completo: HTML y todo el CSS dentro de <style>, y el JavaScript necesario dentro de <script>. La persona copia y pega una sola respuesta; Gesicomm separa el código automáticamente. Sin archivos separados ni explicaciones entre medio.`;
 
 function describirProducto(item, idx, principal) {
   const lineas = [
@@ -550,7 +550,7 @@ ${lineaValores('Binds usados', binds)}
 ${lineaValores('Datos de tienda usados', tienda)}
 ${lineaValores('Atributos Gesicomm presentes', atributos, 34)}
 
-No copies productos, precios ni links a mano: usá esos atributos data-gesicomm-* y devolvé igual los tres bloques html/css/js.`;
+No copies productos, precios ni links a mano: usá esos atributos data-gesicomm-* y devolvé un único HTML con el CSS y JavaScript incluidos.`;
 }
 
 export function bloqueCodigoBase(base, { compacto = false } = {}) {
@@ -569,14 +569,8 @@ Podés tomar este código como referencia funcional del contrato, pero rediseña
 
 \`\`\`html
 ${base.html}
-\`\`\`
-
-\`\`\`css
-${base.css}
-\`\`\`
-
-\`\`\`js
-${base.js}
+${base.css ? `<style>\n${base.css}\n</style>` : ''}
+${base.js ? `<script>\n${base.js}\n</script>` : ''}
 \`\`\``;
 }
 
@@ -617,8 +611,5 @@ ${contexto({
   })}
 
 ${especifico}${estiloTexto}${bloqueCodigoBase(base, { compacto: esFicha || esCheckout })}`;
-  if (!documentoCompleto) return prompt;
-  return prompt
-    .replace(/Devolvé exactamente tres bloques de código[^\n]+/, 'Devolvé un único bloque html con el documento completo: HTML y todo el CSS dentro de <style>, y el JavaScript necesario dentro de <script>. No separes la respuesta en bloques CSS o JavaScript. Sin explicaciones entre medio.')
-    .replace('devolvé igual los tres bloques html/css/js', 'devolvé un único documento HTML con todo el CSS y JavaScript incluidos');
+  return prompt;
 }

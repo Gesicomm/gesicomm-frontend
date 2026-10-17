@@ -74,7 +74,7 @@ Estos elementos no son bloques del panel pero son parte de la compra. Van dentro
 Mobile first: una columna en el celular (galería, después la columna del producto) y dos columnas en la computadora (galería a la izquierda, "pdp-info" a la derecha, la galería puede quedar fija con position: sticky). Precio grande y claro, un solo botón principal fuerte, todo lo demás secundario. Podés cambiar libremente las clases y el CSS: lo que conecta la ficha con los datos y el panel son los atributos data-gesicomm-*, no las clases (excepto "pdp-info", que se conserva). Si algún color tuyo no se aplica sobre clases genéricas como .button-primary o .product-card, usá clases propias.`;
 
 const FORMATO = `## Formato de tu respuesta (recién cuando ya tengas la respuesta del comercio)
-Devolvé la ficha COMPLETA (no solo lo que cambió) en tres bloques de código, en este orden: \`\`\`html, \`\`\`css y \`\`\`js. El HTML es el contenido del <body> (sin <html>, <head> ni <body>), con el <header>, el <main> de la ficha, las secciones de abajo, la barra fija del celular y el <footer>. Si no cambiás el JavaScript, devolvé igual el bloque \`\`\`js con el código actual. Sin explicaciones entre los bloques.`;
+Devolvé la ficha COMPLETA (no solo lo que cambió) en un único bloque html, con todo el CSS dentro de <style> y el JavaScript dentro de <script>. Incluí el <header>, el <main>, las secciones de abajo, la barra fija del celular y el <footer>. Conservá el JavaScript actual si no lo cambiás. La persona copia y pega una sola respuesta; Gesicomm separa el código automáticamente. No entregues archivos ni bloques separados por lenguaje. Sin explicaciones entre medio.`;
 
 function bloqueCodigoActual(base) {
   if (!base?.html) return '';
@@ -85,14 +85,8 @@ Partí de este código: ya cumple todo el contrato de arriba. Cambiá el diseño
 
 \`\`\`html
 ${base.html}
-\`\`\`
-
-\`\`\`css
-${base.css || ''}
-\`\`\`
-
-\`\`\`js
-${base.js || ''}
+${base.css ? `<style>\n${base.css}\n</style>` : ''}
+${base.js ? `<script>\n${base.js}\n</script>` : ''}
 \`\`\``;
 }
 

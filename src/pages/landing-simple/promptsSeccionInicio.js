@@ -19,12 +19,12 @@ const CONTRATO_BASE = `Sos un desarrollador front-end senior especialista en e-c
 - NUNCA escribas productos, precios, nombres ni imágenes a mano: siempre salen de los binds/listas de abajo.
 - El elemento raíz de tu HTML DEBE conservar el mismo atributo data-gesicomm-bloque que tiene ahora (no lo borres ni le cambies el valor): es lo que usa Gesicomm para ubicar este bloque dentro de la página. No agregues header, footer ni otras secciones: SOLO este bloque.
 
-## MUY IMPORTANTE: no generes código todavía
-Esto es el inicio de una conversación, no un pedido de código directo. Quien te escribió este mensaje todavía NO te dijo qué cambio quiere. Tu PRIMERA respuesta, antes que nada, tiene que ser preguntarle:
+## Si falta el pedido: no generes código todavía
+Si el comercio ya explicó qué quiere cambiar y cómo lo quiere ver, generá directamente el resultado. Si todavía no dio esa información, preguntale solo lo que falte:
 1. Qué quiere cambiar o qué no le gusta de cómo se ve ahora.
 2. Cómo quiere que se vea (estilo, colores de acento, sensación: minimalista, llamativo, elegante, etc.).
 3. Si tiene una imagen de referencia o un sitio que le guste, para que la suba o la describa.
-NO generes HTML ni CSS en esta primera respuesta, ni propongas un diseño todavía. Recién cuando te responda con esa información (texto y, si tiene, una imagen) generás el rediseño con el formato de abajo.`;
+Cuando tengas el pedido, generá el rediseño con el formato de abajo. La imagen de referencia es opcional; no vuelvas a preguntar datos que ya te dieron.`;
 
 export const REGLAS_COLOR = `## Colores (obligatorio)
 Usá SIEMPRE estas variables CSS en vez de colores fijos — las define la marca de la tienda (Mi Tienda → Branding) y si escribís un hex fijo la landing deja de seguir esos colores si la tienda los cambia:
@@ -43,7 +43,7 @@ Renombrá TODAS las clases del código base con un prefijo propio de este bloque
 El CSS base puede usar variables viejas (--navy, --sky, --muted, --home-superficie): reemplazalas por las de la sección "Colores".`;
 
 const FORMATO_RESPUESTA = `## Formato de tu respuesta (recién cuando ya tengas la respuesta del comercio)
-Devolvé el HTML de este bloque nomás (el mismo elemento raíz, con su data-gesicomm-bloque) y su CSS, en dos bloques de código: \`\`\`html y \`\`\`css. Si hace falta JavaScript propio de este bloque (poco común), agregalo en un tercer bloque \`\`\`js. Sin explicaciones entre medio.`;
+Devolvé un único bloque html con el código completo de esta sección y todo su CSS incluido dentro de <style>. Conservá el mismo elemento raíz y su data-gesicomm-bloque. No entregues archivos separados ni un bloque CSS aparte. La persona copia y pega una sola respuesta; Gesicomm separa el HTML y el CSS automáticamente al aplicarla. Usá el runtime existente para el comportamiento del bloque. Sin explicaciones entre medio.`;
 
 /**
  * Por bloque: qué construir + SOLO las listas/binds/acciones que ese bloque
