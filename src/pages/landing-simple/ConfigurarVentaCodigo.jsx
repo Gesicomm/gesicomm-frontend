@@ -626,6 +626,7 @@ function normalizarColeccionesInicio(c) {
     modo: c.modo === 'colecciones' ? 'colecciones' : 'categorias',
     ...(typeof c.titulo === 'string' ? { titulo: c.titulo } : {}),
     ...(typeof c.subtitulo === 'string' ? { subtitulo: c.subtitulo } : {}),
+    ...(c.imagenes && typeof c.imagenes === 'object' ? { imagenes: c.imagenes } : {}),
     items: Array.isArray(c.items) ? c.items.filter(v => typeof v === 'string' && v.trim()).slice(0, 24) : [],
     columnas: Math.max(1, Math.min(6, Math.floor(Number(c.columnas) || 4))),
     limite: Math.max(1, Math.min(24, Math.floor(Number(c.limite) || 4))),
@@ -2738,6 +2739,7 @@ export default function ConfigurarVentaCodigo({
                     colecciones: (
                       <EditorColeccionesInicio
                         config={inicioComercial.colecciones}
+                        onSubir={onSubirImagen ? subirImagenLanding : null}
                         categorias={categoriasInicioDisponibles}
                         colecciones={coleccionesLandingDisponibles}
                         onCambiar={c => cambiarInicio('colecciones', c)}

@@ -869,6 +869,19 @@ describe('runtime del lienzo en blanco — inicio', () => {
   });
 
   describe('bloque Colecciones del inicio', () => {
+    it.each(['categorias', 'colecciones'])('usa la imagen propia en modo %s y conserva la automática al quitarla', modo => {
+      const nombre = modo === 'categorias' ? 'Cocina' : 'Novedades';
+      const datosColeccion = { ...datos, productos: [{ ...airFryer, etiqueta: 'Novedades' }],
+        venta: { inicio: { colecciones: { modo, items: [nombre], limite: 4, imagenes: { [modo]: { [nombre]: 'https://cdn.test/coleccion-propia.webp' } } } } } };
+      const propia = montar(PLANTILLA_INICIO, datosColeccion);
+      const tarjeta = propia.document.querySelector('[data-gesicomm-bloque="colecciones"] .collection-card');
+      expect(tarjeta.style.backgroundImage).toContain('coleccion-propia.webp');
+      propia.dom.window.close();
+      datosColeccion.venta.inicio.colecciones.imagenes[modo][nombre] = '';
+      const automatica = montar(PLANTILLA_INICIO, datosColeccion);
+      expect(automatica.document.querySelector('[data-gesicomm-bloque="colecciones"] .collection-card').style.backgroundImage).toContain('air.jpg');
+      automatica.dom.window.close();
+    });
     const productosCol = [
       { ...airFryer, etiqueta: 'Novedades', precio_antes: null, descuento_pct: 0 },
       { ...remera, etiqueta: 'Ofertas del día', precio_antes: null, descuento_pct: 0 },

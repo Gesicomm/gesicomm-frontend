@@ -1908,7 +1908,12 @@ export function runtimeGesicomm() {
       }
     }
     var limite = Number(conf.limite) > 0 ? Number(conf.limite) : 4;
-    return base.slice(0, limite);
+    var imagenesPropias = conf.imagenes && conf.imagenes[conf.modo === 'colecciones' ? 'colecciones' : 'categorias'];
+    return base.slice(0, limite).map(function (tarjeta) {
+      var clave = tarjeta.coleccion || tarjeta.categoria || tarjeta.nombre;
+      var propia = urlSegura(imagenesPropias && imagenesPropias[clave]);
+      return propia ? Object.assign({}, tarjeta, { imagen: propia, imagenes: [propia] }) : tarjeta;
+    });
   }
 
   // Columnas del bloque: solo con la config guardada (el CSS que las usa se

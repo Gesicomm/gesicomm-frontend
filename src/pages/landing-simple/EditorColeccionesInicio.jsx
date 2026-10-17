@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
+import { getMediaUrl } from '../../services/api';
 
 /**
  * Panel del bloque "Colecciones" del Inicio: qué tarjetas muestra
@@ -15,8 +16,10 @@ const MODOS = [
   ['colecciones', 'Mis colecciones', 'Las que armaste en Categorías → Organizar productos (Ofertas del día, Novedades…).'],
 ];
 
-export default function EditorColeccionesInicio({ config, categorias = [], colecciones = [], onCambiar }) {
+export default function EditorColeccionesInicio({ config, categorias = [], colecciones = [], onCambiar, onSubir = null }) {
   const actual = { ...COLECCIONES_INICIO_DEFAULT, ...config };
+  const actualRef = useRef(actual);
+  actualRef.current = actual;
   const opciones = actual.modo === 'colecciones' ? colecciones : categorias;
   const elegidas = new Set(actual.items || []);
   const cambiar = cambio => onCambiar({ ...actual, ...cambio });
@@ -25,9 +28,23 @@ export default function EditorColeccionesInicio({ config, categorias = [], colec
     cambiar({ items });
   };
   const visibles = Math.min(actual.limite, elegidas.size || opciones.length);
+  const tarjetas = (elegidas.size ? [...elegidas] : opciones.map(([nombre]) => nombre)).slice(0, actual.limite);
+  function cambiarImagen(modo, nombre, url) {
+    const ultima = actualRef.current;
+    const imagenes = { ...ultima.imagenes, [modo]: { ...ultima.imagenes?.[modo], [nombre]: url } };
+    onCambiar({ ...ultima, imagenes });
+  }
 
   return (
     <div className="space-y-4">
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-fg-muted">Imagen de cada tarjeta</p>
+        {tarjetas.map(nombre => (
+          <ImagenColeccion key={`${actual.modo}:${nombre}`} nombre={nombre}
+            imagen={actual.imagenes?.[actual.modo]?.[nombre] || ''} onSubir={onSubir}
+            onCambiar={url => cambiarImagen(actual.modo, nombre, url)} />
+        ))}
+      </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {['titulo', 'subtitulo'].map(campo => (
           <label key={campo} className="block">
@@ -106,6 +123,39 @@ export default function EditorColeccionesInicio({ config, categorias = [], colec
         Se ven {visibles} tarjeta{visibles === 1 ? '' : 's'}, en {Math.max(1, Math.ceil(visibles / actual.columnas))} fila{Math.ceil(visibles / actual.columnas) === 1 ? '' : 's'} en escritorio. En celular van de a 2.
         {actual.modo === 'colecciones' && ' Al tocar una, se abre el catálogo filtrado por esa colección.'}
       </p>
+    </div>
+  );
+}
+
+function ImagenColeccion({ nombre, imagen, onSubir, onCambiar }) {
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState('');
+  async function subir(event) {
+    const archivo = event.target.files?.[0];
+    event.target.value = '';
+    if (!archivo || !onSubir) return;
+    setError(''); setSubiendo(true);
+    try { onCambiar(await onSubir(archivo)); }
+    catch { setError('No se pudo subir la imagen. Volvé a intentar.'); }
+    finally { setSubiendo(false); }
+  }
+  return (
+    <div className="rounded-xl border border-border p-3 space-y-2">
+      <p className="text-sm font-medium text-fg">{nombre}</p>
+      {imagen && <img src={getMediaUrl(imagen)} alt={`Imagen de ${nombre}`} className="h-28 w-full rounded-lg object-cover" />}
+      <label className="block text-xs text-fg-muted">
+        URL de imagen para {nombre}
+        <input type="url" value={imagen} onChange={e => onCambiar(e.target.value)} disabled={subiendo}
+          className="mt-1 h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg" placeholder="https://..." />
+      </label>
+      <div className="flex flex-wrap gap-2 items-center">
+        {onSubir && <label className="text-xs font-semibold text-primary-text cursor-pointer">
+          {subiendo ? 'Subiendo…' : 'Subir imagen'}
+          <input type="file" accept="image/jpeg,image/png,image/webp" aria-label={`Subir imagen para ${nombre}`} onChange={subir} disabled={subiendo} className="sr-only" />
+        </label>}
+        {imagen && <button type="button" disabled={subiendo} onClick={() => onCambiar('')} className="text-xs text-fg-muted underline">Usar imagen automática para {nombre}</button>}
+      </div>
+      {error && <p role="alert" className="text-xs text-danger">{error}</p>}
     </div>
   );
 }
