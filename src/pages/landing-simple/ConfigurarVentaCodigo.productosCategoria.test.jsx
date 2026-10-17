@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]) } }));
@@ -44,7 +44,7 @@ function montar() {
   const confirmar = vi.fn().mockResolvedValue(true);
   // La landing vende todo menos el último producto.
   const enLanding = productos.slice(0, 149);
-  render(<ConfigurarVentaCodigo catalogo={{ productos, combos: [] }} inicial={{ seleccion: enLanding }} onConfirmar={confirmar} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
+  render(<ConfigurarVentaCodigo catalogo={{ productos: [...productos, { tipo: 'producto', id: 151, slug: 'externo', nombre: 'Producto ajeno', categoria: 'Categoría ajena', precio_efectivo: 100000 }], combos: [] }} inicial={{ seleccion: enLanding }} onConfirmar={confirmar} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
   fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
   return confirmar;
 }
@@ -83,28 +83,34 @@ describe('Bloque Productos del inicio en una tienda grande', () => {
     expect(confirmar.mock.calls[0][0].venta.inicio.productos_categoria.formato).toBe(formato);
   });
 
-  it('pide al servidor de a 10 y pagina', async () => {
+  it('pagina de a 10 únicamente la selección de la landing sin consultar el catálogo general', async () => {
     montar();
     await abrirBloqueProductos();
     await waitFor(() => expect(screen.getByText('Página 1 de 15')).toBeTruthy());
-    expect(catalogoPaginado).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, limit: 10 }), expect.anything());
+    expect(catalogoPaginado).not.toHaveBeenCalled();
+    expect(screen.getAllByText('149 productos').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('option', { name: 'Categoría ajena' })).toBeNull();
     expect(screen.getByText('Minorista 1')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
     await waitFor(() => expect(screen.getByText('Página 2 de 15')).toBeTruthy());
     expect(screen.getByText('Minorista 11')).toBeTruthy();
     expect(screen.queryByText('Minorista 1')).toBeNull();
+    for (let pagina = 2; pagina < 15; pagina++) fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    expect(screen.getByText('Página 15 de 15')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Notebook 149/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Notebook 150/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Página siguiente' }).disabled).toBe(true);
   });
 
-  it('filtra por categoría y búsqueda en el servidor; lo elegido fuera del corte llega a la vista previa y al guardado', async () => {
+  it('filtra la selección por categoría y búsqueda; lo elegido fuera del corte llega a la vista previa y al guardado', async () => {
     const confirmar = montar();
     await abrirBloqueProductos();
     await waitFor(() => expect(screen.getByRole('option', { name: 'Informática y gaming' })).toBeTruthy());
     fireEvent.change(screen.getByDisplayValue('Todas las categorías'), { target: { value: 'Informática y gaming' } });
     await waitFor(() => expect(screen.getByText('Página 1 de 2')).toBeTruthy());
-    expect(catalogoPaginado).toHaveBeenLastCalledWith(expect.objectContaining({ filtroCategoria: 'Informática y gaming', page: 1 }), expect.anything());
+    expect(screen.getByText('19 productos')).toBeTruthy();
 
     fireEvent.change(screen.getByPlaceholderText('Buscar producto'), { target: { value: 'Notebook 145' } });
-    await waitFor(() => expect(catalogoPaginado).toHaveBeenLastCalledWith(expect.objectContaining({ busqueda: 'Notebook 145' }), expect.anything()), { timeout: 2000 });
     const boton = await screen.findByRole('button', { name: /Notebook 145/ });
     await act(async () => { fireEvent.click(boton); });
 
@@ -118,12 +124,14 @@ describe('Bloque Productos del inicio en una tienda grande', () => {
     expect(confirmar.mock.calls[0][0].venta.inicio.productos_categoria.items).toEqual(['notebook-145']);
   });
 
-  it('un producto que la landing no vende aparece pero no se puede elegir', async () => {
+  it('no muestra productos que la landing no vende, ni al buscarlos', async () => {
     montar();
     await abrirBloqueProductos();
     fireEvent.change(screen.getByPlaceholderText('Buscar producto'), { target: { value: 'Notebook 150' } });
-    const boton = await screen.findByRole('button', { name: /Notebook 150/ }, { timeout: 2000 });
-    expect(boton.disabled).toBe(true);
-    expect(within(boton).getByText('No está en esta landing')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('No hay productos que coincidan.')).toBeTruthy(), { timeout: 2000 });
+    expect(screen.queryByRole('button', { name: /Notebook 150/ })).toBeNull();
+    expect(screen.queryByText('No está en esta landing')).toBeNull();
+    expect(screen.getByText('0 productos')).toBeTruthy();
+    expect(catalogoPaginado).not.toHaveBeenCalled();
   });
 });

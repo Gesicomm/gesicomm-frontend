@@ -11,7 +11,6 @@ import { MCP_EDITOR_HABILITADO } from './mcpEditorConfig';
 import { ofertaService } from '../../services/ofertaService';
 import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
-import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
@@ -1056,8 +1055,7 @@ export default function ConfigurarVentaCodigo({
     [seleccion],
   );
   // Toda la selección de la landing por content_id (sin tope): los buscadores
-  // paginados (Productos, destacados, recomendados…) la usan para saber qué
-  // resultado se puede elegir.
+  // paginados (Productos, destacados, recomendados…) muestran solo esta lista.
   const itemsLandingPorContentId = useMemo(() => {
     const mapa = new Map();
     seleccion.forEach(i => mapa.set(contentIdPanel(i), i));
@@ -1164,7 +1162,7 @@ export default function ConfigurarVentaCodigo({
     [candidatosDatosProducto],
   );
   // Los mismos candidatos indexados para los buscadores paginados de la ficha
-  // y de promos: lo que devuelve el servidor se cruza contra esto.
+  // y de promos: esta lista define sus opciones disponibles.
   const datosProductoPorContentId = useMemo(
     () => new Map(candidatosDatosProducto.map(i => [i.content_id, i])),
     [candidatosDatosProducto],
@@ -4999,11 +4997,9 @@ function EditorProductosCategoria({ config, enLanding, incluirCombos, onCambiar,
 
 const POR_PAGINA_SELECTOR = 10;
 
-// Buscador de productos del bloque "Productos": la búsqueda, la categoría y
-// la página las resuelve el servidor (vitrina/catalogo-paginado), de a 10, así
-// se llega a cualquiera de un catálogo de miles sin bajarlo entero.
-// Solo se puede elegir lo que vende esta landing (enLanding): lo demás se ve
-// pero queda deshabilitado, porque la página publicada no podría mostrarlo.
+// La selección completa ya está cargada en enLanding (sin el recorte del
+// preview). Buscar, filtrar y paginar esa selección evita consultar el
+// catálogo general y mostrar productos que esta landing no vende.
 // Lo reusan todos los selectores de productos del editor (destacados,
 // recomendados, ficha, promos, ofertas); `maximo` bloquea sumar más elegidos
 // y `mostrarElegidos={false}` saca los chips cuando se elige de a uno.
@@ -5012,9 +5008,6 @@ function SelectorProductosPaginado({ elegidos, enLanding, incluirCombos, onAlter
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState('');
   const [pagina, setPagina] = useState(1);
-  const [resultado, setResultado] = useState({ items: [], total: 0, totalPages: 1, categorias: [] });
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -5027,41 +5020,31 @@ function SelectorProductosPaginado({ elegidos, enLanding, incluirCombos, onAlter
     return () => clearTimeout(t);
   }, [texto]);
 
-  useEffect(() => {
-    const control = new AbortController();
-    setCargando(true);
-    setError('');
-    vitrinaService.catalogoPaginado({
-      page: pagina,
-      limit: POR_PAGINA_SELECTOR,
-      busqueda,
-      filtroCategoria: categoria,
-      tipo: incluirCombos ? 'todos' : 'producto',
-      orden: 'nombre',
-      solamenteMios: false,
-    }, { signal: control.signal })
-      .then((data) => {
-        setResultado({
-          items: Array.isArray(data?.items) ? data.items : [],
-          total: Number(data?.total) || 0,
-          totalPages: Math.max(1, Number(data?.totalPages) || 1),
-          categorias: Array.isArray(data?.categorias) ? data.categorias : [],
-        });
-      })
-      .catch(() => {
-        if (!control.signal.aborted) setError('No se pudieron cargar los productos.');
-      })
-      .finally(() => { if (!control.signal.aborted) setCargando(false); });
-    return () => control.abort();
-  }, [pagina, busqueda, categoria, incluirCombos]);
+  const candidatos = useMemo(() => Array.from(enLanding, ([content_id, item]) => ({ ...item, content_id }))
+    .filter(item => incluirCombos || item.tipo !== 'combo')
+    .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es', { numeric: true })), [enLanding, incluirCombos]);
+  const categorias = useMemo(() => [...new Set(candidatos.map(item => item.categoria).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'es')), [candidatos]);
+  const filtrados = useMemo(() => candidatos.filter(item =>
+    (!categoria || item.categoria === categoria)
+    && (!busqueda || String(item.nombre || '').toLocaleLowerCase('es').includes(busqueda.toLocaleLowerCase('es')))), [candidatos, categoria, busqueda]);
+  const totalPages = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA_SELECTOR));
+  const paginaActual = Math.min(pagina, totalPages);
+  const resultado = {
+    items: filtrados.slice((paginaActual - 1) * POR_PAGINA_SELECTOR, paginaActual * POR_PAGINA_SELECTOR),
+    total: filtrados.length, totalPages, categorias,
+  };
+  useEffect(() => { if (pagina !== paginaActual) setPagina(paginaActual); }, [pagina, paginaActual]);
+  useEffect(() => { if (categoria && !categorias.includes(categoria)) { setCategoria(''); setPagina(1); } }, [categoria, categorias]);
 
-  const elegidosSet = new Set(elegidos);
-  const lleno = elegidos.length >= maximo;
+  const elegidosVisibles = elegidos.filter(id => enLanding.has(id));
+  const elegidosSet = new Set(elegidosVisibles);
+  const lleno = elegidosVisibles.length >= maximo;
   return (
     <div className="space-y-2">
-      {mostrarElegidos && elegidos.length > 0 && (
+      {mostrarElegidos && elegidosVisibles.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {elegidos.map((id) => {
+          {elegidosVisibles.map((id) => {
             const item = enLanding.get(id);
             return (
               <span key={id} className="inline-flex max-w-full items-center gap-1 rounded-full border border-accent bg-accent/[0.08] py-0.5 pl-2.5 pr-1 text-xs text-fg">
@@ -5089,17 +5072,14 @@ function SelectorProductosPaginado({ elegidos, enLanding, incluirCombos, onAlter
           {resultado.categorias.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
-      {error ? (
-        <p className="text-sm text-danger">{error}</p>
-      ) : !cargando && resultado.items.length === 0 ? (
+      {resultado.items.length === 0 ? (
         <p className="text-sm text-fg-muted">No hay productos que coincidan.</p>
       ) : (
-        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 ${cargando ? 'opacity-60' : ''}`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {resultado.items.map((i) => {
-            const contentId = contentIdPanel(i);
-            const disponible = enLanding.has(contentId);
+            const contentId = i.content_id;
             const elegido = elegidosSet.has(contentId);
-            const bloqueado = !elegido && (!disponible || lleno);
+            const bloqueado = !elegido && lleno;
             const imagen = getMediaUrl(i.imagen);
             return (
               <button
@@ -5107,7 +5087,7 @@ function SelectorProductosPaginado({ elegidos, enLanding, incluirCombos, onAlter
                 type="button"
                 aria-pressed={elegido}
                 disabled={bloqueado}
-                title={!disponible ? 'Este producto no está entre los productos de esta landing' : bloqueado ? `Ya elegiste el máximo de ${maximo}` : undefined}
+                title={bloqueado ? `Ya elegiste el máximo de ${maximo}` : undefined}
                 onClick={() => onAlternar(contentId)}
                 className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${elegido ? 'border-accent bg-accent/[0.08]' : 'border-border hover:border-border-strong hover:bg-surface-2'}`}
               >
@@ -5116,7 +5096,7 @@ function SelectorProductosPaginado({ elegidos, enLanding, incluirCombos, onAlter
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-fg">{i.nombre}</span>
-                  <span className="block truncate text-xs text-fg-muted">{disponible ? (i.categoria || 'Sin categoría') : 'No está en esta landing'}</span>
+                  <span className="block truncate text-xs text-fg-muted">{i.categoria || 'Sin categoría'}</span>
                 </span>
                 <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border'}`}>
                   {elegido && <Check size={13} />}
@@ -5127,14 +5107,14 @@ function SelectorProductosPaginado({ elegidos, enLanding, incluirCombos, onAlter
         </div>
       )}
       <div className="flex items-center justify-between gap-2 text-xs text-fg-muted">
-        <span>{cargando ? 'Cargando…' : `${resultado.total} producto${resultado.total === 1 ? '' : 's'}`}</span>
+        <span>{`${resultado.total} producto${resultado.total === 1 ? '' : 's'}`}</span>
         <div className="flex items-center gap-2">
-          <button type="button" aria-label="Página anterior" disabled={pagina <= 1 || cargando} onClick={() => setPagina(p => Math.max(1, p - 1))}
+          <button type="button" aria-label="Página anterior" disabled={paginaActual <= 1} onClick={() => setPagina(Math.max(1, paginaActual - 1))}
             className="h-8 rounded-lg border border-border px-2.5 text-fg disabled:opacity-40">
             <ArrowLeft size={13} />
           </button>
-          <span>Página {pagina} de {resultado.totalPages}</span>
-          <button type="button" aria-label="Página siguiente" disabled={pagina >= resultado.totalPages || cargando} onClick={() => setPagina(p => p + 1)}
+          <span>Página {paginaActual} de {resultado.totalPages}</span>
+          <button type="button" aria-label="Página siguiente" disabled={paginaActual >= resultado.totalPages} onClick={() => setPagina(paginaActual + 1)}
             className="h-8 rounded-lg border border-border px-2.5 text-fg disabled:opacity-40">
             <ArrowRight size={13} />
           </button>
