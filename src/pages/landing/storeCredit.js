@@ -11,9 +11,76 @@ a[data-gesicomm-credit]:hover { text-decoration: underline; text-underline-offse
 a[data-gesicomm-credit]:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 3px; }
 `;
 
+// Se serializa también dentro del iframe. Calcula el fondo compuesto real,
+// incluidos contenedores transparentes, y sigue los cambios de tema/estilos.
+export function adaptarLogosGesicom(root) {
+  root = root || document;
+  var links = Array.from(root.querySelectorAll('[data-gesicomm-credit]'));
+  if (!links.length) return function () {};
+  var canvas;
+  function rgba(value) {
+    if (value === 'transparent') return [0, 0, 0, 0];
+    var match = value.match(/^rgba?\(([^)]+)\)$/);
+    if (match) {
+      var parts = match[1].split(/[,\s/]+/).map(Number);
+      return [parts[0], parts[1], parts[2], parts.length > 3 ? parts[3] : 1];
+    }
+    canvas = canvas || document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+    canvas.clearRect(0, 0, 1, 1);
+    canvas.fillStyle = value;
+    canvas.fillRect(0, 0, 1, 1);
+    var pixel = canvas.getImageData(0, 0, 1, 1).data;
+    return [pixel[0], pixel[1], pixel[2], pixel[3] / 255];
+  }
+  function luminance(rgb) {
+    return rgb.reduce(function (sum, channel, i) {
+      var c = channel / 255;
+      return sum + (c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4)) * [.2126, .7152, .0722][i];
+    }, 0);
+  }
+  function contrast(a, b) { return (Math.max(a, b) + .05) / (Math.min(a, b) + .05); }
+  function update() {
+    links.forEach(function (link) {
+      var chain = [];
+      for (var el = link; el; el = el.parentElement) chain.unshift(el);
+      var bg = [255, 255, 255];
+      chain.forEach(function (node) {
+        var front = rgba(getComputedStyle(node).backgroundColor);
+        bg = bg.map(function (channel, i) { return front[i] * front[3] + channel * (1 - front[3]); });
+      });
+      var lum = luminance(bg);
+      var color = contrast(luminance([247, 250, 252]), lum) > contrast(luminance([8, 17, 31]), lum) ? '#f7fafc' : '#08111f';
+      if (link.style.getPropertyValue('--gesicom-credit-logo') !== color) link.style.setProperty('--gesicom-credit-logo', color);
+    });
+  }
+  var frame = 0;
+  function schedule() {
+    if (!frame) frame = requestAnimationFrame(function () { frame = 0; update(); });
+  }
+  var observer = new MutationObserver(schedule);
+  var ancestors = new Set();
+  links.forEach(function (link) {
+    for (var el = link; el; el = el.parentElement) ancestors.add(el);
+  });
+  ancestors.forEach(function (el) { observer.observe(el, { attributes: true, attributeFilter: ['style', 'class', 'data-theme'] }); });
+  if (document.head) observer.observe(document.head, { subtree: true, childList: true, characterData: true, attributes: true });
+  window.addEventListener('load', schedule);
+  window.addEventListener('resize', schedule);
+  document.addEventListener('transitionend', schedule);
+  update();
+  schedule(); // El JavaScript de la tienda puede aplicar su fondo después.
+  return function () {
+    observer.disconnect();
+    cancelAnimationFrame(frame);
+    window.removeEventListener('load', schedule);
+    window.removeEventListener('resize', schedule);
+    document.removeEventListener('transitionend', schedule);
+  };
+}
+
 // Se serializa en el iframe: no debe depender de imports ni del módulo.
 // Actualiza también las firmas de plantillas guardadas antes de esta versión.
-export function actualizarCreditosGesicom(contenido) {
+export function actualizarCreditosGesicom(contenido, adaptar = adaptarLogosGesicom) {
   document.querySelectorAll('footer a[href], .footer-bottom a[href], .gcx-footer-bottom a[href]').forEach(function (link) {
     var url;
     try { url = new URL(link.getAttribute('href'), document.baseURI); } catch (_) { return; }
@@ -23,11 +90,6 @@ export function actualizarCreditosGesicom(contenido) {
     link.setAttribute('target', '_blank');
     link.setAttribute('rel', 'noopener noreferrer');
     link.innerHTML = contenido;
-    // El texto del footer ya se adapta a su fondo. Su luminosidad permite
-    // elegir exclusivamente las dos variantes oficiales, Ink o Cloud.
-    var texto = getComputedStyle(link.parentElement).color;
-    var canales = texto.match(/[\d.]+/g);
-    var claro = canales && (Number(canales[0]) * .2126 + Number(canales[1]) * .7152 + Number(canales[2]) * .0722) > 128;
-    link.style.setProperty('--gesicom-credit-logo', claro ? '#f7fafc' : '#08111f');
   });
+  return adaptar(document);
 }

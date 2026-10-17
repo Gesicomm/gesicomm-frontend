@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { hexToRgba, contraste } from '../landing-simple/templates/themeUtils';
-import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS } from './storeCredit';
+import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS, adaptarLogosGesicom } from './storeCredit';
 
 /**
  * Footer legal de las landings y funnels públicos.
@@ -27,6 +27,8 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
   const colorTexto = tema?.texto || '#000000';
   const fondo = tema?.fondo || '#ffffff';
   const colorLogo = contraste('#08111f', fondo) >= contraste('#f7fafc', fondo) ? '#08111f' : '#f7fafc';
+  const footerRef = useRef(null);
+  useLayoutEffect(() => adaptarLogosGesicom(footerRef.current), [tema, style]);
   // El footer no pinta fondo propio: hereda el del template.
 
   const linkColor  = hexToRgba(colorTexto, ALPHA_ENLACE);
@@ -57,6 +59,7 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
 
   return (
     <footer
+      ref={footerRef}
       className="px-6 py-8 flex flex-col items-center"
       style={{ borderTop: `1px solid ${bordeSuave}`, color: textColor, ...style }}
     >
