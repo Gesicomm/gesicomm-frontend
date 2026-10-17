@@ -641,3 +641,42 @@ test('distingue el lead con productos de interés del pedido y separa sus contad
   expect(screen.getByText('Valor de interés')).toBeInTheDocument();
   expect(screen.getByText('1 lead · 1 pedido')).toBeInTheDocument();
 });
+
+describe('seguimiento operativo desde las tarjetas móviles', () => {
+  let originalMatchMedia;
+  beforeEach(() => {
+    originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  });
+  afterEach(() => { window.matchMedia = originalMatchMedia; });
+
+  test('un pedido sin resumen de seguimiento conserva acceso a sus mensajes', async () => {
+    const envio = pedido(1, 'Pendiente', { seguimiento: null });
+    getEnviosPaginados.mockResolvedValue({ data: [envio], total: 1, totalPages: 1 });
+    const { onAbrirSeguimiento, onAbrirDetalle } = await montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar mensaje de seguimiento' }));
+    expect(onAbrirSeguimiento).toHaveBeenCalledWith(envio);
+    expect(onAbrirDetalle).not.toHaveBeenCalled();
+  });
+
+  test('muestra la fase pendiente y permite confirmar un mensaje ya abierto', async () => {
+    const envio = pedido(1, 'Pendiente', { seguimiento: { etapa: 'CONFIRMACION_PEDIDO_WEB', etapa_nombre: 'Confirmación', fase_id: 102, fase_nombre: 'Recordatorio', fase_posicion: 2, total_fases: 3, fase_abierta_en: '2026-10-17T12:30:00Z' } });
+    getEnviosPaginados.mockResolvedValue({ data: [envio], total: 1, totalPages: 1 });
+    const { onAbrirSeguimiento } = await montar();
+    expect(screen.getByText('2/3 · Recordatorio')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar envío del mensaje' }));
+    expect(onAbrirSeguimiento).toHaveBeenCalledWith(expect.objectContaining({ seguimiento: expect.objectContaining({ fase_id: 102 }) }));
+  });
+
+  test('logística mantiene Preparar y las acciones de detalle e historial', async () => {
+    const onAbrirHistorial = vi.fn();
+    const { onChangeEstado, onAbrirDetalle } = await montar({ etapasDisponibles: ['logistica'], initialEtapa: 'logistica', initialEstado: 'Confirmado', onAbrirHistorial });
+    const tarjeta = screen.getByRole('article', { name: /MIT-2801/ });
+    fireEvent.click(within(tarjeta).getByRole('button', { name: 'Preparar' }));
+    await waitFor(() => expect(onChangeEstado).toHaveBeenCalledWith(1, 'Preparado', expect.objectContaining({ id: 1 })));
+    fireEvent.click(within(tarjeta).getByRole('button', { name: 'Ver / editar pedido' }));
+    expect(onAbrirDetalle).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+    fireEvent.click(within(tarjeta).getByRole('button', { name: 'Historial' }));
+    expect(onAbrirHistorial).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+  });
+});

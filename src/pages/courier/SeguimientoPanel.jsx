@@ -99,6 +99,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
   const [cargando, setCargando] = useState(false);
   const [loadingAccion, setLoadingAccion] = useState(false);
   const [faseEnviando, setFaseEnviando] = useState(null);
+  const [ajustesMobile, setAjustesMobile] = useState(false);
   // Fase cuyo mensaje se está viendo antes de abrir WhatsApp.
   const [faseVista, setFaseVista] = useState(null);
   const [productosMensaje, setProductosMensaje] = useState(null);
@@ -351,7 +352,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "var(--color-overlay)" }} onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={`Seguimiento por WhatsApp del pedido ${numeroPedidoVisible(envio)}`} style={{ width: "460px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+      <div className="sp-panel" role="dialog" aria-modal="true" aria-label={`Seguimiento por WhatsApp del pedido ${numeroPedidoVisible(envio)}`} style={{ width: "460px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.75rem", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <div style={{ minWidth: 0 }}>
             <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -374,14 +375,14 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem" }}>
+        <div className="sp-scroll" style={{ flex: 1, overflowY: "auto", padding: "1.25rem" }}>
           {cargando ? (
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-fg-muted)" }}><Loader2 className="animate-spin" size={16} /> Cargando...</div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <div className="sp-sections" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
               {/* Etiquetas */}
-              <div style={{ background: "var(--color-surface-2)", padding: "1rem", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
+              <div className="sp-tags" style={{ background: "var(--color-surface-2)", padding: "1rem", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
                 <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "0.9rem", color: "var(--color-fg-subtle)", display: "flex", alignItems: "center", gap: "6px" }}><Tag size={14}/> Etiquetas</h3>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "0.75rem" }}>
                   {etiquetasPedido.length === 0 && <span style={{ fontSize: "0.8rem", color: "var(--color-fg-muted)" }}>Sin etiquetas</span>}
@@ -426,7 +427,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
               </div>
 
               {/* Flujo de WhatsApp */}
-              <div style={{ background: "var(--color-surface-2)", padding: "1rem", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
+              <div className="sp-flow" style={{ background: "var(--color-surface-2)", padding: "1rem", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
                 {flujos.length === 0 ? (
                   <div style={{ background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)', color: 'var(--color-warning)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <MessageCircle size={16} style={{ flexShrink: 0 }} />
@@ -434,6 +435,8 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
                   </div>
                 ) : (
                   <>
+                    <button type="button" className="sp-settings-toggle" aria-expanded={ajustesMobile} onClick={() => setAjustesMobile(value => !value)}><MessageCircle size={15} />{telefonoPersonalizado || "Sin teléfono"}<span>{ajustesMobile ? "Cerrar ajustes" : "Flujo y teléfono"}</span></button>
+                    <div className={`sp-message-settings${ajustesMobile ? " is-open" : ""}`}>
                     <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "4px", color: "var(--color-fg-subtle)" }}>Flujo</label>
                     <Select
                       styles={selectStyles}
@@ -448,7 +451,8 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
                     <label style={{ display: "block", fontSize: "0.8rem", margin: "12px 0 4px", color: "var(--color-fg-subtle)" }}>Teléfono</label>
                     <input type="text" className="form-input" style={{ width: "100%" }} value={telefonoPersonalizado} onChange={e => setTelefonoPersonalizado(e.target.value)} disabled={!!faseEnviando} />
 
-                    {confirmarPedidoCta}
+                    </div>
+                    <div className="sp-confirm-action">{confirmarPedidoCta}</div>
 
                     {envio.es_lead && flujo?.tipo === 'SEGUIMIENTO_PRODUCTO_WHATSAPP' && envio.items?.length > 1 && <fieldset style={{ marginTop: '14px', padding: '10px', border: '1px solid var(--color-border)', borderRadius: '8px' }} disabled={!!faseEnviando}>
                       <legend style={{ fontSize: '0.8rem' }}>Productos para este mensaje</legend>
@@ -462,7 +466,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
                       {errorMensaje && <span role="alert">{errorMensaje}</span>}
                     </fieldset>}
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
+                    <div className="sp-phases" style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
                       {fases.filter(fase => !fase.superada || fase.completada).map(fase => (
                         <FaseFila
                           key={fase.id}
@@ -543,8 +547,8 @@ function FaseFila({ fase, envioId, servicio, sugerida = false, vistaAbierta = fa
   const enlace = { padding: 0, background: "none", border: "none", cursor: "pointer", color: "var(--color-primary-text)", fontSize: "0.75rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" };
 
   return (
-    <div style={{ borderRadius: "8px", background: "var(--color-canvas)", border: `1px solid ${borde}` }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 12px" }}>
+    <div className="sp-phase" data-current={sugerida} data-completed={completada} style={{ borderRadius: "8px", background: "var(--color-canvas)", border: `1px solid ${borde}` }}>
+      <div className="sp-phase-row" style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 12px" }}>
         <div style={{ paddingTop: "2px", color: completada ? "var(--color-success)" : faltaMarcar ? "var(--color-warning)" : "var(--color-fg-subtle)", flexShrink: 0 }}>
           {completada ? <CheckCircle2 size={16} /> : <Circle size={16} />}
         </div>

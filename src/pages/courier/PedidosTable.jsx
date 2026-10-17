@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
   ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Clock,
-  Columns3, Table2, SlidersHorizontal, CheckCircle2, Plus
+  Columns3, Table2, SlidersHorizontal, CheckCircle2, Plus, MoreHorizontal, Phone
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio, actualizarLeadTipoManual } from "../../services/courierApi";
@@ -742,6 +742,58 @@ function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen, onAccionSiguie
   );
 }
 
+function PedidoMobile({ envio, etapa, onAbrirDetalle, onAbrirResumen, onAbrirSeguimiento, onCambiarEstado, onAccionSiguiente, onAbrirHistorial, onRepetirPedido, onEliminar, onCambiarOrigen, esAdmin }) {
+  const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "Sin nombre";
+  const seg = envio.seguimiento;
+  const whatsapp = String(envio.origen || "").toUpperCase().includes("WHATSAPP");
+  const leadTipo = envio.lead_tipo_manual || ((envio.campana_leads || []).length ? "campana" : "organico");
+  const origen = whatsapp ? `Lead ${leadTipo === "campana" ? "Campaña" : "Orgánico"}` : envio.origen === "LANDING" ? "Pedido web" : "Manual";
+  const bloqueado = etapa === "seguimiento_envio" && !puedeEnviarSeguimiento(envio);
+  const estadoMensaje = seg ? estadoDelSeguimiento(seg) : null;
+  const { fecha } = formatFechaYHora(envio.dispatchedAt || envio.fecha, envio.hora, envio.createdAt);
+  const cta = bloqueado ? "Disponible al preparar" : seg?.terminado ? "Ver mensajes enviados" : seg?.fase_abierta_en ? "Confirmar envío del mensaje" : "Enviar mensaje de seguimiento";
+  const items = envio.items || [];
+  return (
+    <article className="pm-order" aria-label={`${envio.es_lead ? "Lead" : "Pedido"} ${numeroPedidoVisible(envio)}`}>
+      <header className="pm-order-top">
+        <button type="button" className="pm-reference" onClick={() => onAbrirDetalle?.(envio)}>{numeroPedidoVisible(envio)}<ChevronRight size={14} /></button>
+        <span className="pm-origin">{origen}</span>
+        <details className="pm-more">
+          <summary aria-label={`Más acciones de ${numeroPedidoVisible(envio)}`}><MoreHorizontal size={20} /></summary>
+          <div className="pm-more-menu" onClick={event => { if (event.target.closest("button")) event.currentTarget.closest("details").open = false; }}>
+            <button type="button" onClick={() => onAbrirDetalle?.(envio)}><Eye size={16} /> Ver / editar pedido</button>
+            {onAbrirResumen && <button type="button" onClick={() => onAbrirResumen(envio)}><ClipboardList size={16} /> Resumen del pedido</button>}
+            {onAbrirHistorial && <button type="button" onClick={() => onAbrirHistorial(envio)}><History size={16} /> Historial</button>}
+            {etapa === "recompra" && onRepetirPedido && <button type="button" onClick={() => onRepetirPedido(envio)}><Plus size={16} /> Nuevo pedido del cliente</button>}
+            {whatsapp && <button type="button" onClick={() => onCambiarOrigen(envio, leadTipo)}>Cambiar a lead {leadTipo === "campana" ? "orgánico" : "campaña"}</button>}
+            {esAdmin && <button type="button" className="pm-danger" onClick={() => onEliminar(envio)}>Eliminar pedido</button>}
+          </div>
+        </details>
+      </header>
+      <div className="pm-customer"><h2>{nombre}</h2><strong>{envio.es_lead && !items.length ? "Sin importe" : formatGs(envio.monto)}</strong></div>
+      <p className="pm-location"><MapPin size={13} />{[envio.ciudad, envio.departamento].filter(Boolean).join(" · ") || "Sin ciudad"}</p>
+      <ReputacionClienteBadge reputacion={envio.reputacion_cliente} />
+      <p className="pm-products">{items.length ? items.map(item => `${item.cantidad || 1} × ${item.nombre_producto}`).join(" · ") : "Consulta general · Sin productos"}</p>
+      <div className="pm-status"><EstadoCell envio={envio} etapa={etapa} onCambiarEstado={envio.raha_logistica?.gestionado ? null : onCambiarEstado} /><span>{fecha}</span></div>
+      {onAbrirSeguimiento && <section className={`pm-followup pm-followup--${estadoMensaje?.tono || "neutral"}`} aria-label={`Mensajes de ${nombre}`}>
+        <div className="pm-followup-heading"><MessageCircle size={16} /><strong>{seg?.etapa_nombre || "Mensajes de seguimiento"}</strong>{estadoMensaje && <span>{estadoMensaje.texto}</span>}</div>
+        <p>{seg ? seg.terminado ? "Todos los mensajes enviados" : `${seg.fase_posicion}/${seg.total_fases} · ${seg.fase_nombre}` : "Abrí el flujo para ver y enviar los mensajes de este cliente."}</p>
+        {seg && <div className="pm-progress" role="progressbar" aria-label="Avance del seguimiento" aria-valuemin={0} aria-valuemax={Number(seg.total_fases) || 1} aria-valuenow={seg.terminado ? Number(seg.total_fases) || 1 : Math.max(0, (Number(seg.fase_posicion) || 1) - 1)}><span style={{ width: `${seg.terminado ? 100 : Math.min(100, Math.max(0, ((Number(seg.fase_posicion) || 1) - 1) / (Number(seg.total_fases) || 1) * 100))}%` }} /></div>}
+        <button type="button" className="pm-message-cta" disabled={bloqueado} onClick={() => onAbrirSeguimiento(envio)}><MessageCircle size={18} />{cta}<ChevronRight size={16} /></button>
+        {bloqueado && <small>Logística debe marcar este pedido como Preparado.</small>}
+      </section>}
+      <footer className="pm-footer">
+        <div className="pm-payment"><span>{envio.metodo_pago || "Sin método de pago"}{esPagoAnticipado(envio) ? " · Anticipado" : ""}</span>{Number(envio.costo_envio) > 0 && <span>Envío {formatGs(envio.costo_envio)}</span>}</div>
+        <div className="pm-actions">
+          {envio.telefono && <a href={`tel:${String(envio.telefono).replace(/[^\d+]/g, "")}`} aria-label={`Llamar a ${nombre}`}><Phone size={15} /><span>Llamar</span></a>}
+          {!["seguimiento_envio", "recuperacion", "recompra"].includes(etapa) && !(envio.raha_logistica?.gestionado) && <AccionPrincipal envio={envio} etapa={etapa} onAbrirDetalle={onAbrirDetalle} onAbrirResumen={onAbrirResumen} onAbrirSeguimiento={onAbrirSeguimiento} onCambiarEstado={onCambiarEstado} onAccionSiguiente={onAccionSiguiente} />}
+        </div>
+      </footer>
+      {envio.raha_logistica?.gestionado && etapa === "logistica" && <details className="pm-tracking"><summary>Ver seguimiento RAHA</summary><RahaTimeline envio={envio} /></details>}
+    </article>
+  );
+}
+
 /**
  * Bandeja operativa de pedidos — pestañas por estado con contador (ver plan
  * Gestión de Pedidos, sección 38-42). Reemplaza el viejo MultiEstadoSelect:
@@ -791,6 +843,17 @@ export function PedidosTable({
   const [resumenEntregados, setResumenEntregados] = useState(null);
   const [loading, setLoading] = useState(true);
   const [masFilters, setMasFilters] = useState(false);
+  const [resumenMobile, setResumenMobile] = useState(false);
+  const [esMovil, setEsMovil] = useState(() => window.matchMedia?.("(max-width: 760px)").matches || false);
+  const [busquedaMobileTipo, setBusquedaMobileTipo] = useState("cliente");
+  useEffect(() => {
+    const media = window.matchMedia?.("(max-width: 760px)");
+    if (!media) return;
+    const actualizar = () => setEsMovil(media.matches);
+    actualizar();
+    media.addEventListener("change", actualizar);
+    return () => media.removeEventListener("change", actualizar);
+  }, []);
   const [metodosPagoList, setMetodosPagoList] = useState([]);
   const [canalesVenta, setCanalesVenta] = useState([]);
   const [usuarioActual, setUsuarioActual] = useState(null);
@@ -1214,9 +1277,13 @@ export function PedidosTable({
   );
 
   return (
-    <div className="pt-root" data-stage={etapaActiva}>
+    <div className={`pt-root${masFilters ? " pt-filters-open" : ""}${resumenMobile ? " pt-summary-open" : ""}`} data-stage={etapaActiva} data-mobile-orders={!soloAbastecimiento}>
       {!soloAbastecimiento && (
         <div className="pt-viewbar">
+      {!soloAbastecimiento && <button type="button" className="pt-mobile-summary-toggle" aria-expanded={resumenMobile} onClick={() => setResumenMobile(value => !value)}>
+        <ClipboardList size={16} /> Resumen <ChevronDown size={16} />
+      </button>}
+
           <div className="pt-viewbar-copy">
             <strong>Pedidos</strong>
             <span>Gestión comercial y logística · {loading ? "Cargando..." : `${totalPedidosVista.toLocaleString("es-PY")} pedido${totalPedidosVista === 1 ? "" : "s"}`}</span>
@@ -1229,7 +1296,7 @@ export function PedidosTable({
               onClick={() => setVista("tabla")}
             >
               <Table2 size={15} />
-              Tabla
+              <span className="pt-desktop-label">Tabla</span><span className="pt-mobile-label">Lista</span>
             </button>
             <button
               type="button"
@@ -1279,6 +1346,16 @@ export function PedidosTable({
         </div>
       ) : stageFiltersDisponibles.length > 1 ? (
         <section className="pt-stage-shell" aria-label="Etapas del ciclo de venta">
+          <label className="pm-stage-picker">
+            <span>Bandeja de trabajo</span>
+            <span className="pm-stage-control">
+              <select aria-label="Elegir bandeja de trabajo" value={etapaActiva} onChange={event => handleSelectEtapa(event.target.value)}>
+                {stageFiltersDisponibles.map(stage => <option key={stage.id} value={stage.id}>{stage.label}</option>)}
+              </select>
+              <span className="pm-stage-chevron" aria-hidden="true"><ChevronDown size={20} strokeWidth={2.5} /></span>
+            </span>
+            <small>Tocá para cambiar de bandeja</small>
+          </label>
           <div className="pt-stage-tabs" role="tablist" aria-label="Filtrar por etapa">
             {stageFiltersDisponibles.map((stage) => (
               <button
@@ -1413,6 +1490,10 @@ export function PedidosTable({
         </div>
       )}
 
+      {!soloAbastecimiento && <div className="pm-searchbar">
+        <div className="pm-search-input"><Search size={18} /><input aria-label="Buscar pedidos en móvil" placeholder={busquedaMobileTipo === "cliente" ? "Nombre o teléfono del cliente" : "Número de pedido"} value={filtros[busquedaMobileTipo]} onChange={event => setFiltro(busquedaMobileTipo, event.target.value)} />{filtros[busquedaMobileTipo] && <button type="button" aria-label="Limpiar búsqueda" onClick={() => setFiltro(busquedaMobileTipo, "")}><X size={16} /></button>}</div>
+        <div className="pm-search-options"><select aria-label="Tipo de búsqueda" value={busquedaMobileTipo} onChange={event => setBusquedaMobileTipo(event.target.value)}><option value="cliente">Cliente / teléfono</option><option value="pedido_id">N° de pedido</option></select><button type="button" aria-expanded={masFilters} onClick={() => setMasFilters(value => !value)}><SlidersHorizontal size={16} />Filtros{hayFiltros && <span className="pm-filter-dot" />}</button>{hayFiltros && <button type="button" onClick={resetFiltros}>Limpiar todo</button>}<span>{loading ? "Cargando…" : `${data.total} registros`}</span></div>
+      </div>}
       {/* ── Toolbar de filtros principales ── */}
       <div className="pt-toolbar" style={{ marginTop: "0.75rem" }}>
         <div className="pt-search-wrap" style={{ flex: "0 1 240px" }}>
@@ -1433,12 +1514,13 @@ export function PedidosTable({
         </div>
 
         {esAdmin && (
-          <div className="pt-search-wrap" style={{ flex: "0 0 150px" }}>
+          <div className="pt-search-wrap pt-mobile-secondary-filter" style={{ flex: "0 0 150px" }}>
             <Hash size={14} className="pt-search-icon" />
             <input
               type="text"
               className="pt-search"
               placeholder="ID interno..."
+              aria-label="Buscar por ID interno"
               value={filtros.envio_id}
               onChange={(e) => setFiltro("envio_id", e.target.value)}
             />
@@ -1451,12 +1533,13 @@ export function PedidosTable({
         )}
 
         {/* Búsqueda cliente */}
-        <div className="pt-search-wrap">
+        <div className="pt-search-wrap pt-customer-search">
           <Search size={14} className="pt-search-icon" />
           <input
             type="text"
             className="pt-search"
             placeholder="Buscar cliente, teléfono..."
+            aria-label="Buscar cliente o teléfono"
             value={filtros.cliente}
             onChange={(e) => setFiltro("cliente", e.target.value)}
           />
@@ -1468,12 +1551,13 @@ export function PedidosTable({
         </div>
 
         {/* Ciudad VISIBLE directamente */}
-        <div className="pt-search-wrap" style={{ flex: "0 0 auto", minWidth: "140px" }}>
+        <div className="pt-search-wrap pt-mobile-secondary-filter" style={{ flex: "0 0 auto", minWidth: "140px" }}>
           <MapPin size={14} className="pt-search-icon" style={{ color: "var(--color-fg-subtle)" }} />
           <input
             type="text"
             className="pt-search"
             placeholder="Ciudad..."
+            aria-label="Filtrar por ciudad"
             value={filtros.ciudad}
             onChange={(e) => setFiltro("ciudad", e.target.value)}
           />
@@ -1485,7 +1569,7 @@ export function PedidosTable({
         </div>
 
         {/* Fecha desde */}
-        <label className="pt-date-label" title="Fecha desde">
+        <label className="pt-date-label pt-mobile-secondary-filter" title="Fecha desde">
           <span style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)", whiteSpace: "nowrap" }}>Desde</span>
           <input
             type="date"
@@ -1496,7 +1580,7 @@ export function PedidosTable({
         </label>
 
         {/* Fecha hasta */}
-        <label className="pt-date-label" title="Fecha hasta">
+        <label className="pt-date-label pt-mobile-secondary-filter" title="Fecha hasta">
           <span style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)", whiteSpace: "nowrap" }}>Hasta</span>
           <input
             type="date"
@@ -1509,16 +1593,17 @@ export function PedidosTable({
         <button
           type="button"
           className={`pt-filter-toggle ${masFilters ? "active" : ""}`}
+          aria-expanded={masFilters}
           onClick={() => setMasFilters((o) => !o)}
         >
           <SlidersHorizontal size={14} />
-          Más filtros
-          {filtrosSecundariosActivos.length > 0 && <span className="pt-filter-dot" />}
+          <span className="pt-desktop-label">Más filtros</span><span className="pt-mobile-label">Filtros</span>
+          {hayFiltros && <span className="pt-filter-dot" />}
         </button>
 
         {/* Reset */}
         {hayFiltros && (
-          <button type="button" className="pt-reset-btn" onClick={resetFiltros} title="Limpiar todo">
+          <button type="button" className="pt-reset-btn" onClick={resetFiltros} title="Limpiar todo" aria-label="Limpiar todos los filtros">
             <RotateCcw size={14} />
           </button>
         )}
@@ -1653,6 +1738,10 @@ export function PedidosTable({
             />
           )}
         </div>
+      ) : esMovil && !soloAbastecimiento ? (
+        <section className="pm-list" aria-label="Lista de pedidos" aria-busy={loading}>
+          {loading ? <div className="pm-loading" role="status"><span className="pt-spinner" /> Cargando pedidos…</div> : envios.length === 0 ? <div className="pt-empty">No hay registros en esta bandeja con los filtros actuales.{hayFiltros && <button type="button" onClick={resetFiltros}>Limpiar filtros</button>}</div> : envios.map(envio => <PedidoMobile key={envio.id} envio={envio} etapa={etapaActiva} esAdmin={esAdmin} onAbrirDetalle={onAbrirDetalle} onAbrirResumen={onAbrirResumen} onAbrirSeguimiento={mostrarSeguimiento ? onAbrirSeguimiento : undefined} onCambiarEstado={handleItemEstadoChange} onAccionSiguiente={handleAccionSiguiente} onAbrirHistorial={onAbrirHistorial} onRepetirPedido={onRepetirPedido} onEliminar={handleEliminarPedido} onCambiarOrigen={handleToggleLeadTipo} />)}
+        </section>
       ) : (
       <div className="pt-table-wrap">
         <table className={`pt-table${mostrarSeguimiento || soloAbastecimiento ? " pt-table--followup" : ""}`}>
@@ -1779,7 +1868,7 @@ export function PedidosTable({
                     }}
                   >
                     <td className="pt-td pt-td-id" data-label="Pedido">
-                      <span>{numeroPedidoVisible(e)}</span>
+                      <button type="button" className="pt-order-reference" aria-label={`Abrir ${e.es_lead ? "lead" : "pedido"} ${numeroPedidoVisible(e)}`}>{numeroPedidoVisible(e)}</button>
                       {e.es_lead && <span className="pt-depto">Lead · Sin pedido</span>}
                       {esAdmin && Number(e.id) !== Number(e.numero_pedido) && (
                         <span style={{ display: "block", marginTop: "2px", color: "var(--color-fg-subtle)", fontSize: "0.68rem", fontWeight: 600 }}>
@@ -1825,7 +1914,7 @@ export function PedidosTable({
                       </>
                     ) : (
                       <>
-                        <td className="pt-td" data-label="Cliente">
+                        <td className="pt-td pt-td-client" data-label="Cliente">
                           <span className="pt-cliente-nombre">{nombreCliente}</span>
                           <span className="pt-depto">{[e.ciudad, e.departamento].filter(Boolean).join(" · ") || "Sin ciudad"}</span>
                           <ReputacionClienteBadge reputacion={e.reputacion_cliente} />
@@ -1851,20 +1940,20 @@ export function PedidosTable({
                     </td>
                     {!soloAbastecimiento && (
                       <>
-                        <td className="pt-td" data-label="Método de pago">
+                        <td className="pt-td pt-td-payment" data-label="Método de pago">
                           <span>{e.metodo_pago || "—"}</span>
                           {esPagoAnticipado(e) && <span className="pt-depto">Anticipado</span>}
                         </td>
-                        <td className="pt-td" data-label="Estado">
+                        <td className="pt-td pt-td-state" data-label="Estado">
                           <EstadoCell envio={e} etapa={etapaActiva} onCambiarEstado={e.raha_logistica?.gestionado ? null : handleItemEstadoChange} />
                         </td>
-                        {mostrarSeguimiento && <td className="pt-td" data-label={["seguimiento_envio", "recuperacion"].includes(etapaActiva) ? "Mensaje de seguimiento" : "Seguimiento"} onClick={(ev) => ev.stopPropagation()}>
+                        {mostrarSeguimiento && <td className={`pt-td pt-td-followup${!e.seguimiento ? " pt-td-followup--empty" : ""}`} data-label={["seguimiento_envio", "recuperacion"].includes(etapaActiva) ? "Mensaje de seguimiento" : "Seguimiento"} onClick={(ev) => ev.stopPropagation()}>
                           <SeguimientoCell envio={e} onAbrir={onAbrirSeguimiento} />
                         </td>}
                       </>
                     )}
                     {soloAbastecimiento && (
-                      <td className="pt-td" data-label="Estado" onClick={(ev) => ev.stopPropagation()}>
+                      <td className="pt-td pt-td-state" data-label="Estado" onClick={(ev) => ev.stopPropagation()}>
                         <EstadoBadgeDropdown
                           estado={e.estado}
                           onChange={(nuevoEstado) => handleItemEstadoChange(e, nuevoEstado)}

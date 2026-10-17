@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   Eye, MessageCircle, CreditCard, ArrowRight, Loader, Table2, BarChart3, Store,
-  FileText, Clock, CheckCircle2, Package, PackageCheck, Wallet, Truck, ChevronDown, HelpCircle,
+  FileText, Clock, CheckCircle2, Package, PackageCheck, Wallet, Truck, ChevronDown, HelpCircle, SlidersHorizontal, LayoutDashboard, X,
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { getMetricasDashboardPedidos } from '../../services/courierApi';
 import { METRIC_HELP, METRIC_TERMS } from '../../utils/metricGlossary';
 import { STATUS as ESTADO_PEDIDO } from '../../lib/courier';
 import './MiDashboard.css';
+import './MiDashboard.mobile.css';
 
 const MESES = [
   { id: 1, label: 'Enero' }, { id: 2, label: 'Febrero' }, { id: 3, label: 'Marzo' },
@@ -162,7 +163,7 @@ function Variacion({ actual, previo, invertirColor = false }) {
  * Los conceptos en cero no se listan: un desglose de cuatro renglones donde
  * tres dicen Gs 0 esconde el que importa.
  */
-function DetalleCosto({ producto, columnas }) {
+function DesgloseCosto({ producto }) {
   const d = producto.costo_detalle || {};
   // Mismo orden que el estado de resultados de la tarjeta de Rentabilidad:
   // primero lo que costó la mercadería, después lo que costó venderla y
@@ -192,8 +193,6 @@ function DetalleCosto({ producto, columnas }) {
   ].filter(r => Number(r.valor) > 0);
 
   return (
-    <tr className="md-detalle-fila">
-      <td colSpan={columnas}>
         <div className="md-detalle-caja">
           <div className="md-detalle-cuenta">
             <span className="md-detalle-titulo">Costos de venta</span>
@@ -235,9 +234,23 @@ function DetalleCosto({ producto, columnas }) {
             </div>
           </div>
         </div>
-      </td>
-    </tr>
   );
+}
+
+function DetalleCosto({ producto, columnas }) {
+  return <tr className="md-detalle-fila"><td colSpan={columnas}><DesgloseCosto producto={producto} /></td></tr>;
+}
+
+function TarjetasMetricas({ filas }) {
+  return <div className="md-mobile-data">{filas.map(fila => (
+    <article className="md-data-card" key={fila.id}>
+      <header><strong>{fila.nombre}</strong>{fila.tag && <span>{fila.tag}</span>}</header>
+      <dl>{fila.metricas.map(([label, valor, clase = '']) => (
+        <div key={label}><dt>{label}</dt><dd className={clase}>{valor ?? '—'}</dd></div>
+      ))}</dl>
+      {fila.detalle}
+    </article>
+  ))}</div>;
 }
 
 function formatFechaCorta(iso) {
@@ -297,12 +310,26 @@ function FilaRanking({ posicion, nombre, valor, valorLabel, max, tono }) {
   );
 }
 
+function useAnchoGrafico(ref, vistaTabla, serie) {
+  const [ancho, setAncho] = useState(800);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const medir = () => setAncho(Math.max(220, Math.min(800, Math.round(element.getBoundingClientRect().width))));
+    medir();
+    const observer = new ResizeObserver(medir);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref, vistaTabla, serie]);
+  return ancho;
+}
+
 function GraficoTendencia({ serie, className = '' }) {
   const [vistaTabla, setVistaTabla] = useState(false);
   const [hover, setHover] = useState(null);
   const wrapRef = useRef(null);
 
-  const ANCHO = 800;
+  const ANCHO = useAnchoGrafico(wrapRef, vistaTabla, serie);
   const ALTO = 168;
   const PAD_INF = 22;
   const max = Math.max(1, ...serie.map(d => Math.max(d.visitas, d.contactos)));
@@ -514,7 +541,11 @@ function TablaEmbudoProductos({ filas }) {
     );
   }
   return (
-    <div className="md-table-wrap">
+    <>
+      <TarjetasMetricas filas={filas.map(p => ({ id: p.nombre, nombre: p.nombre, metricas: [
+        ['Leads', p.leads], ['Confirmados', p.confirmados], ['Compras', p.compras], ['Conversión', p.conversion == null ? '—' : pct(p.conversion)],
+      ] }))} />
+    <div className="md-table-wrap md-desktop-data">
       <table className="md-table">
         <thead>
           <tr>
@@ -538,6 +569,7 @@ function TablaEmbudoProductos({ filas }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -603,7 +635,7 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
   const [hover, setHover] = useState(null);
   const wrapRef = useRef(null);
 
-  const ANCHO = 800;
+  const ANCHO = useAnchoGrafico(wrapRef, vistaTabla, serie);
   const ALTO = 168;
   const PAD_INF = 22;
   const lineasGrid = [0.25, 0.5, 0.75, 1];
@@ -660,7 +692,7 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
   }, [hover, serie.length]);
 
   return (
-    <section className={`md-card md-chart-card ${className}`}>
+    <section className={`md-card md-chart-card ${className}`} data-mobile-section="resumen ventas">
       <div className="md-chart-head">
         <div>
           <h3 className="md-card-title">Evolución de Ventas</h3>
@@ -861,7 +893,13 @@ function TablaRendimientoCanal({ filas }) {
     return <p className="md-empty-hint">Todavía no hay pedidos en este período por ningún canal.</p>;
   }
   return (
-    <div className="md-table-wrap">
+    <>
+      <TarjetasMetricas filas={filas.map(f => ({ id: f.canal, nombre: f.canal, metricas: [
+        [METRIC_TERMS.ventasNetas, gs(f.ventas)], ['Costos totales', gs(f.costos_totales)],
+        [METRIC_TERMS.utilidadNeta, gs(f.utilidad_neta), claseValor(f.utilidad_neta)],
+        [METRIC_TERMS.margen, pct(f.margen_neto)], [METRIC_TERMS.roiCanal, pct(f.roi_canal)],
+      ] }))} />
+    <div className="md-table-wrap md-desktop-data">
       <table className="md-table">
         <thead>
           <tr>
@@ -887,6 +925,7 @@ function TablaRendimientoCanal({ filas }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -992,7 +1031,15 @@ function TablaMasVendidos({ filas }) {
     return <p className="md-empty-hint">Todavía no hay pedidos entregados en este período — en cuanto confirmes uno, aparece acá.</p>;
   }
   return (
-    <div className="md-table-wrap">
+    <>
+      <TarjetasMetricas filas={filas.map(p => ({ id: p.producto_id || p.nombre, nombre: p.nombre,
+        tag: `${p.alerta === 'sin_margen' ? 'Sin margen · ' : ''}${p.unidades ?? '—'} unidades`,
+        metricas: [['Venta', gs(p.venta)], [METRIC_TERMS.margenBruto, <>{gs(margenBruto(p))} <small className="md-valor-pct">{pctMargenBruto(p)}%</small></>],
+          ['Costo', gs(p.costo)], [METRIC_TERMS.ganancia, gs(p.ganancia), claseValor(p.ganancia)],
+          ['Pérdida', gs(p.perdida), Number(p.perdida) > 0 ? 'md-valor-negativo' : ''], [METRIC_TERMS.rentabilidad, pct(p.rentabilidad)]],
+        detalle: <details className="md-mobile-cost-detail"><summary>Ver desglose de costos <ChevronDown size={16} /></summary><DesgloseCosto producto={p} /></details>,
+      }))} />
+    <div className="md-table-wrap md-desktop-data">
       <table className="md-table">
         <thead>
           <tr>
@@ -1054,6 +1101,7 @@ function TablaMasVendidos({ filas }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -1064,7 +1112,13 @@ function TablaCouriers({ filas }) {
     return <p className="md-empty-hint">Todavía no hay pedidos asignados a un courier en este período.</p>;
   }
   return (
-    <div className="md-table-wrap">
+    <>
+      <TarjetasMetricas filas={filas.map(c => ({ id: c.courier_id ?? 'sin-asignar', nombre: c.nombre, tag: `${c.tasa_entrega}% efectividad`, metricas: [
+        ['Asignados', c.total_asignados], ['Entregados', c.entregados], ['Cobró', gs(c.monto_recaudado)], ['Fletes', gs(c.costo_fletes)],
+        ['Rendición', gs(Math.abs(c.saldo_rendicion ?? 0)), c.saldo_rendicion < 0 ? 'md-valor-negativo' : ''],
+        ['Saldo', c.saldo_rendicion > 0 ? 'Te transfiere' : c.saldo_rendicion < 0 ? 'Le pagás' : 'Sin saldo'],
+      ] }))} />
+    <div className="md-table-wrap md-desktop-data">
       <table className="md-table">
         <thead>
           <tr>
@@ -1100,6 +1154,7 @@ function TablaCouriers({ filas }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -1239,17 +1294,17 @@ function useColapsable(id, defaultOpen = true) {
  * con un botón de colapso en la cabecera. `id` identifica al bloque para
  * recordar su estado (ver useColapsable); tiene que ser estable y único
  * por bloque dentro del dashboard. */
-function Bloque({ id, titulo, className = '', children, defaultOpen = true }) {
+function Bloque({ id, titulo, className = '', children, defaultOpen = true, mobileSection }) {
   const [abierto, setAbierto] = useColapsable(id, defaultOpen);
   return (
-    <section className={`md-card ${className}`.trim()}>
+    <section className={`md-card ${className}`.trim()} data-mobile-section={mobileSection}>
       <div className="md-bloque-head">
         <h3 className="md-card-title">{titulo}</h3>
         <button
           type="button"
           className="md-bloque-toggle"
           aria-expanded={abierto}
-          aria-label={abierto ? 'Minimizar bloque' : 'Maximizar bloque'}
+          aria-label={`${abierto ? 'Minimizar' : 'Maximizar'} ${typeof titulo === 'string' ? titulo : id}`}
           onClick={() => setAbierto(o => !o)}
         >
           <ChevronDown size={16} className={abierto ? 'md-chevron-abierto' : ''} aria-hidden="true" />
@@ -1339,6 +1394,13 @@ function FlujoPedidos({ porEstado }) {
 
 export default function MiDashboard() {
   const [periodo, setPeriodo] = useState('este_mes');
+  const [vistaMovil, setVistaMovil] = useState('resumen');
+  const [filtrosMoviles, setFiltrosMoviles] = useState(false);
+  const contenidoMovilRef = useRef(null);
+  function seleccionarVistaMovil(vista) {
+    setVistaMovil(vista);
+    requestAnimationFrame(() => contenidoMovilRef.current?.scrollIntoView({ block: 'start' }));
+  }
   const [mes, setMes] = useState(new Date().getMonth() + 1);
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [productoId, setProductoId] = useState('TODOS');
@@ -1635,20 +1697,25 @@ export default function MiDashboard() {
   }
 
   return (
-    <div className="md-page">
+    <div className="md-page" data-mobile-view={vistaMovil}>
       <header className="md-header">
         <div>
           <span className="md-eyebrow">Mi Dashboard</span>
-          <h1 className="md-h1">Cómo le está yendo a tu tienda</h1>
+          <h1 className="md-h1"><span className="md-title-desktop">Cómo le está yendo a tu tienda</span><span className="md-title-mobile">Tu negocio, de un vistazo</span></h1>
+          <p className="md-mobile-intro">Ventas, resultados y pedidos en un solo lugar.</p>
         </div>
 
-        <div className="md-filtros">
+        <button type="button" className="md-mobile-filter-toggle" aria-expanded={filtrosMoviles} aria-controls="md-dashboard-filters" onClick={() => setFiltrosMoviles(v => !v)}>
+          <Clock size={16} /><span>{periodo === 'personalizado_mes' ? MESES.find(m => m.id === mes)?.label : PRESETS.find(p => p.id === periodo)?.label} · {anio}</span><SlidersHorizontal size={17} /><strong>Filtrar</strong>
+        </button>
+        <div id="md-dashboard-filters" className={`md-filtros ${filtrosMoviles ? 'md-filtros-open' : ''}`}>
           <div className="md-tabs">
             {PRESETS.map(p => (
               <button
                 key={p.id}
                 type="button"
                 className={`md-tab ${periodo === p.id ? 'activo' : ''}`}
+                aria-pressed={periodo === p.id}
                 onClick={() => setPeriodo(p.id)}
                 disabled={loading}
               >
@@ -1658,11 +1725,11 @@ export default function MiDashboard() {
           </div>
           <div className="md-selects">
             {periodo === 'personalizado_mes' && (
-              <select className="md-select" value={mes} onChange={e => setMes(Number(e.target.value))} disabled={loading}>
+              <select className="md-select" aria-label="Mes" value={mes} onChange={e => setMes(Number(e.target.value))} disabled={loading}>
                 {MESES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
               </select>
             )}
-            <select className="md-select" value={anio} onChange={e => setAnio(Number(e.target.value))} disabled={loading}>
+            <select className="md-select" aria-label="Año" value={anio} onChange={e => setAnio(Number(e.target.value))} disabled={loading}>
               {aniosDisponibles.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
             <SelectorProducto
@@ -1675,7 +1742,16 @@ export default function MiDashboard() {
         </div>
       </header>
 
-      <div className={`md-bento ${loading ? 'md-updating' : ''}`}>
+      {filtrandoProducto && <div className="md-mobile-active-product"><Package size={15} /><span>{productosDisponibles.find(p => String(p.producto_id) === String(productoId))?.nombre || 'Producto seleccionado'}</span><button type="button" aria-label="Quitar filtro de producto" onClick={() => setProductoId('TODOS')}><X size={16} /></button></div>}
+
+      <nav className="md-mobile-nav" aria-label="Vistas del dashboard">
+        {[
+          ['resumen', 'Resumen', LayoutDashboard], ['ventas', 'Ventas', Wallet],
+          ['pedidos', 'Pedidos', Package], ['marketing', 'Marketing', BarChart3],
+        ].map(([id, label, Icon]) => <button key={id} type="button" aria-pressed={vistaMovil === id} onClick={() => seleccionarVistaMovil(id)}><Icon size={19} /><span>{label}</span></button>)}
+      </nav>
+
+      <div ref={contenidoMovilRef} className={`md-bento ${loading ? 'md-updating' : ''}`}>
         {loading && ventas && (
           <div className="md-updating-overlay">
             <Loader size={20} className="md-spin" />
@@ -1685,7 +1761,7 @@ export default function MiDashboard() {
         
         {/* ── Resumen Ejecutivo: plata confirmada + los 5 indicadores que
             antes vivían dispersos (pedidos/ticket ya no se repiten abajo) ── */}
-        <section className="md-hero md-span-8">
+        <section className="md-hero md-span-8" data-mobile-section="resumen">
           <div className="md-hero-top">
             <span className="md-eyebrow">{METRIC_TERMS.ventasNetas} · {rangoLabel}</span>
             <span className="md-confirmado-tag"><i className="md-pulse" /> confirmado a mano</span>
@@ -1696,6 +1772,7 @@ export default function MiDashboard() {
 
         <Bloque
           id="resumen-ejecutivo"
+          mobileSection="resumen"
           className="md-summary-card md-span-4"
           titulo={(
             <>
@@ -1749,6 +1826,7 @@ export default function MiDashboard() {
       {/* ── Rentabilidad: agregado del período + detalle por producto ──── */}
       <Bloque
         id="rentabilidad"
+        mobileSection="ventas"
         className="md-rentabilidad-card md-span-4"
         titulo={(
           <>
@@ -1873,11 +1951,10 @@ export default function MiDashboard() {
 
       </Bloque>
 
-      <Bloque id="mas-vendidos" className="md-products-card md-span-12" titulo="Más Vendidos">
+      <Bloque id="mas-vendidos" mobileSection="ventas" className="md-products-card md-span-12" titulo="Más Vendidos">
         <p className="md-empty-hint md-subsection-ayuda">
           Cuánto vendiste, cuánto te costó, cuánto ganaste y cuánto perdiste con
-          cada producto. Pasá el mouse por el signo de pregunta de cada columna
-          para ver qué significa.
+          cada producto. Abrí el desglose para conocer sus costos.
         </p>
         <TablaMasVendidos filas={productosVendidos} />
         {/* Transparencia del reparto: si la suma de "Ganancia" de esta tabla
@@ -1900,6 +1977,7 @@ export default function MiDashboard() {
       {/* ── Embudo de Conversión: los 4 embudos, uno a la vez por tab ──── */}
       <Bloque
         id="embudo-conversion"
+        mobileSection="marketing"
         className="md-funnel-card md-span-12"
         titulo={(
           <>
@@ -1928,6 +2006,7 @@ export default function MiDashboard() {
           tal como lo pidió Martín ── */}
       <Bloque
         id="resumen-pedidos"
+        mobileSection="pedidos"
         className="md-span-12"
         titulo={(
           <>
@@ -1943,6 +2022,7 @@ export default function MiDashboard() {
       <div className="md-cols-2 md-span-12">
         <Bloque
           id="rendimiento-canal"
+          mobileSection="marketing"
           titulo={(
             <>
               Rendimiento por canal
@@ -1955,6 +2035,7 @@ export default function MiDashboard() {
 
         <Bloque
           id="desempeno-couriers"
+          mobileSection="pedidos"
           titulo={(
             <>
               <Truck size={15} /> Desempeño Couriers
@@ -1969,6 +2050,7 @@ export default function MiDashboard() {
       {/* ── Productos: leads vs confirmados ─────────────────────────────── */}
       <Bloque
         id="leads-vs-confirmados"
+        mobileSection="marketing"
         className="md-span-12"
         titulo={(
           <>

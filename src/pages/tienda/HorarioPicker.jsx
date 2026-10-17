@@ -108,7 +108,8 @@ export default function HorarioPicker({ value, onChange }) {
             padding: '16px',
             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
             zIndex: 50,
-            width: '320px',
+            width: 'min(320px, 100%)',
+            boxSizing: 'border-box',
             display: 'flex',
             flexDirection: 'column',
             gap: '16px'
@@ -122,7 +123,7 @@ export default function HorarioPicker({ value, onChange }) {
               <select 
                 value={diaInicio} 
                 onChange={e => setDiaInicio(e.target.value)}
-                style={{ flex: 1, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px', fontSize: '14px' }}
+                style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px' }}
               >
                 {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
@@ -130,7 +131,7 @@ export default function HorarioPicker({ value, onChange }) {
               <select 
                 value={diaFin} 
                 onChange={e => setDiaFin(e.target.value)}
-                style={{ flex: 1, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px', fontSize: '14px' }}
+                style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px' }}
               >
                 {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
@@ -147,14 +148,14 @@ export default function HorarioPicker({ value, onChange }) {
                 type="time" 
                 value={horaInicio}
                 onChange={e => setHoraInicio(e.target.value)}
-                style={{ flex: 1, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px', fontSize: '14px' }}
+                style={{ flex: 1, minWidth: 0, width: '100%', padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px' }}
               />
               <span style={{ color: "var(--color-fg-muted)", fontSize: '14px' }}>a</span>
               <input 
                 type="time" 
                 value={horaFin}
                 onChange={e => setHoraFin(e.target.value)}
-                style={{ flex: 1, padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px', fontSize: '14px' }}
+                style={{ flex: 1, minWidth: 0, width: '100%', padding: '6px 8px', border: "1px solid var(--color-border)", borderRadius: '4px' }}
               />
             </div>
           </div>

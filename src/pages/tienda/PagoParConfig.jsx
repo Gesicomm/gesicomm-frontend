@@ -318,7 +318,7 @@ export default function PagoParConfig() {
           </div>
         )}
 
-        <div className="pt-6 flex items-center justify-between border-t border-[var(--vit-border)]">
+        <div className="pt-6 flex flex-wrap gap-3 items-center justify-between border-t border-[var(--vit-border)]">
           <button
             type="button"
             onClick={handleProbarConexion}

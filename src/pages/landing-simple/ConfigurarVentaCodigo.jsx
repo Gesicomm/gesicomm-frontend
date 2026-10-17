@@ -683,6 +683,7 @@ export default function ConfigurarVentaCodigo({
   catalogo, inicial, onConfirmar, onVolver, onCambiarModo, guardando, cargarOfertas = cargarOfertasTienda,
   tienda = null, landing = null, codigos = null, onCambiarCodigo = null, onRestaurarCodigo = null, onSubirImagen = null,
   disenoPendienteIA = false,
+  onDesbloquearInicio = null,
   // Error del guardado (viene del editor): sin esto, si el servidor
   // rechazaba el guardado, el botón "no hacía nada" a la vista.
   errorGuardado = null,
@@ -728,13 +729,15 @@ export default function ConfigurarVentaCodigo({
   const [confirmarResetInicio, setConfirmarResetInicio] = useState(false);
   const [avisoResetInicio, setAvisoResetInicio] = useState('');
 
-  const esGeneradoIa = !desbloqueadoManual && Boolean(
+  const esGeneradoIa = Boolean(
     landing?.content?.generado_por_ia ||
     landing?.content?.origen === 'mcp' ||
     landing?.content?.bloques_inicio_bloqueados ||
     landing?.content?.codigo?.generado_por_mcp ||
     codigos?.inicio?.generado_por_mcp
   );
+  const bloquesInicioBloqueados = esGeneradoIa && !desbloqueadoManual
+    && landing?.content?.bloques_inicio_bloqueados !== false;
 
   function resetearPaginaInicio() {
     const base = plantillaInicioPara(tipo);
@@ -2567,10 +2570,10 @@ export default function ConfigurarVentaCodigo({
 
               <Bloque
                 titulo="Bloques del Inicio"
-                ayuda={esGeneradoIa ? "Esta landing tiene diseño único generado con IA (MCP). Los bloques estándar están bloqueados para proteger tu diseño." : "Todo lo que se ve en el homepage se edita acá, bloque por bloque: abrí uno para cambiar su contenido, reordená o mostrá/ocultá con los controles de la derecha."}
+                ayuda={bloquesInicioBloqueados ? "Esta landing tiene diseño único generado con IA (MCP). Los bloques estándar están bloqueados para proteger tu diseño." : "Todo lo que se ve en el homepage se edita acá, bloque por bloque: abrí uno para cambiar su contenido, reordená o mostrá/ocultá con los controles de la derecha."}
                 verDonde={() => verDonde('inicio', null)}
               >
-                {esGeneradoIa ? (
+                {bloquesInicioBloqueados ? (
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm space-y-3">
                     <div className="flex items-center gap-2 font-semibold text-primary-text">
                       <Lock size={15} />
@@ -2583,8 +2586,18 @@ export default function ConfigurarVentaCodigo({
                       💡 Para modificar o reorganizar elementos, editalo en el código HTML o pedile cambios directamente a la IA conectada al MCP (Claude Desktop, Cursor o cualquier cliente compatible).
                     </p>
                     <div className="pt-2 border-t border-primary/15 flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setDesbloqueadoManual(true); onDesbloquearInicio?.(); }}
+                        className="inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-lg border border-border bg-surface text-xs font-semibold text-fg hover:border-border-strong"
+                      >
+                        <Lock size={13} /> Desbloquear de todas formas (conservando el diseño)
+                      </button>
+                      <p className="text-[11px] text-fg-muted leading-relaxed">
+                        Vas a poder editar los bloques estándar sin perder el HTML que armó el MCP. Ojo: si después le pedís otro cambio a la IA conectada por MCP, puede volver a pisar lo que edites acá.
+                      </p>
                       <p className="text-xs text-fg-muted">
-                        ¿Querés volver a usar la plantilla estándar para editar sus bloques y funcionalidades?
+                        ¿Preferís volver a la plantilla estándar para editar sus bloques y funcionalidades?
                       </p>
                       {confirmarResetInicio ? (
                         <div className="rounded-lg border border-danger/30 bg-danger/10 p-3 space-y-2">

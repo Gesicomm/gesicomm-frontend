@@ -13,6 +13,7 @@ vi.mock('../../services/tiendaService', () => ({
     crear: vi.fn(),
     subirLogo: vi.fn(),
     eliminarLogo: vi.fn(),
+    guardarTipografia: vi.fn(),
     disponibilidadSubdominio: vi.fn(),
     guardarDominioPropio: vi.fn(),
     estadoDominioPropio: vi.fn(),
@@ -97,6 +98,7 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     tiendaService.crear.mockImplementation(payload => Promise.resolve({ ...tiendaBase, ...payload }));
     tiendaService.subirLogo.mockResolvedValue({ ...tiendaBase, logo_imagen: '/uploads/logo.webp' });
     tiendaService.eliminarLogo.mockResolvedValue({ ...tiendaBase, logo_imagen: null });
+    tiendaService.guardarTipografia.mockResolvedValue({ typography: { headingFont: 'outfit', bodyFont: 'outfit' } });
     tiendaService.disponibilidadSubdominio.mockResolvedValue({ valido: true, disponible: true, motivo: null });
     tiendaService.guardarDominioPropio.mockResolvedValue({
       dominio: 'mitienda.com.py',
@@ -141,7 +143,7 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     expect(tiendaService.actualizar.mock.calls[0][0]).not.toHaveProperty('subdominio_manual');
     expect(await screen.findByText(/Configuración guardada correctamente/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: /Contacto/i }));
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true })).getByRole('tab', { name: /Contacto/i }));
     fireEvent.change(await screen.findByPlaceholderText('Ej: Martín García'), { target: { value: 'Martin' } });
     fireEvent.click(screen.getByRole('button', { name: 'Email' }));
     fireEvent.change(screen.getByDisplayValue('595981111222'), { target: { value: '595981234567' } });
@@ -170,13 +172,11 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
       mensaje_contacto: 'Hola, quiero saber de {producto} a {precio}',
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /Analítica/i }));
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true })).getByRole('tab', { name: /Analítica/i }));
     fireEvent.change(await screen.findByPlaceholderText('Ej: 1234567890123456'), { target: { value: '1234567890123456' } });
     fireEvent.change(screen.getByPlaceholderText('Ej: TEST12345'), { target: { value: 'TEST98765' } });
     fireEvent.change(screen.getByPlaceholderText(/Pegá acá el token/i), { target: { value: 'EAAB-token-test' } });
     fireEvent.click(screen.getByLabelText(/Enviar eventos también por Conversions API/i));
-    fireEvent.change(screen.getByPlaceholderText('Ej: G-ABC1234DEF'), { target: { value: 'g-abc1234def' } });
-    fireEvent.change(screen.getByPlaceholderText('Pegá el Pixel ID de TikTok Ads Manager'), { target: { value: 'TTPIXEL12345' } });
     fireEvent.click(screen.getByRole('button', { name: /Guardar cambios/i }));
 
     await waitFor(() => expect(tiendaService.actualizar).toHaveBeenCalledTimes(3));
@@ -185,8 +185,6 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
       meta_test_event_code: 'TEST98765',
       meta_access_token: 'EAAB-token-test',
       meta_capi_activo: true,
-      google_analytics_id: 'G-ABC1234DEF',
-      tiktok_pixel_id: 'TTPIXEL12345',
     });
   });
 
@@ -215,12 +213,13 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
   it('muestra los modulos con guardado propio en Pagos y Costos', async () => {
     await cargarPantalla();
 
-    fireEvent.click(screen.getByRole('tab', { name: /Pagos/i }));
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true })).getByRole('tab', { name: /Pagos/i }));
     expect(await screen.findByTestId('metodos-pago')).toBeInTheDocument();
     expect(screen.getByTestId('pagopar-config')).toBeInTheDocument();
-    expect(screen.getByText(/Esta sección tiene su propio botón de guardado/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Guardar cambios/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: /Costos/i }));
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true })).getByRole('tab', { name: /Costos/i }));
     expect(await screen.findByTestId('combo-config')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Guardar cambios/i })).not.toBeInTheDocument();
   });
 });

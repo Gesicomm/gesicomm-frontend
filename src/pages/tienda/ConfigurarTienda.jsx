@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, useId } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -6,7 +6,7 @@ import {
   ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, CheckCircle2, Info,
   Store, MessageCircle, BarChart3, MousePointerClick, CreditCard, Coins,
   ArrowRight, Palette, ImagePlus, Mail, MapPin, Share2,
-  AtSign, Link2, User, Phone, Video, Type
+  AtSign, Link2, User, Phone, Video, Type, ChevronDown
 } from 'lucide-react';
 
 
@@ -220,6 +220,35 @@ function PlantillaWhatsapp({ titulo, uso, textareaRef, valor, onChange, placehol
 // de una cuenta nueva) — a esta pantalla solo se llega ya con una tienda
 // creada (lo garantiza el guard RequireTienda), así que acá es siempre
 // edición.
+function textoGrupo(node) {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (React.isValidElement(node)) return React.Children.toArray(node.props.children).map(textoGrupo).join('');
+  return '';
+}
+
+// Los controles permanecen montados al plegar un bloque: se conservan las
+// ediciones y los componentes que guardan por separado no vuelven a cargar.
+function GrupoConfiguracion({ children }) {
+  const [open, setOpen] = useState(false);
+  const bodyId = useId();
+  const items = React.Children.toArray(children);
+  const head = items.find(child => child.props?.className === 'tn-group-head');
+  const title = React.Children.toArray(head?.props.children).find(child => child.type === 'h3');
+  return (
+    <section className={`tn-group tn-group-collapsible ${open ? 'tn-group-open' : ''}`}>
+      <div className="tn-group-heading">
+        {head}
+        <button type="button" className="tn-group-toggle" aria-expanded={open} aria-controls={bodyId}
+          aria-label={`${open ? 'Contraer' : 'Expandir'} ${textoGrupo(title)}`}
+          onClick={() => setOpen(value => !value)}>
+          <ChevronDown size={18} aria-hidden="true" />
+        </button>
+      </div>
+      {items.filter(child => child !== head).map(child => React.isValidElement(child) ? React.cloneElement(child, { id: bodyId }) : child)}
+    </section>
+  );
+}
+
 export default function ConfigurarTienda() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -663,8 +692,9 @@ export default function ConfigurarTienda() {
       <header className="tn-page-head">
         <div className="tn-page-head-top">
           <div>
-            <h1>Configuración de tu tienda</h1>
-            <p>Todo lo que define tu negocio online: identidad, contacto, cobros, costos y medición. Se aplica a tu catálogo y a todas tus landings.</p>
+            <span className="tn-store-eyebrow"><Store size={13} /> {tienda?.nombre || 'Tu negocio'}</span>
+            <h1>Mi tienda</h1>
+            <p>Tu marca, tus clientes y todo lo que hace funcionar tu negocio.</p>
           </div>
           <button
             type="button"
@@ -678,6 +708,25 @@ export default function ConfigurarTienda() {
       </header>
 
       <div className="tn-shell">
+        <details className="tn-mobile-navigation">
+          <summary>
+            <span className="tn-mobile-section-icon">{React.createElement(tabActual.icono, { size: 19 })}</span>
+            <span className="tn-mobile-section-label"><small>Configuración</small><strong>{tabActual.label}</strong></span>
+            <span className="tn-mobile-nav-hint">Secciones <ChevronDown size={16} /></span>
+          </summary>
+          <nav className="tn-mobile-section-grid" role="tablist" aria-label="Secciones de configuración móvil">
+            {TABS.map(t => <button key={t.id} type="button" role="tab" aria-selected={tab === t.id}
+              onClick={event => {
+                seleccionarTab(t.id);
+                const menu = event.currentTarget.closest('details');
+                menu.open = false;
+                menu.querySelector('summary').focus();
+              }}>
+              {React.createElement(t.icono, { size: 17 })}<span>{t.label}</span>
+              {tab === t.id && <Check size={14} />}
+            </button>)}
+          </nav>
+        </details>
         {/* ── Navegación ──────────────────────────────────────────────── */}
         <nav className="tn-tabs" role="tablist" aria-label="Secciones de configuración">
           {TABS.map((t, idx) => {
@@ -752,7 +801,7 @@ export default function ConfigurarTienda() {
                 <div className="tn-tab-content" key="tienda">
 
                   {/* Quién es tu tienda */}
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3>Identidad</h3>
                       <p>El nombre de tu negocio y la dirección donde se publica tu catálogo.</p>
@@ -835,11 +884,11 @@ export default function ConfigurarTienda() {
                         </p>
                       )}
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
 
 
                   {/* Branding */}
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3><Palette size={16} /> Branding</h3>
                       <p>El logo y los colores se aplican al catálogo público y a las landings. Si editás el tema desde el armador, también se reflejan acá.</p>
@@ -997,9 +1046,9 @@ export default function ConfigurarTienda() {
                         </label>
                       </div>
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
 
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3><Type size={16} /> Tipografía</h3>
                       <p>Definí la fuente de títulos y textos generales para tu tienda, landings y páginas publicadas.</p>
@@ -1090,10 +1139,10 @@ export default function ConfigurarTienda() {
                         </div>
                       )}
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
 
                   {/* Dónde se publica */}
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3>Dominio propio</h3>
                       <p>Publicá tu tienda bajo tu propia dirección web en lugar del subdominio de Gesicomm.</p>
@@ -1106,12 +1155,12 @@ export default function ConfigurarTienda() {
                         <p className="tn-field-hint">Guardá tu tienda primero para poder configurar un dominio propio.</p>
                       )}
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
 
                   {/* Suscripción — el plan dejó de elegirse acá con dos chips:
                       se lee desde /suscripciones/mi-estado y se mejora desde
                       /planes. Guardar la tienda no toca el plan de la cuenta. */}
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3>Plan de tu cuenta</h3>
                       <p>Define qué funciones tenés habilitadas dentro de Gesicomm.</p>
@@ -1152,7 +1201,7 @@ export default function ConfigurarTienda() {
                         </div>
                       )}
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
                 </div>
               )}
 
@@ -1161,7 +1210,7 @@ export default function ConfigurarTienda() {
                 <div className="tn-tab-content" key="contacto">
 
                   {/* Canales de contacto */}
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3>Canales de contacto</h3>
                       <p>Datos de contacto que ven tus clientes en el catálogo y tus landings.</p>
@@ -1223,10 +1272,10 @@ export default function ConfigurarTienda() {
                         </label>
                       </div>
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
 
                   {/* Redes sociales */}
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3>Redes sociales</h3>
                       <p>Se muestran como íconos de enlace en tu catálogo y tus landings. Podés dejar vacías las que no usés.</p>
@@ -1306,10 +1355,10 @@ export default function ConfigurarTienda() {
                         </label>
                       </div>
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
 
                   {/* Ubicación pública */}
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3><MapPin size={15} style={{ display: 'inline', verticalAlign: 'middle' }} /> Dirección pública</h3>
                       <p>La dirección de tu local o punto de atención, visible en el catálogo. Distinta de la dirección de depósito logístico.</p>
@@ -1341,11 +1390,11 @@ export default function ConfigurarTienda() {
                         </label>
                       </div>
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
 
                   {/* Mensajes de WhatsApp: consulta de producto y consulta general */}
 
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3>Mensajes de WhatsApp para consultas y pedidos</h3>
                       <p>Tres textos editables: consulta de producto, consulta general y confirmación de pedido.</p>
@@ -1390,7 +1439,7 @@ export default function ConfigurarTienda() {
                         ayudaVacio={`Si lo dejás vacío se envía “${MENSAJE_CONFIRMACION_DEFAULT}”`}
                       />
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
                 </div>
               )}
 
@@ -1401,6 +1450,8 @@ export default function ConfigurarTienda() {
                 <div className="tn-tab-content" key="pasarelas">
                   {/* PASO 1: Métodos de Pago del Negocio */}
                   <div style={{ marginBottom: '2rem' }}>
+                    <details className="tn-payment-guide">
+                      <summary><Info size={15} /> Qué métodos conviene activar <ChevronDown size={15} /></summary>
                     <div style={{ fontSize: '0.84rem', color: 'var(--vit-muted)', lineHeight: '1.65', marginBottom: '1.25rem' }}>
                       <p style={{ margin: '0 0 0.6rem 0' }}>
                         Inicialmente estos métodos son los mínimos recomendados para operar, sea que trabajes con logística propia o con Gesicom-RAHA (te recomendamos tener activados los 3):
@@ -1423,6 +1474,7 @@ export default function ConfigurarTienda() {
                         <strong>💡 Nota para la operación:</strong> Estos métodos son utilizados por el <em>confirmador de pedidos</em> al momento de la confirmación de la venta. Se crean inactivos por defecto para que los actives según tu preferencia.
                       </div>
                     </div>
+                    </details>
 
                     <section className="tn-group tn-group-plena" style={{ borderTop: 'none', paddingTop: 0 }}>
                       <div className="tn-group-body">
@@ -1433,55 +1485,14 @@ export default function ConfigurarTienda() {
                     </section>
                   </div>
 
-                  {/* PASO 2: Integración Pagopar & Cobro Anticipado */}
-                  <div style={{ borderTop: '1px solid color-mix(in srgb, var(--vit-border) 70%, transparent)', paddingTop: '1.75rem' }}>
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: '0.22rem 0.65rem',
-                      borderRadius: '0.375rem',
-                      background: 'var(--vit-accent)',
-                      color: "var(--color-fg)",
-                      fontSize: '0.7rem',
-                      fontWeight: 800,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      marginBottom: '0.75rem'
-                    }}>
-                      PASO 2 (No es obligatorio, pero es recomendado) 
-                    
-                    </div>
-
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.6rem',
-                      padding: '0.85rem 1.1rem',
-                      borderRadius: '0.85rem',
-                      background: "linear-gradient(135deg, color-mix(in srgb, var(--color-success) 12%, transparent), color-mix(in srgb, var(--color-primary) 12%, transparent))",
-                      border: '1px dashed color-mix(in srgb, var(--vit-accent) 40%, transparent)',
-                      color: 'var(--vit-text)',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      marginBottom: '1.5rem'
-                    }}>
-                      <span>🚀 El futuro del e-commerce está en el pago anticipado, conectate a pagopar y empezá a cobrar por anticipado en tu sitio web </span>
-                    </div>
-
-                    <section className="tn-group tn-group-plena" style={{ borderTop: 'none', paddingTop: 0 }}>
-                      <div className="tn-group-head" style={{ marginBottom: '1rem' }}>
-                       
-                      </div>
-
-                      {mostrarPagopar && (
-                        <div className="tn-group-body">
-                          <div className="tn-embed tn-embed-pagopar">
-                            <PagoParConfig />
-                          </div>
-                        </div>
-                      )}
-                    </section>
-                  </div>
+                  <details className="tn-payment-integration">
+                    <summary>
+                      <span className="tn-mobile-section-icon"><CreditCard size={20} /></span>
+                      <span><strong>Pagos online</strong><small>Conectar PagoPar · opcional</small></span>
+                      <ChevronDown size={18} />
+                    </summary>
+                    {mostrarPagopar && <div className="tn-embed tn-embed-pagopar"><PagoParConfig /></div>}
+                  </details>
                 </div>
               )}
 
@@ -1511,7 +1522,7 @@ export default function ConfigurarTienda() {
               {tab === 'analitica' && (
                 <div className="tn-tab-content" key="analitica">
 
-                  <section className="tn-group">
+                  <GrupoConfiguracion>
                     <div className="tn-group-head">
                       <h3>Meta Pixel y Conversions API</h3>
                       <p>Para medir los clics en “Consultar” como conversiones en tus campañas de Meta Ads.</p>
@@ -1651,7 +1662,7 @@ export default function ConfigurarTienda() {
                         <p className="tn-warning"><AlertCircle size={13} /> <span>Tenés cargado un Test Event Code: todos los eventos que manda el servidor salen marcados como prueba. Borralo cuando termines de probar en el Administrador de eventos.</span></p>
                       )}
                     </div>
-                  </section>
+                  </GrupoConfiguracion>
 
 
                 </div>
@@ -1659,19 +1670,10 @@ export default function ConfigurarTienda() {
             </div>
 
             {/* ── Footer de acciones ─────────────────────────────────── */}
-            {tab !== 'speedbox' && <div className="tn-footer">
+            {!tabGuardaAparte && <div className="tn-footer">
               <p className="tn-footer-note">
-                {tabGuardaAparte ? (
-                  <>
-                    <Info size={13} />
-                    <span>Esta sección tiene su propio botón de guardado. “Guardar cambios” aplica lo que edites en Tienda, Contacto y Analítica.</span>
-                  </>
-                ) : (
-                  <>
-                    <Info size={13} />
-                    <span>Los cambios se aplican a tu catálogo público y a todas tus landings.</span>
-                  </>
-                )}
+                <Info size={13} />
+                <span>Los cambios se aplican a tu catálogo público y a todas tus landings.</span>
               </p>
               <div className="tn-footer-actions">
                 {ok && <span className="tn-saved"><Check size={14} /> Guardado</span>}

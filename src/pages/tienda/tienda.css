@@ -12,6 +12,9 @@
 
 /* ─── Página ──────────────────────────────────────────────────────────── */
 .tn-page {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 2rem 2.25rem 3rem;
   max-width: 1440px;
   margin: 0 auto;
@@ -74,6 +77,7 @@
 /* ─── Contenedor único ────────────────────────────────────────────────── */
 /* Sin overflow: el footer es sticky y cualquier recorte lo rompería. */
 .tn-shell {
+  min-width: 0;
   background: var(--vit-surface);
   border: 1px solid var(--vit-border);
   border-radius: 16px;
@@ -135,7 +139,32 @@
 }
 
 /* ─── Panel ───────────────────────────────────────────────────────────── */
-.tn-panel { display: flex; flex-direction: column; }
+.tn-panel { display: flex; flex-direction: column; min-width: 0; }
+
+.tn-store-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  color: var(--vit-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.tn-store-eyebrow svg { flex-shrink: 0; }
+.tn-mobile-navigation, .tn-group-toggle { display: none; }
+.tn-group-heading { min-width: 0; }
+.tn-payment-guide { margin-bottom: 1.25rem; font-size: 0.8rem; color: var(--vit-muted); }
+.tn-payment-guide > summary { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; list-style: none; min-height: 44px; }
+.tn-payment-guide > summary svg:last-child { margin-left: auto; }
+.tn-payment-guide > div { padding-top: 0.75rem; }
+.tn-payment-integration { border: 1px solid var(--vit-border); border-radius: 16px; padding: 1rem; background: var(--vit-surface); }
+.tn-payment-integration > summary { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; list-style: none; min-height: 44px; color: var(--vit-text); }
+.tn-payment-integration > summary > span:nth-child(2) { flex: 1; display: grid; gap: 0.35rem; }
+.tn-payment-integration > summary strong { font-size: 0.9rem; }
+.tn-payment-integration > summary small { font-size: 0.75rem; color: var(--vit-muted); }
+.tn-payment-integration > .tn-embed { margin-top: 1rem; }
+.tn-payment-guide summary::-webkit-details-marker, .tn-payment-integration summary::-webkit-details-marker { display: none; }
 
 .tn-panel-head { padding: 1.6rem 2rem 0.25rem; }
 
@@ -315,7 +344,7 @@
 /* ─── Branding ───────────────────────────────────────────────────────── */
 .tn-brand-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
   gap: 1rem;
 }
 
@@ -412,7 +441,7 @@
   flex-direction: column;
   gap: 0.45rem;
   flex: 1;
-  min-width: 220px;
+  min-width: min(220px, 100%);
 }
 
 .tn-logo-buttons {
@@ -608,7 +637,7 @@
   margin: 0.4rem 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 0.4rem 1.25rem;
 }
 .tn-upsell-lista li {
@@ -1106,6 +1135,9 @@
   gap: 1.25rem;
 }
 
+.tn-embed .combo-cost-tab { min-width: 0; }
+.tn-embed .combo-cost-tab .cct-label b { white-space: normal; }
+
 .tn-embed .combo-section {
   background: var(--vit-bg);
   border: 1px solid var(--vit-border);
@@ -1174,6 +1206,7 @@
   .tn-body { padding: 0 1.25rem; }
   .tn-footer { padding: 1rem 1.25rem; }
   .tn-group { padding: 1.4rem 0; }
+  .tn-embed .combo-cost-tabs { flex-direction: column; }
 }
 
 @media (max-width: 640px) {
@@ -1188,6 +1221,112 @@
   .tn-footer-actions { width: 100%; justify-content: flex-end; }
   .tn-embed .combo-section,
   .tn-embed-pagopar > div { padding: 1rem; }
+  .tn-tab { min-height: 44px; }
+  .tn-footer-actions { flex-wrap: wrap; }
+  .tn-page input:not([type="checkbox"]):not([type="color"]):not([type="file"]),
+  .tn-page select,
+  .tn-page textarea { font-size: 1rem; }
+  .tn-embed .combo-cost-tab { min-height: 44px; }
+  .tn-embed .combo-cost-field { min-width: 0; }
+  .tn-embed .combo-pagopar-methods { grid-template-columns: minmax(0, 1fr); }
+  .tn-shell > .tn-panel > .raha { padding: 0 1rem 1rem; }
+}
+
+/* En móvil, la configuración se recorre como bloques de ajustes: navegación
+   completa a un toque y detalle desplegable sin perder lo que se editó. */
+@media (max-width: 640px) {
+  .tn-page { padding: 1.25rem 1rem 1.5rem; gap: 1.15rem; }
+  .tn-page-head-top { flex-wrap: nowrap; align-items: flex-start; gap: 0.75rem; }
+  .tn-page-head-top > div { min-width: 0; }
+  .tn-page-head h1 { font-size: 1.65rem; line-height: 1.15; }
+  .tn-page-head p { font-size: 0.8rem; line-height: 1.5; margin-top: 0.5rem; max-width: 30ch; }
+  .tn-store-eyebrow { font-size: 0.7rem; margin-bottom: 0.4rem; }
+  .tn-btn-tiendas { padding: 0.6rem; font-size: 0.7rem; min-height: 40px; border-radius: 11px; }
+  .tn-shell { background: transparent; border: 0; border-radius: 0; }
+  .tn-tabs { display: none; }
+  .tn-mobile-navigation {
+    display: block;
+    border: 1px solid var(--vit-border);
+    border-radius: 16px;
+    background: var(--vit-surface);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--vit-text) 3%, transparent);
+  }
+  .tn-mobile-navigation summary { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem; cursor: pointer; list-style: none; }
+  .tn-mobile-navigation summary::-webkit-details-marker { display: none; }
+  .tn-mobile-section-icon { display: grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px; color: var(--vit-accent-fg); background: var(--vit-accent-soft); }
+  .tn-mobile-section-label { display: grid; gap: 0.2rem; min-width: 0; }
+  .tn-mobile-section-label small { font-size: 0.65rem; color: var(--vit-muted); }
+  .tn-mobile-section-label strong { font-size: 0.9rem; color: var(--vit-text); }
+  .tn-mobile-nav-hint { display: flex; align-items: center; gap: 0.25rem; margin-left: auto; font-size: 0.65rem; color: var(--vit-muted); }
+  .tn-mobile-nav-hint svg { transition: transform 0.2s; }
+  .tn-mobile-navigation[open] .tn-mobile-nav-hint svg { transform: rotate(180deg); }
+  .tn-mobile-section-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; padding: 0 0.7rem 0.7rem; }
+  .tn-mobile-section-grid button { display: flex; align-items: center; gap: 0.5rem; min-height: 48px; padding: 0.65rem; border: 1px solid var(--vit-border); border-radius: 10px; background: var(--vit-bg); color: var(--vit-muted); font: inherit; font-size: 0.72rem; text-align: left; cursor: pointer; }
+  .tn-mobile-section-grid button svg { flex-shrink: 0; }
+  .tn-mobile-section-grid button span { flex: 1; min-width: 0; }
+  .tn-mobile-section-grid button:last-child { grid-column: 1 / -1; }
+  .tn-mobile-section-grid button[aria-selected="true"] { background: var(--vit-accent-soft); border-color: color-mix(in srgb, var(--vit-accent-fg) 35%, var(--vit-border)); color: var(--vit-accent-fg); font-weight: 700; }
+  .tn-mobile-navigation summary:focus-visible, .tn-mobile-section-grid button:focus-visible, .tn-group-toggle:focus-visible { outline: 2px solid var(--vit-accent-fg); outline-offset: 3px; }
+  .tn-panel-head { padding: 1.35rem 0.15rem 1rem; }
+  .tn-panel-head h2 { font-size: 1.05rem; }
+  .tn-panel-head p { font-size: 0.76rem; line-height: 1.55; margin-top: 0.4rem; }
+  .tn-body { padding: 0; }
+  .tn-group-collapsible {
+    padding: 1rem;
+    margin-bottom: 0.7rem;
+    border: 1px solid var(--vit-border);
+    border-radius: 16px;
+    gap: 1rem;
+    background: var(--vit-surface);
+    box-shadow: 0 3px 12px color-mix(in srgb, var(--vit-text) 2%, transparent);
+  }
+  .tn-group-heading { position: relative; }
+  .tn-group-collapsible .tn-group-head { padding-right: 1.6rem; }
+  .tn-group-collapsible .tn-group-head h3 { font-size: 0.88rem; }
+  .tn-group-collapsible .tn-group-head p { font-size: 0.73rem; margin-top: 0.4rem; }
+  .tn-group-toggle { display: flex; justify-content: flex-end; align-items: flex-start; position: absolute; inset: -0.5rem; padding: 0.5rem; border: 0; border-radius: 10px; background: transparent; color: var(--vit-muted); cursor: pointer; }
+  .tn-group-toggle svg { transition: transform 0.2s; }
+  .tn-group-open > .tn-group-heading .tn-group-toggle svg { transform: rotate(180deg); color: var(--vit-accent-fg); }
+  .tn-group-collapsible:not(.tn-group-open) { gap: 0; }
+  .tn-group-collapsible:not(.tn-group-open) .tn-group-head p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tn-group-collapsible:not(.tn-group-open) > .tn-group-body { display: none; }
+  .tn-group-open > .tn-group-body { animation: tnFadeIn 0.2s ease-out; }
+  .tn-field { gap: 0.5rem; }
+  .tn-field-label { font-size: 0.75rem; }
+  .tn-field-hint { font-size: 0.68rem; line-height: 1.5; }
+  .tn-field > input, .tn-field > select { min-height: 46px; border-radius: 10px; }
+  .tn-footer { margin-top: 0.5rem; padding: 0.7rem 0 max(0.7rem, env(safe-area-inset-bottom)); border-radius: 0; background: color-mix(in srgb, var(--vit-bg) 94%, transparent); }
+  .tn-footer-note { display: none; }
+  .tn-footer-actions { gap: 0.4rem; justify-content: stretch; }
+  .tn-footer-actions .land-btn-primary { flex: 1; min-height: 46px; border-radius: 12px; font-size: 0.84rem; box-shadow: 0 4px 12px color-mix(in srgb, var(--vit-accent-fg) 16%, transparent); }
+  .tn-saved { font-size: 0.72rem; }
+  .tn-shell > .tn-panel > .raha { padding: 0.25rem 1rem 1rem; background: var(--vit-surface); border: 1px solid var(--vit-border); border-radius: 16px; }
+  .tn-embed .combo-section { background: var(--vit-surface); border-radius: 16px; }
+  .tn-embed-metodos-pago .tn-payment-table { display: none; }
+  .tn-embed-metodos-pago .tn-payment-cards { display: grid; gap: 0.75rem; padding: 1rem; }
+  .tn-payment-card { border: 1px solid var(--vit-border); border-radius: 13px; padding: 0.85rem; background: var(--vit-surface); }
+  .tn-payment-card-head { display: flex; align-items: center; gap: 0.6rem; }
+  .tn-payment-icon { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; background: var(--vit-accent-soft); color: var(--vit-accent-fg); }
+  .tn-payment-card-head strong { font-size: 0.8rem; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .tn-payment-fee { font-size: 0.9rem; font-weight: 700; text-align: right; }
+  .tn-payment-fee small { display: block; font-size: 0.6rem; font-weight: 400; color: var(--vit-muted); }
+  .tn-payment-card dl { display: grid; gap: 0.6rem; margin: 1rem 0; }
+  .tn-payment-card dl > div { display: flex; justify-content: space-between; gap: 0.6rem; font-size: 0.7rem; }
+  .tn-payment-card dt { color: var(--vit-muted); }
+  .tn-payment-card dd { margin: 0; font-weight: 600; text-align: right; }
+  .tn-payment-card-actions { display: flex; align-items: center; gap: 0.4rem; padding-top: 0.6rem; border-top: 1px solid var(--vit-border); }
+  .tn-payment-card-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-width: 40px; min-height: 44px; padding: 0.3rem; background: transparent; color: var(--vit-muted); border: 0; border-radius: 8px; cursor: pointer; }
+  .tn-payment-card-actions .tn-payment-status { justify-content: flex-start; margin-right: auto; font: inherit; font-size: 0.7rem; }
+  .tn-payment-card-actions .active { color: var(--color-success); }
+  .tn-payment-card-actions .danger { color: var(--color-danger); }
+  .tn-page .spb-section { padding: 1rem; margin-bottom: 0.7rem; border: 1px solid var(--vit-border); border-radius: 16px; background: var(--vit-surface); }
+  .tn-page .spb-section:first-of-type { padding-top: 1rem; }
+  .tn-page .spb-section:last-of-type { border-bottom: 1px solid var(--vit-border); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-tab-content, .tn-group-open > .tn-group-body { animation: none; }
+  .tn-group-toggle svg, .tn-mobile-nav-hint svg { transition: none; }
 }
 
 /* --- Dominio propio: instrucciones DNS ---------------------------------
@@ -1460,23 +1599,17 @@
 }
 
 /* ─── Embed de Métodos de Pago — fix tabla apretada ────────────────────── */
-/* MetodosPagoCrud usa .prod-table (definido en productos.css) que incluye
-   min-width: 960px y border-collapse. El contenedor tn-embed-metodos-pago
-   necesita overflow-x para que la tabla sea scrollable en pantallas angostas
-   y no quede aplastada por el contenedor padre. */
+/* Solo la tabla se desplaza horizontalmente. La cabecera y el botón para
+   crear métodos deben adaptarse al ancho disponible del panel. */
 .tn-embed-metodos-pago {
   overflow-x: auto;
   border-radius: 12px;
 }
 .tn-embed-metodos-pago > div {
-  min-width: 620px;
+  min-width: 0;
 }
-/* La tabla dentro del embed queda bien con el overflowX del padre */
 .tn-embed-metodos-pago .prod-table {
-  min-width: unset;
-}
-.tn-embed-metodos-pago table {
-  min-width: 100%;
+  min-width: 620px;
 }
 
 

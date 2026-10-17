@@ -241,7 +241,11 @@ export default function FulfillmentCard({ onCambio }) {
           bajada="Despachás desde un depósito propio y usás tus couriers asignados."
           deshabilitada={!config.propia.disponible}
           motivo="Necesitás tener al menos un depósito activo."
-        />
+        >
+          <span className="mt-1 block">
+            Si vendés mercadería de RAHA, primero tenés que abastecer tu depósito con ese stock.
+          </span>
+        </Opcion>
 
         <Opcion
           valor="GESICOMM"
@@ -257,6 +261,9 @@ export default function FulfillmentCard({ onCambio }) {
             </span>
           )}
           <span className="mt-1 block">El costo depende de la ciudad del destinatario.</span>
+          <span className="mt-1 block">
+            Si vendés productos propios, primero tenés que enviar ese stock al depósito de RAHA: desde ahí despachan todo.
+          </span>
         </Opcion>
       </div>
 

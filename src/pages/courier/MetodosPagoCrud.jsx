@@ -4,6 +4,7 @@ import { CreditCard, Pencil, Plus, Trash2, X, Percent, ToggleLeft, ToggleRight }
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { getMetodosPago, createMetodoPago, updateMetodoPago, deleteMetodoPago } from "../../services/courierApi"
 import "./courier.css"
+import "./metodos-pago.css"
 import "../productos/productos.css"
 
 
@@ -112,7 +113,30 @@ export function MetodosPagoCrud() {
         </button>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
+      <div className="tn-payment-cards">
+        {loading ? <p>Cargando métodos de pago...</p> : metodos.length === 0 ? <p>No hay métodos de pago. Agregá el primero para empezar a cobrar.</p> : metodos.map(m => (
+          <article key={m.id} className="tn-payment-card">
+            <div className="tn-payment-card-head">
+              <span className="tn-payment-icon"><CreditCard size={18} /></span>
+              <strong>{m.nombre}</strong>
+              <span className="tn-payment-fee">{Number(m.comision_porcentaje).toLocaleString('es-PY')}%<small>comisión</small></span>
+            </div>
+            <dl>
+              <div><dt>Se cobra</dt><dd>{m.es_anticipado ? 'Por anticipado' : 'Contra entrega'}</dd></div>
+              <div><dt>El dinero queda en</dt><dd>{m.custodia_cobro === 'courier' ? 'Manos del courier' : 'Tu negocio'}</dd></div>
+            </dl>
+            <div className="tn-payment-card-actions">
+              <button type="button" className={`tn-payment-status ${m.activo ? 'active' : ''}`} onClick={() => toggleActivo(m)} aria-pressed={m.activo} aria-label={`${m.activo ? 'Desactivar' : 'Activar'} ${m.nombre}`}>
+                {m.activo ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}{m.activo ? 'Activo' : 'Inactivo'}
+              </button>
+              <button type="button" onClick={() => openEdit(m)} aria-label={`Editar ${m.nombre}`}><Pencil size={16} /></button>
+              <button type="button" className="danger" onClick={() => setMetodoABorrar(m)} aria-label={`Eliminar ${m.nombre}`}><Trash2 size={16} /></button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="tn-payment-table" style={{ overflowX: 'auto' }}>
         <table className="prod-table" style={{ margin: 0, width: '100%' }}>
           <thead>
             <tr>

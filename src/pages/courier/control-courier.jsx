@@ -28,6 +28,7 @@ import {
 } from "../../services/courierApi";
 import { tiendaService } from "../../services/tiendaService";
 import "./courier.css";
+import "./pedidos-mobile.css";
 
 // Abastecimiento ya no es una pestaña de acá: vive en su propia sección
 // (/abastecimiento), porque como pestaña quedaba escondida. Delivery tampoco:
@@ -80,6 +81,7 @@ export function ControlCourier({ etapaFija } = {}) {
   // presta sus datos de cliente/entrega, no se completa ni se toca.
   const [clienteParaRepetir, setClienteParaRepetir] = useState(null);
   const [openImprimir, setOpenImprimir] = useState(false);
+  const [accionesMobile, setAccionesMobile] = useState(false);
   const [envioParaCompletar, setEnvioParaCompletar] = useState(null);
   const [leadParaElegirProductos, setLeadParaElegirProductos] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -316,10 +318,13 @@ export function ControlCourier({ etapaFija } = {}) {
             </div>
           </div>
 
-          <div className="courier-header-actions">
+          <button type="button" className="courier-mobile-actions-toggle" aria-expanded={accionesMobile} onClick={() => setAccionesMobile(value => !value)}>
+            {accionesMobile ? "Cerrar acciones" : "Acciones"}
+          </button>
+          <div className={`courier-header-actions${accionesMobile ? " courier-header-actions--open" : ""}`}>
             <button
               type="button"
-              className="btn-secondary"
+              className="btn-secondary courier-secondary-action"
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
               onClick={() => setOpenImprimir(true)}
             >
@@ -328,7 +333,7 @@ export function ControlCourier({ etapaFija } = {}) {
             </button>
 
             {permiteSeguimiento && ['usuario', 'administrador'].includes(usuarioActual?.rol) && (
-              <Link to="/pedidos/configuracion" className="courier-flow-action">
+              <Link to="/pedidos/configuracion" className="courier-flow-action courier-secondary-action">
                 <MessageCircle size={22} strokeWidth={2.2} aria-hidden="true" />
                 Flujos de WhatsApp
               </Link>
@@ -336,7 +341,7 @@ export function ControlCourier({ etapaFija } = {}) {
 
             <button
               type="button"
-              className="btn-venta-whatsapp"
+              className="btn-venta-whatsapp courier-secondary-action"
               onClick={() => { setClienteParaRepetir(null); setOpenVentaWhatsApp(true); }}
             >
               <MessageCircle size={18} />

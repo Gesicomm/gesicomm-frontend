@@ -276,6 +276,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [propiasBorradas, setPropiasBorradas] = useState(() => new Set());
   const [ajustes, setAjustes] = useState({ titulo: '', seo_titulo: '', seo_descripcion: '' });
   const [tab, setTab] = useState('html');
+  // Escape hatch no destructivo: el comercio puede desbloquear los bloques
+  // rígidos de una landing generada por MCP sin resetear el diseño. Ver
+  // esGeneradoIa más abajo y el botón en el panel "Secciones bloqueadas".
+  const [desbloqueadoManual, setDesbloqueadoManual] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [actualizandoBloques, setActualizandoBloques] = useState(false);
   const [error, setError] = useState('');
@@ -643,13 +647,25 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         nuevoContent.bloques_inicio_bloqueados = false;
         if (nuevoContent.origen === 'mcp') nuevoContent.origen = 'plantilla';
         if (nuevoContent.codigo) {
-          nuevoContent.codigo = { ...nuevoContent.codigo, ...nuevaBase, generado_por_mcp: false };
+          // Conservar HTML/CSS/JS del servidor como referencia del guardado.
+          // La plantilla restaurada vive en codigos; copiarla también acá
+          // hace que mismoCodigo la omita y deje publicado el diseño anterior.
+          nuevoContent.codigo = { ...nuevoContent.codigo, generado_por_mcp: false };
         }
         return { ...prev, content: nuevoContent };
       });
     }
     setSinGuardar(true);
     setAviso('Código base cargado. Guardá para publicarlo.');
+  }
+
+  function desbloquearInicio() {
+    setDesbloqueadoManual(true);
+    setLanding(prev => prev ? {
+      ...prev, content: { ...prev.content, bloques_inicio_bloqueados: false },
+    } : prev);
+    setSinGuardar(true);
+    setAviso('Bloques desbloqueados. Guardá para conservar este cambio.');
   }
 
   function aplicarRespuestaIa(bloques) {
@@ -680,6 +696,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     landing?.content?.codigo?.generado_por_mcp ||
     codigos?.inicio?.generado_por_mcp
   );
+  const bloquesInicioBloqueados = esGeneradoIa && !desbloqueadoManual
+    && landing?.content?.bloques_inicio_bloqueados !== false;
   const creationSource = creationSourceDe(landing);
   const esGeneradaIA = creationSource === 'ai' || creationSource === 'ai_detected' || esGeneradoIa;
   const etiquetaEditor = esGeneradoIa ? 'Generada con IA (MCP)' : (creationSource === 'ai_detected' ? 'Con IA' : esGeneradaIA ? 'Generada con IA' : 'Editor libre');
@@ -830,7 +848,6 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
               if (nuevoContent.codigo) {
                 nuevoContent.codigo = {
                   ...nuevoContent.codigo,
-                  ...nuevaBase,
                   generado_por_mcp: false,
                 };
               }
@@ -840,6 +857,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           setSinGuardar(true);
           setAviso('Vista restaurada a la base. Guardá para publicarlo.');
         }}
+        onDesbloquearInicio={desbloquearInicio}
         onSubirImagen={async archivo => {
           const form = new FormData();
           form.append('imagen', archivo);
@@ -863,8 +881,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   // "Secciones" edita por bloques la estructura fija de INICIO_HTML
   // (hero, banner, categorías) — no tiene sentido en la ficha de producto
   // ni en las páginas legales, que son HTML libre sin esa estructura.
+  // esGeneradoIa ya NO saca la pestaña: se deja visible para que el
+  // comercio pueda abrirla y ver el botón "Desbloquear de todas formas"
+  // (antes era inalcanzable, se filtraba del todo).
   const tabsVisibles = (esLegal ? TABS.filter(t => t.key !== 'prompts') : TABS)
-    .filter(t => t.key !== 'secciones' || (vista === 'inicio' && !esLegal && !esGeneradoIa));
+    .filter(t => t.key !== 'secciones' || (vista === 'inicio' && !esLegal));
   const codigoVista = codigos[claveVista] || CODIGO_VACIO;
   // Ficha guardada antes de que existieran los bloques de ofertas: las
   // ofertas marcadas nunca iban a tener dónde aparecer, sin ningún aviso.
@@ -1103,7 +1124,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                 </div>
               </div>
             ) : tab === 'secciones' ? (
-              esGeneradoIa ? (
+              bloquesInicioBloqueados ? (
                 <div className="p-8 text-center space-y-3">
                   <div className="inline-flex p-3 rounded-full bg-primary/10 text-primary-text">
                     <Lock size={22} />
@@ -1111,6 +1132,16 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   <h3 className="text-sm font-semibold text-fg">Secciones bloqueadas</h3>
                   <p className="text-xs text-fg/60 max-w-sm mx-auto leading-relaxed">
                     Esta landing tiene una estructura personalizada generada con IA (MCP). Los controles de bloques rígidos de la plantilla están deshabilitados para proteger tu código HTML.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={desbloquearInicio}
+                    className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-border bg-fg/5 text-xs font-semibold text-fg hover:border-fg/30"
+                  >
+                    <Lock size={13} /> Desbloquear de todas formas
+                  </button>
+                  <p className="text-[11px] text-fg/40 max-w-sm mx-auto leading-relaxed">
+                    Vas a poder editar los bloques sin tocar el resto del código. Si después le pedís otro cambio a la IA conectada por MCP, puede volver a pisar lo que edites acá.
                   </p>
                 </div>
               ) : (
