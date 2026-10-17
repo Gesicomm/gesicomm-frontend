@@ -8,7 +8,7 @@ import React from 'react';
  * el bloque se ve como siempre hasta que el comercio cambie algo.
  */
 
-export const COLECCIONES_INICIO_DEFAULT = { modo: 'categorias', items: [], columnas: 4, limite: 4 };
+export const COLECCIONES_INICIO_DEFAULT = { modo: 'categorias', items: [], columnas: 4, limite: 4, titulo: '✧ Colecciones', subtitulo: 'Elegí tu estilo, encontrá tus favoritos' };
 
 const MODOS = [
   ['categorias', 'Categorías', 'Una tarjeta por categoría de tus productos.'],
@@ -16,7 +16,7 @@ const MODOS = [
 ];
 
 export default function EditorColeccionesInicio({ config, categorias = [], colecciones = [], onCambiar }) {
-  const actual = config || COLECCIONES_INICIO_DEFAULT;
+  const actual = { ...COLECCIONES_INICIO_DEFAULT, ...config };
   const opciones = actual.modo === 'colecciones' ? colecciones : categorias;
   const elegidas = new Set(actual.items || []);
   const cambiar = cambio => onCambiar({ ...actual, ...cambio });
@@ -28,6 +28,16 @@ export default function EditorColeccionesInicio({ config, categorias = [], colec
 
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {['titulo', 'subtitulo'].map(campo => (
+          <label key={campo} className="block">
+            <span className="mb-1 block text-xs font-medium text-fg-muted">{campo === 'titulo' ? 'Título' : 'Subtítulo'}</span>
+            <input aria-label={campo === 'titulo' ? 'Título de Colecciones' : 'Subtítulo de Colecciones'} value={actual[campo]} maxLength={campo === 'titulo' ? 100 : 160}
+              onChange={e => cambiar({ [campo]: e.target.value })}
+              className="h-9 w-full rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary" />
+          </label>
+        ))}
+      </div>
       <div role="radiogroup" aria-label="Qué mostrar en Colecciones" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {MODOS.map(([modo, titulo, ayuda]) => (
           <button

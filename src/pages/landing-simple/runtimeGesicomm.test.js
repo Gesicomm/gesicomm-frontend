@@ -911,6 +911,21 @@ describe('runtime del lienzo en blanco — inicio', () => {
       });
       expect(tarjetas(document).map(t => t.getAttribute('data-gesicomm-categoria-ir'))).toEqual(['Ropa']);
     });
+
+    it('muestra categorías fuera del recorte de productos y los textos editados', () => {
+      const categorias = ['Audio, TV y video', 'Automotor y movilidad', 'Bebés', 'Belleza'];
+      const preview = datosRuntimePreview({
+        productos: [{ tipo: 'producto', id: 1, nombre: 'Auricular', categoria: categorias[0], precio_efectivo: 10 }],
+        productosCategorias: categorias.map((categoria, idx) => ({ tipo: 'producto', id: idx + 1, categoria })),
+        venta: { inicio: { colecciones: { modo: 'categorias', items: categorias, limite: 4, columnas: 4, titulo: 'Explorá nuestras categorías', subtitulo: 'Todo para tu casa' } } },
+      });
+      const { document, dom } = montar(PLANTILLA_INICIO, preview);
+      expect(tarjetas(document).map(t => t.getAttribute('data-gesicomm-categoria-ir'))).toEqual(categorias);
+      const bloque = document.querySelector('[data-gesicomm-bloque="colecciones"]');
+      expect(bloque.querySelector('h2').textContent).toBe('Explorá nuestras categorías');
+      expect(bloque.querySelector('.section-heading p').textContent).toBe('Todo para tu casa');
+      dom.window.close();
+    });
   });
 
   it('productos por categoría: incluye buscador propio sin tocar el catálogo completo', () => {

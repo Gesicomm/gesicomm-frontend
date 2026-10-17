@@ -1000,7 +1000,7 @@ function coloresTiendaPreview(tienda, landing = null) {
 }
 
 /** Datos del runtime para el preview del editor, con el catálogo del panel. */
-export function datosRuntimePreview({ productos = [], tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], pagoparConectado = null, bloquesEditor = null, filtro = null }) {
+export function datosRuntimePreview({ productos = [], productosCategorias = productos, tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], pagoparConectado = null, bloquesEditor = null, filtro = null }) {
   // Ofertas de la tienda (panel) agrupadas por su producto, ya filtradas
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
@@ -1055,8 +1055,17 @@ export function datosRuntimePreview({ productos = [], tienda, landing = null, ve
       twitter: tienda?.twitter || '',
     },
     venta: ventaRuntime(venta, catalogo, producto),
-    // En el editor está toda la selección en memoria: filtra y ordena el
-    // propio runtime, sin servidor.
+    // Las tarjetas de categorías usan la selección completa, no el recorte
+    // de fichas enriquecidas que se manda a la vista previa.
+    categorias: Array.from(productosCategorias.reduce((mapa, p) => {
+      if (!p.categoria || p.mostrar_en_inicio === false) return mapa;
+      const actual = mapa.get(p.categoria) || { nombre: p.categoria, cantidad: 0, imagen: '' };
+      actual.cantidad += 1;
+      actual.imagen ||= media(p.imagen) || '';
+      mapa.set(p.categoria, actual);
+      return mapa;
+    }, new Map()).values()),
+    // El catálogo de la vista previa se filtra en el runtime, sin servidor.
     catalogo: { total: catalogo.length, por_pagina: 20, paginado: false },
     paginas: { checkout: '#' },
     filtro: filtro || null,

@@ -55,6 +55,24 @@ async function abrirBloqueProductos() {
 }
 
 describe('Bloque Productos del inicio en una tienda grande', () => {
+  it('Colecciones guarda sus textos y recibe categorías fuera del recorte de la vista previa', async () => {
+    const confirmar = montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Colecciones', exact: true }));
+    fireEvent.change(screen.getByLabelText('Título de Colecciones'), { target: { value: 'Elegí tu categoría' } });
+    fireEvent.change(screen.getByLabelText('Subtítulo de Colecciones'), { target: { value: '' } });
+    fireEvent.click(screen.getByLabelText('Mostrar Informática y gaming'));
+    const datos = datosPreview();
+    expect(datos.categorias).toEqual(expect.arrayContaining([
+      expect.objectContaining({ nombre: 'Informática y gaming', cantidad: 19 }),
+      expect.objectContaining({ nombre: 'Minorista', cantidad: 130 }),
+    ]));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(confirmar).toHaveBeenCalled());
+    expect(confirmar.mock.calls[0][0].venta.inicio.colecciones).toMatchObject({
+      titulo: 'Elegí tu categoría', subtitulo: '', items: ['Informática y gaming'],
+    });
+  });
+
   it.each(['carrusel', 'filas'])('envía el formato %s a la vista previa y al guardado', async formato => {
     const confirmar = montar();
     await abrirBloqueProductos();

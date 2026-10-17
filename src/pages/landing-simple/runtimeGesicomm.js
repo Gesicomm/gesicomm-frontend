@@ -1902,6 +1902,7 @@ export function runtimeGesicomm() {
       base = categoriasCuradasDe(el) || categoriasDeProductos();
       if (elegidas.length) {
         var porNombre = {};
+        categoriasDeProductos().forEach(function (c) { porNombre[c.nombre] = c; });
         base.forEach(function (c) { porNombre[c.nombre] = c; });
         base = elegidas.map(function (n) { return porNombre[n]; }).filter(Boolean);
       }
@@ -1916,6 +1917,11 @@ export function runtimeGesicomm() {
     var bloque = document.querySelector('[data-gesicomm-bloque="colecciones"]');
     var conf = coleccionesInicioConfig();
     if (!bloque || !conf) return;
+    // También funciona con plantillas guardadas antes de los binds de texto.
+    var titulo = bloque.querySelector('[data-gesicomm-venta="colecciones_titulo"], .section-heading h2');
+    var subtitulo = bloque.querySelector('[data-gesicomm-venta="colecciones_subtitulo"], .section-heading p');
+    if (titulo && typeof conf.titulo === 'string') { titulo.textContent = conf.titulo; titulo.hidden = !conf.titulo.trim(); }
+    if (subtitulo && typeof conf.subtitulo === 'string') { subtitulo.textContent = conf.subtitulo; subtitulo.hidden = !conf.subtitulo.trim(); }
     var columnas = Math.max(1, Math.min(6, Math.floor(Number(conf.columnas) || 4)));
     bloque.setAttribute('data-col-columnas', String(columnas));
     bloque.style.setProperty('--col-columnas', columnas);
