@@ -306,10 +306,13 @@ export function runtimeGesicomm() {
     var base = productos.filter(function (p) {
       return p.mostrar_en_inicio !== false && Number(p.descuento_pct) > 0;
     });
-    var ids = datos.venta && datos.venta.urgencia && Array.isArray(datos.venta.urgencia.productos)
-      ? datos.venta.urgencia.productos
-      : [];
+    var urgencia = datos.venta && datos.venta.urgencia;
+    var ids = urgencia && Array.isArray(urgencia.productos) ? urgencia.productos : [];
     if (!ids.length) return base;
+    // La selección a mano vence con la propia urgencia: pasada la fecha, la
+    // sección entera se oculta sola (lista vacía) en vez de quedar con la
+    // cuenta regresiva clavada en cero y el descuento igual mostrado.
+    if (!urgenciaVigente(urgencia)) return [];
     var salida = [];
     for (var i = 0; i < ids.length; i++) {
       var item = buscar(ids[i]);
@@ -884,8 +887,19 @@ export function runtimeGesicomm() {
     return imgs;
   }
 
+  // Activo no alcanza: una fecha fija ya pasada tiene que dejar de aplicar
+  // (si no, el contador queda clavado en 00h 00m 00s para siempre). Con
+  // "renovar cada visita" no hay fecha que vencer, siempre vigente. Sin
+  // fecha cargada todavía (demo, antes de confirmar) tampoco está vencida.
+  function urgenciaVigente(config) {
+    if (!config || !config.activo) return false;
+    if (config.renovar_cada_visita) return true;
+    var fin = Date.parse(config.fin_at);
+    return !isFinite(fin) || fin > Date.now();
+  }
+
   function productoAplicaUrgencia(item, config) {
-    if (!item || !config || !config.activo) return false;
+    if (!item || !config || !config.activo || !urgenciaVigente(config)) return false;
     var ids = Array.isArray(config.productos) ? config.productos : [];
     if (ids.length) {
       for (var i = 0; i < ids.length; i++) {
@@ -1121,15 +1135,22 @@ export function runtimeGesicomm() {
   // reinicia, porque este script se vuelve a ejecutar desde cero.
   var urgenciaDemoInicio = null;
 
-  function prepararCountdown(el, finMs) {
+  // onRenovar: solo para "renovar cada visita" — al llegar a cero, en vez
+  // de quedar clavado en 00h 00m 00s hasta el próximo recargo de página,
+  // arranca una vuelta nueva de la misma duración.
+  function prepararCountdown(el, finMs, onRenovar) {
     var horas = el.querySelector('[data-gesicomm-countdown-parte="horas"]');
     var minutos = el.querySelector('[data-gesicomm-countdown-parte="minutos"]');
     var segundos = el.querySelector('[data-gesicomm-countdown-parte="segundos"]');
     if (el.__gesicommCountdownTimer) clearInterval(el.__gesicommCountdownTimer);
-    el.setAttribute('data-gesicomm-countdown-fin', new Date(finMs).toISOString());
     el.style.display = '';
     function pintar() {
       var restante = finMs - Date.now();
+      if (restante <= 0 && typeof onRenovar === 'function') {
+        finMs = onRenovar();
+        restante = finMs - Date.now();
+      }
+      el.setAttribute('data-gesicomm-countdown-fin', new Date(finMs).toISOString());
       el.setAttribute('data-gesicomm-countdown-vencido', restante <= 0 ? 'true' : 'false');
       var totalSeg = Math.max(0, Math.floor(restante / 1000));
       if (horas) horas.textContent = dosDigitos(Math.floor(totalSeg / 3600));
@@ -1173,6 +1194,12 @@ export function runtimeGesicomm() {
     if (!els.length) return;
     var urgencia = datos.venta && datos.venta.urgencia;
     for (var i = 0; i < els.length; i++) {
+      // La sección de ofertas flash envuelve su propia grilla con el mismo
+      // data-gesicomm-lista para ocultarse entera cuando la selección queda
+      // vacía (ver renderizarLista). Si también lleva data-gesicomm-countdown,
+      // no la reaparezcamos acá: display='' pisaría ese ocultamiento y una
+      // oferta vencida volvería a mostrarse con el reloj clavado en cero.
+      if (els[i].hasAttribute('data-gesicomm-lista') && els[i].style.display === 'none') continue;
       var contItem = els[i].closest('[data-gesicomm-item]');
       var enFicha = !contItem && !!els[i].closest('[data-gesicomm-ficha-bloque="oferta_duracion"], [data-gesicomm-ficha-bloque="urgencia"], [data-gesicomm-ficha-bloque="precio"]');
       var item = contItem ? buscar(contItem.getAttribute('data-gesicomm-item')) : (enFicha ? productoActual : null);
@@ -1182,7 +1209,10 @@ export function runtimeGesicomm() {
       // cargada en la ficha en vez de desaparecer.
       if (!isFinite(finMs) && enFicha && item) finMs = Date.now() + countdownDemoMs(item);
       if (!isFinite(finMs)) { els[i].style.display = 'none'; continue; }
-      prepararCountdown(els[i], finMs);
+      var onRenovar = urgencia && urgencia.activo && urgencia.renovar_cada_visita
+        ? function () { urgenciaDemoInicio = Date.now(); return urgenciaDemoInicio + duracionUrgenciaMs(urgencia); }
+        : null;
+      prepararCountdown(els[i], finMs, onRenovar);
     }
   }
 

@@ -551,13 +551,29 @@ describe('runtime del lienzo en blanco — inicio', () => {
     dom.window.close();
   });
 
-  it('Flash: una fecha vencida queda en cero y no vuelve a dos horas', () => {
+  it('Flash: una fecha vencida oculta la sección entera en vez de quedar clavada en cero', () => {
     const { dom, document } = montar(PLANTILLA_INICIO, {
       ...datos, venta: { urgencia: { activo: true, productos: ['air-fryer-26l'], fin_at: new Date(Date.now() - 1000).toISOString() } },
     });
     const flash = document.querySelector('[data-gesicomm-bloque="ofertas_urgencia"]');
-    expect(flash.getAttribute('data-gesicomm-countdown-vencido')).toBe('true');
-    expect([...flash.querySelectorAll('.countdown [data-gesicomm-countdown-parte]')].map(el => el.textContent)).toEqual(['00', '00', '00']);
+    expect(flash.style.display).toBe('none');
+    dom.window.close();
+  });
+
+  it('Flash: "renovar cada visita" no le importa que el "fin_at" guardado ya haya pasado', () => {
+    const venta = {
+      urgencia: {
+        activo: true, productos: ['air-fryer-26l'], renovar_cada_visita: true, duracion_horas: 2,
+        fin_at: new Date(Date.now() - 1000).toISOString(),
+      },
+    };
+    const { dom, document } = montar(PLANTILLA_INICIO, { ...datos, venta });
+    const flash = document.querySelector('[data-gesicomm-bloque="ofertas_urgencia"]');
+    expect(flash.style.display).not.toBe('none');
+    // "01" o "02" según el milisegundo exacto en que arrancó el ancla de
+    // las 2 horas configuradas: lo que importa es que NO arrancó en cero.
+    expect(['01', '02']).toContain(flash.querySelector('[data-gesicomm-countdown-parte="horas"]').textContent);
+    expect(flash.getAttribute('data-gesicomm-countdown-vencido')).toBe('false');
     dom.window.close();
   });
 

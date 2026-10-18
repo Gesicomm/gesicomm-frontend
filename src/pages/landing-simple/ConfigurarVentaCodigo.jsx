@@ -805,9 +805,6 @@ export default function ConfigurarVentaCodigo({
       tieneLegacy ? (Object.prototype.hasOwnProperty.call(legacy, logo.grupo) && legacy[logo.grupo] !== false) : true,
     ]));
   });
-  function alternarPagoLogo(clave) {
-    setPagoLogos(prev => ({ ...prev, [clave]: !prev[clave] }));
-  }
   useEffect(() => {
     let vivo = true;
     landingSimpleService.listarPaymentLogos()
@@ -3206,22 +3203,6 @@ export default function ConfigurarVentaCodigo({
                           )}
                         </div>
                       )}
-                    </div>
-
-                    <div className="mt-4 rounded-xl border border-border bg-surface-2/60 px-4 py-3.5">
-                      <p className="text-sm font-semibold text-fg">Logos de medios de pago en la ficha</p>
-                      <p className="mt-1 text-[13px] text-fg-muted">Se muestran junto al botón de compra, antes de confirmar. Elegí cuáles mostrar.</p>
-                      <div className="mt-3 space-y-2.5">
-                        {paymentLogosCatalogo.map(logo => (
-                          <div key={logo.clave} className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-[13px] font-medium text-fg">{logo.nombre}</p>
-                              <p className="text-xs text-fg-muted truncate">{logo.grupo}</p>
-                            </div>
-                            <Interruptor activo={pagoLogos[logo.clave] !== false} onChange={() => alternarPagoLogo(logo.clave)} etiqueta={`Mostrar ${logo.nombre}`} />
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   </Bloque>
                 </>

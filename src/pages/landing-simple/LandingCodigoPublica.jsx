@@ -199,18 +199,27 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   // páginas del listado vienen sin ofertas. Si el carrito tiene un producto
   // que no llegó entero (se agregó en otra visita, o desde el listado), el
   // order bump del checkout y los upsells del carrito no tendrían de dónde
-  // salir: se piden al servidor esos productos puntuales, una sola vez.
+  // salir: se piden al servidor esos productos puntuales, una sola vez. En
+  // checkout, lo mismo pasa con los "Recomendados del checkout" elegidos a
+  // mano: son cualquier producto del catálogo, no solo los que ya llegaron
+  // con la landing, así que sin esto el carrusel quedaba siempre vacío.
   useEffect(() => {
     if (!data) return;
     const base = new Set((data.catalogo_items || data.items || []).map(i => i.content_id));
-    const faltan = [...new Set(Array.from(cartState.carrito.values()).map(it => it.contentId).filter(Boolean))]
-      .filter(id => !base.has(id) && !completosPedidos.current.has(id));
+    const checkoutReco = data?.content?.venta?.checkout_recomendados;
+    const idsRecomendados = vistaActual === 'checkout' && checkoutReco?.activo !== false
+      ? (checkoutReco?.items || [])
+      : [];
+    const faltan = [...new Set([
+      ...Array.from(cartState.carrito.values()).map(it => it.contentId).filter(Boolean),
+      ...idsRecomendados,
+    ])].filter(id => !base.has(id) && !completosPedidos.current.has(id));
     if (!faltan.length) return;
     faltan.forEach(id => completosPedidos.current.add(id));
     obtenerProductosLandingPublica(slug, faltan)
       .then(items => { if (items.length) setCompletos(prev => [...prev, ...items]); })
       .catch(() => {}); // sin estos productos el carrito sigue funcionando, solo no sugiere ofertas
-  }, [data, slug, cartState.carrito]);
+  }, [data, slug, cartState.carrito, vistaActual]);
   const [checkoutEstado, setCheckoutEstado] = useState(null);
   // Confirmar en la página de checkout: primero el upsell (lo pregunta el
   // CartDrawer, que es donde vive ese popup) y recién después el pedido.
