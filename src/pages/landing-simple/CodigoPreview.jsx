@@ -42,6 +42,8 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
   // si cambia de identidad sin cambiar de contenido no hay que recargar el
   // iframe (se reiniciaría el JS del comercio y el scroll del visitante).
   const datosJson = useMemo(() => JSON.stringify(datos ?? null), [datos]);
+  const datosJsonActual = useRef(datosJson);
+  datosJsonActual.current = datosJson;
   const doc = useMemo(
     () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, datos: JSON.parse(datosJson), extras, typography, previewDevice }),
     // Si cambia el generador durante una actualización de estilos/runtime,
@@ -54,7 +56,7 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
 
   function enviarDatos() {
     if (!ref.current?.contentWindow) return;
-    ref.current.contentWindow.postMessage({ tipo: 'gesicomm:datos', datos: JSON.parse(datosJson) }, '*');
+    ref.current.contentWindow.postMessage({ tipo: 'gesicomm:datos', datos: JSON.parse(datosJsonActual.current) }, '*');
   }
   useEffect(() => { enviarDatos(); }, [datosJson]);
 
