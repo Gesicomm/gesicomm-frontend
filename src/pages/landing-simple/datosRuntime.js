@@ -452,7 +452,8 @@ export function presentacionComercial(item, venta) {
     fuente.resenas_calificacion ?? fuente.rating_comercial ?? fuente.estrellas_comerciales,
     promedio || PRESENTACION_PRODUCTO_DEFAULT.resenas_calificacion,
   );
-  const paymentLogos = logosPagoDesdeVenta(venta);
+  const paymentLogos = logosPagoDesdeVenta(Array.isArray(fuente.payment_logos)
+    ? { payment_logos: fuente.payment_logos } : venta);
   const pagoLogoTarjetas = paymentLogos.some(logo => logo.grupo === 'tarjetas');
   const pagoLogoBocas = paymentLogos.some(logo => logo.grupo === 'bocas');
   const pagoLogoBilletera = paymentLogos.some(logo => logo.grupo === 'billetera');

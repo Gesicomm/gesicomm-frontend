@@ -14,6 +14,7 @@ import { comboAdminService } from '../../services/comboAdminService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
+import EdicionConjuntaFichas from './EdicionConjuntaFichas';
 import PresentacionProducto, { BLOQUES_FICHA_PANEL, ROTULOS_BLOQUES_FICHA, bloqueDeZona } from './PresentacionProducto';
 import { usePagoparConectado } from './usePagoparConectado';
 import { contentIdPanel, datosRuntimePreview, itemPanelARuntime, presentacionDelProducto, slugCategoria, textosRecomendados, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
@@ -1197,13 +1198,8 @@ export default function ConfigurarVentaCodigo({
   function cambiarFichaSeleccionada(campo, valor) {
     if (!productoConfigActual) return;
     if (!editandoGrupo) { cambiarPresentacion(productoConfigActual, campo, valor); return; }
-    let cambios = { [campo]: valor };
-    if (campo === 'ficha_bloques') {
-      // El bloque envía el mapa completo del producto de referencia. Solo
-      // trasladamos las casillas tocadas para preservar las demás diferencias.
-      const base = fichaEfectiva?.ficha_bloques || {};
-      cambios = { ficha_bloques: Object.fromEntries(Object.entries(valor).filter(([clave, visible]) => base[clave] !== visible)) };
-    }
+    if (!['ficha_bloques', 'confianza', 'metodos_pago', 'payment_logos'].includes(campo)) return;
+    const cambios = { [campo]: valor };
     const resultado = aplicarCambiosFichas({
       compartida: fichaCompartida, presentaciones: presentacion,
       cambios, todos: todasLasFichas && !datosProductoConCombos, claves: fichasElegidas.map(claveItem),
@@ -1800,6 +1796,7 @@ export default function ConfigurarVentaCodigo({
       ...(Array.isArray(value.beneficios) ? { beneficios: value.beneficios.filter(b => b && (b.titulo || b.texto)).slice(0, 8) } : {}),
       ...(Array.isArray(value.confianza) ? { confianza: value.confianza.filter(c => c && (c.icono || c.titulo || c.texto)).slice(0, 6) } : {}),
       ...(Array.isArray(value.botones_pago) ? { botones_pago: value.botones_pago.filter(b => b && (b.label || b.tipo || b.valor)).slice(0, 4) } : {}),
+      ...(Array.isArray(value.payment_logos) ? { payment_logos: value.payment_logos.slice(0, 100) } : {}),
       ...(Array.isArray(value.metodos_pago) ? { metodos_pago: value.metodos_pago.filter(m => m && (m.texto || m.label)).slice(0, 8) } : {}),
       ...(Array.isArray(value.incluye_pedido) ? { incluye_pedido: value.incluye_pedido.filter(i => i && (i.texto || i.titulo)).slice(0, 8) } : {}),
       ...(Array.isArray(value.botones_contacto) ? { botones_contacto: value.botones_contacto.filter(b => b && (b.label || b.tipo || b.valor)).slice(0, 4) } : {}),
@@ -2524,32 +2521,29 @@ export default function ConfigurarVentaCodigo({
                 <>
                   <Bloque
                     titulo="Elegí el producto que vas a editar"
-                    ayuda="Seleccioná un producto o marcá varios. Los mismos bloques de abajo permiten editar la selección."
+                    ayuda={seleccionMultipleFichas ? "Seleccioná los productos a los que querés aplicar cambios comunes." : "Elegí un producto para editar sus bloques."}
                   >
                     {candidatosDatosProducto.length === 0 ? (
                       <p className="text-sm text-fg-muted">Agregá productos desde Productos para configurar sus fichas.</p>
                     ) : (
                       <div className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <label className="flex items-center gap-2 text-sm font-medium text-fg">
-                            <input type="checkbox" checked={seleccionMultipleFichas} onChange={e => {
-                              setSeleccionMultipleFichas(e.target.checked); setTodasLasFichas(false);
-                              setFichasMarcadas(new Set(productoConfigActual ? [productoConfigActual.content_id] : []));
-                            }} className="accent-primary" />
-                            Seleccionar varios productos
-                          </label>
-                          <label className="flex items-center gap-2 text-sm font-medium text-fg">
-                            <input type="checkbox" checked={todasLasFichas} onChange={e => {
-                              setSeleccionMultipleFichas(true); setTodasLasFichas(e.target.checked);
-                              setFichasMarcadas(new Set());
-                              if (e.target.checked && !productoConfigActual) seleccionarProductoConfig(candidatosDatosProducto[0]?.content_id || null);
-                            }} className="accent-primary" />
-                            Seleccionar todos ({candidatosDatosProducto.length})
-                          </label>
+                        <div className="flex gap-2" role="group" aria-label="Tipo de edición de productos">
+                          {[false, true].map(varios => <button key={String(varios)} type="button" aria-pressed={seleccionMultipleFichas === varios}
+                            className={`rounded-lg border px-3 py-2 text-sm font-semibold ${seleccionMultipleFichas === varios ? 'border-primary bg-primary/10 text-primary-text' : 'border-border text-fg-muted'}`}
+                            onClick={() => { setSeleccionMultipleFichas(varios); setTodasLasFichas(false); setFichasMarcadas(new Set(productoConfigActual ? [productoConfigActual.content_id] : [])); }}>
+                            {varios ? 'Editar varios o todos' : 'Editar un producto'}
+                          </button>)}
                         </div>
+                        {seleccionMultipleFichas && <label className="flex items-center gap-2 text-sm font-medium text-fg">
+                          <input type="checkbox" checked={todasLasFichas} onChange={e => {
+                            setTodasLasFichas(e.target.checked); setFichasMarcadas(new Set());
+                            if (e.target.checked && !productoConfigActual) seleccionarProductoConfig(candidatosDatosProducto[0]?.content_id || null);
+                          }} className="accent-primary" />
+                          Seleccionar todos ({candidatosDatosProducto.length})
+                        </label>}
                         <div>
                           <p className="block text-sm font-medium text-fg mb-1.5">
-                            {seleccionMultipleFichas ? `${fichasElegidas.length} productos seleccionados` : `Producto a editar${productoConfigActual ? `: ${productoConfigActual.nombre}` : ''}`}
+                            {seleccionMultipleFichas ? `${fichasElegidas.length} ${fichasElegidas.length === 1 ? "producto seleccionado" : "productos seleccionados"}` : `Producto a editar${productoConfigActual ? `: ${productoConfigActual.nombre}` : ''}`}
                           </p>
                           <SelectorProductosPaginado
                             elegidos={seleccionMultipleFichas ? fichasElegidas.map(i => i.content_id) : (productoConfigActual ? [productoConfigActual.content_id] : [])}
@@ -2562,7 +2556,7 @@ export default function ConfigurarVentaCodigo({
                         <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
                           <p className="text-xs font-semibold text-fg">{editandoGrupo ? `Los cambios se aplican a ${fichasElegidas.length} productos` : 'Ahora editás solo este producto'}</p>
                           <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">{editandoGrupo
-                            ? `La preview muestra ${productoConfigActual?.nombre || 'un producto de referencia'}. Los campos que no cambies conservan el contenido de cada producto.`
+                            ? `Podés editar confianza y medios de pago, o mostrar y ocultar bloques. La preview muestra ${productoConfigActual?.nombre || 'un producto de referencia'}.`
                             : 'Imágenes, reseñas, textos, beneficios, compra, pagos, opiniones y recomendaciones quedan separados de los otros productos.'}</p>
                           {todasLasFichas && <p className="mt-1 text-xs text-fg-muted">La selección abarca todo el catálogo, no solo esta página, y los ajustes comunes también se aplican a los productos nuevos.</p>}
                         </div>
@@ -2570,9 +2564,13 @@ export default function ConfigurarVentaCodigo({
                     )}
                   </Bloque>
 
-                  {productoConfigActual && (!seleccionMultipleFichas || fichasElegidas.length > 0) ? (
+                  {editandoGrupo ? (
+                    <EdicionConjuntaFichas cantidad={fichasElegidas.length} referencia={fichaEfectiva}
+                      fichas={fichasElegidas.map(i => itemPanelARuntime({ ...fichasProducto[claveItem(i)], ...i }, [], () => null, ventaActual))}
+                      onCambiar={cambiarFichaSeleccionada} paymentLogosCatalogo={paymentLogosCatalogo} />
+                  ) : productoConfigActual && (!seleccionMultipleFichas || fichasElegidas.length > 0) ? (
                     <Bloque
-                      titulo={editandoGrupo ? `Editar vista de ${fichasElegidas.length} productos` : productoConfigActual.nombre}
+                      titulo={productoConfigActual.nombre}
                       ayuda="Presentación comercial, precio ancla, badges, imágenes y visibilidad de esta ficha."
                       verDonde={() => seleccionarProductoConfig(productoConfigActual.content_id)}
                     >
@@ -2580,13 +2578,13 @@ export default function ConfigurarVentaCodigo({
                         onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(productoConfigActual)]: v }))}
                         onCambiar={cambiarFichaSeleccionada}
                         propio={combinarFichaCompartida(productoConfigActual.tipo === 'producto' ? fichaCompartida : null, presentacion[claveItem(productoConfigActual)] || {})}
-                        cantidadSeleccionada={editandoGrupo ? fichasElegidas.length : 1}
+                        cantidadSeleccionada={1}
                         efectivo={fichaEfectiva}
                         bloqueAbierto={bloqueFichaAbierto}
-                        pagoLogos={pagoLogos}
+                        pagoLogos={Object.fromEntries(paymentLogosCatalogo.map(l => [l.clave, (fichaEfectiva?.payment_logos || []).some(p => p.clave === l.clave)]))}
                         pagoparConectado={pagoparConectado}
                         paymentLogosCatalogo={paymentLogosCatalogo}
-                        onPagoLogosChange={(clave, activo) => setPagoLogos(prev => ({ ...prev, [clave]: activo }))}
+                        onPagoLogosChange={(clave, activo) => cambiarPresentacion(productoConfigActual, 'payment_logos', paymentLogosCatalogo.filter(l => l.clave === clave ? activo : (fichaEfectiva?.payment_logos || []).some(p => p.clave === l.clave)))}
                         bloqueRecomendados={bloqueRecomendadosFicha}
                         recomendadosActivo={recoActivo}
                         resumenRecomendados={resumenReco}

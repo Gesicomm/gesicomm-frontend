@@ -41,7 +41,7 @@ async function abrirFicha() {
 }
 
 describe('Los bloques de la ficha arrancan con los datos del producto', () => {
-  it('permite seleccionar varios con los mismos bloques y modifica solo las fichas y campos elegidos', async () => {
+  it('separa la edición conjunta y limita sus campos, conservando los bloques al volver a un producto', async () => {
     productService.detalle.mockResolvedValue(delProducto);
     productService.faq.mockResolvedValue(faq);
     const productos = Array.from({ length: 3 }, (_, idx) => ({ ...catalogo.productos[0], id: idx + 1, slug: `producto-${idx + 1}`, nombre: `Producto ${idx + 1}` }));
@@ -49,18 +49,23 @@ describe('Los bloques de la ficha arrancan con los datos del producto', () => {
     render(<ConfigurarVentaCodigo catalogo={{ productos, combos: [] }} inicial={{ seleccion: productos }} onConfirmar={confirmar} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Vista producto' }));
     await waitFor(() => expect(within(bloqueFicha('Opiniones')).getByDisplayValue('Laura P.')).toBeInTheDocument());
-    fireEvent.click(screen.getByLabelText('Seleccionar varios productos'));
+    fireEvent.click(screen.getByRole('button', { name: 'Editar varios o todos', exact: true }));
     fireEvent.click(screen.getByRole('button', { name: /Producto 2\s*Tech/ }));
-    expect(screen.getByRole('heading', { name: 'Editar vista de 2 productos', exact: true })).toBeInTheDocument();
-    expect(within(bloqueFicha('Galería del producto')).getByLabelText('Mostrar', { exact: true })).toBeInTheDocument();
-    fireEvent.click(within(bloqueFicha('Qué incluye tu pedido')).getByLabelText('Mostrar', { exact: true }));
+    expect(screen.getByRole('heading', { name: 'Editar 2 productos', exact: true })).toBeInTheDocument();
+    expect(document.querySelectorAll('details[data-bloque-ficha]')).toHaveLength(0);
+    expect(screen.queryByRole('textbox', { name: 'Nombre comercial', exact: true })).toBeNull();
+    expect(screen.queryByRole('textbox', { name: 'Precio anterior', exact: true })).toBeNull();
+    fireEvent.click(screen.getByLabelText('Mostrar Qué incluye tu pedido'));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar', exact: true }));
     const venta = confirmar.mock.calls[0][0].venta;
     expect(venta.presentacion_productos['producto:1'].ficha_bloques).toEqual({ incluye: false });
     expect(venta.presentacion_productos['producto:2'].ficha_bloques).toEqual({ incluye: false });
     expect(venta.presentacion_productos).not.toHaveProperty('producto:3');
+    fireEvent.click(screen.getByRole('button', { name: 'Editar un producto', exact: true }));
+    expect(document.querySelectorAll('details[data-bloque-ficha]')).toHaveLength(15);
+    expect(screen.getByLabelText('Nombre comercial')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Producto 1\s*Tech/ }));
-    expect(screen.getByRole('heading', { name: 'Producto 2', exact: true })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Producto 1', exact: true })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Aplicar a \d+ productos/ })).not.toBeInTheDocument();
   });
 
@@ -78,14 +83,15 @@ describe('Los bloques de la ficha arrancan con los datos del producto', () => {
     const abrir = () => fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Vista producto' }));
     abrir();
     await waitFor(() => expect(within(bloqueFicha('Zona de confianza')).getByDisplayValue('Garantía de 6 meses')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Editar varios o todos', exact: true }));
     fireEvent.click(screen.getByLabelText('Seleccionar todos (503)'));
-    fireEvent.click(within(bloqueFicha('Qué incluye tu pedido')).getByLabelText('Mostrar', { exact: true }));
-    fireEvent.change(within(bloqueFicha('Zona de confianza')).getByPlaceholderText('Título, ej: Compra protegida'), { target: { value: 'Atención de nuestra tienda' } });
+    fireEvent.click(screen.getByLabelText('Mostrar Qué incluye tu pedido'));
+    fireEvent.change(screen.getByPlaceholderText('Título, ej: Compra protegida'), { target: { value: 'Atención de nuestra tienda' } });
     expect(screen.getByRole('button', { name: 'Guardar', exact: true })).toBeEnabled();
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Inicio', exact: true }));
     abrir();
-    expect(within(bloqueFicha('Zona de confianza')).getByPlaceholderText('Título, ej: Compra protegida')).toHaveValue('Atención de nuestra tienda');
-    expect(within(bloqueFicha('Qué incluye tu pedido')).getByLabelText('Mostrar', { exact: true })).not.toBeChecked();
+    expect(screen.getByPlaceholderText('Título, ej: Compra protegida')).toHaveValue('Atención de nuestra tienda');
+    expect(screen.getByLabelText('Mostrar Qué incluye tu pedido')).not.toBeChecked();
     fireEvent.click(screen.getByRole('button', { name: 'Guardar', exact: true }));
     const venta = confirmar.mock.calls[0][0].venta;
     expect(venta.ficha_compartida).toMatchObject({ ficha_bloques: { incluye: false }, confianza: [{ titulo: 'Atención de nuestra tienda' }] });
@@ -121,8 +127,8 @@ describe('Los bloques de la ficha arrancan con los datos del producto', () => {
 
   it('conserva los logos desactivados al guardar y volver a abrir, incluso los cargados del servidor', async () => {
     const logos = [
-      { clave: 'visa', nombre: 'Visa', grupo: 'tarjetas' },
-      { clave: 'metodo-propio', nombre: 'Método propio', grupo: 'tarjetas' },
+      { clave: 'visa', nombre: 'Visa', grupo: 'tarjetas', logo_url: '/visa.webp' },
+      { clave: 'metodo-propio', nombre: 'Método propio', grupo: 'tarjetas', logo_url: '/propio.webp' },
     ];
     landingSimpleService.listarPaymentLogos.mockResolvedValue(logos);
     try {
@@ -132,7 +138,8 @@ describe('Los bloques de la ficha arrancan con los datos del producto', () => {
       fireEvent.click(screen.getByLabelText('Mostrar logo Método propio'));
       fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
       const venta = confirmar.mock.calls[0][0].venta;
-      expect(venta.payment_logos).toEqual([]);
+      expect(venta.presentacion_productos['producto:1'].payment_logos).toEqual([]);
+      expect(venta.payment_logos).toHaveLength(2);
       cleanup();
       render(<ConfigurarVentaCodigo catalogo={catalogo} inicial={{ venta, seleccion: catalogo.productos }} onConfirmar={vi.fn()} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
       fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Vista producto' }));

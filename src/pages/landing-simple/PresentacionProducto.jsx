@@ -492,7 +492,7 @@ function FilaMetodo({ label, detalle, checked, onChange, ariaLabel = label }) {
   );
 }
 
-function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosCatalogo = [], onPagoLogosChange }) {
+export function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosCatalogo = [], onPagoLogosChange, alcanceLogos = 'igual en todas las fichas' }) {
   const base = Array.isArray(metodos) ? metodos : [];
   const otros = base.filter(m => !metodoChipDe(m?.texto || m?.label) && !metodoOcultoDe(m?.texto || m?.label));
   const activo = clave => base.some(m => metodoChipDe(m?.texto || m?.label)?.[0] === clave);
@@ -515,7 +515,7 @@ function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosCatalogo
         <FilaMetodo key={clave} label={label} detalle={detalle} checked={activo(clave)} onChange={si => alternar(clave, si)} />
       ))}
       {conLogos && paymentLogosCatalogo.map(logo => (
-        <FilaMetodo key={logo.clave} label={logo.nombre} detalle={`${logo.grupo || 'medio de pago'} · igual en todas las fichas`} checked={pagoLogos[logo.clave] !== false} onChange={si => onPagoLogosChange(logo.clave, si)} ariaLabel={`Mostrar logo ${logo.nombre}`} />
+        <FilaMetodo key={logo.clave} label={logo.nombre} detalle={`${logo.grupo || 'medio de pago'} · ${alcanceLogos}`} checked={pagoLogos[logo.clave] !== false} onChange={si => onPagoLogosChange(logo.clave, si)} ariaLabel={`Mostrar logo ${logo.nombre}`} />
       ))}
       {otros.length > 0 && <p className="pt-1 text-xs font-semibold text-fg">Otros métodos</p>}
       {otros.map((m, idx) => (
@@ -931,7 +931,7 @@ export default function PresentacionProducto({
         </BloqueFicha>
         <BloqueFicha numero="10" titulo="Disponibilidad y medios de pago" resumen={resumenPagos} visible={visibleBloque('promociones_pago')} onVisible={v => cambiarBloque('promociones_pago', v)} bloqueClave="promociones_pago" ordenIndice={ordenVisible.indexOf('promociones_pago')}>
           <p className="text-xs leading-relaxed text-fg-muted">Esta zona aparece después de los botones: disponibilidad, cobertura y medios de pago antes de confirmar.</p>
-          <MetodosPagoEditor metodos={metodosPago} onCambiar={onCambiar} pagoLogos={pagoLogos} paymentLogosCatalogo={paymentLogosCatalogo} onPagoLogosChange={onPagoLogosChange} />
+          <MetodosPagoEditor metodos={metodosPago} onCambiar={onCambiar} pagoLogos={pagoLogos} paymentLogosCatalogo={paymentLogosCatalogo} onPagoLogosChange={onPagoLogosChange} alcanceLogos="solo este producto" />
         </BloqueFicha>
         <BloqueFicha numero="11" titulo="Qué incluye tu pedido" resumen={resumenIncluye} visible={visibleBloque('incluye')} onVisible={v => cambiarBloque('incluye', v)} bloqueClave="incluye" ordenIndice={ordenVisible.indexOf('incluye')}>
           <ListaSimple titulo="Ítems incluidos" ayuda="Cada línea aparece como checklist dentro de la ficha." items={incluyePedido} campoLista="incluye_pedido" placeholder="Ej: 1 unidad del producto seleccionado" onCambiar={onCambiar} />
