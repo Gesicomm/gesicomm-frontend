@@ -55,6 +55,12 @@ describe('Los bloques de la ficha arrancan con los datos del producto', () => {
     expect(document.querySelectorAll('details[data-bloque-ficha]')).toHaveLength(0);
     expect(screen.queryByRole('textbox', { name: 'Nombre comercial', exact: true })).toBeNull();
     expect(screen.queryByRole('textbox', { name: 'Precio anterior', exact: true })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '+ Agregar tarjeta', exact: true }));
+    fireEvent.change(screen.getAllByPlaceholderText('Título, ej: Compra protegida').at(-1), { target: { value: 'Garantía conjunta nueva' } });
+    expect(screen.getByDisplayValue('Garantía conjunta nueva')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '+ Otro método', exact: true }));
+    fireEvent.change(screen.getByLabelText('Otro método 1'), { target: { value: 'Giros propios' } });
+    expect(screen.getByDisplayValue('Giros propios')).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Mostrar Qué incluye tu pedido'));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar', exact: true }));
     const venta = confirmar.mock.calls[0][0].venta;

@@ -1878,6 +1878,14 @@ export default function ConfigurarVentaCodigo({
     return itemPanelARuntime({ ...fichasProducto[claveItem(base)], ...base }, [], () => null, ventaActual);
   }, [seleccion, productoEditando, fichasProducto, ventaActual]);
 
+  // Conservar filas vacías mientras se escriben: el DTO de la preview las filtra.
+  const fichaPropiaEdicion = productoConfigActual ? combinarFichaCompartida(
+    productoConfigActual.tipo === 'producto' ? fichaCompartida : null, presentacion[claveItem(productoConfigActual)] || {},
+  ) : {};
+  const fichaGrupoEdicion = { ...fichaEfectiva, ...Object.fromEntries(
+    ['confianza', 'metodos_pago', 'payment_logos'].filter(c => Array.isArray(fichaPropiaEdicion[c])).map(c => [c, fichaPropiaEdicion[c]]),
+  ) };
+
   function alternarOferta(oferta) {
     const elegida = ofertasElegidas.has(oferta.id);
     setOfertasElegidas(prev => {
@@ -2565,7 +2573,7 @@ export default function ConfigurarVentaCodigo({
                   </Bloque>
 
                   {editandoGrupo ? (
-                    <EdicionConjuntaFichas cantidad={fichasElegidas.length} referencia={fichaEfectiva}
+                    <EdicionConjuntaFichas cantidad={fichasElegidas.length} referencia={fichaGrupoEdicion}
                       fichas={fichasElegidas.map(i => itemPanelARuntime({ ...fichasProducto[claveItem(i)], ...i }, [], () => null, ventaActual))}
                       onCambiar={cambiarFichaSeleccionada} paymentLogosCatalogo={paymentLogosCatalogo} />
                   ) : productoConfigActual && (!seleccionMultipleFichas || fichasElegidas.length > 0) ? (
