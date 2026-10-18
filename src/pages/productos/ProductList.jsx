@@ -130,6 +130,7 @@ export default function ProductList() {
       buscar(pagina);
     } catch (err) {
       console.error(err);
+      alert(err?.response?.data?.message || 'No se pudo eliminar el producto.');
     } finally {
       setDandoBaja(false);
     }
@@ -412,7 +413,7 @@ export default function ProductList() {
                               <button
                                 className="btn-icon danger"
                                 onClick={(e) => { e.stopPropagation(); setProductoABajar(p); }}
-                                title="Dar de baja"
+                                title="Eliminar definitivamente"
                               >
                                 <Trash2 size={15} />
                               </button>
@@ -484,9 +485,9 @@ export default function ProductList() {
 
       <ConfirmDialog
         open={!!productoABajar}
-        title={`¿Dar de baja "${productoABajar?.nombre}"?`}
-        description="El producto dejará de estar disponible para la venta. Podés reactivarlo después desde el listado."
-        confirmLabel="Dar de baja"
+        title={`¿Eliminar definitivamente "${productoABajar?.nombre}"?`}
+        description="Se eliminará del catálogo y de las landings que lo incluyan. Esta acción no se puede deshacer."
+        confirmLabel="Eliminar definitivamente"
         danger
         loading={dandoBaja}
         onConfirm={confirmarDarDeBaja}

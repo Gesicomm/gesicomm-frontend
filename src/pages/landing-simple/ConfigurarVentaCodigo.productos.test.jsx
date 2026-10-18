@@ -56,7 +56,7 @@ describe('Presentación de los productos del lienzo', () => {
     fireEvent.change(within(nombreComercial).getByLabelText('Nombre comercial'), { target: { value: 'Cocina sin esfuerzo' } });
     fireEvent.change(within(descripcion).getByLabelText('Descripción'), { target: { value: 'Ideal para risottos' } });
     fireEvent.change(within(encabezado).getByLabelText('Encabezado'), { target: { value: 'Oferta' } });
-    expect(datosPreview().productos[0]).toMatchObject({ precio: 850000, precio_antes: 1200000, descuento_pct: 29 });
+    expect(datosPreview().productos[0]).toMatchObject({ precio: 850000, precio_antes: 1200000, descuento_pct: 29.17 });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(confirmar.mock.calls[0][0].venta.presentacion_productos['producto:1']).toMatchObject({ titulo_comercial: 'Cocina sin esfuerzo', mensaje_comercial: 'Ideal para risottos', insignia_principal: 'Oferta' });
     expect(datosPreview().productos[0].titulo_comercial).toBe('Cocina sin esfuerzo');
@@ -323,9 +323,9 @@ describe('Presentación de los productos del lienzo', () => {
     fireEvent.click(screen.getByLabelText('Mostrar Novedades'));
     fireEvent.change(screen.getByLabelText('Tarjetas por fila'), { target: { value: '3' } });
     fireEvent.change(screen.getByLabelText('Total de tarjetas'), { target: { value: '6' } });
-    expect(datosPreview().venta.inicio.colecciones).toEqual({ modo: 'colecciones', items: ['Novedades'], columnas: 3, limite: 6 });
+    expect(datosPreview().venta.inicio.colecciones).toEqual({ modo: 'colecciones', items: ['Novedades'], columnas: 3, limite: 6, titulo: '✧ Colecciones', subtitulo: 'Elegí tu estilo, encontrá tus favoritos' });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    expect(confirmar.mock.calls[0][0].venta.inicio.colecciones).toEqual({ modo: 'colecciones', items: ['Novedades'], columnas: 3, limite: 6 });
+    expect(confirmar.mock.calls[0][0].venta.inicio.colecciones).toEqual({ modo: 'colecciones', items: ['Novedades'], columnas: 3, limite: 6, titulo: '✧ Colecciones', subtitulo: 'Elegí tu estilo, encontrá tus favoritos' });
   });
 
   it('agrega y quita productos de una colección (etiqueta de la landing)', () => {

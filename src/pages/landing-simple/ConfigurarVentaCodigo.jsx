@@ -787,7 +787,10 @@ export default function ConfigurarVentaCodigo({
   const [paymentLogosCatalogo, setPaymentLogosCatalogo] = useState(PAYMENT_LOGOS_DEFAULT);
   const [pagoLogos, setPagoLogos] = useState(() => {
     if (Array.isArray(ventaInicial.payment_logos)) {
-      return Object.fromEntries(ventaInicial.payment_logos.map(logo => [logo.clave, logo.activo !== false]));
+      return {
+        ...Object.fromEntries(PAYMENT_LOGOS_DEFAULT.map(logo => [logo.clave, false])),
+        ...Object.fromEntries(ventaInicial.payment_logos.map(logo => [logo.clave, logo.activo !== false])),
+      };
     }
     const legacy = ventaInicial.pago_logos || {};
     const tieneLegacy = legacy && typeof legacy === 'object' && Object.keys(legacy).length > 0;
@@ -806,7 +809,13 @@ export default function ConfigurarVentaCodigo({
         if (!vivo || !Array.isArray(logos) || !logos.length) return;
         setPaymentLogosCatalogo(logos);
         setPagoLogos(prev => ({
-          ...Object.fromEntries(logos.map(logo => [logo.clave, prev[logo.clave] !== false])),
+          ...Object.fromEntries(logos.map(logo => [logo.clave,
+            Object.prototype.hasOwnProperty.call(prev, logo.clave)
+              ? prev[logo.clave] !== false
+              : Array.isArray(ventaInicial.payment_logos)
+                ? ventaInicial.payment_logos.some(guardado => guardado.clave === logo.clave && guardado.activo !== false)
+                : true,
+          ])),
           ...prev,
         }));
       })

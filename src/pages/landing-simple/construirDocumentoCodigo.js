@@ -1348,6 +1348,11 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] {
 }
 section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-card {
   display: grid;
+  box-sizing: border-box;
+  width: min(100%, max(360px, calc(var(--gc-flash-tarjetas, 6) * clamp(232px, 20vw, 280px) + (var(--gc-flash-tarjetas, 6) - 1) * 16px + 50px)));
+  min-width: 0;
+  max-width: 100%;
+  margin-inline: auto;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto auto;
   grid-template-areas: "summary" "products" "see";
@@ -1630,6 +1635,15 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(button, a):fo
   outline: 2px solid var(--gc-primario, #00b844);
   outline-offset: 3px;
 }
+section.limited-offer[data-gesicomm-flash-compacto] .limited-offer-summary {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+}
+section.limited-offer[data-gesicomm-flash-compacto] .limited-offer-summary h2,
+section.limited-offer[data-gesicomm-flash-compacto] .limited-offer-summary p { grid-column: 1 / -1; }
+section.limited-offer[data-gesicomm-flash-compacto] .countdown { grid-column: 1; grid-row: 3; margin-top: 8px; }
+section.limited-offer[data-gesicomm-flash-compacto] [data-gesicomm-flash-controles] { grid-column: 2; grid-row: 3; align-self: end; }
+
 @media (max-width: 820px) {
   section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-summary { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; }
   section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] .limited-offer-summary h2,
@@ -1788,6 +1802,12 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(button, a):fo
   font-size: clamp(19px, 1.55vw, 25px) !important;
   line-height: 1 !important;
   font-weight: 900 !important;
+}
+[data-gesicomm-base="producto"] .pdp-prices .price-old {
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration-thickness: 2px;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .price-old) {
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;

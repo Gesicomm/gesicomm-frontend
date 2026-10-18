@@ -418,7 +418,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
     const { document, mensajes, click } = montar(plantillaConDescripcion, {
       ...datos,
       vista: 'catalogo',
-      productos: [{ ...airFryer, mensaje_comercial: 'Copy interno de la ficha' }, remera, malicioso],
+      productos: [{ ...airFryer, mensaje_comercial: 'Copy interno de la ficha', insignia_principal: 'Muebles' }, remera, malicioso],
     });
     const tarjeta = document.querySelector('#productos [data-gesicomm-item="air-fryer-26l"]');
     const boton = document.querySelector('#productos [data-gesicomm-item="air-fryer-26l"] [data-gesicomm-comprar]');
@@ -428,6 +428,8 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(tarjeta.classList.contains('has-card-cta')).toBe(true);
     expect(tarjeta.querySelector('.gc-product-availability').textContent).toBe('Disponible');
     expect(tarjeta.querySelector('.gc-card-media-badges').textContent).toBe('-19,04%');
+    expect(tarjeta.querySelector('.gc-commercial-badges')).toBeNull();
+    expect(tarjeta.querySelector('.gc-card-media-badges').parentElement.classList.contains('product-image')).toBe(true);
     expect(document.defaultView.getComputedStyle(boton).display).toBe('flex');
     expect(tarjeta.querySelector('.product-description').textContent).toBe('Copy interno de la ficha');
     expect(tarjeta.querySelector('.product-description').style.display).not.toBe('none');
@@ -530,6 +532,23 @@ describe('runtime del lienzo en blanco — inicio', () => {
       expect(flash.querySelectorAll('[data-gesicomm-flash-controles]')).toHaveLength(1);
       dom.window.close();
     }
+  });
+
+  it.each([1, 3, 6, 8])('Flash: ajusta el contenedor a %s productos y recalcula al cambiar la selección', cantidad => {
+    const panel = Array.from({ length: cantidad }, (_, i) => ({ tipo: 'producto', id: i + 1, slug: 'flash-' + i, nombre: 'Oferta ' + i, precio_efectivo: 80000, precio_tachado: 100000 }));
+    const venta = { urgencia: { activo: true, productos: panel.map(p => p.slug), estado: 'demo' } };
+    const datosFlash = datosRuntimePreview({ productos: panel, venta, vista: 'inicio' });
+    const { dom, document, window } = montar(PLANTILLA_INICIO, datosFlash);
+    const seccion = document.querySelector('[data-gesicomm-bloque="ofertas_urgencia"]');
+    expect(seccion.style.getPropertyValue('--gc-flash-tarjetas')).toBe(String(Math.min(6, cantidad)));
+    expect(seccion.hasAttribute('data-gesicomm-flash-compacto')).toBe(cantidad <= 2);
+    window.dispatchEvent(new window.MessageEvent('message', { source: window, data: {
+      tipo: 'gesicomm:datos', datos: { ...datosFlash, venta: { ...venta, urgencia: { ...venta.urgencia, productos: [panel[0].slug] } } },
+    } }));
+    expect(seccion.style.getPropertyValue('--gc-flash-tarjetas')).toBe('1');
+    expect(seccion.hasAttribute('data-gesicomm-flash-compacto')).toBe(true);
+    expect(seccion.querySelector('[data-gesicomm-flash-controles]').hidden).toBe(true);
+    dom.window.close();
   });
 
   it('Flash: una fecha vencida queda en cero y no vuelve a dos horas', () => {

@@ -958,7 +958,9 @@ export function runtimeGesicomm() {
       var insignias = [item.insignia_principal || item.insignia_secundaria].filter(function (valor) {
         return valor && (valor !== 'Oferta' || ahorro > 0) && (valor !== 'Envío gratis' || item.envio_incluido);
       });
-      if (insignias.length && !raiz.querySelector('.gc-commercial-badges')) {
+      // Las tarjetas ya tienen un badge dentro de la imagen. Agregar otro
+      // contenedor antes de la foto crea una franja y duplica la insignia.
+      if (!esProductCard && insignias.length && !raiz.querySelector('.gc-commercial-badges')) {
         raiz.querySelectorAll('.product-badge').forEach(function (el) { el.style.setProperty('display', 'none', 'important'); });
         var badges = document.createElement('div'); badges.className = 'gc-commercial-badges';
         insignias.forEach(function (valor) {
@@ -1191,6 +1193,11 @@ export function runtimeGesicomm() {
       lista.setAttribute('data-gesicomm-flash-carrusel', '');
       lista.setAttribute('tabindex', '0');
       lista.setAttribute('aria-label', 'Carrusel de ofertas flash');
+      var cantidadTarjetas = lista.querySelectorAll('[data-gesicomm-item]').length;
+      // El panel acompaña a las tarjetas reales; seis o más conservan el
+      // carrusel, sin reservar una fila completa cuando solo hay una o tres.
+      seccion.style.setProperty('--gc-flash-tarjetas', String(Math.max(1, Math.min(6, cantidadTarjetas))));
+      seccion.toggleAttribute('data-gesicomm-flash-compacto', cantidadTarjetas <= 2);
       var controles = seccion.querySelector('[data-gesicomm-flash-controles]');
       if (!controles) {
         controles = document.createElement('div');
@@ -1207,7 +1214,17 @@ export function runtimeGesicomm() {
         });
         (seccion.querySelector('.limited-offer-summary') || lista.parentNode).appendChild(controles);
       }
-      controles.hidden = lista.querySelectorAll('[data-gesicomm-item]').length < 2;
+      var actualizarControles = function () {
+        controles.hidden = lista.querySelectorAll('[data-gesicomm-item]').length < 2
+          || (lista.clientWidth > 0 && lista.scrollWidth <= lista.clientWidth + 1);
+      };
+      actualizarControles();
+      // Recalcular con el layout final y al pasar entre escritorio y celular.
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(actualizarControles);
+      if (typeof ResizeObserver === 'function' && !lista.__gesicommFlashResize) {
+        lista.__gesicommFlashResize = new ResizeObserver(actualizarControles);
+        lista.__gesicommFlashResize.observe(lista);
+      }
     });
   }
 

@@ -740,7 +740,7 @@ function tiendaRuntime(data) {
     mensaje: t.mensaje || data?.tienda?.mensaje_contacto || '',
     // Consultas sin producto (inicio, categorías) — ver mensajeConsultaGeneral.
     mensaje_general: t.mensaje_general || data?.tienda?.mensaje_consulta_general || '',
-    canal_contacto: c.canal_contacto || t.canal_contacto || data?.tienda?.canal_contacto || data?.canal_contacto || 'whatsapp',
+    canal_contacto: c.canal_contacto || c.canal || t.canal_contacto || data?.tienda?.canal_contacto || data?.canal_contacto || 'whatsapp',
     incluir_precio: !!t.incluir_precio,
     incluir_url: !!t.incluir_url,
     telefono: c.telefono || t.telefono || '',

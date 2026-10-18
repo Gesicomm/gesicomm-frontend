@@ -637,12 +637,17 @@ export default function VitrinaGrid() {
     )) return;
     setBorrando(true);
     try {
-      await Promise.all(productosSeleccionados.map(p => productService.eliminar(p.id)));
+      const resultados = await Promise.allSettled(productosSeleccionados.map(p => productService.eliminar(p.id)));
       limpiarSeleccion();
       await cargar();
+      const fallidos = resultados.filter(resultado => resultado.status === 'rejected');
+      if (fallidos.length) {
+        const motivo = fallidos[0].reason?.response?.data?.message || 'Revisá sus registros asociados.';
+        alert(`Se eliminaron ${resultados.length - fallidos.length} productos. No se pudieron eliminar ${fallidos.length}. ${motivo}`);
+      }
     } catch (err) {
       console.error(err);
-      alert('Ocurrió un error al eliminar. Intentá de nuevo.');
+      alert(err?.response?.data?.message || 'Ocurrió un error al eliminar. Intentá de nuevo.');
     } finally {
       setBorrando(false);
     }

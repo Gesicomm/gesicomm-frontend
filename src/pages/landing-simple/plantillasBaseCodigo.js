@@ -1615,6 +1615,7 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .pdp-reviews a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .pdp-prices { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
 .pdp-prices .price { font-size: 2rem; }
+.pdp-prices .price-old { font-size: clamp(22px, 2vw, 28px); font-weight: 700; line-height: 1.2; text-decoration-thickness: 2px; }
 /* Precio, tachado y "Ahorrás" en una sola fila. */
 .pdp-price-badge { display: inline-flex; width: fit-content; margin: 0; }
 .pdp-lead { margin-bottom: 14px; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }

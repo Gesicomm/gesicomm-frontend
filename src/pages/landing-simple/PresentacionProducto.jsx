@@ -789,9 +789,11 @@ export default function PresentacionProducto({
   const inicioSecciones = ordenVisible.findIndex(clave => grupoOrdenFicha(clave) === 'secciones');
   function visibleBloque(clave) {
     if (bloquesFicha[clave] === false) return false;
-    if (clave === 'galeria' && bloquesFicha.portada === false) return false;
-    if (['encabezado', 'nombre_comercial', 'resenas_comerciales', 'precio', 'descripcion'].includes(clave) && bloquesFicha.textos === false) return false;
-    if (['info_compra', 'promociones_pago', 'contacto_pago'].includes(clave) && bloquesFicha.compra === false) return false;
+    if (bloquesGuardados[clave] === undefined) {
+      if (clave === 'galeria' && bloquesFicha.portada === false) return false;
+      if (['encabezado', 'nombre_comercial', 'resenas_comerciales', 'precio', 'descripcion'].includes(clave) && bloquesFicha.textos === false) return false;
+      if (['info_compra', 'promociones_pago', 'contacto_pago'].includes(clave) && bloquesFicha.compra === false) return false;
+    }
     return true;
   }
   function cambiarRecomendadosVisible(visible) {

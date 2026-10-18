@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import ConfigurarVentaCodigo from './ConfigurarVentaCodigo';
 import { productService } from '../../services/productService';
+import { landingSimpleService } from '../../services/landingSimpleService';
 
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]) } }));
@@ -40,6 +41,43 @@ async function abrirFicha() {
 }
 
 describe('Los bloques de la ficha arrancan con los datos del producto', () => {
+  it('permite apagar medios de pago después de apagar los botones, sin mostrar un estado falso', async () => {
+    const confirmar = await abrirFicha();
+    fireEvent.click(within(bloqueFicha('Botones de contacto y pago')).getByLabelText('Mostrar', { exact: true }));
+    const medios = within(bloqueFicha('Disponibilidad y medios de pago')).getByLabelText('Mostrar', { exact: true });
+    expect(medios).toBeChecked();
+    fireEvent.click(medios);
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(confirmar.mock.calls[0][0].venta.presentacion_productos['producto:1'].ficha_bloques).toMatchObject({
+      contacto_pago: false, promociones_pago: false,
+    });
+    expect(fichaPreview().ficha_bloques).toMatchObject({ contacto_pago: false, promociones_pago: false });
+  });
+
+  it('conserva los logos desactivados al guardar y volver a abrir, incluso los cargados del servidor', async () => {
+    const logos = [
+      { clave: 'visa', nombre: 'Visa', grupo: 'tarjetas' },
+      { clave: 'metodo-propio', nombre: 'Método propio', grupo: 'tarjetas' },
+    ];
+    landingSimpleService.listarPaymentLogos.mockResolvedValue(logos);
+    try {
+      const confirmar = await abrirFicha();
+      await waitFor(() => expect(screen.getByLabelText('Mostrar logo Método propio')).toBeChecked());
+      fireEvent.click(screen.getByLabelText('Mostrar logo Visa'));
+      fireEvent.click(screen.getByLabelText('Mostrar logo Método propio'));
+      fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+      const venta = confirmar.mock.calls[0][0].venta;
+      expect(venta.payment_logos).toEqual([]);
+      cleanup();
+      render(<ConfigurarVentaCodigo catalogo={catalogo} inicial={{ venta, seleccion: catalogo.productos }} onConfirmar={vi.fn()} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
+      fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Vista producto' }));
+      await waitFor(() => expect(screen.getByLabelText('Mostrar logo Método propio')).not.toBeChecked());
+      expect(screen.getByLabelText('Mostrar logo Visa')).not.toBeChecked();
+    } finally {
+      landingSimpleService.listarPaymentLogos.mockResolvedValue([]);
+    }
+  });
+
   it('muestra beneficios, garantías, opiniones y preguntas del producto en el panel y en la vista previa, sin guardarlos en la landing', async () => {
     const confirmar = await abrirFicha();
 
