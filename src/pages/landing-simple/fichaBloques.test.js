@@ -157,7 +157,7 @@ describe('ficha: bloques editables de Vista producto', () => {
     expect(doc.querySelector('#confianza-producto [data-gesicomm-bind="texto"]').textContent).toBe('Tu pago y tus datos están seguros.');
     expect(doc.querySelector('[data-gesicomm-comprar] [data-gesicomm-bind="cta_texto"]').textContent).toBe('Comprar esta remera');
     expect(doc.querySelector('.payment-action [data-gesicomm-bind="label"]').textContent).toBe('Pagar por WhatsApp');
-    expect(doc.querySelector('.payment-methods [data-gesicomm-generado]').textContent).toBe('Giros Tigo');
+    expect(doc.querySelectorAll('.payment-methods [data-gesicomm-generado]')).toHaveLength(0);
     expect(doc.querySelector('.order-includes [data-gesicomm-generado]').textContent).toBe('1 remera premium');
     expect([...doc.querySelectorAll('.payment-brand-name')].map(el => el.textContent.trim())).toEqual(['Credicheck', 'Panal']);
     expect(doc.querySelector('#opiniones [data-gesicomm-bind="opiniones_titulo"]').textContent).toBe('Lo que cuentan');
@@ -203,13 +203,15 @@ describe('ficha: bloques editables de Vista producto', () => {
     expect(bloque.querySelector('[data-gesicomm-bind="resenas_texto"]').style.display).toBe('none');
   });
 
-  it('muestra solo métodos de pago personalizados y oculta los chips viejos', () => {
-    const conUno = montar({ metodos_pago: [{ texto: 'Pago contra entrega' }, { texto: 'Giros Tigo' }, { texto: 'Transferencia bancaria' }] });
-    expect([...conUno.querySelectorAll('.payment-methods [data-gesicomm-generado]')].map(e => e.textContent.trim())).toEqual(['Giros Tigo']);
-
-    const vacio = montar({ metodos_pago: [] });
-    expect(vacio.querySelectorAll('.payment-methods [data-gesicomm-generado]')).toHaveLength(0);
-    expect(vacio.querySelector('.payment-methods').style.display).toBe('none');
+  it('muestra el método personalizado como ícono junto a los logos, sin chip de texto', () => {
+    const doc = montar({ metodos_pago: [{ texto: 'Giros Tigo', logo_url: 'https://cdn.test/tigo.png' }, { texto: 'Sin imagen' }] });
+    expect(doc.querySelectorAll('.payment-methods [data-gesicomm-generado]')).toHaveLength(0);
+    expect(doc.querySelector('.payment-methods').style.display).toBe('none');
+    const imagen = doc.querySelector('.payment-brands img[alt="Giros Tigo"]');
+    expect(imagen).not.toBeNull();
+    expect(imagen.getAttribute('src')).toBe('https://cdn.test/tigo.png');
+    expect(doc.querySelectorAll('.payment-brands img[alt="Sin imagen"]')).toHaveLength(0);
+    expect(doc.querySelector('.payment-brands img[alt="Visa"]')).not.toBeNull();
   });
 
   it('"Mostrar" apagado oculta el bloque sin re-mostrar listas vacías al prenderlo', () => {

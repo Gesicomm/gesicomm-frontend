@@ -452,8 +452,11 @@ export function presentacionComercial(item, venta) {
     fuente.resenas_calificacion ?? fuente.rating_comercial ?? fuente.estrellas_comerciales,
     promedio || PRESENTACION_PRODUCTO_DEFAULT.resenas_calificacion,
   );
-  const paymentLogos = logosPagoDesdeVenta(Array.isArray(fuente.payment_logos)
-    ? { payment_logos: fuente.payment_logos } : venta);
+  const logosPersonalizados = (Array.isArray(fuente.metodos_pago) ? fuente.metodos_pago : [])
+    .filter(m => m && (m.texto || m.label) && m.logo_url)
+    .map((m, idx) => normalizarPaymentLogo({ clave: `personalizado-${idx}`, grupo: 'otros', nombre: m.texto || m.label, logo_url: media(m.logo_url), orden: 1000 + idx })).filter(Boolean);
+  const paymentLogos = [...logosPagoDesdeVenta(Array.isArray(fuente.payment_logos)
+    ? { payment_logos: fuente.payment_logos } : venta), ...logosPersonalizados];
   const pagoLogoTarjetas = paymentLogos.some(logo => logo.grupo === 'tarjetas');
   const pagoLogoBocas = paymentLogos.some(logo => logo.grupo === 'bocas');
   const pagoLogoBilletera = paymentLogos.some(logo => logo.grupo === 'billetera');
@@ -501,7 +504,7 @@ export function presentacionComercial(item, venta) {
     confianza,
     botones_pago: lista('botones_pago'),
     // Vacía = el comercio desmarcó todos los métodos: no se rellena con ejemplos.
-    metodos_pago: Array.isArray(fuente.metodos_pago) ? fuente.metodos_pago.filter(m => !esMetodoPagoOculto(m)) : PRESENTACION_PRODUCTO_DEFAULT.metodos_pago,
+    metodos_pago: [], // Los medios personalizados se muestran como logos dentro de payment_logos.
     incluye_pedido: lista('incluye_pedido'),
     botones_contacto: Array.isArray(fuente.botones_contacto) ? fuente.botones_contacto : PRESENTACION_PRODUCTO_DEFAULT.botones_contacto,
     opiniones,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { BLOQUES_FICHA_PANEL, ListaConfianzaProducto, MetodosPagoEditor } from './PresentacionProducto';
 
-export default function EdicionConjuntaFichas({ cantidad, fichas, referencia, onCambiar, paymentLogosCatalogo }) {
+export default function EdicionConjuntaFichas({ cantidad, fichas, referencia, onCambiar, paymentLogosCatalogo, onSubirImagen }) {
   const logos = new Set((referencia?.payment_logos || []).map(l => l.clave));
   return (
     <section className="space-y-5" aria-label="Edición de varios productos">
@@ -31,7 +31,7 @@ export default function EdicionConjuntaFichas({ cantidad, fichas, referencia, on
         <h3 className="text-sm font-semibold text-fg">Medios de pago</h3>
         <MetodosPagoEditor metodos={referencia?.metodos_pago || []} onCambiar={onCambiar}
           paymentLogosCatalogo={paymentLogosCatalogo} pagoLogos={Object.fromEntries(paymentLogosCatalogo.map(l => [l.clave, logos.has(l.clave)]))}
-          alcanceLogos="solo los productos seleccionados"
+          alcanceLogos="solo los productos seleccionados" onSubirImagen={onSubirImagen}
           onPagoLogosChange={(clave, activo) => onCambiar('payment_logos', paymentLogosCatalogo.filter(l => l.clave === clave ? activo : logos.has(l.clave)))} />
       </div>
     </section>

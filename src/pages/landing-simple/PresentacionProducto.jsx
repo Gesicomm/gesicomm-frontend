@@ -492,7 +492,7 @@ function FilaMetodo({ label, detalle, checked, onChange, ariaLabel = label }) {
   );
 }
 
-export function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosCatalogo = [], onPagoLogosChange, alcanceLogos = 'igual en todas las fichas' }) {
+export function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosCatalogo = [], onPagoLogosChange, alcanceLogos = 'igual en todas las fichas', onSubirImagen = null }) {
   const base = Array.isArray(metodos) ? metodos : [];
   const otros = base.filter(m => !metodoChipDe(m?.texto || m?.label) && !metodoOcultoDe(m?.texto || m?.label));
   const activo = clave => base.some(m => metodoChipDe(m?.texto || m?.label)?.[0] === clave);
@@ -503,7 +503,18 @@ export function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosC
   ];
   const clavesActivas = METODOS_CHIP.map(([clave]) => clave).filter(activo);
   const alternar = (clave, si) => onCambiar('metodos_pago', armar(si ? [...clavesActivas, clave] : clavesActivas.filter(c => c !== clave), otros));
-  const cambiarOtro = (idx, texto) => onCambiar('metodos_pago', armar(clavesActivas, otros.map((m, i) => (i === idx ? { texto } : m))));
+  const cambiarOtro = (idx, cambios) => onCambiar('metodos_pago', armar(clavesActivas, otros.map((m, i) => (i === idx ? { ...m, ...cambios } : m))));
+  const [subiendoIcono, setSubiendoIcono] = useState(null);
+  const [errorIcono, setErrorIcono] = useState('');
+  async function subirIcono(event, idx) {
+    const archivo = event.target.files?.[0]; event.target.value = '';
+    if (!archivo || !onSubirImagen) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type) || archivo.size > 5 * 1024 * 1024) { setErrorIcono('Elegí una imagen JPG, PNG o WEBP de hasta 5 MB.'); return; }
+    setSubiendoIcono(idx); setErrorIcono('');
+    try { cambiarOtro(idx, { logo_url: await onSubirImagen(archivo) }); }
+    catch (err) { setErrorIcono(err.response?.data?.message || err.message || 'No pudimos subir el ícono.'); }
+    finally { setSubiendoIcono(null); }
+  }
   const quitarOtro = idx => onCambiar('metodos_pago', armar(clavesActivas, otros.filter((_, i) => i !== idx)));
   const agregarOtro = () => onCambiar('metodos_pago', armar(clavesActivas, [...otros, { texto: '' }]));
   const conLogos = !!(pagoLogos && onPagoLogosChange);
@@ -519,11 +530,22 @@ export function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosC
       ))}
       {otros.length > 0 && <p className="pt-1 text-xs font-semibold text-fg">Otros métodos</p>}
       {otros.map((m, idx) => (
-        <div key={idx} className="flex items-center gap-2">
-          <input className={campo} value={m.texto || m.label || ''} maxLength={40} placeholder="Ej: Giros Tigo" aria-label={`Otro método ${idx + 1}`} onChange={e => cambiarOtro(idx, e.target.value)} />
-          <button type="button" onClick={() => quitarOtro(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button>
+        <div key={idx} className="space-y-2 rounded-lg border border-border bg-surface-2/60 p-3">
+          <div className="flex items-center gap-2">
+            <input className={campo} value={m.texto || m.label || ''} maxLength={40} placeholder="Nombre, ej: Giros Tigo" aria-label={`Otro método ${idx + 1}`} onChange={e => cambiarOtro(idx, { texto: e.target.value })} />
+            <button type="button" disabled={subiendoIcono !== null} onClick={() => quitarOtro(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button>
+          </div>
+          {m.logo_url && <div className="flex h-16 w-24 items-center justify-center rounded-lg border border-border bg-white p-2"><img src={getMediaUrl(m.logo_url)} alt={m.texto || 'Ícono del medio de pago'} className="max-h-full max-w-full object-contain" /></div>}
+          <label className="block text-xs text-fg-muted">URL del ícono<input type="url" className={campo} value={m.logo_url || ''} maxLength={700} placeholder="https://.../logo.png" aria-label={`Ícono del método ${idx + 1}`} onChange={e => cambiarOtro(idx, { logo_url: e.target.value })} /></label>
+          <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text ${!onSubirImagen || subiendoIcono !== null ? 'opacity-50' : ''}`}>
+            <Upload size={13} /> {subiendoIcono === idx ? 'Subiendo...' : 'Subir ícono'}
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label={`Subir ícono del método ${idx + 1}`} disabled={!onSubirImagen || subiendoIcono !== null} onChange={e => subirIcono(e, idx)} />
+          </label>
+          <p className="text-xs text-fg-muted">Recomendado: 240 × 160 px, fondo blanco o transparente. Se muestra junto a Visa y los demás logos, sin recortar.</p>
+          {!m.logo_url && <p className="text-xs text-fg-muted">Agregá el ícono para mostrar este método en la ficha.</p>}
         </div>
       ))}
+      {errorIcono && <p role="alert" className="text-xs text-danger">{errorIcono}</p>}
       {base.length < 8 && <button type="button" onClick={agregarOtro} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Otro método</button>}
     </fieldset>
   );
@@ -931,7 +953,7 @@ export default function PresentacionProducto({
         </BloqueFicha>
         <BloqueFicha numero="10" titulo="Disponibilidad y medios de pago" resumen={resumenPagos} visible={visibleBloque('promociones_pago')} onVisible={v => cambiarBloque('promociones_pago', v)} bloqueClave="promociones_pago" ordenIndice={ordenVisible.indexOf('promociones_pago')}>
           <p className="text-xs leading-relaxed text-fg-muted">Esta zona aparece después de los botones: disponibilidad, cobertura y medios de pago antes de confirmar.</p>
-          <MetodosPagoEditor metodos={metodosPago} onCambiar={onCambiar} pagoLogos={pagoLogos} paymentLogosCatalogo={paymentLogosCatalogo} onPagoLogosChange={onPagoLogosChange} alcanceLogos="solo este producto" />
+          <MetodosPagoEditor metodos={metodosPago} onCambiar={onCambiar} pagoLogos={pagoLogos} paymentLogosCatalogo={paymentLogosCatalogo} onPagoLogosChange={onPagoLogosChange} alcanceLogos="solo este producto" onSubirImagen={onSubirImagen} />
         </BloqueFicha>
         <BloqueFicha numero="11" titulo="Qué incluye tu pedido" resumen={resumenIncluye} visible={visibleBloque('incluye')} onVisible={v => cambiarBloque('incluye', v)} bloqueClave="incluye" ordenIndice={ordenVisible.indexOf('incluye')}>
           <ListaSimple titulo="Ítems incluidos" ayuda="Cada línea aparece como checklist dentro de la ficha." items={incluyePedido} campoLista="incluye_pedido" placeholder="Ej: 1 unidad del producto seleccionado" onCambiar={onCambiar} />

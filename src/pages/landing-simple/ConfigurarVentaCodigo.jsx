@@ -2572,7 +2572,7 @@ export default function ConfigurarVentaCodigo({
                   {editandoGrupo ? (
                     <EdicionConjuntaFichas cantidad={fichasElegidas.length} referencia={fichaGrupoEdicion}
                       fichas={fichasElegidas.map(i => itemPanelARuntime({ ...fichasProducto[claveItem(i)], ...i }, [], () => null, ventaActual))}
-                      onCambiar={cambiarFichaSeleccionada} paymentLogosCatalogo={paymentLogosCatalogo} />
+                      onCambiar={cambiarFichaSeleccionada} paymentLogosCatalogo={paymentLogosCatalogo} onSubirImagen={onSubirImagen ? subirImagenLanding : null} />
                   ) : productoConfigActual && (!seleccionMultipleFichas || fichasElegidas.length > 0) ? (
                     <Bloque
                       titulo={productoConfigActual.nombre}
