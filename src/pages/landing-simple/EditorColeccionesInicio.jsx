@@ -39,6 +39,10 @@ export default function EditorColeccionesInicio({ config, categorias = [], colec
     <div className="space-y-4">
       <div className="space-y-3">
         <p className="text-xs font-medium text-fg-muted">Imagen de cada tarjeta</p>
+        <p className="text-xs leading-relaxed text-fg-muted">
+          La imagen se centra y se recorta para llenar la tarjeta. El recorte cambia según la cantidad de columnas y el tamaño de pantalla.
+          {' '}Dejá el producto en el centro, con margen alrededor, y evitá textos o logos cerca de los bordes.
+        </p>
         {tarjetas.map(nombre => (
           <ImagenColeccion key={`${actual.modo}:${nombre}`} nombre={nombre}
             imagen={actual.imagenes?.[actual.modo]?.[nombre] || ''} onSubir={onSubir}
@@ -148,6 +152,9 @@ function ImagenColeccion({ nombre, imagen, onSubir, onCambiar }) {
         <input type="url" value={imagen} onChange={e => onCambiar(e.target.value)} disabled={subiendo}
           className="mt-1 h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg" placeholder="https://..." />
       </label>
+      <p className="text-xs leading-relaxed text-fg-muted">
+        Recomendado: <strong className="font-semibold text-fg">1200 × 1600 px</strong> (vertical, proporción 3:4). Usá una imagen original de buena calidad, en JPG, PNG o WebP; agrandar una imagen pequeña no mejora su nitidez.
+      </p>
       <div className="flex flex-wrap gap-2 items-center">
         {onSubir && <label className="text-xs font-semibold text-primary-text cursor-pointer">
           {subiendo ? 'Subiendo…' : 'Subir imagen'}

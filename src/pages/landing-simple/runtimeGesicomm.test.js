@@ -888,6 +888,26 @@ describe('runtime del lienzo en blanco — inicio', () => {
   });
 
   describe('bloque Colecciones del inicio', () => {
+    it('publica la imagen guardada de una categoría sin productos en la primera página', () => {
+      const nombre = 'Accesorios Tech';
+      const imagen = 'https://cdn.test/coleccion-tech.webp';
+      const publico = datosRuntimePublico({
+        catalogo_items: [],
+        categorias_catalogo: [{ nombre, cantidad: 1, imagen: 'https://cdn.test/automatica.webp' }],
+        content: { venta: { inicio: { colecciones: {
+          modo: 'categorias', items: [nombre], limite: 4,
+          imagenes: { categorias: { [nombre]: imagen } },
+        } } } },
+      }, 'sommix', null, { vista: 'inicio' });
+      const { document, dom } = montar(PLANTILLA_INICIO, publico);
+      const tarjeta = document.querySelector('[data-gesicomm-bloque="colecciones"] .collection-card');
+      expect(tarjeta).not.toBeNull();
+      expect(tarjeta.style.backgroundImage).toContain(imagen);
+      expect(tarjeta.textContent).toContain(nombre);
+      expect(tarjeta.getAttribute('data-gesicomm-categoria-ir')).toBe(nombre);
+      dom.window.close();
+    });
+
     it.each(['categorias', 'colecciones'])('usa la imagen propia en modo %s y conserva la automática al quitarla', modo => {
       const nombre = modo === 'categorias' ? 'Cocina' : 'Novedades';
       const datosColeccion = { ...datos, productos: [{ ...airFryer, etiqueta: 'Novedades' }],
