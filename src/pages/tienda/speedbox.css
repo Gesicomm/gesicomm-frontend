@@ -58,3 +58,23 @@
 @media (max-width: 720px) { .spb-step-grid, .spb-webhook-box { grid-template-columns: 1fr; } }
 @media (max-width: 540px) { .spb-summary { grid-template-columns: 1fr; } .spb-checks li { font-size: 0.8rem; } .spb-button { max-width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .spb-spin { animation: none; } }
+
+/* Toolbar de filtros dinamicos */
+.spb-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem; }
+.spb-search-wrap { position: relative; display: flex; align-items: center; flex: 1 1 200px; max-width: 340px; }
+.spb-search-wrap svg { position: absolute; left: 0.65rem; color: var(--vit-muted); pointer-events: none; }
+.spb-search-wrap input { width: 100%; min-height: 34px; padding: 0.35rem 0.6rem 0.35rem 2rem; color: var(--vit-text); background: var(--vit-bg); border: 1px solid var(--vit-border); border-radius: 6px; font-size: 0.8rem; }
+.spb-toolbar select { min-height: 34px; padding: 0.35rem 0.6rem; color: var(--vit-text); background: var(--vit-bg); border: 1px solid var(--vit-border); border-radius: 6px; font-size: 0.8rem; }
+.spb-toolbar .spb-button { min-height: 34px; padding: 0.35rem 0.65rem; font-size: 0.8rem; }
+
+/* Paginacion dinamica */
+.spb-pagination { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-top: 0.85rem; padding-top: 0.5rem; font-size: 0.8rem; }
+.spb-pagination-info { display: flex; align-items: center; gap: 0.5rem; color: var(--vit-muted); }
+.spb-pagination-info strong { color: var(--vit-text); }
+.spb-pagination-controls { display: flex; align-items: center; gap: 0.4rem; }
+.spb-pagination-limit { display: flex; align-items: center; gap: 0.35rem; color: var(--vit-muted); margin-right: 0.5rem; font-size: 0.8rem; }
+.spb-pagination-limit select { min-height: 30px; padding: 0.2rem 0.4rem; color: var(--vit-text); background: var(--vit-bg); border: 1px solid var(--vit-border); border-radius: 4px; font-size: 0.8rem; }
+.spb-page-btn { min-height: 30px; padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+.spb-page-current { color: var(--vit-text); font-weight: 550; padding: 0 0.35rem; }
+.spb-table-loading { opacity: 0.55; pointer-events: none; transition: opacity 0.15s ease; }
+.spb-empty-row { text-align: center; color: var(--vit-muted); padding: 1.5rem !important; }
