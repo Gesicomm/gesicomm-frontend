@@ -1096,6 +1096,20 @@ describe('runtime del lienzo en blanco — inicio', () => {
 });
 
 describe('runtime del lienzo en blanco — ficha de producto', () => {
+  it.each(['preview', 'publicada'])('la edición conjunta oculta incluye y muestra la confianza compartida en %s', origen => {
+    const venta = { ficha_compartida: { ficha_bloques: { incluye: false }, confianza: [{ icono: '✓', titulo: 'Garantía de la tienda', texto: 'Atención directa' }] } };
+    const item = { tipo: 'producto', id: 801, referencia_id: 801, slug: 'producto-801', content_id: 'producto-801', nombre: 'Producto 801', precio: 10000, precio_efectivo: 10000,
+      ficha_datos: { presentacion: { incluye_pedido: [{ texto: 'Cable USB' }] } }, confianza: [{ titulo: 'Confianza original' }] };
+    const runtime = origen === 'preview'
+      ? datosRuntimePreview({ productos: [item], venta, vista: 'producto', productoId: 'producto-801' })
+      : datosRuntimePublico({ content: { venta }, catalogo_items: [] }, 'tienda', item, { vista: 'producto' });
+    const { document, dom } = montar(PLANTILLA_PRODUCTO, runtime);
+    expect(dom.window.getComputedStyle(document.querySelector('[data-gesicomm-ficha-bloque="incluye"]')).display).toBe('none');
+    expect(document.querySelector('[data-gesicomm-ficha-bloque="confianza"]').textContent).toContain('Garantía de la tienda');
+    expect(document.querySelector('[data-gesicomm-ficha-bloque="confianza"]').textContent).not.toContain('Confianza original');
+    dom.window.close();
+  });
+
   const datos = { vista: 'producto', tienda: {}, productos: [airFryer, remera], producto: remera, recomendados: [airFryer] };
 
   it('pinta variantes, ofertas y recomendados del producto', () => {

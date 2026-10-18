@@ -41,7 +41,7 @@ async function abrirFichaProducto(nombre) {
 }
 
 function bloqueFicha(titulo) {
-  return screen.getAllByText(titulo).map(el => el.closest('details')).find(Boolean);
+  return screen.getAllByText(titulo).map(el => el.closest('details[data-bloque-ficha]')).find(Boolean);
 }
 
 describe('Presentación de los productos del lienzo', () => {
@@ -82,15 +82,15 @@ describe('Presentación de los productos del lienzo', () => {
     const confirmar = montar();
     abrirFichaProducto('Cacerola');
 
-    const portada = screen.getByText('Galería del producto');
-    const resenasTitulo = screen.getByText('Reseñas comerciales');
-    const precio = screen.getByText('Precio y oferta');
-    const ofertaTitulo = screen.getByText('Oferta por tiempo limitado');
+    const portada = bloqueFicha('Galería del producto');
+    const resenasTitulo = bloqueFicha('Reseñas comerciales');
+    const precio = bloqueFicha('Precio y oferta');
+    const ofertaTitulo = bloqueFicha('Oferta por tiempo limitado');
     const bloqueOferta = bloqueFicha('Oferta por tiempo limitado');
-    const descripcionTitulo = screen.getByText('Descripción breve');
-    const beneficiosTitulo = screen.getByText('Beneficios principales');
-    const botonesTitulo = screen.getByText('Botones de contacto y pago');
-    const compraTitulo = screen.getByText('Disponibilidad y medios de pago');
+    const descripcionTitulo = bloqueFicha('Descripción breve');
+    const beneficiosTitulo = bloqueFicha('Beneficios principales');
+    const botonesTitulo = bloqueFicha('Botones de contacto y pago');
+    const compraTitulo = bloqueFicha('Disponibilidad y medios de pago');
     expect(Boolean(portada.compareDocumentPosition(resenasTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     expect(Boolean(resenasTitulo.compareDocumentPosition(precio) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
     expect(Boolean(precio.compareDocumentPosition(ofertaTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);

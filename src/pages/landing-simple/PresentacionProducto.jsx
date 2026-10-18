@@ -387,7 +387,7 @@ function ListaBeneficios({ items, onCambiar }) {
   );
 }
 
-function ListaConfianzaProducto({ items, onCambiar }) {
+export function ListaConfianzaProducto({ items, onCambiar }) {
   const base = Array.isArray(items) ? items : [];
   const cambiar = (idx, campoItem, valor) => onCambiar('confianza', base.map((it, i) => (i === idx ? { ...it, [campoItem]: valor } : it)));
   const agregar = () => onCambiar('confianza', [...base, { icono: '', titulo: '', texto: '' }].slice(0, 6));
@@ -531,6 +531,7 @@ function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosCatalogo
 
 export default function PresentacionProducto({
   item,
+  cantidadSeleccionada = 1,
   ancla,
   onAncla,
   onCambiar,
@@ -824,7 +825,7 @@ export default function PresentacionProducto({
     <BloquePedidoContext.Provider value={contextoBloques}>
     <div className="mt-3 space-y-3">
       <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
-        <p className="text-sm font-semibold text-fg">Editás solo la ficha pública de este producto.</p>
+        <p className="text-sm font-semibold text-fg">{cantidadSeleccionada > 1 ? `Editás las fichas públicas de ${cantidadSeleccionada} productos. Solo se copia lo que cambies.` : 'Editás solo la ficha pública de este producto.'}</p>
         <p className="mt-1 text-xs leading-relaxed text-fg-muted">Los bloques siguen el orden real de la ficha. Los números quedan fijos aunque ocultes una sección.</p>
         <p className="mt-1 text-xs leading-relaxed text-fg-muted">Para cambiar el orden, arrastrá un bloque desde <GripVertical size={12} className="inline align-[-2px]" />: los bloques 2 a 11 se ordenan dentro de la columna del producto y los 12 a 15 entre las secciones de abajo. La galería queda fija.</p>
         <p className="mt-1 text-xs leading-relaxed text-fg-muted">Cada campo muestra el texto que sale en la ficha. Si lo borrás, ese renglón deja de mostrarse. En la vista previa, pasá el mouse por una zona para ver a qué bloque corresponde y hacé clic para abrirlo acá.</p>
@@ -880,10 +881,11 @@ export default function PresentacionProducto({
         </BloqueFicha>
         <BloqueFicha numero="5" titulo="Precio y oferta" resumen={resumenPrecio} abierto={inicialmenteAbierto} visible={visibleBloque('precio')} onVisible={v => cambiarBloques({ precio: v, badge_precio: v })} bloqueClave="precio" ordenIndice={ordenVisible.indexOf('precio')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <label className="block text-xs text-fg-muted">Precio anterior<CurrencyInput id={`ancla-${claveItem(item)}`} aria-label="Precio anterior" inputMode="numeric" value={ancla ?? ''} onChange={v => onAncla(v == null ? '' : String(v))} placeholder="Opcional" className={campo} /></label>
-            <label className="block text-xs text-fg-muted">% de descuento<input inputMode="numeric" value={porcentaje} placeholder="Ej: 21" className={campo} onChange={e => onAncla(precioAnclaPorDescuento(precio, e.target.value))} /></label>
+            <label className="block text-xs text-fg-muted">Precio anterior<CurrencyInput disabled={cantidadSeleccionada > 1} id={`ancla-${claveItem(item)}`} aria-label="Precio anterior" inputMode="numeric" value={ancla ?? ''} onChange={v => onAncla(v == null ? '' : String(v))} placeholder="Opcional" className={campo} /></label>
+            <label className="block text-xs text-fg-muted">% de descuento<input disabled={cantidadSeleccionada > 1} inputMode="numeric" value={porcentaje} placeholder="Ej: 21" className={campo} onChange={e => onAncla(precioAnclaPorDescuento(precio, e.target.value))} /></label>
             <CampoOcultable titulo="Badge de precio" campo="insignia_secundaria" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={val('insignia_secundaria')} list={insigniasListId} maxLength={40} placeholder={descuento ? `-${descuento}%` : 'Oferta especial'} onChange={e => onCambiar('insignia_secundaria', e.target.value)} aria-label="Badge de precio" /></CampoOcultable>
           </div>
+          {cantidadSeleccionada > 1 && <p className="mt-2 text-xs text-fg-muted">El precio anterior y su descuento se editan eligiendo un solo producto.</p>}
         </BloqueFicha>
         <BloqueFicha numero="6" titulo="Oferta por tiempo limitado" resumen={resumenOferta} abierto={inicialmenteAbierto} visible={visibleBloque('oferta')} onVisible={v => cambiarBloques({ oferta: v, urgencia: v })} bloqueClave="oferta" ordenIndice={ordenVisible.indexOf('oferta')}>
           <div className="space-y-3">

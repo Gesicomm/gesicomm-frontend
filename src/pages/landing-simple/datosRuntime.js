@@ -1,4 +1,5 @@
 import { porcentajeDescuento } from './porcentajeDescuento';
+import { combinarFichaCompartida } from './fichasEnLote';
 import { getMediaUrl } from '../../services/api';
 import { ofertaCheckoutPublicable, detalleOfertaCheckout, precioVentaProducto } from '../landing/ofertasCheckout';
 
@@ -378,7 +379,11 @@ export function presentacionDelProducto(fichaDatos) {
 
 export function presentacionComercial(item, venta) {
   const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
-  const fuente = venta?.presentacion_productos?.[key] || item;
+  const propia = venta?.presentacion_productos?.[key];
+  const compartida = (item.tipo || 'producto') === 'producto' ? venta?.ficha_compartida : null;
+  const ajuste = compartida ? combinarFichaCompartida(compartida, propia || {}) : propia;
+  const fuente = compartida ? { ...item, ...ajuste,
+    ficha_bloques: { ...item.ficha_bloques, ...ajuste.ficha_bloques } } : (propia || item);
   const fichaDatos = { ...(item.ficha_datos || {}), ...(fuente.ficha_datos || {}) };
   // Textos de bloque cargados en el producto (ficha_datos.presentacion, p. ej.
   // desde el JSON de la IA): valen en todas sus landings mientras la landing
@@ -388,9 +393,9 @@ export function presentacionComercial(item, venta) {
   // guarda SOLO lo que el comercio tocó, así que lo que está, manda — también
   // vacío ("lo borré": no se muestra) y también una lista sin elementos. En
   // las fichas anteriores un texto vacío es "sin tocar" y cae al del producto.
-  const v2 = fuente !== item && fuente.v === 2;
-  const propio = campo => v2 && Object.prototype.hasOwnProperty.call(fuente, campo) && fuente[campo] != null;
-  const listaPropia = campo => (v2 && Array.isArray(fuente[campo]) ? fuente[campo] : null);
+  const v2 = ajuste?.v === 2;
+  const propio = campo => v2 && Object.prototype.hasOwnProperty.call(ajuste, campo) && ajuste[campo] != null;
+  const listaPropia = campo => (propio(campo) && Array.isArray(ajuste[campo]) ? ajuste[campo] : null);
   // Vacío a propósito u oculto con "Mostrar" destildado: el runtime no lo
   // dibuja ni lo rellena con su texto de respaldo. El texto oculto se conserva
   // (el panel lo sigue mostrando, atenuado) para poder volver a mostrarlo.
@@ -407,7 +412,9 @@ export function presentacionComercial(item, venta) {
   const beneficios = (listaPropia('beneficios') || beneficiosFuente.length ? beneficiosFuente : PRESENTACION_PRODUCTO_DEFAULT.beneficios)
     .map(normalizarBeneficio)
     .filter(b => b.titulo || b.texto);
-  const confianza = (listaPropia('confianza') || primeraListaConDatos(fuente.confianza, item.confianza, fichaDatos.confianza, fichaDatos.trust_items))
+  const confianza = (listaPropia('confianza') || (propia?.confianza?.length ? propia.confianza : null)
+    || (Array.isArray(compartida?.confianza) ? compartida.confianza : null)
+    || primeraListaConDatos(fuente.confianza, item.confianza, fichaDatos.confianza, fichaDatos.trust_items))
     .map(normalizarConfianza)
     .filter(c => c.titulo || c.texto);
   const preguntasFuente = listaPropia('preguntas') || primeraListaConDatos(
@@ -449,7 +456,7 @@ export function presentacionComercial(item, venta) {
   const pagoLogoTarjetas = paymentLogos.some(logo => logo.grupo === 'tarjetas');
   const pagoLogoBocas = paymentLogos.some(logo => logo.grupo === 'bocas');
   const pagoLogoBilletera = paymentLogos.some(logo => logo.grupo === 'billetera');
-  const bloquesCrudos = fuente.ficha_bloques || {};
+  const bloquesCrudos = { ...item.ficha_bloques, ...compartida?.ficha_bloques, ...propia?.ficha_bloques };
   const bloquesCompatibles = { ...FICHA_BLOQUES_DEFAULT, ...bloquesCrudos };
   if (bloquesCrudos.portada === false && bloquesCrudos.galeria === undefined) bloquesCompatibles.galeria = false;
   if (bloquesCrudos.encabezado === false) {
@@ -508,7 +515,9 @@ export function presentacionComercial(item, venta) {
 
 export function imagenesParaLanding(item, venta = null) {
   const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
-  const propia = venta?.presentacion_productos?.[key]?.imagenes_landing ?? item.imagenes_landing;
+  const propia = venta?.presentacion_productos?.[key]?.imagenes_landing
+    ?? ((item.tipo || 'producto') === 'producto' ? venta?.ficha_compartida?.imagenes_landing : undefined)
+    ?? item.imagenes_landing;
   // Una lista vacía significa que el comercio quitó TODAS las fotos en esta landing.
   const fotos = Array.isArray(propia) ? propia : [item.imagen, ...(item.imagenes || []).filter(i => typeof i === 'string' || i?.tipo !== 'video')];
   return [...new Set(fotos.map(media).filter(Boolean))];

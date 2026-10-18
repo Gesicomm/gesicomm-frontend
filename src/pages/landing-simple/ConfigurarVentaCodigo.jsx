@@ -23,6 +23,7 @@ import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado,
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
 import EditorColeccionesInicio from './EditorColeccionesInicio';
+import { aplicarCambiosFichas, combinarFichaCompartida } from './fichasEnLote';
 import OrganizadorProductos, { BADGES_OFERTA, MAX_PRODUCTOS_CONTADOR, conEtiqueta, sinEtiqueta } from './OrganizadorProductos';
 import { conGlobalesHeredados } from './globalesCodigo';
 import { extraerFragmentoHtml, reemplazarFragmentoHtml, extraerSeccionCss, reemplazarSeccionCss, bindsDeTiendaPerdidos } from './seccionesCodigo';
@@ -783,6 +784,10 @@ export default function ConfigurarVentaCodigo({
   const [presentacion, setPresentacion] = useState(() => ({ ...Object.fromEntries((inicial?.seleccion || []).map(i => [claveItem(i), {
     etiqueta: i.etiqueta || '', mostrar_en_inicio: i.mostrar_en_inicio !== false, envio_incluido: i.envio_incluido === true,
   }])), ...presentacionGuardada(ventaInicial.presentacion_productos) }));
+  const [fichaCompartida, setFichaCompartida] = useState(() => ventaInicial.ficha_compartida || {});
+  const [todasLasFichas, setTodasLasFichas] = useState(false);
+  const [seleccionMultipleFichas, setSeleccionMultipleFichas] = useState(false);
+  const [fichasMarcadas, setFichasMarcadas] = useState(() => new Set());
   const [filtrosCatalogo, setFiltrosCatalogo] = useState(() => ventaInicial.catalogo_filtros || {});
   const [paymentLogosCatalogo, setPaymentLogosCatalogo] = useState(PAYMENT_LOGOS_DEFAULT);
   const [pagoLogos, setPagoLogos] = useState(() => {
@@ -1106,9 +1111,10 @@ export default function ConfigurarVentaCodigo({
       // ficha publicada también cae al del producto en ese caso.
       const propio = Object.fromEntries(Object.entries({ ...i, ...presentacion[claveItem(i)] })
         .filter(([campo, valor]) => (valor !== '' && valor != null) || !(campo in delProducto)));
-      return { ...delProducto, ...propio, content_id: contentIdPanel(i) };
+      const compartidos = combinarFichaCompartida(i.tipo === 'producto' ? fichaCompartida : null, presentacion[claveItem(i)] || {});
+      return { ...delProducto, ...propio, ...compartidos, content_id: contentIdPanel(i) };
     });
-  }, [seleccion, presentacion, fichasProducto]);
+  }, [seleccion, presentacion, fichasProducto, fichaCompartida]);
   // Colecciones de la landing (etiquetas), con cuántos productos tiene cada
   // una; "Oferta" entra sola si hay productos con descuento, como en el
   // runtime (etiquetasDisponiblesCatalogo).
@@ -1177,6 +1183,34 @@ export default function ConfigurarVentaCodigo({
     [candidatosDatosProducto],
   );
   const datosProductoConCombos = candidatosDatosProducto.some(i => i.tipo !== 'producto');
+  const fichasElegidas = candidatosDatosProducto.filter(i => todasLasFichas || fichasMarcadas.has(i.content_id));
+  const editandoGrupo = seleccionMultipleFichas && fichasElegidas.length > 1;
+  function alternarFichaSeleccionada(contentId) {
+    if (!seleccionMultipleFichas) { seleccionarProductoConfig(contentId); return; }
+    const siguientes = new Set(fichasElegidas.map(i => i.content_id));
+    if (siguientes.has(contentId)) siguientes.delete(contentId); else siguientes.add(contentId);
+    setTodasLasFichas(false);
+    setFichasMarcadas(siguientes);
+    const referencia = siguientes.has(contentId) ? contentId : (siguientes.has(productoEditando) ? productoEditando : [...siguientes][0]);
+    seleccionarProductoConfig(referencia || null);
+  }
+  function cambiarFichaSeleccionada(campo, valor) {
+    if (!productoConfigActual) return;
+    if (!editandoGrupo) { cambiarPresentacion(productoConfigActual, campo, valor); return; }
+    let cambios = { [campo]: valor };
+    if (campo === 'ficha_bloques') {
+      // El bloque envía el mapa completo del producto de referencia. Solo
+      // trasladamos las casillas tocadas para preservar las demás diferencias.
+      const base = fichaEfectiva?.ficha_bloques || {};
+      cambios = { ficha_bloques: Object.fromEntries(Object.entries(valor).filter(([clave, visible]) => base[clave] !== visible)) };
+    }
+    const resultado = aplicarCambiosFichas({
+      compartida: fichaCompartida, presentaciones: presentacion,
+      cambios, todos: todasLasFichas && !datosProductoConCombos, claves: fichasElegidas.map(claveItem),
+    });
+    setFichaCompartida(resultado.compartida);
+    setPresentacion(resultado.presentaciones);
+  }
   const urgenciaProductoValido = idsDatosProducto.has(urgenciaProductoId)
     ? urgenciaProductoId
     : (candidatosDatosProducto[0]?.content_id || '');
@@ -1755,6 +1789,7 @@ export default function ConfigurarVentaCodigo({
     inicio_comercial: inicioActual,
     paquetes: confPaquetes,
     catalogo_filtros: filtrosCatalogo,
+    ...(Object.keys(fichaCompartida).length ? { ficha_compartida: fichaCompartida } : {}),
     presentacion_productos: Object.fromEntries(Object.entries(presentacion).map(([key, value]) => [key, {
       v: 2,
       ...Object.fromEntries(CAMPOS_TEXTO_FICHA.filter(campo => value[campo] != null).map(campo => [campo, value[campo]])),
@@ -1770,7 +1805,7 @@ export default function ConfigurarVentaCodigo({
       ...(Array.isArray(value.botones_contacto) ? { botones_contacto: value.botones_contacto.filter(b => b && (b.label || b.tipo || b.valor)).slice(0, 4) } : {}),
       ...(Array.isArray(value.opiniones) ? { opiniones: value.opiniones.filter(o => o && (o.nombre || o.comentario)).slice(0, 6) } : {}),
       ...(Array.isArray(value.preguntas) ? { preguntas: value.preguntas.filter(p => p && (p.pregunta || p.respuesta)).slice(0, 10) } : {}),
-    }]).filter(([, value]) => Object.keys(value).some(key => key !== 'v')).slice(0, 500)),
+    }]).filter(([, value]) => Object.keys(value).some(key => key !== 'v'))),
     // El producto que abre la landing en "Directo en un producto" (con una
     // regla no hay items guardados que lo pongan primero).
     principal_id: abrirEn === 'producto'
@@ -1827,7 +1862,7 @@ export default function ConfigurarVentaCodigo({
         orden: logo.orden || 0,
       })),
   }), [
-    tipo, abrirEn, combosPrimero, destacadosValidos, inicioActual, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
+    tipo, abrirEn, combosPrimero, destacadosValidos, inicioActual, confPaquetes, filtrosCatalogo, presentacion, fichaCompartida, principal, seleccion, modo, categorias, incluirCombos,
     crossActivo, ofertasElegidas, recoActivo, recoModo, recoItemsValidos, recoMax, recoTitulo, recoKicker, recoSubtitulo, recoCta, recoMostrar,
     checkoutRecoActivo, checkoutRecoItemsValidos, checkoutRecoMax, checkoutRecoTitulo, checkoutRecoKicker, checkoutRecoSubtitulo, checkoutRecoCta, checkoutRecoPreciosAntes,
     urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, urgenciaProductosValidos, urgenciaConfirmar, urgenciaRenovar, urgenciaDuracionHoras, urgenciaTitulo, urgenciaTexto, urgenciaCta, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
@@ -2489,42 +2524,63 @@ export default function ConfigurarVentaCodigo({
                 <>
                   <Bloque
                     titulo="Elegí el producto que vas a editar"
-                    ayuda="La ficha se edita de a un producto: elegís uno, el panel de abajo cambia a esa ficha y la preview salta al producto seleccionado."
+                    ayuda="Seleccioná un producto o marcá varios. Los mismos bloques de abajo permiten editar la selección."
                   >
                     {candidatosDatosProducto.length === 0 ? (
                       <p className="text-sm text-fg-muted">Agregá productos desde Productos para configurar sus fichas.</p>
                     ) : (
                       <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <label className="flex items-center gap-2 text-sm font-medium text-fg">
+                            <input type="checkbox" checked={seleccionMultipleFichas} onChange={e => {
+                              setSeleccionMultipleFichas(e.target.checked); setTodasLasFichas(false);
+                              setFichasMarcadas(new Set(productoConfigActual ? [productoConfigActual.content_id] : []));
+                            }} className="accent-primary" />
+                            Seleccionar varios productos
+                          </label>
+                          <label className="flex items-center gap-2 text-sm font-medium text-fg">
+                            <input type="checkbox" checked={todasLasFichas} onChange={e => {
+                              setSeleccionMultipleFichas(true); setTodasLasFichas(e.target.checked);
+                              setFichasMarcadas(new Set());
+                              if (e.target.checked && !productoConfigActual) seleccionarProductoConfig(candidatosDatosProducto[0]?.content_id || null);
+                            }} className="accent-primary" />
+                            Seleccionar todos ({candidatosDatosProducto.length})
+                          </label>
+                        </div>
                         <div>
                           <p className="block text-sm font-medium text-fg mb-1.5">
-                            Producto a editar{productoConfigActual ? `: ${productoConfigActual.nombre}` : ''}
+                            {seleccionMultipleFichas ? `${fichasElegidas.length} productos seleccionados` : `Producto a editar${productoConfigActual ? `: ${productoConfigActual.nombre}` : ''}`}
                           </p>
                           <SelectorProductosPaginado
-                            elegidos={productoConfigActual ? [productoConfigActual.content_id] : []}
+                            elegidos={seleccionMultipleFichas ? fichasElegidas.map(i => i.content_id) : (productoConfigActual ? [productoConfigActual.content_id] : [])}
                             enLanding={datosProductoPorContentId}
                             incluirCombos={datosProductoConCombos}
                             mostrarElegidos={false}
-                            onAlternar={seleccionarProductoConfig}
+                            onAlternar={alternarFichaSeleccionada}
                           />
                         </div>
                         <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
-                          <p className="text-xs font-semibold text-fg">Ahora editás solo este producto</p>
-                          <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">Imágenes, reseñas, textos, beneficios, compra, pagos, opiniones y recomendaciones quedan separados de los otros productos.</p>
+                          <p className="text-xs font-semibold text-fg">{editandoGrupo ? `Los cambios se aplican a ${fichasElegidas.length} productos` : 'Ahora editás solo este producto'}</p>
+                          <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">{editandoGrupo
+                            ? `La preview muestra ${productoConfigActual?.nombre || 'un producto de referencia'}. Los campos que no cambies conservan el contenido de cada producto.`
+                            : 'Imágenes, reseñas, textos, beneficios, compra, pagos, opiniones y recomendaciones quedan separados de los otros productos.'}</p>
+                          {todasLasFichas && <p className="mt-1 text-xs text-fg-muted">La selección abarca todo el catálogo, no solo esta página, y los ajustes comunes también se aplican a los productos nuevos.</p>}
                         </div>
                       </div>
                     )}
                   </Bloque>
 
-                  {productoConfigActual ? (
+                  {productoConfigActual && (!seleccionMultipleFichas || fichasElegidas.length > 0) ? (
                     <Bloque
-                      titulo={productoConfigActual.nombre}
+                      titulo={editandoGrupo ? `Editar vista de ${fichasElegidas.length} productos` : productoConfigActual.nombre}
                       ayuda="Presentación comercial, precio ancla, badges, imágenes y visibilidad de esta ficha."
                       verDonde={() => seleccionarProductoConfig(productoConfigActual.content_id)}
                     >
                       <PresentacionProducto item={productoConfigActual} ancla={anclas[claveItem(productoConfigActual)] ?? ''}
                         onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(productoConfigActual)]: v }))}
-                        onCambiar={(campo, valor) => cambiarPresentacion(productoConfigActual, campo, valor)}
-                        propio={presentacion[claveItem(productoConfigActual)]}
+                        onCambiar={cambiarFichaSeleccionada}
+                        propio={combinarFichaCompartida(productoConfigActual.tipo === 'producto' ? fichaCompartida : null, presentacion[claveItem(productoConfigActual)] || {})}
+                        cantidadSeleccionada={editandoGrupo ? fichasElegidas.length : 1}
                         efectivo={fichaEfectiva}
                         bloqueAbierto={bloqueFichaAbierto}
                         pagoLogos={pagoLogos}

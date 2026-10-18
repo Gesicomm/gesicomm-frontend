@@ -26,7 +26,7 @@ const delProducto = {
 };
 const faq = [{ id: 7, pregunta: '¿Trae pila?', respuesta: 'Sí, incluye una pila AA.', orden: 0 }];
 const fichaPreview = () => JSON.parse(screen.getByTestId('preview-datos').textContent).productos.find(p => p.id === 'mouse');
-const bloqueFicha = titulo => screen.getAllByText(titulo).map(el => el.closest('details')).find(Boolean);
+const bloqueFicha = titulo => screen.getAllByText(titulo).map(el => el.closest('details[data-bloque-ficha]')).find(Boolean);
 afterEach(cleanup);
 
 async function abrirFicha() {
@@ -41,6 +41,71 @@ async function abrirFicha() {
 }
 
 describe('Los bloques de la ficha arrancan con los datos del producto', () => {
+  it('permite seleccionar varios con los mismos bloques y modifica solo las fichas y campos elegidos', async () => {
+    productService.detalle.mockResolvedValue(delProducto);
+    productService.faq.mockResolvedValue(faq);
+    const productos = Array.from({ length: 3 }, (_, idx) => ({ ...catalogo.productos[0], id: idx + 1, slug: `producto-${idx + 1}`, nombre: `Producto ${idx + 1}` }));
+    const confirmar = vi.fn().mockResolvedValue(true);
+    render(<ConfigurarVentaCodigo catalogo={{ productos, combos: [] }} inicial={{ seleccion: productos }} onConfirmar={confirmar} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Vista producto' }));
+    await waitFor(() => expect(within(bloqueFicha('Opiniones')).getByDisplayValue('Laura P.')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('Seleccionar varios productos'));
+    fireEvent.click(screen.getByRole('button', { name: /Producto 2\s*Tech/ }));
+    expect(screen.getByRole('heading', { name: 'Editar vista de 2 productos', exact: true })).toBeInTheDocument();
+    expect(within(bloqueFicha('Galería del producto')).getByLabelText('Mostrar', { exact: true })).toBeInTheDocument();
+    fireEvent.click(within(bloqueFicha('Qué incluye tu pedido')).getByLabelText('Mostrar', { exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar', exact: true }));
+    const venta = confirmar.mock.calls[0][0].venta;
+    expect(venta.presentacion_productos['producto:1'].ficha_bloques).toEqual({ incluye: false });
+    expect(venta.presentacion_productos['producto:2'].ficha_bloques).toEqual({ incluye: false });
+    expect(venta.presentacion_productos).not.toHaveProperty('producto:3');
+    fireEvent.click(screen.getByRole('button', { name: /Producto 1\s*Tech/ }));
+    expect(screen.getByRole('heading', { name: 'Producto 2', exact: true })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Aplicar a \d+ productos/ })).not.toBeInTheDocument();
+  });
+
+  it('aplica a todo el catálogo, guarda una configuración compartida y la recupera sin pisar fotos ni textos', async () => {
+    productService.detalle.mockResolvedValue(delProducto);
+    productService.faq.mockResolvedValue(faq);
+    const productos = Array.from({ length: 503 }, (_, idx) => ({ ...catalogo.productos[0], id: idx + 1, slug: `producto-${idx + 1}`, nombre: `Producto ${idx + 1}` }));
+    const confirmar = vi.fn().mockResolvedValue(true);
+    const inicial = { venta: { seleccion: 'todos', presentacion_productos: {
+      'producto:1': { v: 2, titulo_comercial: 'Mouse especial', imagenes_landing: ['https://cdn.test/propia.webp'], ficha_bloques: { incluye: true, opiniones: false } },
+      'producto:503': { v: 2, confianza: [{ titulo: 'Vieja' }] },
+    } } };
+    const props = { catalogo: { productos, combos: [] }, inicial, onConfirmar: confirmar, cargarOfertas: vi.fn().mockResolvedValue([]), onVolver: vi.fn() };
+    render(<ConfigurarVentaCodigo {...props} />);
+    const abrir = () => fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Vista producto' }));
+    abrir();
+    await waitFor(() => expect(within(bloqueFicha('Zona de confianza')).getByDisplayValue('Garantía de 6 meses')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('Seleccionar todos (503)'));
+    fireEvent.click(within(bloqueFicha('Qué incluye tu pedido')).getByLabelText('Mostrar', { exact: true }));
+    fireEvent.change(within(bloqueFicha('Zona de confianza')).getByPlaceholderText('Título, ej: Compra protegida'), { target: { value: 'Atención de nuestra tienda' } });
+    expect(screen.getByRole('button', { name: 'Guardar', exact: true })).toBeEnabled();
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Inicio', exact: true }));
+    abrir();
+    expect(within(bloqueFicha('Zona de confianza')).getByPlaceholderText('Título, ej: Compra protegida')).toHaveValue('Atención de nuestra tienda');
+    expect(within(bloqueFicha('Qué incluye tu pedido')).getByLabelText('Mostrar', { exact: true })).not.toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar', exact: true }));
+    const venta = confirmar.mock.calls[0][0].venta;
+    expect(venta.ficha_compartida).toMatchObject({ ficha_bloques: { incluye: false }, confianza: [{ titulo: 'Atención de nuestra tienda' }] });
+    expect(Object.keys(venta.presentacion_productos)).toHaveLength(1);
+    expect(venta.presentacion_productos['producto:1']).toMatchObject({ titulo_comercial: 'Mouse especial', imagenes_landing: ['https://cdn.test/propia.webp'], ficha_bloques: { opiniones: false } });
+    expect(venta.presentacion_productos['producto:1'].ficha_bloques).not.toHaveProperty('incluye');
+    cleanup();
+    render(<ConfigurarVentaCodigo {...props} inicial={{ venta }} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
+    abrir();
+    await waitFor(() => expect(within(bloqueFicha('Zona de confianza')).getByDisplayValue('Atención de nuestra tienda')).toBeInTheDocument());
+    expect(within(bloqueFicha('Qué incluye tu pedido')).getByLabelText('Mostrar', { exact: true })).not.toBeChecked();
+    const preview = JSON.parse(screen.getByTestId('preview-datos').textContent);
+    // El iframe recorta sus productos por rendimiento; la selección masiva
+    // y la regla guardada abarcan los 503, no solo este recorte.
+    expect(preview.productos.length).toBeGreaterThan(0);
+    expect(preview.productos.every(p => p.ficha_bloques.incluye === false)).toBe(true);
+    expect(preview.productos.every(p => p.confianza[0].titulo === 'Atención de nuestra tienda')).toBe(true);
+  });
+
   it('permite apagar medios de pago después de apagar los botones, sin mostrar un estado falso', async () => {
     const confirmar = await abrirFicha();
     fireEvent.click(within(bloqueFicha('Botones de contacto y pago')).getByLabelText('Mostrar', { exact: true }));
