@@ -4369,6 +4369,12 @@ export function runtimeGesicomm() {
       enviar({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'catalogo', filtro: { etiqueta: el.getAttribute('data-gesicomm-coleccion-ir'), categoria: '' } });
       return;
     }
+    if ((el = t.closest('[data-gesicomm-categoria-ir]'))) {
+      e.preventDefault();
+      cerrarMenuCategorias();
+      enviar({ tipo: 'gesicomm:navegar', destino: 'categoria', categoria: el.getAttribute('data-gesicomm-categoria-ir') });
+      return;
+    }
     if ((el = t.closest('[data-gesicomm-link]'))) {
       var paginaTienda = paginaDeEnlace(el);
       if (paginaTienda) {
@@ -4403,12 +4409,6 @@ export function runtimeGesicomm() {
     if (categoriaHref) {
       e.preventDefault();
       enviar({ tipo: 'gesicomm:navegar', destino: 'categoria', categoria: categoriaHref });
-      return;
-    }
-    if ((el = t.closest('[data-gesicomm-categoria-ir]'))) {
-      e.preventDefault();
-      cerrarMenuCategorias();
-      enviar({ tipo: 'gesicomm:navegar', destino: 'categoria', categoria: el.getAttribute('data-gesicomm-categoria-ir') });
       return;
     }
     if ((el = t.closest('[data-gesicomm-pagina]'))) {
