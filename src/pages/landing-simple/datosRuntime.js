@@ -1013,7 +1013,7 @@ function coloresTiendaPreview(tienda, landing = null) {
 }
 
 /** Datos del runtime para el preview del editor, con el catálogo del panel. */
-export function datosRuntimePreview({ productos = [], productosCategorias = productos, tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], pagoparConectado = null, bloquesEditor = null, filtro = null }) {
+export function datosRuntimePreview({ productos = [], productosCategorias = productos, tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], pagoparConectado = null, bloquesEditor = null, bloquesInicioEditor = null, filtro = null }) {
   // Ofertas de la tienda (panel) agrupadas por su producto, ya filtradas
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
@@ -1091,9 +1091,10 @@ export function datosRuntimePreview({ productos = [], productosCategorias = prod
     recomendados: recomendadosVista(catalogo, producto, venta),
     geografia: Array.isArray(geografia) ? geografia : [],
     pago_anticipado: pagoAnticipadoRuntime(pagoparConectado),
-    // Solo el editor de fichas: rótulo de cada bloque al pasar el mouse y
+    // Solo el editor: rótulo de cada bloque al pasar el mouse y
     // clic para abrirlo en el panel (ver bloquesEditor en el runtime).
     ...(producto && bloquesEditor ? { editor_bloques: bloquesEditor } : {}),
+    ...(vista === 'inicio' && bloquesInicioEditor ? { editor_bloques_inicio: bloquesInicioEditor } : {}),
   };
 }
 

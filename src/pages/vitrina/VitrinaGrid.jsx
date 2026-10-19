@@ -455,9 +455,15 @@ export default function VitrinaGrid() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => setBusquedaAplicada(busqueda), 300);
+    const termino = busqueda.trim();
+    if (termino === busquedaAplicada) return;
+    const timer = setTimeout(() => {
+      setBusquedaAplicada(termino);
+      setPage(1);
+    }, termino ? 200 : 0);
     return () => clearTimeout(timer);
-  }, [busqueda]);
+  }, [busqueda, busquedaAplicada]);
+  const buscando = cargando || busqueda.trim() !== busquedaAplicada;
   
   const toggleSeleccion = (item) => {
     setSeleccionados(prev => {
@@ -1062,9 +1068,17 @@ export default function VitrinaGrid() {
             type="text"
             className="vit-search-input"
             placeholder="Buscar producto o combo..."
+            aria-label="Buscar productos o combos"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
+            onKeyDown={e => {
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              setBusquedaAplicada(busqueda.trim());
+              setPage(1);
+            }}
           />
+          {buscando && <span role="status" aria-label="Buscando productos" className="vit-search-loading"><Loader size={14} className="spin-icon" /></span>}
         </div>
 
         {/* Filtros de tipo y filtro de Mis Productos */}

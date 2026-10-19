@@ -1019,8 +1019,8 @@ export default function OfertasProductoTab({
                       min="1"
                       value={form.componentes[0]?.cantidad ?? 1}
                       aria-label="Unidades del paquete"
-                    onChange={e => updateComponente(0, 'cantidad', e.target.value)}
-                      style={{ width: '70px', padding: '0.45rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}
+                      onChange={e => updateComponente(0, 'cantidad', e.target.value)}
+                      className="oferta-unidades-input"
                       required
                     />
                   </div>
@@ -1093,7 +1093,7 @@ export default function OfertasProductoTab({
                     value={form.componentes[0]?.cantidad ?? 1}
                     aria-label="Unidades del paquete"
                     onChange={e => updateComponente(0, 'cantidad', e.target.value)}
-                    style={{ width: '70px', padding: '0.45rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}
+                    className="oferta-unidades-input"
                     required
                   />
                 </div>

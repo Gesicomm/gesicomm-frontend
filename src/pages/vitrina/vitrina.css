@@ -272,13 +272,22 @@
   background: var(--vit-card-bg);
   border: 1px solid var(--vit-border);
   border-radius: 10px;
-  padding: 0.55rem 0.9rem 0.55rem 2.35rem;
+  padding: 0.55rem 2.2rem 0.55rem 2.35rem;
   font-size: 0.85rem;
   font-family: var(--font-sans);
   color: var(--vit-text);
   outline: none;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   box-sizing: border-box;
+}
+.vit-search-loading {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--vit-muted);
+  pointer-events: none;
 }
 .vit-search-input::placeholder { color: var(--vit-muted); }
 .vit-search-input:focus {

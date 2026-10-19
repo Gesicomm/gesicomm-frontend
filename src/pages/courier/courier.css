@@ -1429,7 +1429,7 @@ button.order-alert-chip:focus-visible {
 
 .np-product-workbench {
   display: grid;
-  grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
 }
@@ -1668,8 +1668,8 @@ button.order-alert-chip:focus-visible {
 }
 
 .np-order-items-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
 }
 
@@ -1717,6 +1717,31 @@ button.order-alert-chip:focus-visible {
   flex-direction: column;
   gap: 0.65rem;
 }
+
+.np-order-item-card .np-line-badge {
+  align-self: flex-start;
+  margin-left: 0;
+}
+
+.np-item-contents {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem;
+  border: 1px solid var(--np-soft-border);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--np-panel));
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.np-item-presentation { font-weight: 700; color: var(--color-fg); }
+.np-item-purchased, .np-item-contents small { color: var(--color-fg-muted); }
+.np-item-prepare { color: var(--color-success, var(--color-primary-text)); }
+.np-item-contents ul { margin: 0; padding: 0; list-style: none; }
+.np-item-contents li + li { margin-top: 0.3rem; }
+.np-order-item-controls { margin-top: auto; }
+.np-order-item-card { min-width: 0; }
 
 .np-order-item-title-row {
   display: flex;
@@ -1948,6 +1973,7 @@ button.order-alert-chip:focus-visible {
 }
 
 @media (max-width: 560px) {
+  .np-order-items-list { grid-template-columns: minmax(0, 1fr); }
   .np-form {
     padding: 1rem;
   }
@@ -2042,6 +2068,24 @@ button.order-alert-chip:focus-visible {
   justify-content: flex-end;
   gap: 0.65rem;
   flex: 1;
+}
+
+.np-footer-edit-actions {
+  display: flex;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.np-footer-edit-actions .np-cancel-action { color: var(--color-danger); }
+.np-nav-action:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 560px) {
+  .np-footer-edit-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .np-footer-edit-actions .np-nav-action { padding: 0.5rem; font-size: 0.75rem; }
 }
 
 .np-secondary-action,

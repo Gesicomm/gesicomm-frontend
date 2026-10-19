@@ -235,7 +235,7 @@ function imagenPrincipal(item) {
 // el navegador mueve también los contenedores de afuera aunque tengan
 // overflow oculto, y la pantalla entera del editor quedaba corrida hacia
 // arriba, con una franja vacía debajo de la barra de "Inventario de la landing".
-function llevarBloqueALaVista(bloque) {
+export function llevarBloqueALaVista(bloque) {
   let panel = bloque.parentElement;
   while (panel) {
     const desborde = window.getComputedStyle(panel).overflowY;

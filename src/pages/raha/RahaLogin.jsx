@@ -56,7 +56,7 @@ export default function RahaLogin() {
         <div>
           <h1 className="rp-login-title">Portal RAHA</h1>
           <p className="rp-login-subtitle">
-            Acceso exclusivo para el equipo de RAHA para evaluar y gestionar solicitudes de proveedores.
+            Acceso exclusivo para el equipo de RAHA: documentación de comercios, abastecimientos y solicitudes de envío de mercadería.
           </p>
         </div>
 

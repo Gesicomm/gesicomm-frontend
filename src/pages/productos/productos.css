@@ -2925,6 +2925,27 @@
 .oferta-paso { padding: 1rem 0 1.1rem; border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent); }
 .oferta-paso:first-of-type { padding-top: 0.25rem; }
 .oferta-paso-titulo { margin-bottom: 0.6rem; color: var(--color-fg); font-size: 0.95rem; font-weight: 700; }
+
+.oferta-unidades-input {
+  width: 80px;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-fg);
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: text;
+}
+.oferta-unidades-input:hover { border-color: var(--color-primary); }
+.oferta-unidades-input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-color: var(--color-primary);
+}
 .oferta-tipos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
 .oferta-tipo {
   display: grid; gap: 0.25rem; padding: 0.75rem 0.85rem; text-align: left;

@@ -22,6 +22,25 @@ export function nombreBaseItem(item) {
 export function tipoLineaItem(item) {
   if (!item?.oferta_nombre) return null;
   if (item.origen_venta === "order_bump" || item.origen_venta === "upsell") return "Upsell";
-  if (item.origen_venta === "combo") return "Combo";
+  if (item.origen_venta === "combo" || (item.Ofertum || item.Oferta)?.tipo_contenido === 'combo') return "Combo";
   return "Paquete";
+}
+
+// El snapshot ya tiene cantidades físicas totales: nunca multiplicarlo de
+// nuevo. La receta de una oferta, en cambio, es por presentación comprada.
+export function contenidoItem(item) {
+  const cantidad = Number(item?.cantidad) || 1;
+  const vendidos = item?.componentes_vendidos || [];
+  // Sequelize infiere el alias singular "Ofertum" para el modelo Oferta.
+  const receta = item?.oferta_componentes || item?.Ofertum?.componentes || item?.Oferta?.componentes || [];
+  const fuente = vendidos.length ? vendidos : receta;
+  const esOferta = Boolean(item?.oferta_id || item?.oferta_nombre || item?.origen_venta === 'combo');
+  if (!fuente.length && esOferta) return { unidades: null, componentes: [], esOferta };
+  const componentes = fuente.length ? fuente.map(c => ({
+    producto_id: c.producto_id,
+    nombre: c.producto?.nombre || (Number(c.producto_id) === Number(item.producto_id) ? nombreBaseItem(item) : `Producto #${c.producto_id}`),
+    variante: c.variante?.nombre || (Number(c.producto_id) === Number(item.producto_id) ? item.Variante?.nombre : null) || (c.variante_id ? `Variante #${c.variante_id}` : null),
+    cantidad: Number(c.cantidad) * (vendidos.length ? 1 : cantidad),
+  })) : [{ producto_id: item.producto_id, nombre: nombreBaseItem(item), variante: item.Variante?.nombre, cantidad }];
+  return { unidades: componentes.reduce((total, c) => total + c.cantidad, 0), componentes, esOferta };
 }

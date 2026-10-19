@@ -3741,7 +3741,7 @@ export function runtimeGesicomm() {
     catch (err) { window.scrollTo(0, Math.max(0, y)); }
   }
 
-  // ─── Bloques de la ficha en el editor ───────────────────────────────────
+  // ─── Bloques de Inicio y de la ficha en el editor ────────────────────────
   // datos.editor_bloques = { clave: 'N · Título' } llega solo desde el panel
   // (nunca en la tienda publicada). Al pasar el mouse se marca el bloque y se
   // rotula con el mismo número y nombre que tiene en "Vista producto"; un clic
@@ -3750,13 +3750,18 @@ export function runtimeGesicomm() {
   var bloqueMarcado = null;
   var rotuloBloque = null;
   function bloquesEditor() {
+    if (datos.vista === 'inicio') return datos.editor_bloques_inicio || null;
     return datos.editor_bloques && typeof datos.editor_bloques === 'object' ? datos.editor_bloques : null;
+  }
+  function atributoBloqueEditor() {
+    return datos.vista === 'inicio' ? 'data-gesicomm-bloque' : 'data-gesicomm-ficha-bloque';
   }
   function bloqueEditorDe(nodo) {
     var mapa = bloquesEditor();
     if (!mapa || !nodo || !nodo.closest) return null;
-    for (var el = nodo.closest('[data-gesicomm-ficha-bloque]'); el; el = el.parentElement && el.parentElement.closest('[data-gesicomm-ficha-bloque]')) {
-      if (mapa[el.getAttribute('data-gesicomm-ficha-bloque')]) return el;
+    var atributo = atributoBloqueEditor();
+    for (var el = nodo.closest('[' + atributo + ']'); el; el = el.parentElement && el.parentElement.closest('[' + atributo + ']')) {
+      if (mapa[el.getAttribute(atributo)]) return el;
     }
     return null;
   }
@@ -3778,7 +3783,7 @@ export function runtimeGesicomm() {
     el.__gesicommOutlineOffset = el.style.outlineOffset;
     el.__gesicommCursor = el.style.cursor;
     el.style.outline = '2px solid #2563eb';
-    el.style.outlineOffset = '3px';
+    el.style.outlineOffset = '-2px';
     if (!rotuloBloque) {
       // <span>, no <div>: la base de la tienda estira a todo el ancho los
       // div que cuelgan directo del body.
@@ -3789,7 +3794,7 @@ export function runtimeGesicomm() {
         + 'display:block;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis';
       document.body.appendChild(rotuloBloque);
     }
-    rotuloBloque.textContent = bloquesEditor()[el.getAttribute('data-gesicomm-ficha-bloque')] + ' · clic para editar';
+    rotuloBloque.textContent = bloquesEditor()[el.getAttribute(atributoBloqueEditor())] + ' · clic para editar';
     var r = el.getBoundingClientRect();
     var alto = window.innerHeight || document.documentElement.clientHeight;
     rotuloBloque.style.display = '';
@@ -3808,7 +3813,7 @@ export function runtimeGesicomm() {
   document.addEventListener('click', function (e) {
     var bloque = bloqueEditorDe(e.target);
     if (!bloque || (e.target.closest && e.target.closest(ZONAS_CON_ACCION))) return;
-    enviar({ tipo: 'gesicomm:bloque', clave: bloque.getAttribute('data-gesicomm-ficha-bloque') });
+    enviar({ tipo: 'gesicomm:bloque', clave: bloque.getAttribute(atributoBloqueEditor()) });
   });
 
   var resaltadoTimer = null;

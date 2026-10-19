@@ -61,6 +61,15 @@ export const rahaPortalApi = {
   },
   logout: () => setRahaPortalToken(null),
   me: async () => (await portalApi.get(`${base}/me`)).data,
+  abastecimientos: async filtros => (await portalApi.post(`${base}/operaciones/abastecimientos`, filtros)).data,
+  abastecimiento: async id => (await portalApi.get(`${base}/operaciones/abastecimientos/${id}`)).data,
+  destinos: async () => (await portalApi.get(`${base}/operaciones/destinos`)).data,
+  guardarDestino: async (payload, id = null) => (id
+    ? await portalApi.put(`${base}/operaciones/destinos/${id}`, payload)
+    : await portalApi.post(`${base}/operaciones/destinos`, payload)).data,
+  envios: async filtros => (await portalApi.post(`${base}/operaciones/envios/listado`, filtros)).data,
+  envio: async id => (await portalApi.get(`${base}/operaciones/envios/${id}`)).data,
+  resolverEnvio: async (id, payload) => (await portalApi.post(`${base}/operaciones/envios/${id}/resolver`, payload)).data,
   // Filtros dinámicos por body (POST).
   listar: async filtros => (await portalApi.post(`${base}/solicitudes`, filtros)).data,
   detalle: async id => (await portalApi.get(`${base}/solicitudes/${id}`)).data,

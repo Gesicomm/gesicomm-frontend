@@ -404,7 +404,8 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
             </div>
 
             <div className="mt-5 min-h-0 flex-1 overflow-y-auto border-t border-border pt-4">
-              <p className="m-0 mb-3 text-sm font-semibold text-fg">Pedido a RAHA</p>
+              <p className="m-0 text-sm font-semibold text-fg">Pedido a RAHA</p>
+              <p className="mb-3 mt-1 text-xs text-fg-muted">Pago contra entrega. No necesitás enviar comprobantes.</p>
               {items.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border bg-surface-50 px-4 py-6 text-center text-sm text-fg-muted">
                   Agregá al menos un producto.

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FilterX, Building2, ArrowLeft, ChevronDown, Truck } from 'lucide-react';
+import { Plus, FilterX, Building2, ArrowLeft, ChevronDown, Truck, Package } from 'lucide-react';
 import { depositoService } from '../../services/deposito.service';
 import DepositoFilters from '../../components/depositos/DepositoFilters';
 import DepositoCard from '../../components/depositos/DepositoCard';
@@ -14,6 +14,8 @@ import { CourierWizard } from '../courier/CourierWizard';
 import { normalizarRegla, paraApi } from '../courier/DeliveryPanel';
 import { createCourier, getDeliveryZonas, replaceDeliveryZonas, updateCourier } from '../../services/courierApi';
 import useSesion from '../../hooks/useSesion';
+import { rahaOperacionesService } from '../../services/rahaOperacionesService';
+import { botonOperacion, controlOperacion } from '../raha/operacionesUI';
 import '../courier/courier.css';
 
 const resumenCouriers = (data) => {
@@ -47,6 +49,10 @@ export default function DepositosPage() {
 
   const [depositoCouriers, setDepositoCouriers] = useState(null);
   const [depositoAbastecer, setDepositoAbastecer] = useState(null);
+  const [selectorAbastecer, setSelectorAbastecer] = useState(null);
+  const [destinoAbastecerId, setDestinoAbastecerId] = useState('');
+  const [cargandoOrigenes, setCargandoOrigenes] = useState(false);
+  const [errorOrigenes, setErrorOrigenes] = useState('');
   const [depositoSeleccionado, setDepositoSeleccionado] = useState(null);
   const [courierSummaries, setCourierSummaries] = useState({});
   const [summariesLoading, setSummariesLoading] = useState(false);
@@ -120,6 +126,21 @@ export default function DepositosPage() {
   const handleOpenNuevo = () => {
     setFormValues(null);
     setFormOpen(true);
+  };
+
+  const elegirDepositoAbastecer = async () => {
+    setSelectorAbastecer([]);
+    setCargandoOrigenes(true);
+    setErrorOrigenes('');
+    try {
+      const propios = await rahaOperacionesService.origenes();
+      setSelectorAbastecer(propios);
+      setDestinoAbastecerId(String(propios[0]?.id || ''));
+    } catch {
+      setErrorOrigenes('No pudimos cargar tus depósitos. Volvé a intentar.');
+    } finally {
+      setCargandoOrigenes(false);
+    }
   };
 
   const handleOpenEditar = (deposito) => {
@@ -234,7 +255,7 @@ export default function DepositosPage() {
   const resumenSeleccionado = depositoSeleccionado ? courierSummaries[depositoSeleccionado.id] : null;
 
   return (
-    <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+    <div className="mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-8">
       {!esAdmin && (
         <div className="mb-4">
           <button
@@ -246,22 +267,35 @@ export default function DepositosPage() {
           </button>
         </div>
       )}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4">
         <div>
           <h1 className="m-0 text-2xl font-bold text-fg">Depósitos</h1>
           <p className="m-0 mt-1 text-sm text-fg-muted">
             Administrá los lugares desde donde despachás y sus couriers asociados.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleOpenNuevo}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover shadow-sm"
-        >
-          <Plus size={16} />
-          Agregar depósito
-        </button>
+        <nav aria-label="Acciones de depósitos" className={`grid w-full gap-2 ${esAdmin ? '' : 'sm:grid-cols-2 lg:grid-cols-4'}`}>
+          <button
+            type="button"
+            onClick={handleOpenNuevo}
+            className="flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover shadow-sm"
+          >
+            <Plus size={16} />
+            Agregar depósito
+          </button>
+          {!esAdmin && <>
+            <button type="button" onClick={elegirDepositoAbastecer} className={botonOperacion}><Package size={16} /> Abastecerme</button>
+            <button type="button" onClick={() => navigate('/mis-abastecimientos')} className={botonOperacion}><Package size={16} /> Ver RAHA</button>
+            <button type="button" onClick={() => navigate('/mis-envios-raha')} className={botonOperacion}><Truck size={16} /> Enviar mercadería a RAHA</button>
+          </>}
+        </nav>
       </div>
+
+      {selectorAbastecer !== null && <section aria-label="Elegir depósito para abastecerme" className="mb-6 space-y-3 rounded-xl border border-border bg-surface p-4">
+        <h2 className="m-0 text-lg font-semibold">¿Qué depósito querés abastecer?</h2>
+        {cargandoOrigenes ? <p role="status">Cargando depósitos…</p> : errorOrigenes ? <p role="alert" className="text-danger-text">{errorOrigenes}</p> : selectorAbastecer.length ? <label className="block text-sm">Depósito de destino<select className={`${controlOperacion} mt-1 max-w-xl`} value={destinoAbastecerId} onChange={event => setDestinoAbastecerId(event.target.value)}>{selectorAbastecer.map(deposito => <option key={deposito.id} value={deposito.id}>{deposito.nombre} · {deposito.ciudad}</option>)}</select></label> : <p>Agregá un depósito propio activo para abastecerte.</p>}
+        <div className="flex gap-2"><button type="button" className={botonOperacion} disabled={cargandoOrigenes || !!errorOrigenes || !selectorAbastecer.length} onClick={() => { setDepositoAbastecer(selectorAbastecer.find(deposito => String(deposito.id) === destinoAbastecerId)); setSelectorAbastecer(null); }}>Continuar</button><button type="button" className={botonOperacion} onClick={() => setSelectorAbastecer(null)}>Cerrar</button></div>
+      </section>}
 
       <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm shadow-sm">
         <span className="font-semibold text-fg">{total} depósitos</span>

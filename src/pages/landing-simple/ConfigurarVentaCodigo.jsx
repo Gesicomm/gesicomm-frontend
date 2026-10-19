@@ -15,7 +15,7 @@ import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import EdicionConjuntaFichas from './EdicionConjuntaFichas';
-import PresentacionProducto, { BLOQUES_FICHA_PANEL, ROTULOS_BLOQUES_FICHA, bloqueDeZona } from './PresentacionProducto';
+import PresentacionProducto, { BLOQUES_FICHA_PANEL, ROTULOS_BLOQUES_FICHA, bloqueDeZona, llevarBloqueALaVista } from './PresentacionProducto';
 import { usePagoparConectado } from './usePagoparConectado';
 import { contentIdPanel, datosRuntimePreview, itemPanelARuntime, presentacionDelProducto, slugCategoria, textosRecomendados, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
@@ -1884,16 +1884,11 @@ export default function ConfigurarVentaCodigo({
   ) };
 
   function alternarOferta(oferta) {
-    const elegida = ofertasElegidas.has(oferta.id);
     setOfertasElegidas(prev => {
       const copia = new Set(prev);
-      if (elegida) copia.delete(oferta.id); else copia.add(oferta.id);
+      if (copia.has(oferta.id)) copia.delete(oferta.id); else copia.add(oferta.id);
       return copia;
     });
-    if (!elegida) {
-      const prod = porClave.get(`producto:${Number(oferta.producto_ancla_id)}`);
-      if (prod) verOfertaEnFicha(oferta, prod);
-    }
   }
 
   // Al cerrar el panel se vuelve a pedir la lista: lo creado o editado ahí
@@ -2044,6 +2039,16 @@ export default function ConfigurarVentaCodigo({
   }, [productoConfigActual?.id, fichaEnPreview?.id, pedirFichaProducto]);
 
   const pagoparConectado = usePagoparConectado();
+  const rotulosInicio = useMemo(() => {
+    if (bloquesInicioBloqueados) return {};
+    const bloques = inicioComercial.bloques;
+    const orden = [
+      ...bloques.filter(b => b.tipo === BLOQUE_INICIO_FIJO),
+      { tipo: 'encabezado' },
+      ...bloques.filter(b => b.tipo !== BLOQUE_INICIO_FIJO),
+    ];
+    return Object.fromEntries(orden.map((b, i) => [b.tipo, `${i + 1} · ${b.tipo === 'encabezado' ? 'Encabezado' : ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo}`]));
+  }, [inicioComercial.bloques, bloquesInicioBloqueados]);
   const datosPreview = useMemo(() => datosRuntimePreview({
     productos: productosPreview,
     productosCategorias: seleccion,
@@ -2058,7 +2063,8 @@ export default function ConfigurarVentaCodigo({
     ofertas: ofertasConImagen,
     pagoparConectado,
     bloquesEditor: ROTULOS_BLOQUES_FICHA,
-  }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion, pagoparConectado]);
+    bloquesInicioEditor: rotulosInicio,
+  }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion, pagoparConectado, rotulosInicio]);
 
   // Dónde se ve cada tipo de oferta en la ficha (para resaltarla en la vista previa).
   function verOfertaEnFicha(oferta, producto) {
@@ -2098,7 +2104,17 @@ export default function ConfigurarVentaCodigo({
   // Clic sobre un bloque de la ficha en la vista previa: abre ese bloque en
   // el panel, para el producto que se está viendo.
   const [bloqueFichaAbierto, setBloqueFichaAbierto] = useState(null); // { clave, n }
+  const [bloqueInicioAbierto, setBloqueInicioAbierto] = useState(null);
   const alBloquePreview = useCallback((zona) => {
+    if (vistaPreview === 'inicio' && !abreEnFicha) {
+      if (!rotulosInicio[zona]) return;
+      setPanelesOcultos(false);
+      setPreviewMovil(false);
+      setPreviewAmpliada(false);
+      setSeccionConfig('inicio');
+      setBloqueInicioAbierto({ clave: zona === 'encabezado' ? '__menu__' : zona, n: Date.now() });
+      return;
+    }
     const clave = bloqueDeZona(zona);
     const contentId = productoFicha ? contentIdPanel(productoFicha) : null;
     if (!clave || !contentId) return;
@@ -2111,7 +2127,7 @@ export default function ConfigurarVentaCodigo({
     setProductoEditando(contentId);
     setProductoPreview(contentId);
     setBloqueFichaAbierto({ clave, n: Date.now() });
-  }, [productoFicha]);
+  }, [productoFicha, vistaPreview, abreEnFicha, rotulosInicio]);
 
   const alNavegarPreview = useCallback((p) => {
     if (p?.destino === 'producto') {
@@ -2468,7 +2484,7 @@ export default function ConfigurarVentaCodigo({
       <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex">
         {/* Configuración: oculta, no desmontada, para no perder lo que se
             está editando (formularios abiertos, borradores). */}
-        <div hidden={panelesOcultos} className="flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto overscroll-contain">
+        <div hidden={panelesOcultos} className="relative flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto overscroll-contain">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
             <header className="mb-7">
               <div className="flex items-center gap-2">
@@ -2730,6 +2746,7 @@ export default function ConfigurarVentaCodigo({
                       </div>
                     )}
                     <EditorBloquesInicio
+                  bloqueAbierto={bloqueInicioAbierto}
                   bloques={inicioComercial.bloques}
                   onReordenar={reordenarBloqueInicio}
                   onAlternar={alternarBloqueInicio}
@@ -3267,11 +3284,7 @@ export default function ConfigurarVentaCodigo({
                                 onAlternar={alternarOferta}
                                 onGestionar={() => abrirOfertasDe(productoId)}
                                 confPaquetes={confPaquetes}
-                                onCambiarPaquete={(id, cambio) => {
-                                  cambiarPaquete(id, cambio);
-                                  const prod = porClave.get(`producto:${productoId}`);
-                                  if (prod) verDonde('producto', 'paquetes', contentIdPanel(prod));
-                                }}
+                                onCambiarPaquete={cambiarPaquete}
                               />
                             ))}
                           </>
@@ -4403,7 +4416,7 @@ function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCam
 // existía para eso (Categorías visuales, Productos destacados, etc.).
 // Fila de un bloque — con o sin control de orden/visibilidad (el Menú no
 // tiene ninguno de los dos: vive fijo en el header).
-function FilaBloqueInicio({ numero, etiqueta, visible, fijo = false, arrastre = null, onAlternar, panel, abierto, onAbrir }) {
+function FilaBloqueInicio({ numero, etiqueta, tipo, visible, fijo = false, arrastre = null, onAlternar, panel, abierto, onAbrir }) {
   const tienePanel = !!panel;
   // arrastre: { filaProps, manijaProps, arrastrando, destino } — drag & drop
   // nativo (HTML5). Solo la manija arranca el arrastre, así los inputs del
@@ -4412,6 +4425,7 @@ function FilaBloqueInicio({ numero, etiqueta, visible, fijo = false, arrastre = 
   return (
     <div
       {...(filaProps || {})}
+      data-bloque-inicio={tipo}
       className={`rounded-xl border bg-surface transition-shadow ${arrastrando ? 'border-primary opacity-50' : destino ? 'border-primary shadow-lg ring-2 ring-primary/40' : abierto ? 'border-primary ring-2 ring-primary/30' : visible === false ? 'border-border bg-surface-2/40 opacity-70' : 'border-border'}`}
     >
       <div className="flex items-center gap-2 p-2.5">
@@ -4462,10 +4476,21 @@ function FilaBloqueInicio({ numero, etiqueta, visible, fijo = false, arrastre = 
 // duplicado en paneles sueltos más abajo. El Menú entra como bloque 2, fijo
 // (vive en el header: no se reordena ni se oculta), el resto sale de
 // `bloques` (venta.inicio.bloques) con su orden y su "Mostrar".
-export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles = {}, menuPanel, codigoInicio, onCambiarCodigo, tienda, venta, productos }) {
+export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles = {}, menuPanel, codigoInicio, onCambiarCodigo, tienda, venta, productos, bloqueAbierto = null }) {
   // El bloque abierto se recuerda por tipo, no por posición: al arrastrar
   // otro bloque, el que está abierto sigue abierto.
   const [abierto, setAbierto] = useState(null);
+  const listaRef = useRef(null);
+  useEffect(() => {
+    if (!bloqueAbierto?.clave) return;
+    setAbierto(bloqueAbierto.clave);
+    const frame = requestAnimationFrame(() => {
+      const fila = Array.from(listaRef.current?.querySelectorAll('[data-bloque-inicio]') || [])
+        .find(el => el.dataset.bloqueInicio === bloqueAbierto.clave);
+      if (fila) llevarBloqueALaVista(fila);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [bloqueAbierto]);
   // Arrastre en curso: índice (dentro de los movibles) del que se arrastra
   // y del lugar donde caería.
   const [arrastrando, setArrastrando] = useState(null);
@@ -4495,6 +4520,7 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
     return (
       <FilaBloqueInicio
         key={b.tipo}
+        tipo={b.tipo}
         numero={numero}
         etiqueta={esMenu ? 'Encabezado' : (ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo)}
         visible={esMenu ? undefined : b.visible}
@@ -4509,7 +4535,7 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
   }
 
   return (
-    <div className="space-y-2">
+    <div ref={listaRef} className="space-y-2">
       {fijosArriba.map((b, idx) => renderFila(b, idx + 1))}
       {movibles.map((b, idx) => renderFila(b, fijosArriba.length + idx + 1, {
         arrastrando: arrastrando === idx,
@@ -4527,7 +4553,6 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
           onDragEnd: () => { setArrastrando(null); setDestino(null); },
         },
         filaProps: {
-          'data-bloque-inicio': b.tipo,
           onDragOver: e => {
             if (arrastrando === null) return;
             e.preventDefault();

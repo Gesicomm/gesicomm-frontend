@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { RefreshCw, Package, Truck, Warehouse, CheckCircle2, XCircle, ArrowRight, FileText, Search, GripVertical } from 'lucide-react';
 import { solicitudAbastecimientoService } from '../../services/solicitudAbastecimiento.service';
+import { ESTADOS_RAHA, estadoRaha } from '../../components/abastecimiento/rahaSeguimiento';
 
 function formatGs(n) {
   return Math.round(Number(n) || 0).toLocaleString('es-PY');
@@ -22,6 +23,7 @@ const CTA_AVANZAR = {
 // services/abastecimiento/estadoMachine.js) — antes agrupaba varios estados
 // en "En proceso" y se perdia en que paso exacto estaba cada solicitud.
 const COLUMNAS = [
+  ...Object.entries(ESTADOS_RAHA).map(([estado, configuracion]) => ({ estado, label: `RAHA · ${configuracion.label}`, dot: 'bg-primary' })),
   { estado: 'pendiente_pago', label: 'Pendiente de pago', dot: 'bg-warning' },
   { estado: 'pago_rechazado', label: 'Pago rechazado', dot: 'bg-danger' },
   { estado: 'pago_enviado', label: 'A validar', dot: 'bg-info' },
@@ -47,6 +49,7 @@ const COLUMNAS = [
  * tienen destino admin: esas cards no se pueden arrastrar.
  */
 function proximoEstadoAdmin(estado, tipoLogistica) {
+  if (tipoLogistica === 'PROPIA') return [];
   const MAPA = {
     pago_enviado: ['pago_validado', 'pago_rechazado'],
     pago_validado: ['proveedor_contactado'],
@@ -88,7 +91,8 @@ function SolicitudCard({ s, onAbrir, onValidar, onRechazar, onAvanzar, procesand
         {s.tipo_logistica === 'GESICOMM' ? 'Centro Gesicomm' : (s.depositoDestino?.nombre || 'Depósito propio')}
       </div>
 
-      {s.comprobante_url && (
+      {s.es_raha && <p className="text-[11px] text-primary-text">{estadoRaha(s.estado_seguimiento).label} · Contra entrega</p>}
+      {!s.es_raha && s.comprobante_url && (
         <a
           href={s.comprobante_url}
           target="_blank"
@@ -100,7 +104,7 @@ function SolicitudCard({ s, onAbrir, onValidar, onRechazar, onAvanzar, procesand
         </a>
       )}
 
-      {s.estado === 'pago_enviado' && (
+      {!s.es_raha && s.estado === 'pago_enviado' && (
         <div className="flex items-center gap-1.5 pt-2 border-t border-border">
           <button
             type="button"
@@ -121,15 +125,15 @@ function SolicitudCard({ s, onAbrir, onValidar, onRechazar, onAvanzar, procesand
         </div>
       )}
 
-      {(s.estado === 'pendiente_pago' || s.estado === 'pago_rechazado') && (
+      {!s.es_raha && (s.estado === 'pendiente_pago' || s.estado === 'pago_rechazado') && (
         <p className="text-[11px] text-fg-subtle pt-2 border-t border-border">Esperando al comercio.</p>
       )}
 
-      {s.estado === 'en_transito_a_deposito_cliente' && (
+      {!s.es_raha && s.estado === 'en_transito_a_deposito_cliente' && (
         <p className="text-[11px] text-fg-subtle pt-2 border-t border-border">Esperando confirmación del comercio.</p>
       )}
 
-      {CTA_AVANZAR[s.estado] && (
+      {!s.es_raha && CTA_AVANZAR[s.estado] && (
         <button
           type="button"
           onClick={detener(onAvanzar)}
@@ -317,7 +321,7 @@ export function SolicitudesAbastecimientoPanel() {
       ) : (
         <div ref={scrollRef} onDragOver={handleBoardDragOver} className="flex gap-4 overflow-x-auto pb-2">
           {COLUMNAS.map((col) => {
-            const items = filtradas.filter((s) => s.estado === col.estado);
+            const items = filtradas.filter((solicitud) => (solicitud.es_raha ? solicitud.estado_seguimiento : solicitud.estado) === col.estado);
             const esDestinoValido = draggingId && columnasValidasParaDrop.has(col.estado);
             const hayArrastre = !!draggingId;
             return (

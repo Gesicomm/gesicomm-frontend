@@ -14,7 +14,7 @@ import CreatableSelect from "react-select/creatable";
 import ProductPicker from "../landing/ProductPicker";
 import "../landing/landing.css";
 import { numeroPedidoVisible } from "./pedidoNumero";
-import { nombreBaseItem, tipoLineaItem } from "./envioItemDisplay";
+import { nombreBaseItem, tipoLineaItem, contenidoItem } from "./envioItemDisplay";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -243,7 +243,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   // va a rechazar.
   const vaAConfirmar = modoCompletar && ["Pendiente", "EnSeguimiento"].includes(envio.estado);
   const esWhatsapp = String(envio?.origen || '').toUpperCase().includes('WHATSAPP');
-  const editaProductosExistentes = vaAConfirmar && esWhatsapp && !envio.stock_descontado && !envio.raha_logistica?.gestionado;
+  const editaProductosExistentes = vaAConfirmar && !envio.stock_descontado && !envio.raha_logistica?.gestionado;
   const puedeSeleccionarProductos = !modoCompletar || editaProductosExistentes;
   // El pago online de PagoPar ya llegó solo (ver confirmacionPago.js): el
   // confirmador no puede desmarcarlo ni elegir otro método, porque el
@@ -846,12 +846,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
       setForm(prev => ({ ...prev, courier_id: resultadoZona.courierId || "", costo_envio: resultadoZona.costo }));
     } else if (form.courier_id) {
       const nuevoCosto = obtenerTarifaPara(couriersParaOrigen, form.ciudad, form.courier_id, esAnticipado, nuevosItems, form.departamento);
-      setForm(prev => ({ ...prev, costo_envio: nuevoCosto !== null ? nuevoCosto : 0 }));
+      setForm(prev => ({ ...prev, costo_envio: nuevoCosto !== null ? nuevoCosto : (modoCompletar ? prev.costo_envio : 0) }));
     } else {
       const resultado = buscarCourierYTarifa(couriersParaOrigen, form.ciudad, esAnticipado, nuevosItems, form.departamento);
       if (resultado) {
         setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
-      } else {
+      } else if (!modoCompletar) {
         setForm(prev => ({ ...prev, costo_envio: 0 }));
       }
     }
@@ -865,6 +865,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
       oferta_id: oferta ? oferta.id : null,
       oferta_codigo: oferta ? oferta.codigo : null,
       oferta_nombre: oferta ? oferta.nombre : null,
+      oferta_componentes: oferta ? oferta.componentes : null,
       nombre_producto: oferta ? `${producto.nombre} — ${oferta.nombre}` : producto.nombre,
       origen_venta: oferta ? (oferta.estrategia || 'normal') : 'normal',
       cantidad: qty,
@@ -899,6 +900,40 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   const handleRemoveItem = (index) => {
     const nuevosItems = items.filter((_, i) => i !== index);
     actualizarItemsPedido(nuevosItems);
+  };
+
+  const guardarProductosPendientes = async () => {
+    if (!items.length) {
+      setErrors(prev => ({ ...prev, items: 'Agregá al menos un producto o cancelá el pedido completo.' }));
+      setPasoActivo(2);
+      return;
+    }
+    setGuardando(true);
+    setSubmitError(null);
+    try {
+      await onSubmit({
+        id: envio.id, items,
+        costo_envio: Number(form.costo_envio) || 0,
+        delivery_a_cargo: form.incluye_delivery ? 'negocio' : 'cliente',
+      }, true);
+    } catch (err) {
+      setSubmitError(err.response?.data?.error || 'No se pudieron guardar los productos.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const cancelarPedidoPendiente = async () => {
+    if (!window.confirm(`¿Cancelar el pedido #${numeroPedidoVisible(envio)} completo?`)) return;
+    setGuardando(true);
+    setSubmitError(null);
+    try {
+      await onSubmit({ id: envio.id, estado: 'Cancelado' }, true);
+    } catch (err) {
+      setSubmitError(err.response?.data?.error || 'No se pudo cancelar el pedido.');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const handleCantidadItemChange = (index, cantidad) => {
@@ -1125,7 +1160,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     }
   };
 
-  const unidadesSeleccionadas = itemsParaTarifa.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
+  const contenidosSeleccionados = itemsParaTarifa.map(contenidoItem);
+  const unidadesSeleccionadas = contenidosSeleccionados.some(c => c.unidades === null)
+    ? 'Por verificar'
+    : contenidosSeleccionados.reduce((acc, c) => acc + c.unidades, 0);
   const resumenCarga = [
     { label: "Cliente", ok: Boolean(form.nombre_cliente.trim()) },
     { label: "Entrega", ok: Boolean(form.ciudad.trim() && form.direccion.trim()) },
@@ -1134,14 +1172,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   ];
   const pasoActual = PASOS_PEDIDO[pasoActivo];
   const esUltimoPaso = pasoActivo === PASOS_PEDIDO.length - 1;
-  const hayDatosSinGuardar = !modoCompletar && !guardando && (
+  const hayDatosSinGuardar = !guardando && (modoCompletar ? itemsEditados : (
     items.length > 0 ||
     form.nombre_cliente.trim() ||
     form.telefono.trim() ||
     form.ciudad.trim() ||
     form.direccion.trim() ||
     form.observaciones.trim()
-  );
+  ));
 
   const handleRequestClose = () => {
     if (hayDatosSinGuardar && !window.confirm("Hay datos cargados en este pedido. ¿Querés cerrar y descartarlos?")) {
@@ -1809,8 +1847,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
             </h3>
             <div className="np-products-hero">
               <div>
-                <span className="np-kicker">Selección visual</span>
-                <p>Buscá en el catálogo, elegí por imagen y ajustá cada línea antes de confirmar.</p>
+                <span className="np-kicker">{puedeSeleccionarProductos ? 'Selección visual' : 'Detalle de la compra'}</span>
+                <p>{puedeSeleccionarProductos ? 'Buscá en el catálogo, elegí por imagen y ajustá cada línea antes de confirmar.' : 'Revisá la presentación comprada y las unidades de cada producto que hay que preparar.'}</p>
               </div>
               <div className="np-products-metrics">
                 <span><strong>{itemsParaTarifa.length}</strong> ítems</span>
@@ -1866,6 +1904,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                       const ofertas = ofertasPorProducto[Number(it.producto_id)] || [];
                       const pUnit = Number(it.precio_unitario) || 0;
                       const cantLinea = Number(it.cantidad) || 1;
+                      const contenido = contenidoItem(it);
                       const sub = Number(it.subtotal) || (pUnit * cantLinea);
 
                       return (
@@ -1914,7 +1953,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                                   </div>
                                 ) : (
                                   <span className="np-order-item-price-view">
-                                    Gs. {pUnit.toLocaleString('es-PY')} c/u
+                                    Gs. {pUnit.toLocaleString('es-PY')} / {contenido.esOferta ? 'presentación' : 'unidad'}
                                     {modoCompletar && !puedeSeleccionarProductos && (
                                       <button
                                         type="button"
@@ -1929,7 +1968,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                                 )}
                               </div>
                               {puedeSeleccionarProductos && (
-                                <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger" title="Quitar producto">
+                                <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger" title="Quitar producto" aria-label={`Quitar ${nombreBaseItem(it)}`} disabled={guardando}>
                                   <Trash2 size={14} />
                                 </button>
                               )}
@@ -1937,6 +1976,15 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                             {modoCompletar && precioEditandoId === it.id && precioError && (
                               <p style={{ color: 'var(--color-danger)', fontSize: '0.75rem', margin: '0.2rem 0 0' }}>{precioError}</p>
                             )}
+
+                            <div className="np-item-contents">
+                              <span className="np-item-presentation">{it.oferta_nombre || (contenido.esOferta ? 'Combo' : 'Venta individual')}</span>
+                              <span className="np-item-purchased">Comprado: {cantLinea} {contenido.esOferta ? (cantLinea === 1 ? 'presentación' : 'presentaciones') : (cantLinea === 1 ? 'unidad' : 'unidades')}</span>
+                              <strong className="np-item-prepare">{contenido.unidades === null ? 'Contenido por verificar' : `Preparar: ${contenido.unidades} ${contenido.unidades === 1 ? 'unidad' : 'unidades'}`}</strong>
+                              {contenido.componentes.length > 0 ? (
+                                <ul>{contenido.componentes.map((c, i) => <li key={i}><b>{c.cantidad} ×</b> {c.nombre}{c.variante ? ` · ${c.variante}` : ''}</li>)}</ul>
+                              ) : <small>No hay desglose disponible para esta presentación.</small>}
+                            </div>
 
                             <div className="np-order-item-controls">
                               {puedeSeleccionarProductos ? (
@@ -1950,6 +1998,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                                       onChange={e => handleOfertaItemChange(idx, e.target.value)}
                                     >
                                       <option value="">Individual (Gs. {precioProducto(productoCatalogo || it).toLocaleString('es-PY')})</option>
+                                      {it.oferta_id && !ofertas.some(o => Number(o.id) === Number(it.oferta_id)) && <option value={it.oferta_id}>{it.oferta_nombre || 'Presentación comprada'} (Gs. {pUnit.toLocaleString('es-PY')})</option>}
                                       {ofertas.map(o => (
                                         <option key={o.id} value={o.id}>{o.nombre} (Gs. {Number(o.precio).toLocaleString('es-PY')})</option>
                                       ))}
@@ -1957,26 +2006,26 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                                   </label>
 
                                   <label>
-                                    Cantidad
+                                    {contenido.esOferta ? 'Cantidad de presentaciones' : 'Cantidad de unidades'}
                                     <div className="np-qty-control">
-                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea - 1)} title="Restar">
+                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea - 1)} title="Restar" aria-label={`Restar ${nombreBaseItem(it)}`} disabled={cantLinea <= 1 || guardando}>
                                         <Minus size={14} />
                                       </button>
                                       <input
                                         type="number"
                                         min="1"
+                                        aria-label={`Cantidad de ${nombreBaseItem(it)}`}
+                                        disabled={guardando}
                                         value={cantLinea}
                                         onChange={e => handleCantidadItemChange(idx, e.target.value)}
                                       />
-                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea + 1)} title="Sumar">
+                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea + 1)} title="Sumar" aria-label={`Sumar ${nombreBaseItem(it)}`} disabled={guardando}>
                                         <Plus size={14} />
                                       </button>
                                     </div>
                                   </label>
                                 </>
-                              ) : (
-                                <span className="np-line-option">{it.oferta_nombre || "Individual"} · {cantLinea} un.</span>
-                              )}
+                              ) : null}
 
                               <div className="np-line-subtotal">
                                 <span>Subtotal</span>
@@ -2052,6 +2101,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                             {tipoLineaItem(it) && <span className="np-line-badge">{tipoLineaItem(it)}</span>}
                           </span>
                           {it.oferta_nombre && <small>{it.oferta_nombre}</small>}
+                          <small>{contenidoItem(it).unidades === null ? 'Contenido por verificar' : `Preparar: ${contenidoItem(it).unidades} unidades`}</small>
                         </span>
                         <strong>{Number(it.cantidad) || 1} × Gs. {Number(it.precio_unitario || 0).toLocaleString('es-PY')}</strong>
                       </div>
@@ -2149,6 +2199,16 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
 
           {/* Acciones del wizard */}
           <div className="np-footer">
+            {editaProductosExistentes ? (
+              <div className="np-footer-edit-actions">
+                <button type="button" className="np-nav-action" disabled={guardando || !itemsEditados} onClick={guardarProductosPendientes}>
+                  <Save size={16} /> {guardando ? 'Guardando...' : 'Guardar productos'}
+                </button>
+                <button type="button" className="np-nav-action np-cancel-action" disabled={guardando} onClick={cancelarPedidoPendiente}>
+                  <Trash2 size={16} /> Cancelar pedido
+                </button>
+              </div>
+            ) : (
             <button
               type="button"
               className="np-secondary-action"
@@ -2157,6 +2217,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
             >
               <Save size={16} /> Guardar borrador
             </button>
+            )}
 
             <div className="np-footer-nav">
               {pasoActivo > 0 && (

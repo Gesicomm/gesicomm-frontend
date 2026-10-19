@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
 import { proveedoresService } from '../../services/costosGastosService';
 import { getMediaUrl } from '../../services/api';
-import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
@@ -41,8 +40,13 @@ export default function ProductList() {
   const [productos, setProductos] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(0);
-  const [pagina, setPagina] = useState(1);
+  const [consulta, setConsulta] = useState({ pagina: 1, texto: '' });
+  const { pagina, texto: textoBuscado } = consulta;
+  const setPagina = pag => setConsulta(prev => prev.pagina === pag ? prev : { ...prev, pagina: pag });
   const [cargando, setCargando] = useState(true);
+  const [errorBusqueda, setErrorBusqueda] = useState('');
+  const ultimaBusqueda = useRef(0);
+  const peticionBusqueda = useRef(null);
   const [categorias, setCategorias] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [productoABajar, setProductoABajar] = useState(null);
@@ -58,7 +62,13 @@ export default function ProductList() {
   const [ordenarPor, setOrdenarPor] = useState('recientes');
 
   // Debounce solo para el texto (los selects disparan inmediato)
-  const textoBuscado = useDebounce(texto, 300);
+  useEffect(() => {
+    const termino = texto.trim();
+    if (termino === textoBuscado) return;
+    const timer = setTimeout(() => setConsulta({ pagina: 1, texto: termino }), termino ? 200 : 0);
+    return () => clearTimeout(timer);
+  }, [texto, textoBuscado]);
+  const buscando = cargando || texto.trim() !== textoBuscado;
 
   // ── Cargar catálogos una sola vez ─────────────────────────
   useEffect(() => {
@@ -74,7 +84,13 @@ export default function ProductList() {
 
   // ── Buscar en backend ─────────────────────────────────────
   const buscar = useCallback(async (pag = 1) => {
+    const numero = ++ultimaBusqueda.current;
+    peticionBusqueda.current?.abort();
+    const controller = new AbortController();
+    peticionBusqueda.current = controller;
+    const vigente = () => numero === ultimaBusqueda.current && !controller.signal.aborted;
     setCargando(true);
+    setErrorBusqueda('');
     try {
       const body = {
         page: pag,
@@ -91,26 +107,32 @@ export default function ProductList() {
         mios_solamente: true,
       };
 
-      const data = await productService.buscar(body);
+      const data = await productService.buscar(body, { signal: controller.signal });
+      if (!vigente()) return;
       setProductos(data.productos);
       setTotal(data.total);
       setTotalPaginas(data.total_paginas);
     } catch (err) {
-      console.error(err);
+      if (vigente()) setErrorBusqueda('No se pudo buscar productos. Intentá de nuevo.');
     } finally {
-      setCargando(false);
+      if (vigente()) setCargando(false);
     }
   }, [textoBuscado, categoriaId, proveedorId, vista, ordenarPor]);
 
   // Única fuente de búsqueda: se dispara al montar, al cambiar de página,
   // y al cambiar cualquier filtro (porque `buscar` cambia de identidad
   // cuando cambian sus dependencias). El reseteo a página 1 ante un cambio
-  // de filtro se hace directamente en cada handler (más abajo), no acá —
+  // de filtro se hace en cada handler; texto y página cambian juntos al
+  // aplicar la búsqueda para no consultar primero con el término anterior.
   // antes había un efecto separado que también llamaba a buscar(1) en
   // paralelo con este, duplicando la llamada al backend en cada carga y
   // en cada cambio de filtro.
   useEffect(() => {
     buscar(pagina);
+    return () => {
+      ++ultimaBusqueda.current;
+      peticionBusqueda.current?.abort();
+    };
   }, [pagina, buscar]);
 
   // ── Acciones ──────────────────────────────────────────────
@@ -168,7 +190,7 @@ export default function ProductList() {
           <div>
             <h1 className="prod-title">Productos</h1>
             <p className="prod-subtitle">
-              {cargando ? 'Buscando...' : `${total} producto${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}`}
+              {buscando ? 'Buscando...' : `${total} producto${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}`}
             </p>
           </div>
         </div>
@@ -191,11 +213,18 @@ export default function ProductList() {
             id="filtro-texto"
             className="filter-input"
             placeholder="Buscar por nombre..."
+            aria-label="Buscar productos"
             value={texto}
-            onChange={e => { setTexto(e.target.value); setPagina(1); }}
+            onChange={e => setTexto(e.target.value)}
+            onKeyDown={e => {
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              const termino = texto.trim();
+              if (termino !== textoBuscado) setConsulta({ pagina: 1, texto: termino });
+            }}
             autoComplete="off"
           />
-          {cargando && texto && (
+          {buscando && texto && (
             <span className="filter-loading"><Loader size={13} className="spin-icon" /></span>
           )}
         </div>
@@ -234,6 +263,8 @@ export default function ProductList() {
           ))}
         </select>
       </div>
+
+      {errorBusqueda && <p role="alert" className="field-error">{errorBusqueda}</p>}
 
       <div className="prod-view-tabs" role="tablist" aria-label="Vistas de catálogo">
         {VISTAS_CATALOGO.map(v => (

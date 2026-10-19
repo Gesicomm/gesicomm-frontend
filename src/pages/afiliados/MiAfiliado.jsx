@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BadgeDollarSign, Wallet, Copy, Check, ArrowUpRight, MousePointer2, Users, UserCheck, CalendarDays, FileText, X, Save, RefreshCw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { afiliadosService } from '../../services/afiliadosService';
 import './afiliados.css';
@@ -56,6 +56,7 @@ export default function MiAfiliado() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  const [sinAcceso, setSinAcceso] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [modal, setModal] = useState(false);
   const [filtro, setFiltro] = useState('todas');
@@ -66,12 +67,13 @@ export default function MiAfiliado() {
   async function cargar() {
     setCargando(true);
     setError('');
+    setSinAcceso(false);
     try {
       const data = await afiliadosService.miAfiliado();
       setPanel(data);
       setForm(Object.fromEntries(Object.keys(FORM_INICIAL).map(key => [key, data.afiliado?.[key] || FORM_INICIAL[key]])));
       setModal(!data.afiliado || data.afiliado.requiere_aceptacion);
-    } catch (err) { setError(errorMensaje(err)); }
+    } catch (err) { setError(errorMensaje(err)); setSinAcceso(err.response?.status === 403); }
     finally { setCargando(false); }
   }
   useEffect(() => { cargar(); }, []);
@@ -97,7 +99,7 @@ export default function MiAfiliado() {
     catch { setError('No pudimos copiar el enlace. Podés seleccionarlo en el campo.'); }
   }
   if (cargando) return <div className="af-page af-loading" role="status"><Loader2 className="af-spin" size={22} />Cargando tu afiliación…</div>;
-  if (!panel) return <div className="af-page"><h1>Quiero ser afiliado</h1><p className="af-error" role="alert">{error}</p><button className="af-btn" onClick={cargar}><RefreshCw size={16} />Reintentar</button></div>;
+  if (!panel) return <div className="af-page"><div className="af-shell"><h1>Quiero ser afiliado</h1><p className={sinAcceso ? '' : 'af-error'} role={sinAcceso ? 'status' : 'alert'}>{error}</p>{sinAcceso ? <Link to="/planes" className="af-btn af-primary">Ver planes</Link> : <button className="af-btn" onClick={cargar}><RefreshCw size={16} />Reintentar</button>}</div></div>;
 
   const saldo = afiliado?.resumen_comisiones || {};
   const metricas = panel.metricas || {};

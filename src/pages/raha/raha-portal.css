@@ -230,6 +230,8 @@
 
 .rp-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
   align-items: center;
   justify-content: space-between;
   padding: 0.85rem 2rem;
@@ -247,6 +249,15 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
+}
+
+.rp-header-brand > div:last-child {
+  min-width: 0;
+}
+
+.rp-header-brand .rp-badge-brand {
+  flex-shrink: 0;
 }
 
 .rp-header-title {
@@ -257,6 +268,8 @@
 }
 
 .rp-header-tag {
+  display: inline-block;
+  max-width: 100%;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -271,11 +284,14 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .rp-user-name {
   font-size: 0.875rem;
   color: var(--rp-text-muted);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .rp-user-name strong {
@@ -283,6 +299,7 @@
 }
 
 .rp-btn-theme {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -303,6 +320,7 @@
 }
 
 .rp-btn-logout {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -325,6 +343,7 @@
 
 .rp-main {
   flex: 1;
+  min-width: 0;
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
@@ -979,5 +998,29 @@
 @media (max-width: 900px) {
   .rp-content-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .rp-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .rp-header-brand,
+  .rp-header-user {
+    width: 100%;
+  }
+
+  .rp-header-user {
+    justify-content: flex-end;
+  }
+
+  .rp-user-name {
+    margin-right: auto;
+    font-size: 0.75rem;
+  }
+
+  .rp-main {
+    padding: 1.25rem 1rem;
   }
 }

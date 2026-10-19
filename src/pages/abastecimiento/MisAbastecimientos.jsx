@@ -1,237 +1,157 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
-import { RefreshCw, Package, Truck, Warehouse, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, ArrowUpRight, ChevronLeft, ChevronRight, FilterX, Package, RefreshCw, Search, Truck, Warehouse } from 'lucide-react';
 import { solicitudAbastecimientoService } from '../../services/solicitudAbastecimiento.service';
+import { depositoService } from '../../services/deposito.service';
+import { useDebounce } from '../../hooks/useDebounce';
+import { ESTADOS_RAHA, estadoRaha, formatFecha, formatGs } from '../../components/abastecimiento/rahaSeguimiento';
 
-const PAGE_SIZE = 20;
+const control = 'w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-fg outline-none focus:border-primary focus:ring-2 focus:ring-primary/20';
+const boton = 'inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-fg hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40';
 
-const ESTADO_BADGE = {
-  pendiente_pago: 'bg-warning/10 text-warning-text border-warning/20',
-  pago_enviado: 'bg-info/10 text-info-text border-info/20',
-  pago_rechazado: 'bg-danger/10 text-danger-text border-danger/20',
-  disponible_en_gesicomm: 'bg-success/10 text-success-text border-success/20',
-  recibido_en_deposito_cliente: 'bg-success/10 text-success-text border-success/20',
-};
-
-const ESTADOS = [
-  ['TODOS', 'Todos los estados'],
-  ['pendiente_pago', 'Pendiente de pago'],
-  ['pago_enviado', 'Pago enviado'],
-  ['pago_rechazado', 'Pago rechazado'],
-  ['pago_validado', 'Pago validado'],
-  ['proveedor_contactado', 'Proveedor contactado'],
-  ['enviado_por_proveedor', 'Enviado por proveedor'],
-  ['en_transito_a_gesicomm', 'En tránsito a Gesicomm'],
-  ['recibido_en_gesicomm', 'Recibido en Gesicomm'],
-  ['preparando_envio_a_deposito_cliente', 'Preparando envío'],
-  ['despachado_a_deposito_cliente', 'Despachado'],
-  ['en_transito_a_deposito_cliente', 'En tránsito a mi depósito'],
-  ['disponible_en_gesicomm', 'Disponible en Gesicomm'],
-  ['recibido_en_deposito_cliente', 'Recibido en mi depósito'],
-];
-
-function EstadoBadge({ estado }) {
-  return (
-    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${ESTADO_BADGE[estado] || 'bg-primary/10 text-primary-text border-primary/20'}`}>
-      {(estado || '').replace(/_/g, ' ')}
-    </span>
-  );
-}
-
-function formatGs(n) {
-  return Math.round(Number(n) || 0).toLocaleString('es-PY');
-}
-
-function formatFecha(fecha) {
-  if (!fecha) return '—';
-  const d = new Date(fecha);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('es-PY', { timeZone: 'America/Asuncion', day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function useDebounce(value, delay) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
-
-function Paginador({ pagina, totalPaginas, onCambiar }) {
-  if (totalPaginas <= 1) return null;
-  return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-      <p className="text-xs text-fg-muted">Página {pagina} de {totalPaginas}</p>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => onCambiar(pagina - 1)}
-          disabled={pagina <= 1}
-          className="flex items-center gap-1 px-2 py-1 text-sm border border-border rounded-md disabled:opacity-40 hover:bg-surface-2"
-        >
-          <ChevronLeft size={14} /> Anterior
-        </button>
-        <button
-          onClick={() => onCambiar(pagina + 1)}
-          disabled={pagina >= totalPaginas}
-          className="flex items-center gap-1 px-2 py-1 text-sm border border-border rounded-md disabled:opacity-40 hover:bg-surface-2"
-        >
-          Siguiente <ChevronRight size={14} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function productoNombre(s) {
-  const producto = s.producto?.nombre || 'Producto';
-  return s.variante?.nombre ? `${producto} · ${s.variante.nombre}` : producto;
-}
-
-function destinoLabel(s) {
-  if (s.tipo_logistica === 'GESICOMM') {
-    return s.centroGesicomm?.nombre ? `Centro Gesicomm · ${s.centroGesicomm.nombre}` : 'Centro Gesicomm';
-  }
-  return `Mi depósito · ${s.depositoDestino?.nombre || 'Sin depósito'}`;
-}
-
-/** Comercio: sus propias solicitudes de abastecimiento (Camino 3). */
 export default function MisAbastecimientos() {
-  const navigate = useNavigate();
-  const [solicitudes, setSolicitudes] = useState([]);
-  const [pagina, setPagina] = useState(1);
-  const [totalPaginas, setTotalPaginas] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [params, setParams] = useSearchParams();
+  const [data, setData] = useState({ solicitudes: [], total: 0, total_paginas: 1 });
+  const [depositos, setDepositos] = useState([]);
+  const [errorDepositos, setErrorDepositos] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [busqueda, setBusqueda] = useState('');
-  const [estado, setEstado] = useState('TODOS');
-  const [tipoLogistica, setTipoLogistica] = useState('TODOS');
-  const textoDebounced = useDebounce(busqueda, 350);
+  const [error, setError] = useState('');
+  const [actualizacion, setActualizacion] = useState(0);
+  const texto = params.get('texto') || '';
+  const textoDebounced = useDebounce(texto, 350);
+  const pagina = Math.max(1, parseInt(params.get('page'), 10) || 1);
+  const limit = [10, 20, 50, 100].includes(Number(params.get('limit'))) ? Number(params.get('limit')) : 20;
+  const estado = params.get('estado') || '';
+  const depositoId = params.get('depositoId') || '';
+  const desde = params.get('desde') || '';
+  const hasta = params.get('hasta') || '';
+  const ordenar = params.get('ordenar') || 'recientes';
+  const volverA = `/mis-abastecimientos${params.size ? `?${params.toString()}` : ''}`;
 
-  const cargar = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await solicitudAbastecimientoService.listar({
-        texto: textoDebounced || undefined,
-        estado: estado === 'TODOS' ? undefined : estado,
-        tipoLogistica: tipoLogistica === 'TODOS' ? undefined : tipoLogistica,
-        page: pagina,
-        limit: PAGE_SIZE,
-      });
-      setSolicitudes(data.solicitudes || []);
-      setTotalPaginas(data.total_paginas || 1);
-      setTotal(data.total || 0);
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'No se pudieron cargar tus solicitudes.');
-    } finally {
-      setLoading(false);
+  function cambiar(clave, valor) {
+    setParams(prev => {
+      const siguiente = new URLSearchParams(prev);
+      if (valor) siguiente.set(clave, String(valor));
+      else siguiente.delete(clave);
+      if (clave !== 'page') siguiente.delete('page');
+      return siguiente;
+    }, { replace: true });
+  }
+
+  useEffect(() => {
+    let activo = true;
+    async function cargarDepositos() {
+      try {
+        const lista = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const respuesta = await depositoService.listarDepositos({ page, limit: 100 });
+          lista.push(...(respuesta.data || []));
+          totalPages = respuesta.totalPages || 1;
+          page += 1;
+        } while (activo && page <= totalPages);
+        if (activo) { setDepositos(lista); setErrorDepositos(false); }
+      } catch {
+        if (activo) setErrorDepositos(true);
+      }
     }
-  }, [textoDebounced, estado, tipoLogistica, pagina]);
+    cargarDepositos();
+    return () => { activo = false; };
+  }, [actualizacion]);
 
-  useEffect(() => { setPagina(1); }, [textoDebounced, estado, tipoLogistica]);
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => {
+    let activo = true;
+    setLoading(true);
+    if (texto !== textoDebounced) return () => { activo = false; };
+    setError('');
+    solicitudAbastecimientoService.listar({ vista: 'raha', texto: textoDebounced || undefined,
+      estado: estado || undefined, depositoId: depositoId || undefined,
+      desde: desde || undefined, hasta: hasta || undefined, ordenar, page: pagina, limit })
+      .then(respuesta => {
+        if (!activo) return;
+        const paginas = Math.max(1, respuesta.total_paginas || 1);
+        if (pagina > paginas) {
+          setParams(prev => { const siguiente = new URLSearchParams(prev); siguiente.set('page', String(paginas)); return siguiente; }, { replace: true });
+          return;
+        }
+        setData(respuesta);
+      })
+      .catch(err => { if (activo) setError(err.response?.data?.error || 'No pudimos cargar tus abastecimientos. Intentá nuevamente.'); })
+      .finally(() => { if (activo) setLoading(false); });
+    return () => { activo = false; };
+  }, [texto, textoDebounced, estado, depositoId, desde, hasta, ordenar, pagina, limit, actualizacion, setParams]);
+
+  const solicitudes = data.solicitudes || [];
+  const tieneFiltros = Boolean(texto || estado || depositoId || desde || hasta);
+  const paginas = Math.max(1, data.total_paginas || 1);
+  const metricas = [
+    { label: 'Abastecimientos encontrados', valor: data.total || 0, icono: Package },
+    { label: 'Unidades en esta página', valor: solicitudes.reduce((suma, solicitud) => suma + Number(solicitud.cantidad), 0), icono: Truck },
+    { label: 'Importe en esta página', valor: formatGs(solicitudes.reduce((suma, solicitud) => suma + Number(solicitud.costo_producto || 0) + Number(solicitud.costo_logistico || 0), 0)), icono: Warehouse },
+  ];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-surface-50 overflow-hidden">
-      <div className="px-6 py-5 bg-surface border-b border-border flex items-center justify-between">
+    <div className="mx-auto w-full max-w-[1500px] p-4 text-fg sm:p-6 lg:p-8">
+      <Link to="/mi-tienda/depositos" className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-fg-muted hover:text-fg"><ArrowLeft size={16} /> Mis depósitos</Link>
+      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-fg mb-1">Compras a Gesicomm</h1>
-          <p className="text-sm text-fg-muted">
-            Acá ves los productos del catálogo Gesicomm que compraste o pediste abastecer, con pago, destino y estado del proceso.
-          </p>
+          <span className="text-xs font-bold uppercase tracking-widest text-primary-text">Mis depósitos / Abastecimientos</span>
+          <h1 className="mb-2 mt-2 text-2xl font-bold sm:text-3xl">Abastecimientos RAHA</h1>
+          <p className="m-0 max-w-2xl text-sm leading-relaxed text-fg-muted">Seguí tus pedidos, consultá la mercadería en cada depósito y revisá las ventas de tus productos.</p>
         </div>
-        <button onClick={cargar} className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm font-medium text-fg hover:bg-surface-2">
-          <RefreshCw size={15} /> Actualizar
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-auto p-6">
-        <div className="mb-4 flex items-end justify-between gap-3 flex-wrap">
-          <div className="flex items-end gap-2 flex-wrap">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
-              <input
-                type="text"
-                placeholder="Buscar producto, destino o #ID..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                className="pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary w-72"
-              />
-            </div>
-            <select
-              value={estado}
-              onChange={(e) => setEstado(e.target.value)}
-              className="px-3 py-2 text-sm border border-border rounded-lg bg-surface outline-none focus:border-primary"
-            >
-              {ESTADOS.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-            </select>
-            <div>
-              <p className="mb-1 text-[11px] font-semibold uppercase text-fg-muted">Destino</p>
-              <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-1">
-                {[['TODOS', 'Todos'], ['GESICOMM', 'Centro Gesicomm'], ['PROPIA', 'Mi depósito']].map(([val, label]) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setTipoLogistica(val)}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${tipoLogistica === val ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-2'}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <p className="text-sm text-fg-muted">{total} abastecimiento{total === 1 ? '' : 's'}</p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={boton} disabled={loading} onClick={() => setActualizacion(valor => valor + 1)}><RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Actualizar</button>
+          <Link to="/mi-tienda/depositos" className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover"><Package size={16} /> Abastecer un depósito</Link>
         </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center h-40 text-fg-muted">
-            <RefreshCw className="animate-spin mr-2" size={20} /> Cargando...
-          </div>
-        ) : solicitudes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-fg-muted gap-2">
-            <Package size={32} className="opacity-30" />
-            <p>No hay abastecimientos que coincidan con estos filtros.</p>
-          </div>
-        ) : (
-          <div className="bg-surface rounded-xl border border-border overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-surface-2 border-b border-border">
-                  <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Solicitud</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Producto</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase text-right">Pedido</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Destino</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Total</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Estado</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-fg-muted uppercase">Fecha</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-border">
-                {solicitudes.map((s) => {
-                  const total = (Number(s.costo_producto) || 0) + (Number(s.costo_logistico) || 0);
-                  return (
-                    <tr key={s.id} className="hover:bg-surface-50 transition-colors cursor-pointer" onClick={() => navigate(`/mis-abastecimientos/${s.id}`)}>
-                      <td className="px-4 py-3 font-medium text-sm text-fg">#{s.id}</td>
-                      <td className="px-4 py-3 text-sm text-fg">{productoNombre(s)}</td>
-                      <td className="px-4 py-3 text-sm text-fg text-right">{s.cantidad}</td>
-                      <td className="px-4 py-3 text-sm text-fg flex items-center gap-1.5">
-                        {s.tipo_logistica === 'GESICOMM' ? <Truck size={13} className="text-fg-muted" /> : <Warehouse size={13} className="text-fg-muted" />}
-                        {destinoLabel(s)}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-fg">Gs. {formatGs(total)}</td>
-                      <td className="px-4 py-3"><EstadoBadge estado={s.estado} /></td>
-                      <td className="px-4 py-3 text-xs text-fg-muted">{formatFecha(s.created_at)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />
-          </div>
-        )}
+      </header>
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <Truck size={20} className="mt-0.5 shrink-0 text-primary-text" />
+        <div><p className="m-0 text-sm font-semibold">Pago contra entrega</p><p className="mb-0 mt-1 text-sm text-fg-muted">No necesitás adelantar el pago ni enviar comprobantes. Los estados logísticos se actualizan desde RAHA.</p></div>
       </div>
+      <section aria-label="Resumen de resultados" className="mb-6 grid gap-3 sm:grid-cols-3">
+        {metricas.map(({ label, valor, icono: Icono }) => <div key={label} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 shadow-sm"><div><p className="m-0 text-xs font-medium text-fg-muted">{label}</p><p className="mb-0 mt-2 text-2xl font-bold tabular-nums">{loading || error ? '—' : valor}</p></div><Icono size={22} className="shrink-0 text-primary-text" /></div>)}
+      </section>
+      <section aria-label="Filtros de abastecimientos" className="mb-5 rounded-xl border border-border bg-surface p-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="text-xs font-semibold text-fg-muted lg:col-span-2">Buscar pedido o producto
+            <div className="relative mt-1.5"><Search size={16} className="absolute left-3 top-3 text-fg-muted" /><input value={texto} onChange={event => cambiar('texto', event.target.value)} placeholder="Producto, SKU, depósito, pedido RAHA o #ID" className={`${control} pl-9`} /></div>
+          </label>
+          <label className="text-xs font-semibold text-fg-muted">Estado RAHA<select className={`${control} mt-1.5`} value={estado} onChange={event => cambiar('estado', event.target.value)}><option value="">Todos los estados</option>{Object.entries(ESTADOS_RAHA).map(([valor, configuracion]) => <option key={valor} value={valor}>{configuracion.label}</option>)}</select></label>
+          <label className="text-xs font-semibold text-fg-muted">Depósito de destino<select className={`${control} mt-1.5`} value={depositoId} onChange={event => cambiar('depositoId', event.target.value)}><option value="">Todos mis depósitos</option>{depositos.map(deposito => <option key={deposito.id} value={deposito.id}>{deposito.nombre}</option>)}</select></label>
+          <label className="text-xs font-semibold text-fg-muted">Desde<input type="date" value={desde} max={hasta || undefined} onChange={event => cambiar('desde', event.target.value)} className={`${control} mt-1.5`} /></label>
+          <label className="text-xs font-semibold text-fg-muted">Hasta<input type="date" value={hasta} min={desde || undefined} onChange={event => cambiar('hasta', event.target.value)} className={`${control} mt-1.5`} /></label>
+          <label className="text-xs font-semibold text-fg-muted">Ordenar por<select value={ordenar} onChange={event => cambiar('ordenar', event.target.value)} className={`${control} mt-1.5`}><option value="recientes">Más recientes primero</option><option value="antiguos">Más antiguos primero</option></select></label>
+          <div className="flex items-end">{tieneFiltros && <button type="button" onClick={() => setParams({}, { replace: true })} className={`${boton} w-full`}><FilterX size={15} /> Limpiar filtros</button>}</div>
+        </div>
+        {errorDepositos && <p role="status" className="mb-0 mt-3 text-xs text-warning-text">No pudimos cargar el selector de depósitos. Podés buscar por nombre o volver a actualizar.</p>}
+      </section>
+      <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm" aria-label="Pedidos de abastecimiento" aria-busy={loading}>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4"><h2 className="m-0 text-sm font-bold">Historial de abastecimientos</h2><span className="text-xs text-fg-muted" role="status">{loading ? 'Actualizando resultados…' : `${data.total || 0} pedidos encontrados`}</span></div>
+        {error ? <div role="alert" className="p-8 text-center"><p className="text-danger-text">{error}</p><button type="button" onClick={() => setActualizacion(valor => valor + 1)} className={boton}>Reintentar</button></div>
+          : loading ? <div className="space-y-3 p-5" aria-label="Cargando abastecimientos">{[1, 2, 3, 4].map(fila => <div key={fila} className="h-16 animate-pulse rounded-lg bg-surface-2" />)}</div>
+            : solicitudes.length === 0 ? <div className="flex flex-col items-center px-5 py-14 text-center"><Package size={36} className="mb-3 text-fg-muted" /><h3 className="m-0 text-lg font-semibold">{tieneFiltros ? 'No encontramos coincidencias' : 'Tu próximo abastecimiento empieza acá'}</h3><p className="mb-5 mt-2 max-w-md text-sm text-fg-muted">{tieneFiltros ? 'Probá con otro estado, depósito o rango de fechas.' : 'Elegí un depósito y pedí productos del catálogo RAHA. Vas a poder seguir cada entrega desde esta sección.'}</p>{tieneFiltros ? <button type="button" className={boton} onClick={() => setParams({})}>Limpiar filtros</button> : <Link className={boton} to="/mi-tienda/depositos">Ir a mis depósitos</Link>}</div>
+              : <div className="relative overflow-x-auto"><table className="w-full min-w-[1150px] border-collapse text-left text-sm"><thead className="bg-surface-2 text-xs text-fg-muted"><tr>{['Pedido / fecha', 'Producto', 'Destino', 'Cantidad / precio', 'Total', 'Estado RAHA', 'Stock en destino', 'Ventas del producto', 'Seguimiento'].map(titulo => <th key={titulo} scope="col" className="px-4 py-3 font-semibold">{titulo}</th>)}</tr></thead><tbody className="divide-y divide-border">{solicitudes.map(solicitud => {
+                const estadoActual = estadoRaha(solicitud.estado_seguimiento);
+                return <tr key={solicitud.id} className="align-top transition-colors hover:bg-surface-2/50">
+                  <td className="px-4 py-4"><Link to={`/mis-abastecimientos/${solicitud.id}`} state={{ volverA }} className="font-bold text-primary-text hover:underline">#{solicitud.id}</Link><span className="mt-1 block text-xs text-fg-muted">{formatFecha(solicitud.created_at)}</span>{solicitud.pedidoRaha?.order_id && <span className="mt-1 block break-all text-[11px] text-fg-muted">RAHA {solicitud.pedidoRaha.order_id}</span>}</td>
+                  <td className="max-w-[240px] px-4 py-4"><span className="font-semibold">{solicitud.producto?.nombre || `Producto #${solicitud.producto_id}`}</span>{solicitud.variante?.nombre && <span className="mt-1 block text-xs text-fg-muted">{solicitud.variante.nombre}</span>}<span className="mt-1 block font-mono text-xs text-fg-muted">{solicitud.variante?.sku_variante || solicitud.producto?.sku || 'Sin SKU'}</span></td>
+                  <td className="max-w-[170px] px-4 py-4"><span className="font-medium">{solicitud.depositoDestino?.nombre || 'Sin depósito'}</span><span className="mt-1 block text-xs text-fg-muted">{solicitud.depositoDestino?.ciudad}</span></td>
+                  <td className="whitespace-nowrap px-4 py-4 tabular-nums"><strong>{solicitud.cantidad} u.</strong><span className="mt-1 block text-xs text-fg-muted">{formatGs(solicitud.precio_unitario)} / u.</span></td>
+                  <td className="whitespace-nowrap px-4 py-4 font-semibold tabular-nums">{formatGs(Number(solicitud.costo_producto || 0) + Number(solicitud.costo_logistico || 0))}<span className="mt-1 block text-xs font-normal text-fg-muted">Contra entrega</span></td>
+                  <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${estadoActual.color}`}>{estadoActual.label}</span>{solicitud.estado_seguimiento === 'entregado' && !solicitud.stock_acreditado && <span className="mt-2 block text-xs text-warning-text">Recepción pendiente de confirmar</span>}</td>
+                  <td className="whitespace-nowrap px-4 py-4 tabular-nums"><strong>{solicitud.inventario?.disponible ?? '—'}</strong> disponibles<span className="mt-1 block text-xs text-fg-muted">{solicitud.inventario?.reservado ?? '—'} reservadas</span></td>
+                  <td className="whitespace-nowrap px-4 py-4 tabular-nums"><strong>{solicitud.ventas_producto?.unidades ?? '—'}</strong> vendidas<span className="mt-1 block text-xs text-fg-muted">Pedidos entregados</span></td>
+                  <td className="px-4 py-4"><Link to={`/mis-abastecimientos/${solicitud.id}`} state={{ volverA }} className="inline-flex items-center gap-1 text-xs font-semibold text-primary-text hover:underline" aria-label={`Ver seguimiento del abastecimiento ${solicitud.id}`}>Seguimiento <ArrowUpRight size={14} /></Link></td>
+                </tr>;
+              })}</tbody></table></div>}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4">
+          <label className="flex items-center gap-2 text-xs text-fg-muted">Mostrar<select className="rounded-md border border-border bg-surface px-2 py-1.5 text-fg" value={limit} onChange={event => cambiar('limit', event.target.value)}>{[10, 20, 50, 100].map(cantidad => <option key={cantidad} value={cantidad}>{cantidad}</option>)}</select>por página</label>
+          <span className="text-xs text-fg-muted">{data.total ? `${(pagina - 1) * limit + 1}–${Math.min(pagina * limit, data.total)} de ${data.total}` : '0 resultados'}</span>
+          <nav aria-label="Paginación de abastecimientos" className="flex items-center gap-2"><button type="button" className={boton} disabled={loading || pagina <= 1} onClick={() => cambiar('page', pagina - 1)} aria-label="Página anterior"><ChevronLeft size={16} /></button><span className="px-2 text-xs tabular-nums">Página {pagina} de {paginas}</span><button type="button" className={boton} disabled={loading || pagina >= paginas} onClick={() => cambiar('page', pagina + 1)} aria-label="Página siguiente"><ChevronRight size={16} /></button></nav>
+        </div>
+      </section>
+      <p className="mt-4 text-xs leading-relaxed text-fg-muted">El stock corresponde al saldo actual del producto y variante en el depósito de destino. Las ventas incluyen pedidos entregados de ese producto y variante, en todos los depósitos y fechas; no se atribuyen a un lote de abastecimiento. Los saldos pueden repetirse si pediste el mismo producto varias veces.</p>
     </div>
   );
 }

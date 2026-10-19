@@ -47,6 +47,7 @@ const RahaSolicitudes = lazy(() => import('./pages/admin/RahaSolicitudes'));
 const EliminacionDatosAdmin = lazy(() => import('./pages/admin/EliminacionDatos'));
 const AdminPlanes = lazy(() => import('./pages/planes/AdminPlanes'));
 const MiAfiliado = lazy(() => import('./pages/afiliados/MiAfiliado'));
+const PartnerCertificado = lazy(() => import('./pages/partner/PartnerCertificado'));
 const AuthTracking = lazy(() => import('./pages/admin/AuthTracking'));
 const SeleccionModulo = lazy(() => import('./pages/auth/SeleccionModulo'));
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
@@ -56,6 +57,7 @@ const DashboardOperativo = lazy(() => import('./pages/courier/DashboardOperativo
 const AbastecimientoAdmin = lazy(() => import('./pages/abastecimiento/AbastecimientoAdmin'));
 const SolicitudAbastecimientoDetalle = lazy(() => import('./pages/abastecimiento/SolicitudAbastecimientoDetalle'));
 const MisAbastecimientos = lazy(() => import('./pages/abastecimiento/MisAbastecimientos'));
+const MisEnviosRaha = lazy(() => import('./pages/raha/MisEnviosRaha'));
 const RedFulfillment = lazy(() => import('./pages/fulfillment/RedFulfillment'));
 const CentroFulfillmentDetalle = lazy(() => import('./pages/fulfillment/CentroDetalle'));
 const ProveedoresLogisticos = lazy(() => import('./pages/fulfillment/ProveedoresLogisticos'));
@@ -315,6 +317,9 @@ function App() {
         <Route path="/mis-abastecimientos" element={
           <RequireTienda><DynamicLayout><MisAbastecimientos /></DynamicLayout></RequireTienda>
         } />
+        <Route path="/mis-envios-raha" element={
+          <RequireTienda><DynamicLayout><MisEnviosRaha /></DynamicLayout></RequireTienda>
+        } />
         <Route path="/mis-abastecimientos/:id" element={
           <RequireTienda><DynamicLayout><SolicitudAbastecimientoDetalle /></DynamicLayout></RequireTienda>
         } />
@@ -532,6 +537,9 @@ function App() {
         } />
         <Route path="/afiliados" element={
           <RequireTienda><UserLayout><MiAfiliado /></UserLayout></RequireTienda>
+        } />
+        <Route path="/partner-certificado" element={
+          <RequireTienda><UserLayout><PartnerCertificado /></UserLayout></RequireTienda>
         } />
         <Route path="/configuracion" element={
           <RequireTienda><UserLayout><Settings /></UserLayout></RequireTienda>

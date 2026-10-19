@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
   Package, Warehouse, ArrowLeft, Truck, CheckCircle2, AlertTriangle,
@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { solicitudAbastecimientoService } from '../../services/solicitudAbastecimiento.service';
 import useSesion from '../../hooks/useSesion';
+import AbastecimientoRahaDetalle from '../../components/abastecimiento/AbastecimientoRahaDetalle';
 
 const CTA_AVANZAR = {
   pago_validado: 'Contactar proveedor',
@@ -70,6 +71,7 @@ function TransferenciaDato({ label, value, highlight = false, onCopy }) {
 export default function SolicitudAbastecimientoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { usuario } = useSesion();
   const esAdmin = usuario?.rol === 'administrador';
 
@@ -77,22 +79,27 @@ export default function SolicitudAbastecimientoDetalle() {
   const [loading, setLoading] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const [centroInput, setCentroInput] = useState('');
+  const [errorCarga, setErrorCarga] = useState('');
+  const cargaRef = useRef(0);
 
   const cargar = useCallback(async () => {
+    const requestId = ++cargaRef.current;
     try {
       setLoading(true);
+      setErrorCarga('');
       const data = await solicitudAbastecimientoService.obtener(id);
-      setSolicitud(data);
+      if (requestId === cargaRef.current) setSolicitud(data);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'No se pudo cargar la solicitud.');
+      if (requestId === cargaRef.current) setErrorCarga(err.response?.data?.error || 'No se pudo cargar la solicitud.');
     } finally {
-      setLoading(false);
+      if (requestId === cargaRef.current) setLoading(false);
     }
   }, [id]);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { cargar(); return () => { cargaRef.current += 1; }; }, [cargar]);
 
-  const volverA = esAdmin ? '/abastecimiento' : '/mis-abastecimientos';
+  const volverListado = location.state?.volverA;
+  const volverA = esAdmin ? '/abastecimiento' : /^\/mis-abastecimientos(?:\?|$)/.test(volverListado || '') ? volverListado : '/mis-abastecimientos';
 
   const ejecutar = async (accion, mensajeOk) => {
     setProcesando(true);
@@ -147,7 +154,9 @@ export default function SolicitudAbastecimientoDetalle() {
       </div>
     );
   }
+  if (errorCarga) return <div role="alert" className="p-8 text-center text-fg"><p>{errorCarga}</p><button type="button" onClick={cargar} className="rounded-lg border border-border px-4 py-2">Reintentar</button></div>;
   if (!solicitud) return null;
+  if (solicitud.es_raha) return <AbastecimientoRahaDetalle solicitud={solicitud} volver={() => navigate(volverA)} actualizar={cargar} confirmarRecepcion={handleConfirmarRecepcion} procesando={procesando} esAdmin={esAdmin} />;
 
   const total = (Number(solicitud.costo_producto) || 0) + (Number(solicitud.costo_logistico) || 0);
   const esTerminal = ['disponible_en_gesicomm', 'recibido_en_deposito_cliente', 'cancelada'].includes(solicitud.estado);

@@ -1,7 +1,7 @@
 import API from './api';
 
 export const productService = {
-  buscar: (filtros) => API.post('/productos/buscar', filtros).then(r => r.data),
+  buscar: (filtros, config = {}) => API.post('/productos/buscar', filtros, config).then(r => r.data),
   crear: (data) => API.post('/productos', data).then(r => r.data),
   importarShopify: (formData) =>
     API.post('/productos/importar-shopify', formData, {

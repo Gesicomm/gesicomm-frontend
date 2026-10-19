@@ -30,11 +30,18 @@ import {
 } from '../tienda/RahaConexion';
 import '../tienda/raha.css';
 import './raha-portal.css';
+import RahaAbastecimientosPanel from './RahaAbastecimientosPanel';
+import RahaEnviosPanel from './RahaEnviosPanel';
+import RahaDestinosPanel from './RahaDestinosPanel';
+
+const SECCIONES_PORTAL = [['documentacion', 'Documentación'], ['abastecimientos', 'Abastecimientos'],
+  ['envios', 'Envíos a RAHA'], ['destinos', 'Depósitos RAHA']];
 
 export default function RahaPortal() {
   const navigate = useNavigate();
   const { tema, alternarTema } = useTema();
   const [params, setParams] = useSearchParams();
+  const seccion = SECCIONES_PORTAL.some(([valor]) => valor === params.get('tab')) ? params.get('tab') : 'documentacion';
   const solicitudId = Number(params.get('solicitud')) || null;
 
   const [usuario, setUsuario] = useState(null);
@@ -113,8 +120,8 @@ export default function RahaPortal() {
   }, [filtroEstado, busqueda, page, limit, rangoFecha, fechaDesde, fechaHasta]);
 
   useEffect(() => {
-    cargarLista();
-  }, [cargarLista]);
+    if (usuario && seccion === 'documentacion') cargarLista();
+  }, [cargarLista, seccion, usuario]);
 
   // Cargar detalle de la solicitud seleccionada
   const cargarDetalle = useCallback(async () => {
@@ -140,8 +147,9 @@ export default function RahaPortal() {
   }, [solicitudId]);
 
   useEffect(() => {
-    cargarDetalle();
-  }, [cargarDetalle]);
+    if (usuario && seccion === 'documentacion') cargarDetalle();
+    else detailRequest.current += 1;
+  }, [cargarDetalle, seccion, usuario]);
 
   // Manejar resolución de solicitud por RAHA
   async function resolverSolicitud(e) {
@@ -219,7 +227,7 @@ export default function RahaPortal() {
           </div>
           <div>
             <h1 className="rp-header-title">Portal RAHA</h1>
-            <span className="rp-header-tag">Proveedores</span>
+            <span className="rp-header-tag">Operaciones y documentación</span>
           </div>
         </div>
 
@@ -250,6 +258,10 @@ export default function RahaPortal() {
       </header>
 
       <main className="rp-main">
+        <nav aria-label="Secciones del portal RAHA" className="mb-6 flex flex-wrap gap-2 border-b border-border pb-4">
+          {SECCIONES_PORTAL.map(([valor, label]) => <button type="button" key={valor} aria-pressed={seccion === valor} disabled={busy} className={`rp-tab ${seccion === valor ? 'active' : ''}`} onClick={() => setParams({ tab: valor })}>{label}</button>)}
+        </nav>
+        {!usuario ? <div role="status" className="p-8 text-center text-fg-muted">Verificando sesión…</div> : seccion === 'documentacion' ? <>
         {/* Métricas / Semáforo resumen */}
         <section className="rp-stats">
           <div
@@ -740,6 +752,7 @@ export default function RahaPortal() {
             )}
           </div>
         </div>
+        </> : seccion === 'abastecimientos' ? <RahaAbastecimientosPanel /> : seccion === 'envios' ? <RahaEnviosPanel portal /> : <RahaDestinosPanel />}
       </main>
     </div>
   );
