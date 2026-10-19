@@ -66,14 +66,6 @@ const UserLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // La RUTA manda sobre sessionStorage para decidir qué menú se muestra.
-  // sessionStorage es por pestaña y se pierde en vueltas externas como el OAuth
-  // de Meta: al volver a /automatizacion/configuracion el valor ya no estaba y,
-  // como la condición era !== 'marca_personal', caía al menú de e-commerce.
-  const enMarcaPersonal =
-    location.pathname.startsWith('/automatizacion') ||
-    sessionStorage.getItem('moduloActivo') === 'marca_personal';
-
   useEffect(() => {
     const handleUsuarioActualizado = (e) => {
       if (e?.detail) {
@@ -313,7 +305,7 @@ const UserLayout = ({ children }) => {
   };
 
   const renderSidebarDinamico = () => {
-    const contexto = enMarcaPersonal ? 'marca_personal' : 'ecommerce';
+    const contexto = 'ecommerce';
     const modulosBase = progresoSidebar.modulos;
     const grupos = modulosBase
       .filter((item) => item.contexto === contexto)
@@ -556,7 +548,7 @@ const UserLayout = ({ children }) => {
           </button>
           <ul className="sidebar-list">
             {renderLink({ 
-              path: enMarcaPersonal ? '/automatizacion/configuracion' : '/configuracion', 
+              path: '/configuracion',
               label: 'Configuración', 
               icon: <Settings size={14} /> 
             })}

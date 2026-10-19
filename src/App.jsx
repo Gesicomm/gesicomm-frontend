@@ -5,6 +5,7 @@ import LandingPublica from './pages/landing/LandingPublica';
 import TestRenderer from './pages/landing-v2/TestRenderer';
 
 import ProtectedRoute from './components/ProtectedRoute';
+import MarcaPersonalRedirect from './components/MarcaPersonalRedirect';
 import AdminRoute from './components/AdminRoute';
 import RequireTienda from './components/RequireTienda';
 import DashboardLayout from './components/DashboardLayout';
@@ -73,9 +74,6 @@ const AdminEducacion = lazy(() => import('./pages/educacion/AdminEducacion'));
 const CostosGastos = lazy(() => import('./pages/finanzas/CostosGastos'));
 const ProveedoresView = lazy(() => import('./pages/finanzas/Proveedores'));
 const ImportadaChina = lazy(() => import('./pages/importada-china/ImportadaChina'));
-const AutomationHub = lazy(() => import('./pages/automation-hub/AutomationHub'));
-const AutomationSettings = lazy(() => import('./pages/automation-hub/AutomationSettings'));
-const FinanzasAutomatizacion = lazy(() => import('./pages/finanzas/FinanzasAutomatizacion'));
 
 // Sitio institucional público (gesicomm.com). Son las URLs que se cargan en
 // el App Dashboard de Meta para la revisión de la aplicación, así que tienen
@@ -415,12 +413,9 @@ function App() {
         } />
 
 
-        {/* Automatización de contenido — Gesicomm Automation Hub (backend independiente) */}
-        <Route path="/automatizacion" element={
-          <RequireTienda><UserLayout><AutomationHub /></UserLayout></RequireTienda>
-        } />
-        <Route path="/automatizacion/configuracion" element={
-          <RequireTienda><UserLayout><AutomationSettings /></UserLayout></RequireTienda>
+        {/* Compatibilidad con enlaces del módulo anterior. */}
+        <Route path="/automatizacion/*" element={
+          <ProtectedRoute><MarcaPersonalRedirect /></ProtectedRoute>
         } />
 
         {/* Pantalla de Selección de Módulo */}

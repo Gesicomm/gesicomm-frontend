@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Megaphone, ArrowRight } from 'lucide-react';
 import { verificarSesion } from '../../utils/auth';
+import { MARCA_PERSONAL_URL } from '../../lib/marcaPersonal';
 
 export default function SeleccionModulo() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function SeleccionModulo() {
     if (modulo === 'ecommerce') {
       navigate('/mi-dashboard');
     } else {
-      navigate('/automatizacion');
+      window.location.assign(MARCA_PERSONAL_URL);
     }
   };
 
@@ -50,7 +51,7 @@ export default function SeleccionModulo() {
           </button>
         </div>
 
-        {/* Módulo Marca Personal (Automation Hub) */}
+        {/* Módulo Marca Personal (T2E OS) */}
         <div 
           onClick={() => seleccionarModulo('marca_personal')}
           className="flex-1 bg-bg border border-border rounded-xl p-8 cursor-pointer transition-all hover:border-[#10b981] hover:shadow-lg group flex flex-col items-center text-center"
@@ -58,12 +59,12 @@ export default function SeleccionModulo() {
           <div className="w-16 h-16 bg-[#10b981]/10 rounded-full flex items-center justify-center mb-6 text-[#10b981] group-hover:scale-110 transition-transform">
             <Megaphone size={32} />
           </div>
-          <h2 className="text-xl font-bold text-fg mb-3">Marca Personal (Automation)</h2>
+          <h2 className="text-xl font-bold text-fg mb-3">Marca Personal</h2>
           <p className="text-fg-muted mb-6 text-sm">
             Calendario de contenido, publicaciones, CRM, ManyChat y automatización.
           </p>
           <button className="btn-secondary w-full group-hover:bg-[#10b981] group-hover:text-white transition-colors">
-            Entrar a Automation Hub <ArrowRight size={16} className="ml-2 inline" />
+            Entrar a Marca Personal <ArrowRight size={16} className="ml-2 inline" />
           </button>
         </div>
 
