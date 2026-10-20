@@ -282,6 +282,11 @@ export default function ConfigurarTienda() {
   const [subiendoFavicon, setSubiendoFavicon] = useState(false);
   const [errorFavicon, setErrorFavicon] = useState(null);
   const [avisoFavicon, setAvisoFavicon] = useState(null);
+  // Tarjeta al compartir: se guarda al instante, igual que logo y favicon.
+  const imagenCompartirInputRef = useRef(null);
+  const [subiendoImagenCompartir, setSubiendoImagenCompartir] = useState(false);
+  const [errorImagenCompartir, setErrorImagenCompartir] = useState(null);
+  const [avisoImagenCompartir, setAvisoImagenCompartir] = useState(null);
   const [subiendoFuente, setSubiendoFuente] = useState(false);
   const [errorFuente, setErrorFuente] = useState(null);
 
@@ -490,6 +495,51 @@ export default function ConfigurarTienda() {
       setErrorFavicon(err.response?.data?.message || 'No se pudo quitar el favicon.');
     } finally {
       setSubiendoFavicon(false);
+    }
+  }
+
+  async function subirImagenCompartir(e) {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!archivo) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type)) {
+      return setErrorImagenCompartir('Solo se permiten imágenes JPG, PNG o WebP.');
+    }
+    if (archivo.size > 5 * 1024 * 1024) {
+      return setErrorImagenCompartir('La imagen para compartir no puede pesar más de 5 MB.');
+    }
+    setErrorImagenCompartir(null);
+    const medidas = await medirImagen(archivo);
+    const proporcionEsperada = 1200 / 630;
+    if (medidas && Math.abs((medidas.ancho / medidas.alto) - proporcionEsperada) > 0.03) {
+      setAvisoImagenCompartir(`Tu imagen mide ${medidas.ancho}×${medidas.alto} px. La ajustaremos a 1200×630 px y puede recortarse en los bordes.`);
+    } else {
+      setAvisoImagenCompartir(null);
+    }
+    setSubiendoImagenCompartir(true);
+    try {
+      const formData = new FormData();
+      formData.append('imagen', archivo);
+      const actualizada = await tiendaService.subirImagenCompartir(formData);
+      setTienda(prev => ({ ...prev, compartir_imagen: actualizada.compartir_imagen }));
+    } catch (err) {
+      setErrorImagenCompartir(err.response?.data?.message || 'No se pudo subir la imagen para compartir.');
+    } finally {
+      setSubiendoImagenCompartir(false);
+    }
+  }
+
+  async function quitarImagenCompartir() {
+    setErrorImagenCompartir(null);
+    setAvisoImagenCompartir(null);
+    setSubiendoImagenCompartir(true);
+    try {
+      await tiendaService.eliminarImagenCompartir();
+      setTienda(prev => ({ ...prev, compartir_imagen: null }));
+    } catch (err) {
+      setErrorImagenCompartir(err.response?.data?.message || 'No se pudo quitar la imagen para compartir.');
+    } finally {
+      setSubiendoImagenCompartir(false);
     }
   }
 
@@ -983,6 +1033,48 @@ export default function ConfigurarTienda() {
                             type="file"
                             accept="image/png,image/jpeg,image/webp"
                             onChange={subirFavicon}
+                            hidden
+                          />
+                        </div>
+                      </div>
+                      <div className="tn-logo-field">
+                        <span className="tn-field-label">Miniatura al compartir <em>(WhatsApp, Facebook y LinkedIn)</em></span>
+                        <div className="tn-logo-row">
+                          <button
+                            type="button"
+                            className={`tn-logo-preview tn-share-preview ${tienda?.compartir_imagen ? 'con-logo' : ''}`}
+                            onClick={() => imagenCompartirInputRef.current?.click()}
+                            disabled={subiendoImagenCompartir}
+                            aria-label={tienda?.compartir_imagen ? 'Cambiar miniatura al compartir' : 'Subir miniatura al compartir'}
+                          >
+                            {subiendoImagenCompartir
+                              ? <Loader size={18} className="spin-icon" />
+                              : tienda?.compartir_imagen
+                                ? <img src={getMediaUrl(tienda.compartir_imagen)} alt="Miniatura al compartir" />
+                                : <Share2 size={20} />}
+                          </button>
+                          <div className="tn-logo-actions">
+                            <div className="tn-logo-buttons">
+                              <button type="button" className="btn-secondary" onClick={() => imagenCompartirInputRef.current?.click()} disabled={subiendoImagenCompartir}>
+                                {tienda?.compartir_imagen ? 'Cambiar miniatura' : 'Subir miniatura'}
+                              </button>
+                              {tienda?.compartir_imagen && (
+                                <button type="button" className="btn-secondary" onClick={quitarImagenCompartir} disabled={subiendoImagenCompartir}>
+                                  <Trash2 size={14} /> Quitar
+                                </button>
+                              )}
+                            </div>
+                            <span className="tn-field-hint">
+                              Imagen horizontal de <strong>1200×630 px</strong> recomendada (proporción 1.91:1), JPG, PNG o WebP, máx. 5 MB. Esta es la miniatura que aparece al compartir el enlace de tu tienda. Las imágenes de cada landing pueden reemplazarla.
+                            </span>
+                            {avisoImagenCompartir && <span className="tn-favicon-aviso"><Info size={12} /> {avisoImagenCompartir}</span>}
+                            {errorImagenCompartir && <span className="tn-logo-error"><AlertCircle size={12} /> {errorImagenCompartir}</span>}
+                          </div>
+                          <input
+                            ref={imagenCompartirInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            onChange={subirImagenCompartir}
                             hidden
                           />
                         </div>
@@ -1689,4 +1781,3 @@ export default function ConfigurarTienda() {
     </div>
   );
 }
-

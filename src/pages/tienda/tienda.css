@@ -466,6 +466,13 @@
 /* Favicon: mismo recuadro que el logo, el ícono ocupa todo (ya viene
    cuadrado y sin márgenes del backend). */
 .tn-favicon-preview { padding: 14px; }
+.tn-share-preview {
+  width: 152px;
+  height: 80px;
+  padding: 0;
+  border-radius: 9px;
+}
+.tn-share-preview img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 .tn-favicon-aviso {
   display: inline-flex;
   align-items: flex-start;
@@ -1611,5 +1618,4 @@
 .tn-embed-metodos-pago .prod-table {
   min-width: 620px;
 }
-
 

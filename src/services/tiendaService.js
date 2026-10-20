@@ -18,6 +18,13 @@ export const tiendaService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
   eliminarFavicon: () => API.delete('/mi-tienda/favicon').then(r => r.data),
+  // Imagen de la tarjeta que muestran WhatsApp/Facebook/LinkedIn al
+  // compartir la portada de la tienda.
+  subirImagenCompartir: (formData) =>
+    API.post('/mi-tienda/imagen-compartir', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+  eliminarImagenCompartir: () => API.delete('/mi-tienda/imagen-compartir').then(r => r.data),
   guardarTipografia: (payload) => API.put('/mi-tienda/typography', payload).then(r => r.data),
   subirFuente: (formData) =>
     API.post('/mi-tienda/typography/fonts', formData, {
