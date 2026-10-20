@@ -308,6 +308,7 @@ export function runtimeGesicomm() {
     });
     var urgencia = datos.venta && datos.venta.urgencia;
     var ids = urgencia && Array.isArray(urgencia.productos) ? urgencia.productos : [];
+    if (urgencia && urgencia.activo && !urgenciaVigente(urgencia)) return [];
     if (!ids.length) return base;
     // La selección a mano vence con la propia urgencia: pasada la fecha, la
     // sección entera se oculta sola (lista vacía) en vez de quedar con la
@@ -898,6 +899,28 @@ export function runtimeGesicomm() {
     return !isFinite(fin) || fin > Date.now();
   }
 
+  function actualizarOfertasVencidas() {
+    var config = datos.venta && datos.venta.urgencia;
+    var vencida = config && config.activo && !config.renovar_cada_visita && isFinite(Date.parse(config.fin_at)) && !urgenciaVigente(config);
+    var ids = config && Array.isArray(config.productos) && config.productos.length ? config.productos : [config && (config.producto_id || config.content_id)].filter(Boolean);
+    var items = productos.concat(conocidos || [], catalogoVista.items || [], productoActual ? [productoActual] : []);
+    items.forEach(function (item) {
+      if (!item) return;
+      if (item.__ofertaFlashOriginal) Object.assign(item, item.__ofertaFlashOriginal);
+      var aplica = !ids.length || ids.some(function (id) { return [item.id, item.content_id, (item.tipo || 'producto') + '-' + item.referencia_id].some(function (valor) { return String(id) === String(valor); }); });
+      if (!vencida || !aplica) return;
+      if (!item.__ofertaFlashOriginal) item.__ofertaFlashOriginal = { precio_antes: item.precio_antes, descuento_pct: item.descuento_pct, ahorro: item.ahorro, etiqueta: item.etiqueta, insignia_principal: item.insignia_principal, insignia_secundaria: item.insignia_secundaria };
+      item.precio_antes = null;
+      item.descuento_pct = 0;
+      item.ahorro = 0;
+      item.etiqueta = String(item.etiqueta || '').split(',').filter(function (t) { return t.trim().toLowerCase() !== 'oferta'; }).join(',');
+      ['insignia_principal', 'insignia_secundaria'].forEach(function (campo) {
+        if (/^(oferta|oferta flash|descuento|promoción|promocion|\d+%\s*(off|de descuento)?)$/i.test(String(item[campo] || '').trim())) item[campo] = '';
+      });
+    });
+    if (vencida) document.querySelectorAll('.gc-card-countdown').forEach(function (el) { el.remove(); });
+  }
+
   function productoAplicaUrgencia(item, config) {
     if (!item || !config || !config.activo || !urgenciaVigente(config)) return false;
     var ids = Array.isArray(config.productos) ? config.productos : [];
@@ -1119,12 +1142,13 @@ export function runtimeGesicomm() {
     return total > 0 ? total : COUNTDOWN_DEMO_MS;
   }
 
-  // Duración que el comercio cargó para la sección de urgencia (horas),
-  // usada cuando NO confirmó una fecha real (ver finCountdown). 2h por
-  // defecto si no cargó nada, igual que el resto de los countdown demo.
+  // Duración de cada ciclo renovable, con precisión de segundos.
+  // Compatible con configuraciones antiguas que solo guardaban horas.
   function duracionUrgenciaMs(urgencia) {
     var horas = Math.max(0, parseInt(urgencia && urgencia.duracion_horas, 10) || 0);
-    var total = horas * 3600 * 1000;
+    var minutos = Math.max(0, Math.min(59, parseInt(urgencia && urgencia.duracion_minutos, 10) || 0));
+    var segundos = Math.max(0, Math.min(59, parseInt(urgencia && urgencia.duracion_segundos, 10) || 0));
+    var total = (horas * 3600 + minutos * 60 + segundos) * 1000;
     return total > 0 ? total : COUNTDOWN_DEMO_MS;
   }
 
@@ -1150,6 +1174,7 @@ export function runtimeGesicomm() {
         finMs = onRenovar();
         restante = finMs - Date.now();
       }
+      el.__gesicommCountdownFin = finMs;
       el.setAttribute('data-gesicomm-countdown-fin', new Date(finMs).toISOString());
       el.setAttribute('data-gesicomm-countdown-vencido', restante <= 0 ? 'true' : 'false');
       var totalSeg = Math.max(0, Math.floor(restante / 1000));
@@ -1187,7 +1212,22 @@ export function runtimeGesicomm() {
     return Date.now() + countdownDemoMs(item);
   }
 
+  var vencimientoFlashTimer = null;
   function prepararCountdowns() {
+    if (vencimientoFlashTimer) clearInterval(vencimientoFlashTimer);
+    var configFlash = datos.venta && datos.venta.urgencia;
+    // También vence en páginas que no incluyen un contador visible.
+    if (configFlash && configFlash.activo && !configFlash.renovar_cada_visita && Date.parse(configFlash.fin_at) > Date.now()) {
+      vencimientoFlashTimer = setInterval(function () {
+        if (urgenciaVigente(configFlash)) return;
+        clearInterval(vencimientoFlashTimer);
+        actualizarOfertasVencidas();
+        if (!paginado) aplicarLocal();
+        renderizar();
+        prepararCountdowns();
+        aplicarBloquesInicio();
+      }, 250);
+    }
     countdownTimers.forEach(function (timer) { clearInterval(timer); });
     countdownTimers = [];
     var els = document.querySelectorAll('[data-gesicomm-countdown]');
@@ -1203,7 +1243,20 @@ export function runtimeGesicomm() {
       var contItem = els[i].closest('[data-gesicomm-item]');
       var enFicha = !contItem && !!els[i].closest('[data-gesicomm-ficha-bloque="oferta_duracion"], [data-gesicomm-ficha-bloque="urgencia"], [data-gesicomm-ficha-bloque="precio"]');
       var item = contItem ? buscar(contItem.getAttribute('data-gesicomm-item')) : (enFicha ? productoActual : null);
+      var duracionLocal = els[i].getAttribute('data-gesicomm-countdown-duracion');
+      if (urgencia && urgencia.activo && !urgenciaVigente(urgencia)) {
+        var idsFlash = urgencia.productos && urgencia.productos.length ? urgencia.productos : [urgencia.producto_id].filter(Boolean);
+        if (!item || !idsFlash.length || idsFlash.some(function (id) { return String(item.id) === String(id) || String(item.content_id) === String(id); })) {
+          els[i].style.display = 'none';
+          continue;
+        }
+      }
       var finMs = finCountdown(urgencia, item);
+      // Las fichas React declaran la misma duración que el editor de producto.
+      if (duracionLocal != null && (!urgencia || !urgencia.activo || !isFinite(finMs))) finMs = Date.now() + Math.max(0, Number(duracionLocal) || 0) * 1000;
+      var firma = JSON.stringify([urgencia || null, duracionLocal, item && item.id, item && item.urgencia_horas, item && item.urgencia_minutos, item && item.urgencia_segundos]);
+      if (els[i].__gesicommCountdownFirma === firma && isFinite(els[i].__gesicommCountdownFin)) finMs = els[i].__gesicommCountdownFin;
+      els[i].__gesicommCountdownFirma = firma;
       // El bloque de urgencia de la ficha lo prende o apaga el comercio desde
       // el editor: si la Oferta flash es de otros productos, usa la duración
       // cargada en la ficha en vez de desaparecer.
@@ -1215,6 +1268,8 @@ export function runtimeGesicomm() {
       prepararCountdown(els[i], finMs, onRenovar);
     }
   }
+
+  window.addEventListener('gesicomm:actualizar-countdowns', prepararCountdowns);
 
   function prepararCarruselOfertas() {
     document.querySelectorAll('[data-gesicomm-bloque="ofertas_urgencia"]').forEach(function (seccion) {
@@ -2648,6 +2703,7 @@ export function runtimeGesicomm() {
   }
 
   function renderizar() {
+    actualizarOfertasVencidas();
     var listas = document.querySelectorAll('[data-gesicomm-lista]');
     for (var i = 0; i < listas.length; i++) renderizarLista(listas[i]);
     ocultarSeccionesVacias();
@@ -3236,6 +3292,7 @@ export function runtimeGesicomm() {
   }
 
   function aplicarLocal() {
+    actualizarOfertasVencidas();
     var q = normalizar(filtros.busqueda.trim());
     var categoriaActiva = categoriaFiltroEfectiva();
     var lista = productos.filter(function (p) {

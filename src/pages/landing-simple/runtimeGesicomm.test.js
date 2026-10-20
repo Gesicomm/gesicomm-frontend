@@ -560,6 +560,42 @@ describe('runtime del lienzo en blanco — inicio', () => {
     dom.window.close();
   });
 
+  it('Flash: vence sin recargar y quita el descuento del catálogo, conservando otros productos', async () => {
+    const fin = Date.now() + 60000;
+    const { dom, document } = montar(PLANTILLA_INICIO, {
+      ...datos, productos: [{ ...airFryer, etiqueta: 'Oferta, Cocina' }, { ...remera, precio_antes: 70000, descuento_pct: 28 }],
+      venta: { urgencia: { activo: true, productos: [airFryer.id], fin_at: new Date(fin).toISOString() } },
+    });
+    try {
+      expect(document.querySelector('[data-gesicomm-bloque="ofertas_urgencia"]').style.display).not.toBe('none');
+      dom.window.Date.now = () => fin + 1;
+      await new Promise(resolve => setTimeout(resolve, 400));
+      const productos = dom.window.Gesicomm.datos.productos;
+      expect(productos[0]).toMatchObject({ precio_antes: null, descuento_pct: 0, etiqueta: ' Cocina' });
+      expect(productos[1].descuento_pct).toBe(28);
+      expect(document.querySelector('[data-gesicomm-bloque="ofertas_urgencia"]').style.display).toBe('none');
+    } finally { dom.window.close(); }
+  });
+
+  it('Flash: renueva repetidamente una duración de segundos sin perder el descuento', async () => {
+    const ahora = Date.now();
+    const { dom, document } = montar(PLANTILLA_INICIO, {
+      ...datos, venta: { urgencia: { activo: true, renovar_cada_visita: true, productos: [airFryer.id], duracion_horas: 0, duracion_minutos: 0, duracion_segundos: 2 } },
+    });
+    try {
+      const flash = document.querySelector('[data-gesicomm-bloque="ofertas_urgencia"]');
+      const inicioFin = Date.parse(flash.getAttribute('data-gesicomm-countdown-fin'));
+      expect(inicioFin - ahora).toBeLessThan(3000);
+      for (const salto of [3000, 6000]) {
+        dom.window.Date.now = () => ahora + salto;
+        await new Promise(resolve => setTimeout(resolve, 1100));
+        expect(Date.parse(flash.getAttribute('data-gesicomm-countdown-fin'))).toBe(ahora + salto + 2000);
+        expect(flash.style.display).not.toBe('none');
+        expect(dom.window.Gesicomm.datos.productos[0].descuento_pct).toBe(19);
+      }
+    } finally { dom.window.close(); }
+  });
+
   it('Flash: "renovar cada visita" no le importa que el "fin_at" guardado ya haya pasado', () => {
     const venta = {
       urgencia: {

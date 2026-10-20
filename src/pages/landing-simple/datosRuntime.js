@@ -1,3 +1,4 @@
+import { sinOfertaFlashVencida } from './ofertaFlash';
 import { porcentajeDescuento } from './porcentajeDescuento';
 import { combinarFichaCompartida } from './fichasEnLote';
 import { getMediaUrl } from '../../services/api';
@@ -530,7 +531,7 @@ export function imagenesParaLanding(item, venta = null) {
 /** Item de /api/l (landing pública) → item del runtime. */
 export function itemPublicoARuntime(item, slug, venta = null) {
   const imagenes = imagenesParaLanding(item, venta);
-  return {
+  return sinOfertaFlashVencida({
     ...presentacionComercial(item, venta),
     id: item.content_id,
     referencia_id: item.referencia_id,
@@ -572,7 +573,7 @@ export function itemPublicoARuntime(item, slug, venta = null) {
     ...contenidoFicha(item),
     ...presentacionComercial(item, venta),
     url: urlProducto(slug, item.content_id),
-  };
+  }, venta?.urgencia);
 }
 
 /** El content_id público de un item del catálogo del panel — misma regla que obtenerPublica en el backend. */
@@ -671,7 +672,7 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto, venta = 
   const imagenes = imagenesParaLanding(item, venta);
   const ancla = Number(item.precio_ancla ?? item.precio_tachado);
   const precioAntes = ancla > Number(precio) ? ancla : null;
-  return {
+  return sinOfertaFlashVencida({
     ...presentacionComercial(item, venta),
     id: contentId,
     referencia_id: item.id,
@@ -704,7 +705,7 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto, venta = 
     ...contenidoFicha({ ...item, precio, precio_antes: precioAntes }),
     ...presentacionComercial(item, venta),
     url: '#',
-  };
+  }, venta?.urgencia);
 }
 
 /**
