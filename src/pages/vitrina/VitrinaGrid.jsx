@@ -4,12 +4,13 @@ import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
   ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, SlidersHorizontal, Grid,
-  Store, Trash2, FileSpreadsheet, EyeOff, Clock, Tags, X
+  Store, Trash2, FileSpreadsheet, EyeOff, Clock, Tags, X, Download
 } from 'lucide-react';
 import { productService } from '../../services/productService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { compactarItemsLanding } from '../../lib/landingItems';
+import { exportarProductosCsv } from './exportarProductos';
 import CuponesModal from './CuponesModal';
 import ExportarFeedMeta from '../landing-simple/ExportarFeedMeta';
 import CargaMasivaProductosModal from '../productos/CargaMasivaProductosModal';
@@ -443,6 +444,10 @@ export default function VitrinaGrid() {
   }, [exportandoMeta, cerrarExportacionMeta]);
   useEffect(() => { if (!esVistaLanding) setExportandoMeta(false); }, [esVistaLanding]);
   
+  const [exportando, setExportando] = useState(false);
+  const [progresoExport, setProgresoExport] = useState(null);
+  const [errorExport, setErrorExport] = useState(null);
+
   const [page, setPage] = useState(1);
   const [seleccionados, setSeleccionados] = useState(new Set());
   const [seleccionadosData, setSeleccionadosData] = useState(new Map());
@@ -632,6 +637,31 @@ export default function VitrinaGrid() {
       return { tipo, id: Number(id) };
     });
     navigate('/mi-catalogo/precios', seleccion.length ? { state: { seleccion } } : undefined);
+  }
+
+  // Exporta a CSV lo seleccionado (si hay algo marcado) o todo el catálogo
+  // filtrado como está la grilla ahora (búsqueda, categoría, proveedor, tipo).
+  async function exportarProductos() {
+    if (exportando) return;
+    setExportando(true);
+    setErrorExport(null);
+    setProgresoExport({ cargado: 0, total: seleccionados.size || totalItems });
+    try {
+      const seleccionadosLista = Array.from(seleccionados).map(key => {
+        const [tipo, id] = key.split(':');
+        return { tipo, id: Number(id) };
+      });
+      await exportarProductosCsv(
+        { filtro, busqueda: busquedaAplicada, categoria: filtroCategoria, proveedor: filtroProveedor, orden },
+        seleccionadosLista,
+        (cargado, total) => setProgresoExport({ cargado, total })
+      );
+    } catch (err) {
+      setErrorExport(err.response?.data?.message || err.message || 'No se pudo exportar el catálogo.');
+    } finally {
+      setExportando(false);
+      setProgresoExport(null);
+    }
   }
 
   const [borrando, setBorrando] = useState(false);
@@ -879,6 +909,20 @@ export default function VitrinaGrid() {
         <div className="vit-header-text">
           <div className="vit-title-row">
             <h1 className="vit-title">Catálogo de Productos</h1>
+            {!enOnboarding && (
+              <button
+                type="button"
+                className="vit-export-button"
+                onClick={exportarProductos}
+                disabled={exportando}
+                title={seleccionados.size > 0 ? `Exportar ${seleccionados.size} producto${seleccionados.size === 1 ? '' : 's'} seleccionado${seleccionados.size === 1 ? '' : 's'} a CSV` : 'Exportar todo el catálogo filtrado a CSV'}
+              >
+                {exportando ? <Loader size={15} className="spin-icon" /> : <Download size={15} />}
+                {exportando
+                  ? (progresoExport ? `Exportando ${progresoExport.cargado}/${progresoExport.total}…` : 'Exportando…')
+                  : `Exportar productos${seleccionados.size > 0 ? ` (${seleccionados.size})` : ''}`}
+              </button>
+            )}
             {esVistaLanding && !enOnboarding && <div className="vit-meta-export-anchor" ref={exportacionMetaRef}>
               <button ref={botonMetaRef} type="button" className="vit-meta-export-button" onClick={() => setExportandoMeta(v => !v)} aria-expanded={exportandoMeta} aria-haspopup="dialog" aria-controls="vitrina-meta-export"><FileSpreadsheet size={15} />Exportar a Meta</button>
               {exportandoMeta && <ExportarFeedMeta onCerrar={cerrarExportacionMeta} />}
@@ -1050,6 +1094,12 @@ export default function VitrinaGrid() {
       {errorGenerarLanding && (
         <div className="vit-inline-error" role="alert">
           <AlertCircle size={16} /> {errorGenerarLanding}
+        </div>
+      )}
+
+      {errorExport && (
+        <div className="vit-inline-error" role="alert">
+          <AlertCircle size={16} /> {errorExport}
         </div>
       )}
 

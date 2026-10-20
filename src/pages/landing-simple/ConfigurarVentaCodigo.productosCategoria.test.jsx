@@ -40,11 +40,11 @@ afterEach(() => { cleanup(); catalogoPaginado.mockClear(); });
 
 const datosPreview = () => JSON.parse(screen.getAllByTestId('preview-datos')[0].textContent);
 
-function montar() {
+function montar(combos = []) {
   const confirmar = vi.fn().mockResolvedValue(true);
   // La landing vende todo menos el último producto.
-  const enLanding = productos.slice(0, 149);
-  render(<ConfigurarVentaCodigo catalogo={{ productos: [...productos, { tipo: 'producto', id: 151, slug: 'externo', nombre: 'Producto ajeno', categoria: 'Categoría ajena', precio_efectivo: 100000 }], combos: [] }} inicial={{ seleccion: enLanding }} onConfirmar={confirmar} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
+  const enLanding = [...productos.slice(0, 149), ...combos];
+  render(<ConfigurarVentaCodigo catalogo={{ productos: [...productos, { tipo: 'producto', id: 151, slug: 'externo', nombre: 'Producto ajeno', categoria: 'Categoría ajena', precio_efectivo: 100000 }], combos }} inicial={{ seleccion: enLanding }} onConfirmar={confirmar} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
   fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
   return confirmar;
 }
@@ -55,6 +55,19 @@ async function abrirBloqueProductos() {
 }
 
 describe('Bloque Productos del inicio en una tienda grande', () => {
+  it('incluye combos fuera del recorte y guarda el control Mostrar combos', async () => {
+    const confirmar = montar([{ id: 99, tipo: 'combo', nombre: 'prueba123', categoria: 'Minorista', precio_efectivo: 179000 }]);
+    expect(datosPreview().productos.filter(p => p.tipo === 'producto')).toHaveLength(120);
+    expect(datosPreview().productos.find(p => p.id === 'combo-99')).toMatchObject({ nombre: 'prueba123', precio: 179000 });
+    await abrirBloqueProductos();
+    const check = screen.getByRole('checkbox', { name: 'Mostrar combos' });
+    expect(check.checked).toBe(true);
+    fireEvent.click(check);
+    expect(datosPreview().venta.inicio.productos_categoria.mostrar_combos).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(confirmar).toHaveBeenCalled());
+    expect(confirmar.mock.calls[0][0].venta.inicio.productos_categoria.mostrar_combos).toBe(false);
+  });
   it('Colecciones guarda sus textos y recibe categorías fuera del recorte de la vista previa', async () => {
     const confirmar = montar();
     fireEvent.click(screen.getByRole('button', { name: 'Colecciones', exact: true }));

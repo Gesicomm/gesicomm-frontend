@@ -1,3 +1,5 @@
+import { dividirCodigoPegado } from './dividirCodigoPegado';
+import useArrastreBloques, { moverBloqueEnLista } from './useArrastreBloques';
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Loader, ArrowRight, ArrowLeft, Search, Check, AlertTriangle, Infinity as InfinityIcon, Tag, Plus, Pencil, X,
@@ -20,6 +22,10 @@ import { usePagoparConectado } from './usePagoparConectado';
 import { contentIdPanel, datosRuntimePreview, itemPanelARuntime, presentacionDelProducto, slugCategoria, textosRecomendados, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
+import FichaComboLienzo from './FichaComboLienzo';
+import EditorFichaCombo from './EditorFichaCombo';
+import { BLOQUES_COMBO, bloquePadreCombo } from './comboBloques';
+import { contenidoCombo, combinarDetalleCombo } from './comboContenido';
 import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado, marcarFichaPersonalizada, PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
@@ -591,6 +597,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     confianza: confianzaConTexto.length ? confianzaConTexto : CONFIANZA_INICIO_DEFAULT,
     productos_categoria: {
       activo: productosCategoria.activo === true,
+      mostrar_combos: productosCategoria.mostrar_combos !== false,
       titulo: productosCategoria.titulo || '',
       kicker: productosCategoria.kicker || '',
       subtitulo: productosCategoria.subtitulo || '',
@@ -917,6 +924,8 @@ export default function ConfigurarVentaCodigo({
   // Vista previa
   const [vistaPreview, setVistaPreview] = useState('inicio');
   const [productoPreview, setProductoPreview] = useState(null); // content_id
+  const [comboBloqueActivo, setComboBloqueActivo] = useState(null);
+  const [comboBloquePedido, setComboBloquePedido] = useState(null);
   const [resaltado, setResaltado] = useState(null); // { lista, n }
   const [avisoPreview, setAvisoPreview] = useState('');
   const [previewMovil, setPreviewMovil] = useState(false);
@@ -1087,8 +1096,14 @@ export default function ConfigurarVentaCodigo({
   const [fichasProducto, setFichasProducto] = useState({});
   const fichasPedidas = useRef(new Set());
   const pedirFichaProducto = useCallback((item) => {
-    if (!item || item.tipo !== 'producto' || fichasPedidas.current.has(claveItem(item))) return;
+    if (!item || fichasPedidas.current.has(claveItem(item))) return;
     fichasPedidas.current.add(claveItem(item));
+    if (item.tipo === 'combo') {
+      Promise.resolve().then(() => comboAdminService.obtener(item.id))
+        .then(p => { if (p) setFichasProducto(prev => ({ ...prev, [claveItem(item)]: contenidoCombo(p) })); })
+        .catch(() => { fichasPedidas.current.delete(claveItem(item)); });
+      return;
+    }
     Promise.resolve()
       .then(() => Promise.all([productService.detalle(item.id), productService.faq(item.id).catch(() => [])]))
       .then(([p, faq]) => setFichasProducto(prev => ({ ...prev, [claveItem(item)]: {
@@ -1102,10 +1117,10 @@ export default function ConfigurarVentaCodigo({
       .catch(() => {});
   }, []);
   const candidatosDatosProducto = useMemo(() => {
-    const productos = seleccion.filter(i => i.tipo === 'producto');
-    const base = productos.length ? productos : seleccion;
+    const base = seleccion;
     return base.map(i => {
       const ficha = fichasProducto[claveItem(i)];
+      if (i.tipo === 'combo') return { ...combinarDetalleCombo(i, ficha), content_id: contentIdPanel(i) };
       const delProducto = { ...ficha, ...presentacionDelProducto(ficha?.ficha_datos) };
       // Un texto que la landing guardó vacío no pisa el del producto: la
       // ficha publicada también cae al del producto en ese caso.
@@ -1157,6 +1172,7 @@ export default function ConfigurarVentaCodigo({
     [candidatosDatosProducto, promoEditando],
   );
   const seleccionarProductoConfig = useCallback((contentId) => {
+    if (/^combo-\d+$/.test(String(contentId))) setSeleccionMultipleFichas(false);
     setProductoEditando(contentId);
     setSeccionConfig('fichas');
     setVistaPreview('producto');
@@ -1182,8 +1198,11 @@ export default function ConfigurarVentaCodigo({
     () => new Map(candidatosDatosProducto.map(i => [i.content_id, i])),
     [candidatosDatosProducto],
   );
+  const datosEdicionMultiple = useMemo(() => new Map(
+    candidatosDatosProducto.filter(i => i.tipo === 'producto').map(i => [i.content_id, i]),
+  ), [candidatosDatosProducto]);
   const datosProductoConCombos = candidatosDatosProducto.some(i => i.tipo !== 'producto');
-  const fichasElegidas = candidatosDatosProducto.filter(i => todasLasFichas || fichasMarcadas.has(i.content_id));
+  const fichasElegidas = candidatosDatosProducto.filter(i => i.tipo === 'producto' && (todasLasFichas || fichasMarcadas.has(i.content_id)));
   const editandoGrupo = seleccionMultipleFichas && fichasElegidas.length > 1;
   function alternarFichaSeleccionada(contentId) {
     if (!seleccionMultipleFichas) { seleccionarProductoConfig(contentId); return; }
@@ -1789,6 +1808,8 @@ export default function ConfigurarVentaCodigo({
       v: 2,
       ...Object.fromEntries(CAMPOS_TEXTO_FICHA.filter(campo => value[campo] != null).map(campo => [campo, value[campo]])),
       ...(value.ficha_bloques && typeof value.ficha_bloques === 'object' ? { ficha_bloques: value.ficha_bloques } : {}),
+      ...(value.codigo_bloques && typeof value.codigo_bloques === 'object' ? { codigo_bloques: value.codigo_bloques } : {}),
+      ...(value.ficha_combo && typeof value.ficha_combo === 'object' ? { ficha_combo: value.ficha_combo } : {}),
       ...(Array.isArray(value.textos_ocultos) ? { textos_ocultos: value.textos_ocultos } : {}),
       ...(Array.isArray(value.ficha_orden_mobile) ? { ficha_orden_mobile: value.ficha_orden_mobile } : {}),
       ...(Array.isArray(value.imagenes_landing) ? { imagenes_landing: value.imagenes_landing } : {}),
@@ -2020,15 +2041,18 @@ export default function ConfigurarVentaCodigo({
   // abajo en la lista — igual que primeraPaginaLienzo en el backend. Sin
   // esto, un producto elegido en "Productos" que cae después del corte no
   // aparecía en la vista previa (ni su categoría en las pestañas).
+  // Los combos también viajan siempre para que el buscador y su pestaña
+  // funcionen aunque estén después del recorte de productos.
   // También el de la ficha que se está mirando: se elige con el buscador
   // paginado y puede ser cualquiera del catálogo.
   const productosPreview = useMemo(() => {
     const referidos = contentIdsReferidosVenta(ventaActual);
     const enFicha = resolverContentIdProducto(productoPreview);
-    const lista = seleccion.filter((i, idx) => idx < MAX_PRODUCTOS_PREVIEW
+    const lista = seleccion.filter((i, idx) => i.tipo === 'combo' || idx < MAX_PRODUCTOS_PREVIEW
       || referidos.has(contentIdPanel(i)) || referidos.has(`${i.tipo}-${i.id}`)
       || (enFicha && contentIdPanel(i) === enFicha));
-    return lista.map(i => (fichasProducto[claveItem(i)] ? { ...fichasProducto[claveItem(i)], ...i } : i));
+    return lista.map(i => i.tipo === 'combo' ? combinarDetalleCombo(i, fichasProducto[claveItem(i)])
+      : (fichasProducto[claveItem(i)] ? { ...fichasProducto[claveItem(i)], ...i } : i));
   }, [seleccion, fichasProducto, ventaActual, productoPreview, resolverContentIdProducto]);
   const productoFicha = useMemo(() => {
     const productosSolos = productosPreview.filter(p => p.tipo === 'producto');
@@ -2040,7 +2064,7 @@ export default function ConfigurarVentaCodigo({
     pedirFichaProducto(productoConfigActual);
     pedirFichaProducto(fichaEnPreview);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productoConfigActual?.id, fichaEnPreview?.id, pedirFichaProducto]);
+  }, [productoConfigActual?.id, productoConfigActual?.tipo, fichaEnPreview?.id, fichaEnPreview?.tipo, pedirFichaProducto]);
 
   const pagoparConectado = usePagoparConectado();
   const rotulosInicio = useMemo(() => {
@@ -2119,6 +2143,13 @@ export default function ConfigurarVentaCodigo({
       setBloqueInicioAbierto({ clave: zona === 'encabezado' ? '__menu__' : zona, n: Date.now() });
       return;
     }
+    if (productoFicha?.tipo === 'combo' && bloquePadreCombo(zona)) {
+      setPanelesOcultos(false); setPreviewMovil(false); setPreviewAmpliada(false);
+      setSeccionConfig('fichas'); setSeleccionMultipleFichas(false);
+      setProductoEditando(contentIdPanel(productoFicha));
+      setComboBloqueActivo(zona); setComboBloquePedido({ clave: zona, n: Date.now() });
+      return;
+    }
     const clave = bloqueDeZona(zona);
     const contentId = productoFicha ? contentIdPanel(productoFicha) : null;
     if (!clave || !contentId) return;
@@ -2157,7 +2188,9 @@ export default function ConfigurarVentaCodigo({
     else if (p?.destino === 'pagina') setAvisoPreview('Ese link abre una página de la tienda (legales o contacto).');
   }, [resolverContentIdProducto]);
   const alComprarPreview = useCallback((p) => {
-    setAvisoPreview(p?.oferta
+    setAvisoPreview(p?.checkout_directo
+      ? 'En la tienda publicada, abre el checkout con pago anticipado seleccionado. El descuento se retira si el cliente elige pago contra entrega.'
+      : p?.oferta
       ? 'En la landing publicada, esto agrega la oferta al carrito.'
       : 'En la landing publicada, esto agrega el producto y abre el carrito.');
   }, []);
@@ -2367,9 +2400,13 @@ export default function ConfigurarVentaCodigo({
     onVista: v => { setVistaPreview(v); setSeccionConfig(seccionConfigDeVista(v)); if (v === 'categoria') setCategoriaPreview(''); setResaltado(null); setAvisoPreview(''); },
     productos: productosPreview,
     productoFicha,
-    onProducto: id => { setProductoPreview(id); setResaltado(null); },
+    onProducto: id => { seleccionarProductoConfig(id); setResaltado(null); },
     codigo: codigoPreviewActual,
+    codigoInicio: codigoInicioPreview,
     datos: datosPreview,
+    content: { ...landing?.content, venta: ventaActual },
+    comboBloqueActivo,
+    onComboActivo: setComboBloqueActivo,
     resaltado,
     aviso: avisoPreview,
     inicioEsBase,
@@ -2556,8 +2593,15 @@ export default function ConfigurarVentaCodigo({
                       <div className="space-y-3">
                         <div className="flex gap-2" role="group" aria-label="Tipo de edición de productos">
                           {[false, true].map(varios => <button key={String(varios)} type="button" aria-pressed={seleccionMultipleFichas === varios}
+                            disabled={varios && datosEdicionMultiple.size === 0}
                             className={`rounded-lg border px-3 py-2 text-sm font-semibold ${seleccionMultipleFichas === varios ? 'border-primary bg-primary/10 text-primary-text' : 'border-border text-fg-muted'}`}
-                            onClick={() => { setSeleccionMultipleFichas(varios); setTodasLasFichas(false); setFichasMarcadas(new Set(productoConfigActual ? [productoConfigActual.content_id] : [])); }}>
+                            onClick={() => {
+                              const referencia = varios && productoConfigActual?.tipo === 'combo'
+                                ? datosEdicionMultiple.values().next().value : productoConfigActual;
+                              setSeleccionMultipleFichas(varios); setTodasLasFichas(false);
+                              setFichasMarcadas(new Set(referencia ? [referencia.content_id] : []));
+                              if (varios && referencia) seleccionarProductoConfig(referencia.content_id);
+                            }}>
                             {varios ? 'Editar varios o todos' : 'Editar un producto'}
                           </button>)}
                         </div>
@@ -2566,7 +2610,7 @@ export default function ConfigurarVentaCodigo({
                             setTodasLasFichas(e.target.checked); setFichasMarcadas(new Set());
                             if (e.target.checked && !productoConfigActual) seleccionarProductoConfig(candidatosDatosProducto[0]?.content_id || null);
                           }} className="accent-primary" />
-                          Seleccionar todos ({candidatosDatosProducto.length})
+                          Seleccionar todos ({datosEdicionMultiple.size})
                         </label>}
                         <div>
                           <p className="block text-sm font-medium text-fg mb-1.5">
@@ -2574,7 +2618,7 @@ export default function ConfigurarVentaCodigo({
                           </p>
                           <SelectorProductosPaginado
                             elegidos={seleccionMultipleFichas ? fichasElegidas.map(i => i.content_id) : (productoConfigActual ? [productoConfigActual.content_id] : [])}
-                            enLanding={datosProductoPorContentId}
+                            enLanding={seleccionMultipleFichas ? datosEdicionMultiple : datosProductoPorContentId}
                             incluirCombos={datosProductoConCombos}
                             mostrarElegidos={false}
                             onAlternar={alternarFichaSeleccionada}
@@ -2598,13 +2642,24 @@ export default function ConfigurarVentaCodigo({
                   ) : productoConfigActual && (!seleccionMultipleFichas || fichasElegidas.length > 0) ? (
                     <Bloque
                       titulo={productoConfigActual.nombre}
-                      ayuda="Presentación comercial, precio ancla, badges, imágenes y visibilidad de esta ficha."
+                      ayuda={productoConfigActual.tipo === 'combo' ? 'Presentación del combo, imágenes, ahorro por productos y visibilidad de sus bloques.' : 'Presentación comercial, precio ancla, badges, imágenes y visibilidad de esta ficha.'}
                       verDonde={() => seleccionarProductoConfig(productoConfigActual.content_id)}
                     >
-                      <PresentacionProducto item={productoConfigActual} ancla={anclas[claveItem(productoConfigActual)] ?? ''}
+                      {productoConfigActual.tipo === 'combo' ? <EditorFichaCombo
+                        key={productoConfigActual.content_id} item={productoConfigActual}
+                        content={{ ...landing?.content, venta: ventaActual }} codigoInicio={codigoInicioPreview} tienda={tienda}
+                        onCambiar={cambiarFichaSeleccionada} pedido={comboBloquePedido}
+                        activo={comboBloqueActivo} onActivo={setComboBloqueActivo}
+                        onSubirImagen={onSubirImagen ? subirImagenLanding : null}
+                        onGlobal={key => {
+                          setSeccionConfig('inicio'); setVistaPreview('inicio'); setComboBloqueActivo(null);
+                          setBloqueInicioAbierto({ clave: key === 'encabezado_tienda' ? '__menu__' : key === 'pie' ? 'contacto' : 'anuncios', n: Date.now() });
+                        }}
+                      /> : <PresentacionProducto item={productoConfigActual} ancla={anclas[claveItem(productoConfigActual)] ?? ''}
                         onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(productoConfigActual)]: v }))}
                         onCambiar={cambiarFichaSeleccionada}
                         propio={combinarFichaCompartida(productoConfigActual.tipo === 'producto' ? fichaCompartida : null, presentacion[claveItem(productoConfigActual)] || {})}
+                        codigoFicha={codigoFichaPreview}
                         cantidadSeleccionada={1}
                         efectivo={fichaEfectiva}
                         bloqueAbierto={bloqueFichaAbierto}
@@ -2617,7 +2672,7 @@ export default function ConfigurarVentaCodigo({
                         resumenRecomendados={resumenReco}
                         onRecomendadosVisible={setRecoActivo}
                         destacado={destacadosValidos.includes(productoConfigActual.content_id)} onDestacar={() => alternarDestacado(productoConfigActual.content_id)}
-                        tienda={tienda} onSubirImagen={onSubirImagen ? subirImagenLanding : null} {...propsOfertaProducto(productoConfigActual)} inicialmenteAbierto />
+                        tienda={tienda} onSubirImagen={onSubirImagen ? subirImagenLanding : null} {...propsOfertaProducto(productoConfigActual)} inicialmenteAbierto />}
                     </Bloque>
                   ) : (
                     <div className="rounded-2xl border border-dashed border-border-strong bg-surface px-5 py-6 text-center">
@@ -3332,14 +3387,23 @@ export default function ConfigurarVentaCodigo({
                     {seleccion.filter(i => i.tipo === 'combo').length > 0 ? (
                       <div className="rounded-xl border border-border bg-surface divide-y divide-border overflow-hidden">
                         {seleccion.filter(i => i.tipo === 'combo').map(combo => (
-                          <div key={contentIdPanel(combo)} className="flex items-center gap-3 px-3 py-2.5">
+                          <button key={contentIdPanel(combo)} type="button"
+                            aria-label={`Ver combo ${combo.nombre}`}
+                            onClick={() => {
+                              seleccionarProductoConfig(contentIdPanel(combo));
+                              setComboBloqueActivo('hero');
+                              setComboBloquePedido({ clave: 'hero', n: Date.now() });
+                              setPreviewMovil(typeof window !== 'undefined' && window.innerWidth < 1280);
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:-outline-offset-2">
                             <Miniatura item={combo} />
                             <span className="min-w-0 flex-1">
                               <span className="block text-sm font-medium text-fg truncate">{combo.nombre}</span>
                               <span className="block text-xs text-fg-muted">Combo activo en esta landing</span>
                             </span>
                             <span className="font-mono text-xs text-fg tabular-nums">{formatearGs(precioPanel(combo))}</span>
-                          </div>
+                            <ChevronDown size={15} className="-rotate-90 shrink-0 text-fg-muted" aria-hidden="true" />
+                          </button>
                         ))}
                       </div>
                     ) : (
@@ -3639,37 +3703,6 @@ export default function ConfigurarVentaCodigo({
   );
 }
 
-function dividirCodigoPegado(texto) {
-  const fuente = String(texto || '');
-  const salida = {};
-  const bloques = /```(html|htm|xml|css|js|javascript)?[^\n]*\n([\s\S]*?)```/gi;
-  let match;
-  while ((match = bloques.exec(fuente))) {
-    const lang = String(match[1] || '').toLowerCase();
-    const cuerpo = match[2].replace(/\s+$/, '');
-    if (['html', 'htm', 'xml', ''].includes(lang) && salida.html === undefined) salida.html = cuerpo;
-    if (lang === 'css' && salida.css === undefined) salida.css = cuerpo;
-    if (['js', 'javascript'].includes(lang) && salida.js === undefined) salida.js = cuerpo;
-  }
-  const tieneBloques = Object.keys(salida).length > 0;
-  if (tieneBloques && salida.html === undefined) return salida;
-
-  let html = (tieneBloques ? salida.html : fuente).trim();
-  const estilos = [];
-  html = html.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (_, css) => {
-    estilos.push(css.trim());
-    return '';
-  });
-  const scripts = [];
-  html = html.replace(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi, (_, js) => {
-    scripts.push(js.trim());
-    return '';
-  });
-  if (estilos.length) salida.css = [...estilos, salida.css].filter(Boolean).join('\n\n');
-  if (scripts.length) salida.js = [...scripts, salida.js].filter(Boolean).join('\n\n');
-  if (/<[a-z!][\s\S]*>/i.test(html)) salida.html = html.trim();
-  return salida;
-}
 
 export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos, vistaInicial = 'inicio', onCambiarCodigo, onRestaurarCodigo = null, onResetearInicio = null, landing = null, onRecargarLanding = null }) {
   const [metodoIa, setMetodoIa] = useState('hibrido'); // 'hibrido' | 'mcp'
@@ -3889,7 +3922,7 @@ function presentacionGuardada(fichas) {
  * en el lugar disponible (como se ve en una notebook, en miniatura).
  */
 function VistaPrevia({
-  vista, onVista, productos, productoFicha, onProducto, codigo, datos, resaltado, aviso, inicioEsBase, onNavegar, onComprar, onCarrito, onBloque,
+  vista, onVista, productos, productoFicha, onProducto, codigo, codigoInicio, datos, content, comboBloqueActivo, onComboActivo, resaltado, aviso, inicioEsBase, onNavegar, onComprar, onCarrito, onBloque,
   dispositivo, onDispositivo, onAmpliar, ampliada, onCerrar, disenoPendienteIA = false,
   // Solo la landing, sin la cabecera (paneles ocultos): el dispositivo se
   // elige desde la barra superior y se navega con los links de la página.
@@ -3901,7 +3934,14 @@ function VistaPrevia({
   const anchoLienzo = ANCHO_ESCRITORIO;
   const escala = escritorio && tam.w ? Math.min(1, tam.w / anchoLienzo) : 1;
 
-  const iframe = (
+  const iframe = datos?.vista === 'producto' && productoFicha?.tipo === 'combo' ? (
+    <div style={{ height: '100%', overflowY: 'auto' }}>
+      <FichaComboLienzo item={productoFicha} runtime={datos.producto} content={content} tienda={datos.tienda}
+        preview isMobile={!escritorio} onComprar={onComprar} onVolver={() => onNavegar({ destino: 'inicio' })}
+        bloqueActivo={comboBloqueActivo} onBloque={onBloque} onActivo={onComboActivo}
+        codigoInicio={codigoInicio} datos={datos} onNavegar={onNavegar} onCarrito={onCarrito} />
+    </div>
+  ) : (
     <CodigoPreview
       key={`${vista}-${dispositivo}`}
       codigo={codigo}
@@ -3960,7 +4000,7 @@ function VistaPrevia({
                 onClick={() => onVista(k)}
                 className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-md text-[13px] font-medium transition-colors ${vista === k ? 'bg-surface-2 text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
               >
-                <Icono size={14} /> {label}
+                <Icono size={14} /> {k === 'producto' && productoFicha?.tipo === 'combo' ? 'Vista combo' : label}
               </button>
             ))}
           </div>
@@ -4428,21 +4468,20 @@ function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCam
 // tiene ninguno de los dos: vive fijo en el header).
 function FilaBloqueInicio({ numero, etiqueta, tipo, visible, fijo = false, arrastre = null, onAlternar, panel, abierto, onAbrir }) {
   const tienePanel = !!panel;
-  // arrastre: { filaProps, manijaProps, arrastrando, destino } — drag & drop
-  // nativo (HTML5). Solo la manija arranca el arrastre, así los inputs del
-  // panel abierto siguen seleccionando texto normalmente.
-  const { filaProps, manijaProps, arrastrando, destino } = arrastre || {};
+  // Comparte el arrastre de producto y combo. Solo el asa inicia el gesto;
+  // los campos del panel siguen permitiendo seleccionar y editar texto.
+  const { filaProps, manijaProps, arrastrando, bloqueado, fueraDeGrupo, recienMovido, posicion } = arrastre || {};
   return (
     <div
       {...(filaProps || {})}
-      data-bloque-inicio={tipo}
-      className={`rounded-xl border bg-surface transition-shadow ${arrastrando ? 'border-primary opacity-50' : destino ? 'border-primary shadow-lg ring-2 ring-primary/40' : abierto ? 'border-primary ring-2 ring-primary/30' : visible === false ? 'border-border bg-surface-2/40 opacity-70' : 'border-border'}`}
+      data-bloque-inicio={tipo} data-arrastrando={arrastrando || undefined} style={{ order: posicion }}
+      className={`rounded-xl border bg-surface transition-[box-shadow,opacity,border-color] duration-200 ${arrastrando ? 'border-dashed border-primary bg-primary/5 opacity-60' : bloqueado ? 'border-border' : fueraDeGrupo ? 'border-border opacity-40' : recienMovido ? 'border-primary ring-4 ring-primary/25' : abierto ? 'border-primary ring-2 ring-primary/30' : visible === false ? 'border-border bg-surface-2/40 opacity-70' : 'border-border'}`}
     >
-      <div className="flex items-center gap-2 p-2.5">
-        {arrastre ? (
+      <div data-inicio-cabecera className="flex items-center gap-2 p-2.5">
+        {!fijo && arrastre ? (
           <span
             {...(manijaProps || {})}
-            className="inline-flex h-8 w-6 shrink-0 cursor-grab items-center justify-center rounded text-fg-muted hover:text-fg active:cursor-grabbing"
+            className="touch-none select-none inline-flex h-8 w-6 shrink-0 cursor-grab items-center justify-center rounded text-fg-muted hover:text-fg active:cursor-grabbing"
             aria-label={`Arrastrar ${etiqueta} para cambiar su lugar`}
             title="Arrastrá para mover"
           >
@@ -4469,7 +4508,7 @@ function FilaBloqueInicio({ numero, etiqueta, tipo, visible, fijo = false, arras
           </label>
         )}
         <div className="flex items-center gap-1">
-          {fijo && <span className="text-[11px] font-medium text-fg-muted">Fijo</span>}
+          {bloqueado ? <span title="Bloque fijo: no se puede soltar acá" aria-label="Destino bloqueado" className="shrink-0 text-xs text-fg-muted"><Lock size={13} /></span> : fijo && <span className="text-[11px] font-medium text-fg-muted">Fijo</span>}
           {tienePanel && (
             <button type="button" onClick={() => onAbrir(abierto ? null : numero)} className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2 text-xs font-semibold text-fg-muted hover:text-fg" aria-expanded={abierto}>
               {abierto ? <ChevronsDownUp size={13} /> : <ChevronsUpDown size={13} />}
@@ -4501,17 +4540,26 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
     });
     return () => cancelAnimationFrame(frame);
   }, [bloqueAbierto]);
-  // Arrastre en curso: índice (dentro de los movibles) del que se arrastra
-  // y del lugar donde caería.
-  const [arrastrando, setArrastrando] = useState(null);
-  const [destino, setDestino] = useState(null);
   const anuncios = bloques.find(b => b.tipo === BLOQUE_INICIO_FIJO) || null;
   const movibles = bloques.filter(b => b.tipo !== BLOQUE_INICIO_FIJO);
-  // Arriba, fijos: barra de anuncios y encabezado. Después, los que se
-  // arrastran. Al final, fijo, el footer.
   const fijosArriba = [...(anuncios ? [anuncios] : []), { tipo: '__menu__' }];
+  const orden = [...fijosArriba.map(b => b.tipo), ...movibles.map(b => b.tipo), '__footer__'];
+  const { listaBloquesRef, arrastre, recienMovido, ordenVisible, controlArrastre, dentroDeLista } = useArrastreBloques({
+    orden, grupo: clave => movibles.some(b => b.tipo === clave) ? 'contenido' : null,
+    mover: moverBloqueEnLista, atributo: 'data-bloque-inicio', selectorCabecera: '[data-inicio-cabecera]', tipo: 'application/x-gesicomm-inicio',
+    describirLimite: () => 'Movelo entre los bloques de contenido, después de Encabezado y antes de Footer. Barra de anuncios, Encabezado y Footer quedan fijos.',
+    onGuardar: (nuevo, origen) => onReordenar(movibles.findIndex(b => b.tipo === origen), nuevo.filter(k => movibles.some(b => b.tipo === k)).indexOf(origen)),
+  });
+  const controles = clave => ({
+    posicion: ordenVisible.indexOf(clave), arrastrando: arrastre?.origen === clave,
+    bloqueado: arrastre?.bloqueado === clave, fueraDeGrupo: !!arrastre && !movibles.some(b => b.tipo === clave),
+    recienMovido: recienMovido === clave,
+    manijaProps: { draggable: true, ...controlArrastre.puntero(clave),
+      onDragStart: e => controlArrastre.empezar(clave, e), onDragEnd: controlArrastre.terminar },
+    filaProps: { onDragOver: e => controlArrastre.sobre(clave, e), onDrop: controlArrastre.soltar },
+  });
 
-  function renderFila(b, numero, arrastre = null) {
+  function renderFila(b, numero) {
     const esMenu = b.tipo === '__menu__';
     const tipoSeccion = esMenu ? 'encabezado' : b.tipo;
         const panelCompleto = codigoInicio ? (
@@ -4534,8 +4582,8 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
         numero={numero}
         etiqueta={esMenu ? 'Encabezado' : (ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo)}
         visible={esMenu ? undefined : b.visible}
-        fijo={!arrastre}
-        arrastre={arrastre}
+        fijo={!movibles.some(v => v.tipo === b.tipo)}
+        arrastre={controles(b.tipo)}
         onAlternar={esMenu ? null : () => onAlternar(b.tipo)}
         panel={panelCompleto}
         abierto={abierto === b.tipo}
@@ -4545,39 +4593,12 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
   }
 
   return (
-    <div ref={listaRef} className="space-y-2">
+    <div ref={el => { listaRef.current = el; listaBloquesRef.current = el; }} className="flex flex-col gap-2" onDragOver={dentroDeLista} onDrop={controlArrastre.soltar}>
+      <p style={{ order: -2 }} className="text-xs leading-relaxed text-fg-muted">Podés mover los bloques de contenido entre Encabezado y Footer. <span className="font-semibold">Barra de anuncios, Encabezado y Footer quedan fijos.</span></p>
+      <span role="status" className="sr-only" style={{ order: -1 }}>{arrastre ? arrastre.bloqueado ? 'Bloqueado: este bloque es fijo. Soltá entre Encabezado y Footer.' : 'Moviendo un bloque de contenido. Los demás se desplazan para mostrar su nueva posición.' : ''}</span>
       {fijosArriba.map((b, idx) => renderFila(b, idx + 1))}
-      {movibles.map((b, idx) => renderFila(b, fijosArriba.length + idx + 1, {
-        arrastrando: arrastrando === idx,
-        destino: arrastrando !== null && destino === idx && destino !== arrastrando,
-        manijaProps: {
-          draggable: true,
-          onDragStart: e => {
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', b.tipo);
-            // Se arrastra la fila entera, no solo el ícono de la manija.
-            const fila = e.currentTarget.closest('[data-bloque-inicio]');
-            if (fila) e.dataTransfer.setDragImage(fila, 24, 20);
-            setArrastrando(idx);
-          },
-          onDragEnd: () => { setArrastrando(null); setDestino(null); },
-        },
-        filaProps: {
-          onDragOver: e => {
-            if (arrastrando === null) return;
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            if (destino !== idx) setDestino(idx);
-          },
-          onDrop: e => {
-            e.preventDefault();
-            if (arrastrando !== null) onReordenar(arrastrando, idx);
-            setArrastrando(null);
-            setDestino(null);
-          },
-        },
-      }))}
-      <FilaBloqueInicio numero={fijosArriba.length + movibles.length + 1} etiqueta="Footer" fijo />
+      {movibles.map((b, idx) => renderFila(b, fijosArriba.length + idx + 1))}
+      <FilaBloqueInicio tipo="__footer__" numero={fijosArriba.length + movibles.length + 1} etiqueta="Footer" fijo arrastre={controles('__footer__')} />
     </div>
   );
 }
@@ -5036,6 +5057,11 @@ function EditorProductosCategoria({ config, enLanding, incluirCombos, onCambiar,
   return (
     <div className="space-y-3">
       <p className="text-xs text-fg-muted">Por defecto se muestran todos los productos, agrupados por categoría. Elegí productos abajo solo si querés mostrar una selección puntual en vez de todo el catálogo.</p>
+      <label className="flex items-center gap-2 text-sm text-fg">
+        <input type="checkbox" checked={config.mostrar_combos !== false} onChange={e => onCambiar({ mostrar_combos: e.target.checked })} className="accent-primary" />
+        Mostrar combos
+      </label>
+      <p className="text-xs text-fg-muted">Incluye los combos activos de esta landing y agrega la pestaña Combos para encontrarlos.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <CampoTexto label="Rótulo (kicker)" value={config.kicker} onChange={v => onCambiar({ kicker: v })} placeholder="PRODUCTOS" maxLength={40} />
         <CampoTexto label="Título" value={config.titulo} onChange={v => onCambiar({ titulo: v })} placeholder="Productos seleccionados" maxLength={100} />

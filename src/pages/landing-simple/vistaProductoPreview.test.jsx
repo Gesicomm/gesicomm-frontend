@@ -121,7 +121,7 @@ describe('Vista producto: cada campo llega a la preview', () => {
   it('5 · botones de compra, botones de pago y contacto', () => {
     montar();
     const b = bloque('Botones de contacto y pago');
-    escribir(within(b).getByLabelText('Botón principal de compra'), 'La quiero');
+    escribir(within(b).getByLabelText('Botón de pago anticipado'), 'La quiero');
     escribir(within(b).getByLabelText('Descuento pago anticipado %'), '10');
     const pagos = within(b).getByRole('group', { name: 'Botones de pago' });
     escribir(within(pagos).getAllByPlaceholderText('Texto del botón')[0], 'Pagar con PagoPar');

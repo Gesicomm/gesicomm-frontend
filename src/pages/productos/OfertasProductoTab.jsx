@@ -1206,7 +1206,7 @@ export default function OfertasProductoTab({
               <div className="oferta-paso-titulo">¿A qué precio?</div>
               <div className="form-grid-2">
               <div className="form-group">
-                <label>{esPack ? 'Precio del paquete' : esBumpOUpsell ? 'Precio de lo que se suma' : 'Precio del combo'}</label>
+                <label>{esPack ? 'Precio del paquete' : esBumpOUpsell ? 'Precio del Producto que se Vende en la Oferta' : 'Precio del combo'}</label>
                 <CurrencyInput value={form.precio} onChange={val => { precioManualRef.current = true; setForm(f => ({ ...f, precio: val })); }} />
                 {esPack && (
                   <p className="field-hint">
@@ -1261,7 +1261,7 @@ export default function OfertasProductoTab({
               <div className="oferta-paso-titulo">¿Cómo se ve?</div>
               <div className="form-grid-2">
               <div className="form-group full">
-                <label>{esPack ? 'Nombre del paquete' : form.estrategia === 'order_bump' ? 'Título de la casilla' : 'Título de la oferta'}</label>
+                <label>{esPack ? 'Nombre del paquete' : form.estrategia === 'order_bump' ? 'Nombre Comercial' : 'Título de la oferta'}</label>
                 <input
                   value={form.nombre}
                   onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
@@ -1275,7 +1275,7 @@ export default function OfertasProductoTab({
                 )}
               </div>
               <div className="form-group full">
-                <label>Descripción <span className="hint">(opcional)</span></label>
+                <label>Descripción Comercial<span className="hint">(opcional)</span></label>
                 <input
                   value={form.descripcion}
                   onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}

@@ -21,6 +21,7 @@ vi.mock('../../services/landingPublicaService', () => ({
 }));
 
 const { useStoreCart } = await import('./useStoreCart');
+const { crearCheckoutLanding, recalcularCarritoLanding } = await import('../../services/landingPublicaService');
 
 const item = { tipo: 'producto', referencia_id: 7, content_id: 'producto-7', nombre: 'Remera', precio: 50000, imagenes: [] };
 const wrapper = ({ children }) => <MemoryRouter>{children}</MemoryRouter>;
@@ -36,6 +37,31 @@ beforeEach(() => {
 });
 
 describe('useStoreCart — InitiateCheckout', () => {
+  it('alterna el descuento anticipado sin perder el precio original ni acumular redondeos', () => {
+    const { result } = renderHook(() => useStoreCart('tienda', {}, [item]), { wrapper });
+    act(() => result.current.agregarAlCarrito({ item, cantidad: 2, precio: 45000, descuentoBotonPct: 10, precioAntesBoton: 50000 }));
+    const linea = () => Array.from(result.current.carrito.values())[0];
+    expect(linea().precio).toBe(45000);
+    act(() => result.current.cambiarMetodoPago('efectivo'));
+    expect(linea()).toMatchObject({ precio: 50000, descuentoBotonPct: null });
+    act(() => result.current.cambiarMetodoPago('pagopar'));
+    expect(linea()).toMatchObject({ precio: 45000, descuentoBotonPct: 10 });
+    act(() => result.current.cambiarMetodoPago('contra_entrega'));
+    expect(linea()).toMatchObject({ precio: 50000, cantidad: 2 });
+  });
+
+  it.each(['efectivo', 'contra_entrega', 'pagopar'])('confirma con el descuento que corresponde al método final %s', async (metodo) => {
+    const { result } = renderHook(() => useStoreCart('tienda', {}, [item]), { wrapper });
+    act(() => result.current.agregarAlCarrito({ item, cantidad: 1, precio: 45000, descuentoBotonPct: 10, precioAntesBoton: 50000 }));
+    // La confirmación vuelve a comprobar el método, incluso sin un evento change previo.
+    await act(async () => result.current.confirmarPedido({ nombre_cliente: 'Ana', payment_method: metodo }));
+    const pct = metodo === 'pagopar' ? 10 : undefined;
+    expect(recalcularCarritoLanding).toHaveBeenLastCalledWith('tienda', [expect.objectContaining({ descuento_boton_pct: pct })]);
+    expect(crearCheckoutLanding).toHaveBeenLastCalledWith('tienda', expect.objectContaining({
+      payment_method: metodo, items: [expect.objectContaining({ descuento_boton_pct: pct })],
+    }));
+  });
+
   it('sale al iniciar el checkout, con el valor del carrito, y una sola vez por carrito', () => {
     const { result } = renderHook(() => useStoreCart('tienda', {}, [item]), { wrapper });
     act(() => result.current.agregarAlCarrito({ item, cantidad: 2, precio: 50000 }));

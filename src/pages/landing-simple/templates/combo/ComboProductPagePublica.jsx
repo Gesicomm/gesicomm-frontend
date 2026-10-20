@@ -30,6 +30,10 @@ export default function ComboProductPagePublica({
   // se elige PagoPar o contra entrega).
   onAgregar,
   onVolver,
+  previewMode = false,
+  isMobile = false,
+  bloqueActivo, onBloque, onActivo,
+  documento = false,
 }) {
   const ficha = useMemo(
     () => resolverFichaCombo(item?.ficha_combo, landingConfig?.ficha_combo, fichaComboDesdeProducto(item)),
@@ -68,7 +72,10 @@ export default function ComboProductPagePublica({
       templateSlug={templateSlug}
       contacto={contacto}
       nombreComercio={nombreComercio}
-      previewMode={false}
+      previewMode={previewMode}
+      isMobile={isMobile}
+      layout={item.ficha_combo} bloqueActivo={bloqueActivo} onBloque={onBloque} onActivo={onActivo}
+      documento={documento}
       onVolver={onVolver}
       onAgregar={agregarCompra}
       onComprar={agregarCompra}

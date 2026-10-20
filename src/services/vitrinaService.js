@@ -47,6 +47,6 @@ export const vitrinaService = {
   sensibilidadCombo: (id) =>
     API.get(`/vitrina/combos/${id}/sensibilidad`).then(r => r.data),
 
-  buscarPrecios: (filtros = {}) => API.post('/vitrina/precios/buscar', filtros).then(r => r.data),
+  buscarPrecios: (filtros = {}) => API.post('/vitrina/precios/buscar', filtros, { timeout: 20000 }).then(r => r.data),
   actualizarPrecios: (body) => API.post('/vitrina/precios/actualizar', body, { timeout: 120000 }).then(r => r.data),
 };

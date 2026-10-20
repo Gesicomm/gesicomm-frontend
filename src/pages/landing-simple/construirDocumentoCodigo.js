@@ -1,3 +1,4 @@
+import { instalarCodigoBloquesFicha } from './runtimeBloquesFicha';
 /**
  * Arma el documento HTML completo del modo "Lienzo en blanco" a partir de
  * los tres campos que escribe el comercio (HTML / CSS / JS).
@@ -3145,6 +3146,7 @@ window.addEventListener('unhandledrejection', function (e) {
   // puede usar postMessage aunque al comercio se lo prohibamos. Maneja
   // compra, cantidad y order bumps; acá solo se agrega el reporte de tema.
   const puenteGesicomm = `<script>window.__GESICOMM__ = ${jsonEnScript(datos)};</script>
+<script>(${instalarCodigoBloquesFicha.toString()})();</script>
 <script>(${runtimeGesicomm.toString()})();</script>
 <script>
 // Tema de la landing → carrito. El carrito vive fuera del iframe y no puede
@@ -3221,7 +3223,7 @@ html, body { margin: 0; padding: 0; }
 ${typographyCss(opciones.typography || datos?.typography)}
 ${cssMarcaTienda(datos?.tienda?.colores)}
 </style>
-<style>
+<style data-gesicomm-estilos-codigo>
 ${escaparCierreStyle(conMarcaTienda(css))}
 </style>
 <style>

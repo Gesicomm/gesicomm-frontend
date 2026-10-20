@@ -76,6 +76,62 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => cleanup());
 
+  it('reduce cantidades de un pedido web pendiente y guarda sin confirmar ni exigir datos de entrega', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({});
+    await abrir({ ...pedidoEntregado, estado: 'Pendiente', origen: 'WEB', costo_envio: 15000, direccion: '', items: [{ id: 1, producto_id: 201, nombre_producto: 'Hidrolavadora', cantidad: 2, precio_unitario: 615858 }] }, onSubmit);
+    fireEvent.click(screen.getByRole('button', { name: 'Restar Hidrolavadora' }));
+    expect(screen.getByRole('spinbutton', { name: 'Cantidad de Hidrolavadora' })).toHaveValue(1);
+    expect(screen.getByText('Comprado: 1 unidad')).toBeInTheDocument();
+    expect(document.querySelector('.np-summary-lines').textContent).toContain('615.858');
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar productos' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ id: 385, costo_envio: 15000, items: [expect.objectContaining({ cantidad: 1, subtotal: 615858 })] }), true));
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('estado');
+  });
+
+  it('quita un producto y conserva el resto al guardar el pedido pendiente', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({});
+    await abrir({ ...pedidoEntregado, estado: 'Pendiente', origen: 'WEB', items: [
+      ...pedidoEntregado.items,
+      { id: 2, producto_id: 202, nombre_producto: 'Hidrolavadora', cantidad: 2, precio_unitario: 615858 },
+    ] }, onSubmit);
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar Hidrolavadora' }));
+    expect(document.querySelectorAll('.np-order-item-card')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar productos' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ items: [expect.objectContaining({ producto_id: 201 })] }), true));
+  });
+
+  it('permite cancelar el pedido completo, incluso después de quitar el último producto', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({});
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    await abrir({ ...pedidoEntregado, estado: 'Pendiente', origen: 'WEB' }, onSubmit);
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar Cafeteira' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar productos' }));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getAllByText('Agregá al menos un producto o cancelá el pedido completo.').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar pedido' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ id: 385, estado: 'Cancelado' }, true));
+    confirm.mockRestore();
+  });
+
+  it.each([{ estado: 'Confirmado' }, { estado: 'Pendiente', stock_descontado: true }, { estado: 'Pendiente', raha_logistica: { gestionado: true } }])('no habilita edición de productos comprometidos: %j', async restricciones => {
+    await abrir({ ...pedidoEntregado, origen: 'WEB', ...restricciones }, vi.fn());
+    expect(screen.queryByRole('button', { name: 'Quitar Cafeteira' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Guardar productos' })).not.toBeInTheDocument();
+  });
+
+  it('distingue una presentación 2x1 de dos unidades individuales y cuenta las unidades físicas', async () => {
+    await abrir({ ...pedidoEntregado, items: [
+      { id: 1, producto_id: 201, nombre_producto: 'Adaptador — Oferta 2x1', oferta_id: 9, oferta_nombre: 'Oferta 2x1', cantidad: 1, precio_unitario: 200000, Ofertum: { componentes: [{ producto_id: 201, cantidad: 2 }] } },
+      { id: 2, producto_id: 202, nombre_producto: 'Hidrolavadora', cantidad: 2, precio_unitario: 615858 },
+    ] }, vi.fn());
+    expect(screen.getByText('Comprado: 1 presentación')).toBeInTheDocument();
+    expect(screen.getByText('Comprado: 2 unidades')).toBeInTheDocument();
+    expect(screen.getAllByText('Preparar: 2 unidades')).toHaveLength(4);
+    expect(screen.getByText('Oferta 2x1', { selector: '.np-item-presentation' })).toBeInTheDocument();
+    expect(document.querySelector('.np-products-metrics').textContent).toContain('4 unidades');
+    expect(document.querySelectorAll('.np-order-item-card')).toHaveLength(2);
+  });
+
   it('el alta manual no ofrece WhatsApp como canal seleccionable', async () => {
     canalVentaService.listar.mockResolvedValueOnce([{ id: 1, slug: 'web', nombre: 'Web' }, { id: 3, slug: 'whatsapp', nombre: 'WhatsApp' }]);
     await abrir(null, vi.fn());

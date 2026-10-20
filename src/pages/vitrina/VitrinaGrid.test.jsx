@@ -148,6 +148,20 @@ describe('VitrinaGrid Component', () => {
     expect(segunda.aborted).toBe(true);
   });
 
+  it('Enter busca de inmediato, sin una segunda petición por el debounce', async () => {
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto de Prueba');
+    vitrinaService.catalogoPaginado.mockClear();
+    const campo = screen.getByRole('textbox', { name: 'Buscar productos o combos' });
+    fireEvent.change(campo, { target: { value: 'adaptador' } });
+    expect(screen.getByRole('status', { name: 'Buscando productos' })).toBeVisible();
+    fireEvent.keyDown(campo, { key: 'Enter' });
+    await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenCalledTimes(1));
+    expect(vitrinaService.catalogoPaginado.mock.calls[0][0]).toMatchObject({ busqueda: 'adaptador', page: 1 });
+    await new Promise(resolve => setTimeout(resolve, 250));
+    expect(vitrinaService.catalogoPaginado).toHaveBeenCalledTimes(1);
+  });
+
   it('renderiza la cabecera con el botón de "Agregar Mis Productos", la pestaña de landing y la pestaña de productos propios', async () => {
     renderWithRouter(<VitrinaGrid />);
 

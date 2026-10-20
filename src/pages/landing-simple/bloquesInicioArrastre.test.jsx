@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { EditorBloquesInicio } from './ConfigurarVentaCodigo';
@@ -50,4 +50,81 @@ describe('Bloques del Inicio — arrastrar y soltar', () => {
     fireEvent.drop(destino, { dataTransfer: transferencia() });
     expect(onReordenar).not.toHaveBeenCalled();
   });
+  it('muestra la nueva posición antes de soltar y Escape o un destino fijo cancela sin guardar', () => {
+    const guardar = montar();
+    const origen = screen.getByText('Zona de confianza').closest('[data-bloque-inicio]');
+    const destino = screen.getByText('Banner principal').closest('[data-bloque-inicio]');
+    const fijo = screen.getByText('Encabezado').closest('[data-bloque-inicio]');
+    const asa = screen.getByLabelText(/Arrastrar Zona de confianza/);
+    const dt = transferencia();
+    const inicial = Number(origen.style.order);
+    fireEvent.dragStart(asa, { dataTransfer: dt });
+    fireEvent.dragOver(destino, { dataTransfer: dt });
+    expect(Number(origen.style.order)).toBeLessThan(Number(destino.style.order));
+    expect(guardar).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(Number(origen.style.order)).toBe(inicial);
+    fireEvent.dragStart(asa, { dataTransfer: dt });
+    fireEvent.dragOver(destino, { dataTransfer: dt });
+    fireEvent.dragOver(fijo, { dataTransfer: dt });
+    expect(fijo.querySelector('[aria-label="Destino bloqueado"]')).not.toBeNull();
+    expect(fijo).not.toHaveClass('border-danger');
+    fireEvent.drop(fijo, { dataTransfer: dt });
+    expect(guardar).not.toHaveBeenCalled();
+    expect(Number(origen.style.order)).toBe(inicial);
+  });
+
+  it('arrastra con puntero, muestra el límite junto al cursor y permite volver a un destino válido', () => {
+    const guardar = montar();
+    const asa = screen.getByLabelText(/Arrastrar Zona de confianza/);
+    const destino = screen.getByText('Banner principal').closest('[data-bloque-inicio]');
+    const fijo = screen.getByText('Encabezado').closest('[data-bloque-inicio]');
+    asa.setPointerCapture = () => {};
+    asa.hasPointerCapture = () => false;
+    const anterior = document.elementFromPoint;
+    const pointer = (tipo, y) => {
+      const e = new MouseEvent(tipo, { bubbles: true, cancelable: true, button: 0, clientX: 60, clientY: y });
+      Object.defineProperty(e, 'pointerId', { value: 1 });
+      fireEvent(asa, e);
+    };
+    try {
+      document.elementFromPoint = () => fijo;
+      pointer('pointerdown', 300); pointer('pointermove', 100);
+      const fantasma = document.querySelector('[data-arrastre-cabecera]');
+      expect(fantasma.dataset.arrastreBloqueado).toBe('true');
+      expect(fantasma.querySelector('[data-arrastre-limite]')).toHaveTextContent('🔒');
+      expect(fantasma.querySelector('[data-arrastre-limite]').style.width).toBe('26px');
+      expect(document.body.style.cursor).toBe('not-allowed');
+      document.elementFromPoint = () => destino;
+      pointer('pointermove', 150);
+      expect(fantasma.dataset.arrastreBloqueado).toBe('false');
+      expect(fantasma.querySelector('[data-arrastre-limite]')).not.toBeVisible();
+      expect(document.body.style.cursor).toBe('grabbing');
+      pointer('pointerup', 150);
+      expect(guardar).toHaveBeenCalledWith(2, 0);
+      expect(document.querySelector('[data-arrastre-cabecera]')).toBeNull();
+    } finally { document.elementFromPoint = anterior; }
+  });
+
+  it('conserva abierto el panel y sus datos después de guardar el nuevo orden', () => {
+    function Demo() {
+      const [lista, setLista] = useState(bloques);
+      return <EditorBloquesInicio bloques={lista} onAlternar={() => {}} menuPanel={<p>Menú</p>}
+        paneles={{ confianza: <input aria-label="Dato de confianza" defaultValue="Dato original" /> }}
+        onReordenar={(desde, hasta) => setLista(prev => {
+          const fijos = prev.filter(b => b.tipo === 'anuncios'), movibles = prev.filter(b => b.tipo !== 'anuncios');
+          const [movido] = movibles.splice(desde, 1); movibles.splice(hasta, 0, movido); return [...fijos, ...movibles];
+        })} />;
+    }
+    render(<Demo />);
+    fireEvent.click(screen.getByRole('button', { name: 'Zona de confianza', exact: true }));
+    fireEvent.change(screen.getByLabelText('Dato de confianza'), { target: { value: 'Dato editado' } });
+    const dt = transferencia();
+    fireEvent.dragStart(screen.getByLabelText(/Arrastrar Zona de confianza/), { dataTransfer: dt });
+    const destino = screen.getByText('Banner principal').closest('[data-bloque-inicio]');
+    fireEvent.dragOver(destino, { dataTransfer: dt }); fireEvent.drop(destino, { dataTransfer: dt });
+    expect(screen.getByLabelText('Dato de confianza')).toHaveValue('Dato editado');
+    expect(Number(screen.getByText('Zona de confianza').closest('[data-bloque-inicio]').style.order)).toBe(2);
+  });
+
 });

@@ -1,4 +1,13 @@
-import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import EditorCodigoBloqueFicha from './EditorCodigoBloqueFicha';
+import { extraerBloqueFicha } from './codigoBloquesFicha';
+import { PLANTILLA_PRODUCTO } from './plantillasBaseCodigo';
+import useArrastreBloques from './useArrastreBloques';
+import EditorOfertaTiempoLimitado from './EditorOfertaTiempoLimitado';
+import ListaOpinionesProducto from './ListaOpinionesProducto';
+import ListaConfianzaProducto from './ListaConfianzaProducto';
+import { NOMBRES_BLOQUES_FICHA } from './nombresBloquesFicha';
+export { default as ListaConfianzaProducto } from './ListaConfianzaProducto';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import CurrencyInput from '../../components/CurrencyInput';
 import { getMediaUrl } from '../../services/api';
 import { claveItem, precioDeVenta } from './PrecioAnclaItem';
@@ -52,8 +61,8 @@ export const FICHA_BLOQUES_ORDEN = [
   { clave: 'promociones_pago', numero: 10, titulo: 'Disponibilidad y medios de pago' },
   { clave: 'incluye', numero: 11, titulo: 'Qué incluye tu pedido' },
   { clave: 'recomendados', numero: 12, titulo: 'Productos recomendados' },
-  { clave: 'confianza', numero: 13, titulo: 'Zona de confianza' },
-  { clave: 'opiniones', numero: 14, titulo: 'Opiniones' },
+  { clave: 'confianza', numero: 13, titulo: NOMBRES_BLOQUES_FICHA.confianza },
+  { clave: 'opiniones', numero: 14, titulo: NOMBRES_BLOQUES_FICHA.opiniones },
   { clave: 'preguntas', numero: 15, titulo: 'Preguntas frecuentes' },
 ];
 const FICHA_BLOQUES_CLAVES = FICHA_BLOQUES_ORDEN.map(b => b.clave);
@@ -73,8 +82,8 @@ export const BLOQUES_FICHA_PANEL = [
   { clave: 'promociones_pago', numero: 10, titulo: 'Disponibilidad y medios de pago', zonas: ['promociones_pago', 'info_compra'] },
   { clave: 'incluye', numero: 11, titulo: 'Qué incluye tu pedido', zonas: ['incluye'] },
   { clave: 'recomendados', numero: 12, titulo: 'Productos recomendados', zonas: ['recomendados'] },
-  { clave: 'confianza', numero: 13, titulo: 'Zona de confianza', zonas: ['confianza'] },
-  { clave: 'opiniones', numero: 14, titulo: 'Opiniones', zonas: ['opiniones'] },
+  { clave: 'confianza', numero: 13, titulo: NOMBRES_BLOQUES_FICHA.confianza, zonas: ['confianza'] },
+  { clave: 'opiniones', numero: 14, titulo: NOMBRES_BLOQUES_FICHA.opiniones, zonas: ['opiniones'] },
   { clave: 'preguntas', numero: 15, titulo: 'Preguntas frecuentes', zonas: ['preguntas'] },
 ];
 export const ROTULOS_BLOQUES_FICHA = Object.fromEntries(
@@ -86,6 +95,7 @@ export const bloqueDeZona = zona => BLOQUES_FICHA_PANEL.find(b => b.zonas.includ
 const BloquePedidoContext = createContext({ pedido: null, activo: null, marcarActivo: () => {} });
 // El arrastre de bloques: quién se arrastra, sobre qué bloque no se puede
 // soltar, y los manejadores (ver PresentacionProducto).
+const CodigoFichaContext = createContext(null);
 const ArrastreFichaContext = createContext(null);
 const TIPO_ARRASTRE = 'application/x-gesicomm-bloque-ficha';
 const FICHA_BLOQUES_ALIAS = {
@@ -275,6 +285,7 @@ function CampoOcultable({ titulo, campo, ocultos, onOcultos, className = '', chi
 
 function BloqueFicha({ numero, titulo, resumen, abierto = false, visible = true, onVisible, bloqueClave, ordenIndice, children }) {
   const arrastreCtx = useContext(ArrastreFichaContext);
+  const codigoCtx = useContext(CodigoFichaContext);
   const grupo = bloqueClave ? grupoOrdenFicha(bloqueClave) : null;
   const dragActivo = Boolean(arrastreCtx && grupo);
   const arrastre = arrastreCtx?.arrastre;
@@ -296,7 +307,7 @@ function BloqueFicha({ numero, titulo, resumen, abierto = false, visible = true,
   const editando = !!bloqueClave && activo === bloqueClave;
   let estilo = editando ? 'border-primary ring-2 ring-primary/30' : 'border-border';
   if (esOrigen) estilo = 'border-dashed border-primary bg-primary/5 opacity-60';
-  else if (bloqueado) estilo = 'border-danger ring-2 ring-danger/30 opacity-70';
+  else if (bloqueado) estilo = 'border-border opacity-70';
   else if (fueraDeGrupo) estilo = 'border-border opacity-40';
   else if (recienMovido) estilo = 'border-primary ring-4 ring-primary/25';
   return (
@@ -317,9 +328,10 @@ function BloqueFicha({ numero, titulo, resumen, abierto = false, visible = true,
           <span
             draggable
             onClick={e => e.stopPropagation()}
+            {...arrastreCtx.puntero(bloqueClave)}
             onDragStart={e => arrastreCtx.empezar(bloqueClave, e)}
             onDragEnd={arrastreCtx.terminar}
-            className="-ml-1 grid h-8 w-7 shrink-0 cursor-grab place-items-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg active:cursor-grabbing"
+            className="touch-none select-none -ml-1 grid h-8 w-7 shrink-0 cursor-grab place-items-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg active:cursor-grabbing"
             title="Arrastrar para ordenar"
             aria-label={`Arrastrar ${titulo} para ordenar`}
           >
@@ -335,6 +347,8 @@ function BloqueFicha({ numero, titulo, resumen, abierto = false, visible = true,
           <span className="block text-sm font-semibold text-fg">{titulo}</span>
           <span className="mt-0.5 block truncate text-xs text-fg-muted">{visible ? resumen : 'Oculto en la ficha'}</span>
         </span>
+        {bloqueado ? <span title="No se puede soltar en este bloque" aria-label="Destino bloqueado" className="shrink-0 text-xs text-fg-muted">🔒</span>
+          : fueraDeGrupo ? <span title={grupo ? 'Pertenece a otro grupo' : 'Bloque fijo'} className="shrink-0 text-xs text-fg-muted">🔒</span> : null}
         {onVisible && (
           <label className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-fg-muted" onClick={e => e.stopPropagation()}>
             <input type="checkbox" checked={visible} onChange={e => onVisible(e.target.checked)} className="accent-primary" />
@@ -343,7 +357,11 @@ function BloqueFicha({ numero, titulo, resumen, abierto = false, visible = true,
         )}
         <span className="text-lg leading-none text-fg-muted transition-transform group-open:rotate-180">⌄</span>
       </summary>
-      <div className="space-y-3 border-t border-border bg-surface-2/25 p-3">{children}</div>
+      <div className="space-y-3 border-t border-border bg-surface-2/25 p-3">{children}
+        {codigoCtx && <EditorCodigoBloqueFicha clave={bloqueClave} titulo={titulo} tipo="producto"
+          base={() => ({ html: extraerBloqueFicha(codigoCtx.codigo.html, bloqueClave), css: codigoCtx.codigo.css, js: '', motor: codigoCtx.codigo.js })}
+          propio={codigoCtx.codigos[bloqueClave]} contexto={codigoCtx.datos} onGuardar={codigo => codigoCtx.guardar(bloqueClave, codigo)} />}
+      </div>
     </details>
   );
 }
@@ -387,30 +405,6 @@ function ListaBeneficios({ items, onCambiar }) {
   );
 }
 
-export function ListaConfianzaProducto({ items, onCambiar }) {
-  const base = Array.isArray(items) ? items : [];
-  const cambiar = (idx, campoItem, valor) => onCambiar('confianza', base.map((it, i) => (i === idx ? { ...it, [campoItem]: valor } : it)));
-  const agregar = () => onCambiar('confianza', [...base, { icono: '', titulo: '', texto: '' }].slice(0, 6));
-  const quitar = idx => onCambiar('confianza', base.filter((_, i) => i !== idx));
-  return (
-    <fieldset className="space-y-2 rounded-lg border border-border bg-surface px-3 py-3">
-      <legend className="px-1 text-sm font-semibold text-fg">Tarjetas de confianza</legend>
-      <p className="text-xs leading-relaxed text-fg-muted">El ícono es texto libre: podés pegar un símbolo, emoji o clase de ícono. No hay lista fija.</p>
-      {base.length === 0 && <p className="text-xs text-fg-muted">Todavía no agregaste tarjetas de confianza.</p>}
-      {base.map((item, idx) => (
-        <div key={idx} className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-surface-2/70 p-2 sm:grid-cols-[82px_1fr_auto]">
-          <input className={campo} value={item.icono || ''} maxLength={40} placeholder="Ícono" aria-label={`Ícono ${idx + 1}`} onChange={e => cambiar(idx, 'icono', e.target.value)} />
-          <div className="grid grid-cols-1 gap-2">
-            <input className={campo} value={item.titulo || ''} maxLength={70} placeholder="Título, ej: Compra protegida" onChange={e => cambiar(idx, 'titulo', e.target.value)} />
-            <input className={campo} value={item.texto || ''} maxLength={120} placeholder="Subtítulo, ej: Tu pago y tus datos están seguros." onChange={e => cambiar(idx, 'texto', e.target.value)} />
-          </div>
-          <button type="button" onClick={() => quitar(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button>
-        </div>
-      ))}
-      {base.length < 6 && <button type="button" onClick={agregar} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Agregar tarjeta</button>}
-    </fieldset>
-  );
-}
 
 function ListaPreguntas({ items, onCambiar }) {
   const base = Array.isArray(items) ? items : [];
@@ -553,6 +547,7 @@ export function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, paymentLogosC
 
 export default function PresentacionProducto({
   item,
+  codigoFicha = PLANTILLA_PRODUCTO,
   cantidadSeleccionada = 1,
   ancla,
   onAncla,
@@ -634,42 +629,6 @@ export default function PresentacionProducto({
     () => ({ pedido: bloqueAbierto, activo: bloqueActivo, marcarActivo: setBloqueActivo }),
     [bloqueAbierto, bloqueActivo],
   );
-  const [opinionError, setOpinionError] = useState('');
-  const [opinionSubiendo, setOpinionSubiendo] = useState(null);
-  const opinionInputs = useRef({});
-
-  function cambiarOpinion(idx, campoItem, valor) {
-    onCambiar('opiniones', opiniones.map((opinion, i) => (i === idx ? { ...opinion, [campoItem]: valor } : opinion)));
-  }
-  function agregarOpinion() {
-    if (opiniones.length >= 6) return;
-    onCambiar('opiniones', [...opiniones, { nombre: '', comentario: '', detalle: '', calificacion: 5, foto: '' }]);
-  }
-  function quitarOpinion(idx) {
-    onCambiar('opiniones', opiniones.filter((_, i) => i !== idx));
-  }
-  async function subirFotoOpinion(event, idx) {
-    const archivo = event.target.files?.[0];
-    event.target.value = '';
-    if (!archivo || !onSubirImagen) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type) || archivo.size > 5 * 1024 * 1024) {
-      setOpinionError('Elegí una foto JPG, PNG o WEBP de hasta 5 MB.');
-      return;
-    }
-    setOpinionError('');
-    setOpinionSubiendo(idx);
-    try {
-      const url = await onSubirImagen(archivo);
-      onCambiar('opiniones', opiniones.map((opinion, i) => (i === idx ? { ...opinion, foto: url } : opinion)));
-    } catch (err) {
-      setOpinionError(err.response?.data?.message || err.message || 'No pudimos subir la foto. Intentá nuevamente.');
-    } finally {
-      setOpinionSubiendo(null);
-    }
-  }
-  function quitarFotoOpinion(idx) {
-    onCambiar('opiniones', opiniones.map((opinion, i) => (i === idx ? { ...opinion, foto: '' } : opinion)));
-  }
   function cambiarBloque(clave, visible) {
     onCambiar('ficha_bloques', { ...bloquesFicha, [clave]: visible });
   }
@@ -682,132 +641,11 @@ export default function PresentacionProducto({
   // suelta afuera o con Escape, todo vuelve a su lugar. La referencia es la
   // fuente de verdad (dragover llega antes de que React pinte); el estado,
   // lo que se dibuja.
-  const listaBloquesRef = useRef(null);
-  const arrastreRef = useRef(null);
-  const posicionesRef = useRef(null);
-  const [arrastre, setArrastre] = useState(null);
-  const [recienMovido, setRecienMovido] = useState(null);
-  const ordenVisible = arrastre?.orden || ordenMobile;
-  function fijarArrastre(valor) {
-    arrastreRef.current = valor;
-    setArrastre(valor);
-  }
-  function medirBloques() {
-    const lista = listaBloquesRef.current;
-    if (!lista) return;
-    posicionesRef.current = new Map(
-      [...lista.querySelectorAll('[data-bloque-ficha]')].map(el => [el, el.getBoundingClientRect().top]),
-    );
-  }
-  // FLIP: cada bloque arranca donde estaba y se desliza hasta su lugar nuevo.
-  useLayoutEffect(() => {
-    const antes = posicionesRef.current;
-    posicionesRef.current = null;
-    const lista = listaBloquesRef.current;
-    if (!antes || !lista) return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    lista.querySelectorAll('[data-bloque-ficha]').forEach(el => {
-      const previo = antes.get(el);
-      if (previo === undefined) return;
-      el.style.transition = 'none';
-      el.style.transform = '';
-      const delta = previo - el.getBoundingClientRect().top;
-      if (Math.abs(delta) < 1) return;
-      el.style.transform = `translateY(${delta}px)`;
-      el.getBoundingClientRect();
-      el.style.transition = 'transform 240ms cubic-bezier(.2,.8,.2,1)';
-      el.style.transform = '';
-      clearTimeout(el.__finFlip);
-      el.__finFlip = setTimeout(() => { el.style.transition = ''; }, 260);
-    });
-  }, [ordenVisible]);
-  useEffect(() => {
-    if (!recienMovido) return undefined;
-    const t = setTimeout(() => setRecienMovido(null), 900);
-    return () => clearTimeout(t);
-  }, [recienMovido]);
-  const controlArrastre = {
-    arrastre,
-    recienMovido,
-    empezar(clave, e) {
-      e.stopPropagation();
-      e.dataTransfer.effectAllowed = 'move';
-      // Tipo propio: un texto plano se pegaría en el input sobre el que pase.
-      e.dataTransfer.setData(TIPO_ARRASTRE, clave);
-      // La "foto" que acompaña al cursor es la cabecera entera del bloque,
-      // levantada (fondo y sombra solo durante la captura), no el ícono.
-      const cabecera = e.currentTarget.closest('summary');
-      if (cabecera && e.dataTransfer.setDragImage) {
-        const r = cabecera.getBoundingClientRect();
-        const fondo = window.getComputedStyle(cabecera.parentElement).backgroundColor;
-        Object.assign(cabecera.style, { background: fondo, boxShadow: '0 12px 28px rgba(0,0,0,.35)', borderRadius: '12px' });
-        e.dataTransfer.setDragImage(cabecera, e.clientX - r.left, e.clientY - r.top);
-        setTimeout(() => Object.assign(cabecera.style, { background: '', boxShadow: '', borderRadius: '' }), 0);
-      }
-      arrastreRef.current = { origen: clave, orden: ordenMobile, bloqueado: null };
-      // El bloque se vuelve "hueco" recién después de la captura.
-      setTimeout(() => { if (arrastreRef.current?.origen === clave) setArrastre(arrastreRef.current); }, 0);
-    },
-    sobre(destino, e) {
-      const actual = arrastreRef.current;
-      if (!actual) return;
-      if (grupoOrdenFicha(destino) !== grupoOrdenFicha(actual.origen)) {
-        // Sin preventDefault: el cursor muestra que ahí no se puede soltar.
-        if (actual.bloqueado !== destino) fijarArrastre({ ...actual, bloqueado: destino });
-        return;
-      }
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      const limpio = actual.bloqueado ? { ...actual, bloqueado: null } : actual;
-      if (destino === actual.origen) {
-        if (limpio !== actual) fijarArrastre(limpio);
-        return;
-      }
-      // Arriba o abajo se decide por dónde están en pantalla los dos bloques,
-      // no por el orden guardado: entre un dragover y el siguiente React
-      // puede no haber repintado, y comparar contra un orden más nuevo que
-      // la pantalla deshacía el movimiento. Se cambia de lugar cuando el
-      // cursor entra en la zona que el bloque arrastrado va a ocupar: con
-      // bloques de distinto alto (uno abierto) así no rebota.
-      const r = e.currentTarget.getBoundingClientRect();
-      const ro = listaBloquesRef.current?.querySelector(`[data-bloque-ficha="${actual.origen}"]`)?.getBoundingClientRect();
-      let baja;
-      if (ro && r.height > 0 && ro.height > 0) {
-        baja = r.top > ro.top;
-        const entra = baja ? e.clientY > r.bottom - ro.height : e.clientY < r.top + ro.height;
-        if (!entra) {
-          if (limpio !== actual) fijarArrastre(limpio);
-          return;
-        }
-      }
-      const siguiente = moverEnOrden(actual.orden, actual.origen, destino, baja);
-      if (!siguiente) {
-        if (limpio !== actual) fijarArrastre(limpio);
-        return;
-      }
-      medirBloques();
-      fijarArrastre({ ...limpio, orden: siguiente });
-    },
-    soltar(e) {
-      const actual = arrastreRef.current;
-      if (!actual) return;
-      e.preventDefault();
-      if (actual.orden.join() !== ordenMobile.join()) onCambiar('ficha_orden_mobile', actual.orden);
-      setRecienMovido(actual.origen);
-      fijarArrastre(null);
-    },
-    terminar() {
-      // Soltado afuera, en un bloque de otro grupo o con Escape: vuelve.
-      if (!arrastreRef.current) return;
-      medirBloques();
-      fijarArrastre(null);
-    },
-  };
-  function dentroDeLista(e) {
-    const actual = arrastreRef.current;
-    // Entre bloque y bloque (el espacio que los separa) también se puede soltar.
-    if (actual && !actual.bloqueado && !e.target.closest?.('[data-bloque-ficha]')) e.preventDefault();
-  }
+  const { listaBloquesRef, arrastre, ordenVisible, controlArrastre, dentroDeLista } = useArrastreBloques({
+    orden: ordenMobile, onGuardar: nuevo => onCambiar('ficha_orden_mobile', nuevo),
+    grupo: grupoOrdenFicha, mover: moverEnOrden, tipo: TIPO_ARRASTRE,
+    describirLimite: clave => `Solo ${RANGO_GRUPO_FICHA[grupoOrdenFicha(clave)]}. La galería queda fija.`,
+  });
   const tituloBloque = clave => BLOQUES_FICHA_PANEL.find(b => b.clave === clave)?.titulo || clave;
   const inicioSecciones = ordenVisible.findIndex(clave => grupoOrdenFicha(clave) === 'secciones');
   function visibleBloque(clave) {
@@ -852,13 +690,16 @@ export default function PresentacionProducto({
         <p className="mt-1 text-xs leading-relaxed text-fg-muted">Para cambiar el orden, arrastrá un bloque desde <GripVertical size={12} className="inline align-[-2px]" />: los bloques 2 a 11 se ordenan dentro de la columna del producto y los 12 a 15 entre las secciones de abajo. La galería queda fija.</p>
         <p className="mt-1 text-xs leading-relaxed text-fg-muted">Cada campo muestra el texto que sale en la ficha. Si lo borrás, ese renglón deja de mostrarse. En la vista previa, pasá el mouse por una zona para ver a qué bloque corresponde y hacé clic para abrirlo acá.</p>
       </div>
+      <CodigoFichaContext.Provider value={{ codigo: codigoFicha, codigos: propio?.codigo_bloques || ef.codigo_bloques || {}, datos: ef,
+        guardar: (clave, codigo) => { const nuevos = { ...(propio?.codigo_bloques || ef.codigo_bloques || {}) }; if (codigo) nuevos[clave] = codigo; else delete nuevos[clave]; onCambiar('codigo_bloques', nuevos); },
+      }}>
       <ArrastreFichaContext.Provider value={controlArrastre}>
       {arrastre && (
-        // Altura cero: el aviso flota sobre la lista sin correr los bloques.
-        <div className="sticky top-2 z-20 h-0">
+        // Estado accesible; el indicador visual es un candado junto al bloque.
+        <div className="sr-only">
           <div
             role="status"
-            className={`absolute inset-x-0 top-0 rounded-lg border px-3 py-2 text-xs font-medium bg-surface shadow-lg transition-colors ${arrastre.bloqueado ? 'border-danger text-danger' : 'border-primary/50 text-fg'}`}
+            className="sr-only"
           >
             {arrastre.bloqueado
               ? `«${tituloBloque(arrastre.origen)}» no puede ir junto a «${tituloBloque(arrastre.bloqueado)}»: se mueve solo ${RANGO_GRUPO_FICHA[grupoOrdenFicha(arrastre.origen)]}.`
@@ -910,29 +751,7 @@ export default function PresentacionProducto({
           {cantidadSeleccionada > 1 && <p className="mt-2 text-xs text-fg-muted">El precio anterior y su descuento se editan eligiendo un solo producto.</p>}
         </BloqueFicha>
         <BloqueFicha numero="6" titulo="Oferta por tiempo limitado" resumen={resumenOferta} abierto={inicialmenteAbierto} visible={visibleBloque('oferta')} onVisible={v => cambiarBloques({ oferta: v, urgencia: v })} bloqueClave="oferta" ordenIndice={ordenVisible.indexOf('oferta')}>
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-              <label className="block text-xs text-fg-muted">Encabezado de la oferta<input className={campo} value={val('urgencia_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('urgencia_kicker', e.target.value)} /></label>
-              <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_encabezado')} onChange={e => cambiarBloque('oferta_encabezado', e.target.checked)} /> Mostrar encabezado</label>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-              <label className="block text-xs text-fg-muted">Nombre de la oferta<input className={campo} value={val('urgencia_titulo')} maxLength={90} placeholder="Vacío: no se muestra" onChange={e => onCambiar('urgencia_titulo', e.target.value)} /></label>
-              <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_nombre')} onChange={e => cambiarBloque('oferta_nombre', e.target.checked)} /> Mostrar nombre</label>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-              <label className="block text-xs text-fg-muted">Texto de la oferta<textarea className={area} rows={2} value={val('urgencia_texto')} maxLength={180} placeholder="Vacío: no se muestra" onChange={e => onCambiar('urgencia_texto', e.target.value)} /></label>
-              <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_texto')} onChange={e => cambiarBloque('oferta_texto', e.target.checked)} /> Mostrar texto</label>
-            </div>
-            <fieldset className="rounded-lg border border-border bg-surface px-3 py-3">
-              <legend className="px-1 text-sm font-semibold text-fg">Duración del contador</legend>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
-                <label className="block text-xs text-fg-muted">Horas<input className={campo} type="number" min="0" max="99" value={val('urgencia_horas')} placeholder={String(DEFAULTS_PRESENTACION.urgencia_horas)} onChange={e => onCambiar('urgencia_horas', e.target.value)} /></label>
-                <label className="block text-xs text-fg-muted">Minutos<input className={campo} type="number" min="0" max="59" value={val('urgencia_minutos')} placeholder={String(DEFAULTS_PRESENTACION.urgencia_minutos)} onChange={e => onCambiar('urgencia_minutos', e.target.value)} /></label>
-                <label className="block text-xs text-fg-muted">Segundos<input className={campo} type="number" min="0" max="59" value={val('urgencia_segundos')} placeholder={String(DEFAULTS_PRESENTACION.urgencia_segundos)} onChange={e => onCambiar('urgencia_segundos', e.target.value)} /></label>
-                <label className="flex h-9 items-center gap-2 text-xs font-semibold text-fg-muted"><input type="checkbox" checked={visibleBloque('oferta_duracion')} onChange={e => cambiarBloque('oferta_duracion', e.target.checked)} /> Mostrar contador</label>
-              </div>
-            </fieldset>
-          </div>
+          <EditorOfertaTiempoLimitado item={Object.fromEntries(['urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos'].map(k => [k, val(k)]))} onCambiar={onCambiar} visibleBloque={visibleBloque} cambiarBloque={cambiarBloque} />
         </BloqueFicha>
         <BloqueFicha numero="7" titulo="Descripción breve" resumen={resumenDescripcion} abierto={inicialmenteAbierto} visible={visibleBloque('descripcion')} onVisible={v => cambiarBloque('descripcion', v)} bloqueClave="descripcion" ordenIndice={ordenVisible.indexOf('descripcion')}>
           <CampoOcultable titulo="Frase destacada" campo="propuesta_valor" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={fraseDestacada} maxLength={220} placeholder="Vacío: no se muestra" onChange={e => onCambiar('propuesta_valor', e.target.value)} aria-label="Frase destacada" /></CampoOcultable>
@@ -944,9 +763,10 @@ export default function PresentacionProducto({
         </BloqueFicha>
         <BloqueFicha numero="9" titulo="Botones de contacto y pago" resumen={resumenContacto} visible={visibleBloque('contacto_pago')} onVisible={v => cambiarBloques({ contacto_pago: v, compra: v })} bloqueClave="contacto_pago" ordenIndice={ordenVisible.indexOf('contacto_pago')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_150px]">
-            <label className="block text-xs text-fg-muted">Botón principal de compra<input className={campo} value={item.cta_texto || ''} maxLength={42} placeholder="Comprar con pago anticipado" onChange={e => onCambiar('cta_texto', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Botón de pago anticipado<input className={campo} value={item.cta_texto || ''} maxLength={42} placeholder="Comprar con pago anticipado" onChange={e => onCambiar('cta_texto', e.target.value)} /></label>
             <label className={`block text-xs text-fg-muted ${sinPagopar ? 'cursor-not-allowed opacity-60' : ''}`} title={sinPagopar ? AVISO_PAGO_ANTICIPADO : undefined}>Descuento pago anticipado %<input className={`${campo} ${sinPagopar ? 'cursor-not-allowed' : ''}`} type="number" min="0" max="95" step="0.1" inputMode="decimal" disabled={sinPagopar} value={item.cta_descuento_pct ?? ''} placeholder="Ej: 10" onChange={e => onCambiar('cta_descuento_pct', e.target.value)} onBlur={e => onCambiar('cta_descuento_pct', normalizarDescuentoBoton(e.target.value))} /></label>
           </div>
+          <p className="text-xs leading-relaxed text-fg-muted">Este botón solo aparece cuando PagoPar está activo. Abre directamente el checkout con pago anticipado seleccionado y aplica el descuento configurado. Si el cliente cambia a pago contra entrega, se retira ese descuento.</p>
           {sinPagopar && <p className="text-xs leading-relaxed text-fg-muted">{AVISO_PAGO_ANTICIPADO} Mientras tanto el botón de pago anticipado no se muestra, ni en la vista previa ni en la tienda publicada.</p>}
           <ListaBotones titulo="Botones de pago" ayuda="Botones secundarios como Pago contra entrega, Comprar por WhatsApp o un link de pago. Podés sumar un descuento por botón para incentivar el pago anticipado." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} descuentos />
           <ListaBotones titulo="Botones configurables de contacto" ayuda="Caminos de contacto adicionales de esta ficha. WhatsApp usa el mensaje configurado en Mi tienda." items={botonesContacto} campoLista="botones_contacto" onCambiar={onCambiar} ocultarValorWhatsapp />
@@ -961,39 +781,16 @@ export default function PresentacionProducto({
         <BloqueFicha numero="12" titulo="Productos recomendados" resumen={resumenRecomendados} visible={visibleBloque('recomendados') && recomendadosActivo !== false} onVisible={cambiarRecomendadosVisible} bloqueClave="recomendados" ordenIndice={ordenVisible.indexOf('recomendados')}>
           {bloqueRecomendados || <p className="text-xs leading-relaxed text-fg-muted">Configurá acá los productos que aparecen como recomendados en la ficha.</p>}
         </BloqueFicha>
-        <BloqueFicha numero="13" titulo="Zona de confianza" resumen={resumenConfianza} visible={visibleBloque('confianza')} onVisible={v => cambiarBloque('confianza', v)} bloqueClave="confianza" ordenIndice={ordenVisible.indexOf('confianza')}>
+        <BloqueFicha numero="13" titulo={NOMBRES_BLOQUES_FICHA.confianza} resumen={resumenConfianza} visible={visibleBloque('confianza')} onVisible={v => cambiarBloque('confianza', v)} bloqueClave="confianza" ordenIndice={ordenVisible.indexOf('confianza')}>
           <ListaConfianzaProducto items={confianza} onCambiar={onCambiar} />
         </BloqueFicha>
-        <BloqueFicha numero="14" titulo="Opiniones" resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" ordenIndice={ordenVisible.indexOf('opiniones')}>
+        <BloqueFicha numero="14" titulo={NOMBRES_BLOQUES_FICHA.opiniones} resumen={resumenOpiniones} visible={visibleBloque('opiniones')} onVisible={v => cambiarBloque('opiniones', v)} bloqueClave="opiniones" ordenIndice={ordenVisible.indexOf('opiniones')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <CampoOcultable titulo="Rótulo de sección" campo="opiniones_kicker" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={val('opiniones_kicker')} maxLength={60} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_kicker', e.target.value)} aria-label="Rótulo de sección" /></CampoOcultable>
             <CampoOcultable titulo="Título de sección" campo="opiniones_titulo" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)}><input className={campo} value={val('opiniones_titulo')} maxLength={90} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_titulo', e.target.value)} aria-label="Título de sección" /></CampoOcultable>
             <CampoOcultable titulo="Subtítulo de sección" campo="opiniones_subtitulo" ocultos={textosOcultos} onOcultos={v => onCambiar('textos_ocultos', v)} className="sm:col-span-2"><textarea className={area} rows={2} value={val('opiniones_subtitulo')} maxLength={180} placeholder="Vacío: no se muestra" onChange={e => onCambiar('opiniones_subtitulo', e.target.value)} aria-label="Subtítulo de sección" /></CampoOcultable>
           </div>
-          <fieldset className="space-y-3 rounded-lg border border-border bg-surface px-3 py-3">
-            <legend className="px-1 text-sm font-semibold text-fg">Opiniones reales</legend>
-            <p className="text-xs leading-relaxed text-fg-muted">Podés subir una foto de la persona o pegar una URL pública. Si no agregás opiniones, la sección se oculta.</p>
-            {opiniones.length === 0 ? <p className="text-xs text-fg-muted">Todavía no hay opiniones para esta ficha.</p> : (
-              <div className="space-y-2">
-                {opiniones.map((opinion, idx) => (
-                  <div key={idx} className="rounded-lg border border-border bg-surface-2/70 p-2">
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_90px_auto]"><input className={campo} value={opinion.nombre || ''} maxLength={60} placeholder="Nombre" onChange={e => cambiarOpinion(idx, 'nombre', e.target.value)} /><input className={campo} type="number" min="1" max="5" step="0.1" inputMode="decimal" value={opinion.calificacion || 5} onChange={e => cambiarOpinion(idx, 'calificacion', e.target.value)} /><button type="button" onClick={() => quitarOpinion(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button></div>
-                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[64px_1fr_auto] sm:items-end">
-                      <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-full border border-border bg-surface text-[11px] font-semibold text-fg-muted">{opinion.foto ? <img src={getMediaUrl(opinion.foto)} alt="" className="h-full w-full object-cover" loading="lazy" /> : 'Foto'}</div>
-                      <label className="block text-xs text-fg-muted">Foto de la persona<input className={campo} type="url" value={opinion.foto || ''} maxLength={500} placeholder="https://ejemplo.com/persona.webp" onChange={e => cambiarOpinion(idx, 'foto', e.target.value)} /></label>
-                      <div className="flex flex-wrap gap-2"><button type="button" disabled={!onSubirImagen || opinionSubiendo === idx} onClick={() => opinionInputs.current[idx]?.click()} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-semibold text-primary-text disabled:opacity-50"><Upload size={13} /> {opinionSubiendo === idx ? 'Subiendo...' : 'Subir foto'}</button>{opinion.foto && <button type="button" onClick={() => quitarFotoOpinion(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar foto</button>}</div>
-                      <input ref={el => { if (el) opinionInputs.current[idx] = el; }} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!onSubirImagen || opinionSubiendo === idx} onChange={e => subirFotoOpinion(e, idx)} />
-                    </div>
-                    <textarea className="mt-2 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg" rows={2} maxLength={220} value={opinion.comentario || ''} placeholder="Comentario real del cliente" onChange={e => cambiarOpinion(idx, 'comentario', e.target.value)} />
-                    <input className={campo} value={opinion.detalle || ''} maxLength={80} placeholder="Ej: Compra verificada" onChange={e => cambiarOpinion(idx, 'detalle', e.target.value)} />
-                  </div>
-                ))}
-              </div>
-            )}
-            {opinionError && <p role="alert" className="text-xs text-danger">{opinionError}</p>}
-            {!onSubirImagen && <p className="text-xs text-fg-muted">Guardá la landing para habilitar la subida de fotos de opiniones.</p>}
-            {opiniones.length < 6 && <button type="button" onClick={agregarOpinion} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Agregar opinión</button>}
-          </fieldset>
+          <ListaOpinionesProducto items={opiniones} onCambiar={v => onCambiar('opiniones', v)} onSubirImagen={onSubirImagen} />
         </BloqueFicha>
         <BloqueFicha numero="15" titulo="Preguntas frecuentes" resumen={resumenPreguntas} visible={visibleBloque('preguntas')} onVisible={v => cambiarBloque('preguntas', v)} bloqueClave="preguntas" ordenIndice={ordenVisible.indexOf('preguntas')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1005,6 +802,7 @@ export default function PresentacionProducto({
         </BloqueFicha>
       </div>
       </ArrastreFichaContext.Provider>
+      </CodigoFichaContext.Provider>
     </div>
     </BloquePedidoContext.Provider>
   );

@@ -446,9 +446,19 @@ export function runtimeGesicomm() {
         if (otros[k] !== radio && !otros[k].disabled) { otros[k].checked = true; break; }
       }
     }
+    // Solo se sincroniza cuando el contenedor cambia el método: repintar el
+    // resumen no debe deshacer lo que el cliente acaba de seleccionar.
+    if (datos.checkout_metodo_pago && datos.checkout_metodo_pago !== ultimoMetodoCheckout) {
+      ultimoMetodoCheckout = datos.checkout_metodo_pago;
+      var metodo = pagoAnticipadoDisponible() && ultimoMetodoCheckout === 'pagopar' ? 'pagopar' : 'contra_entrega';
+      var elegido = document.querySelector('input[name="payment_method"][value="' + metodo + '"]')
+        || (metodo === 'contra_entrega' ? document.querySelector('input[name="payment_method"][value="efectivo"]') : null);
+      if (elegido) elegido.checked = true;
+    }
     acomodarCompraSinAnticipado();
     prepararCamposCheckout();
   }
+  var ultimoMetodoCheckout = null;
   // ─── Datos del comprador en el checkout ─────────────────────────────────
   // PagoPar no abre el cobro sin el documento (cédula o RUC) y el correo del
   // comprador, que es donde le llega el comprobante: con pago anticipado
@@ -496,6 +506,8 @@ export function runtimeGesicomm() {
       var anticipado = !!form.querySelector('input[name="payment_method"][value="pagopar"]:checked');
       exigirCampoCheckout(campoCheckout(form, 'documento'), anticipado);
       exigirCampoCheckout(campoCheckout(form, 'email'), anticipado);
+      var obligatorios = form.querySelectorAll('[required]');
+      for (var r = 0; r < obligatorios.length; r++) exigirCampoCheckout(obligatorios[r], true);
       var avisos = form.querySelectorAll('[data-gesicomm-si-anticipado]');
       for (var a = 0; a < avisos.length; a++) avisos[a].style.display = anticipado ? '' : 'none';
       // Sin la casilla (checkout personalizado) no se toca nada de la factura.
@@ -521,6 +533,56 @@ export function runtimeGesicomm() {
     if (!rotulo.hasAttribute('data-gesicomm-rotulo')) rotulo.setAttribute('data-gesicomm-rotulo', rotulo.textContent.replace(/\s*\*\s*$/, ''));
     rotulo.textContent = rotulo.getAttribute('data-gesicomm-rotulo') + (obligatorio ? ' *' : '');
   }
+  // La validación nativa ocurre ANTES de submit. Dentro del iframe su aviso
+  // puede pasar inadvertido: dejamos también un error persistente en el campo.
+  function mostrarErrorCampoCheckout(campo) {
+    var rotulo = rotuloDeCampo(campo);
+    var nombre = rotulo ? rotulo.textContent.replace(/\s*\*\s*$/, '') : campo.name;
+    var texto = campo.validity.valueMissing
+      ? (campo.tagName === 'SELECT' ? 'Seleccioná ' : 'Completá ') + nombre.toLowerCase() + ' para confirmar tu pedido.'
+      : (campo.validity.typeMismatch && campo.type === 'email' ? 'Ingresá un correo electrónico válido.' : campo.validationMessage);
+    var error = campo.nextElementSibling;
+    if (!error || !error.hasAttribute('data-gesicomm-error-campo')) {
+      error = document.createElement('small');
+      error.setAttribute('data-gesicomm-error-campo', '');
+      error.id = 'gc-checkout-error-' + campo.name;
+      error.style.cssText = 'display:block;color:#f87171;font-size:13px;line-height:1.4;margin-top:6px';
+      error.setAttribute('role', 'alert');
+      campo.insertAdjacentElement('afterend', error);
+      var descripcion = campo.getAttribute('aria-describedby') || '';
+      campo.setAttribute('aria-describedby', (descripcion + ' ' + error.id).trim());
+    }
+    error.textContent = texto;
+    campo.setAttribute('aria-invalid', 'true');
+  }
+  function limpiarErroresCheckout(e) {
+    var form = e.target && e.target.closest ? e.target.closest('form[data-gesicomm-checkout-form]') : null;
+    if (!form) return;
+    var campos = form.querySelectorAll('[aria-invalid="true"]');
+    for (var i = 0; i < campos.length; i++) {
+      if (!campos[i].validity.valid) continue;
+      campos[i].removeAttribute('aria-invalid');
+      var error = campos[i].nextElementSibling;
+      if (error && error.hasAttribute('data-gesicomm-error-campo')) error.textContent = '';
+    }
+  }
+  document.addEventListener('invalid', function (e) {
+    var campo = e.target;
+    var form = campo.closest && campo.closest('form[data-gesicomm-checkout-form]');
+    if (!form) return;
+    e.preventDefault();
+    mostrarErrorCampoCheckout(campo);
+    var primero = null;
+    for (var i = 0; i < form.elements.length; i++) {
+      if (form.elements[i].willValidate && !form.elements[i].validity.valid) { primero = form.elements[i]; break; }
+    }
+    if (campo === primero) {
+      campo.focus({ preventScroll: true });
+      desplazarA(campo, 'center', false);
+    }
+  }, true);
+  document.addEventListener('input', limpiarErroresCheckout);
+  document.addEventListener('change', limpiarErroresCheckout);
   // Sin el botón principal, el selector de cantidad quedaba solo en su fila
   // y los botones abajo. El primer botón de compra que sí se cobra (contra
   // entrega) sube a esa fila, al lado de la cantidad. La lista de botones se
@@ -1651,14 +1713,21 @@ export function runtimeGesicomm() {
   // para que el bloque no se vea vacío/roto en una landing nueva.
   function productosCategoriaBase() {
     var ids = productosCategoriaConfig().items;
+    var mostrarCombos = productosCategoriaConfig().mostrar_combos !== false;
+    var disponibles = productos.filter(function (p) {
+      return p.mostrar_en_inicio !== false && (mostrarCombos || p.tipo !== 'combo');
+    });
     if (!Array.isArray(ids) || !ids.length) {
-      return productos.filter(function (p) { return p.mostrar_en_inicio !== false; });
+      return disponibles;
     }
     var salida = [];
     for (var i = 0; i < ids.length; i++) {
       var item = buscar(ids[i]);
-      if (item && item.mostrar_en_inicio !== false && salida.indexOf(item) === -1) salida.push(item);
+      if (item && disponibles.indexOf(item) !== -1 && salida.indexOf(item) === -1) salida.push(item);
     }
+    if (mostrarCombos) disponibles.forEach(function (p) {
+      if (p.tipo === 'combo' && salida.indexOf(p) === -1) salida.push(p);
+    });
     return salida;
   }
 
@@ -1676,6 +1745,7 @@ export function runtimeGesicomm() {
   // propio, nunca el de `filtros`: esa es la categoría del catálogo
   // completo, no debe mezclarse con esta grilla chica del inicio.
   var pcCategoriaActiva = '';
+  var pcSoloCombos = false;
   // Colección activa (etiqueta del producto en la landing, ver
   // OrganizadorProductos en el editor). Excluye a la categoría: es una
   // pestaña u otra.
@@ -1772,6 +1842,7 @@ export function runtimeGesicomm() {
 
   function productosCategoriaFiltrados() {
     var base = productosCategoriaBase();
+    if (pcSoloCombos) base = base.filter(function (p) { return p.tipo === 'combo'; });
     if (pcCategoriaActiva) base = base.filter(function (p) { return String(p.categoria || '') === pcCategoriaActiva; });
     if (pcColeccionActiva) base = base.filter(function (p) { return productoPasaColeccionPc(p, pcColeccionActiva); });
     if (pcBusqueda) {
@@ -1876,7 +1947,19 @@ export function runtimeGesicomm() {
     var colecciones = etiquetasDisponiblesCatalogo(productosCategoriaBase());
     if (pcColeccionActiva && !colecciones.some(function (c) { return normalizar(c) === normalizar(pcColeccionActiva); })) pcColeccionActiva = '';
     cont.textContent = '';
-    cont.style.display = cats.length > 1 || colecciones.length ? '' : 'none';
+    var hayCombos = productosCategoriaBase().some(function (p) { return p.tipo === 'combo'; });
+    if (!hayCombos) pcSoloCombos = false;
+    cont.style.display = cats.length > 1 || colecciones.length || hayCombos ? '' : 'none';
+    if (hayCombos) {
+      var tabCombos = document.createElement('button');
+      tabCombos.type = 'button';
+      tabCombos.textContent = 'Combos';
+      tabCombos.setAttribute('data-gesicomm-pc-combos', '');
+      tabCombos.className = 'pc-tab';
+      tabCombos.classList.toggle('is-active', pcSoloCombos);
+      tabCombos.setAttribute('aria-pressed', pcSoloCombos ? 'true' : 'false');
+      cont.appendChild(tabCombos);
+    }
     for (var c = 0; c < colecciones.length; c++) {
       var tabCol = document.createElement('button');
       tabCol.type = 'button';
@@ -1895,7 +1978,7 @@ export function runtimeGesicomm() {
       boton.textContent = opciones[i] || 'Todos';
       boton.setAttribute('data-gesicomm-pc-categoria', opciones[i]);
       boton.className = 'pc-tab';
-      var activo = opciones[i] === pcCategoriaActiva && !(opciones[i] === '' && pcColeccionActiva);
+      var activo = !pcSoloCombos && opciones[i] === pcCategoriaActiva && !(opciones[i] === '' && pcColeccionActiva);
       boton.classList.toggle('is-active', activo);
       boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
       if (opciones[i] === '') cont.insertBefore(boton, cont.firstChild);
@@ -2703,6 +2786,7 @@ export function runtimeGesicomm() {
   }
 
   function renderizar() {
+    window.__gcCodigoBloques?.preparar(productoActual);
     actualizarOfertasVencidas();
     var listas = document.querySelectorAll('[data-gesicomm-lista]');
     for (var i = 0; i < listas.length; i++) renderizarLista(listas[i]);
@@ -2797,6 +2881,7 @@ export function runtimeGesicomm() {
     prepararMenuMovilHeader();
     pintarCarritoHeader();
     prepararCarruselRecomendados(document.querySelector('[data-gesicomm-reco-carrusel]'));
+    window.__gcCodigoBloques?.montar(productoActual);
   }
 
   function actualizarDatos(nuevosDatos) {
@@ -3874,9 +3959,10 @@ export function runtimeGesicomm() {
   });
 
   var resaltadoTimer = null;
-  function resaltar(lista) {
+  function resaltar(lista, desplazar) {
     if (!/^[a-z_]+$/.test(String(lista || ''))) return;
-    var el = document.querySelector('[data-gesicomm-lista="' + lista + '"]');
+    var el = document.querySelector('[data-gesicomm-lista="' + lista + '"]')
+      || document.querySelector('[data-combo-bloque="' + lista + '"], [data-combo-sub-bloque="' + lista + '"]');
     if (!el || el.style.display === 'none') return;
     // Salto directo, no 'smooth': la animación no siempre termina (iframe
     // recién cargado, ventana sin foco) y la zona quedaba fuera de la vista.
@@ -3885,7 +3971,7 @@ export function runtimeGesicomm() {
     var raiz = document.documentElement;
     var comportamiento = raiz.style.scrollBehavior;
     raiz.style.scrollBehavior = 'auto';
-    desplazarA(el, 'center', false);
+    if (desplazar !== false) desplazarA(el, 'center', false);
     raiz.style.scrollBehavior = comportamiento;
     var previo = el.style.outline;
     el.style.outline = '3px dashed #ffc107';
@@ -3898,7 +3984,7 @@ export function runtimeGesicomm() {
     // Solo el contenedor habla con el runtime.
     if (e.source !== parent) return;
     var d = e.data || {};
-    if (d.tipo === 'gesicomm:resaltar') { resaltar(d.lista); return; }
+    if (d.tipo === 'gesicomm:resaltar') { resaltar(d.lista, d.desplazar); return; }
     if (d.tipo === 'gesicomm:datos') { actualizarDatos(d.datos); return; }
     if (d.tipo === 'gesicomm:buscar-respuesta') {
       // Respuesta vieja (el visitante ya siguió escribiendo) o fallida: se
@@ -3993,7 +4079,18 @@ export function runtimeGesicomm() {
   document.addEventListener('change', function (e) {
     // Cambió el medio de pago: la cédula y el correo pasan a ser (o dejan de
     // ser) obligatorios.
-    if (e.target && (e.target.name === 'payment_method' || e.target.name === 'quiere_factura')) prepararCamposCheckout();
+    if (e.target && (e.target.name === 'payment_method' || e.target.name === 'quiere_factura')) {
+      prepararCamposCheckout();
+      limpiarErroresCheckout(e);
+    }
+    if (e.target && e.target.name === 'payment_method') {
+      cuponAplicado = null;
+      cuponError = '';
+      pedidoCupon += 1;
+      cuponValidando = false;
+      pintarCupon();
+      enviar({ tipo: 'gesicomm:metodo-pago', metodo: e.target.value });
+    }
     // Order bump: marcar la casilla lo deja listo para sumarse al comprar.
     var bump = e.target && e.target.matches && e.target.matches('input[data-gesicomm-bump]') ? e.target : null;
     if (bump) {
@@ -4105,6 +4202,7 @@ export function runtimeGesicomm() {
       abrir: opciones.abrir !== false,
     };
     if (opciones.payment_method) mensajeCheckout.payment_method = opciones.payment_method;
+    if (opciones.checkout_directo) mensajeCheckout.checkout_directo = true;
     if (descuentoBotonPct(opciones.descuento_boton_pct) > 0) mensajeCheckout.descuento_boton_pct = descuentoBotonPct(opciones.descuento_boton_pct);
     enviar(mensajeCheckout);
     if (opciones.abrir === false) toast(bumps.length ? 'Agregado al carrito, con tu oferta' : 'Agregado al carrito');
@@ -4327,8 +4425,17 @@ export function runtimeGesicomm() {
       cerrarBuscadorHeader();
       return;
     }
+    if ((el = t.closest('[data-gesicomm-pc-combos]'))) {
+      e.preventDefault();
+      pcSoloCombos = true;
+      pcCategoriaActiva = '';
+      pcColeccionActiva = '';
+      repintarProductosCategoria();
+      return;
+    }
     if ((el = t.closest('[data-gesicomm-pc-categoria]'))) {
       e.preventDefault();
+      pcSoloCombos = false;
       pcCategoriaActiva = el.getAttribute('data-gesicomm-pc-categoria') || '';
       pcColeccionActiva = '';
       repintarProductosCategoria();
@@ -4336,6 +4443,7 @@ export function runtimeGesicomm() {
     }
     if ((el = t.closest('[data-gesicomm-pc-coleccion]'))) {
       e.preventDefault();
+      pcSoloCombos = false;
       pcColeccionActiva = el.getAttribute('data-gesicomm-pc-coleccion') || '';
       pcCategoriaActiva = '';
       repintarProductosCategoria();
@@ -4531,7 +4639,7 @@ export function runtimeGesicomm() {
         if (seguraPago) window.open(seguraPago, '_blank', 'noopener');
         return;
       }
-      comprar(productoActual, { cantidad: cantidadElegida(el), variante: varianteElegida, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || 'pagopar', descuento_boton_pct: descuentoDeElemento(el) });
+      comprar(productoActual, { cantidad: cantidadElegida(el), variante: varianteElegida, checkout_directo: el.hasAttribute('data-gesicomm-boton-principal-pago'), payment_method: el.getAttribute('data-gesicomm-metodo-pago') || 'pagopar', descuento_boton_pct: descuentoDeElemento(el) });
       return;
     }
     if ((el = t.closest('[data-gesicomm-accion-contacto]'))) {
@@ -4563,8 +4671,8 @@ export function runtimeGesicomm() {
         return;
       }
       comprar(itemComprar, paqC
-        ? { oferta: paqC, variante: varianteElegida, conBumps: true, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null, descuento_boton_pct: descuentoDeElemento(el) }
-        : { cantidad: hayPaquetes() && itemComprar === productoActual ? 1 : cantidadElegida(el), variante: varianteElegida, payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null, descuento_boton_pct: descuentoDeElemento(el) });
+        ? { oferta: paqC, variante: varianteElegida, conBumps: true, checkout_directo: el.hasAttribute('data-gesicomm-boton-principal-pago'), payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null, descuento_boton_pct: descuentoDeElemento(el) }
+        : { cantidad: hayPaquetes() && itemComprar === productoActual ? 1 : cantidadElegida(el), variante: varianteElegida, checkout_directo: el.hasAttribute('data-gesicomm-boton-principal-pago'), payment_method: el.getAttribute('data-gesicomm-metodo-pago') || null, descuento_boton_pct: descuentoDeElemento(el) });
       return;
     }
     if ((el = t.closest('[data-gesicomm-agregar]'))) {
@@ -4627,6 +4735,9 @@ export function runtimeGesicomm() {
     var checkoutForm = e.target && e.target.closest ? e.target.closest('form[data-gesicomm-checkout-form]') : null;
     if (checkoutForm) {
       e.preventDefault();
+      prepararCamposCheckout();
+      limpiarErroresCheckout(e);
+      if (!checkoutForm.reportValidity()) return;
       var camposCheckout = {};
       var controles = checkoutForm.querySelectorAll('input[name], textarea[name], select[name]');
       for (var ci = 0; ci < controles.length; ci++) {

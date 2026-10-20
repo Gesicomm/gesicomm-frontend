@@ -496,6 +496,7 @@ export function presentacionComercial(item, venta) {
     resenas_calificacion: resenasCalificacion,
     vacios,
     ficha_bloques: bloquesCompatibles,
+    codigo_bloques: fuente.codigo_bloques || {},
     // Sin orden propio la ficha queda como viene en su HTML (ver
     // aplicarOrdenMobileFicha en el runtime).
     ficha_orden_mobile: Array.isArray(fuente.ficha_orden_mobile) && fuente.ficha_orden_mobile.length
@@ -974,6 +975,7 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
     producto,
     carrito: resumenCarritoRuntime(opciones.carrito || []),
     checkout_estado: opciones.checkoutEstado || null,
+    checkout_metodo_pago: opciones.paymentMethod || null,
     checkout_bumps: extrasCheckout.bumps,
     checkout_recomendados: extrasCheckout.recomendados,
     recomendados: recomendadosVista(catalogo, producto, venta),

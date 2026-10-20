@@ -1,4 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import OfertaTiempoLimitado from '../../OfertaTiempoLimitado';
+import { ofertaProductoDesdeCombo } from '../../ofertaComboAdapter';
+import IconoLibreCombo from '../../IconoLibreCombo';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Check, ChevronDown, ImageOff, Layers, Star } from 'lucide-react';
 import { getMediaUrl } from '../../../../services/api';
 import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
@@ -10,6 +13,8 @@ import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
 import { MediaProducto, MiniaturaMediaProducto, normalizarGaleriaProducto, claveMedioProducto } from '../mediaGaleria';
 import './comboProductPage.css';
+import { productosSeccionCombo, beneficiosVisiblesCombo } from '../../comboContenido';
+import { BLOQUES_COMBO, BLOQUES_EDITABLES_COMBO, ordenBloquesCombo, ordenPartesCombo } from '../../comboBloques';
 
 /**
  * Ficha de detalle de un Combo.
@@ -44,9 +49,20 @@ export default function ComboProductPage({
   // `onAgregar` todavía cableado) — no es el camino real de compra.
   onComprar = null,
   onVolver = null,
+  layout = null,
+  bloqueActivo = null,
+  onBloque = null,
+  onActivo = null,
+  documento = false,
 }) {
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
+  const rootRef = useRef(null);
+  useEffect(() => {
+    if (previewMode && bloqueActivo && onBloque) {
+      rootRef.current?.querySelector(`[data-combo-preview-bloque="${bloqueActivo}"]`)?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [bloqueActivo, previewMode, onBloque]);
 
   const t = resolverTemaPorSlug(tema, templateSlug);
   const vars = useMemo(() => {
@@ -66,7 +82,8 @@ export default function ComboProductPage({
   const productos = item.productosIncluidos || [];
   const beneficios = (ficha.beneficio_principal.items || []).filter(b => b?.titulo?.trim() || b?.texto?.trim());
   const testimonios = (ficha.prueba_social.testimonios || []).filter(t2 => t2?.comentario?.trim());
-  const confianzaItems = (ficha.confianza.items || []).filter(c => c?.titulo?.trim());
+  const confianzaItems = (ficha.confianza.items || []).filter(c => c?.titulo?.trim() || c?.texto?.trim());
+  const preguntas = (ficha.faq.items ?? item.faq ?? []).filter(f => f?.pregunta?.trim() && f.partes?.pregunta !== false);
 
   const comprar = () => {
     const datos = { variante: null, pack: null, precio: item.precio };
@@ -81,10 +98,10 @@ export default function ComboProductPage({
 
   const galeria = normalizarGaleriaProducto(item.imagenes);
   const imagenActual = galeria[indiceImagen] || galeria[0] || null;
-  const tituloTexto = (ficha.hero.titulo || item.nombre || '').trim();
+  const tituloTexto = (ficha.hero.titulo ?? item.nombre ?? '').trim();
   const largoTitulo = tituloTexto.length + (ficha.hero.titulo_destacado || '').length;
   const claseTitulo = largoTitulo > 60 ? 'es-muy-largo' : largoTitulo > 32 ? 'es-largo' : '';
-  const leadTexto = ficha.hero.lead || item.descripcion;
+  const leadTexto = ficha.hero.lead ?? item.descripcion;
 
   // Valor del combo: suma de precios individuales de referencia de cada
   // producto (a lo que costaría comprarlos sueltos) vs. lo que sale el
@@ -92,7 +109,7 @@ export default function ComboProductPage({
   const precioCombo = Number(item.precio) || 0;
   const totalIndividual = productos.reduce((sum, p) => sum + (Number(p.precio) || 0) * (p.cantidad || 1), 0);
   const totalIndividualValido = totalIndividual > 0 ? totalIndividual : null;
-  const precioReferenciaCombo = totalIndividualValido || (Number(item.precioAntes) > precioCombo ? Number(item.precioAntes) : null);
+  const precioReferenciaCombo = totalIndividualValido;
   const ahorroValor = precioReferenciaCombo && precioReferenciaCombo > precioCombo ? precioReferenciaCombo - precioCombo : null;
   const descuentoPorcentaje = ahorroValor && precioReferenciaCombo
     ? Math.round((ahorroValor / precioReferenciaCombo) * 100)
@@ -101,13 +118,23 @@ export default function ComboProductPage({
   const totalUnidades = productos.reduce((sum, p) => sum + (Number(p.cantidad) || 1), 0);
   const resumenUnidades = totalUnidades === 1 ? '1 producto incluido' : `${totalUnidades} productos incluidos`;
 
-  return (
-    <div data-template={templateSlug} className={`cmb-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
+  const ofertaCompartida = ofertaProductoDesdeCombo(ficha.hero);
+  const encabezadoVisible = ficha.hero.activo && layout?._visibilidad?.hero !== false;
+  const parteVisible = clave => ficha.hero.partes?.[clave] !== false;
+  const verParte = (bloque, clave) => (ficha[bloque] || layout?.[bloque])?.partes?.[clave] !== false;
+  const verItem = (bloque, dato, clave) => dato.partes?.[clave] ?? verParte(bloque, clave);
+  const tarjetasConfianza = confianzaItems.filter(c => (verItem('confianza', c, 'nombre') && c.titulo?.trim()) || (verItem('confianza', c, 'texto') && c.texto?.trim()));
+  const tarjetasBeneficios = beneficios.filter(b => (verItem('beneficio_principal', b, 'nombre') && b.titulo?.trim()) || (verItem('beneficio_principal', b, 'texto') && b.texto?.trim()));
+  const caracteristicas = (ficha.hero.caracteristicas || []).filter(v => v.trim());
+  const contenido = (
+    <>
       {/* Barra superior de urgencia (envío, garantía, pago) ─────────── */}
-      {ficha.barra_superior.activo && ficha.barra_superior.items.length > 0 && (
+      {ficha.barra_superior.activo && ficha.barra_superior.items.some(v => v.texto?.trim()) && (
+        <div data-combo-bloque="barra_superior">
+        {!ficha.barra_superior.items.length && <p className="cmb-vacio">Agregá las ventajas de tu tienda en el bloque Barra superior.</p>}
         <BarraMarquee
           className="cmb-barra"
-          items={ficha.barra_superior.items}
+          items={ficha.barra_superior.items.filter(v => v.texto?.trim())}
           animado={ficha.barra_superior.animado !== false}
           velocidad={ficha.barra_superior.velocidad}
           separador={ficha.barra_superior.separador}
@@ -120,12 +147,12 @@ export default function ComboProductPage({
               {ficha.barra_superior.cta_texto}
             </button>
           ) : null}
-        />
+        /></div>
       )}
 
       {/* Migas de pan ────────────────────────────────────────────────── */}
       {onVolver && (
-        <div className="cmb-wrap">
+        <div className="cmb-wrap" data-combo-navegacion="catalogo">
           <button type="button" className="cmb-breadcrumbs" onClick={onVolver}>
             Volver al catálogo <span>/</span> <b>{item.nombre}</b>
           </button>
@@ -133,51 +160,45 @@ export default function ComboProductPage({
       )}
 
       {/* Hero: oferta + combo principal ──────────────────────────────── */}
-      {ficha.hero.activo && (
-        <>
-          {(ficha.hero.etiqueta_oferta || ficha.hero.contador.activo) && (
-            <div className="cmb-wrap">
-              <div className="cmb-offer-timer">
-                {ficha.hero.etiqueta_oferta && <span className="cmb-hero-etiqueta">{ficha.hero.etiqueta_oferta}</span>}
-                {ficha.hero.contador.activo && <Contador desde={ficha.hero.contador} />}
-              </div>
-            </div>
-          )}
-
+      {
+        <div data-combo-bloque="hero">
           <section className="cmb-hero cmb-wrap" id="cmb-hero">
-            <div className={`cmb-hero-copy ${claseTitulo}`}>
-              {(ficha.hero.eyebrow || item.categoria) && (
-                <p className="cmb-eyebrow">{ficha.hero.eyebrow || nombreCategoria(item.categoria)}</p>
+            {encabezadoVisible && <PartesHero orden={layout?._orden_hero} data-combo-estructura="encabezado" className={`cmb-hero-copy ${claseTitulo}`}>
+              <div data-combo-sub-bloque="hero_titulo" data-combo-parte="Nombre y sobre-título" data-combo-orden="titulo">
+              {parteVisible('sobre_titulo') && ficha.hero.eyebrow?.trim() && (
+                <p className="cmb-eyebrow">{ficha.hero.eyebrow}</p>
               )}
-              <h1>
-                {ficha.hero.titulo || item.nombre}
-                {ficha.hero.titulo_destacado && <> <span className="cmb-hero-destacado">{ficha.hero.titulo_destacado}</span></>}
-              </h1>
+              {((parteVisible('titulo') && tituloTexto) || (parteVisible('titulo_destacado') && ficha.hero.titulo_destacado?.trim())) && <h1>
+                {parteVisible('titulo') ? tituloTexto : ''}
+                {parteVisible('titulo_destacado') && ficha.hero.titulo_destacado && <> <span className="cmb-hero-destacado">{ficha.hero.titulo_destacado}</span></>}
+              </h1>}
+              </div>
 
-              {ficha.hero.rating_activo && (
-                <div className="cmb-rating">
+              {parteVisible('calificacion') && ficha.hero.rating_activo && (
+                <div className="cmb-rating" data-combo-sub-bloque="hero_calificacion" data-combo-parte="Calificación" data-combo-orden="calificacion">
                   <Estrellas valor={ficha.hero.rating_valor} tamano={16} />
                   <b>{Number(ficha.hero.rating_valor).toFixed(1)}/5</b>
                 </div>
               )}
 
-              {leadTexto && <RichText text={leadTexto} className="cmb-lead" />}
-            </div>
+              {parteVisible('descripcion') && leadTexto && <div data-combo-sub-bloque="hero_descripcion" data-combo-parte="Descripción" data-combo-orden="descripcion"><RichText text={leadTexto} className="cmb-lead" /></div>}
+            </PartesHero>}
 
-            <div className="cmb-offer-card" aria-label="Oferta del combo">
-              <div className="cmb-hero-visual">
+            <div data-combo-estructura="oferta" className="cmb-offer-card" aria-label="Oferta del combo" style={!parteVisible('galeria') || !galeria.length ? { gridTemplateColumns: '1fr' } : undefined}>
+              {parteVisible('galeria') && galeria.length > 0 && <div className="cmb-hero-visual" data-combo-sub-bloque="hero_galeria" data-combo-parte="Galería e imágenes">
                 <div className={`cmb-hero-foto ${!imagenActual ? 'sin-imagen' : ''}`}>
-                  {ficha.hero.etiqueta && <span className="cmb-hero-badge">{ficha.hero.etiqueta}</span>}
+                  {parteVisible('etiqueta') && ficha.hero.etiqueta && <span className="cmb-hero-badge">{ficha.hero.etiqueta}</span>}
                   {imagenActual
-                    ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
+                    ? documento ? <>{galeria.map((medio, i) => <div key={i} data-combo-media-panel={i} hidden={i !== 0} className="lsp-media-frame"><MediaProducto medio={medio} alt={item.nombre} /></div>)}</>
+                      : <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
                     : (
                       <div className="cmb-hero-foto-vacio">
                         <ImageOff size={32} />
-                        {previewMode && <span>Sin imagen — subila en "Imágenes del combo"</span>}
+                        {previewMode && <span>{onBloque ? 'Agregá fotos desde Galería e imágenes del encabezado.' : 'Sin imagen — subila en "Imágenes del combo"'}</span>}
                       </div>
                     )}
                 </div>
-                {productos.length > 0 && (
+                {parteVisible('productos') && productos.length > 0 && (
                   <div className="cmb-kit-strip" aria-label={resumenUnidades}>
                     {productosHero.map((p, i) => (
                       <React.Fragment key={p.id}>
@@ -196,13 +217,14 @@ export default function ComboProductPage({
                     )}
                   </div>
                 )}
-                {galeria.length > 1 && (
+                {parteVisible('miniaturas') && galeria.length > 1 && (
                   <div className="cmb-miniaturas">
                     {galeria.slice(0, 6).map((medio, i) => (
                       <button
                         type="button"
                         key={claveMedioProducto(medio, i)}
                         aria-label={`Medio ${i + 1} de ${galeria.length}`}
+                        data-combo-imagen={documento ? i : undefined}
                         className={`cmb-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                         onClick={() => setIndiceImagen(i)}
                       >
@@ -211,76 +233,79 @@ export default function ComboProductPage({
                     ))}
                   </div>
                 )}
-              </div>
+              </div>}
 
-              <div className="cmb-offer-panel">
+              <PartesHero orden={layout?._orden_hero} className="cmb-offer-panel">
+                <div data-combo-sub-bloque="hero_precio" data-combo-parte="Precio y ahorro" data-combo-orden="precio">
                 <div className="cmb-offer-panel-head">
-                  <span><Layers size={15} /> Combo armado</span>
-                  <strong>{resumenUnidades}</strong>
+                  {parteVisible('rotulo_combo') && ficha.hero.rotulo_combo?.trim() && <span><Layers size={15} /> {ficha.hero.rotulo_combo ?? 'Combo armado'}</span>}
+                  {parteVisible('cantidad_productos') && <strong>{resumenUnidades}</strong>}
                 </div>
 
-                <div className="cmb-offer-pricing">
-                  {precioReferenciaCombo && (
+                {(parteVisible('precio') || (parteVisible('precio_anterior') && precioReferenciaCombo) || (parteVisible('ahorro') && ahorroValor != null)) && <div className="cmb-offer-pricing">
+                  {parteVisible('precio_anterior') && precioReferenciaCombo && (
                     <div className="cmb-price-line">
-                      <span>Valor por separado</span>
+                      {parteVisible('rotulo_precio_anterior') && ficha.hero.rotulo_precio_anterior?.trim() && <span>{ficha.hero.rotulo_precio_anterior ?? 'Valor por separado'}</span>}
                       <del>{formatPrecio(precioReferenciaCombo)}</del>
                     </div>
                   )}
-                  <div className="cmb-price-main">
-                    <span>Hoy llevás el combo por</span>
+                  {parteVisible('precio') && <div className="cmb-price-main">
+                    {parteVisible('rotulo_precio') && ficha.hero.rotulo_precio?.trim() && <span>{ficha.hero.rotulo_precio ?? 'Hoy llevás el combo por'}</span>}
                     <strong>{formatPrecio(item.precio)}</strong>
-                  </div>
-                  {ahorroValor != null && (
+                  </div>}
+                  {parteVisible('ahorro') && ahorroValor != null && (
                     <div className="cmb-saving-xl">
                       <span>Ahorrás {formatPrecio(ahorroValor)}</span>
-                      {descuentoPorcentaje != null && <b>{descuentoPorcentaje}% OFF</b>}
+                      {parteVisible('porcentaje') && descuentoPorcentaje != null && <b>{descuentoPorcentaje}% OFF</b>}
                     </div>
                   )}
+                </div>}
+
+                  {ficha.hero.contador.activo && <div className="cmb-offer-timer" data-combo-sub-bloque="hero_oferta" data-combo-parte="Oferta por tiempo limitado">
+                    <OfertaTiempoLimitado datos={ofertaCompartida.datos} partes={ofertaCompartida.partes} documento={documento} combo />
+                  </div>}
                 </div>
 
-                {Array.isArray(ficha.hero.caracteristicas) && ficha.hero.caracteristicas.length > 0 && (
-                  <ul className="cmb-hero-checklist">
-                    {ficha.hero.caracteristicas.slice(0, 4).map((linea, i) => (
+                {parteVisible('caracteristicas') && caracteristicas.length > 0 && (
+                  <ul className="cmb-hero-checklist" data-combo-sub-bloque="hero_caracteristicas" data-combo-parte="Puntos clave" data-combo-orden="caracteristicas">
+                    {caracteristicas.slice(0, 6).map((linea, i) => (
                       <li key={i}><span className="cmb-check"><Check size={12} strokeWidth={3} /></span> {linea}</li>
                     ))}
                   </ul>
                 )}
 
-                <div className="cmb-hero-accion">
-                  <button type="button" className="cmb-cta" onClick={comprar}>
-                    {ficha.hero.cta_texto || 'Quiero mi combo'} <ArrowRight size={16} />
-                  </button>
+                  {parteVisible('compra') && ficha.hero.cta_texto?.trim() && <div className="cmb-hero-accion" data-combo-sub-bloque="hero_compra" data-combo-orden="compra"><button type="button" className="cmb-cta" onClick={comprar} data-combo-parte="Botón de compra">
+                    {ficha.hero.cta_texto} <ArrowRight size={16} />
+                  </button></div>}
 
-                  <div className="cmb-trust-row">
-                    {[ficha.hero.nota_envio, ficha.hero.nota_garantia, ficha.hero.nota_stock].filter(Boolean).slice(0, 3).map((nota, i) => (
-                      <span key={i}><Check size={13} strokeWidth={3} /> {nota}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              </PartesHero>
             </div>
           </section>
-        </>
-      )}
+        </div>
+      }
 
       {/* ¿Qué incluye? ─────────────────────────────────────────────── */}
-      {ficha.incluye.activo && (productos.length > 0 || previewMode) && (
-        <section className="cmb-seccion cmb-seccion--fondo">
+      {ficha.incluye.activo && productos.length > 0 && (
+        <section className="cmb-seccion cmb-seccion--fondo" data-combo-bloque="incluye">
           <div className="cmb-wrap">
-            <SeccionTitulo eyebrow="Todo lo que recibís" texto={ficha.incluye.titulo} sub={ficha.incluye.subtitulo} numero={3} mostrarNumero={previewMode} />
+            <SeccionTitulo config={ficha.incluye} eyebrow="Todo lo que recibís" texto={ficha.incluye.titulo} sub={ficha.incluye.subtitulo} numero={3} mostrarNumero={previewMode} />
             {productos.length === 0 ? (
               <p className="cmb-vacio">Agregá productos al combo para que esta sección se arme sola.</p>
             ) : (
               <div className="cmb-products-grid">
-                {productos.map(p => (
-                  <article className="cmb-product-card" key={p.id}>
-                    <div className="cmb-product-card-image">
+                {productosSeccionCombo(productos, ficha.incluye).filter(p =>
+                  (verItem('incluye', p, 'nombre') && p.nombre?.trim()) || (verItem('incluye', p, 'imagen') && p.imagen) ||
+                  verItem('incluye', p, 'cantidad') || (verItem('incluye', p, 'beneficio') && p.beneficios?.some(b => textoBeneficio(b)))).map(p => (
+                  <article className="cmb-product-card" data-combo-sub-bloque={`incluye_producto_${p.id}`} key={p.id}>
+                    {verItem('incluye', p, 'imagen') && p.imagen ? <div className="cmb-product-card-image">
                       {p.imagen ? <img src={getMediaUrl(p.imagen)} alt={p.nombre} loading="lazy" /> : <ImageOff size={26} />}
-                      <span>×{p.cantidad || 1}</span>
-                    </div>
+                      {verItem('incluye', p, 'cantidad') && <span>×{p.cantidad || 1}</span>}
+                    </div> : verItem('incluye', p, 'cantidad') && <span className="cmb-product-cantidad">×{p.cantidad || 1}</span>}
                     <div className="cmb-product-card-copy">
-                      <h3>{p.nombre}</h3>
-                      {textoBeneficio(p.beneficios?.[0]) && <p>{textoBeneficio(p.beneficios[0])}</p>}
+                      {verItem('incluye', p, 'nombre') && p.nombre?.trim() && <h3>{p.nombre}</h3>}
+                      {verItem('incluye', p, 'beneficio') && beneficiosVisiblesCombo(p).length > 0 && <ul className="cmb-checklist cmb-product-beneficios">
+                        {beneficiosVisiblesCombo(p).map((beneficio, i) => <li key={i}><span className="cmb-check"><Check size={11} /></span>{beneficio}</li>)}
+                      </ul>}
                     </div>
                   </article>
                 ))}
@@ -292,12 +317,12 @@ export default function ComboProductPage({
 
       {/* El valor del combo ────────────────────────────────────────── */}
       {ficha.valor.activo && productos.length > 0 && (
-        <section className="cmb-seccion cmb-wrap">
-          <SeccionTitulo eyebrow="Más valor en un solo combo" texto="El valor del combo" numero={4} mostrarNumero={previewMode} />
+        <section className="cmb-seccion cmb-wrap" data-combo-bloque="valor">
+          <SeccionTitulo config={ficha.valor} eyebrow="Más valor en un solo combo" texto="El valor del combo" numero={4} mostrarNumero={previewMode} />
           <div className="cmb-value-grid">
-            <div className="cmb-price-breakdown">
+            {verParte('valor', 'desglose') && <div className="cmb-price-breakdown">
               <div className="cmb-breakdown-head">
-                <span>{ficha.valor.titulo}</span>
+                {verParte('valor', 'rotulo_desglose') && ficha.valor.titulo?.trim() && <span>{ficha.valor.titulo}</span>}
                 <span>Valor</span>
               </div>
               {productos.map(p => (
@@ -306,40 +331,40 @@ export default function ComboProductPage({
                   <strong>{p.precio != null ? formatPrecio(p.precio * (p.cantidad || 1)) : '—'}</strong>
                 </div>
               ))}
-              <div className="cmb-breakdown-total">
-                <span>Valor por separado</span>
+              {verParte('valor', 'total') && <div className="cmb-breakdown-total">
+                <span>{ficha.valor.rotulo_total}</span>
                 <strong>{precioReferenciaCombo ? formatPrecio(precioReferenciaCombo) : '—'}</strong>
-              </div>
-            </div>
+              </div>}
+            </div>}
             <div className="cmb-combo-price">
-              <p>{ficha.valor.titulo_combo}</p>
-              <strong>{formatPrecio(item.precio)}</strong>
-              {ahorroValor != null && <span>Ahorrás {formatPrecio(ahorroValor)}</span>}
-              {ficha.valor.nota_ahorro && <small>{ficha.valor.nota_ahorro}</small>}
+              {verParte('valor', 'rotulo_precio') && ficha.valor.titulo_combo?.trim() && <p>{ficha.valor.titulo_combo}</p>}
+              {verParte('valor', 'precio') && <strong>{formatPrecio(item.precio)}</strong>}
+              {verParte('valor', 'ahorro') && ahorroValor != null && <span>Ahorrás {formatPrecio(ahorroValor)}</span>}
+              {verParte('valor', 'nota') && ficha.valor.nota_ahorro && <small>{ficha.valor.nota_ahorro}</small>}
             </div>
           </div>
-          <button type="button" className="cmb-cta cmb-value-button" onClick={comprar}>
-            {ficha.hero.cta_texto || 'Comprar combo'} <ArrowRight size={16} />
-          </button>
+          {verParte('valor', 'compra') && ficha.valor.cta_texto?.trim() && <button type="button" className="cmb-cta cmb-value-button" onClick={comprar}>
+            {ficha.valor.cta_texto} <ArrowRight size={16} />
+          </button>}
         </section>
       )}
 
       {/* ¿Por qué este combo? ──────────────────────────────────────── */}
-      {ficha.beneficio_principal.activo && (beneficios.length > 0 || ficha.beneficio_principal.texto || previewMode) && (
-        <section className="cmb-seccion cmb-seccion--fondo">
+      {ficha.beneficio_principal.activo && (tarjetasBeneficios.length > 0 || tieneTituloSeccion(ficha.beneficio_principal, 'Elegidos para complementarse')
+        || (ficha.beneficio_principal.partes?.subtitulo !== false && ficha.beneficio_principal.texto?.trim())) && (
+        <section className="cmb-seccion cmb-seccion--fondo" data-combo-bloque="beneficio_principal">
           <div className="cmb-wrap">
-          <SeccionTitulo eyebrow="Elegidos para complementarse" texto={ficha.beneficio_principal.titulo} sub={ficha.beneficio_principal.texto} numero={5} mostrarNumero={previewMode} />
-          {beneficios.length === 0 ? (
-            <p className="cmb-vacio">Se cargan en <b>Vista del combo</b>, como beneficios.</p>
+          <SeccionTitulo config={ficha.beneficio_principal} eyebrow="Elegidos para complementarse" texto={ficha.beneficio_principal.titulo} sub={ficha.beneficio_principal.texto} numero={5} mostrarNumero={previewMode} />
+          {tarjetasBeneficios.length === 0 ? (
+            null
           ) : (
             <div className="cmb-why-grid">
-              {beneficios.map((b, i) => {
-                const Icono = getIconoBeneficio(b.icono);
+              {tarjetasBeneficios.map((b, i) => {
                 return (
                   <div className="cmb-why-item" key={i}>
-                    <Icono size={22} />
-                    <h3>{b.titulo}</h3>
-                    {b.texto && <p>{b.texto}</p>}
+                    {verItem('beneficio_principal', b, 'iconos') && <IconoLibreCombo valor={b.icono} />}
+                    {verItem('beneficio_principal', b, 'nombre') && <h3>{b.titulo}</h3>}
+                    {verItem('beneficio_principal', b, 'texto') && b.texto && <p>{b.texto}</p>}
                   </div>
                 );
               })}
@@ -349,56 +374,26 @@ export default function ComboProductPage({
         </section>
       )}
 
-      {/* Conocé lo que recibís ─────────────────────────────────────── */}
-      {ficha.detalle_productos.activo && productos.length > 0 && (
-        <section className="cmb-seccion cmb-wrap">
-          <SeccionTitulo eyebrow="Detalles de tu compra" texto={ficha.detalle_productos.titulo} numero={6} mostrarNumero={previewMode} />
-          <div className="cmb-receive-list">
-            {productos.map(p => (
-              <div className="cmb-receive-row" key={p.id}>
-                <div className="cmb-receive-foto">
-                  {p.imagen ? <img src={getMediaUrl(p.imagen)} alt={p.nombre} loading="lazy" /> : <ImageOff size={22} />}
-                </div>
-                <div className="cmb-receive-copy">
-                  <strong>{p.nombre}</strong>
-                  {p.beneficios && p.beneficios.length > 0 ? (
-                    <ul className="cmb-checklist">
-                      {p.beneficios.map((beneficio, i) => (
-                        textoBeneficio(beneficio) && (
-                          <li key={i}><span className="cmb-check"><Check size={11} strokeWidth={3} /></span> {textoBeneficio(beneficio)}</li>
-                        )
-                      ))}
-                    </ul>
-                  ) : previewMode ? (
-                    <p className="cmb-vacio-inline">Sin checks: se cargan en la Vista del producto de "{p.nombre}".</p>
-                  ) : null}
-                </div>
-                <span className="cmb-receive-cant">×{p.cantidad || 1}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* Opiniones reales ──────────────────────────────────────────── */}
       {ficha.prueba_social.activo && (
-        <section className="cmb-seccion cmb-seccion--fondo">
+        <section className="cmb-seccion cmb-seccion--fondo" data-combo-bloque="prueba_social">
           <div className="cmb-wrap">
-            <SeccionTitulo eyebrow="Experiencias reales" texto={ficha.prueba_social.titulo} numero={7} mostrarNumero={previewMode} />
-            <div className="cmb-rating cmb-rating--centrado">
+            <SeccionTitulo config={ficha.prueba_social} eyebrow="Experiencias reales" texto={ficha.prueba_social.titulo} numero={7} mostrarNumero={previewMode} />
+            {testimonios.length > 0 && verParte('prueba_social', 'calificacion') && <div className="cmb-rating cmb-rating--centrado">
               <Estrellas valor={ficha.prueba_social.calificacion} tamano={18} />
               <b>{Number(ficha.prueba_social.calificacion).toFixed(1)}/5</b>
-            </div>
+            </div>}
             {testimonios.length === 0 ? (
-              previewMode && <p className="cmb-vacio">Sin testimonios cargados.</p>
+              <p className="cmb-vacio">{previewMode ? 'Todavía no hay opiniones cargadas. Agregá una opinión desde este bloque para mostrar su foto, comentario y calificación.' : 'Todavía no hay opiniones de este combo.'}</p>
             ) : (
               <div className="cmb-reviews-grid">
                 {testimonios.map((t2, i) => (
                   <article className="cmb-review" key={i}>
-                    <Estrellas valor={t2.calificacion ?? 5} tamano={14} />
-                    <p>"{t2.comentario}"</p>
-                    {t2.nombre && <strong>{t2.nombre}</strong>}
-                    <small>Compra verificada</small>
+                    {verItem('prueba_social', t2, 'estrellas') && <Estrellas valor={t2.calificacion ?? 5} tamano={14} />}
+                    {verItem('prueba_social', t2, 'comentario') && <p>"{t2.comentario}"</p>}
+                    {verItem('prueba_social', t2, 'foto') && t2.foto?.trim() && <img className="cmb-review-foto" src={getMediaUrl(t2.foto)} alt={t2.nombre || ''} loading="lazy" />}
+                    {verItem('prueba_social', t2, 'nombre') && t2.nombre && <strong>{t2.nombre}</strong>}
+                    {verParte('prueba_social', 'verificada') && verItem('prueba_social', t2, 'detalle') && (t2.detalle ?? ficha.prueba_social.rotulo_verificada)?.trim() && <small>{t2.detalle ?? ficha.prueba_social.rotulo_verificada}</small>}
                   </article>
                 ))}
               </div>
@@ -408,41 +403,40 @@ export default function ComboProductPage({
       )}
 
       {/* Comprá con confianza ──────────────────────────────────────── */}
-      {ficha.confianza.activo && confianzaItems.length > 0 && (
-        <section className="cmb-seccion cmb-wrap">
-          <SeccionTitulo eyebrow="Comprá tranquilo" texto={ficha.confianza.titulo} numero={8} mostrarNumero={previewMode} />
-          <div className="cmb-trust-grid">
-            {confianzaItems.map((c, i) => {
-              const Icono = getIconoBeneficio(c.icono);
+      {ficha.confianza.activo && (tarjetasConfianza.length > 0 || tieneTituloSeccion(ficha.confianza, 'Comprá tranquilo')) && (
+        <section className="cmb-seccion cmb-wrap" data-combo-bloque="confianza">
+          <SeccionTitulo config={ficha.confianza} eyebrow="Comprá tranquilo" texto={ficha.confianza.titulo} numero={8} mostrarNumero={previewMode} />
+          {tarjetasConfianza.length > 0 && <div className="cmb-trust-grid">
+            {tarjetasConfianza.map((c, i) => {
               return (
                 <div className="cmb-trust-item" key={i}>
-                  <Icono size={24} />
-                  <h3>{c.titulo}</h3>
-                  {c.texto && <p>{c.texto}</p>}
+                  {verItem('confianza', c, 'iconos') && <IconoLibreCombo valor={c.icono} />}
+                  <div>
+                  {verItem('confianza', c, 'nombre') && <h3>{c.titulo}</h3>}
+                  {verItem('confianza', c, 'texto') && c.texto && <p>{c.texto}</p>}
+                  </div>
                 </div>
               );
             })}
-          </div>
+          </div>}
         </section>
       )}
 
       {/* Preguntas frecuentes ──────────────────────────────────────── */}
-      {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
-        <section className="cmb-seccion cmb-seccion--fondo">
+      {ficha.faq.activo && (preguntas.length > 0 || tieneTituloSeccion(ficha.faq, 'Resolvemos tus dudas')) && (
+        <section className="cmb-seccion cmb-seccion--fondo" data-combo-bloque="faq">
           <div className="cmb-wrap">
-            <SeccionTitulo eyebrow="Resolvemos tus dudas" texto={item.faqTitulo || ficha.faq.titulo} numero={9} mostrarNumero={previewMode} />
-            {item.faq.length === 0 ? (
-              <p className="cmb-vacio">Las preguntas se cargan en <b>Vista del combo</b>.</p>
-            ) : (
+            <SeccionTitulo config={ficha.faq} eyebrow="Resolvemos tus dudas" texto={ficha.faq.titulo} numero={9} mostrarNumero={previewMode} />
+            {preguntas.length > 0 && (
               <div className="cmb-faq-list">
-                {item.faq.map((f, i) => (
+                {preguntas.map((f, i) => (
                   <div className={`cmb-faq-item ${preguntaAbierta === i ? 'abierta' : ''}`} key={i}>
-                    <button type="button" onClick={() => setPreguntaAbierta(preguntaAbierta === i ? null : i)} aria-expanded={preguntaAbierta === i}>
+                    <button type="button" data-combo-pregunta={documento ? i : undefined} onClick={() => setPreguntaAbierta(preguntaAbierta === i ? null : i)} aria-expanded={preguntaAbierta === i}>
                       <span>{f.pregunta}</span>
                       <ChevronDown size={16} />
                     </button>
-                    {preguntaAbierta === i && (
-                      <div className="cmb-faq-answer">
+                    {verParte('faq', 'respuestas') && f.partes?.respuesta !== false && f.respuesta?.trim() && (documento || preguntaAbierta === i) && (
+                      <div className="cmb-faq-answer" hidden={documento && preguntaAbierta !== i}>
                         <RichText text={f.respuesta} />
                       </div>
                     )}
@@ -454,58 +448,49 @@ export default function ComboProductPage({
         </section>
       )}
 
-      {/* Cierre de venta ───────────────────────────────────────────── */}
-      {ficha.cta_final.activo && (
-        <section className="cmb-final-cta">
-          <div className="cmb-wrap cmb-final-cta-inner">
-            <div className="cmb-cierre-bloque-timer">
-              {ficha.cta_final.etiqueta && <p className="cmb-cierre-etiqueta">{ficha.cta_final.etiqueta}</p>}
-              {ficha.cta_final.contador.activo && <Contador desde={ficha.cta_final.contador} />}
-            </div>
-            <div className="cmb-cierre-bloque-info">
-              <h2>{ficha.cta_final.titulo || item.nombre}</h2>
-              <div className="cmb-final-price">
-                {item.precioAntes != null && <span>{formatPrecio(item.precioAntes)}</span>}
-                {formatPrecio(item.precio)}
-              </div>
-              <p>
-                {[
-                  item.ahorroAbsoluto > 0 ? `Ahorrás ${formatPrecio(item.ahorroAbsoluto)}` : null,
-                  ficha.hero.nota_stock,
-                  ficha.hero.nota_envio,
-                ].filter(Boolean).join(' · ')}
-              </p>
-            </div>
-            <div className="cmb-cierre-bloque-accion">
-              <button type="button" className="cmb-cta" onClick={comprar}>
-                {ficha.cta_final.cta_texto || 'Comprar ahora'} <ArrowRight size={16} />
-              </button>
-              {ficha.hero.nota_garantia && (
-                <small className="cmb-cierre-garantia">{ficha.hero.nota_garantia}</small>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* El footer de siempre ──────────────────────────────────────── */}
+      <div data-combo-bloque="pie">
       {contacto && <RedesSocialesFooter contacto={contacto} acento={t.acento} bordeSuave={vars['--cmb-border']} isMobile={isMobile} />}
-      <StoreFooterLegal tema={t} bordeSuave={vars['--cmb-border']} nombreComercio={nombreComercio} isPreview={previewMode} />
+      <StoreFooterLegal tema={t} bordeSuave={vars['--cmb-border']} nombreComercio={layout?.pie?.texto ?? nombreComercio} isPreview={previewMode} />
+      </div>
 
       {/* Barra fija en móvil: el CTA queda arriba del pliegue. */}
-      <div className="cmb-barra-movil">
-        <div className="cmb-barra-movil-precio">
+      <div className="cmb-barra-movil" data-combo-bloque="compra_movil">
+        {verParte('compra_movil', 'precio') && <div className="cmb-barra-movil-precio">
           <b>{item.precio != null ? formatPrecio(item.precio) : ''}</b>
-        </div>
-        <button type="button" className="cmb-cta" onClick={comprar}>
-          Comprar ahora
-        </button>
+        </div>}
+        {verParte('compra_movil', 'compra') && (layout?.compra_movil?.texto ?? 'Comprar ahora').trim() && <button type="button" className="cmb-cta" onClick={comprar}>
+          {layout?.compra_movil?.texto ?? 'Comprar ahora'}
+        </button>}
       </div>
-    </div>
+    </>
   );
+  const orden = ordenBloquesCombo(layout?._orden);
+  const bloques = React.Children.toArray(contenido.props.children)
+    .filter(el => el.props?.['data-combo-bloque'] === 'hero' || layout?._visibilidad?.[el.props?.['data-combo-bloque']] !== false)
+    .sort((a, b) => orden.indexOf(a.props?.['data-combo-bloque']) - orden.indexOf(b.props?.['data-combo-bloque']));
+  return <div ref={rootRef} data-template={templateSlug} className={`cmb-root ${isMobile ? 'es-movil' : ''} ${previewMode && onBloque ? 'cmb-editor' : ''}`} style={vars}>
+    {bloques.map(el => {
+      const clave = el.props?.['data-combo-bloque'];
+      if (!previewMode || !onBloque || !BLOQUES_EDITABLES_COMBO.some(b => b.key === clave)) return el;
+      const bloque = BLOQUES_COMBO.find(b => b.key === clave) || { label: 'Barra superior' };
+      return <div key={clave} className={`cmb-editor-bloque ${bloqueActivo === clave ? 'cmb-editor-seleccionado' : ''}`} data-combo-preview-bloque={clave}
+        onMouseEnter={() => onActivo?.(clave)} onMouseLeave={() => onActivo?.(null)}
+        onClickCapture={e => { if (!e.target.closest('button, a, input, textarea, select')) { e.preventDefault(); e.stopPropagation(); onBloque(e.target.closest('[data-combo-sub-bloque]')?.getAttribute('data-combo-sub-bloque') || clave); } }}>
+        <button type="button" className="cmb-editor-label" aria-label={`Editar bloque ${bloque.label}`} onClick={() => onBloque(clave)}>{orden.filter(k => BLOQUES_EDITABLES_COMBO.some(b => b.key === k)).indexOf(clave) + 1} · {bloque.label} · Editar</button>
+        {el}
+      </div>;
+    })}
+  </div>;
 }
 
 /* ── Piezas internas ──────────────────────────────────────────────── */
+
+function PartesHero({ orden, children, ...props }) {
+  const claves = ordenPartesCombo(orden);
+  return <div {...props}>{React.Children.toArray(children).sort((a, b) =>
+    claves.indexOf(a.props?.['data-combo-orden']) - claves.indexOf(b.props?.['data-combo-orden']))}</div>;
+}
 
 function nombreCategoria(categoria) {
   if (!categoria) return '';
@@ -520,13 +505,21 @@ function textoBeneficio(beneficio) {
 }
 
 /** Patrón de título de sección: eyebrow + h2 + bajada opcional, siempre centrado. */
-function SeccionTitulo({ eyebrow, texto, sub, numero, mostrarNumero = false }) {
-  if (!texto) return null;
+function tieneTituloSeccion(config, eyebrow) {
+  return (config.partes?.eyebrow !== false && (config.eyebrow ?? eyebrow)?.trim())
+    || (config.partes?.titulo !== false && (config.encabezado ?? config.titulo)?.trim());
+}
+
+function SeccionTitulo({ config = {}, eyebrow, texto, sub, numero, mostrarNumero = false }) {
+  eyebrow = config.partes?.eyebrow === false ? '' : (config.eyebrow ?? eyebrow)?.trim();
+  texto = config.partes?.titulo === false ? '' : (config.encabezado ?? texto)?.trim();
+  sub = config.partes?.subtitulo === false ? '' : sub?.trim();
+  if (!texto && !eyebrow && !sub) return null;
   return (
     <div className="cmb-seccion-titulo">
       {mostrarNumero && <span className="cmb-seccion-numero">{numero}</span>}
       {eyebrow && <p className="cmb-eyebrow">{eyebrow}</p>}
-      <h2>{texto}</h2>
+      {texto && <h2>{texto}</h2>}
       {sub && <p className="cmb-seccion-sub">{sub}</p>}
     </div>
   );
@@ -540,49 +533,6 @@ function Estrellas({ valor = 5, tamano = 14 }) {
         <Star key={n} size={tamano} fill={n <= llenas ? 'currentColor' : 'none'} strokeWidth={1.6} />
       ))}
     </span>
-  );
-}
-
-const dosDigitos = (n) => String(Math.max(0, n)).padStart(2, '0');
-
-/**
- * Contador decorativo, igual criterio que en las otras fichas (ver
- * BasicoProductPage.jsx): arranca en el tiempo configurado cada vez que se
- * abre la página. No hay fecha límite real detrás — la oferta "por tiempo
- * limitado" es una convención de urgencia, no un plazo que alguien deba
- * mantener.
- */
-function Contador({ desde }) {
-  const total = useMemo(() => Math.max(0,
-    (Number(desde.horas) || 0) * 3600 + (Number(desde.minutos) || 0) * 60 + (Number(desde.segundos) || 0)
-  ), [desde.horas, desde.minutos, desde.segundos]);
-
-  const [restante, setRestante] = useState(total);
-  useEffect(() => { setRestante(total); }, [total]);
-  useEffect(() => {
-    if (restante <= 0) return undefined;
-    const id = setInterval(() => setRestante(s => (s <= 1 ? 0 : s - 1)), 1000);
-    return () => clearInterval(id);
-  }, [restante > 0]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const cajas = [
-    ['Horas', Math.floor(restante / 3600)],
-    ['Minutos', Math.floor((restante % 3600) / 60)],
-    ['Segundos', restante % 60],
-  ];
-
-  return (
-    <div className="cmb-contador">
-      {cajas.map(([label, valor], i) => (
-        <React.Fragment key={label}>
-          {i > 0 && <span className="cmb-contador-sep">:</span>}
-          <span className="cmb-contador-caja">
-            <b>{dosDigitos(valor)}</b>
-            <small>{label}</small>
-          </span>
-        </React.Fragment>
-      ))}
-    </div>
   );
 }
 

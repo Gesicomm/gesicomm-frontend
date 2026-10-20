@@ -16,6 +16,17 @@ function normalizarDescuentoBoton(valor) {
   return Math.min(95, Math.round(n * 10) / 10);
 }
 
+export function itemSegunMetodoPago(item, metodo) {
+  const pct = normalizarDescuentoBoton(item.descuentoBotonDisponible ?? item.descuentoBotonPct);
+  if (!pct) return item;
+  // El precio base se conserva entero para poder alternar sin acumular redondeos.
+  const base = Number(item.precioSinDescuentoBoton ?? Math.round(Number(item.precio) * 100 / (100 - pct)));
+  const anticipado = metodo === 'pagopar';
+  return { ...item, precioSinDescuentoBoton: base, descuentoBotonDisponible: pct,
+    descuentoBotonPct: anticipado ? pct : null,
+    precio: anticipado ? Math.round(base * (100 - pct) / 100) : base };
+}
+
 export function cargarCarritoGuardado(slug) {
   try {
     const crudo = localStorage.getItem(`gesicomm-carrito-${slug || 'home'}`);
@@ -23,6 +34,10 @@ export function cargarCarritoGuardado(slug) {
   } catch {
     return new Map();
   }
+}
+
+export function cargarMetodoPagoGuardado(slug) {
+  try { return sessionStorage.getItem(`gesicomm-metodo-pago-${slug || 'home'}`); } catch { return null; }
 }
 
 const CLAVE_UTM = 'gesicomm:utm';
@@ -137,6 +152,8 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         componenteVarianteNombre: componenteVariante?.nombre || null,
         precio,
         descuentoBotonPct: descuentoBoton || null,
+        descuentoBotonDisponible: descuentoBoton || null,
+        precioSinDescuentoBoton: descuentoBoton ? Number(precioAntesBoton ?? Math.round(precio * 100 / (100 - descuentoBoton))) : null,
         // Precio de lista, para mostrar el ahorro en el carrito: el normal de
         // la oferta (bump/upsell/pack) o el "antes" del producto. Con
         // variante no se usa: precio_antes es del producto base.
@@ -215,6 +232,11 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       copia.delete(clave);
       return copia;
     });
+  }
+
+  function cambiarMetodoPago(metodo) {
+    try { sessionStorage.setItem(`gesicomm-metodo-pago-${slug || 'home'}`, metodo); } catch { /* sin storage */ }
+    setCarrito(prev => new Map(Array.from(prev, ([clave, item]) => [clave, itemSegunMetodoPago(item, metodo)])));
   }
 
   function cambiarCantidadCarrito(clave, delta) {
@@ -305,7 +327,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
 
   async function confirmarPedido(datosFormulario = {}) {
     if (carrito.size === 0) throw new Error('Tu carrito está vacío.');
-    const itemsCrudos = Array.from(carrito.values());
+    const itemsCrudos = Array.from(carrito.values()).map(item => itemSegunMetodoPago(item, datosFormulario.payment_method));
     const itemsPayload = itemsCrudos.map(i => ({
       tipo: i.tipo,
       content_id: i.contentId,
@@ -388,6 +410,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     agregarAlCarrito,
     quitarDelCarrito,
     cambiarCantidadCarrito,
+    cambiarMetodoPago,
     iniciarCheckout,
     confirmarPedido,
     validarCupon

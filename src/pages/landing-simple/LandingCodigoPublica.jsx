@@ -10,9 +10,10 @@ import { registrarEventoLanding, obtenerCatalogoLandingPublica, obtenerGeografia
 import CartDrawer from '../landing/CartDrawer';
 import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
 import { getMediaUrl } from '../../services/api';
-import { useStoreCart } from '../landing/useStoreCart';
+import { useStoreCart, cargarMetodoPagoGuardado } from '../landing/useStoreCart';
 import { conGlobalesHeredados } from './globalesCodigo';
 import { codigoFichaProducto, codigoInicioHeredable as inicioHeredableDe } from './fichaCodigoLanding';
+import FichaComboLienzo from './FichaComboLienzo';
 
 function descuentoBotonPct(valor) {
   const n = Number(String(valor ?? '').replace(',', '.'));
@@ -68,7 +69,8 @@ function temaDesdeData(data) {
 }
 
 function hexToRgb(hex) {
-  const limpio = String(hex || '').trim().replace('#', '');
+  let limpio = String(hex || '').trim().replace('#', '');
+  if (/^[0-9a-f]{3}$/i.test(limpio)) limpio = limpio.split('').map(c => c + c).join('');
   if (!/^[0-9a-f]{6}$/i.test(limpio)) return null;
   return {
     r: parseInt(limpio.slice(0, 2), 16),
@@ -225,7 +227,21 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   // CartDrawer, que es donde vive ese popup) y recién después el pedido.
   const [solicitudUpsell, setSolicitudUpsell] = useState(null);
   const camposCheckoutPendientes = useRef(null);
-  const [paymentMethodInicial, setPaymentMethodInicial] = useState(null);
+  const [paymentMethodInicial, setPaymentMethodInicial] = useState(() =>
+    data?.checkout?.pasarelas?.some(p => p.provider === 'pagopar') && cargarMetodoPagoGuardado(slug) !== 'efectivo' ? 'pagopar' : 'efectivo');
+  const checkoutDirectoPendiente = useRef(false);
+  useEffect(() => {
+    if (!checkoutDirectoPendiente.current || !cartState.carrito.size) return;
+    checkoutDirectoPendiente.current = false;
+    // El hook ya guardó el carrito en su efecto antes de cambiar de ruta.
+    cartState.setCarritoAbierto(false);
+    navegar({ destino: 'checkout' });
+  }, [cartState.carrito]);
+  useEffect(() => {
+    if (!data || data.checkout?.pasarelas?.some(p => p.provider === 'pagopar')) return;
+    setPaymentMethodInicial('efectivo');
+    cartState.cambiarMetodoPago('efectivo');
+  }, [data?.checkout?.pasarelas]);
   // Departamentos/ciudades de Paraguay para el <select> de dirección del
   // checkout propio (ver data-gesicomm-geografia). Catálogo compartido, no
   // de esta tienda: se pide una sola vez, recién al llegar a checkout (no en
@@ -246,10 +262,11 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       categorySlug,
       carrito: Array.from(cartState.carrito.values()),
       checkoutEstado,
+      paymentMethod: paymentMethodInicial,
       geografia,
       filtro: filtroUrl,
     }) : null),
-    [data, slug, productoPublico, vistaActual, categorySlug, cartState.carrito, checkoutEstado, geografia, filtroUrl],
+    [data, slug, productoPublico, vistaActual, categorySlug, cartState.carrito, checkoutEstado, paymentMethodInicial, geografia, filtroUrl],
   );
   const tieneProductosEnCodigo = useMemo(() => codigoTieneProductos(codigo), [codigo?.html]);
   const tieneContactoEnCodigo = useMemo(() => codigoTieneContacto(codigo), [codigo?.html]);
@@ -348,10 +365,16 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     const descuentoBoton = descuentoBotonPct(pedido?.descuento_boton_pct);
     const precio = aplicarDescuentoBoton(precioBase, descuentoBoton);
     cartState.agregarAlCarrito({ item, variante, oferta, cantidad, precio, descuentoBotonPct: descuentoBoton, precioAntesBoton: descuentoBoton ? precioBase : null });
-    if (pedido?.payment_method === 'pagopar' || pedido?.payment_method === 'efectivo') {
-      setPaymentMethodInicial(pedido.payment_method);
-    }
-    if (pedido?.abrir !== false) cartState.setCarritoAbierto(true);
+    if (pedido?.payment_method) cambiarMetodoPago(pedido.payment_method);
+    if (pedido?.checkout_directo) {
+      checkoutDirectoPendiente.current = true;
+    } else if (pedido?.abrir !== false) cartState.setCarritoAbierto(true);
+  }
+
+  function cambiarMetodoPago(metodo) {
+    const elegido = metodo === 'pagopar' && data?.checkout?.pasarelas?.some(p => p.provider === 'pagopar') ? 'pagopar' : 'efectivo';
+    setPaymentMethodInicial(elegido);
+    cartState.cambiarMetodoPago(elegido);
   }
 
   function confirmarCheckoutIframe(pedido) {
@@ -478,7 +501,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   }
 
   const vacia = !codigo?.html?.trim() && !codigo?.css?.trim() && !codigo?.js?.trim();
-  if (vacia) {
+  const esCombo = esFicha && productoPublico.tipo === 'combo';
+  if (vacia && !esCombo) {
     return (
       <div className="lp-status-page">
         <h1>Esta página todavía está en construcción</h1>
@@ -491,7 +515,12 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     <div style={{ height: '100vh', background: cartApariencia.fondo }}>
       {/* key: al pasar de un producto a otro el iframe se remonta y el
           JS del comercio arranca de cero, como en una página nueva. */}
-      <CodigoPreview
+      {esCombo ? <div style={{ height: '100%', overflowY: 'auto' }}>
+        <FichaComboLienzo item={productoPublico} runtime={datosRuntime?.producto} content={data?.content}
+          tienda={datosRuntime?.tienda} tema={tema} contacto={contacto}
+          codigoInicio={codigoInicio} datos={datosRuntime} onNavegar={navegar} onCarrito={() => cartState.setCarritoAbierto(true)} onCatalogo={pedirCatalogo} onTema={onTema}
+          onComprar={abrirCheckout} onVolver={() => navegar({ destino: 'inicio' })} />
+      </div> : <CodigoPreview
         key={esFicha ? `producto:${productoPublico.content_id}` : 'inicio'}
         codigo={codigo}
         titulo={esFicha ? productoPublico.nombre : titulo}
@@ -500,6 +529,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         typography={data?.typography}
         onCheckout={abrirCheckout}
         onConfirmarCheckout={confirmarCheckoutIframe}
+        onMetodoPago={cambiarMetodoPago}
         onQuitarOferta={pedido => {
           // Desmarcar un order bump en el checkout: sale del pedido.
           Array.from(cartState.carrito.values())
@@ -512,7 +542,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         onCatalogo={pedirCatalogo}
         onValidarCupon={cartState.validarCupon}
         onTema={onTema}
-      />
+      />}
 
       {!modoLegal && (
         <CartDrawer
@@ -535,6 +565,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
           deliveryCiudades={data?.delivery_ciudades || []}
           apariencia={cartApariencia}
           paymentMethodInicial={paymentMethodInicial}
+          onMetodoPago={cambiarMetodoPago}
           onIrACheckout={() => navegar({ destino: 'checkout' })}
           solicitudUpsell={solicitudUpsell}
           onUpsellResuelto={enviarPedidoCheckout}

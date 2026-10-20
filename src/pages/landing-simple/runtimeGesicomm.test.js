@@ -940,6 +940,27 @@ describe('runtime del lienzo en blanco — inicio', () => {
   });
 
   describe('bloque Colecciones del inicio', () => {
+    it.each(['Audio, TV y video', 'Bienestar', 'Diversion', 'Hogar'])('abre la categoría %s desde la tarjeta y no el catálogo completo', categoria => {
+      const productos = ['Audio, TV y video', 'Bienestar', 'Diversion', 'Hogar'].map((nombre, indice) => ({
+        ...airFryer, id: `producto-categoria-${indice}`, nombre: `Producto de ${nombre}`, categoria: nombre,
+      }));
+      const { click, mensajes, dom } = montar(PLANTILLA_INICIO, {
+        ...datos, productos,
+        venta: { inicio: { colecciones: { modo: 'categorias', items: [categoria], limite: 4 } } },
+      });
+      click('[data-gesicomm-bloque="colecciones"] .collection-card h3');
+      expect(mensajes.filter(mensaje => mensaje.tipo === 'gesicomm:navegar')).toEqual([
+        { tipo: 'gesicomm:navegar', destino: 'categoria', categoria },
+      ]);
+      const catalogo = montar(PLANTILLA_CATALOGO_TEST, {
+        ...datos, vista: 'categoria', categoria: { nombre: mensajes.at(-1).categoria }, productos,
+      });
+      expect([...catalogo.document.querySelectorAll('[data-gesicomm-lista="catalogo"] [data-gesicomm-bind="nombre"]')].map(elemento => elemento.textContent))
+        .toEqual([`Producto de ${categoria}`]);
+      catalogo.dom.window.close();
+      dom.window.close();
+    });
+
     it('publica la imagen guardada de una categoría sin productos en la primera página', () => {
       const nombre = 'Accesorios Tech';
       const imagen = 'https://cdn.test/coleccion-tech.webp';
@@ -2066,6 +2087,7 @@ describe('runtime — order bump en la ficha', () => {
       producto: 'air-fryer-26l',
       descuento_boton_pct: 10,
       payment_method: 'pagopar',
+      checkout_directo: true,
     });
   });
 
@@ -2109,6 +2131,15 @@ describe('pago anticipado en el checkout propio', () => {
     datosRuntimePublico({ catalogo_items: [mouse], content: {}, checkout: { pasarelas } }, 'tienda', null, { vista: 'checkout', carrito, ...opciones }),
   );
   const radio = (document, valor) => document.querySelector(`input[name="payment_method"][value="${valor}"]`);
+
+  it('respeta el método que llega del botón y comunica los cambios al contenedor', () => {
+    const { document, window, mensajes, dom } = montarCheckout([{ provider: 'pagopar' }], { paymentMethod: 'efectivo' });
+    expect(radio(document, 'contra_entrega').checked).toBe(true);
+    radio(document, 'pagopar').checked = true;
+    radio(document, 'pagopar').dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(mensajes).toContainEqual({ tipo: 'gesicomm:metodo-pago', metodo: 'pagopar' });
+    dom.window.close();
+  });
 
   it('con PagoPar conectado sigue siendo la opción marcada', () => {
     const { document, dom } = montarCheckout([{ provider: 'pagopar', environment: 'production' }]);
@@ -2632,6 +2663,7 @@ describe('runtime — checkout propio, departamento y ciudad', () => {
 
   it('el valor elegido viaja con el resto del formulario al confirmar', () => {
     const { document, window, mensajes, dom } = montar(PLANTILLA_CHECKOUT, datosCheckout);
+    document.querySelector('[name="payment_method"][value="contra_entrega"]').checked = true;
     document.querySelector('[name="nombre_cliente"]').value = 'Ana Gómez';
     document.querySelector('[name="telefono"]').value = '0981123456';
     document.querySelector('[name="direccion"]').value = 'Calle Falsa 123';
@@ -2644,6 +2676,94 @@ describe('runtime — checkout propio, departamento y ciudad', () => {
       .dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
     const confirmado = mensajes.find(m => m.tipo === 'gesicomm:confirmar-checkout');
     expect(confirmado.campos).toMatchObject({ departamento: 'Alto Paraná', ciudad: 'Ciudad del Este' });
+    dom.window.close();
+  });
+
+  function prepararContraEntrega() {
+    const contexto = montar(PLANTILLA_CHECKOUT, datosCheckout);
+    const { document, window } = contexto;
+    document.querySelector('[name="nombre_cliente"]').value = 'Ana Gómez';
+    document.querySelector('[name="telefono"]').value = '0981123456';
+    document.querySelector('[name="direccion"]').value = 'Calle 123';
+    const pago = document.querySelector('[name="payment_method"][value="contra_entrega"]');
+    pago.checked = true;
+    pago.dispatchEvent(new window.Event('change', { bubbles: true }));
+    return contexto;
+  }
+
+  it('sin ciudad el clic real bloquea el pedido, explica el dato faltante y enfoca el campo', () => {
+    const { document, mensajes, dom } = prepararContraEntrega();
+    document.querySelector('.lv-submit').click();
+    const ciudad = document.querySelector('[name="ciudad"]');
+    expect(mensajes.some(m => m.tipo === 'gesicomm:confirmar-checkout')).toBe(false);
+    expect(ciudad.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(ciudad);
+    expect(ciudad.nextElementSibling.textContent).toBe('Seleccioná ciudad para confirmar tu pedido.');
+    expect(document.querySelector('[name="email"]').required).toBe(false);
+    expect(document.querySelector('[name="documento"]').required).toBe(false);
+    dom.window.close();
+  });
+
+  it('corregir ciudad limpia el error y permite contra entrega sin departamento, correo ni documento', () => {
+    const { document, window, mensajes, dom } = prepararContraEntrega();
+    document.querySelector('.lv-submit').click();
+    const ciudad = document.querySelector('[name="ciudad"]');
+    ciudad.value = 'Luque';
+    ciudad.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(ciudad.hasAttribute('aria-invalid')).toBe(false);
+    expect(ciudad.nextElementSibling.textContent).toBe('');
+    document.querySelector('.lv-submit').click();
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:confirmar-checkout')).toEqual([
+      expect.objectContaining({ campos: expect.objectContaining({ ciudad: 'Luque', departamento: '', payment_method: 'contra_entrega' }) }),
+    ]);
+    dom.window.close();
+  });
+
+  it('cambiar departamento invalida una ciudad ajena y explica por qué no se puede confirmar', () => {
+    const { document, window, mensajes, dom } = prepararContraEntrega();
+    document.querySelector('[name="ciudad"]').value = 'Luque';
+    const departamento = document.querySelector('[name="departamento"]');
+    departamento.value = 'Alto Paraná';
+    departamento.dispatchEvent(new window.Event('change', { bubbles: true }));
+    document.querySelector('.lv-submit').click();
+    expect(document.querySelector('[name="ciudad"]').value).toBe('');
+    expect(document.querySelector('[name="ciudad"]').nextElementSibling.textContent).toContain('Seleccioná ciudad');
+    expect(mensajes.some(m => m.tipo === 'gesicomm:confirmar-checkout')).toBe(false);
+    dom.window.close();
+  });
+
+  it('un submit programático tampoco envía datos incompletos y el pago anticipado exige correo y documento', () => {
+    const { document, window, mensajes, dom } = prepararContraEntrega();
+    document.querySelector('[name="ciudad"]').value = 'Luque';
+    const pago = document.querySelector('[name="payment_method"][value="pagopar"]');
+    pago.checked = true;
+    pago.dispatchEvent(new window.Event('change', { bubbles: true }));
+    document.querySelector('form[data-gesicomm-checkout-form]').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    expect(mensajes.some(m => m.tipo === 'gesicomm:confirmar-checkout')).toBe(false);
+    expect(document.querySelector('[name="email"]').getAttribute('aria-invalid')).toBe('true');
+    expect(document.querySelector('[name="documento"]').getAttribute('aria-invalid')).toBe('true');
+    const contraEntrega = document.querySelector('[name="payment_method"][value="contra_entrega"]');
+    contraEntrega.checked = true;
+    contraEntrega.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(document.querySelector('[name="email"]').hasAttribute('aria-invalid')).toBe(false);
+    expect(document.querySelector('[name="documento"]').hasAttribute('aria-invalid')).toBe(false);
+    document.querySelector('.lv-submit').click();
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:confirmar-checkout')).toHaveLength(1);
+    dom.window.close();
+  });
+
+  it.each([
+    ['direccion', '', 'Completá direccion'],
+    ['email', 'correo-invalido', 'Ingresá un correo electrónico válido.'],
+  ])('explica también un dato inválido en %s', (nombre, valor, aviso) => {
+    const { document, mensajes, dom } = prepararContraEntrega();
+    document.querySelector('[name="ciudad"]').value = 'Luque';
+    const campo = document.querySelector(`[name="${nombre}"]`);
+    campo.value = valor;
+    document.querySelector('.lv-submit').click();
+    expect(campo.nextElementSibling.textContent).toContain(aviso);
+    expect(document.activeElement).toBe(campo);
+    expect(mensajes.some(m => m.tipo === 'gesicomm:confirmar-checkout')).toBe(false);
     dom.window.close();
   });
 });

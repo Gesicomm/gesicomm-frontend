@@ -1,3 +1,5 @@
+import { HTML_OFERTA_PRODUCTO } from './OfertaTiempoLimitado';
+import estilosOfertaProducto from './ofertaTiempoLimitado.css?inline';
 import { ESTILOS_INICIO_CODIGO } from './estilosInicioCodigo';
 import { CATALOGO_TIENDA_CSS } from './catalogoTiendaCodigo';
 import { CREDITO_GESICOM_HTML } from '../landing/storeCredit';
@@ -1944,18 +1946,7 @@ const PRODUCTO_HTML = `${headerTiendaUnico('productos')}
       <!-- Combo: el ancla del ahorro, cuánto costaría por separado. -->
       <p class="pdp-separado" data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p>
 
-      <div class="limited-offer pdp-limited-offer pdp-offer-card" data-gesicomm-ficha-bloque="oferta">
-        <div class="limited-offer-card">
-          <p class="limited-offer-kicker" data-gesicomm-bind="urgencia_kicker" data-gesicomm-ficha-bloque="oferta_encabezado">Oferta por tiempo limitado</p>
-          <h2 data-gesicomm-bind="urgencia_titulo" data-gesicomm-ficha-bloque="oferta_nombre">Reservá esta condición antes de que termine.</h2>
-          <p data-gesicomm-bind="urgencia_texto" data-gesicomm-ficha-bloque="oferta_texto">La fecha real se configura en Gesicomm; el contador se actualiza solo.</p>
-          <div class="countdown" aria-label="Cuenta regresiva de la oferta" data-gesicomm-countdown data-gesicomm-ficha-bloque="oferta_duracion">
-            <span class="countdown-box"><b data-gesicomm-countdown-parte="horas">--</b><small>horas</small></span>
-            <span class="countdown-box"><b data-gesicomm-countdown-parte="minutos">--</b><small>min</small></span>
-            <span class="countdown-box"><b data-gesicomm-countdown-parte="segundos">--</b><small>seg</small></span>
-          </div>
-        </div>
-      </div>
+      ${HTML_OFERTA_PRODUCTO}
 
       <!-- Descripción breve: queda después del precio y la oferta. -->
       <p class="pdp-promesa" data-gesicomm-bind="propuesta_valor" data-gesicomm-ficha-bloque="descripcion"></p>
@@ -3330,8 +3321,10 @@ const PRODUCTO_CSS_GENERICO = PRODUCTO_CSS
   .replace(/  \.table-row > \* \{ padding: 10px 6px; \}\n/g, '');
 
 export const PLANTILLA_PRODUCTO = { html: PRODUCTO_HTML_GENERICO, css: `${PRODUCTO_CSS_GENERICO}
+${estilosOfertaProducto}
 ${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
 export const PLANTILLA_PRODUCTO_SUPLEMENTOS = { html: PRODUCTO_HTML, css: `${PRODUCTO_CSS}
+${estilosOfertaProducto}
 ${CSS_COMPARTIDO_TIENDA}`, js: JS_COMUN };
 
 

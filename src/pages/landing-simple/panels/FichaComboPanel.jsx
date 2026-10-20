@@ -1,3 +1,7 @@
+import EditorOfertaTiempoLimitado from '../EditorOfertaTiempoLimitado';
+import { ofertaProductoDesdeCombo, CAMPOS_OFERTA_COMBO, VISIBILIDAD_OFERTA_COMBO } from '../ofertaComboAdapter';
+import ListaOpinionesProducto from '../ListaOpinionesProducto';
+import ListaConfianzaProducto from '../ListaConfianzaProducto';
 import React, { useState } from 'react';
 import { ChevronDown, Link2Off, Plus, Trash2 } from 'lucide-react';
 import {
@@ -5,7 +9,11 @@ import {
   clonarSeccionResuelta, fuenteDeSeccion, seccionEsPropia,
 } from '../templates/combo/fichaCombo';
 import IconoPicker from './IconoPicker';
+import EmojiOImagenCombo from './EmojiOImagenCombo';
 import FichaSeccionesShell from './ficha/FichaSeccionesShell';
+import ControlCombo, { ContextoControlCombo } from './ControlCombo';
+import { PARTES_HERO_COMBO, PARTES_BLOQUE_COMBO } from '../comboBloques';
+import SubbloqueCombo from './SubbloqueCombo';
 
 /**
  * Panel de la ficha del template Combo.
@@ -34,13 +42,15 @@ export default function FichaComboPanel({
   // abiertas en fila (misma idea que Vista del producto) en vez de acordeón
   // de a una, para que no se sienta como un panel técnico escondido.
   expandirTodas = false,
+  seccionUnica = null,
+  soloTextos = false,
+  soloContenido = false,
   onChange,
+  onSubirImagen,
 }) {
   const esProducto = modo === 'producto';
 
-  const baseDe = (key) => (
-    seccionEsPropia(ficha, key) ? ficha[key] : clonarSeccionResuelta(fichaResuelta, key)
-  );
+  const baseDe = key => ({ ...clonarSeccionResuelta(fichaResuelta, key), ...ficha?.[key] });
 
   const guardar = (key, seccion) => onChange({ ...(ficha || {}), [key]: seccion });
   const editar = (key, update) => guardar(key, { ...baseDe(key), ...update });
@@ -84,6 +94,22 @@ export default function FichaComboPanel({
     </p>
   );
 
+  if (seccionUnica && CAMPOS[seccionUnica]) {
+    return <ContextoControlCombo.Provider value={{ partes: fichaResuelta[seccionUnica].partes,
+      nombres: Object.fromEntries(seccionUnica === 'hero' ? PARTES_HERO_COMBO : PARTES_BLOQUE_COMBO[seccionUnica] || []),
+      cambiar: (parte, activo) => editar(seccionUnica, { partes: { ...fichaResuelta[seccionUnica].partes, [parte]: activo } }),
+    }}>{renderCampos(seccionUnica, { onSubirImagen,
+      d: fichaResuelta[seccionUnica], respaldos, soloTextos, soloContenido,
+      set: cambios => editar(seccionUnica, cambios),
+      lista: {
+        editar: (campo, i, c) => editarItem(seccionUnica, campo, i, c),
+        agregar: (campo, nuevo) => agregarItem(seccionUnica, campo, nuevo),
+        quitar: (campo, i) => quitarItem(seccionUnica, campo, i),
+        mover: (campo, i, delta) => moverItem(seccionUnica, campo, i, delta),
+      },
+    })}</ContextoControlCombo.Provider>;
+  }
+
   // Vista del combo (ComboEditor.jsx): pantalla ancha sin sidebar, todas las
   // secciones abiertas en fila — no pasa por el navigator/inspector, que
   // solo tiene sentido en el sidebar angosto de ProductoPanel.
@@ -123,7 +149,7 @@ export default function FichaComboPanel({
                   </p>
                 )}
 
-                {CAMPOS[sec.key]({
+                {renderCampos(sec.key, { onSubirImagen,
                   d: datos,
                   set: (cambios) => editar(sec.key, cambios),
                   lista: {
@@ -177,7 +203,7 @@ export default function FichaComboPanel({
             <>
               <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>
 
-              {CAMPOS[key]({
+              {renderCampos(key, { onSubirImagen,
                 d: datos,
                 set: (cambios) => editar(key, cambios),
                 lista: {
@@ -206,43 +232,66 @@ export default function FichaComboPanel({
   );
 }
 
+function renderCampos(key, props) {
+  const campos = CAMPOS[key](props);
+  const elementos = React.Children.toArray(campos.props.children).filter(el => {
+    if (!props.soloTextos && !props.soloContenido) return true;
+    if (!React.isValidElement(el)) return false;
+    return props.soloTextos ? el.type === Texto : el.type !== Texto && el.type !== 'p';
+  });
+  return <ContextoControlCombo.Provider value={{ partes: props.d.partes,
+    nombres: Object.fromEntries(key === 'hero' ? PARTES_HERO_COMBO : PARTES_BLOQUE_COMBO[key] || []),
+    cambiar: (parte, activo) => props.set({ partes: { ...props.d.partes, [parte]: activo } }),
+  }}>{elementos}</ContextoControlCombo.Provider>;
+}
+
 /* ── Controles reutilizables ──────────────────────────────────────── */
 
-function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) {
-  const usaRespaldo = !valor && !!respaldo;
+const PARTES_CAMPO = {
+  'Sobre-título': 'sobre_titulo', 'Etiqueta foto': 'etiqueta', 'Título principal': 'titulo',
+  'Remate del título (en color)': 'titulo_destacado', 'Bajada (Lead)': 'descripcion',
+  'Botón principal': 'compra', 'Rótulo del combo': 'rotulo_combo', 'Rótulo del precio actual': 'rotulo_precio',
+  'Rótulo del precio por separado': 'rotulo_precio_anterior', 'Etiqueta de oferta': 'oferta',
+  'Nota de stock': 'nota_stock', 'Nota de envío': 'nota_envio', 'Nota de garantía (debajo del botón)': 'nota_garantia',
+  'Título de la sección': 'titulo', 'Subtítulo (opcional)': 'subtitulo', 'Texto explicativo': 'subtitulo',
+  'Título de tarjeta': 'nombre', 'Texto de tarjeta': 'texto', 'Nombre del cliente': 'nombre', 'Comentario': 'comentario',
+  'Título — precio por separado': 'rotulo_desglose', 'Título — precio del combo': 'rotulo_precio', 'Nota bajo el ahorro (opcional)': 'nota',
+};
+
+export function Texto({ label, valor, onChange, placeholder, respaldo, area = false, parte = PARTES_CAMPO[label] }) {
   const id = React.useId();
   const comun = {
     id,
     className: CAMPO,
-    value: valor || '',
+    value: valor ?? '',
+    'aria-label': label,
     placeholder: respaldo || placeholder,
     onChange: e => onChange(e.target.value),
   };
   return (
-    <div>
-      {label && <label className={ETIQUETA} htmlFor={id}>{label}</label>}
+    <ControlCombo label={label} parte={parte}>
       {area ? <textarea rows={3} {...comun} /> : <input type="text" {...comun} />}
-      {usaRespaldo && (
-        <p className="text-[10px] text-fg/30 mt-1 leading-relaxed">
-          Es lo que se está mostrando. Escribí acá solo si querés algo distinto en esta landing.
-        </p>
-      )}
-    </div>
+    </ControlCombo>
   );
 }
 
 function ListaEditable({ items = [], max, campo, lista, textoAgregar, nuevo, children }) {
+  const control = React.useContext(ContextoControlCombo);
   return (
     <div className="flex flex-col gap-3">
       {items.map((it, i) => (
-        <div key={i} className="flex gap-2 items-start bg-fg/20 p-2.5 rounded-lg border border-fg/5 relative group">
-          <div className="flex flex-col gap-1.5 flex-1 min-w-0">{children(it, i)}</div>
-          <div className="flex flex-col items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button type="button" onClick={() => lista.mover(campo, i, -1)} disabled={i === 0} className="text-fg/30 hover:text-fg disabled:opacity-10"><ChevronDown size={12} className="rotate-180" /></button>
-            <button type="button" onClick={() => lista.quitar(campo, i)} className="text-fg/30 hover:text-danger p-1"><Trash2 size={12} /></button>
-            <button type="button" onClick={() => lista.mover(campo, i, 1)} disabled={i === items.length - 1} className="text-fg/30 hover:text-fg disabled:opacity-10"><ChevronDown size={12} /></button>
+        <SubbloqueCombo key={i} titulo={`${campo === 'testimonios' ? 'Opinión' : textoAgregar === 'Agregar tarjeta' ? 'Beneficio' : 'Condición'} ${i + 1}`}
+          resumen={it.titulo || it.nombre || it.texto || 'Sin contenido'} inicial={i === items.length - 1}>
+        <div className="flex gap-2 items-start">
+          <ContextoControlCombo.Provider value={{ partes: { ...control?.partes, ...it.partes }, cambiar: (parte, activo) => lista.editar(campo, i, { partes: { ...it.partes, [parte]: activo } }) }}>
+            <div className="flex flex-col gap-3 flex-1 min-w-0">{children(it, i)}</div>
+          </ContextoControlCombo.Provider>
+          <div className="flex flex-col items-center gap-1 shrink-0">
+            <button type="button" title="Subir" aria-label={`Subir elemento ${i + 1}`} onClick={() => lista.mover(campo, i, -1)} disabled={i === 0} className="text-fg-muted hover:text-fg disabled:opacity-20"><ChevronDown size={14} className="rotate-180" /></button>
+            <button type="button" title="Quitar" aria-label={`Quitar elemento ${i + 1}`} onClick={() => lista.quitar(campo, i)} className="text-fg-muted hover:text-danger p-1"><Trash2 size={14} /></button>
+            <button type="button" title="Bajar" aria-label={`Bajar elemento ${i + 1}`} onClick={() => lista.mover(campo, i, 1)} disabled={i === items.length - 1} className="text-fg-muted hover:text-fg disabled:opacity-20"><ChevronDown size={14} /></button>
           </div>
-        </div>
+        </div></SubbloqueCombo>
       ))}
       {items.length < max && (
         <button type="button" onClick={() => lista.agregar(campo, nuevo())} className="inline-flex items-center justify-center gap-1.5 py-2 mt-1 border border-dashed border-fg/20 rounded-lg text-[12px] font-medium text-fg/50 hover:text-fg hover:border-fg/40">
@@ -253,7 +302,7 @@ function ListaEditable({ items = [], max, campo, lista, textoAgregar, nuevo, chi
   );
 }
 
-function ListaTextos({ valores = [], max, onCambio, textoAgregar, placeholder }) {
+export function ListaTextos({ valores = [], max, onCambio, textoAgregar, placeholder }) {
   const lista = Array.isArray(valores) ? valores : [];
   const actualizar = (i, valor) => {
     const copia = [...lista];
@@ -273,7 +322,7 @@ function ListaTextos({ valores = [], max, onCambio, textoAgregar, placeholder })
       {lista.map((valor, i) => (
         <div key={i} className="flex items-center gap-1.5">
           <button type="button" onClick={() => mover(i, -1)} disabled={i === 0} className="text-fg/25 hover:text-fg disabled:opacity-10"><ChevronDown size={12} className="rotate-180" /></button>
-          <input className={`${MINI} flex-1 min-w-0`} value={valor || ''} placeholder={placeholder} onChange={e => actualizar(i, e.target.value)} />
+          <input aria-label={`Punto ${i + 1}`} className={`${MINI} flex-1 min-w-0`} value={valor || ''} placeholder={placeholder} onChange={e => actualizar(i, e.target.value)} />
           <button type="button" onClick={() => mover(i, 1)} disabled={i === lista.length - 1} className="text-fg/25 hover:text-fg disabled:opacity-10"><ChevronDown size={12} /></button>
           <button type="button" onClick={() => quitar(i)} className="text-fg/25 hover:text-danger p-1"><Trash2 size={12} /></button>
         </div>
@@ -287,24 +336,19 @@ function ListaTextos({ valores = [], max, onCambio, textoAgregar, placeholder })
   );
 }
 
-function CamposContador({ d, set }) {
+export function CamposContador({ d, set }) {
   const c = d.contador || {};
-  const setC = (cambios) => set({ contador: { ...c, ...cambios } });
-  return (
-    <div className="mt-2 bg-fg/20 p-3 rounded-xl border border-fg/5 space-y-3">
-      <label className="flex items-center gap-2 text-[12px] text-fg/90 font-semibold cursor-pointer">
-        <input type="checkbox" checked={!!c.activo} onChange={e => setC({ activo: e.target.checked })} className="w-4 h-4 accent-[var(--color-accent)]" />
-        Contador de tiempo limitado
-      </label>
-      {c.activo && (
-        <div className="grid grid-cols-3 gap-2">
-          <div><label className={ETIQUETA}>Horas</label><input type="number" min="0" max="23" className={CAMPO} value={c.horas || 0} onChange={e => setC({ horas: Number(e.target.value) })} /></div>
-          <div><label className={ETIQUETA}>Min</label><input type="number" min="0" max="59" className={CAMPO} value={c.minutos || 0} onChange={e => setC({ minutos: Number(e.target.value) })} /></div>
-          <div><label className={ETIQUETA}>Seg</label><input type="number" min="0" max="59" className={CAMPO} value={c.segundos || 0} onChange={e => setC({ segundos: Number(e.target.value) })} /></div>
-        </div>
-      )}
-    </div>
-  );
+  const { datos, partes } = ofertaProductoDesdeCombo(d);
+  const setC = cambios => set({ contador: { ...c, ...cambios } });
+  return <div className="space-y-3 border-t border-border pt-3">
+    <label className="flex items-center gap-2 text-sm font-semibold text-fg">
+      <input type="checkbox" className="accent-primary" checked={!!c.activo} onChange={e => setC({ activo: e.target.checked })} />Oferta por tiempo limitado
+    </label>
+    {c.activo && <EditorOfertaTiempoLimitado item={datos}
+      onCambiar={(campo, valor) => setC({ [CAMPOS_OFERTA_COMBO[campo]]: valor })}
+      visibleBloque={clave => partes[clave] !== false}
+      cambiarBloque={(clave, visible) => setC({ [VISIBILIDAD_OFERTA_COMBO[clave]]: visible })} />}
+  </div>;
 }
 
 const CAMPOS = {
@@ -340,8 +384,10 @@ const CAMPOS = {
       />
       <Texto label="Bajada (Lead)" valor={d.lead} respaldo={respaldos.lead} area onChange={v => set({ lead: v })} />
       <Texto label="Botón principal" valor={d.cta_texto} placeholder="Comprar ahora — envío gratis" onChange={v => set({ cta_texto: v })} />
-      <div>
-        <label className={ETIQUETA}>Puntos clave (los ✓ del encabezado)</label>
+      <Texto label="Rótulo del combo" valor={d.rotulo_combo} placeholder="Combo armado" onChange={v => set({ rotulo_combo: v })} />
+      <Texto label="Rótulo del precio actual" valor={d.rotulo_precio} placeholder="Hoy llevás el combo por" onChange={v => set({ rotulo_precio: v })} />
+      <Texto label="Rótulo del precio por separado" valor={d.rotulo_precio_anterior} placeholder="Valor por separado" onChange={v => set({ rotulo_precio_anterior: v })} />
+      <ControlCombo label="Puntos clave (los ✓ del encabezado)" parte="caracteristicas">
         <ListaTextos
           valores={d.caracteristicas}
           max={LIMITES.hero_caracteristicas}
@@ -349,27 +395,20 @@ const CAMPOS = {
           placeholder="Combo completo y listo para usar"
           onCambio={l => set({ caracteristicas: l })}
         />
-      </div>
+      </ControlCombo>
 
       <div className="pt-2 border-t border-fg/10">
         <Texto label="Etiqueta de oferta" valor={d.etiqueta_oferta} placeholder="Oferta por tiempo limitado" onChange={v => set({ etiqueta_oferta: v })} />
         <CamposContador d={d} set={set} />
       </div>
-      <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer">
-        <input type="checkbox" className="w-3.5 h-3.5 accent-primary" checked={d.rating_activo !== false} onChange={e => set({ rating_activo: e.target.checked })} />
-        Mostrar calificación
-      </label>
-      {d.rating_activo !== false && (
+      <ControlCombo label="Calificación" parte="calificacion" mostrar={!!d.rating_activo && d.partes?.calificacion !== false}
+        onMostrar={activo => set({ rating_activo: activo, partes: { ...d.partes, calificacion: activo } })}>
         <div>
           <label className={ETIQUETA}>Calificación (0 a 5)</label>
           <input type="number" min="0" max="5" step="0.1" className={CAMPO} value={d.rating_valor} onChange={e => set({ rating_valor: Number(e.target.value) })} />
         </div>
-      )}
-      <div className="grid grid-cols-2 gap-2">
-        <Texto label="Nota de stock" valor={d.nota_stock} placeholder="Stock limitado" onChange={v => set({ nota_stock: v })} />
-        <Texto label="Nota de envío" valor={d.nota_envio} placeholder="Envío gratis" onChange={v => set({ nota_envio: v })} />
-      </div>
-      <Texto label="Nota de garantía (debajo del botón)" valor={d.nota_garantia} placeholder="Garantía 30 días" onChange={v => set({ nota_garantia: v })} />
+      </ControlCombo>
+
     </>
   ),
 
@@ -378,7 +417,7 @@ const CAMPOS = {
       <Texto label="Título de la sección" valor={d.titulo} placeholder="¿Qué incluye?" onChange={v => set({ titulo: v })} />
       <Texto label="Subtítulo (opcional)" valor={d.subtitulo} placeholder="Todo lo que necesitás en un solo pack" onChange={v => set({ subtitulo: v })} />
       <p className="text-[10px] text-fg/35 leading-relaxed">
-        Las tarjetas de productos se arman solas con lo que cargaste en <b className="text-fg/60">Productos del combo</b> — acá solo se edita el título.
+        Los productos incluidos se cargan con su información real. Podés editar sus textos e imágenes y elegir qué mostrar.
       </p>
     </>
   ),
@@ -388,13 +427,15 @@ const CAMPOS = {
       <Texto label="Título — precio por separado" valor={d.titulo} placeholder="Precio por separado" onChange={v => set({ titulo: v })} />
       <Texto label="Título — precio del combo" valor={d.titulo_combo} placeholder="Precio combo" onChange={v => set({ titulo_combo: v })} />
       <Texto label="Nota bajo el ahorro (opcional)" valor={d.nota_ahorro} placeholder="Precio válido mientras dure el stock" onChange={v => set({ nota_ahorro: v })} />
+      <Texto label="Rótulo del total por separado" parte="total" valor={d.rotulo_total} onChange={v => set({ rotulo_total: v })} />
+      <Texto label="Botón de compra" parte="compra" valor={d.cta_texto} onChange={v => set({ cta_texto: v })} />
       <p className="text-[10px] text-fg/35 leading-relaxed">
         La tabla y el ahorro se calculan solos con los precios reales de cada producto y el precio del combo.
       </p>
     </>
   ),
 
-  beneficio_principal: ({ d, set, lista }) => (
+  beneficio_principal: ({ d, set, lista, onSubirImagen }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} placeholder="¿Por qué este combo?" onChange={v => set({ titulo: v })} />
       <Texto label="Texto explicativo" valor={d.texto} area placeholder="Una selección simple: productos que se complementan para resolver más con menos." onChange={v => set({ texto: v })} />
@@ -402,15 +443,13 @@ const CAMPOS = {
         <label className={ETIQUETA}>Tarjetas (título + texto corto)</label>
         <ListaEditable
           items={d.items} campo="items" lista={lista} max={LIMITES.beneficio_principal_items}
-          textoAgregar="Agregar tarjeta" nuevo={() => ({ icono: 'star', titulo: '', texto: '' })}
+          textoAgregar="Agregar tarjeta" nuevo={() => ({ icono: '', titulo: '', texto: '' })}
         >
           {(it, i) => (
             <>
-              <div className="flex items-center gap-1.5 w-full">
-                <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
-                <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Todo resuelto" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
-              </div>
-              <input className={MINI} value={it.texto || ''} placeholder="Recibís una solución completa sin perder tiempo buscando por separado." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
+              <ControlCombo label="Emoji o ícono" parte="iconos"><EmojiOImagenCombo numero={i + 1} valor={it.icono} onSubirImagen={onSubirImagen} onChange={v => lista.editar('items', i, { icono: v })} /></ControlCombo>
+              <Texto label="Título de tarjeta" valor={it.titulo} onChange={v => lista.editar('items', i, { titulo: v })} />
+              <Texto label="Texto de tarjeta" valor={it.texto} onChange={v => lista.editar('items', i, { texto: v })} />
             </>
           )}
         </ListaEditable>
@@ -430,50 +469,27 @@ const CAMPOS = {
     </>
   ),
 
-  prueba_social: ({ d, set, lista }) => (
+  prueba_social: ({ d, set, lista, onSubirImagen }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} placeholder="Opiniones reales" onChange={v => set({ titulo: v })} />
-      <div>
+      <ControlCombo label="Calificación general" parte="calificacion">
         <label className={ETIQUETA}>Calificación (0 a 5)</label>
         <input type="number" min="0" max="5" step="0.1" className={CAMPO} value={d.calificacion} onChange={e => set({ calificacion: Number(e.target.value) })} />
-      </div>
-      <div>
-        <label className={ETIQUETA}>Testimonios</label>
-        <ListaEditable
-          items={d.testimonios} campo="testimonios" lista={lista} max={LIMITES.prueba_social_testimonios}
-          textoAgregar="Agregar testimonio" nuevo={() => ({ nombre: '', comentario: '', calificacion: 5 })}
-        >
-          {(it, i) => (
-            <>
-              <div className="grid grid-cols-2 gap-1.5">
-                <input className={MINI} value={it.nombre || ''} placeholder="Nombre" onChange={e => lista.editar('testimonios', i, { nombre: e.target.value })} />
-                <input type="number" min="1" max="5" className={MINI} value={it.calificacion ?? 5} placeholder="5" onChange={e => lista.editar('testimonios', i, { calificacion: Number(e.target.value) })} />
-              </div>
-              <textarea rows={2} className={MINI} value={it.comentario || ''} placeholder="Excelente combo, llegó todo perfecto." onChange={e => lista.editar('testimonios', i, { comentario: e.target.value })} />
-            </>
-          )}
-        </ListaEditable>
-      </div>
+      </ControlCombo>
+      <ListaOpinionesProducto ocultarSinOpiniones={false} items={(d.testimonios || []).map(item => ({ ...item, detalle: item.detalle ?? d.rotulo_verificada ?? '' }))} onCambiar={testimonios => set({ testimonios })} onSubirImagen={onSubirImagen}
+        renderCampo={(parte, titulo, nodo, item, idx) => <ControlCombo key={parte} parte={parte} label={titulo}
+          mostrar={(item.partes?.[parte] ?? d.partes?.[parte]) !== false}
+          onMostrar={v => lista.editar('testimonios', idx, { partes: { ...item.partes, [parte]: v } })}>{nodo}</ControlCombo>} />
     </>
   ),
 
   confianza: ({ d, set, lista }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} placeholder="Comprá con confianza" onChange={v => set({ titulo: v })} />
-      <ListaEditable
-        items={d.items} campo="items" lista={lista} max={LIMITES.confianza_items}
-        textoAgregar="Agregar ítem" nuevo={() => ({ icono: 'shield', titulo: '', texto: '' })}
-      >
-        {(it, i) => (
-          <>
-            <div className="flex items-center gap-1.5 w-full">
-              <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
-              <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Garantía 30 días" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
-            </div>
-            <input className={MINI} value={it.texto || ''} placeholder="Compra sin riesgos." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
-          </>
-        )}
-      </ListaEditable>
+      <ListaConfianzaProducto items={d.items} onCambiar={(_campo, items) => set({ items })}
+        renderCampo={(parte, titulo, nodo, item, idx) => <ControlCombo key={parte} parte={parte} label={titulo}
+          mostrar={(item.partes?.[parte] ?? d.partes?.[parte]) !== false}
+          onMostrar={v => lista.editar('items', idx, { partes: { ...item.partes, [parte]: v } })}>{nodo}</ControlCombo>} />
     </>
   ),
 
@@ -481,7 +497,7 @@ const CAMPOS = {
     <>
       <Texto label="Título de la sección" valor={d.titulo} placeholder="Preguntas frecuentes" onChange={v => set({ titulo: v })} />
       <p className="text-[10px] text-fg/35 leading-relaxed">
-        Las preguntas se cargan en <b className="text-fg/60">Vista del combo</b>. Acá solo se edita el título.
+        Las preguntas existentes se cargan debajo para editarlas, ocultarlas o quitarlas.
       </p>
     </>
   ),

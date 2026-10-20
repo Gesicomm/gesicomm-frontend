@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCodigo';
+import { conMarcaTienda } from './marcaTiendaCodigo';
 
 /**
  * El iframe aislado donde vive una landing de "Lienzo en blanco". Lo usan
@@ -23,8 +24,17 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * (contacto/footer, order bump de la landing — ver seccionesSistemaCodigo.js
  * y el order bump del runtime); `onTema` recibe los colores reales del carrito.
  */
-export default function CodigoPreview({ codigo, titulo, datos, extras = null, typography = null, previewDevice = null, onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito, onBloque, resaltar, className = '', style }) {
+export default function CodigoPreview({ codigo, titulo, datos, extras = null, typography = null, previewDevice = null, onError, onCheckout, onConfirmarCheckout, onMetodoPago, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito, onBloque, onBloqueActivo, preservarScroll = false, edicionCombo = null, resaltar, className = '', style }) {
   const ref = useRef(null);
+  const scrollGuardado = useRef(0);
+  const preservarScrollRef = useRef(preservarScroll);
+  preservarScrollRef.current = preservarScroll;
+  const comboActual = useRef(null);
+  comboActual.current = edicionCombo != null ? { html: codigo?.html || '', css: conMarcaTienda(codigo?.css || '') } : null;
+  function enviarCombo() {
+    if (comboActual.current) ref.current?.contentWindow?.postMessage({ tipo: 'gesicomm:combo-documento', ...comboActual.current }, '*');
+  }
+  useEffect(() => { enviarCombo(); }, [edicionCombo, codigo?.html, codigo?.css]);
 
   // resaltar = { lista, n }: pide al runtime que muestre y marque una zona.
   // `n` cambia en cada pedido para poder repetir el mismo. Se reenvía al
@@ -34,7 +44,7 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
   function enviarResaltado() {
     const r = resaltarRef.current;
     if (!r?.lista || !ref.current?.contentWindow) return;
-    ref.current.contentWindow.postMessage({ tipo: 'gesicomm:resaltar', lista: r.lista }, '*');
+    ref.current.contentWindow.postMessage({ tipo: 'gesicomm:resaltar', lista: r.lista, desplazar: r.desplazar !== false }, '*');
   }
   useEffect(() => { enviarResaltado(); }, [resaltar?.n]);
 
@@ -51,7 +61,7 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
     // `datos` viaja por postMessage para no reiniciar el iframe y perder scroll
     // mientras el comercio escribe títulos, badges o CTAs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [construirDocumentoCodigo, codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css, extras?.script, typography?.headingFont, typography?.bodyFont, previewDevice],
+    [construirDocumentoCodigo, edicionCombo, edicionCombo != null ? null : codigo?.html, edicionCombo != null ? null : codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css, extras?.script, typography?.headingFont, typography?.bodyFont, previewDevice],
   );
 
   function enviarDatos() {
@@ -63,7 +73,7 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
   // Refs para los handlers: se registran una sola vez y siempre llaman a
   // la versión más nueva, sin re-suscribir el listener en cada render.
   const handlers = useRef({});
-  handlers.current = { onError, onCheckout, onConfirmarCheckout, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito, onBloque };
+  handlers.current = { onError, onCheckout, onConfirmarCheckout, onMetodoPago, onQuitarOferta, onNavegar, onEvento, onCatalogo, onValidarCupon, onTema, onCarrito, onBloque, onBloqueActivo };
 
   useEffect(() => {
     function alMensaje(e) {
@@ -73,15 +83,18 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
       if (!ref.current || e.source !== ref.current.contentWindow) return;
       const h = handlers.current;
       const tipo = e.data?.tipo;
+      if (tipo === 'gesicomm:scroll' && preservarScrollRef.current && Number.isFinite(e.data.y)) scrollGuardado.current = Math.max(0, e.data.y);
       if (tipo === 'gesicomm:error-codigo') h.onError?.(e.data.mensaje);
       if (tipo === 'gesicomm:checkout') h.onCheckout?.(e.data);
       if (tipo === 'gesicomm:confirmar-checkout') h.onConfirmarCheckout?.(e.data);
+      if (tipo === 'gesicomm:metodo-pago') h.onMetodoPago?.(e.data.metodo);
       if (tipo === 'gesicomm:quitar-oferta') h.onQuitarOferta?.(e.data);
       if (tipo === 'gesicomm:carrito') h.onCarrito?.(e.data);
       if (tipo === 'gesicomm:navegar') h.onNavegar?.(e.data);
       if (tipo === 'gesicomm:evento') h.onEvento?.(e.data);
       // Clic sobre un bloque de la ficha en la vista previa del editor.
       if (tipo === 'gesicomm:bloque') h.onBloque?.(e.data.clave);
+      if (tipo === 'gesicomm:combo-activo') h.onBloqueActivo?.(e.data.clave);
       // Colores reales de la landing para el carrito (ver el puente de tema
       // en construirDocumentoCodigo.js).
       if (tipo === 'gesicomm:tema') h.onTema?.(e.data);
@@ -133,7 +146,9 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
     <iframe
       ref={ref}
       onLoad={() => {
+        if (preservarScrollRef.current) ref.current?.contentWindow?.postMessage({ tipo: 'gesicomm:restaurar-scroll', y: scrollGuardado.current }, '*');
         setTimeout(enviarDatos, 80);
+        setTimeout(enviarCombo, 80);
         setTimeout(enviarResaltado, 150);
       }}
       title={titulo || 'Vista previa de la landing'}

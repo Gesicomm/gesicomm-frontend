@@ -1,3 +1,4 @@
+import { NOMBRES_BLOQUES_FICHA } from '../../nombresBloquesFicha';
 /**
  * Ficha de producto del "Combo" — modelo de datos.
  *
@@ -35,11 +36,9 @@ export const SECCIONES_COMBO = [
   { key: 'incluye',             numero: 3, label: '¿Qué incluye?',            ambito: 'producto', ayuda: 'Grilla con los productos del combo (se arma sola).' },
   { key: 'valor',                numero: 4, label: 'Valor del combo',         ambito: 'producto', ayuda: 'Precio por separado vs. precio del combo (se arma sola).' },
   { key: 'beneficio_principal', numero: 5, label: '¿Por qué este combo?',     ambito: 'producto', ayuda: 'El beneficio principal, con bullets cortos.' },
-  { key: 'detalle_productos',   numero: 6, label: 'Detalle de cada producto', ambito: 'producto', ayuda: 'Cada producto del combo con su foto y sus checks.' },
-  { key: 'prueba_social',       numero: 7, label: 'Opiniones reales',         ambito: 'landing',  ayuda: 'Calificación y reseñas de clientes.' },
-  { key: 'confianza',           numero: 8, label: 'Comprá con confianza',     ambito: 'landing',  ayuda: 'Envío, pago seguro, garantía y soporte.' },
+  { key: 'prueba_social',       numero: 7, label: NOMBRES_BLOQUES_FICHA.opiniones,         ambito: 'landing',  ayuda: 'Calificación y reseñas de clientes.' },
+  { key: 'confianza',           numero: 8, label: NOMBRES_BLOQUES_FICHA.confianza,     ambito: 'landing',  ayuda: 'Envío, pago seguro, garantía y soporte.' },
   { key: 'faq',                  numero: 9, label: 'Preguntas frecuentes',    ambito: 'producto', ayuda: 'Las preguntas se cargan en "Vista del combo".' },
-  { key: 'cta_final',           numero: 10, label: 'Cierre de venta',         ambito: 'landing',  ayuda: 'Último llamado a la acción con contador.' },
 ];
 
 export const CLAVES_SECCIONES = SECCIONES_COMBO.map(s => s.key);
@@ -70,16 +69,24 @@ export const DEFAULTS_COMBO = {
     nota_stock: '',
     nota_envio: '',
     nota_garantia: '',
+    rotulo_combo: 'Combo armado',
+    rotulo_precio: 'Hoy llevás el combo por',
+    rotulo_precio_anterior: 'Valor por separado',
   },
 
   incluye: {
     activo: true,
+    eyebrow: 'Todo lo que recibís',
     titulo: '¿Qué incluye?',
     subtitulo: '',
   },
 
   valor: {
     activo: true,
+    eyebrow: 'Más valor en un solo combo',
+    encabezado: 'El valor del combo',
+    rotulo_total: 'Valor por separado',
+    cta_texto: 'Quiero este combo',
     titulo: 'Precio por separado',
     titulo_combo: 'Precio combo',
     nota_ahorro: '',
@@ -87,6 +94,7 @@ export const DEFAULTS_COMBO = {
 
   beneficio_principal: {
     activo: true,
+    eyebrow: 'Elegidos para complementarse',
     titulo: '¿Por qué este combo?',
     texto: '',
     // [{icono, titulo, texto}] — se pisa con lo cargado en Vista del combo
@@ -96,11 +104,14 @@ export const DEFAULTS_COMBO = {
 
   detalle_productos: {
     activo: true,
+    eyebrow: 'Detalles de tu compra',
     titulo: 'Conocé lo que recibís',
   },
 
   prueba_social: {
     activo: false,
+    eyebrow: 'Experiencias reales',
+    rotulo_verificada: 'Compra verificada',
     titulo: 'Opiniones reales',
     calificacion: 4.8,
     testimonios: [],  // [{nombre, comentario, calificacion}]
@@ -108,12 +119,14 @@ export const DEFAULTS_COMBO = {
 
   confianza: {
     activo: true,
+    eyebrow: 'Comprá tranquilo',
     titulo: 'Comprá con confianza',
     items: [],
   },
 
   faq: {
     activo: true,
+    eyebrow: 'Resolvemos tus dudas',
     titulo: 'Preguntas frecuentes',
   },
 
@@ -155,8 +168,7 @@ function normalizarSeccion(key, s) {
         ...base,
         rating_valor: numeroEntre(base.rating_valor, 0, 5, 5),
         caracteristicas: lista(base.caracteristicas, LIMITES.hero_caracteristicas)
-          .map(x => String(x || '').trim())
-          .filter(Boolean),
+          .map(x => String(x || '')),
         contador: { ...CONTADOR_DEFAULT_HERO, ...(esObjeto(base.contador) ? base.contador : {}) },
       };
     case 'beneficio_principal':
@@ -185,10 +197,17 @@ export function fichaComboDesdeProducto(combo) {
   if (!combo) return {};
   const ficha = esObjeto(combo.ficha_datos) ? { ...combo.ficha_datos } : {};
 
-  const promesa = (combo.propuesta_valor || '').trim();
-  if (promesa && !ficha.hero?.lead) {
-    ficha.hero = { ...(esObjeto(ficha.hero) ? ficha.hero : {}), lead: promesa };
-  }
+  // El valor heredado se carga en el campo. Un string vacío escrito por el
+  // comercio es una eliminación, nunca una señal para recuperar el original.
+  ficha.hero = {
+    titulo: combo.nombre || '',
+    eyebrow: typeof combo.categoria === 'string' ? combo.categoria : combo.categoria?.nombre || '',
+    lead: combo.propuesta_valor || combo.descripcion_larga || combo.descripcion || '',
+    ...(esObjeto(ficha.hero) ? ficha.hero : {}),
+  };
+  const preguntas = combo.faq ?? combo.preguntas_frecuentes;
+  ficha.faq = { ...(preguntas?.length ? { items: preguntas } : {}),
+    ...(combo.faq_titulo != null ? { titulo: combo.faq_titulo } : {}), ...ficha.faq };
 
   const beneficios = (combo.beneficios || []).filter(b => b?.titulo?.trim());
   if (beneficios.length && !ficha.beneficio_principal?.items?.length) {
@@ -198,11 +217,11 @@ export function fichaComboDesdeProducto(combo) {
     };
   }
 
-  const confianza = (combo.confianza || []).filter(c => c?.texto?.trim());
+  const confianza = (combo.confianza || []).filter(c => c?.texto?.trim() || c?.titulo?.trim());
   if (confianza.length && !ficha.confianza?.items?.length) {
     ficha.confianza = {
       ...(esObjeto(ficha.confianza) ? ficha.confianza : {}),
-      items: confianza.map(c => ({ icono: mapearIconoConfianza(c.icono), titulo: c.texto.trim() })),
+      items: confianza.map(c => ({ icono: mapearIconoConfianza(c.icono), titulo: (c.titulo || c.texto).trim(), texto: c.titulo ? (c.texto || '').trim() : '' })),
     };
   }
 
@@ -223,7 +242,7 @@ const ICONO_CONFIANZA_A_CATALOGO = {
   Star: 'star',
 };
 function mapearIconoConfianza(icono) {
-  return ICONO_CONFIANZA_A_CATALOGO[icono] || 'shield';
+  return ICONO_CONFIANZA_A_CATALOGO[icono] || String(icono || '').trim();
 }
 
 export const resolverFichaCombo = crearResolver({

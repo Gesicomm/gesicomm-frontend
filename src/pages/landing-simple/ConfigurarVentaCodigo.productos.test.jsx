@@ -63,6 +63,25 @@ describe('Presentación de los productos del lienzo', () => {
     expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: 1200000 });
   });
 
+  it('guarda el HTML, CSS y JavaScript del bloque solo en la ficha elegida y los recupera al recargar', async () => {
+    const confirmar = montar(); await abrirFichaProducto('Cacerola');
+    const bloque = bloqueFicha('Descripción breve');
+    fireEvent.click(within(bloque).getByRole('button', { name: 'Diseño (código) de este bloque' }));
+    const prompt = within(bloque).getByLabelText('Prompt completo del bloque').value;
+    const html = prompt.match(/HTML COMPLETO DEL BLOQUE:\n```html\n([\s\S]*?)\n```/)[1];
+    const respuesta = '<style>.ia-descripcion{padding:20px}</style>' + html + '<script>bloque.dataset.listo="si";</script>';
+    fireEvent.change(within(bloque).getByLabelText('Respuesta de IA para Descripción breve'), { target: { value: respuesta } });
+    fireEvent.click(within(bloque).getByRole('button', { name: 'Aplicar a este bloque' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    const payload = confirmar.mock.calls[0][0];
+    expect(payload.venta.presentacion_productos['producto:1'].codigo_bloques.descripcion).toMatchObject({ css: '.ia-descripcion{padding:20px}', js: 'bloque.dataset.listo="si";' });
+    expect(payload.venta.presentacion_productos['producto:2']?.codigo_bloques).toBeUndefined();
+    cleanup(); montar({ seleccion: catalogo.productos, venta: payload.venta }); await abrirFichaProducto('Cacerola');
+    const nuevo = bloqueFicha('Descripción breve');
+    fireEvent.click(within(nuevo).getByRole('button', { name: 'Diseño (código) de este bloque' }));
+    expect(within(nuevo).getByLabelText('JS actual del bloque')).toHaveValue('bloque.dataset.listo="si";');
+  });
+
   it('marca etiquetas comerciales, badge y fecha de oferta desde la ficha', () => {
     const confirmar = montar();
     abrirFichaProducto('Cacerola');

@@ -15,6 +15,29 @@
   font-size: 15px;
   line-height: 1.6;
 }
+.cmb-product-cantidad { display: block; text-align: right; padding: 12px 16px 0; font-weight: 700; }
+
+.cmb-editor-bloque { position: relative; }
+.cmb-editor .cmb-seccion-numero { display: none; }
+.cmb-editor-bloque:hover,
+.cmb-editor-bloque:focus-within,
+.cmb-editor-seleccionado { outline: 2px solid #ff624d; outline-offset: -2px; }
+.cmb-editor-label {
+  position: absolute; top: 4px; left: 8px; z-index: 20;
+  border: 0; border-radius: 5px; padding: 5px 9px;
+  background: #ff624d; color: #101a21; font: 600 12px/1.4 system-ui;
+  opacity: 0; pointer-events: none; cursor: pointer;
+}
+.cmb-editor-bloque:hover > .cmb-editor-label,
+.cmb-editor-bloque:focus-within > .cmb-editor-label,
+.cmb-editor-seleccionado > .cmb-editor-label { opacity: 1; pointer-events: auto; }
+.cmb-editor [data-combo-parte] { position: relative; }
+.cmb-editor [data-combo-parte]:hover { outline: 1px dashed #ff624d; outline-offset: 3px; }
+.cmb-editor [data-combo-parte]:hover::after {
+  content: attr(data-combo-parte); position: absolute; right: 0; top: 0;
+  background: #101a21; color: #fff; padding: 3px 6px;
+  border-radius: 4px; font: 500 11px/1.4 system-ui; z-index: 19; pointer-events: none;
+}
 
 .cmb-wrap {
   max-width: 1120px;
@@ -76,22 +99,6 @@
   border-radius: 999px;
   font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px;
 }
-.cmb-contador { display: flex; align-items: center; gap: 8px; }
-.cmb-contador-caja {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 48px;
-  padding: 4px 8px;
-  background: var(--cmb-surface-suave);
-  border: 1px solid var(--cmb-border);
-  border-radius: 10px;
-}
-.cmb-contador-caja b { font-size: 20px; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--cmb-fg); }
-.cmb-contador-caja small { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--cmb-muted); margin-top: 1px; }
-.cmb-contador-sep { font-size: 20px; font-weight: 900; color: var(--cmb-accent); opacity: 0.8; }
-
 /* ── Encabezados de sección ───────────────────────────────────────── */
 .cmb-seccion-titulo { text-align: center; max-width: 620px; margin: 0 auto 32px; position: relative; }
 .cmb-seccion-titulo .cmb-eyebrow { justify-content: center; }
@@ -598,9 +605,11 @@
   display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px;
   text-align: center;
 }
-.cmb-trust-item { padding: 8px; }
+.cmb-trust-item { padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.cmb-trust-item > svg, .cmb-trust-icono { flex-shrink: 0; font-size: 24px; line-height: 1.2; }
+.cmb-review-foto { display: block; width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin: 10px 0 6px; }
 .cmb-trust-item svg { color: var(--cmb-accent); }
-.cmb-trust-item h3 { margin: 10px 0 4px; font-size: 14px; font-weight: 700; }
+.cmb-trust-item h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
 .cmb-trust-item p { margin: 0; color: var(--cmb-muted); font-size: 12.5px; }
 
 /* ── FAQ ───────────────────────────────────────────────────────────── */
@@ -722,3 +731,15 @@
   font-weight: var(--cmb-heading-weight);
 }
 .cmb-root button { font-family: inherit; }
+
+/* El combo usa el mismo bloque de oferta y sus variables de la ficha de producto. */
+.cmb-offer-panel .cmb-offer-timer { display: block; margin: 18px 0 0; padding: 0; max-width: none; border: 0; background: none; box-shadow: none; }
+.cmb-offer-panel .pdp-offer-card {
+  --ink: var(--cmb-fg); --ink-soft: var(--cmb-muted); --white: var(--cmb-bg);
+  --brand: var(--cmb-accent); --brand-dark: var(--cmb-accent); --line: var(--cmb-border);
+  --shadow-sm: 0 4px 20px var(--cmb-sombra); margin: 0;
+}
+
+.cmb-icono-imagen { display: inline-block; width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+
+.cmb-icono-libre { display: inline-flex; flex-shrink: 0; color: var(--cmb-accent); align-items: center; justify-content: center; }

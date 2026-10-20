@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import ProductList from './ProductList';
 import { productService } from '../../services/productService';
@@ -65,6 +65,58 @@ afterEach(() => {
 });
 
 describe('ProductList', () => {
+  const montarLista = () => render(<MemoryRouter><ProductList /></MemoryRouter>);
+
+  it('busca al escribir sin Enter y vuelve a página 1 sin pedir la página anterior con el texto nuevo', async () => {
+    const respuesta = await productService.buscar();
+    productService.buscar.mockClear();
+    productService.buscar.mockResolvedValue({ ...respuesta, total: 30, total_paginas: 3 });
+    montarLista();
+    await screen.findByText('Calefactor QA');
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    await waitFor(() => expect(productService.buscar.mock.calls.at(-1)[0].page).toBe(2));
+    await screen.findByText('Calefactor QA');
+    productService.buscar.mockClear();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Buscar productos' }), { target: { value: 'cale' } });
+    expect(screen.getByText('Buscando...')).toBeVisible();
+    expect(productService.buscar).not.toHaveBeenCalled();
+    await waitFor(() => expect(productService.buscar).toHaveBeenCalledTimes(1));
+    expect(productService.buscar.mock.calls[0][0]).toMatchObject({ texto: 'cale', page: 1 });
+  });
+
+  it('Enter adelanta la búsqueda y el timer pendiente no la repite', async () => {
+    montarLista();
+    await screen.findByText('Calefactor QA');
+    productService.buscar.mockClear();
+    const campo = screen.getByRole('textbox', { name: 'Buscar productos' });
+    fireEvent.change(campo, { target: { value: 'calefactor' } });
+    fireEvent.keyDown(campo, { key: 'Enter' });
+    expect(productService.buscar).toHaveBeenCalledTimes(1);
+    await act(() => new Promise(resolve => setTimeout(resolve, 250)));
+    expect(productService.buscar).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancela solicitudes anteriores y descarta su respuesta aunque lleguen después', async () => {
+    const respuesta = await productService.buscar();
+    productService.buscar.mockClear();
+    let responderAnterior;
+    productService.buscar.mockImplementationOnce(() => new Promise(resolve => { responderAnterior = resolve; }))
+      .mockResolvedValueOnce({ ...respuesta, productos: [{ ...respuesta.productos[0], nombre: 'Resultado actual' }] });
+    const { unmount } = montarLista();
+    const signalAnterior = productService.buscar.mock.calls[0][1].signal;
+    const campo = screen.getByRole('textbox', { name: 'Buscar productos' });
+    fireEvent.change(campo, { target: { value: 'actual' } });
+    fireEvent.keyDown(campo, { key: 'Enter' });
+    await screen.findByText('Resultado actual');
+    expect(signalAnterior.aborted).toBe(true);
+    await act(async () => responderAnterior(respuesta));
+    expect(screen.queryByText('Calefactor QA')).toBeNull();
+    expect(screen.getByText('Resultado actual')).toBeVisible();
+    const signalActual = productService.buscar.mock.calls.at(-1)[1].signal;
+    unmount();
+    expect(signalActual.aborted).toBe(true);
+  });
+
   it('abre la pestaña de ofertas del producto desde el botón de etiqueta', async () => {
     render(
       <MemoryRouter initialEntries={['/mi-catalogo']}>

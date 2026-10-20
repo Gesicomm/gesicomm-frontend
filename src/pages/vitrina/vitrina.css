@@ -164,6 +164,11 @@
 .vit-header-text {}
 
 .vit-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.vit-export-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; border: 1px solid var(--color-success); border-radius: 9px; background: var(--color-success); color: var(--color-success-fg); font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 5px #04785720; transition: background 150ms, box-shadow 150ms, opacity 150ms; }
+.vit-export-button:hover:not(:disabled) { filter: brightness(0.92); box-shadow: 0 3px 8px #04785730; }
+.vit-export-button:focus-visible { outline: 3px solid #04785750; outline-offset: 3px; }
+.vit-export-button:disabled { opacity: .7; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .vit-export-button { transition: none; } }
 .vit-meta-export-anchor { position: relative; }
 .vit-meta-export-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; border: 1px solid #0866ff; border-radius: 9px; background: #0866ff; color: #fff; font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 5px #0866ff20; transition: background 150ms, box-shadow 150ms; }
 .vit-meta-export-button:hover, .vit-meta-export-button[aria-expanded=true] { background: #0755d9; border-color: #0755d9; box-shadow: 0 3px 8px #0866ff30; }

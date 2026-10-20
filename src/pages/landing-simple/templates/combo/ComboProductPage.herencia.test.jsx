@@ -26,6 +26,6 @@ describe('Combo sin vista propia acompaña al template', () => {
     expect(container.querySelector('.cmb-root').style.getPropertyValue('--cmb-accent')).toBe('#985776');
     expect(screen.getByText('Promesa propia QA')).toBeInTheDocument();
     expect(screen.queryByText('Promesa heredada QA')).toBeNull();
-    expect(screen.getAllByText('Envío definido por la tienda QA').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Envío definido por la tienda QA')).toBeNull();
   });
 });

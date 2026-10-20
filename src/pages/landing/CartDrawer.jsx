@@ -126,6 +126,7 @@ export default function CartDrawer({
   // comportamiento de siempre sigue intacto.
   onIrACheckout = null,
   paymentMethodInicial = null,
+  onMetodoPago = null,
   // La página de checkout propia (lienzo) no tiene popup de upsell: cuando
   // el cliente toca "Confirmar pedido" allá, el contenedor cambia
   // solicitudUpsell y este drawer hace la misma pregunta que en su propio
@@ -388,6 +389,10 @@ export default function CartDrawer({
 
   function actualizarCampo(campo, valor) {
     setForm(prev => ({ ...prev, [campo]: valor }));
+    if (campo === 'payment_method') {
+      setCupon(null);
+      onMetodoPago?.(valor);
+    }
     setFaltante(prev => (prev?.campo === campo ? null : prev));
   }
 
