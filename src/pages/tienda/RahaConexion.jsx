@@ -71,7 +71,7 @@ export const VALIDACIONES_RAHA = {
 
 // Semáforo: rojo = trámite sin iniciar (o a corregir), amarillo = enviado, verde = aceptado.
 export function semaforoRaha(estado) {
-  if (estado === 'aprobada') return { color: 'verde', titulo: 'Aprobado por Raha', texto: 'Tu conexión con Raha está activa. Ya podés proveerte con Raha.' };
+  if (estado === 'aprobada') return { color: 'verde', titulo: 'Aprobado por Raha', texto: 'Raha aprobó tu solicitud. Continuá con la validación de tu cuenta para completar la conexión.' };
   if (estado === 'en_revision' || estado === 'enviada_raha') return { color: 'amarillo', titulo: 'Solicitud enviada', texto: 'Raha recibió tu solicitud y la está evaluando. Te avisaremos cuando responda.' };
   if (estado === 'observada') return { color: 'rojo', titulo: 'Raha pidió correcciones', texto: 'Revisá la nota en el seguimiento, corregí los datos o documentos y volvé a enviar.' };
   if (estado === 'rechazada') return { color: 'rojo', titulo: 'Solicitud rechazada', texto: 'Raha rechazó la solicitud. Revisá el motivo en el seguimiento.' };
@@ -137,7 +137,7 @@ function mensajeSubida(err) {
   return err.response.data?.message || 'No se pudo subir el archivo.';
 }
 
-export default function RahaConexion({ tienda }) {
+export default function RahaConexion({ tienda, onSolicitudChange }) {
   const [solicitud, setSolicitud] = useState(null), [datos, setDatos] = useState({});
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
   const [error, setError] = useState(''), [mensaje, setMensaje] = useState(''), [consentimiento, setConsentimiento] = useState(false);
@@ -161,6 +161,7 @@ export default function RahaConexion({ tienda }) {
   }, [tienda]);
 
   useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { if (solicitud) onSolicitudChange?.(solicitud); }, [solicitud, onSolicitudChange]);
 
   async function action(fn, success) {
     if (busy) return;

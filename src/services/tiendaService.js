@@ -48,5 +48,7 @@ export const tiendaService = {
 
   // Varias tiendas por cuenta: listado + cambio de tienda activa.
   mias: () => API.get('/tiendas/mias').then(r => r.data),
+  cambiarEstado: (tiendaId, activo) => API.patch(`/tiendas/${tiendaId}/estado`, { activo }).then(r => r.data),
+  eliminar: (tiendaId, nombre) => API.delete(`/tiendas/${tiendaId}`, { data: { nombre } }).then(r => r.data),
   seleccionar: (tiendaId) => API.post('/auth/seleccionar-tienda', { tienda_id: tiendaId }).then(r => r.data),
 };

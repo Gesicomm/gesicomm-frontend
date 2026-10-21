@@ -17,8 +17,7 @@ import { getMediaUrl } from '../../services/api';
 import { generarPreviewMensaje, generarPreviewMensajeGeneral, generarPreviewMensajeConfirmacion, MENSAJE_CONFIRMACION_DEFAULT } from '../../lib/mensajeWhatsapp';
 import { listaFuentes, typographyStyle } from '../../lib/typography';
 import PagoParConfig from './PagoParConfig';
-import SpeedboxConfig from './SpeedboxConfig';
-import RahaConexion from './RahaConexion';
+import ConexionLogistica from './ConexionLogistica';
 import DominioPropio from './DominioPropio';
 import ComboConfiguracion from '../combos/ComboConfiguracion';
 import { MetodosPagoCrud } from '../courier/MetodosPagoCrud';
@@ -76,12 +75,7 @@ const FORM_INICIAL = {
 };
 
 
-// El orden sigue el recorrido de una tienda nueva: primero quién sos y dónde
-// se publica tu catálogo, después por dónde te escriben, después cómo cobrás,
-// después con qué costos calculás, y al final la medición (lo más técnico y
-// lo que menos se toca). Los `id` son los mismos de siempre — solo cambió el
-// orden en que se listan y la etiqueta de "Económica" → "Costos", que dice
-// mejor qué se configura ahí.
+// Primero la configuración de la tienda; al final, la conexión y validación RAHA.
 const TABS = [
   {
     id: 'tienda',
@@ -104,8 +98,6 @@ const TABS = [
     titulo: 'Medios de cobro',
     desc: 'Definí los métodos de pago de tu negocio.',
   },
-  { id: 'raha', label: 'Conexión Raha', icono: ShieldCheck, titulo: 'Conexión Raha', desc: '' },
-  { id: 'speedbox', label: 'Validación RAHA', icono: Link2, titulo: 'Validación RAHA', desc: '' },
   {
     id: 'economica',
     label: 'Costos',
@@ -120,9 +112,10 @@ const TABS = [
     titulo: 'Medición y píxeles',
     desc: 'Conectá Meta, Google y TikTok para medir lo que pasa en tus landings.',
   },
+  { id: 'raha', label: 'Conexión Logística', icono: ShieldCheck, titulo: 'Conexión Logística', desc: 'Conectá tu tienda con nuestros proveedores.', separadorLargo: true },
 ];
 
-const TABS_VALIDAS = new Set(TABS.map(t => t.id));
+const TABS_VALIDAS = new Set([...TABS.map(t => t.id), 'speedbox']);
 
 // Tabs cuyo contenido tiene su propio botón de guardado (componentes con su
 // propio servicio) — el footer de esta pantalla no los alcanza.
@@ -704,7 +697,7 @@ export default function ConfigurarTienda() {
   const esPlanPago = Boolean(estadoCuenta?.tiene_suscripcion_activa || suscripcionActiva || tienda?.plan === 'pago');
   const nombrePlanActivo = planActivo?.nombre || (esPlanPago ? 'plan de pago' : null);
 
-  const tabActual = TABS.find(t => t.id === tab) || TABS[0];
+  const tabActual = TABS.find(t => t.id === (tab === 'speedbox' ? 'raha' : tab)) || TABS[0];
   const tabGuardaAparte = TABS_CON_GUARDADO_PROPIO.includes(tab);
 
   // Estados derivados de datos que ya existen — no hay lógica nueva detrás,
@@ -750,7 +743,7 @@ export default function ConfigurarTienda() {
             type="button"
             className="tn-btn-tiendas"
             onClick={() => navigate('/seleccionar-tienda', { state: { desde: '/mi-tienda' } })}
-            title="Cambiar de tienda o crear una nueva"
+            title="Administrar, inactivar o reactivar tus tiendas"
           >
             <Store size={14} /> Mis tiendas
           </button>
@@ -765,7 +758,7 @@ export default function ConfigurarTienda() {
             <span className="tn-mobile-nav-hint">Secciones <ChevronDown size={16} /></span>
           </summary>
           <nav className="tn-mobile-section-grid" role="tablist" aria-label="Secciones de configuración móvil">
-            {TABS.map(t => <button key={t.id} type="button" role="tab" aria-selected={tab === t.id}
+            {TABS.map(t => <button key={t.id} type="button" role="tab" aria-selected={tabActual.id === t.id}
               onClick={event => {
                 seleccionarTab(t.id);
                 const menu = event.currentTarget.closest('details');
@@ -773,7 +766,7 @@ export default function ConfigurarTienda() {
                 menu.querySelector('summary').focus();
               }}>
               {React.createElement(t.icono, { size: 17 })}<span>{t.label}</span>
-              {tab === t.id && <Check size={14} />}
+              {tabActual.id === t.id && <Check size={14} />}
             </button>)}
           </nav>
         </details>
@@ -781,12 +774,16 @@ export default function ConfigurarTienda() {
         <nav className="tn-tabs" role="tablist" aria-label="Secciones de configuración">
           {TABS.map((t, idx) => {
             const Icono = t.icono;
-            const activo = tab === t.id;
+            const activo = tabActual.id === t.id;
             return (
               <React.Fragment key={t.id}>
                 {idx > 0 && (
-                  <span className="tn-tab-arrow" aria-hidden="true">
-                    <ArrowRight size={12} />
+                  <span className={`tn-tab-arrow${t.separadorLargo ? ' tn-tab-arrow-long' : ''}`} aria-hidden="true">
+                    {t.separadorLargo ? (
+                      <svg width="56" height="12" viewBox="0 0 56 12" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 6h54m-5-5 5 5-5 5" />
+                      </svg>
+                    ) : <ArrowRight size={12} />}
                   </span>
                 )}
                 <button
@@ -827,7 +824,7 @@ export default function ConfigurarTienda() {
             <p>{tabActual.desc}</p>
           </div>
 
-          {tab === 'raha' ? <RahaConexion tienda={tienda} /> : <form onSubmit={handleSubmit} className="tn-form">
+          {tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
             <div className="tn-body">
 
               {ok && mensajeExito && (
@@ -1588,7 +1585,6 @@ export default function ConfigurarTienda() {
                 </div>
               )}
 
-              {tab === 'speedbox' && <div className="tn-tab-content" key="speedbox"><SpeedboxConfig /></div>}
 
               {/* ═════════════════ TAB: CONFIGURACIÓN ECONÓMICA ═══════════ */}
               {tab === 'economica' && (

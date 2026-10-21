@@ -1,9 +1,46 @@
 import { test, expect } from '@playwright/test';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5175';
-const secciones = ['Tienda', 'Contacto', 'Pagos', 'Conexión Raha', 'Validación RAHA', 'Costos', 'Analítica'];
+const secciones = ['Tienda', 'Contacto', 'Pagos', 'Costos', 'Analítica', 'Conexión Logística'];
 
-async function preparar(page) {
+for (const width of [375, 1440]) {
+  test(`Conexión Logística: solicitud y bloqueo a ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await preparar(page);
+    await page.goto(`${baseURL}/mi-tienda?tab=speedbox`);
+    const conectar = page.getByRole('button', { name: 'Conectarme a Rahá' });
+    await expect(conectar).toBeEnabled();
+    const validar = page.getByRole('button', { name: 'Validar cuenta', exact: true });
+    await expect(validar).toBeDisabled();
+    const logo = page.getByRole('img', { name: 'Rahá', exact: true });
+    await expect(logo).toBeVisible();
+    expect(await logo.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+    await page.locator('.logistica-validation-action').hover();
+    await expect(page.getByRole('tooltip')).toBeVisible();
+    await expect(page.getByRole('tooltip')).toContainText('Rahá tiene que aprobar tu solicitud');
+    await comprobarAncho(page);
+    await page.screenshot({ path: testInfo.outputPath('proveedor-logistico.png') });
+    await conectar.click();
+    await expect(page.getByLabel('Razón social', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Adjuntar Constancia de RUC', { exact: true })).toBeAttached();
+    await comprobarAncho(page);
+    await page.screenshot({ path: testInfo.outputPath('solicitud-logistica.png') });
+  });
+  test(`Conexión Logística: validación aprobada a ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await preparar(page, { estadoRaha: 'aprobada' });
+    await page.goto(`${baseURL}/mi-tienda?tab=raha`);
+    await expect(page.getByText('Validación pendiente', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Validar cuenta', exact: true }).click();
+    await expect(page.getByLabel('Public key', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Private key', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Solicitar habilitación en producción' })).toBeDisabled();
+    await comprobarAncho(page);
+    await page.screenshot({ path: testInfo.outputPath('validacion-logistica.png') });
+  });
+}
+
+async function preparar(page, { estadoRaha = 'borrador' } = {}) {
   await page.route('**/api/**', route => {
     const path = new URL(route.request().url()).pathname;
     let data = {};
@@ -15,7 +52,7 @@ async function preparar(page) {
     };
     else if (path.includes('suscripciones/mi-estado')) data = { tiene_suscripcion_activa: true, suscripcion: { plan: { nombre: 'Pro' } } };
     else if (path.endsWith('/tiendas/mias')) data = [{ id: 1, nombre: 'Tienda de prueba' }];
-    else if (path.endsWith('/integraciones/raha')) data = { id: 1, estado: 'borrador', version: 1, datos: {}, documentos: [], historial: [] };
+    else if (path.endsWith('/integraciones/raha')) data = { id: 1, estado: estadoRaha, version: 1, datos: {}, documentos: [], historial: [] };
     else if (path.endsWith('/integraciones/speedbox')) data = { connections: [], checks: {}, orders: [], events: [], reviews: [], webhook_url: 'https://api.gesicomm.com/api/webhooks/speedbox?environment=production' };
     else if (path.includes('metodos-pago')) data = [{ id: 1, nombre: 'Transferencia bancaria', comision_porcentaje: 0, activo: true }];
     else if (path.endsWith('/combos/configuracion')) data = { cpa_porcentaje: 10, costo_envio: 20000, costo_confirmacion: 5000, costo_empaque: 2000, metodos_pago: [] };

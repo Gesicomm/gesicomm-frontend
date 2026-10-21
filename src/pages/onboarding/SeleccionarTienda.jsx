@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Loader, Store } from 'lucide-react';
+import { ArrowRight, Loader, Plus, Power, Store, Trash2 } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 import Logo from '../../components/public/Logo';
 import './onboarding.css';
@@ -19,6 +19,13 @@ export default function SeleccionarTienda() {
   const [tiendas, setTiendas] = useState(null);
   const [error, setError] = useState(null);
   const [seleccionando, setSeleccionando] = useState(null);
+  const [confirmando, setConfirmando] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+  const [borrando, setBorrando] = useState(null);
+  const [nombreConfirmacion, setNombreConfirmacion] = useState('');
+  const [mensaje, setMensaje] = useState('');
+  const ocupado = seleccionando !== null || guardando;
+  const confirmacionAbierta = confirmando !== null || borrando !== null;
 
   useEffect(() => {
     let activo = true;
@@ -40,18 +47,52 @@ export default function SeleccionarTienda() {
     }
   }
 
+  async function cambiarEstado(tienda) {
+    setError(null);
+    setMensaje('');
+    setGuardando(true);
+    try {
+      const actualizada = await tiendaService.cambiarEstado(tienda.id, tienda.activo === false);
+      setTiendas(actuales => actuales.map(item => item.id === tienda.id ? { ...item, ...actualizada } : item));
+      setConfirmando(null);
+      setMensaje(actualizada.activo ? `${tienda.nombre} está activa.` : `${tienda.nombre} está inactiva. Podés reactivarla cuando quieras.`);
+    } catch (err) {
+      setError(err.response?.data?.message || 'No pudimos cambiar el estado. Probá de nuevo.');
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function eliminar(tienda) {
+    setError(null);
+    setMensaje('');
+    setGuardando(true);
+    try {
+      await tiendaService.eliminar(tienda.id, nombreConfirmacion);
+      setTiendas(actuales => actuales.filter(item => item.id !== tienda.id));
+      setBorrando(null);
+      setNombreConfirmacion('');
+      setMensaje(`${tienda.nombre} fue eliminada.`);
+    } catch (err) {
+      setError(err.response?.data?.message || 'No pudimos eliminar la tienda. Probá de nuevo.');
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
-    <div className="onb-page">
+    <div className="onb-page st-page">
       <div className="onb-card st-card">
         <div className="onb-brand">
           <Logo size={24} />
         </div>
 
         <div className="onb-step-content">
-          <h1>¿Con qué tienda querés trabajar?</h1>
-          <p className="onb-subtitle">Tu cuenta tiene varias tiendas. Elegí una para continuar.</p>
+          <h1>Mis tiendas</h1>
+          <p className="onb-subtitle">Entrá a tu tienda o administrá su disponibilidad.</p>
 
-          {error && <div className="land-alert-error">{error}</div>}
+          {error && <div className="land-alert-error" role="alert">{error}</div>}
+          <p className="st-feedback" role="status">{mensaje}</p>
 
           {tiendas === null && (
             <div className="st-cargando"><Loader size={18} className="spin-icon" /></div>
@@ -60,11 +101,12 @@ export default function SeleccionarTienda() {
           {tiendas && (
             <div className="st-lista">
               {tiendas.map((tienda) => (
+                <div key={tienda.id} className="st-tienda">
                 <button
-                  key={tienda.id}
                   type="button"
                   className="st-item"
-                  disabled={seleccionando !== null}
+                  aria-label={`Administrar ${tienda.nombre}`}
+                  disabled={ocupado || confirmacionAbierta}
                   onClick={() => elegir(tienda)}
                 >
                   <span className="st-item-logo">
@@ -74,19 +116,68 @@ export default function SeleccionarTienda() {
                     <strong>{tienda.nombre}</strong>
                     <small>{tienda.subdominio}.gesicomm.com</small>
                   </span>
-                  {seleccionando === tienda.id && <Loader size={15} className="spin-icon" />}
+                  <span className="st-entrar">{seleccionando === tienda.id ? <Loader size={17} className="spin-icon" /> : <ArrowRight size={18} />}</span>
                 </button>
+                <div className="st-pie">
+                  <span className={`st-estado ${tienda.activo === false ? 'st-inactiva' : ''}`}>
+                    <span className="st-estado-punto" />{tienda.activo === false ? 'Inactiva' : 'Activa'}
+                  </span>
+                  <div className="st-pie-acciones">
+                  <button type="button" className="st-cambiar-estado"
+                    aria-label={`${tienda.activo === false ? 'Reactivar' : 'Inactivar'} ${tienda.nombre}`}
+                    disabled={ocupado || confirmacionAbierta}
+                    onClick={() => {
+                      setError(null);
+                      setMensaje('');
+                      if (tienda.activo === false) cambiarEstado(tienda);
+                      else setConfirmando(tienda.id);
+                    }}>
+                    <Power size={14} />{tienda.activo === false ? 'Reactivar' : 'Inactivar'}
+                  </button>
+                  <button type="button" className="st-cambiar-estado st-eliminar"
+                    aria-label={`Eliminar ${tienda.nombre}`}
+                    title={tienda.activo === false ? 'Eliminar definitivamente una tienda vacía' : 'Inactivá la tienda antes de eliminarla'}
+                    disabled={ocupado || confirmacionAbierta || tienda.activo !== false}
+                    onClick={() => { setError(null); setMensaje(''); setNombreConfirmacion(''); setBorrando(tienda.id); }}>
+                    <Trash2 size={14} /> Eliminar
+                  </button>
+                  </div>
+                </div>
+                {borrando === tienda.id && (
+                  <form className="st-confirmacion" onSubmit={event => { event.preventDefault(); if (nombreConfirmacion === tienda.nombre && !guardando) eliminar(tienda); }}>
+                    <p><strong>Eliminar «{tienda.nombre}» definitivamente</strong></p>
+                    <p>Esta acción no se puede deshacer. Solo se pueden eliminar tiendas sin datos asociados. Si tiene historial, mantenela inactiva.</p>
+                    <label className="st-confirmar-nombre">
+                      Escribí «{tienda.nombre}» para confirmar
+                      <input value={nombreConfirmacion} onChange={event => setNombreConfirmacion(event.target.value)} disabled={guardando} autoComplete="off" autoFocus />
+                    </label>
+                    <div className="st-acciones">
+                      <button type="button" className="onb-btn-secondary" disabled={guardando} onClick={() => setBorrando(null)}>Cancelar</button>
+                      <button type="submit" className="onb-btn-secondary st-confirmar" disabled={guardando || nombreConfirmacion !== tienda.nombre}>{guardando ? 'Eliminando…' : 'Eliminar definitivamente'}</button>
+                    </div>
+                  </form>
+                )}
+                {confirmando === tienda.id ? (
+                  <div className="st-confirmacion" role="group" aria-label={`Inactivar ${tienda.nombre}`}>
+                    <p>Al inactivar «{tienda.nombre}», su sitio público dejará de estar disponible y no recibirá nuevas compras. Conservás los pedidos, productos y la configuración. Podés reactivarla cuando quieras.</p>
+                    <div className="st-acciones">
+                      <button type="button" className="onb-btn-secondary" disabled={guardando} onClick={() => setConfirmando(null)} autoFocus>Cancelar</button>
+                      <button type="button" className="onb-btn-secondary st-confirmar" disabled={guardando} onClick={() => cambiarEstado(tienda)}>{guardando ? 'Inactivando…' : 'Confirmar inactivación'}</button>
+                    </div>
+                  </div>
+                ) : null}
+                </div>
               ))}
             </div>
           )}
 
           <button
             type="button"
-            className="onb-btn-secondary"
-            disabled={seleccionando !== null}
+            className="onb-btn-secondary st-crear"
+            disabled={ocupado || confirmacionAbierta}
             onClick={() => navigate('/onboarding', { state: { nueva: true } })}
           >
-            + Crear otra tienda
+            <Plus size={17} /> Crear otra tienda
           </button>
         </div>
       </div>

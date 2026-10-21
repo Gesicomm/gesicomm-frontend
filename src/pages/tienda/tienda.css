@@ -138,6 +138,10 @@
   margin-bottom: -1px; /* alinea con el borde inferior del nav */
 }
 
+.tn-tab-arrow-long {
+  margin-inline: 0.5rem;
+}
+
 /* ─── Panel ───────────────────────────────────────────────────────────── */
 .tn-panel { display: flex; flex-direction: column; min-width: 0; }
 

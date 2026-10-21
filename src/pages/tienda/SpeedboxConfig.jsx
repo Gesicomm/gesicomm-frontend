@@ -432,7 +432,7 @@ export default function SpeedboxConfig() {
   const productionCredentialsAvailable = Boolean(productionCredentials.public_key && (productionCredentials.private_key || productionConnection?.has_private_key));
   const uncertain = retryOrder && ['incierto', 'enviando'].includes(retryOrder.estado);
   const reviews = (data?.events || []).filter(event => event.estado === 'revision' && event.tipo !== 'wallet.transaction');
-  const allChecks = data?.checks && Object.values(data.checks).every(Boolean);
+  const allChecks = Object.keys(labels).every(key => Boolean(data?.checks?.[key]));
   const productionWebhookUrl = productionWebhookFromData(data);
   const sandboxWebhookUrl = sandboxWebhookFromData(data);
   const sandboxStoreActionLabel = sandboxConnection?.tienda_id ? 'Recrear tienda sandbox en RAHA' : 'Crear tienda sandbox en RAHA';
