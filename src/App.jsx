@@ -180,13 +180,15 @@ const FunnelBuilder = lazy(() => import('./pages/page-builder/funnel/FunnelBuild
 // va a cargar Monaco), no tiene por qué entrar al bundle del dashboard.
 const PageEditor = lazy(() => import('./pages/page-builder/editor/PageEditor'));
 
-function RaizSegunHostname() {
-  return esHostnameDeTienda() ? <LandingPublica /> : <PublicLayout><Landing /></PublicLayout>;
+// Inicio, ficha, categoría y checkout de la tienda usan ESTE mismo componente
+// a propósito: con un envoltorio distinto por ruta, React desmontaba la tienda
+// entera al pasar de una a otra y mostraba la pantalla de carga negra en cada
+// clic. Con el mismo tipo, LandingPublica sobrevive y hace la transición.
+function TiendaSegunHostname({ vistaCodigo = null, fuera }) {
+  return esHostnameDeTienda() ? <LandingPublica vistaCodigo={vistaCodigo} /> : fuera;
 }
 
-function ProductoSegunHostname() {
-  return esHostnameDeTienda() ? <LandingPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
-}
+const FUERA_DE_TIENDA = <PaginaPublica><NotFound /></PaginaPublica>;
 
 function CatalogoSegunHostname() {
   return esHostnameDeTienda() ? <CatalogoPublico /> : <PaginaPublica><NotFound /></PaginaPublica>;
@@ -194,14 +196,6 @@ function CatalogoSegunHostname() {
 
 function ContactoSegunHostname() {
   return esHostnameDeTienda() ? <ContactoPublico /> : <PaginaPublica><NotFound /></PaginaPublica>;
-}
-
-function CategoriaSegunHostname() {
-  return esHostnameDeTienda() ? <LandingPublica vistaCodigo="categoria" /> : <PaginaPublica><NotFound /></PaginaPublica>;
-}
-
-function CheckoutTiendaSegunHostname() {
-  return esHostnameDeTienda() ? <LandingPublica vistaCodigo="checkout" /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
 
 function PoliticaPrivacidadSegunHostname() {
@@ -251,7 +245,7 @@ function App() {
             POST https://api.gesicomm.com/api/meta/data-deletion-callback
             ───────────────────────────────────────────────────────── */}
         <Route path="/test-builder" element={<TestRenderer />} />
-        <Route path="/" element={<RaizSegunHostname />} />
+        <Route path="/" element={<TiendaSegunHostname fuera={<PublicLayout><Landing /></PublicLayout>} />} />
         <Route path="/privacy" element={<PaginaPublica><Privacy /></PaginaPublica>} />
         <Route path="/terms" element={<PaginaPublica><Terms /></PaginaPublica>} />
         <Route path="/cookies" element={<PaginaPublica><Cookies /></PaginaPublica>} />
@@ -542,15 +536,15 @@ function App() {
 
         {/* /l y /l/:slug: compatibilidad hacia atrás — desde la IP dedicada,
             "/" en el hostname de una tienda ya sirve lo mismo (ver
-            RaizSegunHostname arriba). Nginx sigue proxyeando estas dos rutas
+            TiendaSegunHostname arriba). Nginx sigue proxyeando estas dos rutas
             al backend igual que "/", así que un link viejo con /l no rompe. */}
         <Route path="/l" element={<LandingPublica />} />
         <Route path="/l/:slug" element={<LandingPublica />} />
         
         {/* Catálogo y Contacto públicos de la tienda */}
         <Route path="/catalogo" element={<CatalogoSegunHostname />} />
-        <Route path="/categoria/:categorySlug" element={<CategoriaSegunHostname />} />
-        <Route path="/checkout" element={<CheckoutTiendaSegunHostname />} />
+        <Route path="/categoria/:categorySlug" element={<TiendaSegunHostname vistaCodigo="categoria" fuera={FUERA_DE_TIENDA} />} />
+        <Route path="/checkout" element={<TiendaSegunHostname vistaCodigo="checkout" fuera={FUERA_DE_TIENDA} />} />
         <Route path="/contacto" element={<ContactoSegunHostname />} />
         <Route path="/politica-privacidad" element={<PoliticaPrivacidadSegunHostname />} />
         <Route path="/politica-reembolso" element={<PoliticaReembolsoSegunHostname />} />
@@ -579,7 +573,7 @@ function App() {
         <Route path="/f/:funnelSlug/:pageSlug" element={<PaginaBuilderPublica />} />
 
         {/* Producto publico */}
-        <Route path="/:productId" element={<ProductoSegunHostname />} />
+        <Route path="/:productId" element={<TiendaSegunHostname fuera={FUERA_DE_TIENDA} />} />
         <Route path="/l/:slug/:productId" element={<LandingPublica />} />
 
         {/* Comodín: sin esto una URL mal escrita renderiza una página en
