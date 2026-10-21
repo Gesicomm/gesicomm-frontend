@@ -1543,10 +1543,10 @@ export function runtimeGesicomm(plantillas) {
       case 'recomendados_titulo': return 'recomendados_titulo' in venta ? venta.recomendados_titulo : 'Te puede gustar';
       case 'recomendados_subtitulo': return venta.recomendados_subtitulo || '';
       case 'recomendados_cta': return 'recomendados_cta' in venta ? venta.recomendados_cta : 'Agregar';
-      case 'checkout_recomendados_kicker': return checkoutReco.kicker || 'Antes de cerrar';
-      case 'checkout_recomendados_titulo': return checkoutReco.titulo || 'También te puede interesar';
-      case 'checkout_recomendados_subtitulo': return checkoutReco.subtitulo || '';
-      case 'checkout_recomendados_cta': return checkoutReco.cta_texto || 'Agregar';
+      case 'checkout_recomendados_kicker': return checkoutReco.mostrar && checkoutReco.mostrar.kicker === false ? '' : (checkoutReco.kicker || 'Antes de cerrar');
+      case 'checkout_recomendados_titulo': return checkoutReco.mostrar && checkoutReco.mostrar.titulo === false ? '' : (checkoutReco.titulo || 'También te puede interesar');
+      case 'checkout_recomendados_subtitulo': return checkoutReco.mostrar && checkoutReco.mostrar.subtitulo === false ? '' : (checkoutReco.subtitulo || '');
+      case 'checkout_recomendados_cta': return checkoutReco.mostrar && checkoutReco.mostrar.cta === false ? '' : (checkoutReco.cta_texto || 'Agregar');
       case 'urgencia_titulo': return urg.titulo || 'Ofertas que terminan pronto';
       case 'urgencia_texto': return urg.texto || 'Aprovechá antes de que se agoten';
       case 'urgencia_cta': return urg.cta_texto || 'Ver todos';

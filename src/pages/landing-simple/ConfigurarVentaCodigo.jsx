@@ -885,10 +885,10 @@ export default function ConfigurarVentaCodigo({
       : []
   ));
   const [checkoutRecoMax, setCheckoutRecoMax] = useState(checkoutRecoInicial.max || 4);
-  const [checkoutRecoTitulo, setCheckoutRecoTitulo] = useState(checkoutRecoInicial.titulo || '');
-  const [checkoutRecoKicker, setCheckoutRecoKicker] = useState(checkoutRecoInicial.kicker || '');
+  const [checkoutRecoTitulo, setCheckoutRecoTitulo] = useState(checkoutRecoInicial.mostrar?.titulo === false ? '' : (checkoutRecoInicial.titulo || 'También te puede interesar'));
+  const [checkoutRecoKicker, setCheckoutRecoKicker] = useState(checkoutRecoInicial.mostrar?.kicker === false ? '' : (checkoutRecoInicial.kicker || 'Antes de cerrar'));
   const [checkoutRecoSubtitulo, setCheckoutRecoSubtitulo] = useState(checkoutRecoInicial.subtitulo || '');
-  const [checkoutRecoCta, setCheckoutRecoCta] = useState(checkoutRecoInicial.cta_texto || '');
+  const [checkoutRecoCta, setCheckoutRecoCta] = useState(checkoutRecoInicial.mostrar?.cta === false ? '' : (checkoutRecoInicial.cta_texto || 'Agregar'));
   const [checkoutRecoPreciosAntes, setCheckoutRecoPreciosAntes] = useState(() => (
     checkoutRecoInicial.precio_antes && typeof checkoutRecoInicial.precio_antes === 'object'
       ? checkoutRecoInicial.precio_antes
@@ -1895,6 +1895,7 @@ export default function ConfigurarVentaCodigo({
       kicker: checkoutRecoKicker,
       subtitulo: checkoutRecoSubtitulo,
       cta_texto: checkoutRecoCta,
+      mostrar: { kicker: !!checkoutRecoKicker.trim(), titulo: !!checkoutRecoTitulo.trim(), subtitulo: !!checkoutRecoSubtitulo.trim(), cta: !!checkoutRecoCta.trim() },
       precio_antes: Object.fromEntries(
         Object.entries(checkoutRecoPreciosAntes || {})
           .filter(([id, valor]) => checkoutRecoItemsValidos.includes(id) && (Number(String(valor).replace(/\D/g, '')) || 0) > 0)
@@ -3254,7 +3255,7 @@ export default function ConfigurarVentaCodigo({
                                 value={checkoutRecoKicker}
                                 onChange={e => setCheckoutRecoKicker(e.target.value)}
                                 maxLength={50}
-                                placeholder="Antes de cerrar"
+                                placeholder="Sin rótulo superior"
                                 className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
                               />
                             </label>
@@ -3264,7 +3265,7 @@ export default function ConfigurarVentaCodigo({
                                 value={checkoutRecoTitulo}
                                 onChange={e => setCheckoutRecoTitulo(e.target.value)}
                                 maxLength={80}
-                                placeholder="También te puede interesar"
+                                placeholder="Sin título"
                                 className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
                               />
                             </label>
@@ -3275,7 +3276,7 @@ export default function ConfigurarVentaCodigo({
                                 onChange={e => setCheckoutRecoSubtitulo(e.target.value)}
                                 maxLength={180}
                                 rows={2}
-                                placeholder="Complementos que el cliente puede sumar antes de confirmar."
+                                placeholder="Sin subtítulo"
                                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
                               />
                             </label>
@@ -3285,7 +3286,7 @@ export default function ConfigurarVentaCodigo({
                                 value={checkoutRecoCta}
                                 onChange={e => setCheckoutRecoCta(e.target.value)}
                                 maxLength={40}
-                                placeholder="Agregar"
+                                placeholder="Sin botón"
                                 className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
                               />
                             </label>

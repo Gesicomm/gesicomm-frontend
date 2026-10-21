@@ -56,6 +56,29 @@ async function abrirBloqueProductos() {
 }
 
 describe('Bloque Productos del inicio en una tienda grande', () => {
+  it('carga los textos visibles del checkout y conserva el rótulo borrado al guardar y volver a abrir', async () => {
+    const confirmar = vi.fn().mockResolvedValue(true);
+    const props = { catalogo: { productos: [productos[0], productos[1]], combos: [] }, inicial: { seleccion: [productos[0], productos[1]], venta: { configurado: true } }, onConfirmar: confirmar, cargarOfertas: vi.fn().mockResolvedValue([]), onVolver: vi.fn() };
+    const abrirCheckout = () => fireEvent.click(screen.getAllByRole('tab', { name: 'Checkout', exact: true })[0]);
+    const vista = render(<ConfigurarVentaCodigo {...props} />);
+    abrirCheckout();
+    fireEvent.click(screen.getByRole('button', { name: /^Productos recomendados/ }));
+    expect(screen.getByLabelText('Rótulo superior').value).toBe('Antes de cerrar');
+    expect(screen.getByLabelText('Título').value).toBe('También te puede interesar');
+    expect(screen.getByLabelText('Texto del botón').value).toBe('Agregar');
+    fireEvent.change(screen.getByLabelText('Rótulo superior'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar', exact: true }));
+    await waitFor(() => expect(confirmar).toHaveBeenCalled());
+    const guardada = confirmar.mock.calls[0][0].venta;
+    expect(guardada.checkout_recomendados.kicker).toBe('');
+    expect(guardada.checkout_recomendados.mostrar.kicker).toBe(false);
+    vista.unmount();
+    render(<ConfigurarVentaCodigo {...props} inicial={{ ...props.inicial, venta: guardada }} />);
+    abrirCheckout();
+    fireEvent.click(screen.getByRole('button', { name: /^Productos recomendados/ }));
+    expect(screen.getByLabelText('Rótulo superior').value).toBe('');
+  });
+
   it('edita emojis libres y compuestos sin perder los guardados ni el orden de los beneficios', async () => {
     const confirmar = vi.fn().mockResolvedValue(true);
     const emoji = '👩🏽‍💻👨‍👩‍👧‍👦🏳️‍🌈';
