@@ -122,6 +122,27 @@
         }
       })();
     </script>
+    <!--
+      Precarga de los datos de la tienda: el mismo GET que hace
+      obtenerLandingPublica() al montar el inicio o una ficha, pero lanzado
+      apenas llega el HTML, en paralelo con la descarga del JS — no al final.
+      La app reusa esta respuesta (ver landingPublicaService.js) en vez de
+      pedirla de nuevo. Solo en hostnames de tienda y en "/" o "/<ficha>".
+    -->
+    <script>
+      (function () {
+        try {
+          var h = location.hostname;
+          if (h === 'localhost' || h === 'gesicomm.com' || h === 'www.gesicomm.com' || h === 'app.gesicomm.com') return;
+          var partes = location.pathname.split('/').filter(Boolean);
+          var reservadas = /^(catalogo|checkout|contacto|categoria|politica-privacidad|politica-reembolso|terminos-servicio|politica-envio|aviso-legal|pagopar|l|p|f)$/;
+          var url = null;
+          if (partes.length === 0) url = '/api/l/';
+          else if (partes.length === 1 && partes[0].indexOf('.') === -1 && !reservadas.test(partes[0])) url = '/api/l/' + partes[0];
+          if (url) window.__gcPrecargaLanding = { url: url, respuesta: fetch(url, { credentials: 'include' }) };
+        } catch (e) { /* sin precarga: la app pide sola */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

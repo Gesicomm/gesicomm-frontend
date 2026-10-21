@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { Search, MessageCircle, Package, Layers, ImageOff, ShoppingCart, Plus, Check, Heart, Eye } from 'lucide-react';
 import { obtenerLandingPublica, registrarEventoLanding, crearCheckoutLanding, recalcularCarritoLanding, validarCuponLanding } from '../../services/landingPublicaService';
@@ -9,32 +9,41 @@ import { inicializarTikTokPixel, trackearEventoTikTok } from '../../lib/tiktokPi
 import { calcularEstiloLanding, cargarFuenteGoogle } from '../../lib/landingDiseno';
 import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { formatPrecio, armarLinkWhatsapp, armarLinkWhatsappCarrito } from '../../lib/mensajeWhatsapp';
-import ProductPagePublica from './ProductPagePublica';
-import FitnessProductPagePublica from '../landing-simple/templates/fitness/FitnessProductPagePublica';
-import TechProductPagePublica from '../landing-simple/templates/tech/TechProductPagePublica';
-import BeautyProductPagePublica from '../landing-simple/templates/beauty/BeautyProductPagePublica';
-import BazarProductPagePublica from '../landing-simple/templates/bazar/BazarProductPagePublica';
-import ModaProductPagePublica from '../landing-simple/templates/moda/ModaProductPagePublica';
-import BasicoProductPagePublica from '../landing-simple/templates/basico/BasicoProductPagePublica';
-import ComboProductPagePublica from '../landing-simple/templates/combo/ComboProductPagePublica';
 import StoreHeader from '../landing-simple/templates/StoreHeader';
 import { useNavigate } from 'react-router-dom';
 import CartDrawer from './CartDrawer';
-import LandingDropdown from './LandingDropdown';
-import { PageRenderer } from '../../page-builder/core/PageRenderer';
-import { registerLegacyBlocks } from '../../page-builder/blocks/legacyBlocks';
-import { getComponenteTemplate } from '../landing-simple/templates';
 import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
 import { resolverTemaPorSlug, hexToRgba } from '../landing-simple/templates/themeUtils';
 import LandingCodigoPublica from '../landing-simple/LandingCodigoPublica';
 import StoreFooterLegal from './StoreFooterLegal';
-import VentaDirectaTemplate from '../funnel/templates/VentaDirectaTemplate';
-import FunnelCheckout from '../funnel/FunnelCheckout';
-import { mapPublicDtoToFunnelData } from '../funnel/mapFunnelToTemplateData';
 import { calcularCrossSells, ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
 import './landingPublica.css';
 
-registerLegacyBlocks();
+// Las tiendas "lienzo en blanco" salen por LandingCodigoPublica antes de
+// llegar a cualquiera de estas vistas: van diferidas para que esas tiendas
+// no descarguen las plantillas rígidas ni el page-builder legacy (que trae
+// framer-motion). Cada una con su Suspense: el header y el carrito de
+// alrededor quedan pintados mientras llega el chunk.
+function diferida(cargar, fallback = null) {
+  const Vista = lazy(cargar);
+  return function VistaDiferida(props) {
+    return <Suspense fallback={fallback}><Vista {...props} /></Suspense>;
+  };
+}
+const ProductPagePublica = diferida(() => import('./ProductPagePublica'));
+const FitnessProductPagePublica = diferida(() => import('../landing-simple/templates/fitness/FitnessProductPagePublica'));
+const TechProductPagePublica = diferida(() => import('../landing-simple/templates/tech/TechProductPagePublica'));
+const BeautyProductPagePublica = diferida(() => import('../landing-simple/templates/beauty/BeautyProductPagePublica'));
+const BazarProductPagePublica = diferida(() => import('../landing-simple/templates/bazar/BazarProductPagePublica'));
+const ModaProductPagePublica = diferida(() => import('../landing-simple/templates/moda/ModaProductPagePublica'));
+const BasicoProductPagePublica = diferida(() => import('../landing-simple/templates/basico/BasicoProductPagePublica'));
+const ComboProductPagePublica = diferida(() => import('../landing-simple/templates/combo/ComboProductPagePublica'));
+const TemplateRigidoPublico = diferida(
+  () => import('./TemplateRigidoPublico'),
+  <div className="lp-status-page"><div className="lp-spinner" /></div>,
+);
+const PaginaBloquesTienda = diferida(() => import('./PaginaBloquesTienda'));
+
 const VENTANA_NUEVO_DIAS = 14;
 
 function claveCarrito(item, varianteId, ofertaId, componenteVarianteId) {
@@ -1076,10 +1085,6 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
       );
     }
 
-    const ComponenteRigido = getComponenteTemplate(data.template.slug);
-    if (!ComponenteRigido) {
-      return <div className="lp-status-page"><h1>Esta vidriera no está disponible</h1></div>;
-    }
     const cantidadCarritoRigida = Array.from(carrito.values()).reduce((s, it) => s + it.cantidad, 0);
     const datosRigidos = mapPublicDtoToTemplateData(data);
     // Las tarjetas del template reciben la forma reducida de TemplateData
@@ -1090,7 +1095,8 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
 
     return (
       <div className="lp-typography-scope" style={cssVarsRigido}>
-        <ComponenteRigido
+        <TemplateRigidoPublico
+          templateSlug={data.template.slug}
           data={datosRigidos}
           onClickProducto={(p) => navigate(slug ? `/l/${slug}/${p.id}` : `/${p.id}`)}
           cantidadCarrito={cantidadCarritoRigida}
@@ -1177,7 +1183,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
       className={`lp-page ${data.tema.modo === 'claro' ? 'claro' : ''}`}
       style={{ ...calcularEstiloLanding({ tema: data.tema, diseno: data.diseno, typography: data.typography }), display: 'flex', flexDirection: 'column' }}
     >
-      <PageRenderer context={renderContext} />
+      <PaginaBloquesTienda context={renderContext} />
 
       {/* El camino flexible (landing general y funnel) nunca agregaba el
           pie de copyright/links legales — el sistema de landing rígida sí
