@@ -15,12 +15,16 @@ const PROVEEDORES = [{
   Solicitud: RahaConexion, Validacion: SpeedboxConfig,
 }];
 
-function ProveedorLogistico({ proveedor, tienda, abrirValidacion = false }) {
+function ProveedorLogistico({ proveedor, tienda, abrirValidacion = false, onEstadoChange }) {
   const [solicitud, setSolicitud] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [vista, setVista] = useState('resumen');
   const { Solicitud, Validacion } = proveedor;
+  const actualizarSolicitud = useCallback(solicitud => {
+    setSolicitud(solicitud);
+    onEstadoChange?.();
+  }, [onEstadoChange]);
   const aprobado = proveedor.solicitudAprobada(solicitud);
   const motivoBloqueo = `${proveedor.nombre} tiene que aprobar tu solicitud para que puedas acceder a este siguiente paso y validar tu cuenta.`;
   const cargar = useCallback(async () => {
@@ -40,7 +44,7 @@ function ProveedorLogistico({ proveedor, tienda, abrirValidacion = false }) {
       <div className="logistica-provider-copy"><h3>{proveedor.nombre}</h3><p>{proveedor.descripcion}</p>
         <ul className="logistica-benefits">{proveedor.beneficios.map(({ icono: Icono, texto }) => <li key={texto}><Icono size={17} />{texto}</li>)}</ul>
       </div>
-      <button type="button" className="raha-icon" aria-label={`Actualizar estado de ${proveedor.nombre}`} disabled={loading} onClick={cargar}><RefreshCw size={16} /></button>
+      <button type="button" className="raha-icon" aria-label={`Actualizar estado de ${proveedor.nombre}`} disabled={loading} onClick={() => { cargar(); onEstadoChange?.(); }}><RefreshCw size={16} /></button>
     </div>
     {error && <p className="raha-alert raha-error" role="alert">{error}</p>}
     <div className="logistica-application">
@@ -49,7 +53,7 @@ function ProveedorLogistico({ proveedor, tienda, abrirValidacion = false }) {
         {solicitud?.estado === 'borrador' ? `Conectarme a ${proveedor.nombre}` : 'Ver solicitud'}<ArrowRight size={16} />
       </button>
     </div>
-    {vista === 'solicitud' && <div className="logistica-detail"><Solicitud tienda={tienda} onSolicitudChange={setSolicitud} /></div>}
+    {vista === 'solicitud' && <div className="logistica-detail"><Solicitud tienda={tienda} onSolicitudChange={actualizarSolicitud} /></div>}
     <div className="logistica-validation">
       <div><span className="logistica-step">2. Validación de cuenta</span><strong>{aprobado ? 'Validación pendiente' : 'Pendiente de aprobación'}</strong>
         <p>{aprobado ? 'Ingresá tus claves, completá las pruebas y solicitá la habilitación en producción.' : `Primero enviá tu documentación y esperá la aprobación de ${proveedor.nombre}.`}</p>
@@ -61,13 +65,13 @@ function ProveedorLogistico({ proveedor, tienda, abrirValidacion = false }) {
     </div>
     {vista === 'validacion' && aprobado && <div className="logistica-detail logistica-validation-detail">
       <button type="button" className="raha-button" onClick={() => setVista('resumen')}><ArrowLeft size={16} />Volver al proveedor</button>
-      <Validacion />
+      <Validacion onConfigChange={onEstadoChange} />
     </div>}
   </article>;
 }
 
-export default function ConexionLogistica({ tienda, abrirValidacion = false }) {
+export default function ConexionLogistica({ tienda, abrirValidacion = false, onEstadoChange }) {
   return <div className="logistica"><p className="logistica-intro">Elegí un proveedor para conectar tu tienda. Cada uno revisará tu documentación antes de habilitar la validación de tu cuenta.</p>
-    <div className="logistica-providers">{PROVEEDORES.map(proveedor => <ProveedorLogistico key={`${tienda?.id || ''}-${proveedor.id}`} proveedor={proveedor} tienda={tienda} abrirValidacion={abrirValidacion} />)}</div>
+    <div className="logistica-providers">{PROVEEDORES.map(proveedor => <ProveedorLogistico key={`${tienda?.id || ''}-${proveedor.id}`} onEstadoChange={onEstadoChange} proveedor={proveedor} tienda={tienda} abrirValidacion={abrirValidacion} />)}</div>
   </div>;
 }

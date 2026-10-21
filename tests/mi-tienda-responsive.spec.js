@@ -4,6 +4,31 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5175';
 const secciones = ['Tienda', 'Contacto', 'Pagos', 'Costos', 'Analítica', 'Conexión Logística'];
 
 for (const width of [375, 1440]) {
+  test(`Estado de configuración: check y pendientes a ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await preparar(page);
+    await page.goto(`${baseURL}/mi-tienda`);
+    const menu = width <= 640
+      ? page.getByRole('tablist', { name: 'Secciones de configuración móvil' })
+      : page.getByRole('tablist', { name: 'Secciones de configuración', exact: true });
+    if (width <= 640) await page.locator('.tn-mobile-navigation summary').click();
+    await expect(menu.getByRole('tab', { name: 'Tienda', exact: true })).toHaveAttribute('aria-description', /^Completo/);
+    await expect(menu.getByRole('tab', { name: 'Contacto', exact: true })).toHaveAttribute('aria-description', /^Completo/);
+    await expect(menu.getByRole('tab', { name: 'Analítica', exact: true })).toHaveAttribute('aria-description', /^Pendiente/);
+    await expect(menu.getByRole('tab', { name: 'Tienda', exact: true }).locator('.tn-section-status.complete')).toBeVisible();
+    await expect(menu.getByRole('tab', { name: 'Analítica', exact: true }).locator('.tn-section-status.pending')).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('estados-configuracion.png') });
+    await menu.getByRole('tab', { name: 'Contacto', exact: true }).click();
+    const grupos = page.locator('.tn-group-toggle[aria-expanded="false"]');
+    if (width <= 640) while (await grupos.count()) await grupos.first().click();
+    await page.getByPlaceholder('Ej: 595981234567').fill('');
+    await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
+    if (width <= 640) await page.locator('.tn-mobile-navigation summary').click();
+    await expect(menu.getByRole('tab', { name: 'Contacto', exact: true })).toHaveAttribute('aria-description', /^Pendiente/);
+    if (width <= 640) await page.locator('.tn-mobile-navigation summary').click();
+    await comprobarAncho(page);
+  });
+
   test(`Conexión Logística: solicitud y bloqueo a ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await preparar(page);
@@ -41,15 +66,20 @@ for (const width of [375, 1440]) {
 }
 
 async function preparar(page, { estadoRaha = 'borrador' } = {}) {
+  let cambiosTienda = {};
   await page.route('**/api/**', route => {
     const path = new URL(route.request().url()).pathname;
     let data = {};
     if (path.endsWith('/auth/me')) data = { id: 1, nombre: 'QA', rol: 'usuario', tiendaId: 1 };
-    else if (path.endsWith('/mi-tienda')) data = {
+    else if (path.endsWith('/mi-tienda')) {
+      if (route.request().method() === 'PUT') cambiosTienda = { ...cambiosTienda, ...route.request().postDataJSON() };
+      data = {
       id: 1, nombre: 'Tienda de prueba', subdominio: 'tienda-de-prueba', dominio_base: 'gesicomm.com',
-      plan: 'pago', whatsapp: '595981111222',
+      plan: 'pago', whatsapp: '595981111222', documento: '4123456',
       typography: { headingFont: 'outfit', bodyFont: 'outfit' },
+      ...cambiosTienda,
     };
+    }
     else if (path.includes('suscripciones/mi-estado')) data = { tiene_suscripcion_activa: true, suscripcion: { plan: { nombre: 'Pro' } } };
     else if (path.endsWith('/tiendas/mias')) data = [{ id: 1, nombre: 'Tienda de prueba' }];
     else if (path.endsWith('/integraciones/raha')) data = { id: 1, estado: estadoRaha, version: 1, datos: {}, documentos: [], historial: [] };

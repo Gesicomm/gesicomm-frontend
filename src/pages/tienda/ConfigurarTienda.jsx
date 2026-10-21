@@ -22,9 +22,21 @@ import DominioPropio from './DominioPropio';
 import ComboConfiguracion from '../combos/ComboConfiguracion';
 import { MetodosPagoCrud } from '../courier/MetodosPagoCrud';
 import HorarioPicker from './HorarioPicker';
+import { getMetodosPago } from '../../services/courierApi';
+import { comboAdminService } from '../../services/comboAdminService';
+import { rahaService } from '../../services/rahaService';
+import { speedboxService } from '../../services/speedboxService';
+import { estadosConfiguracion } from './estadoConfiguracion';
 import '../vitrina/vitrina.css';
 import '../landing/landing.css';
 import './tienda.css';
+
+function EstadoSeccion({ estado, compacto = false }) {
+  return <span className={`tn-section-status ${estado.completo ? 'complete' : 'pending'}${compacto ? ' compact' : ''}`} title={`${estado.texto}. ${estado.completo ? 'Configuración guardada.' : estado.detalle}`} aria-hidden={compacto || undefined}>
+    {estado.completo ? <CheckCircle2 size={compacto ? 16 : 14} /> : <AlertCircle size={compacto ? 16 : 14} />}
+    {!compacto && estado.texto}
+  </span>;
+}
 
 function slugifyLigero(texto) {
   return (texto || '')
@@ -247,6 +259,18 @@ export default function ConfigurarTienda() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabInicial = searchParams.get('tab');
   const [tienda, setTienda] = useState(null);
+  const [recursosEstado, setRecursosEstado] = useState({});
+  const cargarEstados = useCallback(async () => {
+    const resultados = await Promise.allSettled([
+      getMetodosPago(), comboAdminService.obtenerConfiguracion(), rahaService.obtener(), speedboxService.obtener(),
+    ]);
+    setRecursosEstado(Object.fromEntries(['pagos', 'costos', 'solicitud', 'logistica']
+      .map((clave, i) => [clave, resultados[i].status === 'fulfilled' ? resultados[i].value : null])));
+  }, []);
+  useEffect(() => { cargarEstados(); }, [cargarEstados]);
+  const estadosSecciones = estadosConfiguracion(tienda, recursosEstado);
+  const actualizarPagos = useCallback(pagos => setRecursosEstado(prev => ({ ...prev, pagos })), []);
+  const actualizarCostos = useCallback(costos => setRecursosEstado(prev => ({ ...prev, costos })), []);
   const [cargando, setCargando] = useState(true);
   const [form, setForm] = useState(FORM_INICIAL);
   const [estadoCuenta, setEstadoCuenta] = useState(null);
@@ -755,10 +779,11 @@ export default function ConfigurarTienda() {
           <summary>
             <span className="tn-mobile-section-icon">{React.createElement(tabActual.icono, { size: 19 })}</span>
             <span className="tn-mobile-section-label"><small>Configuración</small><strong>{tabActual.label}</strong></span>
+            <EstadoSeccion estado={estadosSecciones[tabActual.id]} compacto />
             <span className="tn-mobile-nav-hint">Secciones <ChevronDown size={16} /></span>
           </summary>
           <nav className="tn-mobile-section-grid" role="tablist" aria-label="Secciones de configuración móvil">
-            {TABS.map(t => <button key={t.id} type="button" role="tab" aria-selected={tabActual.id === t.id}
+            {TABS.map(t => <button key={t.id} type="button" role="tab" aria-label={t.label} aria-description={`${estadosSecciones[t.id].texto}. ${estadosSecciones[t.id].completo ? 'Configuración guardada.' : estadosSecciones[t.id].detalle}`} aria-selected={tabActual.id === t.id}
               onClick={event => {
                 seleccionarTab(t.id);
                 const menu = event.currentTarget.closest('details');
@@ -766,7 +791,7 @@ export default function ConfigurarTienda() {
                 menu.querySelector('summary').focus();
               }}>
               {React.createElement(t.icono, { size: 17 })}<span>{t.label}</span>
-              {tabActual.id === t.id && <Check size={14} />}
+              <EstadoSeccion estado={estadosSecciones[t.id]} compacto />
             </button>)}
           </nav>
         </details>
@@ -789,12 +814,15 @@ export default function ConfigurarTienda() {
                 <button
                   type="button"
                   role="tab"
+                  aria-label={t.label}
+                  aria-description={`${estadosSecciones[t.id].texto}. ${estadosSecciones[t.id].completo ? 'Configuración guardada.' : estadosSecciones[t.id].detalle}`}
                   aria-selected={activo}
                   className={`tn-tab ${activo ? 'activo' : ''}`}
                   onClick={() => seleccionarTab(t.id)}
                 >
                   <span className="tn-tab-icon"><Icono size={15} /></span>
                   {t.label}
+                  <EstadoSeccion estado={estadosSecciones[t.id]} compacto />
                 </button>
               </React.Fragment>
             );
@@ -820,11 +848,12 @@ export default function ConfigurarTienda() {
                 PASO 1
               </div>
             )}
-            <h2>{tabActual.titulo}</h2>
+            <div className="tn-panel-title-status"><h2>{tabActual.titulo}</h2><EstadoSeccion estado={estadosSecciones[tabActual.id]} /></div>
+            {!estadosSecciones[tabActual.id].completo && <p className="tn-section-next-step">{estadosSecciones[tabActual.id].detalle}</p>}
             <p>{tabActual.desc}</p>
           </div>
 
-          {tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
+          {tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica onEstadoChange={cargarEstados} tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
             <div className="tn-body">
 
               {ok && mensajeExito && (
@@ -1568,7 +1597,7 @@ export default function ConfigurarTienda() {
                     <section className="tn-group tn-group-plena" style={{ borderTop: 'none', paddingTop: 0 }}>
                       <div className="tn-group-body">
                         <div className="tn-embed tn-embed-metodos-pago">
-                          <MetodosPagoCrud />
+                          <MetodosPagoCrud onMetodosChange={actualizarPagos} />
                         </div>
                       </div>
                     </section>
@@ -1599,7 +1628,7 @@ export default function ConfigurarTienda() {
                     </div>
                     <div className="tn-group-body">
                       <div className="tn-embed tn-embed-combo">
-                        <ComboConfiguracion asTab={true} />
+                        <ComboConfiguracion asTab={true} onConfigChange={actualizarCostos} />
                       </div>
                     </div>
                   </section>

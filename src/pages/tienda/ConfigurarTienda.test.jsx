@@ -5,6 +5,8 @@ import { MemoryRouter } from 'react-router-dom';
 import ConfigurarTienda from './ConfigurarTienda';
 import { tiendaService } from '../../services/tiendaService';
 import { planesService } from '../../services/planesService';
+import { getMetodosPago } from '../../services/courierApi';
+import { comboAdminService } from '../../services/comboAdminService';
 
 vi.mock('../../services/tiendaService', () => ({
   tiendaService: {
@@ -29,6 +31,11 @@ vi.mock('../../services/planesService', () => ({
   },
 }));
 
+vi.mock('../../services/courierApi', () => ({ getMetodosPago: vi.fn().mockResolvedValue([]) }));
+vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { obtenerConfiguracion: vi.fn().mockResolvedValue(null) } }));
+vi.mock('../../services/rahaService', () => ({ rahaService: { obtener: vi.fn().mockResolvedValue({ estado: 'borrador' }) } }));
+vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: vi.fn().mockResolvedValue({ connections: [] }) } }));
+
 vi.mock('./PagoParConfig', () => ({
   default: () => <div data-testid="pagopar-config">PagoPar config</div>,
 }));
@@ -38,7 +45,7 @@ vi.mock('../combos/ComboConfiguracion', () => ({
 }));
 
 vi.mock('../courier/MetodosPagoCrud', () => ({
-  MetodosPagoCrud: () => <div data-testid="metodos-pago">Metodos de pago</div>,
+  MetodosPagoCrud: ({ onMetodosChange }) => <div data-testid="metodos-pago">Metodos de pago<button type="button" onClick={() => onMetodosChange([{ activo: true }])}>Activar pago QA</button></div>,
 }));
 
 const tiendaBase = {
@@ -92,6 +99,8 @@ async function cargarPantalla() {
 describe('ConfigurarTienda — flujo integral de configuracion', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getMetodosPago.mockResolvedValue([]);
+    comboAdminService.obtenerConfiguracion.mockResolvedValue(null);
     window.confirm = vi.fn(() => true);
     tiendaService.obtener.mockResolvedValue({ ...tiendaBase });
     tiendaService.actualizar.mockImplementation(payload => Promise.resolve({ ...tiendaBase, ...payload }));
@@ -222,4 +231,31 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     expect(await screen.findByTestId('combo-config')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Guardar cambios/i })).not.toBeInTheDocument();
   });
+  it('muestra check y pendiente en ambos menús según datos guardados', async () => {
+    tiendaService.obtener.mockResolvedValue({ ...tiendaBase, whatsapp: '' });
+    await cargarPantalla();
+    const menus = screen.getAllByRole('tablist', { hidden: true });
+    for (const menu of menus) {
+      expect(within(menu).getByRole('tab', { name: 'Tienda', hidden: true })).toHaveAccessibleDescription(/^Completo/);
+      expect(within(menu).getByRole('tab', { name: 'Contacto', hidden: true })).toHaveAccessibleDescription(/^Pendiente/);
+    }
+    const menu = screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true });
+    fireEvent.click(within(menu).getByRole('tab', { name: 'Contacto' }));
+    const input = screen.getByPlaceholderText('Ej: 595981234567');
+    fireEvent.change(input, { target: { value: '595981111222' } });
+    expect(within(menu).getByRole('tab', { name: 'Contacto' })).toHaveAccessibleDescription(/^Pendiente/);
+    fireEvent.click(screen.getByRole('button', { name: /Guardar cambios/ }));
+    await waitFor(() => expect(within(menu).getByRole('tab', { name: 'Contacto' })).toHaveAccessibleDescription(/^Completo/));
+  });
+
+  it('actualiza el check al activar un pago sin recargar', async () => {
+    await cargarPantalla();
+    const menu = screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true });
+    const pagos = within(menu).getByRole('tab', { name: 'Pagos' });
+    expect(pagos).toHaveAccessibleDescription(/^Pendiente/);
+    fireEvent.click(pagos);
+    fireEvent.click(await screen.findByRole('button', { name: 'Activar pago QA' }));
+    expect(pagos).toHaveAccessibleDescription(/^Completo/);
+  });
+
 });

@@ -49,7 +49,7 @@ function agruparOpcionesCheckoutPagopar(metodos = []) {
 
 const RAHA_COSTO_ENVIO_FIJO = 30000;
 
-export default function ComboConfiguracion({ asTab = false }) {
+export default function ComboConfiguracion({ asTab = false, onConfigChange }) {
   const navigate = useNavigate();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -87,6 +87,7 @@ export default function ComboConfiguracion({ asTab = false }) {
       
       const cfg = await comboAdminService.obtenerConfiguracion();
       setConfig(cfg);
+      onConfigChange?.(cfg);
       setCpa(fmtNumber(cfg.cpa_porcentaje));
       setEnvio(fmtNumber(cfg.costo_envio));
       setConfirmacion(fmtNumber(cfg.costo_confirmacion));
@@ -140,6 +141,7 @@ export default function ComboConfiguracion({ asTab = false }) {
       setGuardando(true);
       const cfg = await comboAdminService.actualizarConfiguracion(payload);
       setConfig(cfg);
+      onConfigChange?.(cfg);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {

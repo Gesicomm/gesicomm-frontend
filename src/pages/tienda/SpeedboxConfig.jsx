@@ -129,7 +129,7 @@ function PaginacionDinamica({ paginacion, loading, onChangePage, onChangeLimit }
   );
 }
 
-export default function SpeedboxConfig() {
+export default function SpeedboxConfig({ onConfigChange } = {}) {
   const [data, setData] = useState(null);
   const [active, setActive] = useState(false);
   const [productionActive, setProductionActive] = useState(false);
@@ -295,6 +295,7 @@ export default function SpeedboxConfig() {
 
   function applyConfig(config, resetForm = false) {
     setData(config);
+    onConfigChange?.();
     const sandbox = connectionByEnvironment(config, 'sandbox') || config.connection;
     const production = connectionByEnvironment(config, 'production');
     setActive(Boolean(sandbox?.activo));

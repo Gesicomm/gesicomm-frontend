@@ -16,7 +16,7 @@ const emptyForm = {
   activo: false, // empieza inactivo — el usuario lo activa cuando está listo
 }
 
-export function MetodosPagoCrud() {
+export function MetodosPagoCrud({ onMetodosChange } = {}) {
   const [metodos, setMetodos] = useState([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -28,6 +28,10 @@ export function MetodosPagoCrud() {
   useEffect(() => {
     cargarMetodos()
   }, [])
+
+  useEffect(() => {
+    if (!loading) onMetodosChange?.(metodos)
+  }, [metodos, loading, onMetodosChange])
 
   async function cargarMetodos() {
     try {
