@@ -404,7 +404,110 @@ describe('runtime del lienzo en blanco — inicio', () => {
     const conCombo = montar(PLANTILLA_INICIO, { ...datos, productos: [...datos.productos, { ...airFryer, id: 'combo-3', tipo: 'combo', nombre: 'Pack', productos_incluidos: ['A', 'B'] }] });
     expect(conCombo.document.querySelector('#combos').style.display).toBe('');
     expect(conCombo.document.querySelectorAll('#combos [data-gesicomm-item]')).toHaveLength(1);
-    expect(conCombo.document.querySelector('#combos [data-gesicomm-bind="incluye"]').textContent).toBe('A, B');
+    expect([...conCombo.document.querySelectorAll('#combos [data-combo="incluye"] li')].map(el => el.textContent)).toEqual(['A', 'B']);
+  });
+
+  it('muestra el bloque propio de combos con su ficha y respeta el control Mostrar', () => {
+    const combo = { ...airFryer, id: 'combo-3', tipo: 'combo', nombre: 'Pack cocina', productos_incluidos: ['A', 'B'] };
+    const configurados = { ...datos, productos: [...datos.productos, combo], venta: { inicio: { bloques: [{ tipo: 'combos', visible: true }] } } };
+    const { document, click, mensajes, dom } = montar(PLANTILLA_INICIO, configurados);
+    expect(document.querySelector('#combos').hidden).toBe(false);
+    expect(document.querySelector('#combos h2').textContent).toBe('Juntos convienen más.');
+    expect(document.querySelectorAll('#combos .home-combo-card')).toHaveLength(1);
+    click('#combos h3[data-gesicomm-ver]');
+    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:navegar', destino: 'producto', producto: 'combo-3' }));
+    const oculto = montar(PLANTILLA_INICIO, { ...configurados, venta: { inicio: { bloques: [{ tipo: 'combos', visible: false }] } } });
+    expect(oculto.document.querySelector('#combos').hidden).toBe(true);
+    dom.window.close();
+    oculto.dom.window.close();
+  });
+
+  it('Ver todos los combos navega al catálogo filtrado y las tarjetas solo muestran ahorro real', () => {
+    const combo = { ...airFryer, id: 'combo-3', tipo: 'combo', precio: 240000, precio_antes: 320000, productos_incluidos: ['Auriculares', 'Reloj'] };
+    const { document, click, mensajes, dom } = montar(PLANTILLA_INICIO, { ...datos, productos: [combo] });
+    expect(document.querySelector('[data-combo="descuento"]').textContent).toBe('AHORRÁ 25%');
+    expect(document.querySelector('[data-combo="ahorro"]').textContent).toBe('Ahorrás Gs 80.000');
+    click('.home-combos-explore');
+    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:navegar', pagina: 'catalogo', filtro: { tipo: 'combo' } }));
+    dom.window.close();
+    const sinAhorro = montar(PLANTILLA_INICIO, { ...datos, productos: [{ ...combo, precio_antes: null, precio_separado: null }] });
+    expect(sinAhorro.document.querySelector('[data-combo="ahorro"]').hidden).toBe(true);
+    expect(sinAhorro.document.querySelector('[data-combo="descuento"]').hidden).toBe(true);
+    sinAhorro.dom.window.close();
+  });
+
+  it('respeta textos, selección manual, orden, columnas, filas y máximo del bloque de combos', () => {
+    const combos = Array.from({ length: 6 }, (_, i) => ({ id: 20 + i, tipo: 'combo', nombre: `Pack ${i}`, precio_efectivo: 100000,
+      producto_padre: { id: 1, nombre: 'Cacerola', imagen: 'https://cdn.test/cacerola.png', precio: 80000 },
+      items: [{ cantidad: 2, producto_incluido: { id: 2, nombre: 'Utensilios', imagen: 'https://cdn.test/utensilio.png', precio: 30000 } }],
+    }));
+    const cfg = { kicker: '', titulo: 'Para tu casa', descripcion: 'Armá tu pedido', enlace_texto: 'Explorar packs', pie: '',
+      modo: 'manual', items: ['combo-24', 'combo-20', 'combo-22', 'combo-21', 'combo-23'], columnas: 2, filas: 2, limite: 4, imagen_modo: 'componentes' };
+    const entrada = datosRuntimePreview({ productos: combos, vista: 'inicio', venta: { inicio: { combos: cfg } } });
+    const { document, dom } = montar(PLANTILLA_INICIO, entrada);
+    expect(document.querySelector('#combos h2').textContent).toBe('Para tu casa');
+    expect(document.querySelector('.home-combos-eyebrow').hidden).toBe(true);
+    expect(document.querySelector('.home-combos-note').hidden).toBe(true);
+    expect([...document.querySelectorAll('.home-combo-card h3')].map(el => el.textContent)).toEqual(['Pack 4', 'Pack 0', 'Pack 2', 'Pack 1']);
+    expect(document.querySelector('.home-combo-grid').style.getPropertyValue('--combo-columnas')).toBe('2');
+    expect(document.querySelector('.home-combo-meta').textContent).toBe('COMBO · 3 PRODUCTOS');
+    expect(document.querySelector('[data-combo="incluye"]').textContent).toContain('Utensilios · x2');
+    expect(document.querySelectorAll('.home-combo-card:first-child .home-combo-tile img')).toHaveLength(2);
+    dom.window.close();
+    const vacio = montar(PLANTILLA_INICIO, { ...entrada, venta: { inicio: { combos: { ...cfg, items: [] } } } });
+    expect(vacio.document.querySelector('#combos').style.display).toBe('none');
+    vacio.dom.window.close();
+  });
+
+  it('usa la imagen propia del combo y reemplaza la composición anterior sin tocar qué incluye', () => {
+    const combo = { id: 33, tipo: 'combo', nombre: 'Pack completo', precio: 100000,
+      imagen: 'https://cdn.test/combo-portada.webp', productos_combo: [{ id: 1, nombre: 'Cacerola', imagen: 'https://cdn.test/cacerola.webp' }] };
+    const entrada = datosRuntimePreview({ productos: [combo], vista: 'inicio', venta: { inicio: { combos: { imagen_modo: 'componentes' } } } });
+    const { document, dom } = montar(PLANTILLA_INICIO, entrada);
+    const fotos = document.querySelectorAll('.home-combo-card .home-combo-tile img');
+    expect(fotos).toHaveLength(1);
+    expect(fotos[0].getAttribute('src')).toBe('https://cdn.test/combo-portada.webp');
+    expect(document.querySelector('.home-combo-pictures').classList.contains('is-cover')).toBe(true);
+    expect(document.querySelector('[data-combo="incluye"]').textContent).toContain('Cacerola');
+    dom.window.close();
+  });
+
+  it('solo combos se aplica al catálogo local y se mantiene en pedidos paginados', () => {
+    const combo = { ...airFryer, id: 'combo-3', tipo: 'combo' };
+    const contexto = { ...datos, vista: 'catalogo', productos: [airFryer, combo], filtro: { tipo: 'combo' } };
+    const { document, dom, window } = montar(PLANTILLA_CATALOGO, contexto);
+    expect(document.querySelector('[data-gesicomm-filtro="tipo"]').value).toBe('combo');
+    expect(document.querySelectorAll('.lv-shop-card')).toHaveLength(1);
+    window.dispatchEvent(new window.MessageEvent('message', { source: window.parent, data: { tipo: 'gesicomm:datos', datos: { ...contexto, filtro: null } } }));
+    expect(document.querySelector('[data-gesicomm-filtro="tipo"]').value).toBe('');
+    expect(document.querySelectorAll('.lv-shop-card')).toHaveLength(2);
+    dom.window.close();
+    const paginado = montar(PLANTILLA_CATALOGO, { ...contexto, catalogo: { paginado: true, total: 80 } });
+    expect(paginado.mensajes.filter(m => m.tipo === 'gesicomm:catalogo').at(-1)).toMatchObject({ filtroTipo: 'combo' });
+    paginado.dom.window.close();
+  });
+
+  it('permite pasar de combos a productos y todos desde los botones visibles, también en catálogos anteriores', () => {
+    const combo = { ...airFryer, id: 'combo-3', tipo: 'combo' };
+    const anterior = { ...PLANTILLA_CATALOGO, html: PLANTILLA_CATALOGO.html.replace(/<label class="lv-filter-field">Mostrar <select[\s\S]*?<\/select><\/label>/, '') };
+    const contexto = { ...datos, vista: 'catalogo', productos: [airFryer, combo], filtro: { tipo: 'combo' } };
+    const { document, dom, click } = montar(anterior, contexto);
+    expect(document.querySelector('[data-gesicomm-filtro-tipo="combo"]').getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelectorAll('.lv-shop-card')).toHaveLength(1);
+    click('[data-gesicomm-filtro-tipo="producto"]');
+    expect(document.querySelector('.lv-shop-card').getAttribute('data-gesicomm-item')).toBe(airFryer.id);
+    expect(document.querySelector('select[data-gesicomm-filtro="tipo"]').value).toBe('producto');
+    click('[data-gesicomm-filtro-tipo=""]');
+    expect(document.querySelectorAll('.lv-shop-card')).toHaveLength(2);
+    expect(document.querySelector('[data-gesicomm-filtro-tipo=""]').getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelectorAll('.gc-catalog-types')).toHaveLength(1);
+    dom.window.close();
+    const paginado = montar(anterior, { ...contexto, catalogo: { paginado: true, total: 80 } });
+    paginado.click('[data-gesicomm-filtro-tipo="producto"]');
+    expect(paginado.mensajes.filter(m => m.tipo === 'gesicomm:catalogo').at(-1)).toMatchObject({ filtroTipo: 'producto', pagina: 1 });
+    paginado.click('[data-gesicomm-filtro-tipo=""]');
+    expect(paginado.mensajes.filter(m => m.tipo === 'gesicomm:catalogo').at(-1).filtroTipo).toBe('');
+    paginado.dom.window.close();
   });
 
   it('"Comprar ahora" en una tarjeta agrega al carrito y lleva a la ficha', () => {
@@ -680,6 +783,20 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(tarjetas).toHaveLength(1);
     expect(tarjetas[0].querySelector('h3').textContent).toBe('Envío rápido');
     expect(tarjetas[0].querySelector('.trust-card-icon').textContent).toBe('🚚');
+    expect(tarjetas[0].querySelector('.trust-card-icon svg')).toBeNull();
+    expect(tarjetas[0].closest('.trust-section').getAttribute('data-trust-style')).toBe('compacta');
+  });
+
+  it.each(['compacta', 'tarjetas', 'destacada'])('conserva emojis Unicode compuestos como texto en confianza %s', estilo => {
+    const emoji = '👩🏽‍💻👨‍👩‍👧‍👦🏳️‍🌈';
+    const { document, dom } = montar(PLANTILLA_INICIO, { ...datos, venta: { inicio: {
+      confianza_estilo: estilo, confianza: [{ icono: emoji, titulo: 'Atención personal', texto: 'Consultá las condiciones.' }, { icono: '', titulo: 'Sin emoji', texto: '' }],
+    } } });
+    expect(document.querySelector('.trust-card-icon').textContent).toBe(emoji);
+    expect(document.querySelector('.trust-card-icon svg')).toBeNull();
+    expect(document.querySelectorAll('.trust-card-icon')[1].hidden).toBe(true);
+    expect([...document.querySelectorAll('.trust-card h3')].map(el => el.textContent)).toEqual(['Atención personal', 'Sin emoji']);
+    dom.window.close();
   });
 
   it('anuncios vacíos guardados no vuelven a rellenarse con ejemplos', () => {

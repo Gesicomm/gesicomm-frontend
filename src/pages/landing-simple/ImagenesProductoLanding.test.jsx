@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ImagenesProductoLanding from './ImagenesProductoLanding';
 import { itemPanelARuntime, itemPublicoARuntime } from './datosRuntime';
+import { combinarDetalleCombo } from './comboContenido';
 
 afterEach(cleanup);
 const producto = { tipo: 'producto', id: 10, referencia_id: 10, content_id: 'cacerola', nombre: 'Cacerola', imagen: '/uploads/a.jpg', imagenes: ['/uploads/a.jpg', '/uploads/b.jpg'] };
@@ -11,6 +12,17 @@ function Editor({ subir = vi.fn() }) {
   return <><ImagenesProductoLanding item={item} onCambiar={(campo, valor) => setItem(prev => ({ ...prev, [campo]: valor }))} onSubirImagen={subir} /><output data-testid="item">{JSON.stringify(item)}</output></>;
 }
 describe('imágenes propias de cada landing', () => {
+  it('lleva la foto principal subida al combo a preview y público, incluso al completar una ficha liviana', () => {
+    const combo = combinarDetalleCombo({ id: 22, tipo: 'combo', nombre: 'Pack cocina', imagen: 'https://cdn.test/producto-padre.webp' }, {
+      imagenes: [{ url: 'https://cdn.test/combo-secundaria.webp', orden: 0 }, { url: 'https://cdn.test/combo-portada.webp', es_principal: true, orden: 9 }],
+      producto_padre: { id: 1, nombre: 'Cacerola', imagen: 'https://cdn.test/cacerola.webp' },
+    });
+    expect(combo.productos_combo).toHaveLength(1);
+    expect(itemPanelARuntime(combo).imagen).toBe('https://cdn.test/combo-portada.webp');
+    expect(itemPublicoARuntime(combo, 'tienda').imagen).toBe('https://cdn.test/combo-portada.webp');
+    const venta = { presentacion_productos: { 'combo:22': { imagenes_landing: ['https://cdn.test/personalizada.webp'] } } };
+    expect(itemPanelARuntime(combo, [], null, venta).imagen).toBe('https://cdn.test/personalizada.webp');
+  });
   it('agrega links públicos y rechaza protocolos inseguros y duplicados', () => {
     render(<Editor />);
     fireEvent.change(screen.getByLabelText('Agregar imagen por link'), { target: { value: 'javascript:alert(1)' } });

@@ -1,6 +1,9 @@
 // El combo recién creado trae producto_padre/items; el catálogo y la página
 // pública traen productos_combo. Ambos deben alimentar los mismos bloques.
 export function contenidoCombo(item = {}) {
+  const imagenes = (item.imagenes || []).filter(i => typeof i === 'string' || i?.tipo !== 'video').slice()
+    .sort((a, b) => Number(!!b?.es_principal) - Number(!!a?.es_principal) || (Number(a?.orden) || 0) - (Number(b?.orden) || 0));
+  const portada = imagenes.map(i => typeof i === 'string' ? i : i?.url).find(Boolean);
   const incluidos = item.productos_combo?.length ? item.productos_combo : [
     ...(item.producto_padre ? [{ ...item.producto_padre, cantidad: 1 }] : []),
     ...(item.items || []).map(i => ({ ...i.producto_incluido, cantidad: i.cantidad || 1 })),
@@ -10,13 +13,14 @@ export function contenidoCombo(item = {}) {
     imagen: p.imagen || p.imagen_principal || p.imagenes?.[0]?.url || p.imagenes?.[0] || null,
     beneficios: p.beneficios || [], cantidad: Number(p.cantidad) || 1,
   }));
-  return { ...item, productos_combo, precio_efectivo: item.precio_efectivo ?? item.precio_usuario ?? item.precio ?? item.precio_total ?? item.precio_base,
+  return { ...item, imagen: portada || item.imagen, imagenes, productos_combo, precio_efectivo: item.precio_efectivo ?? item.precio_usuario ?? item.precio ?? item.precio_total ?? item.precio_base,
     preguntas_frecuentes: item.preguntas_frecuentes ?? item.faq ?? [],
   };
 }
 
 export function combinarDetalleCombo(item, detalle) {
   if (!detalle) return contenidoCombo(item);
+  detalle = contenidoCombo(detalle);
   const marketing = Object.fromEntries(['descripcion', 'descripcion_larga', 'propuesta_valor', 'beneficios', 'confianza',
     'preguntas_frecuentes', 'faq_titulo', 'ficha_datos'].filter(k => detalle[k] != null).map(k => [k, detalle[k]]));
   const enriquecidos = item.productos_combo || [];
@@ -28,7 +32,9 @@ export function combinarDetalleCombo(item, detalle) {
       beneficios: p.beneficios?.length ? p.beneficios : completo.beneficios || [],
     };
   }) : componentes;
-  return contenidoCombo({ ...item, ...marketing, productos_combo });
+  return contenidoCombo({ ...item, ...marketing, productos_combo,
+    ...(detalle.imagenes.length ? { imagenes: detalle.imagenes, imagen: detalle.imagen } : {}),
+  });
 }
 
 export function productosSeccionCombo(productos, config = {}) {

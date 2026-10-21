@@ -33,13 +33,19 @@ export default function CatalogoPublico() {
   const etiquetaUrl = searchParams.get('etiqueta') || searchParams.get('badge') || '';
   const categoriaUrl = searchParams.get('categoria') || '';
   const busquedaUrl = searchParams.get('q') || searchParams.get('busqueda') || '';
+  const tipoUrl = ['combo', 'producto'].includes(searchParams.get('tipo')) ? searchParams.get('tipo') : '';
   const [filtros, setFiltros] = useState(() => ({
     ...FILTROS_INICIALES,
+    ...(['combo', 'producto'].includes(searchParams.get('tipo')) ? { filtroTipo: searchParams.get('tipo') } : {}),
     ...(etiquetaUrl ? { etiqueta: etiquetaUrl } : {}),
     ...(categoriaUrl ? { categoria: categoriaUrl } : {}),
     ...(busquedaUrl ? { busqueda: busquedaUrl } : {}),
   }));
   const [pagina, setPagina] = useState(1);
+  useEffect(() => {
+    setFiltros(prev => (prev.filtroTipo || '') === tipoUrl ? prev : { ...prev, filtroTipo: tipoUrl });
+    setPagina(1);
+  }, [tipoUrl]);
   // Distinto del spinner de pantalla completa: esto es solo un dim sutil de
   // la grilla mientras se pide una página/filtro nuevo, para no perder el
   // scroll ni el layout en cada cambio (ver CatalogoView -> prop `cargando`).

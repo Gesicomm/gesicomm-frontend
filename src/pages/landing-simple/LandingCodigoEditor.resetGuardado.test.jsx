@@ -41,6 +41,39 @@ async function resetear() {
 afterEach(() => { cleanup(); vi.clearAllMocks(); sessionStorage.clear(); });
 
 describe('Resetear el diseño MCP y guardar la landing publicada', () => {
+  it('edita páginas legales desde la vista de venta y recupera el texto al reabrir', async () => {
+    let persistida = inicial();
+    persistida.content.vistas = { legales: {
+      politica_privacidad: { html: '<main><h1>Privacidad vigente</h1><p>Texto actual de la tienda</p></main>', css: '', js: '' },
+      politica_envio: { html: '<main><h1>Envíos propios</h1><p>Entregamos en 48 horas</p></main>', css: '', js: '' },
+    } };
+    landingSimpleService.actualizar.mockImplementation(async (_id, payload) => {
+      persistida = { ...persistida, content: { ...persistida.content, venta: payload.venta,
+        codigo: payload.codigo ?? persistida.content.codigo,
+        vistas: { ...persistida.content.vistas, ...payload.vistas, legales: { ...persistida.content.vistas.legales, ...payload.vistas?.legales } },
+      } };
+      return structuredClone(persistida);
+    });
+    const vista = montar(persistida);
+    fireEvent.change(await screen.findByLabelText('Qué querés editar'), { target: { value: 'legales' } });
+    const editor = screen.getByRole('textbox', { name: 'Contenido de Política de privacidad' });
+    expect(editor).toHaveTextContent('Texto actual de la tienda');
+    editor.innerHTML = '<p><u>Privacidad editada</u></p><ul><li>Condición propia</li></ul>';
+    fireEvent.input(editor);
+    fireEvent.change(screen.getByLabelText('Página que querés editar'), { target: { value: 'politica_envio' } });
+    expect(screen.getByRole('textbox', { name: 'Contenido de Política de envío' })).toHaveTextContent('Entregamos en 48 horas');
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar', exact: true }));
+    await waitFor(() => expect(landingSimpleService.actualizar).toHaveBeenCalled());
+    const payload = landingSimpleService.actualizar.mock.calls[0][1];
+    expect(payload.vistas.legales.politica_privacidad.html).toContain('<u>Privacidad editada</u>');
+    expect(payload.vistas.legales.politica_privacidad.html).toContain('<ul><li>Condición propia</li></ul>');
+    expect(payload.vistas.legales.politica_envio).toBeUndefined();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar', exact: true })).toBeEnabled());
+    vista.unmount();
+    montar(persistida);
+    fireEvent.change(await screen.findByLabelText('Qué querés editar'), { target: { value: 'legales' } });
+    expect(screen.getByRole('textbox', { name: 'Contenido de Política de privacidad' })).toHaveTextContent('Privacidad editada');
+  });
   it('envía el código restaurado y conserva la plantilla al volver a abrir', async () => {
     let persistida = inicial();
     landingSimpleService.actualizar.mockImplementation(async (_id, payload) => {

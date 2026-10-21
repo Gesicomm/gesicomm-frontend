@@ -1,5 +1,10 @@
 /** Presentación compartida por el preview, las bases y el HTML ya guardado. */
 export const CATALOGO_TIENDA_CSS = `
+.gc-catalog-types { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; }
+.gc-catalog-types button { flex: 0 1 auto; min-height: 42px; padding: 10px 20px; border: 1px solid var(--tienda-linea, #dfe5eb); border-radius: 999px; background: var(--gc-superficie, #fff); color: var(--gc-texto, #10202f); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.gc-catalog-types button[aria-pressed="true"] { background: var(--gc-primario, #075da0); color: #fff; border-color: var(--gc-primario, #075da0); }
+.gc-catalog-types button:hover { filter: brightness(.95); }
+.gc-catalog-types button:focus-visible { outline: 2px solid var(--gc-primario, #075da0); outline-offset: 3px; }
 .lv-shop-page {
   box-sizing: border-box !important;
   width: 100% !important;

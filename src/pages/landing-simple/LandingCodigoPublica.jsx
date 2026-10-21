@@ -111,6 +111,7 @@ function textoLegibleSobre(fondo) {
 
 function queryCatalogoDesdeFiltro(filtro = {}) {
   const params = new URLSearchParams();
+  if (filtro.tipo === 'combo' || filtro.tipo === 'producto') params.set('tipo', filtro.tipo);
   if (filtro.categoria) params.set('categoria', filtro.categoria);
   if (filtro.etiqueta) params.set('etiqueta', filtro.etiqueta);
   if (filtro.badge && !filtro.etiqueta) params.set('etiqueta', filtro.badge);
@@ -144,8 +145,9 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     const et = searchParams.get('etiqueta') || searchParams.get('badge') || '';
     const cat = searchParams.get('categoria') || '';
     const bus = searchParams.get('busqueda') || searchParams.get('q') || '';
-    if (!et && !cat && !bus) return null;
-    return { etiqueta: et, categoria: cat, busqueda: bus };
+    const tipo = ['combo', 'producto'].includes(searchParams.get('tipo')) ? searchParams.get('tipo') : '';
+    if (!et && !cat && !bus && !tipo) return null;
+    return { etiqueta: et, categoria: cat, busqueda: bus, tipo };
   }, [searchParams]);
   // Ficha de producto: una sola plantilla (content.vistas.producto) que el
   // runtime llena con el producto de la URL. Si el comercio todavía no la
@@ -427,6 +429,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   const pedirCatalogo = useCallback(async (pedido) => {
     const res = await obtenerCatalogoLandingPublica(slug, {
       soloDatos: true,
+      filtroTipo: pedido?.filtroTipo,
       pagina: pedido?.pagina,
       porPagina: pedido?.porPagina || 20,
       orden: pedido?.orden === 'min-max' || pedido?.orden === 'max-min' || pedido?.orden === 'az' || pedido?.orden === 'za'

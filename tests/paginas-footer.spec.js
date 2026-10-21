@@ -1,0 +1,93 @@
+import { test, expect } from '@playwright/test';
+
+const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+
+test('sube y pega imágenes, conserva texto y las recupera al reabrir', async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 1000 });
+  await page.route('**/api/**', route => route.fulfill({ status: 200, json: {} }));
+  let subidas = 0;
+  let fallar = false;
+  let liberarPrimera;
+  await page.route('**/mis-landings/240/seccion-imagen', async route => {
+    if (fallar) return route.fulfill({ status: 400, json: { message: 'No se pudo guardar la imagen de prueba.' } });
+    subidas += 1;
+    if (subidas === 1) await new Promise(resolve => { liberarPrimera = resolve; });
+    await route.fulfill({ status: 200, json: { url: `/uploads/legal-${subidas}.png` } });
+  });
+  await page.route('**/uploads/legal-*.png', route => route.fulfill({ contentType: 'image/png', body: Buffer.from(png, 'base64') }));
+  await page.goto((process.env.PALETTE_BASE_URL || 'http://localhost:5173') + '/tests/fixtures/paginas-footer.html');
+  await page.getByLabel('Contenido de vista previa').selectOption('legales');
+  const editor = page.getByRole('textbox', { name: 'Contenido de Política de privacidad' });
+  await editor.fill('Texto antes de las imágenes');
+  await editor.press('End');
+  const elegirArchivo = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Subir imagen', exact: true }).click();
+  await (await elegirArchivo).setFiles({ name: 'foto.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+  await expect(page.getByRole('status')).toHaveText('Subiendo imagen…');
+  await expect(page.getByRole('button', { name: 'Guardar', exact: true })).toBeDisabled();
+  await expect.poll(() => typeof liberarPrimera).toBe('function');
+  liberarPrimera();
+  await expect(editor.locator('img')).toHaveCount(1);
+  await editor.evaluate((node, png) => {
+    const bytes = Uint8Array.from(atob(png), c => c.charCodeAt(0));
+    const datos = new DataTransfer();
+    datos.items.add(new File([bytes], 'image.png', { type: 'image/png' }));
+    node.dispatchEvent(new ClipboardEvent('paste', { clipboardData: datos, bubbles: true, cancelable: true }));
+  }, png);
+  await expect(editor.locator('img')).toHaveCount(2);
+  await editor.evaluate((node, png) => {
+    const datos = new DataTransfer();
+    datos.setData('text/html', `<p>Texto pegado con foto</p><img src="data:image/png;base64,${png}">`);
+    node.dispatchEvent(new ClipboardEvent('paste', { clipboardData: datos, bubbles: true, cancelable: true }));
+  }, png);
+  await expect(editor.locator('img')).toHaveCount(3);
+  await expect(editor).toContainText('Texto antes de las imágenes');
+  await expect(editor).toContainText('Texto pegado con foto');
+  expect(subidas).toBe(3);
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await page.reload();
+  await page.getByLabel('Contenido de vista previa').selectOption('legales');
+  await expect(editor.locator('img')).toHaveCount(3);
+  await expect(page.frameLocator('iframe[title="Vista previa"]').first().locator('main img')).toHaveCount(3);
+  fallar = true;
+  await page.getByLabel('Archivo de imagen').setInputFiles({ name: 'otra.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+  await expect(page.getByRole('alert')).toHaveText('No se pudo guardar la imagen de prueba.');
+  await expect(editor.locator('img')).toHaveCount(3);
+  await expect(page.getByRole('button', { name: 'Guardar', exact: true })).toBeEnabled();
+});
+
+test('formatea texto, cambia de página, guarda y recupera la edición', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1536, height: 1000 });
+  await page.route('**/api/**', route => route.fulfill({ status: 200, json: {} }));
+  await page.goto((process.env.PALETTE_BASE_URL || 'http://localhost:5173') + '/tests/fixtures/paginas-footer.html');
+  await page.getByLabel('Contenido de vista previa').selectOption('legales');
+  const editor = page.getByRole('textbox', { name: 'Contenido de Política de privacidad' });
+  await expect(editor).toContainText('SomMix');
+  await editor.fill('Texto de mi tienda');
+  await editor.selectText();
+  await page.getByRole('button', { name: 'Texto normal', exact: true }).click();
+  for (const name of ['Negrita', 'Cursiva', 'Subrayado', 'Viñetas']) await page.getByRole('button', { name, exact: true }).click();
+  await expect(editor.locator('ul li')).toContainText('Texto de mi tienda');
+  await page.getByLabel('Página que querés editar').selectOption('contacto');
+  await page.getByRole('textbox', { name: 'Contenido de Contacto' }).fill('Contactanos por WhatsApp');
+  await page.getByLabel('Página que querés editar').selectOption('politica_privacidad');
+  await expect(editor).toContainText('Texto de mi tienda');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  const publicacion = page.frameLocator('iframe[title="Vista previa"]').first();
+  await expect(publicacion.locator('ul li')).toContainText('Texto de mi tienda');
+  await expect(publicacion.locator('b, strong').first()).toContainText('Texto de mi tienda');
+  await expect(publicacion.locator('i, em').first()).toContainText('Texto de mi tienda');
+  await expect(publicacion.locator('u').first()).toContainText('Texto de mi tienda');
+  await page.screenshot({ path: testInfo.outputPath('editor-desktop.png') });
+  await page.reload();
+  await page.getByLabel('Contenido de vista previa').selectOption('legales');
+  await expect(editor.locator('ul li')).toContainText('Texto de mi tienda');
+  await page.setViewportSize({ width: 375, height: 812 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('editor-mobile.png') });
+  await page.getByRole('button', { name: 'Vista previa', exact: true }).click();
+  const dialogo = page.getByRole('dialog', { name: 'Vista previa', exact: true });
+  await expect(dialogo.getByLabel('Página legal en vista previa')).toBeVisible();
+  await dialogo.getByLabel('Página legal en vista previa').selectOption('contacto');
+  await expect(dialogo.frameLocator('iframe[title="Vista previa"]').locator('main')).toContainText('Contactanos por WhatsApp');
+});

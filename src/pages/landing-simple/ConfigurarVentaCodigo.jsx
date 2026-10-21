@@ -17,6 +17,11 @@ import { landingSimpleService } from '../../services/landingSimpleService';
 import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import EdicionConjuntaFichas from './EdicionConjuntaFichas';
+import EditorCombosInicio from './EditorCombosInicio';
+import PaginasFooterEditor from './PaginasFooterEditor';
+import { textoInicialFooter, codigoFooterDesdeTexto } from './paginasFooter';
+import { PAGINAS_LEGALES_CODIGO, plantillaLegalPara } from './plantillasLegalesCodigo';
+import { normalizarCombosInicio } from './combosInicio';
 import PresentacionProducto, { BLOQUES_FICHA_PANEL, ROTULOS_BLOQUES_FICHA, bloqueDeZona, llevarBloqueALaVista } from './PresentacionProducto';
 import { usePagoparConectado } from './usePagoparConectado';
 import { contentIdPanel, datosRuntimePreview, itemPanelARuntime, presentacionDelProducto, slugCategoria, textosRecomendados, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
@@ -143,6 +148,7 @@ function contentIdsReferidosVenta(venta = {}) {
   lista(venta.destacados).forEach(sumar);
   lista(inicio.secciones).forEach(s => lista(s?.productos).forEach(sumar));
   lista(inicio.productos_categoria?.items).forEach(sumar);
+  lista(inicio.combos?.items).forEach(sumar);
   [venta.urgencia?.producto_id, venta.prueba_social?.producto_id].forEach(sumar);
   lista(venta.urgencia?.productos).forEach(sumar);
   lista(venta.recomendados?.items).forEach(sumar);
@@ -225,6 +231,12 @@ const CONFIANZA_INICIO_DEFAULT = [
   { icono: '↺', titulo: 'Cambios y devoluciones', texto: 'Conocé las condiciones y los pasos para solicitar un cambio.' },
   { icono: '🚚', titulo: 'Envíos a tu zona', texto: 'Confirmá la cobertura, el costo y el plazo antes de pedir.' },
 ];
+// Compatibilidad con los nombres guardados por el selector anterior. Los
+// valores Unicode se conservan completos, incluidos ZWJ y tonos de piel.
+function emojiConfianzaInicio(icono) {
+  const antiguos = { shield: '🛡️', card: '💳', truck: '🚚', rotate: '↺', badge: '🏅', heart: '❤️', leaf: '🌿', headphones: '🎧', package: '📦', clock: '⏱️', gift: '🎁', star: '⭐', lock: '🔒', whatsapp: '💬', mail: '✉️', location: '📍', cash: '💵' };
+  return Object.prototype.hasOwnProperty.call(antiguos, icono) ? antiguos[icono] : icono || '';
+}
 const MARCA_INICIO_DEFAULT = {
   activo: true,
   kicker: 'NUESTRA MARCA',
@@ -459,7 +471,7 @@ function inicioComercialDesdeVenta(venta = {}) {
 // (el espejo del lado del runtime). "Menú" no está: vive en el header fijo,
 // no tiene una posición en la página que mover.
 const TIPOS_BLOQUE_INICIO = [
-  'anuncios', 'banner', 'productos_categoria', 'ofertas_urgencia', 'confianza', 'testimonios', 'marca', 'colecciones',
+  'anuncios', 'banner', 'productos_categoria', 'combos', 'ofertas_urgencia', 'confianza', 'testimonios', 'marca', 'colecciones',
 ];
 const ETIQUETAS_BLOQUE_INICIO = {
   anuncios: 'Barra de anuncios',
@@ -485,7 +497,7 @@ const ETIQUETAS_BLOQUE_INICIO = {
 // ver primero, visible; el resto (lo que ya traía la base) queda apagado
 // pero disponible por si lo quiere prender después.
 const BLOQUES_INICIO_DEFAULT = [
-  'anuncios', 'banner', 'productos_categoria', 'ofertas_urgencia', 'confianza', 'testimonios', 'marca', 'colecciones',
+  'anuncios', 'banner', 'productos_categoria', 'combos', 'ofertas_urgencia', 'confianza', 'testimonios', 'marca', 'colecciones',
 ].map(tipo => ({ tipo, visible: true }));
 
 // La barra de anuncios va siempre arriba de todo (junto al encabezado, que
@@ -500,7 +512,11 @@ function normalizarBloquesInicio(bloques) {
   // Si la base agregó un tipo de bloque nuevo después de que esta landing ya
   // guardó su lista, aparece al final (visible) en vez de desaparecer.
   const faltantes = TIPOS_BLOQUE_INICIO.filter(t => !vistos.has(t)).map(tipo => ({ tipo, visible: true }));
-  const todos = [...guardados.map(b => ({ tipo: b.tipo, visible: b.visible !== false })), ...faltantes];
+  const todos = [...guardados.map(b => ({ tipo: b.tipo, visible: b.visible !== false })), ...faltantes.filter(b => b.tipo !== 'combos')];
+  if (!vistos.has('combos')) {
+    const despuesDeProductos = todos.findIndex(b => b.tipo === 'productos_categoria') + 1;
+    todos.splice(despuesDeProductos || 1, 0, { tipo: 'combos', visible: true });
+  }
   return [...todos.filter(b => b.tipo === BLOQUE_INICIO_FIJO), ...todos.filter(b => b.tipo !== BLOQUE_INICIO_FIJO)];
 }
 
@@ -564,7 +580,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     : [];
   const anunciosConTexto = anuncios.filter(it => String(it.texto || '').trim());
   const confianza = Array.isArray(inicio.confianza)
-    ? inicio.confianza.map(it => ({ icono: it?.icono || '', titulo: it?.titulo || '', texto: it?.texto || '' }))
+    ? inicio.confianza.map(it => ({ icono: emojiConfianzaInicio(it?.icono), titulo: it?.titulo || '', texto: it?.texto || '' }))
     : [];
   const confianzaConTexto = confianza.filter(it => String(it.titulo || it.texto || '').trim());
   const testimoniosItems = Array.isArray(testimoniosConfig.items)
@@ -595,6 +611,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     // selector de ícono (ver limpiarAnuncioInicio, backend).
     anuncios: tieneAnunciosGuardados ? anunciosConTexto : ANUNCIOS_INICIO_DEFAULT,
     confianza: confianzaConTexto.length ? confianzaConTexto : CONFIANZA_INICIO_DEFAULT,
+    confianza_estilo: ['tarjetas', 'destacada'].includes(inicio.confianza_estilo) ? inicio.confianza_estilo : 'compacta',
     productos_categoria: {
       activo: productosCategoria.activo === true,
       mostrar_combos: productosCategoria.mostrar_combos !== false,
@@ -606,6 +623,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       columnas: Math.max(1, Math.min(8, Math.floor(Number(productosCategoria.columnas) || 4))),
       formato: productosCategoria.formato === 'carrusel' ? 'carrusel' : 'filas',
     },
+    combos: normalizarCombosInicio(inicio.combos),
     marca: {
       activo: marca.activo !== false,
       kicker: marca.kicker || MARCA_INICIO_DEFAULT.kicker,
@@ -923,6 +941,10 @@ export default function ConfigurarVentaCodigo({
 
   // Vista previa
   const [vistaPreview, setVistaPreview] = useState('inicio');
+  const [modoPreview, setModoPreview] = useState('venta');
+  const [paginaLegal, setPaginaLegal] = useState('politica_privacidad');
+  const esPaginaLegal = modoPreview === 'legales';
+  const [filtroPreview, setFiltroPreview] = useState(null);
   const [productoPreview, setProductoPreview] = useState(null); // content_id
   const [comboBloqueActivo, setComboBloqueActivo] = useState(null);
   const [comboBloquePedido, setComboBloquePedido] = useState(null);
@@ -982,7 +1004,11 @@ export default function ConfigurarVentaCodigo({
             onCambiarCodigo(`propia:${cid}`, 'css', c?.css || '');
             onCambiarCodigo(`propia:${cid}`, 'js', c?.js || '');
           });
-        } else if (vk !== 'legales') {
+        } else if (vk === 'legales') {
+          Object.entries(vistas.legales || {}).forEach(([tipo, codigo]) => {
+            for (const parte of ['html', 'css', 'js']) onCambiarCodigo(`legal:${tipo}`, parte, codigo?.[parte] || '');
+          });
+        } else {
           onCambiarCodigo(vk, 'html', vistas[vk]?.html || '');
           onCambiarCodigo(vk, 'css', vistas[vk]?.css || '');
           onCambiarCodigo(vk, 'js', vistas[vk]?.js || '');
@@ -1094,14 +1120,19 @@ export default function ConfigurarVentaCodigo({
   // JSON de la IA) y no con los textos de ejemplo. Van DEBAJO de lo que la
   // landing pisa, y no entran en `seleccion`: no se guardan con la landing.
   const [fichasProducto, setFichasProducto] = useState({});
+  const [cargandoCombosInicio, setCargandoCombosInicio] = useState({});
+  const [erroresCombosInicio, setErroresCombosInicio] = useState({});
   const fichasPedidas = useRef(new Set());
   const pedirFichaProducto = useCallback((item) => {
     if (!item || fichasPedidas.current.has(claveItem(item))) return;
     fichasPedidas.current.add(claveItem(item));
     if (item.tipo === 'combo') {
+      setCargandoCombosInicio(prev => ({ ...prev, [claveItem(item)]: true }));
+      setErroresCombosInicio(prev => ({ ...prev, [claveItem(item)]: false }));
       Promise.resolve().then(() => comboAdminService.obtener(item.id))
-        .then(p => { if (p) setFichasProducto(prev => ({ ...prev, [claveItem(item)]: contenidoCombo(p) })); })
-        .catch(() => { fichasPedidas.current.delete(claveItem(item)); });
+        .then(p => { if (!p) throw new Error('No se recibió el detalle del combo.'); setFichasProducto(prev => ({ ...prev, [claveItem(item)]: contenidoCombo(p) })); })
+        .catch(() => { fichasPedidas.current.delete(claveItem(item)); setErroresCombosInicio(prev => ({ ...prev, [claveItem(item)]: true })); })
+        .finally(() => setCargandoCombosInicio(prev => ({ ...prev, [claveItem(item)]: false })));
       return;
     }
     Promise.resolve()
@@ -1116,6 +1147,15 @@ export default function ConfigurarVentaCodigo({
       } })))
       .catch(() => {});
   }, []);
+  useEffect(() => {
+    if (seccionConfig !== 'inicio' || inicioComercial.bloques.find(b => b.tipo === 'combos')?.visible === false) return;
+    const cfg = inicioComercial.combos;
+    const ids = new Set(cfg.items);
+    seleccion.filter(i => i.tipo === 'combo' && (cfg.modo !== 'manual' || ids.has(contentIdPanel(i))))
+      .slice(0, Math.min(48, Math.max(8, cfg.limite))).forEach(item => {
+        if (!contenidoCombo(item).productos_combo.length) pedirFichaProducto(item);
+      });
+  }, [seccionConfig, seleccion, inicioComercial.combos, inicioComercial.bloques, pedirFichaProducto]);
   const candidatosDatosProducto = useMemo(() => {
     const base = seleccion;
     return base.map(i => {
@@ -1130,6 +1170,13 @@ export default function ConfigurarVentaCodigo({
       return { ...delProducto, ...propio, ...compartidos, content_id: contentIdPanel(i) };
     });
   }, [seleccion, presentacion, fichasProducto, fichaCompartida]);
+  const candidatosCombosInicio = useMemo(() => {
+    const elegidos = new Map(candidatosDatosProducto.filter(i => i.tipo === 'combo').map(i => [Number(i.id), i]));
+    return catalogoActual.combos.map(c => {
+      const item = elegidos.get(Number(c.id)) || combinarDetalleCombo({ ...c, tipo: 'combo' }, fichasProducto[`combo:${c.id}`]);
+      return { ...item, en_landing: elegidos.has(Number(c.id)), puede_incluir: !esRegla || modo === 'todos' || categorias.has(item.categoria) };
+    }).filter(i => i.mostrar_en_inicio !== false);
+  }, [catalogoActual.combos, candidatosDatosProducto, fichasProducto, esRegla, modo, categorias]);
   // Colecciones de la landing (etiquetas), con cuántos productos tiene cada
   // una; "Oferta" entra sola si hay productos con descuento, como en el
   // runtime (etiquetasDisponiblesCatalogo).
@@ -2026,7 +2073,13 @@ export default function ConfigurarVentaCodigo({
     codigoInicioPreview,
   );
   const codigoCheckoutPreview = conGlobalesHeredados(codigos?.checkout?.html ? codigos.checkout : PLANTILLA_CHECKOUT, codigoInicioPreview);
-  const codigoPreviewActual = abreEnFicha || vistaPreview === 'producto'
+  const codigoLegalActual = codigos?.[`legal:${paginaLegal}`] || landing?.content?.vistas?.legales?.[paginaLegal] || plantillaLegalPara(paginaLegal, tienda);
+  const textoLegalActual = useMemo(() => textoInicialFooter(paginaLegal, tienda, codigoLegalActual), [paginaLegal, codigoLegalActual.html, tienda]);
+  function editarTextoLegal(html) {
+    const codigo = codigoFooterDesdeTexto(paginaLegal, html, tienda);
+    for (const parte of ['html', 'css', 'js']) onCambiarCodigo?.(`legal:${paginaLegal}`, parte, codigo[parte]);
+  }
+  const codigoPreviewActual = esPaginaLegal ? codigoLegalActual : abreEnFicha || vistaPreview === 'producto'
     ? codigoFichaPreview
     : vistaPreview === 'catalogo'
       ? codigoCatalogoPreview
@@ -2092,7 +2145,8 @@ export default function ConfigurarVentaCodigo({
     pagoparConectado,
     bloquesEditor: ROTULOS_BLOQUES_FICHA,
     bloquesInicioEditor: rotulosInicio,
-  }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion, pagoparConectado, rotulosInicio]);
+    filtro: filtroPreview,
+  }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion, pagoparConectado, rotulosInicio, filtroPreview]);
 
   // Dónde se ve cada tipo de oferta en la ficha (para resaltarla en la vista previa).
   function verOfertaEnFicha(oferta, producto) {
@@ -2165,6 +2219,12 @@ export default function ConfigurarVentaCodigo({
   }, [productoFicha, vistaPreview, abreEnFicha, rotulosInicio]);
 
   const alNavegarPreview = useCallback((p) => {
+    const legalDestino = p?.destino === 'pagina' && PAGINAS_LEGALES_CODIGO.find(pagina => pagina.ruta === p.pagina || pagina.key === p.pagina);
+    if (legalDestino) {
+      setPaginaLegal(legalDestino.key); setModoPreview('legales'); setResaltado(null); setAvisoPreview('');
+      return;
+    }
+    setModoPreview('venta');
     if (p?.destino === 'producto') {
       const contentId = resolverContentIdProducto(p.producto);
       setVistaPreview('producto');
@@ -2173,19 +2233,20 @@ export default function ConfigurarVentaCodigo({
       setProductoPreview(contentId);
       setResaltado(null);
     }
-    else if (p?.destino === 'inicio') { setVistaPreview('inicio'); setSeccionConfig('inicio'); setResaltado(null); }
+    else if (p?.destino === 'inicio') { setVistaPreview('inicio'); setSeccionConfig('inicio'); setResaltado(null); setFiltroPreview(null); }
     else if (p?.destino === 'categoria') { setVistaPreview('categoria'); setSeccionConfig('categorias'); setCategoriaPreview(p.categoria || ''); setResaltado(null); }
     else if (p?.destino === 'catalogo') { setVistaPreview('categoria'); setSeccionConfig('categorias'); setCategoriaPreview(''); setResaltado(null); }
     else if (p?.destino === 'checkout') { setVistaPreview('checkout'); setSeccionConfig('checkout'); setResaltado(null); }
     else if (p?.destino === 'pagina' && p.pagina === 'catalogo') {
-      setVistaPreview(p?.filtro?.etiqueta ? 'catalogo' : 'categoria');
+      setVistaPreview(p?.filtro?.etiqueta || p?.filtro?.tipo ? 'catalogo' : 'categoria');
+      setFiltroPreview(p?.filtro || null);
       setSeccionConfig('categorias');
       setResaltado(null);
       setCategoriaPreview('');
       if (p?.filtro?.etiqueta) setAvisoPreview(`En la tienda publicada abre el catálogo filtrado por ${p.filtro.etiqueta}.`);
+      else if (p?.filtro?.tipo === 'combo') setAvisoPreview('Catálogo filtrado: solo combos.');
     }
     else if (p?.destino === 'pagina' && p.pagina === 'checkout') { setVistaPreview('checkout'); setSeccionConfig('checkout'); setResaltado(null); }
-    else if (p?.destino === 'pagina') setAvisoPreview('Ese link abre una página de la tienda (legales o contacto).');
   }, [resolverContentIdProducto]);
   const alComprarPreview = useCallback((p) => {
     setAvisoPreview(p?.checkout_directo
@@ -2396,19 +2457,23 @@ export default function ConfigurarVentaCodigo({
   );
 
   const propsVistaPrevia = {
-    vista: vistaPreview,
-    onVista: v => { setVistaPreview(v); setSeccionConfig(seccionConfigDeVista(v)); if (v === 'categoria') setCategoriaPreview(''); setResaltado(null); setAvisoPreview(''); },
+    modo: modoPreview,
+    onModo: setModoPreview,
+    paginaLegal,
+    onPaginaLegal: setPaginaLegal,
+    vista: esPaginaLegal ? `legal:${paginaLegal}` : vistaPreview,
+    onVista: v => { setVistaPreview(v); setFiltroPreview(null); setSeccionConfig(seccionConfigDeVista(v)); if (v === 'categoria') setCategoriaPreview(''); setResaltado(null); setAvisoPreview(''); },
     productos: productosPreview,
     productoFicha,
     onProducto: id => { seleccionarProductoConfig(id); setResaltado(null); },
     codigo: codigoPreviewActual,
     codigoInicio: codigoInicioPreview,
-    datos: datosPreview,
+    datos: esPaginaLegal ? { ...datosPreview, vista: 'legal' } : datosPreview,
     content: { ...landing?.content, venta: ventaActual },
     comboBloqueActivo,
     onComboActivo: setComboBloqueActivo,
-    resaltado,
-    aviso: avisoPreview,
+    resaltado: esPaginaLegal ? null : resaltado,
+    aviso: esPaginaLegal ? 'Editá el texto a la izquierda. Los cambios se ven acá y se publican al guardar.' : avisoPreview,
     inicioEsBase,
     disenoPendienteIA,
     onNavegar: alNavegarPreview,
@@ -2529,6 +2594,18 @@ export default function ConfigurarVentaCodigo({
             está editando (formularios abiertos, borradores). */}
         <div hidden={panelesOcultos} className="relative flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto overscroll-contain">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
+            <div className="mb-6">
+              <label htmlFor="contenido-configuracion" className="block text-xs font-semibold text-fg-muted mb-2">Qué querés editar</label>
+              <select id="contenido-configuracion" value={modoPreview} onChange={e => setModoPreview(e.target.value)} className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-fg">
+                <option value="venta">Vista previa de venta</option><option value="legales">Páginas legales</option>
+              </select>
+            </div>
+            {esPaginaLegal && <section aria-label="Editar páginas legales">
+              <h1 className="text-2xl font-bold text-fg mb-2">Páginas del footer</h1>
+              <p className="text-sm text-fg-muted mb-6">Editá las políticas y la información de contacto que aparecen al pie de esta tienda.</p>
+              <PaginasFooterEditor tipo={paginaLegal} onTipo={setPaginaLegal} contenido={textoLegalActual} onEditar={editarTextoLegal} onSubirImagen={onSubirImagen} onEstadoSubida={subiendo => setSubidasPendientes(n => n + (subiendo ? 1 : -1))} disabled={guardando || !onCambiarCodigo} />
+            </section>}
+            <div hidden={esPaginaLegal}>
             <header className="mb-7">
               <div className="flex items-center gap-2">
                 <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML</p>
@@ -2864,9 +2941,23 @@ export default function ConfigurarVentaCodigo({
                         onAlternarItem={alternarItemProductosCategoria}
                       />
                     ),
+                    combos: (
+                      <EditorCombosInicio config={inicioComercial.combos}
+                        combos={candidatosCombosInicio}
+                        onAgregarCombo={combo => {
+                          if (esRegla) setIncluirCombos(true);
+                          else setManual(prev => prev.includes(`combo:${combo.id}`) ? prev : [...prev, `combo:${combo.id}`]);
+                        }}
+                        onCambiar={cambio => setInicioComercial(prev => ({ ...prev, combos: normalizarCombosInicio({ ...prev.combos, ...cambio }) }))}
+                        onAdministrar={() => { setSeccionConfig('combos'); setResaltado(null); }}
+                        cargando={cargandoCombosInicio} errores={erroresCombosInicio}
+                        onReintentar={combo => { fichasPedidas.current.delete(claveItem(combo)); pedirFichaProducto(combo); }} />
+                    ),
                     confianza: (
                       <EditorConfianzaInicio
                         items={inicioComercial.confianza}
+                        estilo={inicioComercial.confianza_estilo}
+                        onEstilo={confianza_estilo => setInicioComercial(prev => ({ ...prev, confianza_estilo }))}
                         onCambiar={cambiarConfianza}
                       />
                     ),
@@ -3587,6 +3678,7 @@ export default function ConfigurarVentaCodigo({
               </Bloque>
               )}
             </div>
+            </div>
           </div>
         </div>
 
@@ -3922,6 +4014,7 @@ function presentacionGuardada(fichas) {
  * en el lugar disponible (como se ve en una notebook, en miniatura).
  */
 function VistaPrevia({
+  modo = 'venta', onModo, paginaLegal, onPaginaLegal,
   vista, onVista, productos, productoFicha, onProducto, codigo, codigoInicio, datos, content, comboBloqueActivo, onComboActivo, resaltado, aviso, inicioEsBase, onNavegar, onComprar, onCarrito, onBloque,
   dispositivo, onDispositivo, onAmpliar, ampliada, onCerrar, disenoPendienteIA = false,
   // Solo la landing, sin la cabecera (paneles ocultos): el dispositivo se
@@ -3929,6 +4022,7 @@ function VistaPrevia({
   soloLienzo = false,
 }) {
   const productosFicha = productos.filter(p => p.tipo === 'producto' || p.tipo === 'combo');
+  const vistaSeleccionada = vista === 'catalogo' ? 'categoria' : vista;
   const [marcoRef, tam] = useTamano();
   const escritorio = dispositivo === 'escritorio';
   const anchoLienzo = ANCHO_ESCRITORIO;
@@ -3961,7 +4055,9 @@ function VistaPrevia({
       {!soloLienzo && (
       <div className={`px-4 pt-4 pb-3 space-y-3 shrink-0 ${ampliada ? 'border-b border-border bg-surface' : ''}`}>
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-fg">Vista previa</p>
+          <select aria-label="Contenido de vista previa" value={modo} onChange={e => onModo?.(e.target.value)} className="min-w-0 h-9 max-w-[220px] rounded-lg border border-border bg-surface px-2 text-sm font-semibold text-fg">
+            <option value="venta">Vista previa de venta</option><option value="legales">Páginas legales</option>
+          </select>
           <div className="flex items-center gap-1.5">
             <div role="radiogroup" aria-label="Dispositivo" className="flex rounded-lg bg-surface p-0.5 border border-border">
               {[['movil', 'Celular', Smartphone], ['escritorio', 'Escritorio', Monitor]].map(([k, label, Icono]) => (
@@ -3990,21 +4086,23 @@ function VistaPrevia({
           </div>
         </div>
         <div className={`flex flex-col ${ampliada ? 'sm:flex-row' : ''} gap-2`}>
-          <div role="tablist" aria-label="Pantalla" className={`flex rounded-lg bg-surface p-1 border border-border ${ampliada ? 'sm:w-80' : ''}`}>
+          {modo === 'legales' ? <select aria-label="Página legal en vista previa" value={paginaLegal} onChange={e => onPaginaLegal?.(e.target.value)} className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg">
+            {PAGINAS_LEGALES_CODIGO.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+          </select> : <div role="tablist" aria-label="Pantalla" className={`flex rounded-lg bg-surface p-1 border border-border ${ampliada ? 'sm:w-80' : ''}`}>
             {VISTAS_PREVIEW_TIENDA.map(([k, label, Icono]) => (
               <button
                 key={k}
                 type="button"
                 role="tab"
-                aria-selected={vista === k}
+                aria-selected={vistaSeleccionada === k}
                 onClick={() => onVista(k)}
-                className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-md text-[13px] font-medium transition-colors ${vista === k ? 'bg-surface-2 text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-md text-[13px] font-medium transition-colors ${vistaSeleccionada === k ? 'bg-surface-2 text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
               >
                 <Icono size={14} /> {k === 'producto' && productoFicha?.tipo === 'combo' ? 'Vista combo' : label}
               </button>
             ))}
-          </div>
-          {vista === 'producto' && productosFicha.length > 0 && (
+          </div>}
+          {modo !== 'legales' && vista === 'producto' && productosFicha.length > 0 && (
             <select
               value={productoFicha ? contentIdPanel(productoFicha) : ''}
               onChange={e => onProducto(e.target.value)}
@@ -4026,7 +4124,7 @@ function VistaPrevia({
       )}
 
       <div className={`flex-1 min-h-0 flex justify-center ${ampliada ? 'p-4 md:p-6' : 'px-4 pb-4'}`}>
-        {productos.length === 0 ? (
+        {productos.length === 0 && modo !== 'legales' ? (
           <div className="w-full max-w-[390px] rounded-[28px] border border-dashed border-border-strong flex items-center justify-center p-8 text-center text-sm text-fg-muted">
             Elegí productos y los vas a ver acá.
           </div>
@@ -4907,14 +5005,22 @@ const ICONOS_CONFIANZA = [
   ['gift', 'Regalo'], ['star', 'Destacado'], ['lock', 'Seguridad'], ['whatsapp', 'WhatsApp'], ['mail', 'Email'],
   ['location', 'Ubicación'], ['cash', 'Efectivo'],
 ];
-function EditorConfianzaInicio({ items, onCambiar }) {
+function EditorConfianzaInicio({ items, onCambiar, estilo, onEstilo }) {
   const slots = Array.from({ length: 3 }, (_, i) => items?.[i] || CONFIANZA_INICIO_DEFAULT[i] || { icono: '', titulo: '', texto: '' });
   return (
     <div className="space-y-3">
-      <p className="text-xs text-fg-muted">Siempre 3 tarjetas. Ya vienen cargadas: podés cambiar el texto y escribir el ícono libremente, como emoji o nombre de ícono.</p>
+      <label className="block text-xs font-medium text-fg-muted">Presentación de confianza
+        <select className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg" value={estilo || 'compacta'} onChange={e => onEstilo(e.target.value)}>
+          <option value="compacta">Barra horizontal compacta</option><option value="tarjetas">Tarjetas individuales</option><option value="destacada">Sección destacada</option>
+        </select>
+      </label>
+      <p className="text-xs text-fg-muted">Escribí o pegá cualquier emoji, también combinaciones. Se muestra arriba del título, con detalles en el color de tu tienda. Describí solo las condiciones que ofrecés.</p>
       {slots.map((it, idx) => (
         <div key={idx} className="grid grid-cols-1 sm:grid-cols-[110px_1fr_1fr] gap-2 rounded-lg border border-border p-2.5">
-          <CampoTexto label="Ícono" value={it.icono} onChange={v => onCambiar(idx, { icono: v })} placeholder="🚚 o fa-truck" maxLength={40} />
+          <div className="space-y-2">
+            <span aria-hidden="true" className="flex min-h-12 w-fit min-w-12 items-center justify-center rounded-xl bg-primary/10 px-2 text-2xl" style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif' }}>{it.icono}</span>
+            <label className="block text-xs text-fg-muted">Emoji<input type="text" aria-label={`Emoji del beneficio ${idx + 1}`} className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-2 text-lg text-fg" value={it.icono} onChange={e => onCambiar(idx, { icono: e.target.value })} placeholder="Pegá un emoji" /></label>
+          </div>
           <CampoTexto label="Título" value={it.titulo} onChange={v => onCambiar(idx, { titulo: v })} placeholder="Opciones de pago" maxLength={60} />
           <CampoTexto label="Texto" value={it.texto} onChange={v => onCambiar(idx, { texto: v })} placeholder="Consultá los medios disponibles" maxLength={120} />
         </div>

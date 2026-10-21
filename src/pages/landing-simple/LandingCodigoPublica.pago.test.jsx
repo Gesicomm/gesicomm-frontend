@@ -24,9 +24,9 @@ const producto = { tipo: 'producto', referencia_id: 7, content_id: 'producto-7',
 const data = { catalogo_items: [producto], producto, tienda: { nombre: 'Tienda' }, content: {}, checkout: { pasarelas: [{ provider: 'pagopar' }] } };
 const codigo = { html: '<main></main>', css: '', js: '' };
 function Tienda() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const checkout = pathname.endsWith('/checkout');
-  return <><span data-testid="ruta">{pathname}</span><LandingCodigoPublica
+  return <><span data-testid="ruta">{pathname}{search}</span><LandingCodigoPublica
     key={checkout ? 'checkout' : 'producto'}
     codigo={codigo} titulo="Tienda" data={data} slug="tienda"
     productId={checkout ? null : 'producto-7'} vistaCodigo={checkout ? 'checkout' : null}
@@ -35,6 +35,13 @@ function Tienda() {
 
 beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
 afterEach(cleanup);
+
+it('Ver todos los combos navega a la URL pública del catálogo y conserva el filtro en los datos del iframe', () => {
+  render(<MemoryRouter initialEntries={['/l/tienda']}><Tienda /></MemoryRouter>);
+  act(() => vistas.preview.onNavegar({ destino: 'pagina', pagina: 'catalogo', filtro: { tipo: 'combo' } }));
+  expect(screen.getByTestId('ruta').textContent).toBe('/catalogo?tipo=combo');
+  expect(vistas.preview.datos.filtro.tipo).toBe('combo');
+});
 
 it('el botón anticipado llega directo al checkout, conserva el carrito al cambiar de página y alterna el 10%', async () => {
   render(<MemoryRouter initialEntries={['/l/tienda/producto-7']}><Tienda /></MemoryRouter>);

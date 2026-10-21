@@ -64,9 +64,10 @@ export function limpiarCacheCatalogoPublico() {
 
 export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
   const {
-    pagina, porPagina, orden, disponibilidad, categoria, marca, etiqueta, precioMin, precioMax, busqueda, soloInicio, soloDescuento, soloDatos,
+    pagina, porPagina, orden, disponibilidad, categoria, marca, etiqueta, precioMin, precioMax, busqueda, soloInicio, soloDescuento, soloDatos, filtroTipo,
   } = opciones;
   const params = new URLSearchParams({ vista: 'catalogo' });
+  if (filtroTipo === 'combo' || filtroTipo === 'producto') params.set('filtroTipo', filtroTipo);
   if (pagina) params.set('pagina', pagina);
   // Siempre explícito, aunque sea el default del backend: sin esto "sin
   // porPagina" y "porPagina=20" son dos URLs distintas para la misma

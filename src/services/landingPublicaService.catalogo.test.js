@@ -10,21 +10,28 @@ function respuesta(body, status = 200) {
 }
 
 describe('obtenerCatalogoLandingPublica — un solo pedido por página', () => {
+  it('envía solo combos al servidor y lo separa de la caché del catálogo completo', async () => {
+    await obtenerCatalogoLandingPublica('tienda', { filtroTipo: 'combo' });
+    await obtenerCatalogoLandingPublica('tienda');
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[0][0]).toContain('filtroTipo=combo');
+    expect(fetch.mock.calls[1][0]).not.toContain('filtroTipo');
+  });
   beforeEach(() => {
     limpiarCacheCatalogoPublico();
     global.fetch = vi.fn(() => respuesta({ disponible: true, catalogo_items: [] }));
   });
   afterEach(() => { vi.useRealTimers(); });
 
-  it('el pedido del padre (sin porPagina) y el del iframe (porPagina=20) son la misma URL y un solo fetch', async () => {
+  it('el pedido del padre (sin porPagina) y el del iframe (porPagina=25) son la misma URL y un solo fetch', async () => {
     const delPadre = await obtenerCatalogoLandingPublica(undefined, {
       orden: 'destacados', disponibilidad: 'todos', categoria: 'todas', etiqueta: 'todas', precioMin: '', precioMax: '', pagina: 1,
     });
-    const delIframe = await obtenerCatalogoLandingPublica(undefined, { pagina: 1, porPagina: 20, orden: 'destacados' });
-    await obtenerCatalogoLandingPublica(undefined, { pagina: 1, porPagina: 20, orden: 'destacados' });
+    const delIframe = await obtenerCatalogoLandingPublica(undefined, { pagina: 1, porPagina: 25, orden: 'destacados' });
+    await obtenerCatalogoLandingPublica(undefined, { pagina: 1, porPagina: 25, orden: 'destacados' });
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(global.fetch.mock.calls[0][0]).toBe('/api/l/?vista=catalogo&pagina=1&porPagina=20&orden=destacados');
+    expect(global.fetch.mock.calls[0][0]).toBe('/api/l/?vista=catalogo&pagina=1&porPagina=25&orden=destacados');
     expect(delIframe).toBe(delPadre);
   });
 

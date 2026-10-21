@@ -1,6 +1,7 @@
 import { sinOfertaFlashVencida } from './ofertaFlash';
 import { porcentajeDescuento } from './porcentajeDescuento';
 import { combinarFichaCompartida } from './fichasEnLote';
+import { contenidoCombo } from './comboContenido';
 import { getMediaUrl } from '../../services/api';
 import { ofertaCheckoutPublicable, detalleOfertaCheckout, precioVentaProducto } from '../landing/ofertasCheckout';
 
@@ -520,6 +521,7 @@ export function presentacionComercial(item, venta) {
 }
 
 export function imagenesParaLanding(item, venta = null) {
+  if (item.tipo === 'combo') item = contenidoCombo(item);
   const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
   const propia = venta?.presentacion_productos?.[key]?.imagenes_landing
     ?? ((item.tipo || 'producto') === 'producto' ? venta?.ficha_compartida?.imagenes_landing : undefined)
@@ -622,6 +624,7 @@ function ofertaPanelARuntime(o, imagenDeProducto = () => null) {
  * del ahorro).
  */
 export function contenidoFicha(item) {
+  if (item.tipo === 'combo') item = contenidoCombo(item);
   const fichaDatos = item.ficha_datos || {};
   const beneficios = primeraListaConDatos(item.beneficios, fichaDatos.beneficios_rapidos)
     .map(normalizarBeneficio)
@@ -639,6 +642,7 @@ export function contenidoFicha(item) {
       nombre: p.nombre,
       imagen: media(p.imagen),
       precio: Number(p.precio) || null,
+      cantidad_unidades: Number(p.cantidad) || 1,
       cantidad: Number(p.cantidad) > 1 ? `x${Number(p.cantidad)}` : null,
       content_id: p.slug || null,
     }))
@@ -658,6 +662,7 @@ export function contenidoFicha(item) {
     preguntas,
     opiniones,
     combo_incluye: comboIncluye,
+    ...(item.tipo === 'combo' ? { productos_incluidos: comboIncluye.length ? comboIncluye.map(p => p.nombre) : (item.productos_incluidos || []) } : {}),
     precio_separado: item.tipo === 'combo' && separado > precio ? separado : null,
     // Ahorro del producto o combo: lo usan los binds "ahorro" y "ahorro_texto".
     ahorro: antes > precio && precio > 0 ? antes - precio : 0,

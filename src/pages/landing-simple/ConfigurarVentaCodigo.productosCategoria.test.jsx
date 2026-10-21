@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
-vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]) } }));
+const obtenerCombo = vi.hoisted(() => vi.fn());
+vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]), obtener: (...a) => obtenerCombo(...a) } }));
 vi.mock('../../services/landingSimpleService', () => ({ landingSimpleService: { listarPaymentLogos: vi.fn().mockResolvedValue([]) } }));
 vi.mock('./CodigoPreview', () => ({ default: ({ datos }) => <output data-testid="preview-datos">{JSON.stringify(datos)}</output> }));
 
@@ -36,7 +37,7 @@ vi.mock('../../services/vitrinaService', () => ({ vitrinaService: { catalogoPagi
 
 const { default: ConfigurarVentaCodigo } = await import('./ConfigurarVentaCodigo');
 
-afterEach(() => { cleanup(); catalogoPaginado.mockClear(); });
+afterEach(() => { cleanup(); catalogoPaginado.mockClear(); obtenerCombo.mockReset(); });
 
 const datosPreview = () => JSON.parse(screen.getAllByTestId('preview-datos')[0].textContent);
 
@@ -55,6 +56,74 @@ async function abrirBloqueProductos() {
 }
 
 describe('Bloque Productos del inicio en una tienda grande', () => {
+  it('edita emojis libres y compuestos sin perder los guardados ni el orden de los beneficios', async () => {
+    const confirmar = vi.fn().mockResolvedValue(true);
+    const emoji = '👩🏽‍💻👨‍👩‍👧‍👦🏳️‍🌈';
+    render(<ConfigurarVentaCodigo catalogo={{ productos: [productos[0]], combos: [] }} inicial={{ seleccion: [productos[0]], venta: { configurado: true, inicio: {
+      confianza: [{ icono: emoji, titulo: 'Atención personal', texto: 'Consultá horarios' }, { icono: 'truck', titulo: 'Entrega', texto: 'Consultá cobertura' }, { icono: '🦋', titulo: 'Tu tienda', texto: 'Condiciones propias' }],
+    } } }} onConfirmar={confirmar} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: /^\d*\s*Zona de confianza$/ }));
+    expect(screen.getByLabelText('Emoji del beneficio 1').value).toBe(emoji);
+    expect(screen.getByLabelText('Emoji del beneficio 2').value).toBe('🚚');
+    expect(screen.getByLabelText('Emoji del beneficio 3').value).toBe('🦋');
+    expect(screen.queryByRole('combobox', { name: 'Ícono' })).toBeNull();
+    fireEvent.change(screen.getByLabelText('Emoji del beneficio 2'), { target: { value: emoji.repeat(4) } });
+    fireEvent.change(screen.getByLabelText('Emoji del beneficio 3'), { target: { value: '' } });
+    expect(datosPreview().venta.inicio.confianza.map(c => c.titulo)).toEqual(['Atención personal', 'Entrega', 'Tu tienda']);
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(confirmar).toHaveBeenCalled());
+    expect(confirmar.mock.calls[0][0].venta.inicio.confianza.map(c => c.icono)).toEqual([emoji, emoji.repeat(4), '']);
+  });
+  it('cambia la variante de confianza en la preview y conserva la elección al guardar', async () => {
+    const confirmar = montar();
+    fireEvent.click(screen.getByRole('button', { name: /^\d*\s*Zona de confianza$/ }));
+    expect(screen.getByLabelText('Presentación de confianza').value).toBe('compacta');
+    fireEvent.change(screen.getByLabelText('Presentación de confianza'), { target: { value: 'tarjetas' } });
+    expect(datosPreview().venta.inicio.confianza_estilo).toBe('tarjetas');
+    fireEvent.change(screen.getByLabelText('Presentación de confianza'), { target: { value: 'destacada' } });
+    expect(datosPreview().venta.inicio.confianza_estilo).toBe('destacada');
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(confirmar).toHaveBeenCalled());
+    expect(confirmar.mock.calls[0][0].venta.inicio.confianza_estilo).toBe('destacada');
+  });
+  it('permite buscar y seleccionar un combo del catálogo que aún no se agregó a la landing manual', async () => {
+    const combo = { id: 99, tipo: 'combo', nombre: 'Cocina completa', precio_efectivo: 179000, productos_combo: [{ id: 1, nombre: 'Cacerola' }] };
+    const confirmar = vi.fn().mockResolvedValue(true);
+    render(<ConfigurarVentaCodigo catalogo={{ productos, combos: [combo] }} inicial={{ seleccion: [productos[0]], venta: { configurado: true, seleccion: 'manual' } }} onConfirmar={confirmar} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: /^\d*\s*Combos y packs$/ }));
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar combos' }), { target: { value: 'cacerola' } });
+    fireEvent.click(screen.getByLabelText('Mostrar combo Cocina completa'));
+    expect(datosPreview().productos.find(p => p.id === 'combo-99')).toBeTruthy();
+    expect(datosPreview().venta.inicio.combos).toMatchObject({ modo: 'manual', items: ['combo-99'] });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(confirmar).toHaveBeenCalled());
+    expect(confirmar.mock.calls[0][0].seleccion).toEqual(expect.arrayContaining([expect.objectContaining({ id: 99, tipo: 'combo' })]));
+  });
+  it('carga los componentes de un combo liviano y guarda todos los controles de la sección', async () => {
+    obtenerCombo.mockResolvedValue({ id: 99, producto_padre: { id: 1, nombre: 'Cacerola', imagen: 'https://cdn.test/cacerola.png' }, items: [{ cantidad: 2, producto_incluido: { id: 2, nombre: 'Utensilios' } }] });
+    const confirmar = montar([{ id: 99, tipo: 'combo', nombre: 'Cocina completa', precio_efectivo: 179000 }]);
+    await waitFor(() => expect(obtenerCombo).toHaveBeenCalledWith(99));
+    await waitFor(() => expect(datosPreview().productos.find(p => p.id === 'combo-99').combo_incluye).toHaveLength(2));
+    fireEvent.click(screen.getByRole('button', { name: /^\d*\s*Combos y packs$/ }));
+    fireEvent.change(screen.getByLabelText('Título de combos'), { target: { value: 'Elegí tu pack' } });
+    fireEvent.change(screen.getByLabelText('Rótulo de combos'), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText('Tarjetas por fila'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('Filas de combos'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(confirmar).toHaveBeenCalled());
+    expect(confirmar.mock.calls[0][0].venta.inicio.combos).toMatchObject({ titulo: 'Elegí tu pack', kicker: '', columnas: 2, filas: 2, limite: 4 });
+  });
+  it('ofrece Combos y packs como bloque propio y conserva su visibilidad al guardar', async () => {
+    const confirmar = montar([{ id: 99, tipo: 'combo', nombre: 'Pack cocina', precio_efectivo: 179000 }]);
+    expect(datosPreview().venta.inicio.bloques).toEqual(expect.arrayContaining([{ tipo: 'combos', visible: true }]));
+    const fila = screen.getByRole('button', { name: /^\d*\s*Combos y packs$/ }).closest('[data-bloque-inicio]');
+    fireEvent.click(fila.querySelector('input[type="checkbox"]'));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(confirmar).toHaveBeenCalled());
+    expect(confirmar.mock.calls[0][0].venta.inicio.bloques).toEqual(expect.arrayContaining([{ tipo: 'combos', visible: false }]));
+  });
   it('incluye combos fuera del recorte y guarda el control Mostrar combos', async () => {
     const confirmar = montar([{ id: 99, tipo: 'combo', nombre: 'prueba123', categoria: 'Minorista', precio_efectivo: 179000 }]);
     expect(datosPreview().productos.filter(p => p.tipo === 'producto')).toHaveLength(120);
