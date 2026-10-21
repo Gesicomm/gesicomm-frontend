@@ -505,10 +505,10 @@ describe('runtime del lienzo en blanco — inicio', () => {
     const combo = { ...airFryer, id: 'combo-3', tipo: 'combo' };
     const contexto = { ...datos, vista: 'catalogo', productos: [airFryer, combo], filtro: { tipo: 'combo' } };
     const { document, dom, window } = montar(PLANTILLA_CATALOGO, contexto);
-    expect(document.querySelector('[data-gesicomm-filtro="tipo"]').value).toBe('combo');
+    expect(document.querySelector('[data-gesicomm-filtro-tipo="combo"]').getAttribute('aria-pressed')).toBe('true');
     expect(document.querySelectorAll('.lv-shop-card')).toHaveLength(1);
     window.dispatchEvent(new window.MessageEvent('message', { source: window.parent, data: { tipo: 'gesicomm:datos', datos: { ...contexto, filtro: null } } }));
-    expect(document.querySelector('[data-gesicomm-filtro="tipo"]').value).toBe('');
+    expect(document.querySelector('[data-gesicomm-filtro-tipo=""]').getAttribute('aria-pressed')).toBe('true');
     expect(document.querySelectorAll('.lv-shop-card')).toHaveLength(2);
     dom.window.close();
     const paginado = montar(PLANTILLA_CATALOGO, { ...contexto, catalogo: { paginado: true, total: 80 } });
@@ -518,14 +518,16 @@ describe('runtime del lienzo en blanco — inicio', () => {
 
   it('permite pasar de combos a productos y todos desde los botones visibles, también en catálogos anteriores', () => {
     const combo = { ...airFryer, id: 'combo-3', tipo: 'combo' };
-    const anterior = { ...PLANTILLA_CATALOGO, html: PLANTILLA_CATALOGO.html.replace(/<label class="lv-filter-field">Mostrar <select[\s\S]*?<\/select><\/label>/, '') };
+    const anterior = { ...PLANTILLA_CATALOGO, html: PLANTILLA_CATALOGO.html.replace('<h2>Filtros</h2>', '<h2>Filtros</h2><label>Mostrar<select data-gesicomm-filtro="tipo"><option value="">Todos: productos y combos</option><option value="combo">Combos</option></select></label>') };
     const contexto = { ...datos, vista: 'catalogo', productos: [airFryer, combo], filtro: { tipo: 'combo' } };
     const { document, dom, click } = montar(anterior, contexto);
     expect(document.querySelector('[data-gesicomm-filtro-tipo="combo"]').getAttribute('aria-pressed')).toBe('true');
     expect(document.querySelectorAll('.lv-shop-card')).toHaveLength(1);
     click('[data-gesicomm-filtro-tipo="producto"]');
     expect(document.querySelector('.lv-shop-card').getAttribute('data-gesicomm-item')).toBe(airFryer.id);
-    expect(document.querySelector('select[data-gesicomm-filtro="tipo"]').value).toBe('producto');
+    expect(document.querySelector('select[data-gesicomm-filtro="tipo"]')).toBeNull();
+    expect(document.querySelector('[data-gesicomm-filtro-tipo="producto"]').getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelectorAll('.lv-results [data-gesicomm-buscar]')).toHaveLength(1);
     click('[data-gesicomm-filtro-tipo=""]');
     expect(document.querySelectorAll('.lv-shop-card')).toHaveLength(2);
     expect(document.querySelector('[data-gesicomm-filtro-tipo=""]').getAttribute('aria-pressed')).toBe('true');

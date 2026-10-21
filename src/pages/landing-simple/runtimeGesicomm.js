@@ -1557,10 +1557,10 @@ export function runtimeGesicomm(plantillas) {
       case 'recomendados_titulo': return 'recomendados_titulo' in venta ? venta.recomendados_titulo : 'Te puede gustar';
       case 'recomendados_subtitulo': return venta.recomendados_subtitulo || '';
       case 'recomendados_cta': return 'recomendados_cta' in venta ? venta.recomendados_cta : 'Agregar';
-      case 'checkout_recomendados_kicker': return checkoutReco.kicker || 'Antes de cerrar';
-      case 'checkout_recomendados_titulo': return checkoutReco.titulo || 'También te puede interesar';
-      case 'checkout_recomendados_subtitulo': return checkoutReco.subtitulo || '';
-      case 'checkout_recomendados_cta': return checkoutReco.cta_texto || 'Agregar';
+      case 'checkout_recomendados_kicker': return checkoutReco.mostrar && checkoutReco.mostrar.kicker === false ? '' : (checkoutReco.kicker || 'Antes de cerrar');
+      case 'checkout_recomendados_titulo': return checkoutReco.mostrar && checkoutReco.mostrar.titulo === false ? '' : (checkoutReco.titulo || 'También te puede interesar');
+      case 'checkout_recomendados_subtitulo': return checkoutReco.mostrar && checkoutReco.mostrar.subtitulo === false ? '' : (checkoutReco.subtitulo || '');
+      case 'checkout_recomendados_cta': return checkoutReco.mostrar && checkoutReco.mostrar.cta === false ? '' : (checkoutReco.cta_texto || 'Agregar');
       case 'urgencia_titulo': return urg.titulo || 'Ofertas que terminan pronto';
       case 'urgencia_texto': return urg.texto || 'Aprovechá antes de que se agoten';
       case 'urgencia_cta': return urg.cta_texto || 'Ver todos';
@@ -3243,6 +3243,13 @@ export function runtimeGesicomm(plantillas) {
   function prepararFiltrosCatalogo() {
     var lista = document.querySelector('[data-gesicomm-lista="catalogo"]');
     if (!lista) return;
+    // Los botones Todos / Productos / Combos reemplazan al selector antiguo,
+    // incluso cuando el HTML guardado todavía lo contiene.
+    document.querySelectorAll('select[data-gesicomm-filtro="tipo"]').forEach(function (select) {
+      var etiqueta = select.closest('label');
+      if (etiqueta && etiqueta.querySelectorAll('input, select, textarea').length === 1) etiqueta.remove();
+      else select.remove();
+    });
     // También se agrega a los catálogos guardados antes de existir este filtro.
     if (!document.querySelector('.gc-catalog-types')) {
       var tiposCatalogo = document.createElement('div');
@@ -3272,7 +3279,6 @@ export function runtimeGesicomm(plantillas) {
     }
     barra.classList.add('gc-catalog-controls');
     var opciones = [
-      ['tipo', 'Tipo de producto', 'Todos: productos y combos'],
       ['categoria', 'Categoría', 'Todas las categorías'], ['disponibilidad', 'Disponibilidad', 'Toda disponibilidad'],
       ['orden', 'Ordenar', 'Destacados'],
     ];
@@ -3283,7 +3289,7 @@ export function runtimeGesicomm(plantillas) {
       select.setAttribute('aria-label', def[1]);
       select.setAttribute('data-gesicomm-filtro', def[0]);
       var valores = def[0] === 'orden' ? [['', def[2]], ['min-max', 'Menor precio'], ['max-min', 'Mayor precio'], ['az', 'A → Z'], ['za', 'Z → A']]
-        : def[0] === 'disponibilidad' ? [['todos', def[2]], ['en_stock', 'En stock'], ['agotado', 'Agotados']] : def[0] === 'tipo' ? [['', def[2]], ['producto', 'Productos individuales'], ['combo', 'Solo combos']] : [['', def[2]]];
+        : def[0] === 'disponibilidad' ? [['todos', def[2]], ['en_stock', 'En stock'], ['agotado', 'Agotados']] : [['', def[2]]];
       valores.forEach(function (v) { var o = document.createElement('option'); o.value = v[0]; o.textContent = v[1]; select.appendChild(o); });
       barra.appendChild(select);
     });

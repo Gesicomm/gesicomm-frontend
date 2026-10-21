@@ -2882,7 +2882,6 @@ const CATEGORIA_HTML = `<div class="lv-shell">
     <section class="lv-shop-layout" aria-label="Catálogo de productos">
       <aside class="lv-filters" aria-label="Filtros">
         <h2>Filtros</h2>
-        <label class="lv-filter-field">Mostrar <select aria-label="Tipo de producto" data-gesicomm-filtro="tipo"><option value="">Todos: productos y combos</option><option value="producto">Productos individuales</option><option value="combo">Solo combos</option></select></label>
         <div class="lv-filter-group" data-gesicomm-control="categoria">
           <div class="lv-filter-head"><span>Categorías</span><span aria-hidden="true">-</span></div>
           <label class="lv-filter-field">
