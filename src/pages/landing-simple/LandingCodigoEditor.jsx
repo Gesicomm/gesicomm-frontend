@@ -8,6 +8,7 @@ import {
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { tiendaService } from '../../services/tiendaService';
 import { vitrinaService } from '../../services/vitrinaService';
+import { tomarPrecargaEditor } from './precargaEditor';
 import { ofertaService } from '../../services/ofertaService';
 import CodigoPreview from './CodigoPreview';
 import SeccionesPanel from './panels/SeccionesPanel';
@@ -309,10 +310,12 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     // El panel inicializa su selección al montarse: esperar al catálogo
     // incluso cuando EditorSegunModo ya nos entregó la landing.
     setCargando(true);
+    // Catálogo y tienda ya vienen pedidos desde la entrada (precargaEditor).
+    const precarga = tomarPrecargaEditor();
     Promise.all([
       landingInicial ? Promise.resolve(landingInicial) : landingSimpleService.obtener(id),
-      tiendaService.obtener().catch(() => null),
-      vitrinaService.catalogo(),
+      precarga.tienda,
+      precarga.catalogo,
     ]).then(([l, t, cat]) => {
       if (!activo) return;
       const inicial = codigosDesdeContent(l.content, PLANTILLA_PRODUCTO, t || l?.tienda || null);
@@ -572,19 +575,6 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   // Volver a la pantalla de "¿Cómo querés armar tu landing?": la landing de
   // código recién creada se borra (todavía no tiene nada) y /landing, sin
   // landings, muestra el selector de modo.
-  // "Volver" desde "Configurar tienda", que ahora es la única pantalla de
-  // este editor. Con la landing ya configurada no hay a dónde "volver"
-  // dentro del editor: se sale a la lista de landings. Recién creada (sin
-  // configurar), el editor solo tendría el código de arranque: la vuelta
-  // atrás que tiene sentido es la pantalla de "¿Cómo querés armar tu
-  // landing?". La landing en blanco se borra — todavía no tiene nada — y
-  // sin landings /landing muestra ese selector.
-  function volverDesdeVenta() {
-    if (venta?.configurado) { navigate('/landing', { replace: true }); return; }
-    const intacta = !codigos.inicio.html.trim() || codigos.inicio.html.includes(MARCA_CODIGO_INICIAL);
-    cambiarDeModo({ preguntar: !intacta });
-  }
-
   async function cambiarDeModo({ preguntar = true } = {}) {
     if (preguntar && !window.confirm('Se va a borrar esta landing en blanco para que puedas elegir cómo armarla. ¿Seguir?')) return;
     try {
@@ -812,7 +802,6 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         anclasIniciales={anclasGuardadas}
         guardando={guardando}
         onConfirmar={confirmarVenta}
-        onVolver={volverDesdeVenta}
         errorGuardado={error ? { mensaje: error, detalles: erroresDetalle } : null}
         onCambiarModo={venta?.configurado ? null : () => cambiarDeModo()}
         tienda={tienda}

@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
-import LandingSimpleEditor from './LandingSimpleEditor';
 import LandingCodigoEditor from './LandingCodigoEditor';
+import { precargarEditor } from './precargaEditor';
+
+// Las plantillas rígidas ya casi no se usan (todo es lienzo): su editor no
+// viaja en el mismo chunk que el del lienzo.
+const LandingSimpleEditor = lazy(() => import('./LandingSimpleEditor'));
 
 /**
  * "/landing/:id" — la ruta es una sola, pero hay dos editores según cómo
@@ -25,6 +29,9 @@ export default function EditorSegunModo() {
     let activo = true;
     setLanding(null);
     setError('');
+    // Entrando directo a /landing/:id (recarga, link guardado) no pasó por
+    // LandingSimpleEntry: el catálogo arranca acá, junto con el detalle.
+    precargarEditor();
     landingSimpleService.obtener(id)
       .then(l => { if (activo) setLanding(l); })
       .catch(err => {
@@ -37,15 +44,15 @@ export default function EditorSegunModo() {
     return <div className="m-10 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger text-sm font-medium">{error}</div>;
   }
 
-  if (!landing) {
-    return (
-      <div className="flex items-center justify-center gap-2 text-fg/60 p-16">
-        <Loader size={20} className="animate-spin" /> Cargando...
-      </div>
-    );
-  }
+  const cargando = (
+    <div className="flex items-center justify-center gap-2 text-fg/60 p-16">
+      <Loader size={20} className="animate-spin" /> Cargando...
+    </div>
+  );
+
+  if (!landing) return cargando;
 
   return landing.template?.kind === 'codigo'
     ? <LandingCodigoEditor landingInicial={landing} />
-    : <LandingSimpleEditor landingInicial={landing} />;
+    : <Suspense fallback={cargando}><LandingSimpleEditor landingInicial={landing} /></Suspense>;
 }

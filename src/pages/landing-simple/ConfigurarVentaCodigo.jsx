@@ -710,7 +710,7 @@ export function aplicarReglaVenta(catalogo, venta) {
 const cargarOfertasTienda = () => ofertaService.listarTodas({ estrategias: ['order_bump', 'upsell', 'normal'] });
 
 export default function ConfigurarVentaCodigo({
-  catalogo, inicial, onConfirmar, onVolver, onCambiarModo, guardando, cargarOfertas = cargarOfertasTienda,
+  catalogo, inicial, onConfirmar, onCambiarModo, guardando, cargarOfertas = cargarOfertasTienda,
   tienda = null, landing = null, codigos = null, onCambiarCodigo = null, onRestaurarCodigo = null, onSubirImagen = null,
   disenoPendienteIA = false,
   onDesbloquearInicio = null,
@@ -2492,14 +2492,9 @@ export default function ConfigurarVentaCodigo({
           ya guardada. Reemplaza al antiguo editor de código como pantalla
           de entrada — esas acciones (publicar, guardar, eliminar) vivían
           ahí y ahora viven acá. */}
-      <div className="shrink-0 border-b border-border bg-surface px-4 md:px-6 py-2.5 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onVolver}
-          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold text-fg-muted hover:bg-surface-2 hover:text-fg"
-        >
-          <ArrowLeft size={15} /> Volver
-        </button>
+      {/* Sin "Volver": mandaba a /landing, que con una landing existente
+          redirige de vuelta acá — el botón no hacía nada. */}
+      <div className="shrink-0 border-b border-border bg-surface px-4 md:px-6 py-2.5 flex items-center justify-end gap-3">
         <div className="flex items-center gap-1.5">
           {panelesOcultos && (
             <div role="radiogroup" aria-label="Dispositivo" className="flex rounded-lg bg-surface-2 p-0.5 border border-border">
