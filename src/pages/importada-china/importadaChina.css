@@ -534,7 +534,8 @@
   border-radius: 12px;
   background: rgb(13 27 61 / 85%);
   backdrop-filter: blur(12px);
-  color: var(--color-fg)
+  /* La tarjeta conserva su fondo oscuro también en el tema claro. */
+  color: var(--color-brand-cloud)
 }
 
 .china-visual-label span {
