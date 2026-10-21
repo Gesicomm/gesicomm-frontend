@@ -26,6 +26,7 @@ import { runtimeGesicomm } from './runtimeGesicomm';
 import { protegerObservadoresCodigo } from './protegerObservadoresCodigo';
 import { CATALOGO_TIENDA_CSS } from './catalogoTiendaCodigo';
 import { CONFIANZA_INICIO_CSS } from './confianzaInicioCodigo';
+import { COMBOS_INICIO_CSS, COMBO_INICIO_TARJETA_HTML } from './combosInicioCodigo';
 import { conMarcaTienda, cssMarcaTienda } from './marcaTiendaCodigo';
 import { typographyCss } from '../../lib/typography';
 import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS, actualizarCreditosGesicom, adaptarLogosGesicom } from '../landing/storeCredit';
@@ -3148,7 +3149,7 @@ window.addEventListener('unhandledrejection', function (e) {
   // compra, cantidad y order bumps; acá solo se agrega el reporte de tema.
   const puenteGesicomm = `<script>window.__GESICOMM__ = ${jsonEnScript(datos)};</script>
 <script>(${instalarCodigoBloquesFicha.toString()})();</script>
-<script>(${runtimeGesicomm.toString()})();</script>
+<script>(${runtimeGesicomm.toString()})(${jsonEnScript({ combo: COMBO_INICIO_TARJETA_HTML })});</script>
 <script>
 // Tema de la landing → carrito. El carrito vive fuera del iframe y no puede
 // leer este CSS: se le mandan los colores. Primero las variables --gc-* del
@@ -3233,6 +3234,7 @@ ${CATALOGO_TIENDA_CSS}
 </style>
 <style data-gesicomm-confianza-estilos>
 ${CONFIANZA_INICIO_CSS}
+${COMBOS_INICIO_CSS}
 </style>
 ${extras?.css ? `<style>\n${escaparCierreStyle(extras.css)}\n</style>` : ''}
 <style>${CREDITO_GESICOM_CSS}</style>

@@ -1,3 +1,4 @@
+import { COMBO_INICIO_TARJETA_HTML } from './combosInicioCodigo';
 import { HTML_OFERTA_PRODUCTO } from './OfertaTiempoLimitado';
 import estilosOfertaProducto from './ofertaTiempoLimitado.css?inline';
 import { ESTILOS_INICIO_CODIGO } from './estilosInicioCodigo';
@@ -1496,13 +1497,7 @@ ${headerTiendaUnico('inicio')}
 
     <section id="combos" class="section combos-section home-combos" data-gesicomm-bloque="combos" data-gesicomm-lista="combos">
       <div class="section-heading"><div><p class="home-combos-eyebrow">✦ TODO EN UN COMBO</p><h2>Juntos convienen más.</h2><p>Elegí un combo listo para vos y descubrí todo lo que incluye.</p></div><a class="home-combos-explore" href="/catalogo?tipo=combo" data-gesicomm-link="catalogo">Ver todos los combos ↗</a></div>
-      <div class="home-combo-grid" data-gesicomm-lista="combos" data-gesicomm-limite="3"><template><article class="home-combo-card">
-        <div class="home-combo-visual" data-gesicomm-ver><span class="home-combo-tag" data-combo="etiqueta"></span><span class="home-combo-discount" data-combo="descuento" hidden></span><div class="home-combo-pictures" data-combo="imagenes"></div></div>
-        <div class="home-combo-body"><p class="home-combo-meta" data-combo="cantidad"></p><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="home-combo-description" data-gesicomm-bind="descripcion"></p>
-          <div class="home-combo-includes"><h4>¿Qué incluye?</h4><ul data-combo="incluye"></ul></div>
-          <div class="home-combo-footer"><span class="home-combo-old" data-combo="antes" hidden></span><div class="home-combo-prices"><strong data-gesicomm-bind="precio"></strong><span class="home-combo-saving" data-combo="ahorro" hidden></span></div><button type="button" data-gesicomm-comprar>Comprar combo <span aria-hidden="true">→</span></button></div>
-        </div>
-      </article></template></div><p class="home-combos-note">✓ Varios productos juntos en un solo pedido</p>
+      <div class="home-combo-grid" data-gesicomm-lista="combos" data-gesicomm-limite="3"><template>${COMBO_INICIO_TARJETA_HTML}</template></div><p class="home-combos-note">✓ Varios productos juntos en un solo pedido</p>
     </section>
 
     <section id="preguntas" class="section faq-section" data-gesicomm-bloque="preguntas"><div class="section-heading"><div><h2>Preguntas frecuentes</h2><p>Resolvemos tus dudas más comunes</p></div></div><div class="faq-list"><div class="faq-item is-open"><button class="faq-question" type="button" aria-expanded="true"><span>¿Cuánto tarda en llegar mi pedido?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Los envíos se realizan según la cobertura de la tienda. Vas a ver las condiciones antes de confirmar.</p></div></div></div><div class="faq-item"><button class="faq-question" type="button" aria-expanded="false"><span>¿Qué medios de pago aceptan?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Podés pagar con los medios habilitados por la tienda y consultar disponibilidad de pago al recibir.</p></div></div></div><div class="faq-item"><button class="faq-question" type="button" aria-expanded="false"><span>¿Qué hago si recibo un producto con problemas?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Escribinos por WhatsApp para recibir asistencia sobre cambios o devoluciones.</p></div></div></div><div class="faq-item"><button class="faq-question" type="button" aria-expanded="false"><span>¿Los productos tienen garantía?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Consultá las condiciones del producto o escribinos antes de comprar.</p></div></div></div></div></section>

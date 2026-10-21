@@ -472,6 +472,32 @@ describe('runtime del lienzo en blanco — inicio', () => {
     dom.window.close();
   });
 
+  it('actualiza las tarjetas genéricas guardadas y respeta incluye, ahorro y descripción al repintar', () => {
+    const codigo = { html: `<main><section id="otra">Diseño propio</section><section data-gesicomm-bloque="combos"><div class="section-heading"><div><h2>Combos</h2></div></div>
+      <div class="product-grid" data-gesicomm-lista="combos"><template><article class="product-card"><span>AHORRÁ MÁS</span><div class="product-content"><h3 data-gesicomm-bind="nombre"></h3></div></article></template></div></section></main>`, css: '.product-grid { display:flex; }', js: '' };
+    const combo = { id: 33, tipo: 'combo', nombre: 'Combo cocina', descripcion: 'Tres piezas para tu cocina.', precio_efectivo: 200000, precio_ancla: 250000,
+      imagen: 'https://cdn.test/combo.webp', productos_combo: [{ id: 1, nombre: 'Cacerola', cantidad: 1, precio: 150000 }, { id: 2, nombre: 'Utensilios', cantidad: 2, precio: 50000 }] };
+    const entrada = datosRuntimePreview({ productos: [combo], vista: 'inicio', venta: { inicio: { combos: { mostrar_incluidos: true, mostrar_ahorro: true, mostrar_descripcion: true } } } });
+    const { document, window, dom } = montar(codigo, entrada);
+    expect(document.querySelector('.home-combo-includes').hidden).toBe(false);
+    expect(document.querySelector('[data-combo="incluye"]').textContent).toContain('Utensilios · x2');
+    expect(document.querySelector('[data-combo="ahorro"]').textContent).toBe('Ahorrás Gs 50.000');
+    expect(document.querySelector('[data-combo="descuento"]').textContent).toBe('AHORRÁ 20%');
+    expect(document.querySelector('.home-combo-description').textContent).toBe(combo.descripcion);
+    expect(document.querySelector('.home-combo-footer button').textContent).toContain('Comprar combo');
+    expect(document.querySelector('.gc-product-availability')).toBeNull();
+    expect(document.body.textContent).not.toContain('AHORRÁ MÁS');
+    expect(document.querySelector('#otra').textContent).toBe('Diseño propio');
+    window.dispatchEvent(new window.MessageEvent('message', { source: window.parent, data: { tipo: 'gesicomm:datos', datos: { ...entrada,
+      venta: { inicio: { combos: { mostrar_incluidos: false, mostrar_ahorro: false, mostrar_descripcion: false } } } } } }));
+    expect(document.querySelector('.home-combo-includes').hidden).toBe(true);
+    expect(document.querySelector('[data-combo="ahorro"]').hidden).toBe(true);
+    expect(document.querySelector('[data-combo="descuento"]').hidden).toBe(true);
+    expect(document.querySelector('.home-combo-description').hidden).toBe(true);
+    expect(document.querySelectorAll('.home-combo-card')).toHaveLength(1);
+    dom.window.close();
+  });
+
   it('solo combos se aplica al catálogo local y se mantiene en pedidos paginados', () => {
     const combo = { ...airFryer, id: 'combo-3', tipo: 'combo' };
     const contexto = { ...datos, vista: 'catalogo', productos: [airFryer, combo], filtro: { tipo: 'combo' } };

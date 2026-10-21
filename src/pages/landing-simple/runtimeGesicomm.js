@@ -70,7 +70,7 @@
  *     Fuente: venta.urgencia (activo + fin_at, cargados en Configurar venta). Si no está
  *     activo o fin_at ya pasó, el bloque se oculta solo — mismo criterio que una lista vacía.
  */
-export function runtimeGesicomm() {
+export function runtimeGesicomm(plantillas) {
   var datos = window.__GESICOMM__ || {};
   var productos = Array.isArray(datos.productos) ? datos.productos : [];
   var productoActual = datos.producto || null;
@@ -951,6 +951,18 @@ export function runtimeGesicomm() {
   function prepararSeccionCombos() {
     var seccion = document.querySelector('[data-gesicomm-bloque="combos"]');
     if (!seccion) return;
+    // Los diseños guardados pueden conservar tarjetas genéricas que ignoran
+    // los controles de este bloque. Actualizar solo su plantilla de combos.
+    var plantillasCombo = seccion.querySelectorAll('[data-gesicomm-lista="combos"] > template');
+    for (var pc = 0; pc < plantillasCombo.length; pc++) {
+      var tplCombo = plantillasCombo[pc];
+      if (plantillas && plantillas.combo && !tplCombo.content.querySelector('.home-combo-card [data-combo="incluye"]')) {
+        tplCombo.innerHTML = plantillas.combo;
+        tplCombo.parentNode.classList.remove('product-grid', 'spotlight-grid', 'lv-shop-grid');
+        tplCombo.parentNode.classList.add('home-combo-grid');
+      }
+    }
+    seccion.classList.add('home-combos');
     var c = inicioConfig().combos || {}, cfg = configCombosInicio();
     [['kicker', '.home-combos-eyebrow', 'TODO EN UN COMBO'], ['titulo', '.section-heading h2', 'Juntos convienen más.'],
       ['descripcion', '.section-heading > div > p:not(.home-combos-eyebrow)', 'Elegí un combo listo para vos y descubrí todo lo que incluye.'],
@@ -1069,6 +1081,7 @@ export function runtimeGesicomm() {
 
   function prepararTarjetaProducto(raiz, item) {
     if (!raiz || !item) return;
+    if (raiz.classList.contains('home-combo-card')) return;
     var contenido = raiz.querySelector('.product-content, .limited-offer-copy, .hero-card-copy');
     var esProductCard = !!(raiz.classList && raiz.classList.contains('product-card'));
     if (item.titulo_comercial || item.mensaje_comercial || item.insignia_principal || item.insignia_secundaria || item.cta_texto) {
