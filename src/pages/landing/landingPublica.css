@@ -124,6 +124,24 @@
 }
 @keyframes lp-spin { to { transform: rotate(360deg); } }
 
+/* Navegar de una ficha a otra ya no tira abajo la página entera (eso se
+   sentía como un refresh del sitio): se queda la vista vieja puesta y solo
+   se ve esta barra fina arriba mientras llega la próxima. */
+.lp-barra-transicion {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 9998;
+  background: var(--l-primary, #10b981);
+  background: linear-gradient(90deg, transparent, var(--l-primary, #10b981), transparent);
+  background-size: 200% 100%;
+  animation: lp-barra-transicion 1s ease-in-out infinite;
+}
+@keyframes lp-barra-transicion {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* El alto lo fija el VIEWPORT, no el ancho. Antes era `aspect-ratio: 16/6`
    sin tope: en una pantalla de 1920px daba 720px de banner —media pantalla
    para mostrar tres líneas de texto— y empujaba todos los productos abajo

@@ -20,10 +20,21 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
   const [data, setData] = useState(null);
   const visitaEnviadaRef = useRef(null);
   const pageviewEnviadoRef = useRef(null);
+  // Si ya había una página pintada (header, tema, producto anterior), al
+  // navegar a otra ficha no la tiramos abajo para mostrar la pantalla negra
+  // de "cargando": eso se sentía como un refresh completo del sitio. Se
+  // sigue viendo la página vieja con una barra de progreso arriba hasta que
+  // la nueva esté lista, y recién ahí se reemplaza de una vez.
+  const [transicionando, setTransicionando] = useState(false);
+  const huboPrimeraCarga = useRef(false);
 
   useEffect(() => {
     let activo = true;
-    setEstado('cargando');
+    if (huboPrimeraCarga.current) {
+      setTransicionando(true);
+    } else {
+      setEstado('cargando');
+    }
     const promesa = productId
       ? (slug
           ? obtenerProductoLanding(slug, productId)
@@ -63,7 +74,12 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
           if (!productId) registrarVisitaLanding(slug);
         }
       })
-      .catch(() => { if (activo) setEstado('no-encontrada'); });
+      .catch(() => { if (activo) setEstado('no-encontrada'); })
+      .finally(() => {
+        if (!activo) return;
+        huboPrimeraCarga.current = true;
+        setTransicionando(false);
+      });
     return () => { activo = false; };
   }, [slug, productId, vistaCodigo, categoriaVista]);
 
@@ -103,16 +119,21 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
     return <div className="lp-status-page"><div className="lp-spinner" /></div>;
   }
 
+  const barraTransicion = transicionando ? <div className="lp-barra-transicion" /> : null;
+
   // Página del Page Builder: se pinta con el MISMO iframe sandbox que usa
   // el preview del editor (ver CodigoPreview / construirDocumentoCodigo).
   if (estado === 'builder') {
     return (
-      <LandingCodigoPublica
-        codigo={data.codigo}
-        titulo={data.seo?.titulo || data.pagina?.nombre || ''}
-        data={data}
-        slug={slug}
-      />
+      <>
+        {barraTransicion}
+        <LandingCodigoPublica
+          codigo={data.codigo}
+          titulo={data.seo?.titulo || data.pagina?.nombre || ''}
+          data={data}
+          slug={slug}
+        />
+      </>
     );
   }
 
@@ -127,8 +148,18 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
 
   // Rutear dependiendo del tipo de página (STI)
   if (data?.tipo_pagina === 'funnel') {
-    return <FunnelView data={data} slug={slug} productId={productId} />;
+    return (
+      <>
+        {barraTransicion}
+        <FunnelView data={data} slug={slug} productId={productId} />
+      </>
+    );
   }
 
-  return <TiendaPaginaView data={data} slug={slug} productId={productId} vistaCodigo={vistaCodigo} categorySlug={categoriaVista} />;
+  return (
+    <>
+      {barraTransicion}
+      <TiendaPaginaView data={data} slug={slug} productId={productId} vistaCodigo={vistaCodigo} categorySlug={categoriaVista} />
+    </>
+  );
 }
