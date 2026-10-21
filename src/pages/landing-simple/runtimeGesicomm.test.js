@@ -2948,6 +2948,33 @@ describe('checkout propio — order bumps, recomendados y resumen', () => {
     dom.window.close();
   });
 
+  it('el carrusel vuelve al inicio al avanzar desde el final y al final al retroceder desde el inicio', async () => {
+    const datos = datosRuntimePublico(data, 'tienda', null, { vista: 'checkout', carrito: carritoMouse });
+    const { document, window, click, dom } = montar(PLANTILLA_CHECKOUT, datos);
+    try {
+      const carrusel = document.querySelector('[data-gesicomm-reco-carrusel]');
+      Object.defineProperties(carrusel, { clientWidth: { value: 300 }, scrollWidth: { value: 500 } });
+      [...carrusel.querySelectorAll('.lv-reco-card')].forEach((tarjeta, i) => {
+        Object.defineProperty(tarjeta, 'offsetLeft', { value: i * 300 });
+      });
+      const destinos = [];
+      carrusel.scrollTo = ({ left }) => { destinos.push(left); carrusel.scrollLeft = left; };
+      await new Promise(resolve => window.requestAnimationFrame(resolve));
+      const anterior = document.querySelector('[data-gesicomm-reco-prev]');
+      const siguiente = document.querySelector('[data-gesicomm-reco-next]');
+      expect(anterior.disabled).toBe(false);
+      expect(siguiente.disabled).toBe(false);
+      for (let i = 0; i < 4; i++) click('[data-gesicomm-reco-next]');
+      expect(destinos).toEqual([200, 0, 200, 0]);
+      click('[data-gesicomm-reco-prev]');
+      expect(carrusel.scrollLeft).toBe(200);
+      carrusel.dispatchEvent(new window.Event('scroll'));
+      await new Promise(resolve => window.requestAnimationFrame(resolve));
+      expect(siguiente.disabled).toBe(false);
+      expect(anterior.disabled).toBe(false);
+    } finally { dom.window.close(); }
+  });
+
   it('los recomendados con imagen faltante muestran un fallback estable', () => {
     const datos = datosRuntimePublico(
       { catalogo_items: [mouse, { ...sarten, imagen: null }], content: {} },

@@ -4364,8 +4364,8 @@ export function runtimeGesicomm() {
     var base = tarjetas.length ? tarjetas[0].offsetLeft : 0;
     var posiciones = [];
     tarjetas.forEach(function (tarjeta) {
-      var pos = Math.max(0, Math.round(tarjeta.offsetLeft - base));
-      if (pos <= maxScroll + 1 && posiciones.indexOf(pos) === -1) posiciones.push(pos);
+      var pos = Math.min(maxScroll, Math.max(0, Math.round(tarjeta.offsetLeft - base)));
+      if (posiciones.indexOf(pos) === -1) posiciones.push(pos);
     });
     if (!posiciones.length) posiciones.push(0);
     posiciones.sort(function (a, b) { return a - b; });
@@ -4389,7 +4389,6 @@ export function runtimeGesicomm() {
     var controles = controlesCarruselRecomendados(carrusel);
     var maxScroll = Math.max(0, carrusel.scrollWidth - carrusel.clientWidth);
     var posiciones = posicionesCarruselRecomendados(carrusel);
-    var indice = indiceCarruselRecomendados(carrusel, posiciones);
     var puedeMoverse = maxScroll > 1 && posiciones.length > 1;
     if (controles.grupo) controles.grupo.hidden = !puedeMoverse;
     if (!puedeMoverse) {
@@ -4397,10 +4396,8 @@ export function runtimeGesicomm() {
       if (controles.next) controles.next.disabled = true;
       return;
     }
-    var alInicio = indice <= 0 || carrusel.scrollLeft <= 1;
-    var alFinal = indice >= posiciones.length - 1 || carrusel.scrollLeft >= maxScroll - 1;
-    if (controles.prev) controles.prev.disabled = alInicio;
-    if (controles.next) controles.next.disabled = alFinal;
+    if (controles.prev) controles.prev.disabled = false;
+    if (controles.next) controles.next.disabled = false;
   }
 
   function prepararCarruselRecomendados(carrusel) {
@@ -4433,7 +4430,7 @@ export function runtimeGesicomm() {
     var posiciones = posicionesCarruselRecomendados(carrusel);
     if (posiciones.length <= 1) { actualizarCarruselRecomendados(carrusel); return; }
     var indice = indiceCarruselRecomendados(carrusel, posiciones);
-    var destino = Math.max(0, Math.min(posiciones.length - 1, indice + direccion));
+    var destino = (indice + direccion + posiciones.length) % posiciones.length;
     carrusel.scrollTo({ left: posiciones[destino], behavior: 'smooth' });
     window.setTimeout(function () { actualizarCarruselRecomendados(carrusel); }, 260);
   }
