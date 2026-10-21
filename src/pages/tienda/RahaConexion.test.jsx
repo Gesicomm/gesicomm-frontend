@@ -55,6 +55,47 @@ describe('Raha application', () => {
     expect(screen.getByText('Archivo subido correctamente.')).toBeInTheDocument();
     expect(screen.getByText('Adjuntado')).toBeInTheDocument();
   });
+  it.each(['Constancia de RUC', 'Cédula del representante legal'])('rechaza un archivo pesado en %s antes de enviarlo', async documento => {
+    render(<RahaConexion />);
+    const archivo = new File(['imagen'], 'documento.png', { type: 'image/png' });
+    Object.defineProperty(archivo, 'size', { value: 9 * 1024 * 1024 });
+    fireEvent.change(await screen.findByLabelText(`Adjuntar ${documento}`), { target: { files: [archivo] } });
+    const alerta = await screen.findByRole('alert');
+    expect(alerta).toHaveTextContent('El archivo es demasiado pesado');
+    expect(alerta).toHaveTextContent('máximo de 8 MB');
+    expect(alerta).not.toHaveTextContent(/servidor|conexión/i);
+    expect(rahaService.subir).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(`Adjuntar ${documento}`)).toBeEnabled();
+  });
+  it.each([
+    { response: { status: 413, data: '<html>413 Request Entity Too Large</html>' } },
+    { response: { status: 413 } },
+    { response: { status: 400, data: { code: 'FILE_TOO_LARGE' } } },
+  ])('explica el rechazo por tamaño del servidor o proxy: %j', async error => {
+    rahaService.subir.mockRejectedValue(error);
+    render(<RahaConexion />);
+    fireEvent.change(await screen.findByLabelText('Adjuntar Constancia de RUC'), { target: { files: [new File(['%PDF'], 'ruc.pdf', { type: 'application/pdf' })] } });
+    const alerta = await screen.findByRole('alert');
+    expect(alerta).toHaveTextContent('El archivo es demasiado pesado');
+    expect(alerta).toHaveTextContent('8 MB por documento');
+    expect(alerta).not.toHaveTextContent(/conexión|servidor/i);
+    expect(screen.getByText('Reintentar')).toBeInTheDocument();
+  });
+  it('no afirma una caída del servidor cuando el navegador no informa la causa', async () => {
+    rahaService.subir.mockRejectedValue({ code: 'ERR_NETWORK' });
+    render(<RahaConexion />);
+    fireEvent.change(await screen.findByLabelText('Adjuntar Constancia de RUC'), { target: { files: [new File(['%PDF'], 'ruc.pdf', { type: 'application/pdf' })] } });
+    const alerta = await screen.findByRole('alert');
+    expect(alerta).toHaveTextContent('No se pudo completar la carga del documento');
+    expect(alerta).toHaveTextContent('máximo 8 MB');
+    expect(alerta).not.toHaveTextContent(/No hay conexión con el servidor|servidor.*caído/i);
+  });
+  it('rechaza archivos vacíos con un mensaje específico', async () => {
+    render(<RahaConexion />);
+    fireEvent.change(await screen.findByLabelText('Adjuntar Constancia de RUC'), { target: { files: [new File([], 'ruc.pdf', { type: 'application/pdf' })] } });
+    expect(await screen.findByRole('alert')).toHaveTextContent('El archivo está vacío');
+    expect(rahaService.subir).not.toHaveBeenCalled();
+  });
   it('reports a failed upload next to the document and lets the user retry', async () => {
     rahaService.subir.mockRejectedValue({ response: { status: 503, data: { message: 'Error interno del servidor.' } } });
     render(<RahaConexion />);

@@ -132,7 +132,10 @@ export function RahaDocumentos({ documentos = [], editable = false, busy, subida
 }
 
 function mensajeSubida(err) {
-  if (!err.response) return 'No hay conexión con el servidor. Revisá tu internet y volvé a intentar.';
+  if (err.response?.status === 413 || err.response?.data?.code === 'FILE_TOO_LARGE') {
+    return 'El archivo es demasiado pesado para subirlo. Reducí su tamaño o comprimilo y volvé a intentar. El máximo permitido es de 8 MB por documento.';
+  }
+  if (!err.response) return 'No se pudo completar la carga del documento. Si el archivo es pesado, probá reducir su tamaño o comprimilo (máximo 8 MB). Si sigue fallando, revisá tu conexión y volvé a intentar.';
   if (err.response.status >= 500) return 'El servidor no pudo guardar el archivo. Probá de nuevo en unos minutos; si sigue fallando, avisanos.';
   return err.response.data?.message || 'No se pudo subir el archivo.';
 }
@@ -176,7 +179,12 @@ export default function RahaConexion({ tienda, onSolicitudChange }) {
   async function subir(file, tipo) {
     if (busy) return;
     const marcar = subida => setSubidas(prev => ({ ...prev, [tipo]: { nombre: file.name, ...subida } }));
-    if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 8 * 1024 * 1024 || !file.size) { marcar({ estado: 'error', mensaje: 'Usá PDF, JPG, PNG o WebP de hasta 8 MB.' }); return; }
+    if (file.size > 8 * 1024 * 1024) {
+      marcar({ estado: 'error', mensaje: 'El archivo es demasiado pesado y supera el máximo de 8 MB por documento. Reducí su tamaño o comprimilo antes de adjuntarlo.' });
+      return;
+    }
+    if (!file.size) { marcar({ estado: 'error', mensaje: 'El archivo está vacío. Elegí un documento que tenga contenido.' }); return; }
+    if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { marcar({ estado: 'error', mensaje: 'Este formato no está permitido. Usá PDF, JPG, PNG o WebP de hasta 8 MB.' }); return; }
     setBusy(true); setError(''); setMensaje(''); marcar({ estado: 'subiendo', progreso: 0 });
     try {
       const row = await rahaService.subir(file, tipo, solicitud.version, progreso => marcar({ estado: 'subiendo', progreso }));
