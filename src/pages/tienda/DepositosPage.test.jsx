@@ -7,11 +7,10 @@ import * as courierApi from '../../services/courierApi';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
 import { solicitudAbastecimientoService } from '../../services/solicitudAbastecimiento.service';
-import { rahaOperacionesService } from '../../services/rahaOperacionesService';
 
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
+const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }));
+vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
 vi.mock('../../hooks/useSesion', () => ({ default: () => ({ estado: 'autenticado', usuario: { rol: 'usuario' } }) }));
-vi.mock('../../services/rahaOperacionesService', () => ({ rahaOperacionesService: { origenes: vi.fn() } }));
 vi.mock('../../components/depositos/FulfillmentCard', () => ({ default: () => null }));
 vi.mock('../../services/deposito.service', () => ({
   depositoService: {
@@ -72,20 +71,19 @@ beforeEach(() => {
   productService.buscar.mockResolvedValue({ productos: [], total: 0, total_paginas: 0 });
   productService.variantes.mockResolvedValue([]);
   solicitudAbastecimientoService.crear.mockResolvedValue({ id: 99 });
-  rahaOperacionesService.origenes.mockResolvedValue([{ id: 50, nombre: 'Depósito fuera del filtro', ciudad: 'Luque' }]);
 });
 
-it('ordena los cuatro accesos y permite abastecer un depósito que no está en la página actual', async () => {
+it('muestra los tres accesos y navega a abastecimientos y envíos RAHA', async () => {
   render(<DepositosPage />);
+  await waitFor(() => expect(depositoService.listarDepositos).toHaveBeenCalled());
   const acciones = screen.getByRole('navigation', { name: 'Acciones de depósitos' });
   expect([...acciones.querySelectorAll('button')].map(boton => boton.textContent.trim()))
-    .toEqual(['Agregar depósito', 'Abastecerme', 'Ver RAHA', 'Enviar mercadería a RAHA']);
-  fireEvent.click(screen.getByRole('button', { name: 'Abastecerme', exact: true }));
-  await screen.findByRole('option', { name: /Depósito fuera del filtro/ });
-  expect(screen.getByLabelText('Depósito de destino')).toHaveValue('50');
-  fireEvent.click(screen.getByRole('button', { name: 'Continuar', exact: true }));
-  await screen.findByText('Abastecer depósito');
-  expect(rahaOperacionesService.origenes).toHaveBeenCalledTimes(1);
+    .toEqual(['Agregar depósito', 'Ver abastecimientos RAHA', 'Enviar mercadería a RAHA']);
+  expect(screen.queryByRole('button', { name: 'Abastecerme', exact: true })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Ver abastecimientos RAHA' }));
+  expect(navigate).toHaveBeenLastCalledWith('/mis-abastecimientos');
+  fireEvent.click(screen.getByRole('button', { name: 'Enviar mercadería a RAHA' }));
+  expect(navigate).toHaveBeenLastCalledWith('/mis-envios-raha');
 });
 
 async function abrirFormularioDeposito() {
