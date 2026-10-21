@@ -610,7 +610,7 @@ Si no te di un precio ancla, recomendá uno aproximadamente 30% por encima del p
 Mostrámelo en el resumen para que pueda cambiarlo. Dejá "anchor_price" en null solo si te digo que no quiero precio ancla.
 
 ## PASO 5 — INVENTARIO Y VARIANTES
-Usá stock de salón y depósito. No inventes cantidades.
+Usá únicamente stock en depósito (stock_warehouse). No inventes cantidades.
 Si el producto tiene variantes, cargá cada opción con sus valores en "variants.options" (ej: name "Color", values ["Negro", "Blanco"]). Sin variantes: "options": [].
 
 ## PASO 6 — CONTENIDO DE LA FICHA, BLOQUE POR BLOQUE
@@ -659,7 +659,6 @@ Mostrame un resumen (incluí el precio ancla recomendado y de dónde salieron la
       "discount": { "percentage": 0, "valid_from": null, "valid_until": null }
     },
     "inventory": {
-      "stock_store": 0,
       "stock_warehouse": 0,
       "minimum_total_stock": 0
     },
@@ -846,10 +845,11 @@ export default function ProductForm() {
 
       // ── Inventario ─────────────────────────────────────────────
       if (p.inventory) {
-        const salon    = p.inventory.stock_store     ?? 0;
-        const deposito = p.inventory.stock_warehouse ?? 0;
-        setValue('stock_salon',         salon,          { shouldDirty: true });
-        setValue('stock_deposito',      deposito,       { shouldDirty: true });
+        // Compatibilidad con JSON anteriores: conservar su stock total.
+        const salon = Number(p.inventory.stock_store) || 0;
+        const deposito = Number(p.inventory.stock_warehouse) || 0;
+        setValue('stock_salon',         0,          { shouldDirty: true });
+        setValue('stock_deposito',      salon + deposito,       { shouldDirty: true });
         setValue('cantidad_disponible', salon + deposito, { shouldDirty: true });
         if (p.inventory.minimum_total_stock !== undefined)
           setValue('stock_minimo', p.inventory.minimum_total_stock, { shouldDirty: true });
@@ -1231,10 +1231,10 @@ export default function ProductForm() {
             descuento_fin: p.descuento_fin ? p.descuento_fin.slice(0, 10) : '',
             impuestos_incluidos: p.impuestos_incluidos !== false,
             cantidad_disponible: p.cantidad_disponible || 0,
-            stock_salon: p.stock_salon || 0,
-            stock_deposito: p.stock_deposito || 0,
+            stock_salon: 0,
+            stock_deposito: (Number(p.stock_salon) || 0) + (Number(p.stock_deposito) || 0),
             stock_minimo: p.stock_minimo || 0,
-            stock_minimo_salon: p.stock_minimo_salon ?? '',
+            stock_minimo_salon: '',
             unidad_medida: p.unidad_medida || 'unidad',
             activo: p.activo,
             estado_venta: p.estado_venta || 'en_venta',
@@ -1242,6 +1242,8 @@ export default function ProductForm() {
             variantes: vars?.length
               ? vars.map(v => ({
                   ...v,
+                  stock_salon: 0,
+                  stock_deposito: (Number(v.stock_salon) || 0) + (Number(v.stock_deposito) || 0),
                   incluida: true,
                   valores: (v.valoresOpcion || []).map(vo => ({ opcion: vo.opcion.nombre, valor: vo.valor })),
                 }))
@@ -1370,7 +1372,7 @@ export default function ProductForm() {
         return {
           valores,
           sku_variante: getValues('sku') || '',
-          stock_salon: parseInt(getValues('stock_salon'), 10) || 0,
+          stock_salon: 0,
           stock_deposito: parseInt(getValues('stock_deposito'), 10) || 0,
           precio_diferencial: 0,
           incluida: true,
@@ -1541,17 +1543,6 @@ export default function ProductForm() {
   const sumarStockDepositos = (key) => Object.values(stockPorDeposito[key] || {})
     .reduce((acc, cantidad) => acc + (parseInt(cantidad, 10) || 0), 0);
 
-  const tipoUbicacion = (depositoId) => (
-    depositosStock.find((dep) => String(dep.id) === String(depositoId))?.tipoUbicacion
-    || depositosStock.find((dep) => String(dep.id) === String(depositoId))?.tipo_ubicacion
-    || 'DEPOSITO'
-  );
-
-  const sumarStockPorTipo = (key, tipos) => Object.entries(stockPorDeposito[key] || {})
-    .reduce((acc, [depositoId, cantidad]) => (
-      tipos.includes(tipoUbicacion(depositoId)) ? acc + (parseInt(cantidad, 10) || 0) : acc
-    ), 0);
-
   const cambiarStockDeposito = (key, depositoId, valor) => {
     const cantidad = Math.max(0, parseInt(valor, 10) || 0);
     setStockPorDeposito((prev) => {
@@ -1564,21 +1555,17 @@ export default function ProductForm() {
       };
 
       if (key === 'producto') {
-        const totalSalon = Object.entries(siguiente.producto || {})
-          .reduce((acc, [id, item]) => (tipoUbicacion(id) === 'SALON' ? acc + (parseInt(item, 10) || 0) : acc), 0);
-        const totalDeposito = Object.entries(siguiente.producto || {})
-          .reduce((acc, [id, item]) => (tipoUbicacion(id) !== 'SALON' ? acc + (parseInt(item, 10) || 0) : acc), 0);
-        setValue('stock_salon', totalSalon, { shouldDirty: true, shouldValidate: true });
+        const totalDeposito = Object.values(siguiente.producto || {})
+          .reduce((acc, item) => acc + (parseInt(item, 10) || 0), 0);
+        setValue('stock_salon', 0, { shouldDirty: true });
         setValue('stock_deposito', totalDeposito, { shouldDirty: true, shouldValidate: true });
       } else if (key.startsWith('variante:')) {
         const varianteId = key.slice('variante:'.length);
         const idx = (getValues('variantes') || []).findIndex((v) => String(v.id) === String(varianteId));
         if (idx >= 0) {
-          const totalSalon = Object.entries(siguiente[key] || {})
-            .reduce((acc, [id, item]) => (tipoUbicacion(id) === 'SALON' ? acc + (parseInt(item, 10) || 0) : acc), 0);
-          const totalDeposito = Object.entries(siguiente[key] || {})
-            .reduce((acc, [id, item]) => (tipoUbicacion(id) !== 'SALON' ? acc + (parseInt(item, 10) || 0) : acc), 0);
-          setValue(`variantes.${idx}.stock_salon`, totalSalon, { shouldDirty: true, shouldValidate: true });
+          const totalDeposito = Object.values(siguiente[key] || {})
+            .reduce((acc, item) => acc + (parseInt(item, 10) || 0), 0);
+          setValue(`variantes.${idx}.stock_salon`, 0, { shouldDirty: true });
           setValue(`variantes.${idx}.stock_deposito`, totalDeposito, { shouldDirty: true, shouldValidate: true });
         }
       }
@@ -1621,8 +1608,8 @@ export default function ProductForm() {
         .filter(v => modoLegacyVariantes || v.incluida !== false);
       const stockFisicoTotal = data.variantes?.length
         ? variantesActivas
-          .reduce((acc, v) => acc + (parseInt(v.stock_salon, 10) || 0) + (parseInt(v.stock_deposito, 10) || 0), 0)
-        : (parseInt(data.stock_salon, 10) || 0) + (parseInt(data.stock_deposito, 10) || 0);
+          .reduce((acc, v) => acc + (parseInt(v.stock_deposito, 10) || 0), 0)
+        : (parseInt(data.stock_deposito, 10) || 0);
       const stockDepositosPayload = construirStockDepositosPayload(variantesActivas);
       const totalDistribuido = stockDepositosPayload.reduce((acc, fila) => acc + fila.cantidad, 0);
 
@@ -1637,14 +1624,14 @@ export default function ProductForm() {
       }
 
       if (tieneVariantes) {
-        const varianteNuevaConDeposito = variantesActivas.some((v) => !v.id && ((parseInt(v.stock_salon, 10) || 0) + (parseInt(v.stock_deposito, 10) || 0)) > 0);
+        const varianteNuevaConDeposito = variantesActivas.some((v) => !v.id && (parseInt(v.stock_deposito, 10) || 0) > 0);
         if (varianteNuevaConDeposito) {
           setTabActiva('stock');
           throw new Error('Guardá primero las variantes nuevas y luego distribuí su stock por ubicación.');
         }
 
         const varianteDesbalanceada = variantesActivas.find((v) => {
-          const totalVariante = (parseInt(v.stock_salon, 10) || 0) + (parseInt(v.stock_deposito, 10) || 0);
+          const totalVariante = (parseInt(v.stock_deposito, 10) || 0);
           const distribuidoVariante = v.id ? sumarStockDepositos(`variante:${v.id}`) : 0;
           return distribuidoVariante !== totalVariante;
         });
@@ -1676,15 +1663,13 @@ export default function ProductForm() {
         descuento_inicio: data.descuento_inicio || null,
         descuento_fin: data.descuento_fin || null,
         impuestos_incluidos: data.impuestos_incluidos !== false,
-        // El total lo recalcula el backend como salón + depósito; no se
+        // El stock se guarda íntegramente en depósito; no se
         // manda cantidad_disponible para que no queden dos fuentes de verdad.
-        stock_salon: parseInt(data.stock_salon) || 0,
+        stock_salon: 0,
         stock_deposito: parseInt(data.stock_deposito) || 0,
         stock_depositos: stockDepositosPayload,
         stock_minimo: parseInt(data.stock_minimo) || 0,
-        stock_minimo_salon: data.stock_minimo_salon === '' || data.stock_minimo_salon == null
-          ? null
-          : parseInt(data.stock_minimo_salon),
+        stock_minimo_salon: null,
         unidad_medida: data.unidad_medida,
         activo: data.activo,
         estado_venta: data.estado_venta,
@@ -1695,8 +1680,7 @@ export default function ProductForm() {
         confianza: data.confianza || [],
         ficha_rubro: data.ficha_rubro === 'basico' ? null : (data.ficha_rubro || null),
         ficha_datos: data.ficha_datos || {},
-        // El total no se manda: el backend lo recalcula como salón + depósito
-        // para que no pueda quedar desincronizado con el desglose. Con
+        // El total no se manda: el backend lo deriva del stock en depósito. Con
         // Opciones activas, solo se mandan las combinaciones que quedaron
         // tildadas ("incluida") — las desmarcadas no se guardan como variante.
         variantes: variantesActivas
@@ -1705,7 +1689,7 @@ export default function ProductForm() {
             nombre: v.nombre,
             valores: v.valores,
             sku_variante: v.sku_variante,
-            stock_salon: parseInt(v.stock_salon, 10) || 0,
+            stock_salon: 0,
             stock_deposito: parseInt(v.stock_deposito, 10) || 0,
             precio_diferencial: v.precio_diferencial ? parseFloat(v.precio_diferencial) : 0,
           })),
@@ -2058,18 +2042,17 @@ export default function ProductForm() {
   };
 
   const valoresProducto = watch();
-  // El disponible se deriva del desglose en vivo, no se lee del formulario:
+  // El disponible se deriva del stock en depósito en vivo:
   // así el número y la barra de abajo reaccionan mientras se tipea, sin
   // esperar a guardar. El backend vuelve a hacer la misma suma al persistir.
-  const stockSalonVal = parseInt(watch('stock_salon'), 10) || 0;
   const stockDepositoVal = parseInt(watch('stock_deposito'), 10) || 0;
   const variantesWatch = watch('variantes') || [];
   const stockUbicacionesTotalVal = tieneVariantes
     ? variantesWatch
       .filter(v => modoLegacyVariantes || v.incluida !== false)
-      .reduce((acc, v) => acc + (parseInt(v.stock_salon, 10) || 0) + (parseInt(v.stock_deposito, 10) || 0), 0)
-    : stockSalonVal + stockDepositoVal;
-  const stockActualVal = stockSalonVal + stockDepositoVal;
+      .reduce((acc, v) => acc + (parseInt(v.stock_deposito, 10) || 0), 0)
+    : stockDepositoVal;
+  const stockActualVal = stockUbicacionesTotalVal;
   const stockMinimoVal = parseInt(watch('stock_minimo'), 10) || 0;
   const unidadVal = watch('unidad_medida') || 'unidad';
   const estadoVentaVal = watch('estado_venta') || 'en_venta';
@@ -2110,7 +2093,7 @@ export default function ProductForm() {
     { label: 'Precio de venta', listo: valoresProducto.precio_base !== '' && valoresProducto.precio_base != null && Number(valoresProducto.precio_base) >= 0, tab: 'comercial', id: 'prod-precio-base' },
   ];
   const stockParaVender = tieneVariantes
-    ? (valoresProducto.variantes || []).some(v => v.incluida !== false && ((Number(v.stock_salon) || 0) + (Number(v.stock_deposito) || 0)) > 0)
+    ? (valoresProducto.variantes || []).some(v => v.incluida !== false && (Number(v.stock_deposito) || 0) > 0)
     : stockActualVal > 0;
   const requisitosVender = [
     { label: 'Precio mayor a 0', listo: precioFinalVal > 0, tab: 'comercial', id: 'prod-precio-base' },
@@ -2863,24 +2846,6 @@ export default function ProductForm() {
 
         <div className={`tab-content ${tabActiva === 'stock' ? 'active' : ''}`}>
           <div className="form-grid-3">
-            {/* Salón y depósito se cargan por separado; el disponible es la
-                suma y por eso es de solo lectura. Online se vende el TOTAL:
-                tener la mercadería guardada no frena una venta. Lo que sí
-                define el desglose es de dónde sale — primero el salón. */}
-            <div className="form-group">
-              <label htmlFor="prod-stock-salon">
-                Stock en salón
-                {tieneVariantes && <span className="hint"> (calculado)</span>}
-              </label>
-              <input
-                id="prod-stock-salon"
-                type="number"
-                min="0"
-                {...register('stock_salon')}
-                readOnly={!tieneVariantes}
-                disabled={tieneVariantes}
-              />
-            </div>
             <div className="form-group">
               <label htmlFor="prod-stock-deposito">
                 Stock en depósito
@@ -2890,13 +2855,13 @@ export default function ProductForm() {
                 id="prod-stock-deposito"
                 type="number"
                 min="0"
-                {...register('stock_deposito')}
+                value={stockActualVal}
                 readOnly
               />
             </div>
             <div className="form-group">
               <label htmlFor="prod-stock">
-                Cantidad disponible <span className="hint">(salón + depósito)</span>
+                Cantidad disponible <span className="hint">(depósito)</span>
               </label>
               <input
                 id="prod-stock"
@@ -2909,12 +2874,6 @@ export default function ProductForm() {
             <div className="form-group">
               <label htmlFor="prod-stock-min">Stock mínimo total (alerta)</label>
               <input id="prod-stock-min" type="number" min="0" {...register('stock_minimo')} />
-            </div>
-            <div className="form-group">
-              <label htmlFor="prod-stock-min-salon">
-                Mínimo en salón <span className="hint">(reponer desde depósito)</span>
-              </label>
-              <input id="prod-stock-min-salon" type="number" min="0" placeholder="Opcional" {...register('stock_minimo_salon')} />
             </div>
             <div className="form-group">
               <label htmlFor="prod-unidad">Unidad de medida</label>
@@ -2932,8 +2891,8 @@ export default function ProductForm() {
             <div className="stock-depositos-panel">
               <div className="stock-depositos-header">
                 <div>
-                  <h3>Stock por ubicación</h3>
-                  <p>Indicá cuántas unidades están físicamente en cada salón o depósito.</p>
+                  <h3>Stock por depósito</h3>
+                  <p>Indicá cuántas unidades están físicamente en cada depósito.</p>
                 </div>
                 <strong>{stockUbicacionesTotalVal} {unidadVal}{stockUbicacionesTotalVal === 1 ? '' : 's'}</strong>
               </div>
@@ -2944,7 +2903,7 @@ export default function ProductForm() {
                     <label key={dep.id} className="stock-deposito-row">
                       <span>
                         <strong>{dep.nombre}</strong>
-                        <small>{dep.tipoUbicacion === 'SALON' ? 'Salón' : 'Depósito'} · {dep.ciudad}{dep.departamento ? `, ${dep.departamento}` : ''}</small>
+                        <small>Depósito · {dep.ciudad}{dep.departamento ? `, ${dep.departamento}` : ''}</small>
                       </span>
                       <input
                         type="number"
@@ -2959,8 +2918,8 @@ export default function ProductForm() {
                 </div>
               ) : (
                 <div className="empty-inline-state">
-                  <span>Sin ubicaciones cargadas. Creá un salón o depósito para cargar stock.</span>
-                  <Link to="/mi-tienda/depositos">Crear ubicación</Link>
+                  <span>Sin depósitos cargados. Creá un depósito para cargar stock.</span>
+                  <Link to="/mi-tienda/depositos">Crear depósito</Link>
                 </div>
               )}
             </div>
@@ -2970,8 +2929,8 @@ export default function ProductForm() {
             <div className="stock-depositos-panel">
               <div className="stock-depositos-header">
                 <div>
-                  <h3>Stock por ubicación</h3>
-                  <p>Distribuí el stock físico de cada variante entre tus salones y depósitos.</p>
+                  <h3>Stock por depósito</h3>
+                  <p>Distribuí el stock físico de cada variante entre tus depósitos.</p>
                 </div>
                 <strong>{stockUbicacionesTotalVal} {unidadVal}{stockUbicacionesTotalVal === 1 ? '' : 's'}</strong>
               </div>
@@ -3004,7 +2963,7 @@ export default function ProductForm() {
                                 <label key={dep.id} className="stock-deposito-row">
                                   <span>
                                     <strong>{dep.nombre}</strong>
-                                    <small>{dep.tipoUbicacion === 'SALON' ? 'Salón' : 'Depósito'} · {dep.ciudad}</small>
+                                    <small>Depósito · {dep.ciudad}</small>
                                   </span>
                                   <input
                                     type="number"
@@ -3012,7 +2971,7 @@ export default function ProductForm() {
                                     className="form-control"
                                     style={{ background: "var(--color-surface, var(--color-surface))", border: '1px solid var(--color-border, #ccc)', padding: '0.4rem', textAlign: 'center', borderRadius: '6px' }}
                                     value={stockPorDeposito[key]?.[String(dep.id)] ?? ''}
-                                    disabled={!variante.id || totalVariante <= 0}
+                                    disabled={!variante.id}
                                     onChange={(e) => cambiarStockDeposito(key, dep.id, e.target.value)}
                                   />
                                 </label>
@@ -3025,8 +2984,8 @@ export default function ProductForm() {
                 </div>
               ) : (
                 <div className="empty-inline-state">
-                  <span>Sin ubicaciones cargadas. Creá un salón o depósito para cargar stock.</span>
-                  <Link to="/mi-tienda/depositos">Crear ubicación</Link>
+                  <span>Sin depósitos cargados. Creá un depósito para cargar stock.</span>
+                  <Link to="/mi-tienda/depositos">Crear depósito</Link>
                 </div>
               )}
             </div>
@@ -3075,14 +3034,12 @@ export default function ProductForm() {
                   <span className="text-center">Foto</span>
                   <span>Nombre de variante</span>
                   <span>SKU</span>
-                  <span className="text-center">Stock salón</span>
                   <span className="text-center">Stock depósito</span>
                   <span className="text-center">Total</span>
                   <span>Precio diferencial</span>
                   <span></span>
                 </div>
                 {variantesFields.map((field, i) => {
-                  const salonFila = parseInt(watch(`variantes.${i}.stock_salon`), 10) || 0;
                   const depositoFila = parseInt(watch(`variantes.${i}.stock_deposito`), 10) || 0;
                   const imagenGuardada = field.id ? imagenes.find(img => img.variante_id === field.id) : null;
                   const imagenElegida = imagenesVariante[field._rhfKey];
@@ -3120,17 +3077,10 @@ export default function ProductForm() {
                       min="0"
                       className="variante-input text-center"
                       placeholder="0"
-                      {...register(`variantes.${i}.stock_salon`)}
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      className="variante-input text-center"
-                      placeholder="0"
                       {...register(`variantes.${i}.stock_deposito`)}
                     />
-                    <span className="variante-total-badge" title="Salón + depósito. Es el stock que se vende online.">
-                      {salonFila + depositoFila}
+                    <span className="variante-total-badge" title="Stock en depósito disponible para vender online.">
+                      {depositoFila}
                     </span>
                     <div style={{ padding: 0, border: 'none', background: 'transparent' }}>
                       <Controller
@@ -3236,14 +3186,12 @@ export default function ProductForm() {
                       <span className="text-center">Foto</span>
                       <span>Combinación</span>
                       <span>SKU</span>
-                      <span className="text-center">Stock salón</span>
                       <span className="text-center">Stock depósito</span>
                       <span className="text-center">Total</span>
                       <span>Precio diferencial</span>
                     </div>
                     {variantesFields.map((field, i) => {
                       const estaIncluida = watch(`variantes.${i}.incluida`);
-                      const salonFila = parseInt(watch(`variantes.${i}.stock_salon`), 10) || 0;
                       const depositoFila = parseInt(watch(`variantes.${i}.stock_deposito`), 10) || 0;
                       const imagenGuardada = field.id ? imagenes.find(img => img.variante_id === field.id) : null;
                       const imagenElegida = imagenesVariante[field._rhfKey];
@@ -3308,17 +3256,10 @@ export default function ProductForm() {
                           min="0"
                           className="variante-input text-center"
                           placeholder="0"
-                          {...register(`variantes.${i}.stock_salon`)}
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          className="variante-input text-center"
-                          placeholder="0"
                           {...register(`variantes.${i}.stock_deposito`)}
                         />
-                        <span className="variante-total-badge" title="Salón + depósito. Es el stock que se vende online.">
-                          {salonFila + depositoFila}
+                        <span className="variante-total-badge" title="Stock en depósito disponible para vender online.">
+                          {depositoFila}
                         </span>
                         <div style={{ padding: 0, border: 'none', background: 'transparent' }}>
                           <Controller

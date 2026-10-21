@@ -1369,7 +1369,7 @@
 /* ─── Variantes ───────────────────────────────────── */
 .variantes-header {
   display: grid;
-  grid-template-columns: 52px 2fr 1.2fr 0.85fr 0.85fr 65px 1.2fr 40px;
+  grid-template-columns: 52px 2fr 1.2fr 0.85fr 65px 1.2fr 40px;
   gap: 0.6rem;
   font-size: 0.72rem;
   font-weight: 700;
@@ -1414,9 +1414,9 @@
   filter: grayscale(15%);
 }
 
-/* Foto | nombre | SKU | salón | depósito | total | precio dif. | borrar */
+/* Foto | nombre | SKU | depósito | total | precio dif. | borrar */
 .variante-row-3 {
-  grid-template-columns: 52px 2fr 1.2fr 0.85fr 0.85fr 65px 1.2fr 40px;
+  grid-template-columns: 52px 2fr 1.2fr 0.85fr 65px 1.2fr 40px;
 }
 
 /* Inputs unificados dentro de cada celda de variante */
@@ -1740,7 +1740,7 @@
    foto + combinación (solo lectura) + inputs uniformes. */
 .variantes-header-generada,
 .variante-row-generada {
-  grid-template-columns: 32px 46px minmax(110px, 1.8fr) minmax(120px, 1.4fr) 88px 88px 65px minmax(120px, 1.2fr);
+  grid-template-columns: 32px 46px minmax(110px, 1.8fr) minmax(120px, 1.4fr) 88px 65px minmax(120px, 1.2fr);
   gap: 0.6rem;
 }
 .variante-row-generada { align-items: center; }

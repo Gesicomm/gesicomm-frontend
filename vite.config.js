@@ -5,6 +5,12 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Vitest uses a different Vite version. Sharing optimized dependencies with
+  // the running dev server can load two React instances in the same page.
+  cacheDir: process.env.VITEST ? 'node_modules/.vite-vitest' : 'node_modules/.vite-dev',
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
   test: {
     environment: 'jsdom',
     globals: true,

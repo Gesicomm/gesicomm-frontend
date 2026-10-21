@@ -4,11 +4,14 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import ProductForm from './ProductForm';
 import { productService } from '../../services/productService';
+import { depositoService } from '../../services/deposito.service';
 import { ofertaService } from '../../services/ofertaService';
 
 vi.mock('../../services/productService', () => ({ productService: {
+  detalle: vi.fn(), actualizar: vi.fn().mockResolvedValue({}), opciones: vi.fn().mockResolvedValue([]), imagenes: vi.fn().mockResolvedValue([]), faq: vi.fn().mockResolvedValue([]),
   buscar: vi.fn().mockResolvedValue([]), crear: vi.fn(), variantes: vi.fn().mockResolvedValue([]),
 } }));
+vi.mock('../../services/deposito.service', () => ({ depositoService: { listarDepositos: vi.fn().mockResolvedValue({ data: [] }) } }));
 vi.mock('../../services/ofertaService', () => ({ ofertaService: {
   listarPorProducto: vi.fn().mockResolvedValue([]), crear: vi.fn(), actualizar: vi.fn(), eliminar: vi.fn(),
 } }));
@@ -23,6 +26,9 @@ vi.mock('../landing/ProductPicker', () => ({ default: ({ onToggle }) => <button 
 
 beforeEach(() => {
   vi.clearAllMocks();
+  depositoService.listarDepositos.mockResolvedValue({ data: [] });
+  productService.variantes.mockResolvedValue([]);
+  productService.opciones.mockResolvedValue([]);
   productService.crear.mockResolvedValue({ id: 42, ofertas: [{ id: 61 }] });
 });
 afterEach(() => {
@@ -329,5 +335,72 @@ describe('Importar el JSON de la IA', () => {
     expect(Object.keys(esquema.product.landing_blocks.product_showcase)).toEqual(['badge', 'tagline', 'short_description', 'description', 'details']);
     expect(Object.keys(esquema.product.landing_blocks.ficha_blocks)).toEqual(['header_label', 'commercial_name', 'price_badge', 'limited_offer', 'order_includes', 'reviews_section', 'faq_section']);
     expect(Object.keys(esquema.product.landing_blocks.testimonials[0])).toEqual(['name', 'rating', 'comment', 'source', 'photo']);
+  });
+});
+
+
+describe('Inventario solo en depósito', () => {
+  const depositos = [
+    { id: 1, nombre: 'Central', ciudad: 'Asunción', tipoUbicacion: 'DEPOSITO' },
+    { id: 2, nombre: 'Sucursal', ciudad: 'Luque', tipoUbicacion: 'SALON' },
+  ];
+
+  it('suma las ubicaciones como depósito y guarda sin stock ni mínimo en salón', async () => {
+    depositoService.listarDepositos.mockResolvedValue({ data: depositos });
+    await montar();
+    completarIdentidad(); completarPrecio();
+    fireEvent.click(screen.getByRole('tab', { name: /^Inventario/ }));
+    expect(document.getElementById('prod-stock-salon')).toBeNull();
+    expect(document.getElementById('prod-stock-min-salon')).toBeNull();
+    fireEvent.change(screen.getByLabelText(/Central/), { target: { value: '7' } });
+    fireEvent.change(screen.getByLabelText(/Sucursal/), { target: { value: '3' } });
+    expect(document.getElementById('prod-stock-deposito')).toHaveValue(10);
+    expect(document.getElementById('prod-stock')).toHaveValue(10);
+    guardar();
+    await screen.findByText('Catálogo guardado');
+    expect(productService.crear.mock.calls[0][0]).toMatchObject({
+      stock_salon: 0, stock_deposito: 10, stock_minimo_salon: null,
+      stock_depositos: [
+        { deposito_id: 1, variante_id: null, cantidad: 7 },
+        { deposito_id: 2, variante_id: null, cantidad: 3 },
+      ],
+    });
+  });
+
+  it.each([false, true])('conserva el total anterior al editar (variantes: %s)', async (conVariantes) => {
+    depositoService.listarDepositos.mockResolvedValue({ data: depositos });
+    productService.detalle.mockResolvedValue({
+      id: 42, creado_por: 9, nombre: 'Producto anterior', sku: 'ANT-1', precio_base: 10000,
+      activo: true, stock_salon: 3, stock_deposito: 7, stock_minimo_salon: 2,
+      stock_depositos: [
+        { deposito_id: 1, variante_id: conVariantes ? 5 : null, cantidad: 7 },
+        { deposito_id: 2, variante_id: conVariantes ? 5 : null, cantidad: 3 },
+      ],
+    });
+    if (conVariantes) productService.variantes.mockResolvedValue([
+      { id: 5, nombre: 'Rojo', sku_variante: 'ANT-R', stock_salon: 3, stock_deposito: 7 },
+    ]);
+    render(<MemoryRouter initialEntries={['/products/42/editar']}><Routes>
+      <Route path="/products/:id/editar" element={<ProductForm />} />
+      <Route path="/mi-catalogo" element={<p>Catálogo guardado</p>} />
+    </Routes></MemoryRouter>);
+    await screen.findByDisplayValue('Producto anterior');
+    fireEvent.click(screen.getByRole('tab', { name: /^Inventario/ }));
+    expect(document.getElementById('prod-stock-deposito')).toHaveValue(10);
+    expect(screen.queryByText('Stock salón')).toBeNull();
+    if (conVariantes) {
+      fireEvent.change(screen.getByLabelText(/Central/), { target: { value: '0' } });
+      fireEvent.change(screen.getByLabelText(/Sucursal/), { target: { value: '0' } });
+      expect(document.getElementById('prod-stock')).toHaveValue(0);
+      fireEvent.change(screen.getByLabelText(/Central/), { target: { value: '7' } });
+      fireEvent.change(screen.getByLabelText(/Sucursal/), { target: { value: '3' } });
+    }
+    guardar();
+    await screen.findByText('Catálogo guardado');
+    const payload = productService.actualizar.mock.calls[0][1];
+    expect(payload).toMatchObject({ stock_salon: 0, stock_deposito: 10, stock_minimo_salon: null });
+    if (conVariantes) expect(payload.variantes).toEqual([
+      expect.objectContaining({ id: 5, stock_salon: 0, stock_deposito: 10 }),
+    ]);
   });
 });
