@@ -377,7 +377,7 @@ body:has(.trust-bar[hidden]) .commerce-header[data-variante="embebido"] { top: 0
 @media (max-width: 600px) {
   .commerce-header .container, .site-footer .container { padding-left: 16px; padding-right: 16px; }
   .header-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; height: 64px; min-height: 64px; flex-wrap: nowrap; align-items: center; gap: 8px; padding-top: 0; padding-bottom: 0; }
-  .brand-column { flex: 1 1 auto; min-width: 0; height: 44px; display: flex; align-items: center; justify-content: center; align-self: center; padding: 0; }
+  .brand-column { flex: 1 1 auto; min-width: 0; height: 44px; display: flex; align-items: flex-start; justify-content: center; align-self: center; padding: 0; }
   .brand.brand-mark, .brand { min-width: 0; max-width: 100%; height: 44px; min-height: 44px; align-items: center; }
   .brand-logo { flex: 0 0 auto; }
   .brand-mark span[data-gesicomm-tienda], .brand span[data-gesicomm-tienda] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

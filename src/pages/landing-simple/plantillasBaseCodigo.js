@@ -519,7 +519,7 @@ const HEADER_UNIFICADO_CSS = `
     align-items: center;
     gap: 8px;
   }
-  .commerce-header .brand-column { flex: 1 1 auto; min-width: 0; height: 44px; display: flex; align-items: center; justify-content: center; align-self: center; padding: 0; }
+  .commerce-header .brand-column { flex: 1 1 auto; min-width: 0; height: 44px; display: flex; align-items: flex-start; justify-content: center; align-self: center; padding: 0; }
   .commerce-header .brand,
   .commerce-header .brand.brand-mark { min-width: 0; max-width: 100%; height: 44px; min-height: 44px; align-items: center; }
   .commerce-header .brand-mark span[data-gesicomm-tienda],
