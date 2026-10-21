@@ -2,15 +2,18 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPublica from './pages/landing/LandingPublica';
-import TestRenderer from './pages/landing-v2/TestRenderer';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import MarcaPersonalRedirect from './components/MarcaPersonalRedirect';
 import AdminRoute from './components/AdminRoute';
 import RequireTienda from './components/RequireTienda';
-import DashboardLayout from './components/DashboardLayout';
-import UserLayout from './components/UserLayout';
-import DynamicLayout from './components/DynamicLayout';
+
+// Los layouts del panel y la ruta de prueba del renderer no los usa ningún
+// visitante de una tienda: diferidos para sacarlos del bundle de entrada.
+const TestRenderer = lazy(() => import('./pages/landing-v2/TestRenderer'));
+const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
+const UserLayout = lazy(() => import('./components/UserLayout'));
+const DynamicLayout = lazy(() => import('./components/DynamicLayout'));
 
 // Panel de administracion / dashboard del comercio: ningun visitante publico
 // de una tienda (catalogo, ficha de producto) pasa por estas pantallas, asi
@@ -79,13 +82,14 @@ const ImportadaChina = lazy(() => import('./pages/importada-china/ImportadaChina
 // el App Dashboard de Meta para la revisión de la aplicación, así que tienen
 // que quedar siempre accesibles sin sesión.
 //
-// La landing va con import normal porque es la portada: tiene que pintar sin
-// esperar un chunk adicional. Los documentos legales van con lazy() porque
-// son mucho texto que casi nadie lee de corrido, y cargarlos siempre sumaba
-// ~190 kB al bundle que descarga cualquiera que entre a gesicomm.com.
+// La portada (Landing) va diferida: trae framer-motion y, con import normal,
+// ese peso lo descargaba también cada visitante de CADA tienda, que nunca la
+// ve. El costo es un chunk más al entrar a gesicomm.com. Los documentos
+// legales van con lazy() porque son mucho texto que casi nadie lee de
+// corrido.
 import PublicLayout from './components/public/PublicLayout';
-import Landing from './pages/public/Landing';
 import { esHostnameDeTienda } from './lib/hostname';
+const Landing = lazy(() => import('./pages/public/Landing'));
 import { inicializarPixel, PIXEL_ID_GESICOMM } from './lib/metaPixel';
 
 const Contact = lazy(() => import('./pages/public/Contact'));
@@ -170,7 +174,7 @@ import CatalogoPublico from './pages/landing/CatalogoPublico';
 import ContactoPublico from './pages/landing/ContactoPublico';
 import LegalPagePublica from './pages/landing/LegalPagePublica';
 import ResultadoPagoTienda from './pages/landing/ResultadoPagoTienda';
-import PaginaBuilderPublica from './pages/page-builder/publico/PaginaBuilderPublica';
+const PaginaBuilderPublica = lazy(() => import('./pages/page-builder/publico/PaginaBuilderPublica'));
 // Page Builder (privado, siempre detras de AdminRoute): mismo criterio de
 // lazy() que el resto del panel admin de arriba.
 const PageBuilderHome = lazy(() => import('./pages/page-builder/PageBuilderHome'));
@@ -245,7 +249,7 @@ function App() {
             POST https://api.gesicomm.com/api/meta/data-deletion-callback
             ───────────────────────────────────────────────────────── */}
         <Route path="/test-builder" element={<TestRenderer />} />
-        <Route path="/" element={<TiendaSegunHostname fuera={<PublicLayout><Landing /></PublicLayout>} />} />
+        <Route path="/" element={<TiendaSegunHostname fuera={<PaginaPublica><Landing /></PaginaPublica>} />} />
         <Route path="/privacy" element={<PaginaPublica><Privacy /></PaginaPublica>} />
         <Route path="/terms" element={<PaginaPublica><Terms /></PaginaPublica>} />
         <Route path="/cookies" element={<PaginaPublica><Cookies /></PaginaPublica>} />

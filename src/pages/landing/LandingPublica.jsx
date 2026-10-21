@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, registrarVisitaLanding } from '../../services/landingPublicaService';
 import { esperarCookiesFacebook, generarEventId, inicializarPixel, trackearEvento } from '../../lib/metaPixel';
@@ -6,10 +6,13 @@ import { inicializarGA } from '../../lib/googleAnalytics';
 import { inicializarTikTokPixel } from '../../lib/tiktokPixel';
 import { cargarFuenteGoogle } from '../../lib/landingDiseno';
 import { useDocumentSeo, faviconDeLanding } from '../../hooks/useDocumentSeo';
-import FunnelView from './FunnelView';
 import TiendaPaginaView from './TiendaPaginaView';
 import LandingCodigoPublica from '../landing-simple/LandingCodigoPublica';
 import './landingPublica.css';
+
+// Embudo legacy: trae el page-builder (y framer-motion). Diferido para que
+// las tiendas que no son embudo no lo descarguen.
+const FunnelView = lazy(() => import('./FunnelView'));
 
 export default function LandingPublica({ vistaCodigo = null, categorySlug = null }) {
   const { slug, productId, categorySlug: categorySlugParam } = useParams();
@@ -151,7 +154,9 @@ export default function LandingPublica({ vistaCodigo = null, categorySlug = null
     return (
       <>
         {barraTransicion}
-        <FunnelView data={data} slug={slug} productId={productId} />
+        <Suspense fallback={<div className="lp-status-page"><div className="lp-spinner" /></div>}>
+          <FunnelView data={data} slug={slug} productId={productId} />
+        </Suspense>
       </>
     );
   }

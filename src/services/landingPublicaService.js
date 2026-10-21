@@ -17,6 +17,20 @@
  */
 import { esHostnameDeTienda } from '../lib/hostname';
 
+// El GET que index.html lanza apenas llega el HTML (ver el script de
+// precarga ahí). Se usa una sola vez: una Response se lee una única vez, y
+// cualquier navegación posterior tiene que pedir datos frescos.
+async function tomarPrecarga(path) {
+  const precarga = typeof window !== 'undefined' ? window.__gcPrecargaLanding : null;
+  if (!precarga || precarga.url !== path) return null;
+  window.__gcPrecargaLanding = null;
+  try {
+    return await precarga.respuesta;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * @param {string|undefined} slug - undefined → landing es_home de la tienda actual
  * @returns {null} el slug nunca existió (404 real)
@@ -30,7 +44,7 @@ export async function obtenerLandingPublica(slug, opciones = {}) {
   const query = params.toString();
   const pathBase = slug ? `/api/l/${encodeURIComponent(slug)}` : '/api/l/';
   const path = query ? `${pathBase}?${query}` : pathBase;
-  const res = await fetch(path, { credentials: 'include' });
+  const res = (await tomarPrecarga(path)) || await fetch(path, { credentials: 'include' });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('No se pudo cargar la landing.');
   return res.json();
