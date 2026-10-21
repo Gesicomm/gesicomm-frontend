@@ -2258,7 +2258,7 @@ section.limited-offer[data-gesicomm-flash-compacto] [data-gesicomm-flash-control
     min-width: 0 !important;
     height: 42px !important;
     display: flex !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     justify-content: center !important;
     align-self: center !important;
     padding: 0 !important;
