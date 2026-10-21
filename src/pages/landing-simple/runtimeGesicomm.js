@@ -963,6 +963,20 @@ export function runtimeGesicomm(plantillas) {
       }
     }
     seccion.classList.add('home-combos');
+    var encabezadoCombos = seccion.querySelector('.section-heading');
+    if (encabezadoCombos) {
+      var textosCombos = encabezadoCombos.querySelector('div');
+      if (textosCombos && !textosCombos.querySelector('.home-combos-eyebrow')) {
+        var rotuloCombos = document.createElement('p'); rotuloCombos.className = 'home-combos-eyebrow'; textosCombos.insertBefore(rotuloCombos, textosCombos.firstChild);
+      }
+      if (textosCombos && !textosCombos.querySelector('p:not(.home-combos-eyebrow)')) textosCombos.appendChild(document.createElement('p'));
+      if (!encabezadoCombos.querySelector('.home-combos-explore')) {
+        var enlaceCombos = document.createElement('a'); enlaceCombos.className = 'home-combos-explore'; enlaceCombos.href = '/catalogo?tipo=combo'; enlaceCombos.setAttribute('data-gesicomm-link', 'catalogo'); encabezadoCombos.appendChild(enlaceCombos);
+      }
+    }
+    if (!seccion.querySelector('.home-combos-note')) {
+      var pieCombos = document.createElement('p'); pieCombos.className = 'home-combos-note'; seccion.appendChild(pieCombos);
+    }
     var c = inicioConfig().combos || {}, cfg = configCombosInicio();
     [['kicker', '.home-combos-eyebrow', 'TODO EN UN COMBO'], ['titulo', '.section-heading h2', 'Juntos convienen más.'],
       ['descripcion', '.section-heading > div > p:not(.home-combos-eyebrow)', 'Elegí un combo listo para vos y descubrí todo lo que incluye.'],
@@ -1964,6 +1978,13 @@ export function runtimeGesicomm(plantillas) {
   function aplicarBloquesInicio() {
     var bloques = inicioConfig().bloques;
     if (!Array.isArray(bloques) || !bloques.length) return;
+    // El editor incorpora este bloque nuevo a las configuraciones anteriores;
+    // la publicación debe aplicar el mismo valor por defecto sin exigir guardar.
+    if (document.querySelector('[data-gesicomm-bloque="combos"]') && !bloques.some(function (b) { return b.tipo === 'combos'; })) {
+      bloques = bloques.slice();
+      var posicionCombos = bloques.findIndex(function (b) { return b.tipo === 'productos_categoria'; }) + 1;
+      bloques.splice(posicionCombos || 1, 0, { tipo: 'combos', visible: true });
+    }
     var secciones = document.querySelectorAll('[data-gesicomm-bloque]');
     if (!secciones.length) return;
     // "anuncios" (la franja de arriba del todo) vive FUERA de .page-content

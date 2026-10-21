@@ -477,7 +477,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
       <div class="product-grid" data-gesicomm-lista="combos"><template><article class="product-card"><span>AHORRÁ MÁS</span><div class="product-content"><h3 data-gesicomm-bind="nombre"></h3></div></article></template></div></section></main>`, css: '.product-grid { display:flex; }', js: '' };
     const combo = { id: 33, tipo: 'combo', nombre: 'Combo cocina', descripcion: 'Tres piezas para tu cocina.', precio_efectivo: 200000, precio_ancla: 250000,
       imagen: 'https://cdn.test/combo.webp', productos_combo: [{ id: 1, nombre: 'Cacerola', cantidad: 1, precio: 150000 }, { id: 2, nombre: 'Utensilios', cantidad: 2, precio: 50000 }] };
-    const entrada = datosRuntimePreview({ productos: [combo], vista: 'inicio', venta: { inicio: { combos: { mostrar_incluidos: true, mostrar_ahorro: true, mostrar_descripcion: true } } } });
+    const entrada = datosRuntimePreview({ productos: [combo], vista: 'inicio', venta: { inicio: { bloques: [{ tipo: 'productos_categoria', visible: true }, { tipo: 'confianza', visible: true }], combos: { mostrar_incluidos: true, mostrar_ahorro: true, mostrar_descripcion: true } } } });
     const { document, window, dom } = montar(codigo, entrada);
     expect(document.querySelector('.home-combo-includes').hidden).toBe(false);
     expect(document.querySelector('[data-combo="incluye"]').textContent).toContain('Utensilios · x2');
@@ -486,6 +486,9 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(document.querySelector('.home-combo-description').textContent).toBe(combo.descripcion);
     expect(document.querySelector('.home-combo-footer button').textContent).toContain('Comprar combo');
     expect(document.querySelector('.gc-product-availability')).toBeNull();
+    expect(document.querySelector('[data-gesicomm-bloque="combos"]').hidden).toBe(false);
+    expect(document.querySelector('.home-combos-explore').textContent).toBe('Ver todos los combos');
+    expect(document.querySelector('.home-combos-note').textContent).toBe('Varios productos juntos en un solo pedido');
     expect(document.body.textContent).not.toContain('AHORRÁ MÁS');
     expect(document.querySelector('#otra').textContent).toBe('Diseño propio');
     window.dispatchEvent(new window.MessageEvent('message', { source: window.parent, data: { tipo: 'gesicomm:datos', datos: { ...entrada,
