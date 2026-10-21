@@ -140,6 +140,8 @@ it('permite cantidades declaradas sin ubicación pero bloquea stock registrado a
   comercio.stock.mockResolvedValue({ registros: [{ ...filaStock, stock_registrado: false, disponible: 0 },
     { ...filaStock, producto_id: 4, producto: { nombre: 'Agotado' }, stock_registrado: true, disponible: 0 }], total: 2, totalPaginas: 1 });
   await prepararEnvio();
+  expect(screen.getByRole('searchbox', { name: 'Buscar en mis productos propios' })).toBeInTheDocument();
+  expect(screen.getByText(/Solo se muestran productos propios de esta tienda/)).toBeInTheDocument();
   expect(screen.getByText('Sin stock registrado · cantidad declarada')).toBeInTheDocument();
   expect(screen.getByLabelText('Cantidad')).toHaveAttribute('max', '1000000');
   expect(screen.getByRole('button', { name: /Agotado/ })).toBeDisabled();
