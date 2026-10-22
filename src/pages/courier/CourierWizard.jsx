@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bike,
   Building2,
   Car,
   CheckCircle2,
+  ChevronRight,
   MapPin,
   Phone,
   Plus,
@@ -15,6 +16,7 @@ import {
 import CurrencyInput from "../../components/CurrencyInput";
 import DepositoCampos, { DEPOSITO_VACIO, validarDeposito } from "../../components/depositos/DepositoCampos";
 import { getCourierGeografia } from "../../services/courierApi";
+import "./courierWizard.css";
 
 const VEHICULOS = ["Moto", "Auto", "Camioneta", "Bicicleta"];
 const TIPOS_PAGO = ["Ambos", "Al Recibir", "Anticipado"];
@@ -79,7 +81,7 @@ const nuevaConfiguracion = (overrides = {}) => {
     tipo_pago: tipoPago,
     tiempo_entrega_hs: tiempoEntrega,
     activo,
-    rangos: overrides.rangos?.length
+    rangos: Array.isArray(overrides.rangos)
       ? overrides.rangos
       : [nuevoRango({ tipo_pago: tipoPago, tiempo_entrega_hs: tiempoEntrega, activo })],
   };
@@ -236,12 +238,29 @@ export function CourierWizard({
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [geo, setGeo] = useState([]);
+  const [cargandoGeo, setCargandoGeo] = useState(false);
+  const [errorGeo, setErrorGeo] = useState(false);
+  const [reintentoGeo, setReintentoGeo] = useState(0);
   const [departamentoId, setDepartamentoId] = useState(null);
   const [busquedaCiudad, setBusquedaCiudad] = useState("");
+  const [confirmarSalida, setConfirmarSalida] = useState(false);
+  const dialogRef = useRef(null);
+  const bodyRef = useRef(null);
+  const nombreRef = useRef(null);
+  const initialDraft = useRef(JSON.stringify(draft));
+  const closeRef = useRef(null);
+  closeRef.current = () => {
+    if (guardando) return;
+    if (JSON.stringify(draft) !== initialDraft.current) setConfirmarSalida(true);
+    else onClose();
+  };
 
   useEffect(() => {
     if (!open) return;
-    setDraft(draftInicial(courier, reglas));
+    const inicial = draftInicial(courier, reglas);
+    setDraft(inicial);
+    initialDraft.current = JSON.stringify(inicial);
+    setConfirmarSalida(false);
     setPaso(pasoInicial);
     setErroresDeposito({});
     setError("");
@@ -250,15 +269,51 @@ export function CourierWizard({
   }, [open]);
 
   useEffect(() => {
+    if (!open) return;
+    const anterior = document.activeElement;
+    const dialog = dialogRef.current;
+    if (!dialog?.contains(document.activeElement)) dialog?.focus();
+    const teclado = event => {
+      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeRef.current(); }
+      if (event.key !== "Tab") return;
+      const controles = [...dialog.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]')]
+        .filter(el => el.getClientRects().length && !el.closest('[inert]'));
+      const primero = controles[0], ultimo = controles.at(-1);
+      if (!primero) { event.preventDefault(); return; }
+      if (event.shiftKey && (document.activeElement === primero || document.activeElement === dialog)) { event.preventDefault(); ultimo.focus(); }
+      else if (!event.shiftKey && (document.activeElement === ultimo || document.activeElement === dialog)) { event.preventDefault(); primero.focus(); }
+    };
+    dialog?.addEventListener("keydown", teclado);
+    return () => { dialog?.removeEventListener("keydown", teclado); anterior?.focus?.(); };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    bodyRef.current?.scrollTo?.({ top: 0 });
+    if (paso !== "courier") bodyRef.current?.focus();
+  }, [open, paso]);
+
+  useEffect(() => {
+    if (confirmarSalida) dialogRef.current?.querySelector('.cw-keep-editing')?.focus();
+  }, [confirmarSalida]);
+
+  useEffect(() => {
     if (!open || paso !== "ciudades" || geo.length > 0) return;
+    let vigente = true;
+    setCargandoGeo(true);
+    setErrorGeo(false);
     getCourierGeografia({ conCiudades: true })
       .then((data) => {
+        if (!vigente) return;
+        setCargandoGeo(false);
         const lista = data || [];
         setGeo(lista);
         setDepartamentoId((prev) => prev ?? lista[0]?.id ?? null);
       })
-      .catch(() => setError("No se pudo cargar el catálogo de ciudades."));
-  }, [open, paso, geo.length]);
+      .catch(() => { if (vigente) setErrorGeo(true); })
+      .finally(() => { if (vigente) setCargandoGeo(false); });
+    return () => { vigente = false; };
+  }, [open, paso, geo.length, reintentoGeo]);
 
   const departamento = useMemo(
     () => geo.find((d) => Number(d.id) === Number(departamentoId)) || null,
@@ -450,7 +505,7 @@ export function CourierWizard({
 
   function validarCourier() {
     if (draft.sinCourier) return "";
-    if (!draft.courier.nombre.trim()) return "Ingresá el nombre del courier.";
+    if (!draft.courier.nombre.trim()) { nombreRef.current?.focus(); return "Ingresá el nombre del courier."; }
     return "";
   }
 
@@ -482,6 +537,7 @@ export function CourierWizard({
 
   async function avanzar(e) {
     e.preventDefault();
+    if (guardando) return;
 
     if (paso === "deposito") {
       const problema = validarDepositoPaso();
@@ -573,13 +629,14 @@ export function CourierWizard({
   const totalRangos = ciudadesValidas.reduce((acc, c) => acc + totalRangosCiudad(c), 0);
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <aside style={styles.drawer} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
-        <form onSubmit={avanzar} style={styles.form}>
-          <div style={styles.header}>
-            <div>
+    <div className="cw-overlay" style={styles.overlay} onClick={() => closeRef.current()}>
+      <aside ref={dialogRef} tabIndex={-1} className={`cw-dialog cw-step-${paso}`} style={styles.drawer} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-busy={guardando} aria-labelledby="cw-title">
+        {confirmarSalida && <div className="cw-exit" role="alertdialog" aria-labelledby="cw-exit-title"><h3 id="cw-exit-title">¿Salir sin guardar?</h3><p>Los datos que cargaste todavía no se guardaron.</p><div><button type="button" className="btn-secondary cw-keep-editing" onClick={() => { setConfirmarSalida(false); dialogRef.current?.focus(); }}>Seguir editando</button><button type="button" className="btn-secondary" onClick={onClose}>Descartar y cerrar</button></div></div>}
+        <form onSubmit={avanzar} noValidate style={styles.form} {...(confirmarSalida ? { inert: "" } : {})}>
+          <div className="cw-header" style={styles.header}>
+            <div className="cw-heading"><span className="cw-heading-icon"><Truck size={25} /></span><div>
               <p style={styles.eyebrow}>{conDeposito ? "Nuevo depósito" : courier?.id ? "Editar courier" : "Nuevo courier"}</p>
-              <h3 style={styles.title}>
+              <h3 id="cw-title" style={styles.title}>
                 {paso === "deposito"
                   ? "Datos del depósito"
                   : paso === "courier"
@@ -588,13 +645,14 @@ export function CourierWizard({
                     ? `Ciudades de ${draft.courier.nombre || "este courier"}`
                     : "Revisar y guardar"}
               </h3>
-            </div>
-            <button type="button" className="btn-icon" onClick={onClose} title="Cerrar" aria-label="Cerrar panel">
+              <span className="cw-step-caption">Paso {activeIndex + 1} de {PASOS.length} · {paso === "courier" ? "Identificá quién va a realizar las entregas." : paso === "ciudades" ? "Definí la cobertura y los costos de envío." : paso === "resumen" ? "Revisá los datos antes de guardar." : "Definí desde dónde salen tus pedidos."}</span>
+            </div></div>
+            <button type="button" className="btn-icon" onClick={() => closeRef.current()} disabled={guardando} title="Cerrar" aria-label="Cerrar panel">
               <X size={18} />
             </button>
           </div>
 
-          <div style={styles.steps}>
+          <nav className="cw-steps" aria-label="Pasos de configuración" style={{ ...styles.steps, gridTemplateColumns: `repeat(${PASOS.length}, minmax(0, 1fr))` }}>
             {PASOS.map(([key, label], index) => {
               const isPassedOrActive = index <= activeIndex;
               const isCurrent = key === paso;
@@ -603,6 +661,8 @@ export function CourierWizard({
                   type="button"
                   key={key}
                   onClick={() => irAlPaso(key)}
+                  className={`cw-step ${isCurrent ? "is-current" : index < activeIndex ? "is-complete" : ""}`}
+                  disabled={guardando || index > activeIndex}
                   style={{
                     ...styles.step,
                     ...(isPassedOrActive ? styles.stepActive : {}),
@@ -615,17 +675,18 @@ export function CourierWizard({
                     ...styles.stepDot,
                     ...(isCurrent ? styles.stepDotCurrent : {}),
                   }}>
-                    {index + 1}
+                    {index < activeIndex ? <CheckCircle2 size={17} /> : index + 1}
                   </span>
                   {label}
+                  {index < PASOS.length - 1 && <ChevronRight className="cw-step-arrow" size={17} aria-hidden="true" />}
                 </button>
               );
             })}
-          </div>
+          </nav>
 
-          {error && <div style={styles.error}>{error}</div>}
+          {error && error !== "Ingresá el nombre del courier." && <div role="alert" style={styles.error}>{error}</div>}
 
-          <div style={styles.body}>
+          <div ref={bodyRef} tabIndex={-1} className="cw-body" style={styles.body} {...(guardando ? { inert: "" } : {})}>
             {paso === "deposito" && (
               <div style={styles.stack}>
                 <p style={styles.help}>
@@ -654,17 +715,19 @@ export function CourierWizard({
             )}
 
             {paso === "courier" && !draft.sinCourier && (
-              <div style={styles.stack}>
-                <p style={styles.help}>
+              <div className="cw-courier-fields" style={styles.stack}>
+                <section className="cw-card"><div className="cw-section-heading"><Building2 size={21} /><div><h4>Información del courier</h4><p>Cargá el nombre y los datos de contacto.</p></div></div>
+                <p className="cw-depot-context" style={styles.help} hidden={!conDeposito}>
                   {conDeposito
                     ? `El courier que va a retirar de ${draft.deposito.nombre.trim() || "este depósito"}. Después cargás las ciudades que cubre y cuánto cobra en cada una.`
-                    : "Después de estos datos vas a cargar, en el mismo paso, las ciudades que cubre y cuánto cobra en cada una."}
+                    : ""}
                 </p>
 
                 <Field label="Nombre del courier o empresa">
                   <div style={styles.inputWrap}>
                     <Building2 size={16} style={styles.inputIcon} />
                     <input
+                      ref={nombreRef}
                       autoFocus
                       className="form-input"
                       style={styles.iconInput}
@@ -672,15 +735,20 @@ export function CourierWizard({
                       onChange={e => setCourier("nombre", e.target.value)}
                       placeholder="Ej. Propio, TSI, PAP..."
                       required
+                      aria-invalid={error === "Ingresá el nombre del courier."}
+                      aria-describedby={error === "Ingresá el nombre del courier." ? "cw-name-error" : undefined}
                     />
                   </div>
                 </Field>
+                {error === "Ingresá el nombre del courier." && <p id="cw-name-error" className="cw-field-error" role="alert">{error}</p>}
 
-                <div style={styles.twoCols}>
+                <div className="cw-two-cols" style={styles.twoCols}>
                   <Field label="Teléfono de contacto">
                     <div style={styles.inputWrap}>
                       <Phone size={16} style={styles.inputIcon} />
                       <input
+                        type="tel"
+                        autoComplete="tel"
                         className="form-input"
                         style={styles.iconInput}
                         value={draft.courier.telefono}
@@ -706,17 +774,17 @@ export function CourierWizard({
                     </div>
                   </Field>
                 </div>
-
-
-                <label style={styles.toggle}>
+                </section>
+                <label className="cw-status" style={styles.toggle}>
                   <input
                     type="checkbox"
                     checked={draft.courier.activo}
                     onChange={e => setCourier("activo", e.target.checked)}
                     style={styles.checkbox}
                   />
-                  Courier activo
+                  <span><strong>Courier activo</strong><small>Disponible para asignar entregas cuando guardes su cobertura.</small></span>
                 </label>
+                <div className="cw-next-note"><MapPin size={21} /><div><strong>Siguiente: ciudades y tarifas</strong><p>Elegí dónde entrega y cuánto cobra. Podés revisar todo antes de guardar.</p></div></div>
               </div>
             )}
 
@@ -732,7 +800,8 @@ export function CourierWizard({
                 </div>
 
                 <section style={styles.cityPicker}>
-                  <div style={styles.cityPickerControls}>
+                  {errorGeo && <div className="cw-geo-error" role="alert"><p>No se pudo cargar el catálogo de ciudades.</p><button type="button" className="btn-secondary" onClick={() => setReintentoGeo(value => value + 1)}>Reintentar carga</button></div>}
+                  <div className="cw-city-controls" style={styles.cityPickerControls}>
                     <Field label="Departamento">
                       <select
                         className="form-input"
@@ -741,7 +810,7 @@ export function CourierWizard({
                         disabled={geo.length === 0}
                       >
                         {geo.length === 0 ? (
-                          <option value="">Cargando ciudades...</option>
+                          <option value="">{cargandoGeo ? "Cargando ciudades..." : "Sin departamentos disponibles"}</option>
                         ) : geo.map((d) => (
                           <option key={d.id} value={d.id}>{d.nombre}</option>
                         ))}
@@ -771,6 +840,7 @@ export function CourierWizard({
                         ...(tieneCoberturaInterior ? styles.cityOptionSelected : {}),
                       }}
                       onClick={alternarCoberturaInterior}
+                      aria-pressed={tieneCoberturaInterior}
                     >
                       <span style={{
                         ...styles.cityCheck,
@@ -785,7 +855,7 @@ export function CourierWizard({
                     </button>
                     {ciudadesVisibles.length === 0 ? (
                       <div style={styles.cityEmpty}>
-                        {geo.length === 0 ? "Cargando catálogo..." : "No encontramos ciudades en este departamento."}
+                        {cargandoGeo ? "Cargando catálogo..." : errorGeo ? "Reintentá la carga para seleccionar ciudades." : "No encontramos ciudades en este departamento."}
                       </div>
                     ) : ciudadesVisibles.map((c) => {
                       const seleccionada = ciudadesSeleccionadas.has(`id:${c.id}`) || ciudadesSeleccionadas.has(claveCatalogo(c, departamento));
@@ -798,6 +868,7 @@ export function CourierWizard({
                             ...(seleccionada ? styles.cityOptionSelected : {}),
                           }}
                           onClick={() => alternarCiudadCatalogo(c)}
+                          aria-pressed={seleccionada}
                         >
                           <span style={{
                             ...styles.cityCheck,
@@ -818,14 +889,16 @@ export function CourierWizard({
                   </div>
                 )}
 
+                {draft.ciudades.length > 0 && <div className="cw-tariff-heading"><h4>Tarifas de las ciudades seleccionadas</h4><span>{draft.ciudades.length} cobertura{draft.ciudades.length === 1 ? "" : "s"} · {totalRangos} rango{totalRangos === 1 ? "" : "s"}</span></div>}
+
                 {draft.ciudades.map((ciudad, ciudadIndice) => (
-                  <section key={ciudad._id || ciudadIndice} style={styles.cityCard}>
+                  <section className="cw-city-card" key={ciudad._id || ciudadIndice} style={styles.cityCard}>
                     <div style={styles.cityCardHeader}>
                       <span style={styles.cityBadge}>
                         <MapPin size={14} />
                         {esCoberturaInterior(ciudad) ? "Otras ciudades / interior" : (ciudad.ciudad.trim() || `Ciudad ${ciudadIndice + 1}`)}
                         {ciudad.departamento && !esCoberturaInterior(ciudad) ? <small style={styles.cityBadgeMeta}>· {ciudad.departamento}</small> : null}
-                        {esCoberturaInterior(ciudad) ? <small style={styles.cityBadgeMeta}>· fallback</small> : null}
+                        {esCoberturaInterior(ciudad) ? <small style={styles.cityBadgeMeta}>· sin tarifa específica</small> : null}
                       </span>
                       <div style={styles.cityCardActions}>
                         <button
@@ -914,9 +987,9 @@ export function CourierWizard({
             )}
           </div>
 
-          <div style={styles.actions}>
+          <div className="cw-actions" style={styles.actions}>
             {esPrimerPaso ? (
-              <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+              <button type="button" className="btn-secondary" onClick={() => closeRef.current()}>Cancelar</button>
             ) : (
               <button type="button" className="btn-secondary" onClick={retroceder} disabled={guardando}>
                 Volver a editar
@@ -974,7 +1047,7 @@ function TarifaConfigEditor({
         )}
       </div>
 
-      <div style={styles.configGrid}>
+      <div className="cw-config-grid" style={styles.configGrid}>
         <Field label="Método de pago aceptado">
           <select className="form-input" value={config.tipo_pago} onChange={e => onSharedChange("tipo_pago", e.target.value)}>
             {TIPOS_PAGO.map(tp => <option key={tp} value={tp}>{tp}</option>)}
@@ -994,7 +1067,7 @@ function TarifaConfigEditor({
         <span style={styles.rangosTitle}>Costo de envío según cantidad de productos</span>
         <div style={styles.rangosRows}>
           {rangos.map((rango, rangoIndice) => (
-            <div key={rangoIndice} style={styles.rangeRow}>
+            <div className="cw-range-row" key={rangoIndice} style={styles.rangeRow}>
               <Field label="Desde">
                 <input
                   type="number"
@@ -1076,18 +1149,25 @@ const styles = {
     zIndex: 1200,
     background: "rgba(0, 0, 0, 0.45)",
     display: "flex",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "1.25rem",
+    backdropFilter: "blur(5px)",
   },
   drawer: {
-    width: "min(560px, 100vw)",
-    height: "100%",
-    background: "var(--color-canvas)",
+    width: "min(860px, 100%)",
+    maxHeight: "min(92dvh, 980px)",
+    display: "flex",
+    flexDirection: "column",
+    borderRadius: 24,
+    overflow: "hidden",
+    background: "var(--color-surface)",
     color: "var(--color-fg)",
-    borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)",
+    border: "1px solid var(--color-border)",
     boxShadow: "-20px 0 45px rgba(0,0,0,0.22)",
   },
   form: {
-    height: "100%",
+    minHeight: 0,
     display: "flex",
     flexDirection: "column",
   },
@@ -1096,13 +1176,14 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "1rem",
-    padding: "1.25rem 1.3rem 0.85rem",
+    padding: "1.5rem",
+    flexShrink: 0,
     borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)",
   },
   eyebrow: {
     margin: "0 0 0.25rem",
     color: "var(--color-fg-muted)",
-    fontSize: "0.72rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 800,
     textTransform: "uppercase",
   },
@@ -1115,8 +1196,9 @@ const styles = {
   steps: {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "0.4rem",
-    padding: "0.85rem 1.3rem",
+    gap: "1.5rem",
+    flexShrink: 0,
+    padding: "1rem 1.5rem",
     borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)",
   },
   step: {
@@ -1124,9 +1206,9 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     gap: "0.4rem",
-    minHeight: 34,
+    minHeight: 44,
     borderRadius: 10,
-    fontSize: "0.78rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 800,
     color: "var(--color-fg-muted)",
     background: "color-mix(in srgb, var(--color-fg) 4%, transparent)",
@@ -1142,38 +1224,41 @@ const styles = {
     background: "color-mix(in srgb, var(--color-success) 12%, transparent)",
   },
   stepCurrent: {
+    background: "color-mix(in srgb, var(--color-primary) 10%, var(--color-surface))",
+    color: "var(--color-primary-text)",
     border: "1px solid var(--color-primary)",
     boxShadow: "0 0 0 1px var(--color-primary)",
   },
   stepDot: {
     display: "grid",
     placeItems: "center",
-    width: 18,
-    height: 18,
+    width: 26,
+    height: 26,
+    flexShrink: 0,
     borderRadius: 999,
     background: "color-mix(in srgb, var(--color-fg) 8%, transparent)",
-    fontSize: "0.68rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     transition: "all 0.15s ease",
   },
   stepDotCurrent: {
     background: "var(--color-primary)",
-    color: "#fff",
+    color: "var(--color-primary-fg)",
   },
   error: {
     margin: "0.9rem 1.3rem 0",
     padding: "0.75rem 0.85rem",
     borderRadius: 10,
-    color: "#f87171",
-    background: "rgba(239, 68, 68, 0.12)",
-    border: "1px solid rgba(239, 68, 68, 0.25)",
-    fontSize: "0.82rem",
+    color: "var(--color-danger)",
+    background: "color-mix(in srgb, var(--color-danger) 8%, var(--color-surface))",
+    border: "1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 700,
   },
   body: {
-    flex: 1,
+    flex: "1 1 auto",
     minHeight: 0,
     overflowY: "auto",
-    padding: "1.1rem 1.3rem",
+    padding: "1.5rem",
   },
   stack: {
     display: "grid",
@@ -1185,7 +1270,7 @@ const styles = {
     borderRadius: 10,
     color: "var(--color-fg-muted)",
     background: "color-mix(in srgb, var(--color-fg) 4%, transparent)",
-    fontSize: "0.82rem",
+    fontSize: "var(--ui-text-help, .875rem)",
   },
   sectionHeader: {
     display: "flex",
@@ -1203,7 +1288,7 @@ const styles = {
   sectionHelp: {
     margin: "0.2rem 0 0",
     color: "var(--color-fg-muted)",
-    fontSize: "0.78rem",
+    fontSize: "var(--ui-text-help, .875rem)",
   },
   cityPicker: {
     display: "grid",
@@ -1237,7 +1322,7 @@ const styles = {
     color: "var(--color-fg)",
     cursor: "pointer",
     fontFamily: "inherit",
-    fontSize: "0.8rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 750,
     padding: "0.45rem 0.55rem",
     textAlign: "left",
@@ -1255,7 +1340,7 @@ const styles = {
     display: "block",
     marginTop: 2,
     color: "var(--color-fg-muted)",
-    fontSize: "0.72rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 650,
   },
   cityCheck: {
@@ -1278,7 +1363,7 @@ const styles = {
     borderRadius: 9,
     border: "1px dashed color-mix(in srgb, var(--color-fg) 14%, transparent)",
     color: "var(--color-fg-muted)",
-    fontSize: "0.82rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     textAlign: "center",
   },
   emptySelection: {
@@ -1286,7 +1371,7 @@ const styles = {
     borderRadius: 12,
     border: "1px dashed color-mix(in srgb, var(--color-fg) 14%, transparent)",
     color: "var(--color-fg-muted)",
-    fontSize: "0.84rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     textAlign: "center",
   },
   cityCard: {
@@ -1352,7 +1437,7 @@ const styles = {
     display: "block",
     marginTop: 3,
     color: "var(--color-fg-muted)",
-    fontSize: "0.76rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 700,
   },
   removeConfigButton: {
@@ -1361,7 +1446,7 @@ const styles = {
     color: "var(--color-danger)",
     cursor: "pointer",
     fontFamily: "inherit",
-    fontSize: "0.76rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 800,
     padding: "0.1rem 0",
   },
@@ -1379,7 +1464,7 @@ const styles = {
   rangosTitle: {
     display: "block",
     color: "var(--color-fg-muted)",
-    fontSize: "0.8rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 750,
   },
   rangosRows: {
@@ -1423,7 +1508,7 @@ const styles = {
     border: "none",
     background: "transparent",
     color: "var(--color-primary)",
-    fontSize: "0.78rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 800,
     cursor: "pointer",
   },
@@ -1440,12 +1525,12 @@ const styles = {
     color: "var(--color-fg)",
     cursor: "pointer",
     fontFamily: "inherit",
-    fontSize: "0.82rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 850,
   },
   label: {
     color: "var(--color-fg-muted)",
-    fontSize: "0.76rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 700,
     marginBottom: "0.28rem",
     display: "block",
@@ -1477,7 +1562,7 @@ const styles = {
     alignItems: "center",
     gap: "0.5rem",
     color: "var(--color-fg-muted)",
-    fontSize: "0.82rem",
+    fontSize: "var(--ui-text-help, .875rem)",
     fontWeight: 700,
   },
   checkbox: {
@@ -1501,7 +1586,7 @@ const styles = {
     borderRadius: 10,
     background: "color-mix(in srgb, var(--color-fg) 4%, transparent)",
     color: "var(--color-fg)",
-    fontSize: "0.83rem",
+    fontSize: "var(--ui-text-help, .875rem)",
   },
   summaryCity: {
     fontSize: "0.88rem",
@@ -1509,13 +1594,14 @@ const styles = {
   },
   summaryRange: {
     color: "var(--color-fg-muted)",
-    fontSize: "0.79rem",
+    fontSize: "var(--ui-text-help, .875rem)",
   },
   actions: {
     display: "flex",
     justifyContent: "space-between",
     gap: "0.75rem",
-    padding: "1rem 1.3rem",
+    padding: "1rem 1.5rem",
+    flexShrink: 0,
     borderTop: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)",
     background: "var(--color-canvas)",
   },

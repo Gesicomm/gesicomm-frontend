@@ -1,0 +1,65 @@
+.cw-dialog { outline: none; }
+.cw-dialog #cw-title { font-size: var(--ui-text-section, 1.375rem) !important; }
+.cw-header { background: linear-gradient(115deg, color-mix(in srgb, var(--color-primary) 7%, var(--color-surface)), var(--color-surface) 75%); }
+.cw-heading { display: flex; align-items: flex-start; gap: 1rem; min-width: 0; }
+.cw-heading-icon { display: grid; place-items: center; width: 54px; height: 54px; flex: 0 0 54px; border-radius: 17px; color: var(--color-primary-text); background: var(--color-surface); border: 1px solid var(--color-border); }
+.cw-step-caption { display: block; margin-top: .55rem; color: var(--color-fg-muted); font-size: var(--ui-text-help, .875rem); line-height: 1.5; }
+.cw-header > button { flex-shrink: 0; }
+.cw-step { position: relative; }
+.cw-step-arrow { position: absolute; right: -22px; color: var(--color-fg-muted); pointer-events: none; }
+.cw-step:disabled { cursor: default !important; }
+.cw-step.is-complete { color: var(--color-success) !important; }
+.cw-body { outline: none; background: var(--color-canvas); overscroll-behavior: contain; }
+.cw-card { display: grid; gap: 1.1rem; border: 1px solid var(--color-border); padding: 1.25rem; border-radius: 18px; background: var(--color-surface); }
+.cw-section-heading { display: flex; align-items: flex-start; gap: .75rem; margin-bottom: .25rem; }
+.cw-section-heading > svg { flex-shrink: 0; margin-top: .2rem; color: var(--color-primary-text); }
+.cw-section-heading h4 { margin: 0 0 .35rem; }
+.cw-section-heading p { margin: 0; color: var(--color-fg-muted); }
+.cw-two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.cw-dialog .form-group { min-width: 0; }
+.cw-dialog .form-input { width: 100%; min-width: 0; min-height: 46px; padding-block: .65rem; border-radius: 11px; }
+.cw-dialog input[aria-invalid='true'] { border-color: var(--color-danger); }
+.cw-field-error { margin: -.7rem 0 0; color: var(--color-danger); }
+.cw-dialog .cw-status { padding: 1rem 1.25rem; gap: .8rem !important; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface); cursor: pointer; }
+.cw-status input { flex-shrink: 0; width: 20px !important; height: 20px !important; }
+.cw-status strong { display: block; color: var(--color-fg); font-weight: 600; }
+.cw-status small { display: block; margin-top: .2rem; font-weight: 400; color: var(--color-fg-muted); line-height: 1.5; }
+.cw-next-note { display: flex; align-items: flex-start; gap: .8rem; padding: .35rem .4rem; }
+.cw-next-note > svg { color: var(--color-primary-text); margin-top: .2rem; flex-shrink: 0; }
+.cw-next-note strong { font-weight: 600; }
+.cw-next-note p { margin: .3rem 0 0; color: var(--color-fg-muted); }
+.cw-actions button { min-height: 46px; border-radius: 12px; white-space: normal; }
+.cw-dialog button:focus-visible, .cw-dialog input:focus-visible, .cw-dialog select:focus-visible { outline: 2px solid var(--color-primary) !important; outline-offset: 3px; }
+.cw-dialog button svg { flex-shrink: 0; }
+.cw-exit { padding: 1.5rem; background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+.cw-exit h3 { margin: 0 0 .5rem; }
+.cw-exit p { margin: 0 0 1rem; color: var(--color-fg-muted); }
+.cw-exit > div { display: flex; gap: .75rem; flex-wrap: wrap; }
+.cw-exit button { min-height: 44px; }
+.cw-dialog:has(.cw-exit) > form { opacity: .35; }
+.cw-city-card { background: var(--color-surface) !important; border-radius: 18px !important; }
+.cw-city-card > div:first-child { padding-bottom: .8rem; border-bottom: 1px solid var(--color-border); }
+.cw-config-grid { align-items: start; }
+.cw-dialog .cw-city-card button { white-space: normal; }
+.cw-geo-error { padding: 1rem; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
+.cw-geo-error p { margin: 0 0 .75rem; color: var(--color-danger); }
+.cw-tariff-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-top: .4rem; }
+.cw-tariff-heading h4 { margin: 0; }
+.cw-tariff-heading span { font-size: var(--ui-text-help); color: var(--color-fg-muted); }
+@media (max-width: 640px) {
+  .cw-overlay { padding: .6rem !important; }
+  .cw-dialog { max-height: calc(100dvh - 1.2rem) !important; border-radius: 20px !important; }
+  .cw-header { padding: 1rem !important; gap: .5rem !important; }
+  .cw-heading { gap: .7rem; }
+  .cw-heading-icon { width: 40px; height: 40px; flex-basis: 40px; border-radius: 13px; }
+  .cw-steps { gap: 1rem !important; padding: .85rem !important; }
+  .cw-step { flex-direction: column; gap: .3rem !important; padding: .45rem .15rem !important; font-weight: 600 !important; }
+  .cw-step-arrow { right: -17px; top: calc(50% - 8px); width: 15px; }
+  .cw-body { padding: 1rem !important; }
+  .cw-card { padding: 1rem; border-radius: 15px; }
+  .cw-two-cols, .cw-city-controls, .cw-config-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .cw-dialog .cw-range-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .cw-range-row > :last-child { grid-column: 1 / -1; }
+  .cw-actions { padding: .85rem !important; gap: .6rem !important; }
+  .cw-actions > button { min-width: 0; flex: 1; justify-content: center; }
+}
