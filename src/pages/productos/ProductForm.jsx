@@ -1221,7 +1221,7 @@ export default function ProductForm() {
             faq_titulo: p.faq_titulo || '',
             tags: Array.isArray(p.tags) ? p.tags.join(', ') : '',
             precio_base: p.precio_base || '',
-            precio_costo: p.precio_costo || '',
+            precio_costo: p.precio_costo ?? '',
             precio_dolar: p.precio_dolar || '',
             es_dolar: !!p.es_dolar,
             precio_ancla: p.precio_ancla ?? p.precio_tachado ?? '',
@@ -1414,7 +1414,10 @@ export default function ProductForm() {
 
   // ── Rentabilidad Reactiva ─────────────────────────────────
   const precioBaseVal = parseFloat(watch('precio_base')) || 0;
-  const precioCostoVal = parseFloat(watch('precio_costo')) || 0;
+  const precioCostoDato = watch('precio_costo');
+  const precioCostoVal = parseFloat(precioCostoDato) || 0;
+  const costoDefinido = precioCostoDato !== '' && precioCostoDato != null && Number.isFinite(Number(precioCostoDato));
+  const puedeAnalizarPrecio = precioBaseVal > 0 && costoDefinido;
   const descuentoPctVal = parseFloat(watch('descuento_porcentaje')) || 0;
   const precioAnclaVal = parseFloat(watch('precio_ancla')) || 0;
 
@@ -1654,7 +1657,7 @@ export default function ProductForm() {
           .filter(f => f.pregunta?.trim() && f.respuesta?.trim())
           .map((f, idx) => ({ pregunta: f.pregunta.trim(), respuesta: f.respuesta.trim(), orden: idx })),
         precio_base: parseFloat(data.precio_base),
-        precio_costo: data.precio_costo ? parseFloat(data.precio_costo) : null,
+        precio_costo: data.precio_costo !== '' && data.precio_costo != null ? parseFloat(data.precio_costo) : null,
         precio_dolar: data.precio_dolar ? parseFloat(data.precio_dolar) : null,
         es_dolar: !!data.es_dolar,
         precio_ancla: data.precio_ancla ? parseFloat(data.precio_ancla) : null,
@@ -2180,6 +2183,8 @@ export default function ProductForm() {
             </div>
           </div>
           
+          <details className="prod-advanced-import">
+            <summary><Bot size={16} /> Importar con IA</summary>
           <div className="ia-import-block">
             <button 
               type="button" 
@@ -2197,11 +2202,13 @@ export default function ProductForm() {
               <input 
                 type="text" 
                 placeholder="Pegar JSON aquí..." 
+                aria-label="JSON del producto para importar"
                 onChange={handleImportarJSON}
                 className="ia-import-input"
               />
             </div>
           </div>
+          </details>
         </div>
         <button
           className="btn-primary"
@@ -2244,8 +2251,7 @@ export default function ProductForm() {
             return (
               <button
                 key={tab.id}
-                role="tab"
-                aria-selected={tabActiva === tab.id}
+                aria-pressed={tabActiva === tab.id}
                 className={`prod-step ${tabActiva === tab.id ? 'active' : ''} ${estado}`}
                 onClick={() => setTabActiva(tab.id)}
                 type="button"
@@ -2266,8 +2272,8 @@ export default function ProductForm() {
 
         <div className="prod-workspace-main">
 
-        <div className="prod-requirements" aria-label="Datos mínimos del producto">
-          <strong>Lo mínimo para empezar</strong>
+        <details className="prod-requirements" aria-label="Datos mínimos del producto">
+          <summary>Datos para guardar · {requisitosGuardar.filter(r => r.listo).length} de {requisitosGuardar.length} completos <span>Ver pendientes</span></summary>
           <div className="prod-requirements-row">
             <span>Para guardar</span>
             {requisitosGuardar.map(r => (
@@ -2285,7 +2291,7 @@ export default function ProductForm() {
             ))}
           </div>
           <p>Fotos, categoría, descripción y ofertas son opcionales para guardar. Podés completarlas después.</p>
-        </div>
+        </details>
 
         <div className={`tab-content ${tabActiva === 'basica' ? 'active' : ''}`}>
           <div className="form-grid-2">
@@ -2563,7 +2569,7 @@ export default function ProductForm() {
               )}
             </div>
 
-            <div className="commercial-summary">
+            {puedeAnalizarPrecio ? <div className="commercial-summary">
               <div className="final">
                 <span>Precio final</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
@@ -2587,7 +2593,7 @@ export default function ProductForm() {
                 <span>Margen</span>
                 <strong className={margenSimpleVal >= 0 ? 'positive' : 'negative'}>{fmtPct(margenSimpleVal)}</strong>
               </div>
-            </div>
+            </div> : <p className="field-hint">Completá el costo y el precio para ver la ganancia y el margen. Si el producto no tiene costo, ingresá 0.</p>}
           </div>
 
           <div className="form-grid-2" style={{ marginTop: '1rem' }}>
@@ -2658,7 +2664,7 @@ export default function ProductForm() {
             Este descuento se aplica de verdad en el checkout (mismo motor de precios que ve el cliente), no es solo informativo.
           </p>
 
-          {config && rentabilidad && (() => {
+          {config && rentabilidad && puedeAnalizarPrecio && (() => {
             const sBase = rentabilidad;
             const targetMargin = Number(config.margen_minimo) / 100;
             const marginBase = sBase.margin;
@@ -3797,7 +3803,9 @@ export default function ProductForm() {
         </div>
 
         {tabActiva !== 'marketing' && (
-        <aside className="prod-summary-panel" aria-label="Resumen del producto">
+        <details className="prod-summary-panel" aria-label="Resumen del producto">
+          <summary>Resumen del producto</summary>
+          <div className="prod-summary-content">
           <div className="summary-media">
             {imagenPrincipalUrl
               ? <img src={imagenPrincipalUrl} alt={nombre || 'Producto'} />
@@ -3822,7 +3830,7 @@ export default function ProductForm() {
             </div>
             <div>
               <span>Margen</span>
-              <strong className={margenSimpleVal >= 0 ? 'positive' : 'negative'}>{fmtPct(margenSimpleVal)}</strong>
+              <strong className={puedeAnalizarPrecio ? (margenSimpleVal >= 0 ? 'positive' : 'negative') : ''}>{puedeAnalizarPrecio ? fmtPct(margenSimpleVal) : 'Por completar'}</strong>
             </div>
           </div>
 
@@ -3846,7 +3854,8 @@ export default function ProductForm() {
           </div>
 
           {destacadoVal && <span className="summary-featured"><Star size={12} /> Destacado</span>}
-        </aside>
+          </div>
+        </details>
         )}
 
       </form>

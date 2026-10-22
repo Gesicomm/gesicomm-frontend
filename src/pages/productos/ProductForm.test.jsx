@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import ProductForm from './ProductForm';
 import { productService } from '../../services/productService';
@@ -52,7 +52,7 @@ function completarPrecio(valor = '10000') {
   fireEvent.change(document.getElementById('prod-precio-base'), { target: { value: valor } });
 }
 async function prepararPack() {
-  fireEvent.click(screen.getByRole('tab', { name: /^Venta/ }));
+  fireEvent.click(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Venta/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Nueva oferta' }));
   fireEvent.change(screen.getByPlaceholderText('Ej. Llevá 2 y ahorrá'), { target: { value: 'Pack x2' } });
   const precio = screen.getByText('Precio del paquete', { selector: 'label' }).parentElement.querySelector('input');
@@ -62,10 +62,19 @@ async function prepararPack() {
 }
 
 describe('Alta de producto por secciones', () => {
+  it('conserva un costo cero intencional al guardar', async () => {
+    await montar();
+    completarIdentidad();
+    completarPrecio();
+    fireEvent.change(document.getElementById('prod-precio-costo'), { target: { value: '0' } });
+    guardar();
+    await screen.findByText('Catálogo guardado');
+    expect(productService.crear.mock.calls[0][0].precio_costo).toBe(0);
+  });
   it('abre directamente Venta cuando el listado pide gestionar ofertas', async () => {
     sessionStorage.setItem('gesicomm:tabInicial', 'ofertas');
     await montar();
-    expect(screen.getByRole('tab', { name: /^Venta/ })).toHaveAttribute('aria-selected', 'true');
+    expect(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Venta/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Nueva oferta' })).toBeVisible();
   });
 
@@ -74,7 +83,7 @@ describe('Alta de producto por secciones', () => {
     completarIdentidad();
     guardar();
     await waitFor(() => expect(document.getElementById('prod-precio-base')).toHaveFocus());
-    expect(screen.getByRole('tab', { name: /^Precio/ })).toHaveAttribute('aria-selected', 'true');
+    expect(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Precio/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('El precio base es requerido.')).toBeVisible();
     expect(document.getElementById('prod-nombre')).toHaveValue('Mi producto');
     expect(productService.crear).not.toHaveBeenCalled();
@@ -82,7 +91,7 @@ describe('Alta de producto por secciones', () => {
 
   it('recorre Identidad y Precio al corregir errores en distintas secciones', async () => {
     await montar();
-    fireEvent.click(screen.getByRole('tab', { name: /^Venta/ }));
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Venta/ }));
     guardar();
     await waitFor(() => expect(document.getElementById('prod-nombre')).toHaveFocus());
     fireEvent.change(document.getElementById('prod-nombre'), { target: { value: 'Mi producto' } });
@@ -95,9 +104,10 @@ describe('Alta de producto por secciones', () => {
 
   it('muestra los mínimos para guardar y vender con accesos a sus secciones', async () => {
     await montar();
-    expect(screen.getByLabelText('Datos mínimos del producto')).toBeVisible();
+    expect(screen.getByText(/Datos para guardar ·/)).toBeVisible();
+    fireEvent.click(screen.getByText(/Datos para guardar ·/));
     fireEvent.click(screen.getByRole('button', { name: 'Stock disponible' }));
-    expect(screen.getByRole('tab', { name: /^Inventario/ })).toHaveAttribute('aria-selected', 'true');
+    expect(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Inventario/ })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('permite preparar, editar y guardar un pack antes del primer guardado del producto', async () => {
@@ -127,10 +137,10 @@ describe('Alta de producto por secciones', () => {
     await prepararPack();
     completarIdentidad(); completarPrecio();
     productService.crear.mockRejectedValueOnce({ response: { data: { message: 'Código de oferta repetido.', seccion: 'venta' } } });
-    fireEvent.click(screen.getByRole('tab', { name: /^Identidad/ }));
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Identidad/ }));
     guardar();
     await screen.findByText('Código de oferta repetido.');
-    expect(screen.getByRole('tab', { name: /^Venta/ })).toHaveAttribute('aria-selected', 'true');
+    expect(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Venta/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Pack x2', { selector: '.combo-list-card-name' })).toBeVisible();
     guardar();
     await screen.findByText('Catálogo guardado');
@@ -139,18 +149,18 @@ describe('Alta de producto por secciones', () => {
 
   it('no ofrece Combo dentro del armador de ofertas', async () => {
     await montar();
-    fireEvent.click(screen.getByRole('tab', { name: /^Venta/ }));
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Venta/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Nueva oferta' }));
     expect(screen.queryByRole('radio', { name: /^Combo/ })).toBeNull();
   });
 
   it.each([
-    ['Order bump', 'order_bump', 'Precio de lo que se suma'],
-    ['Upsell', 'upsell', 'Precio de lo que se suma'],
+    ['Order bump', 'order_bump', 'Precio del Producto que se Vende en la Oferta'],
+    ['Upsell', 'upsell', 'Precio del Producto que se Vende en la Oferta'],
   ])('prepara %s con referencias correctas al producto nuevo y al complemento', async (tipo, estrategia, label) => {
     await montar();
     completarIdentidad(); completarPrecio();
-    fireEvent.click(screen.getByRole('tab', { name: /^Venta/ }));
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Venta/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Nueva oferta' }));
     fireEvent.click(screen.getByRole('radio', { name: new RegExp(`^${tipo}`) }));
     fireEvent.click(screen.getByRole('button', { name: 'Elegir extra QA' }));
@@ -349,7 +359,7 @@ describe('Inventario solo en depósito', () => {
     depositoService.listarDepositos.mockResolvedValue({ data: depositos });
     await montar();
     completarIdentidad(); completarPrecio();
-    fireEvent.click(screen.getByRole('tab', { name: /^Inventario/ }));
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Inventario/ }));
     expect(document.getElementById('prod-stock-salon')).toBeNull();
     expect(document.getElementById('prod-stock-min-salon')).toBeNull();
     fireEvent.change(screen.getByLabelText(/Central/), { target: { value: '7' } });
@@ -385,7 +395,7 @@ describe('Inventario solo en depósito', () => {
       <Route path="/mi-catalogo" element={<p>Catálogo guardado</p>} />
     </Routes></MemoryRouter>);
     await screen.findByDisplayValue('Producto anterior');
-    fireEvent.click(screen.getByRole('tab', { name: /^Inventario/ }));
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Flujo de configuracion del producto' })).getByRole('button', { name: /^Inventario/ }));
     expect(document.getElementById('prod-stock-deposito')).toHaveValue(10);
     expect(screen.queryByText('Stock salón')).toBeNull();
     if (conVariantes) {

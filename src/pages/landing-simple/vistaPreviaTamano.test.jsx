@@ -54,12 +54,13 @@ describe('Vista previa de escritorio: se vuelve a medir', () => {
     expect(lienzo().style.transform).toBe(`scale(${1190 / 1280})`);
 
     fireEvent.click(screen.getByRole('button', { name: /Ocultar paneles/ }));
-    marco.w = 1280; marco.h = 820;
+    marco.w = 1700; marco.h = 820;
     const activos = observadores.filter(o => o.activo);
     expect(activos.length).toBeGreaterThan(0);
     act(() => { activos.forEach(o => o.cb([])); });
 
     expect(lienzo().style.transform).toBe('scale(1)');
+    expect(lienzo().style.width).toBe('1700px');
     expect(lienzo().style.height).toBe('820px');
   });
 });

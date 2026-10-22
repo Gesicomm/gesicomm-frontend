@@ -6,6 +6,7 @@ import App from './App.jsx'
 import '@fontsource-variable/plus-jakarta-sans'
 import './index.css'
 import './styles/systemTypography.css'
+import './styles/panelComponents.css'
 import { registerChunkRecovery } from './lib/chunkRecovery'
 
 registerChunkRecovery(window, import.meta.url)

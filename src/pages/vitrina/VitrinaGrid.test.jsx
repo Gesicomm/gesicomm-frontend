@@ -309,7 +309,7 @@ describe('VitrinaGrid Component', () => {
     expect(await screen.findByText('Combo en Landing')).toBeInTheDocument();
     expect(screen.queryByText('Producto fuera de Landing')).toBeNull();
     expect(screen.getByRole('button', { name: /Seleccionar página/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Seleccionar todo/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Seleccionar todo/i })).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /Seleccionar Producto en Landing/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Despublicar seleccionados/i })).toBeNull();
     fireEvent.click(screen.getByRole('checkbox', { name: /Seleccionar Producto en Landing/i }));
@@ -552,6 +552,7 @@ describe('VitrinaGrid Component', () => {
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
 ));
 
+    fireEvent.click(screen.getByRole('button', { name: /Seleccionar página/i }));
     fireEvent.click(screen.getByRole('button', { name: /Seleccionar todo/i }));
 
     await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
@@ -573,7 +574,7 @@ describe('VitrinaGrid Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Quitar todo/i }));
     expect(screen.queryByRole('region', { name: 'Productos seleccionados' })).toBeNull();
-    expect(screen.getByRole('button', { name: /Seleccionar todo/i })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('button', { name: /Seleccionar todo/i })).not.toBeInTheDocument();
   });
 
   it('Cambiar precios lleva solo los seleccionados, por router state y sin tocar la URL', async () => {
@@ -581,6 +582,7 @@ describe('VitrinaGrid Component', () => {
     await screen.findByText('Producto de Prueba');
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Seleccionar Producto de Prueba' }));
+    fireEvent.click(screen.getByText('Herramientas', {selector: 'summary'}));
     fireEvent.click(screen.getByRole('button', { name: 'Cambiar precios (1)' }));
 
     expect(window.location.pathname).toBe('/mi-catalogo/precios');
@@ -601,6 +603,7 @@ describe('VitrinaGrid Component', () => {
     }));
     renderWithRouter(<VitrinaGrid />);
     await screen.findByText('Producto volumen 1');
+    fireEvent.click(screen.getByRole('button', { name: /Seleccionar página/i }));
     fireEvent.click(screen.getByRole('button', { name: /Seleccionar todo/i }));
     await waitFor(() => expect(within(screen.getByRole('region', { name: 'Productos seleccionados' })).getByText('4000')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /Publicar productos en la web/i }));
@@ -615,6 +618,7 @@ describe('VitrinaGrid Component', () => {
     renderWithRouter(<VitrinaGrid />);
     await screen.findByText('Producto de Prueba');
 
+    fireEvent.click(screen.getByText('Herramientas', {selector: 'summary'}));
     fireEvent.click(screen.getByRole('button', { name: 'Cambiar precios' }));
 
     expect(window.location.pathname).toBe('/mi-catalogo/precios');

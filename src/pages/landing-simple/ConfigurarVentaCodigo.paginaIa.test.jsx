@@ -16,6 +16,27 @@ function montar() {
 }
 
 describe('Guía de IA para la página completa', () => {
+  it('sincroniza el destino al cambiar de vista si no hay código pendiente', () => {
+    const props = { tienda: { nombre: 'QA' }, venta: { tipo: 'catalogo' }, productos: [], onCambiarCodigo: vi.fn() };
+    const { rerender } = render(<InstruccionesIaPagina {...props} vistaInicial="inicio" />);
+    rerender(<InstruccionesIaPagina {...props} vistaInicial="checkout" />);
+    expect(screen.getByLabelText('Página a diseñar')).toHaveValue('checkout');
+    expect(screen.getByRole('button', { name: 'Aplicar a Checkout' })).toBeInTheDocument();
+    expect(screen.queryByRole('note', { name: 'Destino de código diferente' })).toBeNull();
+  });
+
+  it('conserva el código pendiente y avisa cuando la vista cambia a otro destino', () => {
+    const cambiar = vi.fn();
+    const props = { tienda: { nombre: 'QA' }, venta: { tipo: 'catalogo' }, productos: [], onCambiarCodigo: cambiar };
+    const { rerender } = render(<InstruccionesIaPagina {...props} vistaInicial="inicio" />);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '<main>Diseño pendiente</main>' } });
+    rerender(<InstruccionesIaPagina {...props} vistaInicial="checkout" />);
+    expect(screen.getByRole('textbox')).toHaveValue('<main>Diseño pendiente</main>');
+    expect(screen.getByLabelText('Página a diseñar')).toHaveValue('inicio');
+    expect(screen.getByRole('note', { name: 'Destino de código diferente' })).toHaveTextContent('Estás viendo Checkout');
+    expect(cambiar).not.toHaveBeenCalled();
+  });
+
   it('presenta el contrato comercial y un único campo de pegado, sin pestañas por lenguaje', () => {
     montar();
     expect(screen.getAllByRole('textbox')).toHaveLength(1);
@@ -35,7 +56,7 @@ describe('Guía de IA para la página completa', () => {
     const cambiar = montar();
     fireEvent.change(screen.getByRole('textbox'), { target: { value: respuesta } });
     expect(cambiar).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Aplicar a la página' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Aplicar a /  }));
     expect(cambiar.mock.calls).toEqual([
       ['inicio', 'html', '<main>Nuevo</main>'],
       ['inicio', 'css', '.nuevo { color: red; }'],
@@ -47,7 +68,7 @@ describe('Guía de IA para la página completa', () => {
   it('rechaza texto sin HTML sin modificar la página', () => {
     const cambiar = montar();
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Quiero un diseño nuevo' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Aplicar a la página' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Aplicar a /  }));
     expect(cambiar).not.toHaveBeenCalled();
     expect(screen.getByRole('alert')).toHaveTextContent('Pegá el código completo');
   });
@@ -67,7 +88,7 @@ describe('Guía de IA para la página completa', () => {
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: '<main>Pedido</main><style>main { color: blue; }</style><script>console.log("nuevo")</script>' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Aplicar a la página' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Aplicar a /  }));
     expect(cambiar.mock.calls).toEqual([
       ['checkout', 'html', '<main>Pedido</main>'],
       ['checkout', 'css', 'main { color: blue; }'],

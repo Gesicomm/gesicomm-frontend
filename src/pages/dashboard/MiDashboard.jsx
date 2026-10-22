@@ -1783,7 +1783,7 @@ export default function MiDashboard() {
         >
           <div className="md-rentabilidad-grid">
             <div className="md-rent-item">
-              <span className="md-rent-label">Pedidos <Ayuda texto="Cuántos pedidos llegaron a manos del cliente en este período." /></span>
+              <span className="md-rent-label">Pedidos entregados · del período <Ayuda texto="Cuántos pedidos llegaron a manos del cliente en este período." /></span>
               <span className="md-rent-valor">{funnel.entregados}</span>
             </div>
             <div className="md-rent-item">
@@ -1911,12 +1911,17 @@ export default function MiDashboard() {
             equilibrio del que hablar. */}
         {kpis.punto_equilibrio !== undefined && kpis.gastos_fijos_generales > 0 && (
           <div className={`md-equilibrio ${kpis.punto_equilibrio === null ? 'md-equilibrio-alerta' : (kpis.falta_para_equilibrio > 0 ? 'md-equilibrio-falta' : 'md-equilibrio-ok')}`}>
-            {kpis.punto_equilibrio === null ? (
+            {!(Number(kpis.facturacion_entregada) > 0) ? (
               <>
-                <strong>No hay punto de equilibrio</strong>
+                <strong>Sin ventas suficientes para calcularlo</strong>
+                <span>El período necesita ventas entregadas para estimar el margen de contribución y el punto de equilibrio.</span>
+              </>
+            ) : kpis.punto_equilibrio === null ? (
+              <>
+                <strong>No se puede alcanzar el equilibrio con el margen actual</strong>
                 <span>
-                  Estás vendiendo por debajo de lo que te cuesta la mercadería, así que vender
-                  más no cubre los gastos fijos: los agranda. Hay que corregir precios o costos.
+                  La contribución de las ventas no alcanza para cubrir los gastos fijos.
+                  Revisá precios y costos variables antes de proyectar más ventas.
                 </span>
               </>
             ) : kpis.falta_para_equilibrio > 0 ? (

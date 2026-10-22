@@ -1,0 +1,88 @@
+/* Contrato de componentes del panel. No define colores de marca.
+   Primitivos → roles semánticos → alias usados por pantallas existentes. */
+:root {
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+  --ui-border-width: 1px;
+  --ui-radius-control: 8px;
+  --ui-radius-card: 12px;
+  --ui-radius-overlay: 16px;
+  --ui-radius-chip: 999px;
+  --ui-control-height: 40px;
+  --ui-control-compact-height: 36px;
+  --ui-touch-target: 44px;
+  --ui-section-gap: var(--ui-space-6);
+  --ui-content-gap: var(--ui-space-4);
+  --ui-card-padding: var(--ui-space-4);
+  --ui-overlay-shadow: 0 8px 24px color-mix(in srgb, var(--color-fg) 12%, transparent);
+}
+
+/* Como la tipografía compartida, alcanza portales. Las vistas previas y el
+   editor de código conservan su contrato propio. Los iframes son aislados. */
+@scope (body:has(.gc-panel, .onb-page, .st-page):not(:has(.courier-page .courier-container))) to (.courier-page:has(.courier-container), .tn-typography-preview, .monaco-editor, [data-typography-preview]) {
+  :where(button, input, select, textarea, summary) { box-sizing: border-box; }
+  button:not([role='switch']),
+  :is(input, select, textarea):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='hidden']) {
+    border-radius: var(--ui-radius-control) !important;
+    min-height: var(--ui-control-height);
+  }
+  /* Los botones sin borde conservan su presentación; no añadir marcos
+     a zonas de contenido que también permiten abrir un detalle. */
+  :is(input, select, textarea):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='hidden']) {
+    border-width: var(--ui-border-width);
+  }
+  :is(input, select, textarea) { max-width: 100%; }
+  textarea { min-height: 96px; }
+  :is(button, a, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--color-primary-text);
+    outline-offset: 3px;
+  }
+  :is(button, input, select, textarea):disabled { cursor: not-allowed; }
+  button:disabled { opacity: .55; }
+  :is(button, [role='button'])[aria-busy='true'] { cursor: progress; }
+  [aria-invalid='true'] { border-style: dashed; border-width: 2px; }
+  :is(.pt-status-chip, .badge, .vit-filter-btn, .md-confirmado-tag) {
+    border-radius: var(--ui-radius-chip) !important;
+  }
+  :is(.btn-primary, .btn-secondary, .btn-ghost, .btn-nuevo-pedido,
+      .btn-venta-whatsapp, .af-btn, .pc-btn):not(:disabled) { box-shadow: none; }
+  :is(.md-card, .md-hero, .prod-summary-panel, .vit-card, .cic-kpi-card,
+      .cic-table-card, .cic-funnel-card, .cic-insight-card, .tn-group,
+      .dep-deposit-card, .ads-summary-card) {
+    border-radius: var(--ui-radius-card) !important;
+    border-width: var(--ui-border-width);
+    box-shadow: none !important;
+  }
+  :is(.pricing-grid-bg, .commercial-summary > div) { box-shadow: none; background-image: none; }
+  :is(.modal-content, .vit-modal, .af-dialog, .dep-form, .np-modal-container,
+      .lb-modal, .pc-modal, .ads-dialog) {
+    border-radius: var(--ui-radius-overlay) !important;
+    border-width: var(--ui-border-width);
+    box-shadow: var(--ui-overlay-shadow) !important;
+    max-height: calc(100dvh - var(--ui-space-8));
+  }
+  :is(.vit-tools-content, .ads-actions-menu, .st-opciones-tienda[open] .st-pie-acciones) {
+    border-radius: var(--ui-radius-control);
+    box-shadow: var(--ui-overlay-shadow);
+  }
+  :is(.dep-detail, .af-dialog, .np-modal-container) { overscroll-behavior: contain; }
+  :is(.prod-save-bar, .tn-footer) { gap: var(--ui-space-3); }
+  :is(.prod-form, .tn-panel) { scroll-padding-bottom: 96px; }
+  :is(.cic-filters-grid, .form-grid-2, .form-grid-3, .form-grid-4) { gap: var(--ui-content-gap); }
+  :is(.form-group, .np-row, .cic-filter-item) { min-width: 0; }
+  :is(.form-group, .np-row, .cic-filter-item) > label { display: block; margin-bottom: var(--ui-space-2); }
+  :is(.pt-th-num, .pt-td-num, .text-right, .tabular-nums) { font-variant-numeric: tabular-nums; }
+  :is(.pt-th-num, .pt-td-num) { text-align: right; }
+  p { text-transform: none; }
+  .ui-icon-action { min-width: var(--ui-touch-target); min-height: var(--ui-touch-target); }
+  .ui-section { margin-block-start: var(--ui-section-gap); }
+  .ui-surface { padding: var(--ui-card-padding); border: var(--ui-border-width) solid var(--color-border); border-radius: var(--ui-radius-card); background: var(--color-surface); }
+  @media (pointer: coarse), (max-width: 767px) {
+    button, summary, :is(input, select):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='hidden']) { min-height: var(--ui-touch-target); }
+    :is(.btn-icon, .close-btn, .ui-icon-action), button[aria-label]:has(> svg:only-child) { min-width: var(--ui-touch-target); }
+  }
+}

@@ -1,5 +1,6 @@
 import { dividirCodigoPegado } from './dividirCodigoPegado';
 import useArrastreBloques, { moverBloqueEnLista } from './useArrastreBloques';
+import './editorWorkspace.css';
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Loader, ArrowRight, ArrowLeft, Search, Check, AlertTriangle, Infinity as InfinityIcon, Tag, Plus, Pencil, X,
@@ -2487,15 +2488,20 @@ export default function ConfigurarVentaCodigo({
   const vistaPrevia = <VistaPrevia {...propsVistaPrevia} onAmpliar={() => setPreviewAmpliada(true)} />;
 
   return (
-    <div className="h-full min-h-0 w-full overflow-hidden flex flex-col bg-canvas">
+    <div className="ecommerce-builder h-full min-h-0 w-full overflow-hidden flex flex-col bg-canvas">
       {/* Barra superior: siempre a la vista, con las acciones de la landing
           ya guardada. Reemplaza al antiguo editor de código como pantalla
           de entrada — esas acciones (publicar, guardar, eliminar) vivían
           ahí y ahora viven acá. */}
       {/* Sin "Volver": mandaba a /landing, que con una landing existente
           redirige de vuelta acá — el botón no hacía nada. */}
-      <div className="shrink-0 border-b border-border bg-surface px-4 md:px-6 py-2.5 flex items-center justify-end gap-3">
-        <div className="flex items-center gap-1.5">
+      <div className="ecommerce-builder-toolbar shrink-0 border-b border-border bg-surface px-4 md:px-6 py-2.5 flex items-center justify-end gap-3">
+        <div className="ecommerce-save-context mr-auto min-w-0 text-sm text-fg-muted" role="note" aria-label="Alcance del guardado">
+          <strong className="text-fg">{landingActiva ? 'Publicado' : 'Sin publicar'}</strong>
+          <span className="block">{landingActiva ? 'Guardar actualiza la tienda publicada.' : 'Guardar conserva los cambios; Publicar habilita el acceso público.'}</span>
+          {(landing?.updatedAt || landing?.updated_at) && <span className="block">Último guardado: {new Date(landing.updatedAt || landing.updated_at).toLocaleString('es-PY', { timeZone: 'America/Asuncion' })}</span>}
+        </div>
+        <div className="ecommerce-builder-actions flex items-center gap-1.5">
           {panelesOcultos && (
             <div role="radiogroup" aria-label="Dispositivo" className="flex rounded-lg bg-surface-2 p-0.5 border border-border">
               {[['movil', 'Celular', Smartphone], ['escritorio', 'Escritorio', Monitor]].map(([k, label, Icono]) => (
@@ -2517,11 +2523,12 @@ export default function ConfigurarVentaCodigo({
             type="button"
             onClick={() => setPanelesOcultos(v => !v)}
             aria-pressed={panelesOcultos}
+            aria-label={panelesOcultos ? 'Mostrar paneles' : 'Ocultar paneles'}
             title={panelesOcultos ? 'Volver a mostrar la configuración y la vista previa' : 'Ocultar la configuración y ver solo la landing'}
             className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             {panelesOcultos ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-            <span className="hidden sm:inline">{panelesOcultos ? 'Mostrar paneles' : 'Ocultar paneles'}</span>
+            <span>{panelesOcultos ? 'Mostrar paneles' : 'Ocultar paneles'}</span>
           </button>
           {onAbrirCodigo && (
             <button
@@ -2549,15 +2556,15 @@ export default function ConfigurarVentaCodigo({
           {publicUrl && (
             <a
               href={publicUrl} target="_blank" rel="noreferrer"
-              title="Ver landing pública"
-              className="p-2 rounded-lg text-fg-muted hover:bg-surface-2 hover:text-fg"
+              title="Abrir la página publicada en una pestaña nueva"
+              className="ecommerce-public-page inline-flex items-center gap-2 px-3 rounded-lg border border-border text-fg hover:bg-surface-2"
             >
-              <ExternalLink size={16} />
+              <ExternalLink size={16} aria-hidden="true" /> Ver página publicada
             </a>
           )}
           {onEliminar && (
-            <button type="button" onClick={onEliminar} title="Eliminar landing" className="p-2 rounded-lg text-fg-muted hover:bg-danger/10 hover:text-danger">
-              <Trash2 size={16} />
+            <button type="button" onClick={onEliminar} title="Eliminar esta página" className="ecommerce-delete-page inline-flex items-center gap-2 px-3 rounded-lg text-fg-muted hover:bg-danger/10 hover:text-danger">
+              <Trash2 size={16} aria-hidden="true" /> Eliminar página
             </button>
           )}
           {onPublicar && (
@@ -2588,7 +2595,7 @@ export default function ConfigurarVentaCodigo({
       <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex">
         {/* Configuración: oculta, no desmontada, para no perder lo que se
             está editando (formularios abiertos, borradores). */}
-        <div hidden={panelesOcultos} className="relative flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto overscroll-contain">
+        <div hidden={panelesOcultos} className="ecommerce-builder-config relative flex-1 min-w-0 overflow-y-auto overscroll-contain">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
             <div className="mb-6">
               <label htmlFor="contenido-configuracion" className="block text-xs font-semibold text-fg-muted mb-2">Qué querés editar</label>
@@ -3680,7 +3687,7 @@ export default function ConfigurarVentaCodigo({
 
         {/* Vista previa (escritorio ancho; con los paneles ocultos, en
             cualquier ancho y sin su cabecera) */}
-        <aside className={`${panelesOcultos ? 'flex pt-4' : 'hidden xl:flex border-l border-border'} flex-1 min-w-0 bg-surface-2 flex-col min-h-0`} aria-label="Vista previa">
+        <aside className={`${panelesOcultos ? 'flex' : 'hidden xl:flex border-l border-border'} flex-1 min-w-0 bg-surface-2 flex-col min-h-0`} aria-label="Vista previa">
           {panelesOcultos ? <VistaPrevia {...propsVistaPrevia} soloLienzo /> : vistaPrevia}
         </aside>
       </div>
@@ -3800,6 +3807,19 @@ export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos,
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
   const [confirmarReset, setConfirmarReset] = useState(false);
+  const vistaActual = VISTAS_CODIGO_TIENDA.find(v => v.key === vistaInicial) || VISTAS_CODIGO_TIENDA[0];
+  // Seguir el contexto de edición salvo que haya código pegado pendiente.
+  // En ese caso se conserva el texto y se advierte el destino explícitamente.
+  useEffect(() => {
+    if (!pegado.trim()) {
+      setVistaKey(VISTAS_CODIGO_TIENDA.some(v => v.key === vistaInicial) ? vistaInicial : 'inicio');
+      setCopiado(false);
+      setError('');
+      setAviso('');
+    }
+    // Solo el cambio de vista dispara la sincronización, no la escritura.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vistaInicial]);
   const vista = VISTAS_CODIGO_TIENDA.find(v => v.key === vistaKey);
   const codigo = codigos?.[vistaKey] || vista.base(tipo);
   const esBase = useMemo(() => {
@@ -3882,6 +3902,7 @@ export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos,
             }} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg">
               {VISTAS_CODIGO_TIENDA.map(v => <option key={v.key} value={v.key}>{v.label}</option>)}
             </select>
+            {vistaKey !== vistaActual.key && <p className="rounded-lg border border-warning/40 p-3 text-fg" role="note" aria-label="Destino de código diferente">Estás viendo {vistaActual.label}. Este código se aplicará a {vista.label}. Revisá la página a diseñar antes de aplicar.</p>}
           </div>
           <div className="space-y-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3">
             <p className="text-sm font-semibold text-fg">1 · Instrucciones para la IA · Prompt maestro</p>
@@ -3907,7 +3928,7 @@ export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos,
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-xs text-fg outline-none focus:border-primary" />
             <button type="button" onClick={aplicar} disabled={!pegado.trim() || !onCambiarCodigo}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-semibold text-primary-fg disabled:opacity-45">
-              <Sparkles size={15} /> Aplicar a la página
+              <Sparkles size={15} /> Aplicar a {vista.label}
             </button>
           </div>
           {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
@@ -4021,7 +4042,7 @@ function VistaPrevia({
   const vistaSeleccionada = vista === 'catalogo' ? 'categoria' : vista;
   const [marcoRef, tam] = useTamano();
   const escritorio = dispositivo === 'escritorio';
-  const anchoLienzo = ANCHO_ESCRITORIO;
+  const anchoLienzo = Math.max(ANCHO_ESCRITORIO, tam.w);
   const escala = escritorio && tam.w ? Math.min(1, tam.w / anchoLienzo) : 1;
 
   const iframe = datos?.vista === 'producto' && productoFicha?.tipo === 'combo' ? (
@@ -4119,17 +4140,15 @@ function VistaPrevia({
       </div>
       )}
 
-      <div className={`flex-1 min-h-0 flex justify-center ${ampliada ? 'p-4 md:p-6' : 'px-4 pb-4'}`}>
+      <div className={`flex-1 min-h-0 min-w-0 flex justify-center ${soloLienzo ? '' : ampliada ? 'p-4 md:p-6' : 'px-4 pb-4'}`}>
         {productos.length === 0 && modo !== 'legales' ? (
           <div className="w-full max-w-[390px] rounded-[28px] border border-dashed border-border-strong flex items-center justify-center p-8 text-center text-sm text-fg-muted">
             Elegí productos y los vas a ver acá.
           </div>
         ) : escritorio ? (
-          // Ventana de navegador: 1280px como base, centrada y escalada.
-          // No se estira a paneles más anchos porque muchas landings tienen
-          // layout de escritorio con ancho máximo; forzarlas dejaba una
-          // plancha blanca a la derecha que parecía código roto.
-          <div className="w-full max-w-[1280px] h-full flex flex-col rounded-xl border border-border-strong overflow-hidden bg-surface shadow-xl">
+          // En marcos angostos se simula un escritorio de 1280 px. Si hay
+          // más espacio, el viewport crece y la página adapta su propio layout.
+          <div className={`ecommerce-desktop-preview w-full h-full min-w-0 flex flex-col overflow-hidden bg-surface ${soloLienzo ? '' : 'rounded-xl border border-border-strong shadow-xl'}`}>
             <div className="h-7 shrink-0 flex items-center gap-1.5 px-3 bg-surface border-b border-border" aria-hidden="true">
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
@@ -4604,7 +4623,7 @@ function FilaBloqueInicio({ numero, etiqueta, tipo, visible, fijo = false, arras
         <div className="flex items-center gap-1">
           {bloqueado ? <span title="Bloque fijo: no se puede soltar acá" aria-label="Destino bloqueado" className="shrink-0 text-xs text-fg-muted"><Lock size={13} /></span> : fijo && <span className="text-[11px] font-medium text-fg-muted">Fijo</span>}
           {tienePanel && (
-            <button type="button" onClick={() => onAbrir(abierto ? null : numero)} className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2 text-xs font-semibold text-fg-muted hover:text-fg" aria-expanded={abierto}>
+            <button type="button" onClick={() => onAbrir(abierto ? null : numero)} className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2 text-xs font-semibold text-fg-muted hover:text-fg" aria-expanded={abierto} aria-label={`${abierto ? 'Contraer' : 'Expandir'} ${etiqueta}`}>
               {abierto ? <ChevronsDownUp size={13} /> : <ChevronsUpDown size={13} />}
             </button>
           )}

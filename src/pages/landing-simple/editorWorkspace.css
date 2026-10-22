@@ -1,0 +1,20 @@
+.ecommerce-builder-toolbar { flex-wrap: wrap; gap: 12px 24px; }
+.ecommerce-builder-toolbar .ecommerce-save-context { flex: 1 1 260px; }
+.ecommerce-builder-actions { flex-wrap: wrap; min-width: 0; gap: 8px; }
+.ecommerce-builder-actions > :is(button, a) { min-height: 40px; font-size: 14px; line-height: 1.4; }
+.ecommerce-builder-actions svg { flex-shrink: 0; }
+.ecommerce-builder-actions .ecommerce-delete-page { margin-right: 12px; }
+.ecommerce-builder-actions .ecommerce-public-page { text-decoration: none; font-weight: 600; }
+.ecommerce-builder-config > div { padding-inline: 24px; }
+.ecommerce-builder-config [role='tablist'][aria-label='Área de configuración'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ecommerce-builder-config [role='tablist'][aria-label='Área de configuración'] button span { white-space: normal; overflow: visible; }
+@media (min-width: 1280px) {
+  .ecommerce-builder-config { flex: 0 0 clamp(360px, 32vw, 520px); }
+}
+@media (max-width: 767px) {
+  .ecommerce-builder-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .ecommerce-builder-actions > :is(button, a) { min-height: 44px; justify-content: center; text-align: center; }
+  .ecommerce-builder-actions > [role='radiogroup'], .ecommerce-builder-actions > button:last-child { grid-column: 1 / -1; }
+  .ecommerce-builder-actions .ecommerce-delete-page { margin-right: 0; }
+  .ecommerce-builder-config > div { padding-inline: 16px; }
+}

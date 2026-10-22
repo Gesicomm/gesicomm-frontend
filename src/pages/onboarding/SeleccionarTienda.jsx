@@ -122,6 +122,7 @@ export default function SeleccionarTienda() {
                   <span className={`st-estado ${tienda.activo === false ? 'st-inactiva' : ''}`}>
                     <span className="st-estado-punto" />{tienda.activo === false ? 'Inactiva' : 'Activa'}
                   </span>
+                  <details className="st-opciones-tienda"><summary aria-label={`Opciones de ${tienda.nombre}`}>Opciones</summary>
                   <div className="st-pie-acciones">
                   <button type="button" className="st-cambiar-estado"
                     aria-label={`${tienda.activo === false ? 'Reactivar' : 'Inactivar'} ${tienda.nombre}`}
@@ -142,6 +143,7 @@ export default function SeleccionarTienda() {
                     <Trash2 size={14} /> Eliminar
                   </button>
                   </div>
+                  </details>
                 </div>
                 {borrando === tienda.id && (
                   <form className="st-confirmacion" onSubmit={event => { event.preventDefault(); if (nombreConfirmacion === tienda.nombre && !guardando) eliminar(tienda); }}>

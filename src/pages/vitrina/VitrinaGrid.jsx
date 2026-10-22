@@ -66,7 +66,6 @@ function PrecioEditable({ item, onGuardar }) {
   useEffect(() => {
     setValor(item.precio_efectivo ?? '');
     setError(null);
-    setOk(false);
   }, [item.precio_efectivo]);
 
   const huboCambio = Number(valor) !== Number(item.precio_efectivo);
@@ -111,8 +110,10 @@ function PrecioEditable({ item, onGuardar }) {
           className={`vit-price-input ${error ? 'error' : ''}`}
           value={valor}
           prefix=""
-          onChange={(num) => { setValor(num === '' ? '' : num); setError(null); }}
-          onKeyDown={(e) => { if (e.key === 'Enter') guardar(); }}
+          onChange={(num) => { setValor(num === '' ? '' : num); setError(null); setOk(false); }}
+          aria-label={`Precio de venta de ${item.nombre}`}
+          disabled={guardando}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !guardando) guardar(); }}
         />
         <span className="vit-price-suffix">Gs</span>
         {guardando && <Loader size={14} className="spin-icon" />}
@@ -131,6 +132,7 @@ function PrecioEditable({ item, onGuardar }) {
         </span>
       </div>
 
+      <span className="vit-price-status" role="status">{guardando ? 'Guardando precio…' : ok ? 'Precio guardado' : huboCambio ? 'Cambios sin guardar' : 'Editá y pulsá Guardar cambio'}</span>
       {huboCambio && !guardando && (
         <button className="vit-price-save-btn" onClick={guardar} title="Guardar precio">
           Guardar cambio
@@ -138,7 +140,7 @@ function PrecioEditable({ item, onGuardar }) {
       )}
 
       {error && (
-        <div className="vit-price-error"><AlertCircle size={12} /> {error}</div>
+        <div className="vit-price-error" role="alert"><AlertCircle size={12} /> {error}</div>
       )}
     </div>
   );
@@ -942,6 +944,7 @@ export default function VitrinaGrid() {
         </div>
 
         <div className="vit-header-actions" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
+          <details className="vit-tools"><summary>Herramientas</summary><div className="vit-tools-content">
           {!enOnboarding && (
             <button type="button" className="btn-secondary" onClick={irACambiarPrecios}
               title={seleccionados.size > 0 ? 'Cambiar el precio de los seleccionados' : 'Cambiar precios de todo el catálogo'}
@@ -957,6 +960,8 @@ export default function VitrinaGrid() {
           >
             <Ticket size={16} /> Generar cupón
           </button>
+          <button type="button" className="btn-secondary" onClick={() => armarCombo([])}><Layers size={16} /> Armar mi combo</button>
+          </div></details>
           <button
             type="button"
             className="btn-primary"
@@ -964,14 +969,6 @@ export default function VitrinaGrid() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
           >
             <Plus size={16} /> Agregar Mis Productos
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => armarCombo([])}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
-          >
-            <Layers size={16} /> Armar mi combo
           </button>
         </div>
       </div>
@@ -1163,7 +1160,7 @@ export default function VitrinaGrid() {
             {paginaSeleccionada ? 'Quitar página' : 'Seleccionar página'}
             <span>{itemsFiltrados.length}</span>
           </button>
-          <button
+          {(paginaSeleccionada || totalFiltradoSeleccionado) && <button
             type="button"
             className={`vit-bulk-select-btn ${totalFiltradoSeleccionado ? 'active' : ''}`}
             onClick={seleccionarTodoFiltrado}
@@ -1171,9 +1168,9 @@ export default function VitrinaGrid() {
             aria-pressed={totalFiltradoSeleccionado}
           >
             {seleccionandoTodos ? <Loader size={14} className="spin-icon" /> : <Check size={14} />}
-            {totalFiltradoSeleccionado ? 'Quitar todo' : 'Seleccionar todo'}
+            {totalFiltradoSeleccionado ? 'Quitar todos los resultados' : 'Seleccionar todos los resultados'}
             <span>{totalItems}</span>
-          </button>
+          </button>}
         </div>
 
         {/* Filtro de categoría */}

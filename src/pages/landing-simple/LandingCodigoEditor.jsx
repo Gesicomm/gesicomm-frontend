@@ -289,6 +289,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [advertencias, setAdvertencias] = useState([]);
   const [aviso, setAviso] = useState('');
   const [confirmacionPublicacionIA, setConfirmacionPublicacionIA] = useState(null);
+  const [contenidoIaAceptado, setContenidoIaAceptado] = useState(!!landingInicial?.contenido_ia_aceptado);
+  const [publicando, setPublicando] = useState(false);
   const [errorRuntime, setErrorRuntime] = useState('');
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [viewportMode, setViewportMode] = useState('desktop');
@@ -320,6 +322,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       if (!activo) return;
       const inicial = codigosDesdeContent(l.content, PLANTILLA_PRODUCTO, t || l?.tienda || null);
       setLanding(l);
+      setContenidoIaAceptado(!!l.contenido_ia_aceptado);
       setTienda(t);
       setCatalogo(cat);
       // Con una regla (todos / por categoría) no hay items guardados: la
@@ -548,22 +551,27 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   async function cambiarEstado(activo, opciones = {}) {
+    if (publicando) return;
     setError('');
-    if (activo && !opciones.aceptarContenidoIA) {
+    if (activo && !contenidoIaAceptado && !opciones.aceptarContenidoIA) {
       const pendientes = advertenciasDePublicacionIA();
       if (pendientes.length) {
         setConfirmacionPublicacionIA({ pendientes });
         return;
       }
     }
+    setPublicando(true);
     try {
       const actualizada = await landingSimpleService.cambiarEstado(id, activo, {
         aceptarContenidoIA: opciones.aceptarContenidoIA,
       });
       setLanding(prev => ({ ...prev, activo: actualizada.activo }));
+      if (actualizada.contenido_ia_aceptado) setContenidoIaAceptado(true);
       setConfirmacionPublicacionIA(null);
     } catch (err) {
       setError(err?.response?.data?.message || 'No se pudo cambiar el estado.');
+    } finally {
+      setPublicando(false);
     }
   }
 
@@ -586,7 +594,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   async function eliminar() {
-    if (!window.confirm('¿Eliminar esta landing? Se pierde todo el código escrito y no se puede deshacer.')) return;
+    if (!window.confirm('¿Eliminar esta página? Se pierde todo el código escrito y no se puede deshacer.')) return;
     try {
       await landingSimpleService.eliminar(id);
       if (onEliminada) onEliminada();
@@ -859,6 +867,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       {confirmacionPublicacionIA && (
         <ConfirmacionPublicacionIAModal
           pendientes={confirmacionPublicacionIA.pendientes}
+          publicando={publicando}
+          error={error}
           onCancelar={irAConfigurarDatosReales}
           onAceptar={() => cambiarEstado(true, { aceptarContenidoIA: true })}
         />
@@ -1290,6 +1300,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       {confirmacionPublicacionIA && (
         <ConfirmacionPublicacionIAModal
           pendientes={confirmacionPublicacionIA.pendientes}
+          publicando={publicando}
+          error={error}
           onCancelar={irAConfigurarDatosReales}
           onAceptar={() => cambiarEstado(true, { aceptarContenidoIA: true })}
         />
@@ -1306,16 +1318,17 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
  * el editor de código como desde el paso "venta" (Configurar venta /
  * Categorías), que renderiza una vista completamente distinta.
  */
-function ConfirmacionPublicacionIAModal({ pendientes, onCancelar, onAceptar }) {
+function ConfirmacionPublicacionIAModal({ pendientes, onCancelar, onAceptar, publicando = false, error = '' }) {
+  const [aceptado, setAceptado] = useState(false);
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-fg/55 p-4">
-      <div className="w-full max-w-md rounded-2xl border border-fg/15 bg-surface shadow-2xl">
+      <div role="dialog" aria-modal="true" aria-labelledby="publicacion-ia-titulo" className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl border border-fg/15 bg-surface shadow-2xl">
         <div className="flex items-start gap-3 border-b border-fg/10 p-4">
           <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-warning/15 text-warning">
             <AlertTriangle size={18} />
           </div>
           <div className="min-w-0">
-            <p className="text-base font-bold text-fg">Contenido generado con IA</p>
+            <p id="publicacion-ia-titulo" className="text-base font-bold text-fg">Contenido generado con IA</p>
             <p className="mt-1 text-sm leading-relaxed text-fg/65">
               Esta landing usa {pendientes.includes('urgencia') && pendientes.includes('prueba_social')
                 ? 'countdown y estadísticas'
@@ -1327,24 +1340,30 @@ function ConfirmacionPublicacionIAModal({ pendientes, onCancelar, onAceptar }) {
           <p>
             Revisá que esa información sea verdadera antes de usarla en anuncios o en la página pública. Publicar datos falsos o no comprobados puede traerte problemas con políticas de anuncios y normas de defensa del consumidor.
           </p>
-          <p className="font-semibold text-fg">
-            Podés publicar igual si aceptás que estás al tanto de lo que implica.
-          </p>
+          <label className="flex items-start gap-3 text-base text-fg cursor-pointer">
+            <input type="checkbox" autoFocus checked={aceptado} disabled={publicando} onChange={e => setAceptado(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" />
+            <span>Leí y entiendo este aviso. Soy responsable de revisar la veracidad del contenido que publico.</span>
+          </label>
+          <p>Esta aceptación se guarda en tu cuenta. No volveremos a mostrarte este aviso.</p>
+          {error && <p role="alert" className="text-danger">{error}</p>}
         </div>
         <div className="flex flex-col-reverse gap-2 border-t border-fg/10 p-4 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onCancelar}
+            disabled={publicando}
             className="inline-flex justify-center rounded-xl border border-fg/15 px-4 py-2 text-sm font-semibold text-fg/75 hover:bg-fg/10"
           >
             Cancelar y cargar datos reales
           </button>
           <button
             type="button"
-            onClick={onAceptar}
+            onClick={() => { if (aceptado && !publicando) onAceptar(); }}
+            disabled={!aceptado || publicando}
+            aria-busy={publicando}
             className="inline-flex justify-center rounded-xl bg-fg px-4 py-2 text-sm font-semibold text-canvas hover:bg-fg-muted"
           >
-            Aceptar, estoy al tanto
+            {publicando ? 'Publicando…' : 'Aceptar y publicar'}
           </button>
         </div>
       </div>

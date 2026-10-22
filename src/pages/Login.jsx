@@ -484,13 +484,13 @@ export default function Login() {
             </div>
 
             <h1 className="m-0 text-5xl font-bold leading-[1.02] text-fg">
-              Crea tu tienda, selecciona los productos y vende.
+              Tu negocio, en un solo lugar.
             </h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-fg-muted">
               Gestioná tu catálogo, recibí consultas y pedidos directos, y monitoreá tus ventas sin configuraciones complejas.
             </p>
 
-            <div className="mt-9 grid gap-4">
+            {activeForm === 'register' && <div className="mt-9 grid gap-4">
               {BENEFICIOS.map(({ icono: Icono, titulo, detalle }) => (
                 <div key={titulo} className="flex items-start gap-4 rounded-lg border border-border bg-surface/70 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.18)]">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary-text">
@@ -502,18 +502,18 @@ export default function Login() {
                   </span>
                 </div>
               ))}
-            </div>
+            </div>}
 
-            <div className="mt-8 rounded-lg border border-border bg-surface-2/60 p-4">
+            {activeForm === 'register' && <div className="mt-8 rounded-lg border border-border bg-surface-2/60 p-4">
               <p className="m-0 text-sm leading-6 text-fg-muted">
                 El registro crea tu cuenta. La tienda, pagos, dominios, píxeles y datos avanzados se ajustan después desde el panel.
               </p>
-            </div>
+            </div>}
           </div>
         </section>
 
         <section className="mx-auto w-full max-w-[460px]">
-          <div className="rounded-xl border border-border bg-surface/90 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.34)] backdrop-blur sm:p-8">
+          <div className="rounded-xl border border-border bg-surface/90 p-5 shadow-sm backdrop-blur sm:p-8">
             <Link to="/" className="mb-7 flex justify-center text-fg">
               <Logo size={34} />
             </Link>
@@ -554,7 +554,7 @@ export default function Login() {
               <form onSubmit={handleLogin} noValidate className="flex flex-col gap-4">
                 <div>
                   <h2 className="m-0 text-2xl font-bold">Iniciar sesión</h2>
-                  <p className="mt-2 text-sm leading-6 text-fg-muted">Usá tu correo o Gmail para volver a tu panel de ventas.</p>
+                  <p className="mt-2 text-sm leading-6 text-fg-muted">Ingresá con tu correo y contraseña para volver a tu panel de ventas.</p>
                 </div>
                 <AuthField
                   id="email"

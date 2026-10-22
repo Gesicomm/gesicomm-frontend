@@ -237,10 +237,11 @@ export default function DepositosPage() {
       {!esAdmin && (
         <div className="mb-4">
           <button
+            type="button"
             onClick={() => navigate('/mi-tienda')}
-            className="flex items-center gap-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
+            className="dep-back-to-store"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={20} aria-hidden="true" />
             Volver a Mi Tienda
           </button>
         </div>

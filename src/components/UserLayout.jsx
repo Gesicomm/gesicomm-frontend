@@ -19,6 +19,7 @@ import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
 import '../pages/educacion/EducacionView.css';
 import './userSidebar.css';
+import '../styles/ecommerceWorkspace.css';
 
 // Editor de landing: el contenedor principal no se desplaza nunca (cada panel
 // tiene su propio scroll). Con overflow:hidden igual se podia correr por codigo

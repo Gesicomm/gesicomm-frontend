@@ -31,6 +31,14 @@ for (const width of [375, 1280]) for (const modalidad of ['PROPIA', 'GESICOMM'])
     if (modalidad === 'PROPIA') await expect(aviso).toBeVisible();
     else await expect(aviso).toHaveCount(0);
     await comprobarAncho(page, '.dep-page');
+    const abrirDeposito = page.locator('.dep-deposit-card > button').first();
+    for (const lado of ['top', 'right', 'bottom', 'left']) {
+      await expect(abrirDeposito).toHaveCSS(`border-${lado}-width`, '0px');
+    }
+    await abrirDeposito.focus();
+    await expect(abrirDeposito).toHaveCSS('outline-style', 'solid');
+    await expect(abrirDeposito).toHaveCSS('outline-width', '2px');
+    await abrirDeposito.blur();
     await page.screenshot({ path: testInfo.outputPath('depositos.png'), fullPage: true });
     await page.getByLabel('Buscar depósito', { exact: true }).fill('Central');
     await page.getByRole('button', { name: 'Limpiar filtros', exact: true }).click();

@@ -113,7 +113,38 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
         <article><span>Gasto registrado acumulado</span><strong>{formatPYG(totalVisible)}</strong></article>
         <article><span>Sin gasto registrado</span><strong>{visibles.filter(c => !(c.gasto_registros > 0)).length}</strong></article>
       </div>
-      <details className="ads-guide"><summary>Cómo organizar tu primera campaña</summary><ol><li>Registrá el producto, canal y objetivo en Gesicom.</li><li>Copiá el nombre generado al crear tu campaña en Meta Ads Manager.</li><li>Registrá el gasto por fechas para revisar tu inversión.</li></ol></details>
+      <details className="ads-guide">
+        <summary>
+          <span>Cómo organizar tu primera campaña</span>
+          <span className="ads-guide-caption">3 pasos: crear → publicar → registrar el gasto</span>
+        </summary>
+        <ol className="ads-guide-steps" role="list">
+          <li>
+            <span className="ads-guide-number" aria-hidden="true">1</span>
+            <div>
+              <span className="ads-guide-place">En Gesicom</span>
+              <h3>Creá tu campaña</h3>
+              <p>Hacé clic en <strong>Nueva campaña</strong>. Elegí el producto, el canal, el objetivo y la distribución del presupuesto para generar su nombre.</p>
+            </div>
+          </li>
+          <li>
+            <span className="ads-guide-number" aria-hidden="true">2</span>
+            <div>
+              <span className="ads-guide-place">En Meta Ads Manager</span>
+              <h3>Publicá tus anuncios</h3>
+              <p>Copiá el nombre generado en Gesicom y pegalo al crear la campaña en Meta. Allí configurás los anuncios y los publicás.</p>
+            </div>
+          </li>
+          <li>
+            <span className="ads-guide-number" aria-hidden="true">3</span>
+            <div>
+              <span className="ads-guide-place">De vuelta en Gesicom</span>
+              <h3>Registrá lo que gastaste</h3>
+              <p>En tu campaña, elegí <strong>Cargar gasto</strong>. Indicá el rango de fechas y el monto invertido para consultar el total y su historial.</p>
+            </div>
+          </li>
+        </ol>
+      </details>
       {/* El esqueleto es solo para la primera carga: al refrescar después de
           guardar un gasto, la tabla se queda en pantalla. */}
       {cargando && campanas.length === 0 ? (

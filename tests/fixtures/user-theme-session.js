@@ -17,11 +17,13 @@ export async function prepararUsuario(page, theme, { conPlan = true } = {}) {
   ];
   const modulo = { id: 1, titulo: 'Primeros pasos', descripcion: 'Configurá tu tienda y catálogo.', desbloqueado: true, icono: '🎓', total_lecciones: 1, lecciones: [{ id: 11, titulo: 'Tu primera tienda', duracion_min: 5, completada: false }], preguntas: [] };
   const pedidos = [
-    { id: 501, numero_pedido: 1001, cliente: 'Cliente de prueba', nombre_cliente: 'Cliente', apellido_cliente: 'de prueba', telefono: '595981000001', ciudad: 'Asunción', direccion: 'Dirección de prueba', fecha: '2026-10-15', createdAt: '2026-10-15T12:00:00Z', estado: 'Pendiente', total: 125000, total_cobrar: 125000, items: [{ id: 601, producto_id: 101, nombre_producto: 'Producto propio de prueba', cantidad: 1, precio_unitario: 125000 }], metodo_pago: 'Efectivo', metodo_pago_id: 1 },
-    { id: 502, numero_pedido: 1002, cliente: 'Cliente de logística', telefono: '595981000002', ciudad: 'Asunción', direccion: 'Dirección de prueba', fecha: '2026-10-15', createdAt: '2026-10-15T12:00:00Z', estado: 'Confirmado', total: 95000, total_cobrar: 95000, items: [{ id: 602, producto_id: 102, nombre_producto: 'Producto Gesicom de prueba', cantidad: 1, precio_unitario: 95000 }] },
+    { id: 501, numero_pedido: 1, numero_pedido_visible: 'TIE-1001', monto: 125000, cliente: 'Cliente de prueba', nombre_cliente: 'Cliente', apellido_cliente: 'de prueba', telefono: '595981000001', ciudad: 'Asunción', direccion: 'Dirección de prueba', fecha: '2026-10-15', createdAt: '2026-10-15T12:00:00Z', estado: 'Pendiente', total: 125000, total_cobrar: 125000, items: [{ id: 601, producto_id: 101, nombre_producto: 'Producto propio de prueba', cantidad: 1, precio_unitario: 125000 }], metodo_pago: 'Efectivo', metodo_pago_id: 1 },
+    { id: 502, numero_pedido: 2, numero_pedido_visible: 'TIE-1002', monto: 95000, cliente: 'Cliente de logística', telefono: '595981000002', ciudad: 'Asunción', direccion: 'Dirección de prueba', fecha: '2026-10-15', createdAt: '2026-10-15T12:00:00Z', estado: 'Confirmado', total: 95000, total_cobrar: 95000, items: [{ id: 602, producto_id: 102, nombre_producto: 'Producto Gesicom de prueba', cantidad: 1, precio_unitario: 95000 }] },
   ];
   const tienda = { id: 7, nombre: 'Tienda del usuario', subdominio: 'tienda-usuario', documento: '1234567', whatsapp: '595981000000', color_primario: '#155e63', color_secundario: '#d8a862', color_fondo: '#f7fafc' };
   await page.addInitScript(theme => {
+    // Las vistas previas usan iframes sandbox sin acceso a almacenamiento.
+    if (window.top !== window.self) return;
     if (!localStorage.getItem('gesicomm-tema-publico')) localStorage.setItem('gesicomm-tema-publico', theme);
     sessionStorage.setItem('moduloActivo', 'ecommerce');
   }, theme);

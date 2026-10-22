@@ -1,0 +1,129 @@
+/* Las bandejas Comercial y Logística conservan íntegro su diseño original. */
+@scope (.user-layout-container) to (.courier-page:has(.courier-container)) {
+/* Auditoría UX, octubre 2026. Alcance: panel del comercio, sin tienda pública.
+   La densidad se ajusta con distribución y espacio, conservando typography.md. */
+:scope {
+  --workspace-radius: var(--ui-radius-card, 12px);
+  --workspace-control-radius: var(--ui-radius-control, 8px);
+  --workspace-gap: var(--ui-content-gap, 16px);
+}
+:scope .dashboard-main { min-width: 0; }
+:scope :is(.prod-page, .vit-page, .dep-page, .tn-page) { width: 100%; min-width: 0; }
+:scope :is(.prod-header, .vit-header, .dep-page-heading) { margin-bottom: 1.25rem; }
+:scope :is(.btn-primary, .btn-secondary, .btn-back, .btn-icon) {
+  border-radius: var(--workspace-control-radius);
+  min-height: 44px;
+  box-shadow: none;
+}
+:scope :is(.btn-primary, .btn-secondary):hover { transform: none; box-shadow: none; }
+:scope :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-primary-text);
+  outline-offset: 3px;
+}
+:scope summary { cursor: pointer; padding-block: .6rem; font-weight: 600; }
+:scope :is(.prod-advanced-import, .prod-requirements, .pt-summary-details, .pt-finance-details) > summary {
+  color: var(--color-fg-muted);
+}
+:scope :is(.prod-advanced-import, .prod-requirements, .pt-summary-details, .pt-finance-details)[open] > summary { color: var(--color-fg); }
+
+/* Conservar contexto y controles cómodos, recuperar la altura de separadores. */
+:scope .sidebar-header { min-height: 64px; padding: .65rem 1rem; }
+:scope .user-sidebar-store { margin: .5rem .85rem; }
+:scope .user-sidebar-store-trigger { min-height: 48px; box-shadow: none; }
+:scope .sidebar-nav-container { gap: .5rem; padding-bottom: .5rem; }
+:scope .user-sidebar-group { padding-top: .5rem; }
+:scope .user-sidebar-group .sidebar-section-label { margin-bottom: .25rem; letter-spacing: .02em; }
+:scope .sidebar-list { gap: .125rem; }
+:scope .sidebar-link { padding-block: .5rem; border-radius: var(--workspace-control-radius); }
+:scope .sidebar-footer { padding: .5rem .85rem; }
+
+/* Producto: navegación arriba, formulario ancho, resumen a demanda. */
+:scope .prod-workspace,
+:scope .prod-workspace.product-view-mode {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--workspace-gap);
+}
+:scope .prod-step-nav {
+  position: static; display: flex; flex-direction: row; flex-wrap: wrap;
+  gap: .375rem; border-bottom: 1px solid var(--color-border); padding-bottom: .75rem;
+}
+@media (min-width: 1181px) {
+  :scope .prod-workspace.product-view-mode { grid-template-rows: auto minmax(0, 1fr); }
+}
+:scope .prod-step {
+  display: flex; align-items: center; width: auto; min-height: 44px;
+  padding: .6rem .75rem; gap: .5rem; border-radius: var(--workspace-control-radius);
+  background: transparent; border-color: transparent;
+}
+:scope .prod-step.active { box-shadow: inset 0 -2px var(--color-primary-text); }
+:scope .prod-step-icon { width: 24px; height: 24px; background: transparent; }
+:scope .prod-step-copy > span { font-weight: 600; line-height: 1.5; }
+:scope .prod-step-copy small,
+:scope .prod-step em { display: none; }
+:scope .prod-header-left-form { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 1rem; }
+:scope .prod-advanced-import { max-width: 100%; }
+:scope .prod-advanced-import > summary { display: flex; align-items: center; gap: .5rem; }
+:scope .prod-advanced-import .ia-import-block { flex-wrap: wrap; padding-block: .75rem; }
+:scope .ia-import-input-wrap { min-width: 0; max-width: 100%; }
+:scope .prod-requirements {
+  background: transparent; border: 0; border-bottom: 1px solid var(--color-border);
+  border-radius: 0; margin-bottom: 1rem; padding: 0 0 .5rem;
+}
+:scope .prod-requirements > summary span { font-weight: 400; margin-left: .5rem; }
+:scope .prod-requirements-row > button { min-height: 44px; }
+:scope .prod-summary-panel { position: static; padding: .5rem 1rem; border-radius: var(--workspace-radius); box-shadow: none; }
+:scope .prod-summary-content { display: grid; grid-template-columns: 100px minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; padding-block: 1rem; align-items: start; }
+:scope .prod-summary-content .summary-media { height: 100px; }
+:scope .summary-kpis > div,
+:scope .summary-list > div { background: transparent; border-bottom: 1px solid var(--color-border); border-radius: 0; }
+:scope :is(.form-grid-2, .form-grid-3, .form-grid-4) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+:scope .prod-save-bar { flex-wrap: wrap; gap: .75rem; }
+
+/* Catálogo: búsqueda y filtros en una superficie, lista para administrar. */
+:scope .vit-tools { position: relative; }
+:scope .vit-tools > summary { min-height: 44px; padding: .6rem .8rem; border: 1px solid var(--color-border); border-radius: var(--workspace-control-radius); }
+:scope .vit-tools-content { position: absolute; right: 0; top: calc(100% + .375rem); min-width: 240px; z-index: 25; display: flex; flex-direction: column; align-items: stretch; gap: .375rem; padding: .5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--workspace-control-radius); box-shadow: 0 8px 24px color-mix(in srgb, var(--color-fg) 12%, transparent); }
+:scope .vit-seleccion-bar { box-shadow: none; padding: .75rem 1rem; margin-block: 0 1rem; border-radius: var(--workspace-radius); }
+:scope .vit-seleccion-acciones { flex-wrap: wrap; }
+:scope .vit-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; padding: 1rem; border-radius: var(--workspace-radius); }
+:scope .vit-search-wrap { flex: 1 1 280px; min-width: 0; }
+:scope .vit-filters { flex: 1 1 100%; flex-wrap: wrap; gap: .375rem; }
+:scope .vit-bulk-select { margin-left: 0; flex-wrap: wrap; }
+:scope :is(.vit-sort-select, .vit-search-input) { min-height: 44px; max-width: 100%; }
+:scope .vit-price-status { display: block; font-size: var(--ui-text-help); line-height: 1.5; color: var(--color-fg-muted); }
+
+/* Dashboard: ancho de resumen proporcional a su contenido. */
+@media (min-width: 1101px) {
+  :scope .md-hero { grid-column: span 4; min-height: 0; justify-content: flex-start; padding: 1.25rem; }
+  :scope .md-summary-card { grid-column: span 8; }
+  :scope .md-summary-card .md-rentabilidad-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem 1rem; }
+  :scope .md-summary-card .md-rent-item { padding: .5rem 0; border-bottom: 1px solid var(--color-border); }
+}
+:scope .md-header { background: transparent; border: 0; padding: 0 0 .5rem; }
+:scope :is(.md-card, .md-hero) { border-radius: var(--workspace-radius); box-shadow: none; }
+:scope .md-hero-numero { font-size: clamp(1.75rem, 2.8vw, 2.5rem); overflow-wrap: anywhere; }
+:scope .dep-list-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1rem; margin-block: 1rem .75rem; }
+:scope .dep-list-heading p { margin: 0; max-width: 65ch; }
+:scope .tn-group { border-radius: var(--workspace-radius); box-shadow: none; padding: 1.25rem; }
+:scope .tn-panel-head { padding-block: 1rem; }
+:scope .tn-group-body > .tn-group { border: 0; border-top: 1px solid var(--color-border); border-radius: 0; padding-inline: 0; background: transparent; }
+:scope .dep-stock-section { border-radius: var(--workspace-radius); padding: 1.25rem; }
+:scope .dep-stock-grid button { border-radius: var(--workspace-control-radius); background: transparent; }
+:scope .ecommerce-builder-toolbar { flex-wrap: wrap; gap: .5rem; }
+:scope .ecommerce-builder [data-bloque-inicio] { border-radius: var(--workspace-control-radius); box-shadow: none; }
+:scope .ecommerce-builder [data-inicio-cabecera] { flex-wrap: wrap; gap: .5rem; }
+:scope .ecommerce-builder [data-inicio-cabecera] button { min-height: 44px; }
+
+@media (max-width: 767px) {
+  :scope .prod-step-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :scope .prod-step { padding: .5rem; }
+  :scope .prod-summary-content { grid-template-columns: minmax(0, 1fr); }
+  :scope .prod-summary-content .summary-media { max-width: 160px; }
+  :scope .vit-toolbar { padding: .75rem; }
+  :scope .vit-sort-select { width: 100%; }
+  :scope .prod-requirements > summary span { display: block; margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :scope *, :scope *::before, :scope *::after { scroll-behavior: auto; animation: none; transition: none; }
+}
+}
