@@ -3,13 +3,14 @@ import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, Messa
 import { metaReportesService } from '../../services/metaReportesService';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
+import { useAdsDialog } from './useAdsDialog';
 import { getMediaUrl } from '../../services/api';
 
 const PASOS = [
   { id: 1, label: 'Producto' },
-  { id: 2, label: 'Embudo' },
-  { id: 3, label: 'Fase' },
-  { id: 4, label: 'Presupuesto' },
+  { id: 2, label: 'Canal' },
+  { id: 3, label: 'Objetivo' },
+  { id: 4, label: 'Distribución' },
 ];
 
 /**
@@ -20,6 +21,7 @@ const PASOS = [
  */
 export default function CampanaInternaModal({ open, onClose, onCreated, onCargarGasto = null, tiendas = [], campanaEditar = null }) {
   const [step, setStep] = useState(1);
+  const [editado, setEditado] = useState(false);
 
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -43,12 +45,14 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
   const [copiado, setCopiado] = useState(false);
 
   const esEdicion = !!campanaEditar;
+  const { dialogRef, requestClose, aviso } = useAdsDialog(open, onClose, guardando, !resultado && editado);
   const maxStep = PASOS[PASOS.length - 1]?.id || 1;
 
   useEffect(() => {
     if (!open) return;
 
     setStep(1);
+    setEditado(false);
     setError(null);
     setResultado(null);
     setCopiado(false);
@@ -59,8 +63,11 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
     if (campanaEditar) {
       setMetaIntegrationId(campanaEditar.meta_integration_id || null);
-      // If editing, we might not have all the specific fields broken down,
-      // but we try to set what we have. (Edition of these new campaigns might be disabled or limited)
+      const partes = String(campanaEditar.nombre_interno || campanaEditar.nombre_display || '').split('|').map(p => p.trim());
+      setProductoSeleccionado(campanaEditar.productos?.[0] || null);
+      setEmbudo(campanaEditar.tipo === 'whatsapp' ? 'WHATSAPP' : 'WEB');
+      setFase(['PRESENTACION', 'EVALUACION', 'CONVERSION', 'ASCENSION'].includes(partes.at(-2)) ? partes.at(-2) : null);
+      setPresupuesto(['ABO', 'CBO'].includes(partes.at(-1)) ? partes.at(-1) : null);
     } else {
       setProductoSeleccionado(null);
       setEmbudo(null);
@@ -110,6 +117,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
   const toggleProducto = (producto) => {
     setProductoSeleccionado(producto);
+    setEditado(true);
   };
 
   const puedeAvanzar = () => {
@@ -131,6 +139,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
   };
 
   const handleSubmit = async () => {
+    if (!productoSeleccionado || !embudo || !fase || !presupuesto) { setError('Completá los cuatro pasos antes de guardar.'); return; }
     setGuardando(true);
     setError(null);
     try {
@@ -164,15 +173,16 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
     navigator.clipboard.writeText(resultado.nombre_interno).then(() => {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
-    });
+    }).catch(() => setError('No pudimos copiar el nombre. Seleccioná el texto y copialo manualmente.'));
   };
 
   return (
     <div
-      onClick={onClose}
+      className="ads-modal-overlay"
+      onClick={requestClose}
       style={{ position: 'fixed', inset: 0, background: "var(--color-overlay)", display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
     >
-      <div
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={esEdicion ? 'Editar campaña' : 'Nueva campaña interna'} className="ads-wizard"
         style={{ width: '100%', maxWidth: '680px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)', borderRadius: '10px', color: 'var(--color-fg)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -180,11 +190,14 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
           <h2 style={{ margin: 0, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Sparkles size={18} color="var(--color-primary-text)" /> {esEdicion ? 'Editar campaña' : 'Nueva campaña interna'}
           </h2>
-          <button type="button" className="btn-icon" onClick={onClose}><X size={18} /></button>
+          <button type="button" className="btn-icon" onClick={requestClose} disabled={guardando} aria-label="Cerrar campaña"><X size={18} /></button>
         </div>
 
+        {aviso}
+        <p className="ads-dialog-intro">Este registro organiza tu publicidad en Gesicom. No publica anuncios ni compromete un presupuesto en Meta.</p>
         {resultado ? (
           <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {error && <div role="alert" className="ads-error">{error}</div>}
             <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-fg)' }}>
               Campaña creada. Copiá este nombre <strong>tal cual</strong> como nombre de la campaña real en Meta Ads Manager.
               Después cargá acá cuánto gastaste en cada rango de fechas.
@@ -204,7 +217,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 1.25rem 0' }}>
+            <div className="ads-wizard-steps" aria-label="Pasos de la campaña" style={{ display: 'flex', gap: '0.5rem', padding: '1rem 1.25rem 0' }}>
               {PASOS.map((p) => (
                 <div key={p.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? "var(--bg-primary, var(--color-primary))" : 'color-mix(in srgb, var(--color-fg) 10%, transparent)' }} />
@@ -213,9 +226,9 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
               ))}
             </div>
 
-            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, minHeight: '320px' }}>
+            <div className="ads-wizard-body" style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, minHeight: '320px' }}>
               {error && (
-                <div style={{ marginBottom: '1rem', background: "color-mix(in srgb, var(--color-danger) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)", color: "var(--color-danger)", borderRadius: '6px', padding: '0.6rem 0.8rem', fontSize: '0.82rem' }}>
+                <div role="alert" style={{ marginBottom: '1rem', background: "color-mix(in srgb, var(--color-danger) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)", color: "var(--color-danger)", borderRadius: '6px', padding: '0.6rem 0.8rem', fontSize: '0.82rem' }}>
                   {error}
                 </div>
               )}
@@ -226,7 +239,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                   
                   {tiendas.length > 1 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.5rem' }}>
-                      <select className="filter-input" value={metaIntegrationId || ''} onChange={(e) => setMetaIntegrationId(e.target.value || null)}>
+                      <select aria-label="Cuenta de Meta (opcional)" className="filter-input" value={metaIntegrationId || ''} onChange={(e) => { setMetaIntegrationId(e.target.value || null); setEditado(true); }}>
                         <option value="">Cuenta de Meta (opcional)</option>
                         {tiendas.map(t => <option key={t.id} value={t.id}>{t.nombre || t.business_name}</option>)}
                       </select>
@@ -262,6 +275,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                             <button
                               type="button"
                               key={p.id}
+                              aria-pressed={seleccionado}
                               onClick={() => toggleProducto(p)}
                               style={{
                                 display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer',
@@ -284,9 +298,9 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                                 )}
                               </div>
                               <div style={{ padding: '0.5rem' }}>
-                                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-fg)', lineHeight: 1.2, marginBottom: '2px' }}>{p.nombre}</div>
+                                <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-fg)', lineHeight: 1.5, marginBottom: '2px' }}>{p.nombre}</div>
                                 {p.categoria_id && mapaCategorias.get(p.categoria_id) && (
-                                  <span style={{ fontSize: '0.68rem', color: "var(--color-primary-text)" }}>{mapaCategorias.get(p.categoria_id)}</span>
+                                  <span style={{ fontSize: '0.875rem', color: "var(--color-primary-text)" }}>{mapaCategorias.get(p.categoria_id)}</span>
                                 )}
                               </div>
                             </button>
@@ -334,7 +348,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
               {step === 2 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>¿Qué tipo de embudo usarás?</p>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>¿Dónde querés recibir las consultas?</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {[
                       { value: 'WEB', label: 'Venta Web', desc: 'Tráfico a página de destino', icon: <Globe size={22} color="var(--color-primary-text)" />, color: '#3b82f6' },
@@ -343,7 +357,8 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                       <button
                         type="button"
                         key={opt.value}
-                        onClick={() => setEmbudo(opt.value)}
+                        aria-pressed={embudo === opt.value}
+                        onClick={() => { setEmbudo(opt.value); setEditado(true); }}
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem',
                           padding: '1.25rem', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
@@ -375,7 +390,8 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                       <button
                         type="button"
                         key={opt.value}
-                        onClick={() => setFase(opt.value)}
+                        aria-pressed={fase === opt.value}
+                        onClick={() => { setFase(opt.value); setEditado(true); }}
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.4rem',
                           padding: '1rem', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
@@ -396,7 +412,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
               {step === 4 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>¿Qué tipo de presupuesto utilizarás?</p>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>¿Cómo distribuirás el presupuesto en Meta?</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {[
                       { value: 'ABO', label: 'ABO', desc: 'Presupuesto por conjunto de anuncios', icon: <RefreshCw size={20} /> },
@@ -405,7 +421,8 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                       <button
                         type="button"
                         key={opt.value}
-                        onClick={() => setPresupuesto(opt.value)}
+                        aria-pressed={presupuesto === opt.value}
+                        onClick={() => { setPresupuesto(opt.value); setEditado(true); }}
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.4rem',
                           padding: '1rem', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',

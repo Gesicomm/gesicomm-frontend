@@ -101,7 +101,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-canvas text-fg">
+    <div className="gc-panel min-h-screen overflow-hidden bg-canvas text-fg">
       <Link
         to="/login"
         className="absolute left-5 top-5 z-20 flex items-center gap-2 rounded-lg border border-border bg-surface/75 px-3 py-2 text-sm font-semibold text-fg-muted backdrop-blur transition-colors hover:border-border-strong hover:text-fg"

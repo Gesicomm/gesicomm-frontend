@@ -163,7 +163,7 @@
 .at-kpi small {
   display: block;
   color: var(--color-fg-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .at-kpi strong {
@@ -183,7 +183,7 @@
 }
 
 .at-panel p {
-  font-size: 0.84rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .at-grid {
@@ -262,7 +262,7 @@
   flex-wrap: wrap;
   gap: 10px;
   color: var(--color-fg-muted);
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .at-money-states span {
@@ -296,7 +296,7 @@
 .at-payment-result span {
   display: block;
   color: var(--color-fg-muted);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .at-payment-result-error {
@@ -314,7 +314,7 @@
   margin-top: 12px;
   color: var(--color-danger);
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .at-legend {
@@ -322,7 +322,7 @@
   flex-wrap: wrap;
   gap: 12px;
   color: var(--color-fg-muted);
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .at-legend span {
@@ -419,7 +419,7 @@
 
 .at-table td {
   color: var(--color-fg-muted);
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .at-table strong {
@@ -445,7 +445,7 @@
   gap: 12px;
   margin-top: 12px;
   color: var(--color-fg-muted);
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .at-pagination div {
@@ -475,7 +475,7 @@
   min-height: 24px;
   border-radius: 999px;
   padding: 0 9px;
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
 }
 

@@ -248,6 +248,31 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     await waitFor(() => expect(within(menu).getByRole('tab', { name: 'Contacto' })).toHaveAccessibleDescription(/^Completo/));
   });
 
+  it('conserva las plantillas al cambiar de tarjeta y limpia el aviso al guardar', async () => {
+    await cargarPantalla();
+    const menu = screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true });
+    fireEvent.click(within(menu).getByRole('tab', { name: 'Contacto', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Editar mensaje: Consulta general', exact: true }));
+    const general = screen.getByRole('textbox', { name: 'Texto del mensaje', exact: true });
+    expect(general).toHaveValue('Hola, quiero hacer una consulta.');
+    fireEvent.change(general, { target: { value: '' } });
+    expect(general).toHaveValue('');
+    fireEvent.change(general, { target: { value: 'Hola, necesito información de su tienda.' } });
+    expect(screen.getByRole('status')).toHaveTextContent('Cambios sin guardar');
+    fireEvent.click(screen.getByRole('button', { name: 'Editar mensaje: Confirmación de pedido', exact: true }));
+    expect(general).not.toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Editar mensaje: Consulta general', exact: true }));
+    expect(general).toBeVisible();
+    expect(general).toHaveValue('Hola, necesito información de su tienda.');
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios', exact: true }));
+    await waitFor(() => expect(tiendaService.actualizar).toHaveBeenCalled());
+    expect(tiendaService.actualizar.mock.calls[0][0].mensaje_consulta_general).toBe('Hola, necesito información de su tienda.');
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Usar mensaje recomendado', exact: true }));
+    expect(general).toHaveValue('Hola, quiero hacer una consulta.');
+    expect(screen.getByRole('status')).toHaveTextContent('Cambios sin guardar');
+  });
+
   it('actualiza el check al activar un pago sin recargar', async () => {
     await cargarPantalla();
     const menu = screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true });

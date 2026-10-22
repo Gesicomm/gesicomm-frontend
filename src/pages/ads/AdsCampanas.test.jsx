@@ -57,11 +57,11 @@ afterEach(cleanup);
 describe('AdsCampanas — total gastado por campaña', () => {
   it('muestra lo gastado en cada campaña y el total', () => {
     montar();
-    const fila = screen.getByText('P0003 | TERMO | WEB | CONVERSION | CBO', { selector: 'button' }).closest('tr');
+    const fila = screen.getByRole('button', { name: 'P0003 | TERMO | WEB | CONVERSION | CBO', exact: true }).closest('tr');
     expect(within(fila).getByText(cifra('1.750.000'))).toBeInTheDocument();
     expect(within(fila).getByText('hasta el 14/10/2026')).toBeInTheDocument();
 
-    const sinGasto = screen.getByText('P0008 | MATE | WHATSAPP | EVALUACION | ABO', { selector: 'button' }).closest('tr');
+    const sinGasto = screen.getByRole('button', { name: 'P0008 | MATE | WHATSAPP | EVALUACION | ABO', exact: true }).closest('tr');
     expect(within(sinGasto).getByText('Sin cargar')).toBeInTheDocument();
 
     const pie = screen.getByText('Total gastado').closest('tr');
@@ -76,7 +76,7 @@ describe('AdsCampanas — total gastado por campaña', () => {
 
 describe('Cargar gasto', () => {
   const abrirCarga = (nombre) => {
-    const fila = screen.getByText(nombre, { selector: 'button' }).closest('tr');
+    const fila = screen.getByRole('button', { name: nombre, exact: true }).closest('tr');
     fireEvent.click(within(fila).getByRole('button', { name: /cargar gasto/i }));
     return screen.getByRole('heading', { name: /cargar gasto/i }).closest('div').parentElement;
   };

@@ -29,7 +29,7 @@
 .china-topline-note  {
   color: var(--color-fg-muted);
   font-weight: 500;
-  font-size: 12px
+  font-size: var(--ui-text-help, 0.875rem)
 }
 
 .china-hero  {
@@ -44,7 +44,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 10px;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
   letter-spacing: 1.8px;
   color: var(--color-fg-muted);
@@ -93,7 +93,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   white-space: nowrap
 }
@@ -119,7 +119,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted)
 }
 
@@ -161,7 +161,7 @@
 }
 
 .china-form-description  {
-  font-size: 13px;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted);
   line-height: 1.8;
   margin: 0 0 25px
@@ -169,7 +169,7 @@
 
 .china-form label  {
   display: block;
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 750;
   margin-bottom: 9px
 }
@@ -198,7 +198,7 @@
   background: var(--color-canvas);
   color: var(--color-fg);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--ui-text-help, 0.875rem);
   outline: none;
   transition: border-color .18s,box-shadow .18s
 }
@@ -209,7 +209,7 @@
 }
 
 .china-help  {
-  font-size: 11px;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-subtle);
   margin: 9px 0 20px
 }
@@ -227,7 +227,7 @@
   border: 0;
   border-radius: 10px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 750;
   cursor: pointer;
   box-shadow: 0 5px 16px color-mix(in srgb,var(--color-primary) 20%,transparent);
@@ -251,7 +251,7 @@
 
 .china-form-foot  {
   text-align: center;
-  font-size: 11px;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-subtle);
   margin: 14px 0 0
 }
@@ -264,7 +264,7 @@
   border: 1px solid color-mix(in srgb,var(--color-success) 25%,var(--color-border));
   border-radius: 10px;
   background: color-mix(in srgb,var(--color-success) 7%,transparent);
-  font-size: 12px
+  font-size: var(--ui-text-help, 0.875rem)
 }
 
 .china-success>svg  {
@@ -301,7 +301,7 @@
 }
 
 .china-process-heading>p:last-child  {
-  font-size: 13px;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted);
   margin: 0
 }
@@ -347,7 +347,7 @@
 }
 
 .china-steps p  {
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.8;
   color: var(--color-fg-muted);
   margin: 0
@@ -454,12 +454,12 @@
 
 .china-heading .china-intro {
   max-width: none;
-  font-size: 13px;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.85
 }
 
 .china-heading .china-kicker {
-  font-size: 9px;
+  font-size: var(--ui-text-help, 0.875rem);
   letter-spacing: 1.35px
 }
 
@@ -474,7 +474,7 @@
   background: linear-gradient(135deg,var(--color-primary),var(--color-primary-active));
   border-radius: 10px;
   color: var(--color-primary-fg);
-  font-size: 11px;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
   text-decoration: none;
   box-shadow: 0 6px 20px color-mix(in srgb,var(--color-primary) 20%,transparent);
@@ -515,7 +515,7 @@
 }
 
 .china-hero-visual figcaption {
-  font-size: 10px;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.6;
   color: var(--color-fg-subtle);
   margin-top: 12px
@@ -539,7 +539,7 @@
 }
 
 .china-visual-label span {
-  font-size: 9px;
+  font-size: var(--ui-text-help, 0.875rem);
   letter-spacing: 1.3px;
   display: block;
   margin-bottom: 7px;
@@ -624,14 +624,14 @@
 }
 
 .china-benefit p {
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.85;
   color: var(--color-fg-muted);
   margin: 0
 }
 
 .china-photo-credit {
-  font-size: 10px;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-subtle);
   margin: 14px 0 0;
   line-height: 1.7
@@ -663,7 +663,7 @@
 }
 
 .china-difference p:not(.china-kicker) {
-  font-size: 13px;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted);
   line-height: 1.85;
   margin: 0 0 16px
@@ -676,7 +676,7 @@
 }
 
 .china-legal {
-  font-size: 11px!important;
+  font-size: var(--ui-text-help, 0.875rem)!important;
   line-height: 1.8!important;
   color: var(--color-fg-subtle)!important;
   font-style: italic;
@@ -707,7 +707,7 @@
   align-items: flex-start;
   gap: 10px;
   color: var(--color-fg-muted);
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.8;
   margin-top: 25px;
   max-width: 330px
@@ -738,7 +738,7 @@
 }
 
 .china-form label {
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.5
 }
 
@@ -747,7 +747,7 @@
 }
 
 .china-form label small {
-  font-size: 10px;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-subtle);
   font-weight: 500;
   margin-left: 5px
@@ -762,7 +762,7 @@
   background: var(--color-canvas);
   color: var(--color-fg);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   outline: none;
   min-height: 48px;
   transition: border-color .18s,box-shadow .18s
@@ -787,14 +787,14 @@
 }
 
 .china-field-error {
-  font-size: 11px;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.7;
   color: var(--color-danger);
   margin: 8px 0 0
 }
 
 .china-error {
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.8;
   border: 1px solid color-mix(in srgb,var(--color-danger) 30%,transparent);
   background: color-mix(in srgb,var(--color-danger) 6%,transparent);
@@ -816,13 +816,13 @@
 }
 
 .china-success p {
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.8
 }
 
 .china-request-state {
   display: block;
-  font-size: 11px;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   margin-bottom: 10px;
   color: var(--color-success)
@@ -877,7 +877,7 @@
   .china-cta {
     width: 100%;
     box-sizing: border-box;
-    font-size: 10px;
+    font-size: var(--ui-text-help, 0.875rem);
     text-align: center
   }
   .china-heading h1 {

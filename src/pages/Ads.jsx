@@ -5,6 +5,7 @@ import { api } from '../utils/api';
 import { metaReportesService } from '../services/metaReportesService';
 import AdsCampanas from './ads/AdsCampanas';
 import AdsEnVivo from './ads/AdsEnVivo';
+import './ads/publicidad.css';
 
 /**
  * Ads & Campañas — shell de navegación.
@@ -23,8 +24,8 @@ import AdsEnVivo from './ads/AdsEnVivo';
 const MOSTRAR_EN_VIVO = true;
 
 const SECCIONES = [
-  { id: 'campanas', label: 'Campañas', icono: Megaphone },
-  ...(MOSTRAR_EN_VIVO ? [{ id: 'vivo', label: 'En vivo (Meta)', icono: Globe }] : []),
+  { id: 'campanas', label: 'Mis campañas', icono: Megaphone },
+  ...(MOSTRAR_EN_VIVO ? [{ id: 'vivo', label: 'Métricas de Meta', icono: Globe }] : []),
 ];
 
 // La sección activa NO viaja por la URL (en Gesicomm el estado de UI nunca
@@ -46,6 +47,7 @@ export default function Ads() {
     return 'campanas';
   });
 
+  const [errorCampanas, setErrorCampanas] = useState(null);
   const [tiendas, setTiendas] = useState([]);
   const [campanas, setCampanas] = useState([]);
   const [cargandoCampanas, setCargandoCampanas] = useState(true);
@@ -66,18 +68,19 @@ export default function Ads() {
 
   const cargarCampanas = useCallback(() => {
     setCargandoCampanas(true);
+    setErrorCampanas(null);
     return metaReportesService.listarCampanas()
       .then((res) => setCampanas(Array.isArray(res) ? res : []))
-      .catch(() => setCampanas([]))
+      .catch(() => setErrorCampanas('No pudimos cargar tus campañas. Reintentá para ver los datos actualizados.'))
       .finally(() => setCargandoCampanas(false));
   }, []);
 
   useEffect(() => { cargarCampanas(); }, [cargarCampanas]);
 
   return (
-    <div className="settings-container" style={{ maxWidth: '100%' }}>
+    <div className="ads-page settings-container" style={{ maxWidth: '100%' }}>
       <div className="settings-header flex flex-wrap items-start justify-between gap-3">
-        <h1>Ads &amp; Campañas</h1>
+        <div><h1>Publicidad</h1><p>Organizá tus campañas y llevá el control de tu inversión.</p></div>
         {seccion === 'campanas' && (
           <button
             type="button"
@@ -96,13 +99,14 @@ export default function Ads() {
 
       {/* Navegación — con una sola sección no hay entre qué elegir */}
       {SECCIONES.length > 1 && (
-        <nav className="mb-4 flex gap-1 overflow-x-auto border-b border-border">
+        <nav className="ads-tabs" aria-label="Secciones de publicidad">
           {SECCIONES.map((s) => {
             const activa = s.id === seccion;
             return (
               <button
                 key={s.id}
                 type="button"
+                aria-current={activa ? 'page' : undefined}
                 onClick={() => irA(s.id)}
                 className={`inline-flex shrink-0 items-center gap-1.5 border-b-2 border-solid bg-transparent px-3.5 py-2.5 text-[0.88rem] transition-colors ${
                   activa
@@ -117,7 +121,8 @@ export default function Ads() {
         </nav>
       )}
 
-      {seccion === 'campanas' && (
+      {errorCampanas && seccion === 'campanas' && <div role="alert" className="ads-error"><p>{errorCampanas}</p><button type="button" className="btn-secondary" onClick={cargarCampanas} disabled={cargandoCampanas}>Reintentar</button></div>}
+      {seccion === 'campanas' && (!errorCampanas || campanas.length > 0) && (
         <AdsCampanas
           campanas={campanas}
           cargando={cargandoCampanas}

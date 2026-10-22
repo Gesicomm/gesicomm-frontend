@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5175';
-const secciones = ['Tienda', 'Contacto', 'Pagos', 'Costos', 'Analítica', 'Conexión Logística'];
+const secciones = ['Tienda', 'Contacto', 'Pagos', 'Costos', 'Analítica', 'Conexión a proveedor'];
 
 for (const width of [375, 1440]) {
   test(`Estado de configuración: check y pendientes a ${width}px`, async ({ page }, testInfo) => {
@@ -29,7 +29,7 @@ for (const width of [375, 1440]) {
     await comprobarAncho(page);
   });
 
-  test(`Conexión Logística: solicitud y bloqueo a ${width}px`, async ({ page }, testInfo) => {
+  test(`Conexión a proveedor: solicitud y bloqueo a ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await preparar(page);
     await page.goto(`${baseURL}/mi-tienda?tab=speedbox`);
@@ -51,7 +51,7 @@ for (const width of [375, 1440]) {
     await comprobarAncho(page);
     await page.screenshot({ path: testInfo.outputPath('solicitud-logistica.png') });
   });
-  test(`Conexión Logística: validación aprobada a ${width}px`, async ({ page }, testInfo) => {
+  test(`Conexión a proveedor: validación aprobada a ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await preparar(page, { estadoRaha: 'aprobada' });
     await page.goto(`${baseURL}/mi-tienda?tab=raha`);
@@ -140,6 +140,27 @@ for (const width of [320, 375, 390, 768, 1440]) {
       }
 
       if (nombre === 'Contacto') {
+        for (const titulo of ['Consulta de producto', 'Consulta general', 'Confirmación de pedido']) {
+          await page.getByRole('button', { name: `Editar mensaje: ${titulo}`, exact: true }).click();
+          await expect(page.locator('.tn-message-editor:visible')).toHaveCount(1);
+          const editor = page.locator('.tn-message-card.is-open');
+          await expect(editor.getByText(titulo, { exact: true })).toBeVisible();
+          if (titulo === 'Consulta general') {
+            await expect(editor.getByLabel('Texto del mensaje')).toHaveValue('Hola, quiero hacer una consulta.');
+            await editor.getByLabel('Texto del mensaje').fill('Hola, necesito ayuda.');
+            await expect(editor.getByRole('status')).toContainText('Cambios sin guardar');
+            await editor.getByRole('button', { name: 'Enlace', exact: true }).click();
+            await expect(editor.getByLabel('Texto del mensaje')).toHaveValue('Hola, necesito ayuda.{url}');
+          }
+          await comprobarAncho(page);
+          await editor.scrollIntoViewIfNeeded();
+          await page.screenshot({ path: testInfo.outputPath(`mensaje-${titulo}.png`) });
+        }
+        await page.getByRole('button', { name: 'Editar mensaje: Consulta general', exact: true }).click();
+        const editorGeneral = page.locator('.tn-message-card.is-open');
+        await expect(editorGeneral.getByLabel('Texto del mensaje')).toHaveValue('Hola, necesito ayuda.{url}');
+        await editorGeneral.getByRole('button', { name: 'Usar mensaje recomendado', exact: true }).click();
+        await expect(editorGeneral.getByLabel('Texto del mensaje')).toHaveValue('Hola, quiero hacer una consulta.');
         await page.locator('.tn-input-like').click();
         await comprobarAncho(page);
         const limites = await page.locator('.horario-picker-popover').evaluate(el => {

@@ -63,7 +63,7 @@
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
   color: var(--color-primary-text);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -153,7 +153,7 @@
 }
 
 .lms-stat-label {
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--lms-text-muted);
   font-weight: 500;
   text-transform: uppercase;
@@ -287,7 +287,7 @@
   gap: 0.4rem;
   padding: 0.25rem 0.65rem;
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   text-transform: capitalize;
 }
@@ -335,7 +335,7 @@
   border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--lms-text-secondary);
   font-weight: 500;
 }
@@ -363,7 +363,7 @@
   background: var(--color-surface-2);
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--color-fg) 4%, transparent);
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg);
 }
 
@@ -374,7 +374,7 @@
 }
 
 .lms-lesson-sub-duration {
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--lms-text-muted);
 }
 
@@ -432,7 +432,7 @@
   background: color-mix(in srgb, var(--color-fg) 6%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   color: var(--color-fg);
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -573,7 +573,7 @@
   background: transparent;
   border: none;
   color: var(--lms-text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -612,7 +612,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -626,7 +626,7 @@
 
 .lms-form-label {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--color-fg);
   margin-bottom: 0.5rem;
@@ -754,7 +754,7 @@
 }
 
 .lms-lesson-badge {
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
@@ -802,7 +802,7 @@
 }
 
 .lms-ecosystem-card-desc {
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--lms-text-secondary);
   line-height: 1.4;
 }
@@ -840,7 +840,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--lms-text-secondary);
   flex-shrink: 0;
 }
@@ -851,7 +851,7 @@
   background: color-mix(in srgb, var(--color-fg) 4%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   color: var(--lms-text-secondary);
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;

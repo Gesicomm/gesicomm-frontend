@@ -25,7 +25,7 @@
 }
 
 .cic-nav-group h4 {
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   text-transform: uppercase;
   color: var(--color-fg-muted);
   margin: 0 0 0.3rem 0.5rem;
@@ -44,7 +44,7 @@
   border: none;
   border-radius: 8px;
   color: var(--color-fg-subtle);
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 500;
   text-align: left;
   cursor: pointer;

@@ -5,6 +5,7 @@ import App from './App.jsx'
 // un solo archivo cubre todos los pesos. Ver --font-sans en index.css.
 import '@fontsource-variable/plus-jakarta-sans'
 import './index.css'
+import './styles/systemTypography.css'
 import { registerChunkRecovery } from './lib/chunkRecovery'
 
 registerChunkRecovery(window, import.meta.url)

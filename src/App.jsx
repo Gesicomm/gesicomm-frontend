@@ -376,7 +376,7 @@ function App() {
                 <span className="loader" />
               </div>
             }>
-              <PageEditor />
+              <div className="gc-panel contents"><PageEditor /></div>
             </Suspense>
           </AdminRoute>
         } />

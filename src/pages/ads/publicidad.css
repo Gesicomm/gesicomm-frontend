@@ -1,0 +1,83 @@
+.ads-page { width: 100%; min-width: 0; box-sizing: border-box; }
+.ads-page .settings-header { margin-bottom: 1.5rem; }
+.ads-page h1 { margin: 0; }
+.ads-page .settings-header p { margin: 0.5rem 0 0; color: var(--color-fg-muted); }
+.ads-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem; margin-bottom: 1.5rem; border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-surface); }
+.ads-tabs button { border: 0; border-radius: 14px; min-height: 44px; }
+.ads-tabs button[aria-current='page'] { background: var(--bg-primary-soft); color: var(--color-primary-text); }
+.ads-page :is(.btn-primary,.btn-secondary,.filter-input) { border-radius: 12px; min-height: 44px; }
+.ads-page .filter-input { width: 100%; }
+.ads-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; }
+.ads-summary article { display: grid; align-content: start; gap: 0.5rem; padding: 1.25rem; border: 1px solid var(--color-border); border-radius: 22px; background: var(--color-surface); }
+.ads-summary span { color: var(--color-fg-muted); font-size: var(--ui-text-help); }
+.ads-summary strong { font-size: var(--ui-text-section); color: var(--color-fg); overflow-wrap: anywhere; }
+.ads-guide { padding: 1rem 1.25rem; border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-surface); }
+.ads-guide summary { cursor: pointer; color: var(--color-primary-text); }
+.ads-guide li { margin: 0.6rem 0; line-height: 1.6; }
+.ads-campaigns { border-radius: 22px; }
+.ads-campaigns table { min-width: 0; width: 100%; table-layout: fixed; }
+.ads-campaigns th:first-child { width: 30%; }
+.ads-campaigns th:nth-child(2) { width: 13%; }
+.ads-campaigns th:nth-child(3) { width: 19%; }
+.ads-campaigns th:nth-child(4) { width: 15%; }
+.ads-campaigns th:last-child { width: 23%; }
+.ads-campaigns th { white-space: normal; overflow-wrap: anywhere; }
+.ads-campaigns td:last-child > div { flex-wrap: wrap; }
+.ads-campaigns td:first-child button { overflow-wrap: anywhere; }
+.ads-campaigns td { vertical-align: top; padding: 1.15rem; }
+.ads-campaigns td:first-child { min-width: 13rem !important; }
+.ads-code-hint { color: var(--color-fg-muted); font-size: var(--ui-text-help); line-height: 1.6; }
+.ads-actions { position: relative; white-space: normal; }
+.ads-actions > summary { display: flex; align-items: center; min-height: 40px; padding: 0.4rem 0.65rem; border: 1px solid var(--color-border); border-radius: 10px; cursor: pointer; font-size: var(--ui-text-help); list-style: none; white-space: nowrap; }
+.ads-actions > summary::-webkit-details-marker { display: none; }
+.ads-actions-menu { display: grid; gap: 0.35rem; min-width: 170px; margin-top: 0.6rem; }
+.ads-actions-menu .btn-icon { display: flex; align-items: center; justify-content: flex-start; gap: 0.6rem; width: 100%; height: auto; min-height: 40px; padding: 0.5rem 0.65rem; text-align: left; border-radius: 10px; }
+.ads-actions > small { display: block; max-width: 180px; padding-top: 0.6rem; color: var(--color-fg-muted); }
+.ads-footnote { max-width: 75ch; }
+.ads-history { min-width: 0; }
+.ads-history code { overflow-wrap: anywhere; white-space: normal; }
+.ads-history .data-table-wrapper { border-radius: 22px; }
+.ads-error { padding: 1rem 1.25rem; border: 1px solid var(--color-danger); border-radius: 18px; background: var(--color-surface); color: var(--color-danger); margin-bottom: 1rem; }
+.ads-error p { margin: 0 0 0.7rem; }
+.ads-technical-error { max-width: 100%; overflow-wrap: anywhere; color: var(--color-fg-muted); }
+.ads-modal-overlay > div { min-width: 0; border-radius: 24px !important; }
+.ads-wizard { outline: none; overflow: hidden; }
+.ads-wizard-body { min-height: 0 !important; }
+.ads-wizard-steps > div { min-width: 0; }
+.ads-wizard-steps span { overflow-wrap: anywhere; }
+.ads-wizard :is(span,div)[style*='font-size: 0.'] { font-size: var(--ui-text-help) !important; line-height: 1.5 !important; }
+.ads-wizard .filter-input { max-width: none; width: 100%; }
+.ads-wizard button { min-width: 0; }
+.ads-wizard .btn-icon { flex-shrink: 0; }
+.ads-wizard code { white-space: normal; overflow-wrap: anywhere; }
+.ads-dialog-intro { flex-shrink: 0; margin: 0; padding: 1rem 1.25rem 0; color: var(--color-fg-muted); }
+.ads-modal-overlay [role='dialog'] > form { min-height: 0; overflow-y: auto; }
+.ads-discard { flex-shrink: 0; margin: 0.75rem 1.25rem; padding: 0.85rem; border: 1px solid var(--color-warning); border-radius: 14px; background: var(--color-surface); }
+.ads-discard p { margin: 0.4rem 0; }
+.ads-discard button { margin: 0.3rem; }
+.ads-page button:focus-visible, .ads-page summary:focus-visible, .ads-modal-overlay button:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
+@media (min-width: 1000px) {
+  .ads-campaign-list > .mb-3 { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; }
+  .ads-campaign-list > .mb-3 > div:last-child { flex-wrap: nowrap; }
+  .ads-campaign-list > .mb-3 > div:last-child select { width: auto; }
+  .ads-campaign-list > .mb-3 > div:last-child button { white-space: nowrap; }
+}
+@media (max-width: 850px) {
+  .ads-summary { grid-template-columns: minmax(0,1fr); gap: 0.75rem; }
+  .ads-summary article { padding: 1rem; grid-template-columns: minmax(0,1fr) auto; align-items: center; }
+  .ads-campaigns .table-scroll-container { overflow: visible; }
+  .ads-campaigns table, .ads-campaigns tbody { display: block; }
+  .ads-campaigns thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+  .ads-campaigns tbody tr { display: grid; grid-template-columns: minmax(0,1fr); margin: 0.85rem; border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-surface); }
+  .ads-campaigns tbody td { display: block; width: auto; min-width: 0 !important; padding: 0.7rem 1rem; text-align: left; border: 0; white-space: normal; }
+  .ads-campaigns tbody td:not(:first-child)::before { content: attr(data-label); display: block; margin-bottom: 0.3rem; color: var(--color-fg-muted); font-size: var(--ui-text-help); }
+  .ads-campaigns tbody td:last-child > div { justify-content: flex-start; flex-wrap: wrap; }
+  .ads-campaigns tfoot { display: none; }
+  .ads-history .table-scroll-container { max-width: 100%; overflow-x: auto; }
+  .ads-tabs button { flex: 1; justify-content: center; }
+  .ads-wizard-steps { flex-wrap: wrap; }
+  .ads-wizard-steps > div { flex: 1 0 40% !important; }
+  .ads-modal-overlay { padding: 0.65rem !important; }
+  .ads-modal-overlay > div { max-height: 94dvh !important; }
+  .ads-dialog-intro { font-size: var(--ui-text-help) !important; padding-top: 0.65rem; }
+}

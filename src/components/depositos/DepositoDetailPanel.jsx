@@ -28,6 +28,7 @@ function CourierRow({ courier, onConfigure }) {
 
 export default function DepositoDetailPanel({
   deposito,
+  modoPropio = true,
   courierSummary,
   summaryLoading,
   onClose,
@@ -47,7 +48,7 @@ export default function DepositoDetailPanel({
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-fg/30 p-0 backdrop-blur-[1px]" onClick={onClose}>
       <aside
-        className="h-full w-full max-w-[620px] overflow-y-auto border-l border-border bg-canvas shadow-2xl"
+        className="dep-detail h-full w-full max-w-[620px] overflow-y-auto border-l border-border bg-canvas shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-label={`Administrar ${deposito.nombre}`}
@@ -75,10 +76,10 @@ export default function DepositoDetailPanel({
         </div>
 
         <div className="space-y-5 px-5 py-5">
-        <section>
+        <section className="dep-detail-block">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="m-0 text-[12px] font-semibold uppercase text-fg-muted">Información general</p>
+              <p className="m-0 text-[12px] font-semibold uppercase text-fg-muted">Ubicación y contacto</p>
               <p className="m-0 mt-2 text-sm font-medium text-fg">{deposito.direccion}</p>
               {deposito.referencia && <p className="m-0 mt-1 text-sm text-fg-muted">{deposito.referencia}</p>}
               {(deposito.personaContacto || deposito.telefonoContacto) && (
@@ -99,24 +100,6 @@ export default function DepositoDetailPanel({
           </div>
         </section>
 
-        <section className="rounded-lg border border-border bg-surface px-4 py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="m-0 text-base font-semibold text-fg">Abastecer este depósito</h3>
-              <p className="m-0 mt-0.5 text-[13px] text-fg-muted">Pedí productos de catálogo RAHA para que lleguen a esta dirección.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => onAbastecer?.(deposito)}
-              disabled={!deposito.activo}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
-            >
-              <PackagePlus size={15} />
-              Abastecer depósito
-            </button>
-          </div>
-        </section>
-
         <section className="grid grid-cols-3 gap-2">
           <div className="rounded-md border border-border bg-surface-50 px-3 py-2">
             <p className="m-0 text-[11px] font-medium text-fg-muted">Couriers</p>
@@ -127,16 +110,16 @@ export default function DepositoDetailPanel({
             <p className="m-0 mt-1 text-lg font-semibold text-fg">{summaryLoading ? '...' : courierSummary?.totalCities || 0}</p>
           </div>
           <div className="rounded-md border border-border bg-surface-50 px-3 py-2">
-            <p className="m-0 text-[11px] font-medium text-fg-muted">Pendientes</p>
+            <p className="m-0 text-[11px] font-medium text-fg-muted">Sin cobertura</p>
             <p className={`m-0 mt-1 text-lg font-semibold ${pendientes > 0 ? 'text-warning' : 'text-fg'}`}>{summaryLoading ? '...' : pendientes}</p>
           </div>
         </section>
 
-        <section>
+        <section className="dep-detail-block">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <h3 className="m-0 text-base font-semibold text-fg">Couriers asignados</h3>
-              <p className="m-0 mt-0.5 text-[13px] text-fg-muted">Transportistas disponibles desde este depósito.</p>
+              <h3 className="m-0 text-base font-semibold text-fg">Transportistas y cobertura</h3>
+              <p className="m-0 mt-0.5 text-[13px] text-fg-muted">{modoPropio ? 'Elegí quién entrega y las ciudades que atiende.' : 'Opcional: configurá transportistas si también despachás desde aquí.'}</p>
             </div>
             <button
               type="button"
@@ -169,6 +152,24 @@ export default function DepositoDetailPanel({
             </ul>
           )}
         </section>
+        <section className="dep-detail-block dep-detail-stock">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="m-0 text-base font-semibold text-fg">Abastecer este depósito</h3>
+              <p className="m-0 mt-0.5 text-[13px] text-fg-muted">Pedí productos de catálogo RAHA para que lleguen a esta dirección.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onAbastecer?.(deposito)}
+              disabled={!deposito.activo}
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-[13px] font-semibold text-fg hover:bg-surface-2 disabled:opacity-50"
+            >
+              <PackagePlus size={15} />
+              Abastecer depósito
+            </button>
+          </div>
+        </section>
+
       </div>
       </aside>
     </div>

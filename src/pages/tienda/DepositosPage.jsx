@@ -14,8 +14,9 @@ import { CourierWizard } from '../courier/CourierWizard';
 import { normalizarRegla, paraApi } from '../courier/DeliveryPanel';
 import { createCourier, getDeliveryZonas, replaceDeliveryZonas, updateCourier } from '../../services/courierApi';
 import useSesion from '../../hooks/useSesion';
-import { botonOperacion } from '../raha/operacionesUI';
 import '../courier/courier.css';
+import './depositos.css';
+import '../../styles/settingsTypography.css';
 
 const resumenCouriers = (data) => {
   const couriers = data?.couriers || [];
@@ -52,7 +53,9 @@ export default function DepositosPage() {
   const [courierSummaries, setCourierSummaries] = useState({});
   const [summariesLoading, setSummariesLoading] = useState(false);
   const [courierWizard, setCourierWizard] = useState({ open: false, deposito: null, courier: null, reglas: [] });
-  const [fulfillmentOpen, setFulfillmentOpen] = useState(true);
+  const [fulfillmentOpen, setFulfillmentOpen] = useState(false);
+  const [fulfillmentConfig, setFulfillmentConfig] = useState(null);
+  const [filtersKey, setFiltersKey] = useState(0);
   const resumenesReqRef = useRef(0);
 
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', desc: '', action: null, danger: false });
@@ -227,15 +230,10 @@ export default function DepositosPage() {
   const totalPages = Math.ceil(total / limit) || 1;
   const tieneFiltros = Object.keys(filtros).length > 0;
   const depositosActivos = depositos.filter((dep) => dep.activo).length;
-  const depositosConCouriers = depositos.filter((dep) => (courierSummaries[dep.id]?.enabledCount || 0) > 0).length;
-  const depositosPorConfigurar = depositos.filter((dep) => {
-    const resumen = courierSummaries[dep.id];
-    return dep.activo && resumen && (resumen.enabledCount === 0 || resumen.pendingCount > 0);
-  }).length;
   const resumenSeleccionado = depositoSeleccionado ? courierSummaries[depositoSeleccionado.id] : null;
 
   return (
-    <div className="mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-8">
+    <div className="dep-page mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-8">
       {!esAdmin && (
         <div className="mb-4">
           <button
@@ -247,14 +245,14 @@ export default function DepositosPage() {
           </button>
         </div>
       )}
-      <div className="mb-6 flex flex-col gap-4">
+      <div className="dep-page-heading mb-6 flex flex-col gap-4">
         <div>
           <h1 className="m-0 text-2xl font-bold text-fg">Depósitos</h1>
           <p className="m-0 mt-1 text-sm text-fg-muted">
-            Administrá los lugares desde donde despachás y sus couriers asociados.
+            Definí desde dónde sale tu mercadería y quién se encarga de entregarla.
           </p>
         </div>
-        <nav aria-label="Acciones de depósitos" className={`grid w-full gap-2 ${esAdmin ? '' : 'sm:grid-cols-3'}`}>
+        <nav aria-label="Acciones de depósitos" className="dep-primary-actions">
           <button
             type="button"
             onClick={handleOpenNuevo}
@@ -263,61 +261,42 @@ export default function DepositosPage() {
             <Plus size={16} />
             Agregar depósito
           </button>
-          {!esAdmin && <>
-            <button type="button" onClick={() => navigate('/mis-abastecimientos')} className={botonOperacion}><Package size={16} /> Ver abastecimientos RAHA</button>
-            <button type="button" onClick={() => navigate('/mis-envios-raha')} className={botonOperacion}><Truck size={16} /> Enviar mercadería a RAHA</button>
-          </>}
+
         </nav>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm shadow-sm">
-        <span className="font-semibold text-fg">{total} depósitos</span>
-        <span className="text-fg-muted"><strong className="font-semibold text-fg">{depositosActivos}</strong> activos</span>
-        <span className="text-fg-muted">
-          <strong className={`font-semibold ${depositosPorConfigurar > 0 ? 'text-warning' : 'text-fg'}`}>
-            {summariesLoading ? '...' : depositosPorConfigurar}
-          </strong>{' '}
-          por configurar
-        </span>
-        <span className="text-fg-muted"><strong className="font-semibold text-fg">{depositosConCouriers}</strong> con couriers</span>
-      </div>
+      <div className="dep-list-summary"><strong>{total} {total === 1 ? 'depósito' : 'depósitos'}</strong><span>{depositosActivos} activos en esta página</span></div>
 
       {!esAdmin && (
-        <div className="mb-6 rounded-lg border border-border bg-surface">
-          <div className="flex w-full flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              onClick={() => setFulfillmentOpen((open) => !open)}
-              aria-expanded={fulfillmentOpen}
-              className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md text-left text-fg hover:text-primary-text"
-            >
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold">Entrega de pedidos</span>
-                <span className="block text-[13px] text-fg-muted">Elegí si despachás con tus depósitos/couriers o con Gesicom-RAHA.</span>
-              </span>
-              <ChevronDown className={`flex-shrink-0 text-fg-muted transition-transform ${fulfillmentOpen ? 'rotate-180' : ''}`} size={18} />
-            </button>
-            <span className="flex items-center gap-2 self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => navigate('/mi-tienda/couriers')}
-                className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-[13px] font-semibold text-fg hover:bg-surface-2"
-              >
-                <Truck size={14} />
-                Catálogo de couriers
-              </button>
-            </span>
-          </div>
-          {fulfillmentOpen && (
-            <div className="border-t border-border p-4">
-              <FulfillmentCard />
+        <div className="dep-delivery mb-6 rounded-lg border border-border bg-surface">
+          <div className="dep-delivery-heading">
+            <div className="dep-delivery-copy">
+              <span className="dep-delivery-icon" aria-hidden="true"><Truck size={24} /></span>
+              <div>
+                <h2>Entrega de pedidos</h2>
+                <p>Elegí quién prepara y entrega los pedidos de tu tienda.</p>
+                <span className="dep-delivery-current">{fulfillmentConfig ? (fulfillmentConfig.modalidad === 'PROPIA' ? 'Despachás con tus depósitos y transportistas.' : 'Gesicom-RAHA prepara y entrega tus pedidos.') : 'Consultá o cambiá cómo entregás tus pedidos.'}</span>
+              </div>
             </div>
-          )}
+            <div className="dep-delivery-actions">
+              <button type="button" className="dep-delivery-toggle" onClick={() => setFulfillmentOpen(open => !open)} aria-label={`Entrega de pedidos: ${fulfillmentOpen ? 'cerrar' : 'cambiar'} configuración`} aria-expanded={fulfillmentOpen} aria-controls="dep-delivery-options">
+                {fulfillmentOpen ? 'Cerrar configuración' : 'Cambiar configuración'}<ChevronDown size={18} className={fulfillmentOpen ? 'rotate-180' : ''} />
+              </button>
+              <button type="button" className="dep-courier-catalog" onClick={() => navigate('/mi-tienda/couriers')}><Truck size={16} />Catálogo de couriers</button>
+            </div>
+          </div>
+          <div id="dep-delivery-options" hidden={!fulfillmentOpen} className="border-t border-border p-4">
+              <FulfillmentCard onConfiguracion={setFulfillmentConfig} />
+            </div>
         </div>
       )}
 
+      <header className="dep-list-heading">
+        <h2>Tus depósitos</h2>
+        <p>En cada depósito, entrá a <strong>Administrar</strong> para editar la ubicación y el contacto, asignar transportistas y configurar las ciudades de entrega.</p>
+      </header>
       <div className="mb-6">
-        <DepositoFilters onChange={handleFiltrosChange} />
+        <DepositoFilters key={filtersKey} onChange={handleFiltrosChange} />
       </div>
 
       <div className="relative min-h-[300px]">
@@ -336,6 +315,7 @@ export default function DepositosPage() {
                     deposito={dep}
                     courierSummary={courierSummaries[dep.id]}
                     summaryLoading={summariesLoading && !courierSummaries[dep.id]}
+                    modoPropio={esAdmin || fulfillmentConfig?.modalidad === 'PROPIA'}
                     selected={depositoSeleccionado?.id === dep.id}
                     onManage={setDepositoSeleccionado}
                     onEdit={handleOpenEditar}
@@ -386,7 +366,7 @@ export default function DepositosPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => handleFiltrosChange({})}
+                  onClick={() => { handleFiltrosChange({}); setFiltersKey(value => value + 1); }}
                   className="rounded-md bg-surface-2 px-4 py-2 text-sm font-medium text-fg hover:bg-surface-3 transition-colors border border-border"
                 >
                   Limpiar filtros
@@ -413,8 +393,17 @@ export default function DepositosPage() {
         )}
       </div>
 
+      {!esAdmin && <section className="dep-stock-section" aria-labelledby="dep-stock-title">
+        <header><h2 id="dep-stock-title">Mercadería y abastecimiento</h2><p>Elegí hacia dónde necesitás mover tus productos.</p></header>
+        <div className="dep-stock-grid">
+          <button type="button" onClick={() => navigate('/mis-abastecimientos')}><Package size={23} /><span><strong>Traer productos de RAHA</strong><small>Consultá tus abastecimientos para recibir mercadería en tu depósito.</small></span><ArrowLeft size={17} /></button>
+          <button type="button" onClick={() => navigate('/mis-envios-raha')}><Truck size={23} /><span><strong>Enviar mercadería a RAHA</strong><small>Enviá tus productos para que RAHA prepare y despache tus pedidos.</small></span><ArrowLeft className="rotate-180" size={17} /></button>
+        </div>
+      </section>}
+
       <DepositoDetailPanel
         deposito={depositoSeleccionado}
+        modoPropio={esAdmin || fulfillmentConfig?.modalidad === 'PROPIA'}
         courierSummary={resumenSeleccionado}
         summaryLoading={summariesLoading && !resumenSeleccionado}
         onClose={() => setDepositoSeleccionado(null)}

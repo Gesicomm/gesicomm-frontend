@@ -46,9 +46,9 @@ function formatGs(n) {
 
 // Sin emojis: el color del badge ya codifica el tipo, y el 🟢 de "Producto"
 // metía un verde que no es de la paleta justo al lado de un badge azul.
-function getBadgeConfig(item) {
+function getBadgeConfig(item, mostrarStock) {
   if (item.tipo === 'combo') return { cls: 'combo',     label: 'Combo' };
-  if (item.stock === 0)      return { cls: 'sin-stock', label: 'Sin stock' };
+  if (mostrarStock && item.stock === 0) return { cls: 'sin-stock', label: 'Sin stock' };
   return                           { cls: 'producto',  label: 'Producto' };
 }
 
@@ -268,10 +268,11 @@ function MarcasLanding({ item, onQuitar }) {
 
 function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, filtro, seleccionable = true, onQuitarMarca = null }) {
   const esCombo = item.tipo === 'combo';
-  const badge   = getBadgeConfig(item);
-  const sinStock = item.stock === 0 && !esCombo;
   const esAdmin = usuarioActual?.rol === 'administrador';
   const esCreadorDirecto = usuarioActual?.id != null && item.creado_por != null && Number(item.creado_por) === Number(usuarioActual.id);
+  const mostrarStock = esCreadorDirecto && !esCombo && item.stock != null;
+  const badge = getBadgeConfig(item, mostrarStock);
+  const sinStock = mostrarStock && item.stock === 0;
   const esEditable = item.tipo === 'producto' && (esAdmin || esCreadorDirecto);
 
   return (
@@ -338,10 +339,10 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
               <Tag size={11} /> {item.categoria}
             </span>
           )}
-          {item.categoria && item.stock !== undefined && (
+          {item.categoria && mostrarStock && (
             <span className="vit-card-meta-sep" />
           )}
-          {item.stock !== undefined && !esCombo && (
+          {mostrarStock && (
             <span className="vit-card-meta-item" style={{ color: sinStock ? "var(--color-danger)" : undefined }}>
               <Archive size={11} /> Stock: {item.stock}
             </span>

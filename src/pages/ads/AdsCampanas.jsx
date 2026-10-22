@@ -19,6 +19,8 @@ import { EncabezadoSeccion, EstadoVacio } from './adsUI';
  * está en su histórico (AdsCampanaHistorial).
  */
 export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
+  const [errorAccion, setErrorAccion] = useState(null);
+  const [operandoId, setOperandoId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [campanaEditar, setCampanaEditar] = useState(null);
   const [copiadoId, setCopiadoId] = useState(null);
@@ -37,16 +39,17 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
     navigator.clipboard.writeText(texto).then(() => {
       setCopiadoId(id);
       setTimeout(() => setCopiadoId(null), 1800);
-    });
+    }).catch(() => setErrorAccion('No pudimos copiar el nombre. Podés seleccionarlo en el detalle de la campaña.'));
   };
 
   const cambiarEstado = async (campana, estado) => {
+    setOperandoId(campana.id); setErrorAccion(null);
     try {
       await metaReportesService.actualizarCampana(campana.id, { estado });
       onCambio();
     } catch (err) {
-      alert(err.response?.data?.message || err.message || 'No se pudo cambiar el estado.');
-    }
+      setErrorAccion(err.response?.data?.message || err.message || 'No se pudo cambiar el estado.');
+    } finally { setOperandoId(null); }
   };
 
   const eliminar = async (campana) => {
@@ -89,13 +92,13 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="ads-campaign-list flex flex-col gap-3">
       <EncabezadoSeccion
         titulo="Campañas"
-        descripcion="Creá la campaña, copiá el nombre generado en Meta Ads Manager y cargá acá cuánto gastaste en cada rango de fechas. El gasto se va sumando."
+        descripcion="Registrá tus campañas y cargá lo que gastaste. Publicar y administrar los anuncios se hace en Meta Ads Manager."
       >
-        <select className="filter-input" style={{ maxWidth: '170px' }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
-          <option value="activas">En curso</option>
+        <select aria-label="Filtrar campañas por estado" className="filter-input" style={{ maxWidth: '170px' }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+          <option value="activas">Sin archivar</option>
           <option value="archivadas">Archivadas</option>
           <option value="todas">Todas</option>
         </select>
@@ -104,6 +107,13 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
         </button>
       </EncabezadoSeccion>
 
+      {errorAccion && <div className="ads-error" role="alert">{errorAccion}</div>}
+      <div className="ads-summary" aria-label="Resumen de campañas">
+        <article><span>Campañas visibles</span><strong>{visibles.length}</strong></article>
+        <article><span>Gasto registrado acumulado</span><strong>{formatPYG(totalVisible)}</strong></article>
+        <article><span>Sin gasto registrado</span><strong>{visibles.filter(c => !(c.gasto_registros > 0)).length}</strong></article>
+      </div>
+      <details className="ads-guide"><summary>Cómo organizar tu primera campaña</summary><ol><li>Registrá el producto, canal y objetivo en Gesicom.</li><li>Copiá el nombre generado al crear tu campaña en Meta Ads Manager.</li><li>Registrá el gasto por fechas para revisar tu inversión.</li></ol></details>
       {/* El esqueleto es solo para la primera carga: al refrescar después de
           guardar un gasto, la tabla se queda en pantalla. */}
       {cargando && campanas.length === 0 ? (
@@ -121,15 +131,15 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
           )}
         </EstadoVacio>
       ) : (
-        <div className="data-table-wrapper">
+        <div className="ads-campaigns data-table-wrapper">
           <div className="table-scroll-container">
             <table className="escalafy-table">
               <thead>
                 <tr>
                   <th>Campaña</th>
-                  <th className="text-right">Leads</th>
+                  <th className="text-right">Pedidos asociados</th>
                   <th className="text-right">Gastado</th>
-                  <th>Estado</th>
+                  <th>Estado en Gesicom</th>
                   <th className="text-right">Acciones</th>
                 </tr>
               </thead>
@@ -140,6 +150,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                   // El asistente genera un nombre que ya ES el que se copia en
                   // Meta: mostrarlo dos veces solo ensancha la tabla. Las
                   // campañas viejas tienen un nombre corto + otro con código.
+                  const nombreAmigable = (c.productos || []).map(p => p.nombre).join(', ') || c.nombre_display?.split('|')[1]?.trim() || c.nombre_display;
                   const nombreUnico = c.nombre_interno === c.nombre_display;
                   const botonCopiar = (
                     <button
@@ -154,7 +165,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
 
                   return (
                     <tr key={c.id}>
-                      <td style={{ whiteSpace: 'normal', minWidth: '15rem' }}>
+                      <td data-label="Campaña" style={{ whiteSpace: 'normal', minWidth: '15rem' }}>
                         <div className="flex items-center gap-2.5">
                           {c.tipo === 'whatsapp'
                             ? <MessageCircle size={16} className="shrink-0" color="var(--color-success)" title="WhatsApp" />
@@ -163,10 +174,11 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                             <span className="flex items-start gap-1.5">
                               <button
                                 type="button"
+                                aria-label={c.nombre_display}
                                 onClick={() => setCampanaAbierta(c)}
                                 className="group inline-flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left text-[0.88rem] font-semibold text-fg hover:text-primary-text"
                               >
-                                {c.nombre_display}
+                                {nombreAmigable}
                                 <ChevronRight size={13} className="shrink-0 text-fg-subtle group-hover:text-primary-text" />
                               </button>
                               {nombreUnico && botonCopiar}
@@ -177,19 +189,20 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                                 {botonCopiar}
                               </span>
                             )}
+                            {nombreUnico && <span className="ads-code-hint">{c.tipo === 'whatsapp' ? 'WhatsApp' : 'Tienda online'} · Nombre para Meta disponible al copiar</span>}
                             {!nombreUnico && (c.productos || []).length > 0 && (
                               <span className="text-[0.72rem] text-fg-muted">{c.productos.map(p => p.nombre).join(', ')}</span>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td
+                      <td data-label="Pedidos asociados"
                         className="whitespace-nowrap text-right tabular-nums"
                         title="Pedidos con al menos un producto de esta campaña, resuelto automáticamente al crearse"
                       >
                         {c.leads > 0 ? c.leads : <span className="text-fg-subtle">0</span>}
                       </td>
-                      <td className="whitespace-nowrap text-right">
+                      <td data-label="Gasto registrado" className="whitespace-nowrap text-right">
                         {tieneGasto ? (
                           <>
                             <span className="block font-semibold tabular-nums text-fg">{formatPYG(c.gasto_total)}</span>
@@ -197,10 +210,10 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                           </>
                         ) : <span className="text-fg-subtle">Sin cargar</span>}
                       </td>
-                      <td>
+                      <td data-label="Estado en Gesicom">
                         <span className="badge" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
                       </td>
-                      <td className="text-right">
+                      <td data-label="Acciones" className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
@@ -213,27 +226,29 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                           <button type="button" className="btn-icon" title="Ver histórico de gasto" onClick={() => setCampanaAbierta(c)}>
                             <History size={15} />
                           </button>
-                          <button type="button" className="btn-icon" title="Editar campaña" onClick={() => { setCampanaEditar(c); setModalOpen(true); }}>
-                            <Edit2 size={15} />
+                          <details className="ads-actions"><summary>Más acciones</summary><div className="ads-actions-menu">
+                          <button type="button" className="btn-icon" disabled={operandoId === c.id} title="Editar campaña" onClick={() => { setCampanaEditar(c); setModalOpen(true); }}>
+                            <Edit2 size={15} /> Editar campaña
                           </button>
                           {(c.estado === 'borrador' || c.estado === 'pausada') && (
-                            <button type="button" className="btn-icon" title="Marcar como activa" onClick={() => cambiarEstado(c, 'activa')}>
-                              <Play size={15} />
+                            <button type="button" className="btn-icon" disabled={operandoId === c.id} title="Marcar como activa" onClick={() => cambiarEstado(c, 'activa')}>
+                              <Play size={15} /> Marcar activa en Gesicom
                             </button>
                           )}
                           {c.estado === 'activa' && (
-                            <button type="button" className="btn-icon" title="Pausar" onClick={() => cambiarEstado(c, 'pausada')}>
-                              <Pause size={15} />
+                            <button type="button" className="btn-icon" disabled={operandoId === c.id} title="Pausar" onClick={() => cambiarEstado(c, 'pausada')}>
+                              <Pause size={15} /> Marcar pausada en Gesicom
                             </button>
                           )}
                           {c.estado !== 'archivada' && (
-                            <button type="button" className="btn-icon" title="Archivar" onClick={() => cambiarEstado(c, 'archivada')}>
-                              <Archive size={15} />
+                            <button type="button" className="btn-icon" disabled={operandoId === c.id} title="Archivar" onClick={() => cambiarEstado(c, 'archivada')}>
+                              <Archive size={15} /> Archivar
                             </button>
                           )}
                           <button type="button" className="btn-icon danger" title="Eliminar" onClick={() => eliminar(c)}>
-                            <Trash2 size={15} />
+                            <Trash2 size={15} /> Eliminar
                           </button>
+                          </div><small>Estos cambios no modifican los anuncios en Meta.</small></details>
                         </div>
                       </td>
                     </tr>
@@ -253,7 +268,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
         </div>
       )}
 
-      <p className="m-0 text-[0.72rem] text-fg-subtle">
+      <p className="ads-footnote m-0 text-[0.72rem] text-fg-subtle">
         El gasto de cada campaña es la suma de todos los rangos de fechas que cargaste. Tocá el nombre de la campaña para ver el histórico completo.
       </p>
 

@@ -6,7 +6,7 @@ import {
   ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, CheckCircle2, Info,
   Store, MessageCircle, BarChart3, MousePointerClick, CreditCard, Coins,
   ArrowRight, Palette, ImagePlus, Mail, MapPin, Share2,
-  AtSign, Link2, User, Phone, Video, Type, ChevronDown
+  AtSign, Link2, User, Phone, Video, Type, ChevronDown, ExternalLink
 } from 'lucide-react';
 
 
@@ -22,6 +22,7 @@ import DominioPropio from './DominioPropio';
 import ComboConfiguracion from '../combos/ComboConfiguracion';
 import { MetodosPagoCrud } from '../courier/MetodosPagoCrud';
 import HorarioPicker from './HorarioPicker';
+import PlantillaWhatsapp from './PlantillaWhatsapp';
 import { getMetodosPago } from '../../services/courierApi';
 import { comboAdminService } from '../../services/comboAdminService';
 import { rahaService } from '../../services/rahaService';
@@ -30,6 +31,7 @@ import { estadosConfiguracion } from './estadoConfiguracion';
 import '../vitrina/vitrina.css';
 import '../landing/landing.css';
 import './tienda.css';
+import '../../styles/settingsTypography.css';
 
 function EstadoSeccion({ estado, compacto = false }) {
   return <span className={`tn-section-status ${estado.completo ? 'complete' : 'pending'}${compacto ? ' compact' : ''}`} title={`${estado.texto}. ${estado.completo ? 'Configuración guardada.' : estado.detalle}`} aria-hidden={compacto || undefined}>
@@ -93,8 +95,8 @@ const TABS = [
     id: 'tienda',
     label: 'Tienda',
     icono: Store,
-    titulo: 'Tu tienda',
-    desc: 'Cómo se llama tu negocio, dónde se publica, bajo qué dominio y con qué identidad visual sale tu marca.',
+    titulo: 'Identidad de tu negocio',
+    desc: 'Personalizá tu marca y la dirección donde te encuentran tus clientes.',
   },
   {
     id: 'contacto',
@@ -124,7 +126,7 @@ const TABS = [
     titulo: 'Medición y píxeles',
     desc: 'Conectá Meta, Google y TikTok para medir lo que pasa en tus landings.',
   },
-  { id: 'raha', label: 'Conexión Logística', icono: ShieldCheck, titulo: 'Conexión Logística', desc: 'Conectá tu tienda con nuestros proveedores.', separadorLargo: true },
+  { id: 'raha', label: 'Conexión a proveedor', icono: ShieldCheck, titulo: 'Conexión a proveedor', desc: 'Conectá tu tienda con nuestros proveedores.', separadorLargo: true },
 ];
 
 const TABS_VALIDAS = new Set([...TABS.map(t => t.id), 'speedbox']);
@@ -153,73 +155,6 @@ const VARIABLES_CONFIRMACION_PEDIDO = [
   { variable: '{producto}', desc: 'Producto(s) del pedido', ejemplo: 'Chomba Lacoste Clásica' },
   { variable: '{total}', desc: 'Total del pedido', ejemplo: 'Gs 150.000' },
 ];
-
-/**
- * Una plantilla de WhatsApp (textarea + variables + burbuja de preview).
- * `uso` dice en qué botones de la tienda se envía: es lo que distingue la
- * consulta de producto de la general.
- */
-function PlantillaWhatsapp({ titulo, uso, textareaRef, valor, onChange, placeholder, variables, onInsertar, urlPublica, preview, ayudaVacio }) {
-  return (
-    <div className="tn-msg-plantilla">
-      <div className="tn-msg-plantilla-head">
-        <span className="tn-msg-plantilla-titulo">{titulo}</span>
-        <span className="tn-msg-plantilla-uso"><Info size={12} /> {uso}</span>
-      </div>
-      <div className="tn-msg-grid">
-        <div className="tn-msg-builder">
-          <span className="tn-field-label">Texto del mensaje</span>
-          <textarea
-            ref={textareaRef}
-            className="tn-msg-textarea"
-            value={valor}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder}
-            maxLength={300}
-            rows={3}
-          />
-          {ayudaVacio && !valor && <span className="tn-field-hint">{ayudaVacio}</span>}
-
-          <div className="tn-msg-vars-header">
-            <MousePointerClick size={12} />
-            <span>Hacé clic para insertar una variable</span>
-          </div>
-          <div className="tn-msg-vars">
-            {variables.map(v => (
-              <button
-                key={v.variable}
-                type="button"
-                className="tn-msg-var-chip"
-                onClick={() => onInsertar(v.variable)}
-                title={`${v.desc} — ej: ${v.ejemplo || urlPublica}`}
-              >
-                {v.variable}
-                <span className="tn-var-desc">— {v.desc}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="tn-msg-preview-wrap">
-          <div className="tn-msg-preview-label">
-            <Eye size={12} />
-            <span>Preview — así se ve en WhatsApp</span>
-          </div>
-          <div className="tn-msg-preview-bg">
-            {preview ? (
-              <div className="tn-msg-preview-bubble">
-                {preview}
-                <span className="tn-preview-time">10:30 a.m.</span>
-              </div>
-            ) : (
-              <div className="tn-msg-preview-empty">Escribí un mensaje arriba para ver el preview.</div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // La creación de la tienda vive en /onboarding (nombre + plan, primer paso
 // de una cuenta nueva) — a esta pantalla solo se llega ya con una tienda
@@ -259,6 +194,7 @@ export default function ConfigurarTienda() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabInicial = searchParams.get('tab');
   const [tienda, setTienda] = useState(null);
+  const [mensajeAbierto, setMensajeAbierto] = useState(null);
   const [recursosEstado, setRecursosEstado] = useState({});
   const cargarEstados = useCallback(async () => {
     const resultados = await Promise.allSettled([
@@ -623,7 +559,7 @@ export default function ConfigurarTienda() {
 
   function insertarVariable(variable, campo = 'mensaje_contacto', ref = textareaRef) {
     const ta = ref.current;
-    const texto = form[campo] || '';
+    const texto = ta?.value ?? form[campo] ?? '';
     if (!ta) {
       handleChange(campo, texto + variable);
       return;
@@ -759,9 +695,8 @@ export default function ConfigurarTienda() {
       <header className="tn-page-head">
         <div className="tn-page-head-top">
           <div>
-            <span className="tn-store-eyebrow"><Store size={13} /> {tienda?.nombre || 'Tu negocio'}</span>
             <h1>Mi tienda</h1>
-            <p>Tu marca, tus clientes y todo lo que hace funcionar tu negocio.</p>
+            <p>Dale tu identidad y prepará tu negocio para vender.</p>
           </div>
           <button
             type="button"
@@ -773,6 +708,22 @@ export default function ConfigurarTienda() {
           </button>
         </div>
       </header>
+
+      <section className="tn-store-card" aria-label="Tu negocio en línea">
+        <div className="tn-store-avatar">
+          {tienda?.logo_imagen
+            ? <img src={getMediaUrl(tienda.logo_imagen)} alt="" />
+            : <Store size={28} aria-hidden="true" />}
+        </div>
+        <div className="tn-store-card-info">
+          <span className="tn-store-eyebrow">TU NEGOCIO EN LÍNEA</span>
+          <h2>{tienda?.nombre || 'Tu negocio'}</h2>
+          {tienda?.subdominio && <span className="tn-store-address"><Globe size={14} aria-hidden="true" />{tienda.dominio_propio || `${tienda.subdominio}.${tienda.dominio_base || 'gesicomm.com'}`}</span>}
+        </div>
+        {tienda?.subdominio && <a className="tn-visit-store" href={`https://${tienda.dominio_propio || `${tienda.subdominio}.${tienda.dominio_base || 'gesicomm.com'}`}`} target="_blank" rel="noopener noreferrer">
+          Ver mi tienda <ExternalLink size={16} aria-hidden="true" />
+        </a>}
+      </section>
 
       <div className="tn-shell">
         <details className="tn-mobile-navigation">
@@ -801,16 +752,8 @@ export default function ConfigurarTienda() {
             const Icono = t.icono;
             const activo = tabActual.id === t.id;
             return (
-              <React.Fragment key={t.id}>
-                {idx > 0 && (
-                  <span className={`tn-tab-arrow${t.separadorLargo ? ' tn-tab-arrow-long' : ''}`} aria-hidden="true">
-                    {t.separadorLargo ? (
-                      <svg width="56" height="12" viewBox="0 0 56 12" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 6h54m-5-5 5 5-5 5" />
-                      </svg>
-                    ) : <ArrowRight size={12} />}
-                  </span>
-                )}
+              <div key={t.id} className="tn-tab-step" role="presentation">
+                {idx > 0 && <span className="tn-tab-arrow" aria-hidden="true"><ArrowRight size={15} /></span>}
                 <button
                   type="button"
                   role="tab"
@@ -824,30 +767,13 @@ export default function ConfigurarTienda() {
                   {t.label}
                   <EstadoSeccion estado={estadosSecciones[t.id]} compacto />
                 </button>
-              </React.Fragment>
+              </div>
             );
           })}
         </nav>
 
         <div className="tn-panel">
           <div className="tn-panel-head">
-            {tab === 'pasarelas' && (
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '0.22rem 0.65rem',
-                borderRadius: '0.375rem',
-                background: 'var(--vit-accent)',
-                color: "var(--color-fg)",
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                marginBottom: '0.5rem'
-              }}>
-                PASO 1
-              </div>
-            )}
             <div className="tn-panel-title-status"><h2>{tabActual.titulo}</h2><EstadoSeccion estado={estadosSecciones[tabActual.id]} /></div>
             {!estadosSecciones[tabActual.id].completo && <p className="tn-section-next-step">{estadosSecciones[tabActual.id].detalle}</p>}
             <p>{tabActual.desc}</p>
@@ -966,8 +892,8 @@ export default function ConfigurarTienda() {
                   {/* Branding */}
                   <GrupoConfiguracion>
                     <div className="tn-group-head">
-                      <h3><Palette size={16} /> Branding</h3>
-                      <p>El logo y los colores se aplican al catálogo público y a las landings. Si editás el tema desde el armador, también se reflejan acá.</p>
+                      <h3><Palette size={16} /> Logo y colores</h3>
+                      <p>La imagen de tu marca en tu tienda online y tus páginas de venta.</p>
                     </div>
                     <div className="tn-group-body">
                       <div className="tn-logo-field">
@@ -1512,15 +1438,17 @@ export default function ConfigurarTienda() {
 
                   {/* Mensajes de WhatsApp: consulta de producto y consulta general */}
 
-                  <GrupoConfiguracion>
-                    <div className="tn-group-head">
-                      <h3>Mensajes de WhatsApp para consultas y pedidos</h3>
-                      <p>Tres textos editables: consulta de producto, consulta general y confirmación de pedido.</p>
-                    </div>
-                    <div className="tn-group-body tn-msg-plantillas">
+                  <section className="tn-whatsapp-settings" aria-labelledby="tn-whatsapp-title">
+                    <header className="tn-whatsapp-heading"><span className="tn-whatsapp-heading-icon"><MessageCircle size={22} /></span><div><h3 id="tn-whatsapp-title">Mensajes de WhatsApp</h3><p>Personalizá las consultas que recibís y las confirmaciones que enviás.</p></div></header>
+                    <section className="tn-message-category" aria-labelledby="tn-incoming-title"><header><h4 id="tn-incoming-title">Consultas que recibís</h4><p>El cliente inicia la conversación desde tu tienda online.</p></header>
+                    <div className="tn-message-list">
                       <PlantillaWhatsapp
                         titulo="Consulta de producto"
-                        uso="Se envía cuando el cliente consulta un producto: el botón “Consultar por WhatsApp” de la ficha del producto y el ícono flotante mientras mira esa ficha."
+                        uso="Desde la ficha de un producto o su botón de consulta."
+                        recomendado={FORM_INICIAL.mensaje_contacto}
+                        guardado={tienda?.mensaje_contacto}
+                        abierto={mensajeAbierto === 'producto'}
+                        onToggle={() => setMensajeAbierto(prev => prev === 'producto' ? null : 'producto')}
                         textareaRef={textareaRef}
                         valor={form.mensaje_contacto}
                         onChange={v => handleChange('mensaje_contacto', v)}
@@ -1532,7 +1460,11 @@ export default function ConfigurarTienda() {
                       />
                       <PlantillaWhatsapp
                         titulo="Consulta general"
-                        uso="Se envía cuando el cliente te escribe sin estar mirando un producto: en la página de inicio, en las categorías, el botón “Escribinos por WhatsApp” y el ícono flotante fuera de la ficha."
+                        uso="Desde el inicio, las categorías o el contacto de tu tienda."
+                        recomendado={MENSAJE_GENERAL_PLACEHOLDER}
+                        guardado={tienda?.mensaje_consulta_general}
+                        abierto={mensajeAbierto === 'general'}
+                        onToggle={() => setMensajeAbierto(prev => prev === 'general' ? null : 'general')}
                         textareaRef={textareaGeneralRef}
                         valor={form.mensaje_consulta_general}
                         onChange={v => handleChange('mensaje_consulta_general', v)}
@@ -1543,9 +1475,16 @@ export default function ConfigurarTienda() {
                         preview={previewMensajeGeneral}
                         ayudaVacio={`Si lo dejás vacío se envía “${MENSAJE_GENERAL_PLACEHOLDER}”`}
                       />
+                    </div></section>
+                    <section className="tn-message-category" aria-labelledby="tn-outgoing-title"><header><h4 id="tn-outgoing-title">Mensajes que enviás</h4><p>Acompañá al cliente después de su compra.</p></header><div className="tn-message-list">
                       <PlantillaWhatsapp
                         titulo="Confirmación de pedido"
-                        uso="Se ofrece enviar al confirmar un pedido en Gestión Comercial: un pop-up te deja mandarlo (o editarlo antes) con los datos de ese pedido."
+                        uso="Al confirmar un pedido, revisás el texto antes de enviarlo."
+                        salida
+                        recomendado={MENSAJE_CONFIRMACION_DEFAULT}
+                        guardado={tienda?.mensaje_confirmacion_pedido}
+                        abierto={mensajeAbierto === 'confirmacion'}
+                        onToggle={() => setMensajeAbierto(prev => prev === 'confirmacion' ? null : 'confirmacion')}
                         textareaRef={textareaConfirmacionRef}
                         valor={form.mensaje_confirmacion_pedido}
                         onChange={v => handleChange('mensaje_confirmacion_pedido', v)}
@@ -1557,7 +1496,7 @@ export default function ConfigurarTienda() {
                         ayudaVacio={`Si lo dejás vacío se envía “${MENSAJE_CONFIRMACION_DEFAULT}”`}
                       />
                     </div>
-                  </GrupoConfiguracion>
+                  </section></section>
                 </div>
               )}
 
@@ -1594,7 +1533,7 @@ export default function ConfigurarTienda() {
                     </div>
                     </details>
 
-                    <section className="tn-group tn-group-plena" style={{ borderTop: 'none', paddingTop: 0 }}>
+                    <section className="tn-group tn-group-plena">
                       <div className="tn-group-body">
                         <div className="tn-embed tn-embed-metodos-pago">
                           <MetodosPagoCrud onMetodosChange={actualizarPagos} />

@@ -163,7 +163,7 @@ export default function AdsEnVivo() {
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary-text">
           <Store size={20} />
         </div>
-        <p className="m-0 max-w-sm text-sm text-fg-muted">No tenés tiendas conectadas todavía. Conectá tu cuenta de Meta para ver métricas en vivo acá.</p>
+        <h2>Conectá Meta para ver tus métricas</h2><p className="m-0 max-w-sm text-sm text-fg-muted">No tenés tiendas conectadas todavía. Conectá tu cuenta de Meta para ver métricas en vivo acá.</p>
         <a href={rutaConfiguracion} className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:text-primary-text">
           Ir a Configuración <ArrowRight size={14} />
         </a>
@@ -177,7 +177,7 @@ export default function AdsEnVivo() {
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-danger/10 text-danger">
           <AlertTriangle size={20} />
         </div>
-        <p className="m-0 max-w-sm text-sm text-danger">{error}</p>
+        <h2>Necesitamos revisar tu conexión con Meta</h2><p className="m-0 max-w-sm text-sm text-fg-muted">La sesión puede haber vencido o faltan permisos. Revisá la conexión desde Configuración y volvé a intentarlo.</p><details className="ads-technical-error"><summary>Ver detalle técnico</summary><p>{error}</p></details>
         <a href={rutaConfiguracion} className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:text-primary-text">
           Ir a Configuración <ArrowRight size={14} />
         </a>

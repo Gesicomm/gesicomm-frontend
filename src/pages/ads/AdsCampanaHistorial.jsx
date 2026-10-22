@@ -98,7 +98,7 @@ export default function AdsCampanaHistorial({ campana, onVolver, onEditar, onCam
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="ads-history flex flex-col gap-4">
       {/* ---- Encabezado ---- */}
       <div>
         <button type="button" onClick={onVolver} className="mb-2 inline-flex items-center gap-1.5 border-none bg-transparent p-0 text-xs text-fg-muted hover:text-fg">
@@ -111,7 +111,7 @@ export default function AdsCampanaHistorial({ campana, onVolver, onEditar, onCam
               {campana.tipo === 'whatsapp'
                 ? <MessageCircle size={18} color="var(--color-success)" />
                 : <Globe size={18} color="var(--color-primary-text)" />}
-              <h2 className="m-0 text-base font-semibold text-fg">{campana.nombre_display}</h2>
+              <h2 className="m-0 text-base font-semibold text-fg">{campana.productos?.map(p => p.nombre).join(', ') || campana.nombre_display}</h2>
               <span className="badge" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
             </div>
 

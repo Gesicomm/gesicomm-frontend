@@ -12,7 +12,7 @@
 .st-page .st-card { max-width: 520px; padding: 32px; gap: 28px; box-shadow: 0 12px 40px rgb(8 17 31 / 5%); }
 .st-page .onb-step-content { gap: 18px; }
 .st-page h1 { font-size: 1.65rem; font-weight: 750; letter-spacing: -0.04em; }
-.st-page .onb-subtitle { margin: -10px 0 2px; font-size: 0.85rem; }
+.st-page .onb-subtitle { margin: -10px 0 2px; font-size: var(--ui-text-help, 0.875rem); }
 .st-cargando { display: flex; justify-content: center; padding: 24px; color: var(--color-fg-muted); }
 .st-lista { display: flex; flex-direction: column; gap: 12px; }
 .st-tienda { min-width: 0; overflow: hidden; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
@@ -22,27 +22,27 @@
 .st-item-logo img { width: 100%; height: 100%; object-fit: cover; }
 .st-item-info { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
 .st-item-info strong { font-size: 0.95rem; font-weight: 700; overflow-wrap: anywhere; }
-.st-item-info small { font-size: 0.75rem; color: var(--color-fg-muted); overflow-wrap: anywhere; }
+.st-item-info small { font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted); overflow-wrap: anywhere; }
 .st-entrar { display: flex; flex-shrink: 0; color: var(--color-fg-muted); }
 .st-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px 8px 16px; border-top: 1px solid var(--color-border); background: var(--color-canvas); }
-.st-estado { display: inline-flex; align-items: center; gap: 6px; color: var(--color-success); font-size: 0.72rem; font-weight: 700; }
+.st-estado { display: inline-flex; align-items: center; gap: 6px; color: var(--color-success); font-size: var(--ui-text-help, 0.875rem); font-weight: 700; }
 .st-inactiva { color: var(--color-fg-muted); }
 .st-estado-punto { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .st-pie { flex-wrap: wrap; }
 .st-pie-acciones { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .st-eliminar:not(:disabled) { color: var(--color-danger); }
-.st-confirmar-nombre { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; font-size: 0.8rem; color: var(--color-fg); }
+.st-confirmar-nombre { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg); }
 .st-confirmar-nombre input { min-width: 0; width: 100%; padding: 10px; border: 1px solid var(--color-border-strong); border-radius: 8px; background: var(--color-canvas); color: var(--color-fg); font: inherit; }
-.st-cambiar-estado { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 6px 10px; border: 1px solid var(--color-border-strong); border-radius: 7px; background: var(--color-surface); color: var(--color-fg-muted); font: inherit; font-size: 0.74rem; font-weight: 600; cursor: pointer; }
+.st-cambiar-estado { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 6px 10px; border: 1px solid var(--color-border-strong); border-radius: 7px; background: var(--color-surface); color: var(--color-fg-muted); font: inherit; font-size: var(--ui-text-help, 0.875rem); font-weight: 600; cursor: pointer; }
 .st-cambiar-estado:hover:not(:disabled) { color: var(--color-fg); background: var(--color-surface-2); }
 .st-page button:disabled { opacity: 0.55; cursor: default; }
 .st-page button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -3px; }
 .st-confirmacion { padding: 16px; border-top: 1px solid var(--color-border); }
-.st-confirmacion p, .st-feedback { margin: 0; color: var(--color-fg-muted); font-size: 0.8rem; line-height: 1.65; }
+.st-confirmacion p, .st-feedback { margin: 0; color: var(--color-fg-muted); font-size: var(--ui-text-help, 0.875rem); line-height: 1.65; }
 .st-feedback:empty { display: none; }
 .st-feedback:not(:empty) { padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; }
 .st-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.st-acciones .onb-btn-secondary { flex: 1 1 140px; padding: 8px; font-size: 0.75rem; }
+.st-acciones .onb-btn-secondary { flex: 1 1 140px; padding: 8px; font-size: var(--ui-text-help, 0.875rem); }
 .st-acciones .st-confirmar { background: var(--color-danger); border-color: var(--color-danger); color: var(--color-danger-fg); }
 .st-acciones .st-confirmar:hover:not(:disabled) { background: var(--color-danger); filter: brightness(1.08); }
 .st-page .st-crear { gap: 8px; min-height: 44px; background: var(--color-fg); color: var(--color-surface); border-color: var(--color-fg); }

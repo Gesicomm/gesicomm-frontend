@@ -55,7 +55,7 @@
 }
 
 .prod-subtitle {
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-text-mut, var(--color-fg-muted));
   margin: 0;
 }
@@ -87,7 +87,7 @@
   height: 30px;
   padding: 0.3rem 0.6rem;
   gap: 0.3rem;
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   white-space: nowrap;
 }
 
@@ -113,7 +113,7 @@
   background: color-mix(in srgb, var(--color-fg) 4%, transparent);
   color: var(--color-fg);
   outline: none;
-  font-size: 12px;
+  font-size: var(--ui-text-help, 0.875rem);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
@@ -189,7 +189,7 @@
 .filter-check {
   display: flex; align-items: center; gap: 0.35rem;
   color: var(--color-warning);
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -207,7 +207,7 @@
   color: var(--color-fg-muted);
   border-radius: 8px;
   padding: 0.45rem 0.8rem;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -245,7 +245,7 @@
   padding: 0.875rem 1rem;
   text-align: left;
   color: var(--color-fg-subtle);
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -296,7 +296,7 @@
   gap: 0.4rem;
   margin-top: 0.25rem;
   color: var(--color-fg-subtle);
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .badge-star {
@@ -305,12 +305,12 @@
   color: var(--color-warning);
   border-radius: 4px;
   padding: 0.1rem 0.4rem;
-  font-size: 0.7rem;
+  font-size: var(--ui-text-help, 0.875rem);
   margin-left: 0.5rem;
 }
 
 .owner-badge {
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   padding: 0.12rem 0.38rem;
   background: color-mix(in srgb, var(--color-fg) 5%, transparent);
   color: var(--color-fg-muted);
@@ -323,7 +323,7 @@
 
 .sku-tag {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted);
   background: color-mix(in srgb, var(--color-fg) 5%, transparent);
   padding: 0.15rem 0.4rem;
@@ -342,12 +342,12 @@
 }
 .anchor-price {
   color: var(--color-fg-subtle);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   text-decoration: line-through;
 }
 .stock-mini-label {
   color: var(--color-fg-subtle);
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 /* Estado de venta */
@@ -355,7 +355,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   padding: 0.2rem 0.65rem;
   border-radius: 20px;
@@ -378,7 +378,7 @@
   font-weight: 600;
   padding: 0.2rem 0.6rem;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 .stock-badge.stock-ok  { background: color-mix(in srgb, var(--color-success) 15%, transparent); color: var(--color-success); }
 .stock-badge.stock-low { background: color-mix(in srgb, var(--color-danger) 15%, transparent);  color: var(--color-danger); }
@@ -400,7 +400,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-fg) 5%, transparent);
   color: var(--color-fg-muted);
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -478,7 +478,7 @@
   border: 1px solid transparent;
   border-radius: 7px;
   color: var(--color-fg-subtle);
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 500;
   padding: 0.35rem 0.65rem;
   cursor: pointer;
@@ -496,7 +496,7 @@
 .btn-pag-num:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .pag-dots { color: var(--color-fg-subtle); padding: 0 0.2rem; font-size: 0.9rem; }
-.pag-info { color: var(--color-fg-subtle); font-size: 0.8rem; margin-left: 0.5rem; white-space: nowrap; }
+.pag-info { color: var(--color-fg-subtle); font-size: var(--ui-text-help, 0.875rem); margin-left: 0.5rem; white-space: nowrap; }
 
 /* ─── Overlay de tabla al recargar ───────────────── */
 .prod-table-inner {
@@ -637,18 +637,18 @@
   border-radius: 8px;
   background: color-mix(in srgb, var(--color-primary) 5%, transparent);
 }
-.prod-requirements > strong { font-size: 0.86rem; color: var(--color-fg); }
+.prod-requirements > strong { font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg); }
 .prod-requirements-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin-top: 0.65rem; }
-.prod-requirements-row > span { font-size: 0.75rem; color: var(--color-fg-muted); margin-right: 0.3rem; }
+.prod-requirements-row > span { font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted); margin-right: 0.3rem; }
 .prod-requirements-row > button {
   display: inline-flex; align-items: center; gap: 0.35rem;
-  padding: 0.3rem 0.5rem; font: inherit; font-size: 0.73rem;
+  padding: 0.3rem 0.5rem; font: inherit; font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted); border: 1px solid color-mix(in srgb, var(--color-fg) 15%, transparent);
   border-radius: 5px; background: transparent; cursor: pointer;
 }
 .prod-requirements-row > button.ready { color: var(--color-success); }
 .prod-requirements-row > button:hover { border-color: var(--color-primary); color: var(--color-fg); }
-.prod-requirements p, .prod-offer-draft-hint { font-size: 0.75rem; line-height: 1.5; color: var(--color-fg-muted); }
+.prod-requirements p, .prod-offer-draft-hint { font-size: var(--ui-text-help, 0.875rem); line-height: 1.5; color: var(--color-fg-muted); }
 .prod-requirements p { margin: 0.65rem 0 0; }
 .prod-offer-draft-hint { padding: 0.7rem; border-radius: 6px; background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
 
@@ -719,7 +719,7 @@
 .prod-step-copy > span {
   display: block;
   color: var(--color-fg);
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
   line-height: 1.2;
 }
@@ -728,7 +728,7 @@
   display: block;
   margin-top: 0.2rem;
   color: var(--color-fg-subtle);
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.25;
 }
 
@@ -749,7 +749,7 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--color-fg) 5%, transparent);
   color: var(--color-fg-subtle);
-  font-size: 0.66rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-style: normal;
   font-weight: 700;
   text-transform: uppercase;
@@ -767,7 +767,7 @@
 
 .form-group { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
 .form-group label {
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--color-fg-muted);
   letter-spacing: 0.02em;
@@ -798,8 +798,8 @@
 
 .req { color: var(--color-danger); }
 .hint { color: var(--color-fg-subtle); font-weight: 400; }
-.field-error { color: var(--color-danger); font-size: 0.78rem; }
-.field-hint { color: var(--color-fg-subtle); font-size: 0.78rem; margin: 0; }
+.field-error { color: var(--color-danger); font-size: var(--ui-text-help, 0.875rem); }
+.field-hint { color: var(--color-fg-subtle); font-size: var(--ui-text-help, 0.875rem); margin: 0; }
 
 .empty-inline-state {
   min-height: 42px;
@@ -812,7 +812,7 @@
   border-radius: 8px;
   background: var(--color-surface-2);
   color: var(--color-fg-muted);
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .empty-inline-state a {
@@ -891,19 +891,19 @@
 }
 
 .tax-toggle strong {
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.2;
 }
 
 .tax-toggle small {
   color: var(--color-fg-muted);
-  font-size: 0.76rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.35;
 }
 
 .form-section-title {
   display: flex; align-items: center; gap: 0.5rem;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   color: var(--color-fg-subtle);
   text-transform: uppercase;
@@ -1051,7 +1051,7 @@
 
 .commercial-summary span {
   color: var(--color-fg-subtle);
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 700;
@@ -1091,7 +1091,7 @@
 }
 .inventory-status {
   color: var(--color-fg-muted);
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   margin-top: 0.15rem;
 }
 .inventory-meter {
@@ -1157,7 +1157,7 @@
 .prod-summary-panel p {
   margin: 0.25rem 0 0;
   color: var(--color-fg-subtle);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 .summary-price {
   display: flex;
@@ -1167,7 +1167,7 @@
 .summary-price span {
   color: var(--color-fg-subtle);
   text-decoration: line-through;
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 .summary-price strong {
   color: var(--color-success);
@@ -1188,7 +1188,7 @@
 .summary-list span {
   display: block;
   color: var(--color-fg-subtle);
-  font-size: 0.7rem;
+  font-size: var(--ui-text-help, 0.875rem);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-weight: 700;
@@ -1213,7 +1213,7 @@
   background: color-mix(in srgb, var(--color-warning) 13%, transparent);
   border-radius: 8px;
   padding: 0.45rem 0.6rem;
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
 }
 
@@ -1235,7 +1235,7 @@
 .product-preview-kicker {
   display: block;
   color: var(--color-fg-subtle);
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1261,7 +1261,7 @@
   border-radius: 7px;
   background: color-mix(in srgb, var(--color-fg) 3%, transparent);
   color: var(--color-fg-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   cursor: pointer;
 }
@@ -1357,7 +1357,7 @@
   display: block;
   margin-top: 0.2rem;
   color: var(--color-fg-subtle);
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.35;
 }
 .offer-strategy-card b {
@@ -1371,7 +1371,7 @@
   display: grid;
   grid-template-columns: 52px 2fr 1.2fr 0.85fr 65px 1.2fr 40px;
   gap: 0.6rem;
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   color: var(--color-fg-subtle);
   text-transform: uppercase;
@@ -1429,7 +1429,7 @@
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
   background: color-mix(in srgb, var(--color-fg) 3.5%, transparent);
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg);
   transition: all 0.18s ease;
 }
@@ -1597,7 +1597,7 @@
   width: auto;
   min-width: 2.5ch;
   max-width: 16ch;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--color-fg);
   outline: none;
@@ -1624,7 +1624,7 @@
   border: 1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent) !important;
   border-radius: 999px !important;
   padding: 0.3rem 0.85rem !important;
-  font-size: 0.83rem;
+  font-size: var(--ui-text-help, 0.875rem);
   width: 7rem !important;
   background: color-mix(in srgb, var(--color-fg) 2%, transparent) !important;
   color: var(--color-fg) !important;
@@ -1677,7 +1677,7 @@
 
 .combinacion-original-sub {
   margin: 0.25rem 0 0 0;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted);
   line-height: 1.45;
 }
@@ -1694,7 +1694,7 @@
 }
 
 .combinacion-original-select-label {
-  font-size: 0.84rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--color-fg);
   white-space: nowrap;
@@ -1773,7 +1773,7 @@
 }
 .variantes-info-card p {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.5;
   color: var(--color-fg-muted);
 }
@@ -1802,7 +1802,7 @@
   border-radius: 8px;
 }
 .combinacion-original label {
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
 }
 .combinacion-original select {
@@ -1922,7 +1922,7 @@
 .rubro-section-heading label {
   margin: 0;
   color: var(--color-fg);
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
   letter-spacing: 0;
 }
@@ -1931,7 +1931,7 @@
 .rubro-section-heading p {
   margin: 0.22rem 0 0;
   color: var(--color-fg-subtle);
-  font-size: 0.76rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.35;
 }
 
@@ -1998,7 +1998,7 @@
   background: var(--color-surface);
   color: var(--color-fg-muted);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 650;
   cursor: pointer;
 }
@@ -2023,7 +2023,7 @@
 .rubro-empty-lock p {
   margin: 0.22rem 0 0;
   color: var(--color-fg-subtle);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .rubro-field-card {
@@ -2066,7 +2066,7 @@
 
 .rubro-field span {
   color: var(--color-fg-subtle);
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -2080,7 +2080,7 @@
   border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-fg);
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -2207,7 +2207,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  font-size: 0.65rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted);
 }
 .imagen-card-meta input[type="range"] {
@@ -2228,7 +2228,7 @@
   position: absolute; bottom: 0; left: 0; right: 0;
   background: var(--color-primary);
   color: var(--color-primary-fg);
-  font-size: 0.7rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   text-align: center;
   padding: 0.2rem;
@@ -2260,7 +2260,7 @@
   z-index: 1;
   background: color-mix(in srgb, var(--color-success) 92%, transparent);
   color: var(--color-fg);
-  font-size: 0.6rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -2283,7 +2283,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   padding: 0.4rem 0.5rem;
   border-radius: 999px;
@@ -2348,7 +2348,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg);
 }
 .editor-encuadre-controles input[type="range"] {
@@ -2356,7 +2356,7 @@
 }
 .editor-encuadre-label {
   display: block;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   margin-bottom: 0.4rem;
   color: var(--color-fg);
@@ -2389,7 +2389,7 @@
   align-items: center; justify-content: center;
   gap: 0.5rem;
   color: var(--color-primary-text);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   cursor: pointer;
   transition: all 0.2s;
   background: color-mix(in srgb, var(--color-primary) 4%, transparent);
@@ -2578,7 +2578,7 @@
   border-radius: 12px;
   box-shadow: 0 8px 28px rgba(0,0,0,0.45);
   color: var(--color-fg);
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 500;
 }
 
@@ -2769,7 +2769,7 @@
 
 .imagen-preview-head p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted);
 }
 
@@ -2825,7 +2825,7 @@
 }
 
 .imagen-preview-comparacion-label {
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -2833,7 +2833,7 @@
 }
 
 .imagen-preview-calculando {
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted);
 }
 
@@ -2852,7 +2852,7 @@
 }
 
 .imagen-preview-controls > strong {
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   word-break: break-all;
   color: var(--color-fg);
 }
@@ -2861,7 +2861,7 @@
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg);
 }
 
@@ -2879,7 +2879,7 @@
   border: 0;
   background: transparent;
   color: var(--color-fg-muted);
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   padding: 0.4rem 0.7rem;
   border-radius: 999px;
@@ -2897,7 +2897,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-muted);
 }
 
@@ -2957,9 +2957,9 @@
 .oferta-tipo.active { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 9%, transparent); }
 .oferta-tipo:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .oferta-tipo strong { font-size: 0.88rem; }
-.oferta-tipo small { color: var(--color-fg-muted); font-size: 0.74rem; line-height: 1.35; }
+.oferta-tipo small { color: var(--color-fg-muted); font-size: var(--ui-text-help, 0.875rem); line-height: 1.35; }
 .oferta-mas { margin-top: 1rem; }
-.oferta-mas > summary { color: var(--color-fg-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.oferta-mas > summary { color: var(--color-fg-muted); font-size: var(--ui-text-help, 0.875rem); font-weight: 600; cursor: pointer; }
 .oferta-mas > summary:hover { color: var(--color-fg); }
 .oferta-preview-card {
   width: 100%;
@@ -2999,7 +2999,7 @@
   background: color-mix(in srgb, var(--color-accent) 16%, transparent);
   color: var(--color-fg);
   font: inherit;
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
   text-align: left;
 }
@@ -3065,7 +3065,7 @@
 .oferta-preview-copy p {
   margin: 0;
   color: var(--color-fg-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.42;
 }
 .oferta-preview-eyebrow,
@@ -3076,7 +3076,7 @@
   align-items: center;
   gap: 0.35rem;
   color: color-mix(in srgb, var(--color-accent-text) 82%, var(--color-fg));
-  font-size: 0.66rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 900;
   line-height: 1.1;
   text-transform: uppercase;
@@ -3102,11 +3102,11 @@
 }
 .oferta-preview-price del {
   color: var(--color-fg-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 .oferta-preview-price span {
   color: var(--color-success);
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 900;
 }
 .oferta-preview-price--stacked {
@@ -3127,7 +3127,7 @@
   background: var(--color-accent);
   color: var(--color-accent-contrast, var(--color-fg));
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 900;
 }
 @media (max-width: 640px) {
@@ -3194,7 +3194,7 @@
 .import-modal-header p {
   margin: 0.35rem 0 0;
   color: var(--color-fg-muted);
-  font-size: 0.84rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.45;
 }
 
@@ -3234,7 +3234,7 @@
 
 .import-dropzone small {
   color: var(--color-fg-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .import-alert {
@@ -3244,7 +3244,7 @@
   gap: 0.5rem;
   padding: 0.75rem 0.85rem;
   border-radius: 9px;
-  font-size: 0.84rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.4;
 }
 
@@ -3261,7 +3261,7 @@
   list-style: decimal;
   display: grid;
   gap: 0.85rem;
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.45;
 }
 
@@ -3295,7 +3295,7 @@
 .import-columnas {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .import-columnas th,
@@ -3331,7 +3331,7 @@
 .import-columnas-ejemplo {
   min-width: 150px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.74rem;
+  font-size: var(--ui-text-help, 0.875rem);
   word-break: break-word;
 }
 
@@ -3362,7 +3362,7 @@
 .import-errors strong {
   display: block;
   color: var(--color-fg);
-  font-size: 0.84rem;
+  font-size: var(--ui-text-help, 0.875rem);
   margin-bottom: 0.55rem;
 }
 
@@ -3388,13 +3388,13 @@
 
 .import-errors span {
   color: var(--color-fg);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
 }
 
 .import-errors small {
   color: var(--color-fg-muted);
-  font-size: 0.77rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .import-modal-actions {
@@ -3424,7 +3424,7 @@
   background: var(--color-surface);
 }
 .rubro-imagen-vista img { width: 100%; height: 100%; object-fit: cover; }
-.rubro-imagen-error { color: var(--color-danger); font-size: 0.72rem; }
+.rubro-imagen-error { color: var(--color-danger); font-size: var(--ui-text-help, 0.875rem); }
 
 .stock-depositos-panel {
   margin-top: 1rem;
@@ -3452,7 +3452,7 @@
 .stock-variant-card-head small {
   margin: 0.2rem 0 0;
   color: var(--color-fg-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .stock-depositos-header > strong {
@@ -3496,13 +3496,13 @@
 
 .stock-deposito-row strong {
   color: var(--color-fg);
-  font-size: 0.84rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .stock-deposito-row small {
   margin-top: 0.16rem;
   color: var(--color-fg-muted);
-  font-size: 0.73rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .stock-deposito-row input {

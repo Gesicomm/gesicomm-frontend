@@ -18,7 +18,7 @@
   color: var(--color-fg);
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.4;
   width: max-content;
   max-width: 250px;

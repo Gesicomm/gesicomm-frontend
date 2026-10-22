@@ -165,7 +165,7 @@ export default function CourierPedidos() {
   }
 
   return (
-    <main className="cp-root">
+    <main className="gc-panel cp-root">
       <div className="cp-page">
         <header className="cp-header">
           <div className="cp-header-row">

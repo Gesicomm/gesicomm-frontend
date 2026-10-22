@@ -218,7 +218,7 @@ export default function RahaPortal() {
   const esPendiente = solicitud && ['en_revision', 'enviada_raha'].includes(solicitud.estado);
 
   return (
-    <div className="rp-root rp-portal">
+    <div className="gc-panel rp-root rp-portal">
       {/* Header */}
       <header className="rp-header">
         <div className="rp-header-brand">

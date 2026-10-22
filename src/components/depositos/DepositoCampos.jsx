@@ -204,12 +204,14 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
   );
 
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+    <div className="dep-fields grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+      <h3 className="dep-fields-heading sm:col-span-2">Datos del depósito</h3>
       <div className="sm:col-span-2">
         <label className="mb-1 block text-sm font-medium text-fg">Nombre del depósito *</label>
         <input
           type="text"
           name="nombre"
+          aria-label="Nombre del depósito"
           autoFocus={autoFocus}
           value={form.nombre}
           onChange={handleChange}
@@ -219,10 +221,12 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
         {errors.nombre && <p className="mt-1 text-[13px] text-danger">{errors.nombre}</p>}
       </div>
 
+      <h3 className="dep-fields-heading sm:col-span-2">Ubicación</h3>
       <div>
         <label className="mb-1 block text-sm font-medium text-fg">Departamento</label>
         <CreatableSelect
           isClearable
+          aria-label="Departamento"
           placeholder="Buscar departamento..."
           styles={selectStyles}
           options={optionsDepartamentos}
@@ -245,6 +249,7 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
         <label className="mb-1 block text-sm font-medium text-fg">Ciudad *</label>
         <CreatableSelect
           isClearable
+          aria-label="Ciudad"
           placeholder={form.departamento ? "Buscar ciudad del departamento..." : "Primero elegí departamento o buscá ciudad..."}
           styles={getErrorSelectStyles(Boolean(errors.ciudad))}
           options={optionsCiudades}
@@ -284,6 +289,7 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
         <input
           type="text"
           name="direccion"
+          aria-label="Dirección"
           value={form.direccion}
           onChange={handleChange}
           placeholder="Calle, número, barrio"
@@ -293,10 +299,11 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
       </div>
 
       <div className="sm:col-span-2">
-        <label className="mb-1 block text-sm font-medium text-fg">Referencia</label>
+        <label className="mb-1 block text-sm font-medium text-fg">Referencia (opcional)</label>
         <input
           type="text"
           name="referencia"
+          aria-label="Referencia"
           value={form.referencia || ''}
           onChange={handleChange}
           placeholder="Ej: frente a la plaza, portón negro"
@@ -304,11 +311,13 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
         />
       </div>
 
+      <h3 className="dep-fields-heading sm:col-span-2">Contacto <small>(opcional)</small></h3>
       <div>
         <label className="mb-1 block text-sm font-medium text-fg">Persona de contacto</label>
         <input
           type="text"
           name="personaContacto"
+          aria-label="Persona de contacto"
           value={form.personaContacto || ''}
           onChange={handleChange}
           placeholder="Quien recibe o entrega"
@@ -321,6 +330,7 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
         <input
           type="text"
           name="telefonoContacto"
+          aria-label="Teléfono de contacto"
           value={form.telefonoContacto || ''}
           onChange={handleChange}
           placeholder="Ej: 0991234567"
@@ -329,10 +339,11 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
       </div>
 
       <div className="sm:col-span-2">
-        <label className="mb-1 block text-sm font-medium text-fg">Link de Google Maps</label>
+        <label className="mb-1 block text-sm font-medium text-fg">Link de Google Maps (opcional)</label>
         <input
           type="text"
           name="googleMapsUrl"
+          aria-label="Link de Google Maps"
           value={form.googleMapsUrl || ''}
           onChange={handleChange}
           placeholder="https://maps.google.com/..."

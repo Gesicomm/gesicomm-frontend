@@ -105,7 +105,7 @@ for (const theme of ['light', 'dark']) {
     await expect(nav).toBeVisible();
     await nav.getByRole('link', { name: 'Mi tienda', exact: true }).click();
     await expect(page).toHaveURL(origin + '/mi-tienda');
-    await expect(page.getByRole('heading', { name: 'Configuración de tu tienda' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Mi tienda', exact: true })).toBeVisible();
     const target = theme === 'light' ? 'dark' : 'light';
     await page.getByRole('button', { name: `Cambiar a tema ${theme === 'light' ? 'oscuro' : 'claro'}` }).last().click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', target);

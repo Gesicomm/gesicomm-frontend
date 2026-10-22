@@ -1,0 +1,58 @@
+.tn-whatsapp-settings { display: grid; gap: 1.5rem; min-width: 0; padding: 1.5rem; border: 1px solid var(--vit-border); border-radius: 24px; background: var(--vit-surface); }
+.tn-whatsapp-heading { display: flex; align-items: flex-start; gap: 0.85rem; }
+.tn-whatsapp-heading-icon, .tn-message-icon { display: grid; place-items: center; flex: 0 0 42px; height: 42px; border-radius: 14px; background: color-mix(in srgb, var(--color-success) 10%, var(--vit-surface)); color: var(--color-success); }
+.tn-whatsapp-heading h3 { margin: 0 0 0.4rem; color: var(--vit-text); font-size: 1.05rem; }
+.tn-whatsapp-heading p, .tn-message-category > header p { margin: 0; font-size: var(--ui-text-help, 0.875rem); color: var(--vit-muted); line-height: 1.6; }
+.tn-message-category { display: grid; gap: 0.85rem; min-width: 0; }
+.tn-message-category > header h4 { margin: 0 0 0.25rem; color: var(--vit-text); font-size: 0.9rem; }
+.tn-message-category + .tn-message-category { border-top: 1px solid var(--vit-border); padding-top: 1.5rem; }
+.tn-message-list { display: grid; gap: 0.85rem; min-width: 0; }
+.tn-message-card { min-width: 0; border: 1px solid var(--vit-border); border-radius: 19px; background: var(--vit-surface); overflow: hidden; }
+.tn-message-card.is-open { border-color: color-mix(in srgb, var(--vit-accent-fg) 35%, var(--vit-border)); box-shadow: 0 5px 20px color-mix(in srgb, var(--vit-text) 4%, transparent); }
+.tn-message-summary { display: flex; gap: 0.85rem; align-items: flex-start; width: 100%; padding: 1.25rem; border: 0; background: transparent; color: var(--vit-text); font: inherit; text-align: left; cursor: pointer; }
+.tn-message-summary:hover { background: color-mix(in srgb, var(--vit-text) 2%, transparent); }
+.tn-message-summary:focus-visible, .tn-message-reset:focus-visible, .tn-msg-var-chip:focus-visible { outline: 2px solid var(--vit-accent-fg); outline-offset: -3px; }
+.tn-message-icon.outgoing { color: var(--vit-accent-fg); background: var(--vit-accent-soft); }
+.tn-message-overview { display: grid; gap: 0.4rem; flex: 1; min-width: 0; }
+.tn-message-title { font-size: 0.92rem; font-weight: 700; }
+.tn-message-direction { display: inline-flex; gap: 0.35rem; align-items: center; color: var(--vit-muted); font-size: var(--ui-text-help, 0.875rem); }
+.tn-message-use { font-size: var(--ui-text-help, 0.875rem); color: var(--vit-muted); line-height: 1.6; }
+.tn-message-excerpt { margin-top: 0.25rem; padding: 0.65rem 0.85rem; border-radius: 10px; background: var(--vit-bg); color: var(--vit-muted); font-size: var(--ui-text-help, 0.875rem); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.tn-message-summary-end { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+.tn-message-summary-end > svg { transition: transform 0.15s; }
+.is-open .tn-message-summary-end > svg { transform: rotate(180deg); }
+.tn-message-state { padding: 0.25rem 0.55rem; border-radius: 999px; background: var(--vit-bg); color: var(--vit-muted); font-size: var(--ui-text-help, 0.875rem); font-weight: 600; }
+.tn-message-state.unsaved { background: color-mix(in srgb, var(--color-warning) 12%, var(--vit-surface)); color: var(--vit-text); }
+.tn-message-editor { padding: 1.25rem; border-top: 1px solid var(--vit-border); }
+.tn-message-editor[hidden] { display: none; }
+.tn-message-editor .tn-msg-grid { gap: 1.5rem; align-items: start; }
+.tn-message-editor .tn-msg-textarea { min-height: 140px; }
+.tn-message-editor .tn-msg-var-chip { border-radius: 999px; min-height: 38px; font-family: inherit; }
+.tn-message-text-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; color: var(--vit-muted); font-size: var(--ui-text-help, 0.875rem); }
+.tn-message-data-label { margin-top: 0.6rem; color: var(--vit-text); font-size: var(--ui-text-help, 0.875rem); font-weight: 600; }
+.tn-message-help { margin: 0; color: var(--vit-muted); font-size: var(--ui-text-help, 0.875rem); line-height: 1.6; }
+.tn-message-reset { display: inline-flex; align-items: center; align-self: flex-start; gap: 0.4rem; min-height: 40px; margin-top: 0.35rem; border: 1px solid var(--vit-border); border-radius: 10px; padding: 0.45rem 0.65rem; color: var(--vit-text); background: var(--vit-surface); font: inherit; font-size: var(--ui-text-help, 0.875rem); cursor: pointer; }
+.tn-message-reset:disabled { opacity: 0.5; cursor: default; }
+.tn-message-chat { border: 1px solid var(--vit-border); border-radius: 17px; overflow: hidden; }
+.tn-message-chat-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem; background: var(--vit-bg); font-size: var(--ui-text-help, 0.875rem); color: var(--vit-text); }
+.tn-message-chat-head small { margin-left: auto; color: var(--vit-muted); font-size: var(--ui-text-help, 0.875rem); }
+.tn-message-chat-body { min-height: 145px; display: flex; align-items: flex-start; padding: 1.25rem; background: color-mix(in srgb, var(--color-success) 5%, var(--vit-bg)); }
+.tn-message-chat-body.outgoing { justify-content: flex-end; }
+.tn-message-chat-body.incoming .tn-msg-preview-bubble { --tn-wa-bubble-bg: var(--vit-surface); color: var(--vit-text); border: 1px solid var(--vit-border); }
+.tn-message-chat-body.incoming .tn-preview-time { color: var(--vit-muted); }
+.tn-message-chat .tn-preview-time { display: flex; gap: 0.2rem; align-items: center; }
+.tn-message-delivery-note { margin: 1.25rem 0 0; border-radius: 12px; padding: 0.8rem; color: var(--vit-muted); background: var(--vit-bg); font-size: var(--ui-text-help, 0.875rem); line-height: 1.7; }
+.tn-message-dirty { margin: 0.7rem 0 0; color: var(--vit-text); font-size: var(--ui-text-help, 0.875rem); }
+@media (min-width: 1000px) { .tn-message-editor .tn-msg-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .tn-whatsapp-settings { padding: 1rem; border-radius: 20px; gap: 1.25rem; }
+  .tn-whatsapp-heading h3 { font-size: 0.96rem; }
+  .tn-message-summary { flex-wrap: wrap; padding: 1rem; gap: 0.7rem; }
+  .tn-message-summary-end { width: 100%; justify-content: space-between; }
+  .tn-message-editor { padding: 1rem; }
+  .tn-message-icon { flex-basis: 32px; height: 32px; border-radius: 10px; }
+  .tn-message-title { font-size: var(--ui-text-help, 0.875rem); }
+  .tn-message-chat-body { padding: 1rem; }
+  .tn-message-editor .tn-msg-var-chip { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { .tn-message-summary-end > svg { transition: none; } }

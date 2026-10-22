@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { X, Wallet, Loader2 } from 'lucide-react';
+import { useAdsDialog } from './useAdsDialog';
 import CurrencyInput from '../../components/CurrencyInput';
 import { metaReportesService } from '../../services/metaReportesService';
 import { formatPYG, formatNum, diasEntre, diaSiguiente } from './adsShared';
@@ -21,6 +22,8 @@ export default function GastoCampanaModal({ open, campana, gastoEditar = null, o
   const [error, setError] = useState(null);
 
   const esEdicion = Boolean(gastoEditar);
+  const dirty = esEdicion ? (desde !== gastoEditar.fecha_desde || hasta !== gastoEditar.fecha_hasta || String(monto) !== String(gastoEditar.monto) || nota !== (gastoEditar.nota || '')) : Boolean(hasta || monto || nota);
+  const { dialogRef, requestClose, aviso } = useAdsDialog(open && Boolean(campana), onClose, guardando, dirty);
 
   useEffect(() => {
     if (!open) return;
@@ -68,8 +71,8 @@ export default function GastoCampanaModal({ open, campana, gastoEditar = null, o
   };
 
   return (
-    <div className="modal-overlay" onClick={guardando ? undefined : onClose}>
-      <div
+    <div className="modal-overlay ads-modal-overlay" onClick={requestClose}>
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={esEdicion ? 'Corregir gasto' : 'Cargar gasto'}
         className="flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border border-border-strong bg-surface text-fg shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -77,11 +80,12 @@ export default function GastoCampanaModal({ open, campana, gastoEditar = null, o
           <h2 className="m-0 flex items-center gap-2 text-[1.05rem] font-semibold">
             <Wallet size={18} className="text-primary-text" /> {esEdicion ? 'Corregir gasto' : 'Cargar gasto'}
           </h2>
-          <button type="button" className="btn-icon" onClick={onClose} disabled={guardando} title="Cerrar">
+          <button type="button" className="btn-icon" onClick={requestClose} disabled={guardando} title="Cerrar">
             <X size={18} />
           </button>
         </div>
 
+        {aviso}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 overflow-y-auto p-5">
           <div>
             <p className="m-0 text-[0.7rem] font-medium uppercase tracking-wide text-fg-subtle">Campaña</p>
@@ -156,7 +160,7 @@ export default function GastoCampanaModal({ open, campana, gastoEditar = null, o
           )}
 
           <div className="flex justify-end gap-2">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={guardando}>Cancelar</button>
+            <button type="button" className="btn-secondary" onClick={requestClose} disabled={guardando}>Cancelar</button>
             <button type="submit" className="btn-primary" disabled={guardando}>
               {guardando
                 ? <Loader2 size={16} className="animate-spin" />

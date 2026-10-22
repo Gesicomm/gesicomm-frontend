@@ -6,6 +6,7 @@ export default function DepositoCard({
   deposito,
   courierSummary,
   summaryLoading = false,
+  modoPropio = true,
   selected = false,
   onManage,
   onEdit,
@@ -20,7 +21,7 @@ export default function DepositoCard({
   const pendientes = courierSummary?.pendingCount ?? 0;
 
   return (
-    <div className={`flex flex-col gap-4 rounded-lg border bg-surface px-4 py-3 shadow-sm transition-all hover:border-primary/40 hover:shadow-md lg:grid lg:grid-cols-[minmax(260px,1fr)_minmax(170px,240px)_210px_auto] lg:items-center ${selected ? 'border-primary/60 ring-2 ring-primary/10' : 'border-border'}`}>
+    <div className={`dep-deposit-card flex flex-col gap-4 rounded-lg border bg-surface px-4 py-3 shadow-sm transition-all hover:border-primary/40 hover:shadow-md lg:grid lg:grid-cols-[minmax(260px,1fr)_minmax(170px,240px)_210px_auto] lg:items-center ${selected ? 'border-primary/60 ring-2 ring-primary/10' : 'border-border'}`}>
       <button
         type="button"
         onClick={() => onManage?.(deposito)}
@@ -34,10 +35,10 @@ export default function DepositoCard({
           <span className="mb-1 flex flex-wrap items-center gap-2">
             <h3 className="m-0 text-base font-semibold text-fg">{deposito.nombre}</h3>
             <DepositoStatusBadge activo={deposito.activo} />
-            {pendientes > 0 && (
+            {modoPropio && deposito.activo && !summaryLoading && courierSummary && (couriersAsignados === 0 || pendientes > 0) && (
               <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-semibold text-warning">
                 <AlertTriangle size={11} />
-                Por configurar
+                {couriersAsignados === 0 ? 'Sin transportista asignado' : 'Falta configurar cobertura'}
               </span>
             )}
           </span>
@@ -68,12 +69,12 @@ export default function DepositoCard({
 
       <div className="grid w-full grid-cols-2 gap-2 text-sm">
         <span className="rounded-md border border-border bg-surface-50 px-3 py-2">
-          <span className="block text-[11px] font-medium uppercase text-fg-muted">Couriers</span>
-          <span className="font-semibold text-fg">{summaryLoading ? '...' : couriersAsignados}</span>
+          <span className="block text-[11px] font-medium uppercase text-fg-muted">Transportistas</span>
+          <span className="font-semibold text-fg">{summaryLoading ? '...' : courierSummary ? couriersAsignados : '—'}</span>
         </span>
         <span className="rounded-md border border-border bg-surface-50 px-3 py-2">
           <span className="block text-[11px] font-medium uppercase text-fg-muted">Ciudades</span>
-          <span className="font-semibold text-fg">{summaryLoading ? '...' : ciudades}</span>
+          <span className="font-semibold text-fg">{summaryLoading ? '...' : courierSummary ? ciudades : '—'}</span>
         </span>
       </div>
 

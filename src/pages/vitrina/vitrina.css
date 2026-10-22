@@ -84,7 +84,7 @@
 .user-topbar-brand .dot { color: var(--vit-accent-fg); }
 
 .user-topbar-subtitle {
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--vit-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -100,7 +100,7 @@
   display: flex; align-items: center; gap: 0.4rem;
   color: var(--vit-muted);
   text-decoration: none;
-  font-size: 0.83rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   padding: 0.4rem 0.8rem;
   border-radius: 8px;
@@ -116,7 +116,7 @@
 }
 
 .user-topbar-name {
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--vit-muted);
 }
 
@@ -129,7 +129,7 @@
   color: var(--vit-text);
   padding: 0.45rem 0.9rem;
   border-radius: 8px;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast);
 }
@@ -164,39 +164,39 @@
 .vit-header-text {}
 
 .vit-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-.vit-export-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; border: 1px solid var(--color-success); border-radius: 9px; background: var(--color-success); color: var(--color-success-fg); font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 5px #04785720; transition: background 150ms, box-shadow 150ms, opacity 150ms; }
+.vit-export-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; border: 1px solid var(--color-success); border-radius: 9px; background: var(--color-success); color: var(--color-success-fg); font: inherit; font-size: var(--ui-text-help, 0.875rem); font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 5px #04785720; transition: background 150ms, box-shadow 150ms, opacity 150ms; }
 .vit-export-button:hover:not(:disabled) { filter: brightness(0.92); box-shadow: 0 3px 8px #04785730; }
 .vit-export-button:focus-visible { outline: 3px solid #04785750; outline-offset: 3px; }
 .vit-export-button:disabled { opacity: .7; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .vit-export-button { transition: none; } }
 .vit-meta-export-anchor { position: relative; }
-.vit-meta-export-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; border: 1px solid #0866ff; border-radius: 9px; background: #0866ff; color: #fff; font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 5px #0866ff20; transition: background 150ms, box-shadow 150ms; }
+.vit-meta-export-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; border: 1px solid #0866ff; border-radius: 9px; background: #0866ff; color: #fff; font: inherit; font-size: var(--ui-text-help, 0.875rem); font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 5px #0866ff20; transition: background 150ms, box-shadow 150ms; }
 .vit-meta-export-button:hover, .vit-meta-export-button[aria-expanded=true] { background: #0755d9; border-color: #0755d9; box-shadow: 0 3px 8px #0866ff30; }
 .vit-meta-export-button:focus-visible { outline: 3px solid #0866ff50; outline-offset: 3px; }
-.vit-meta-popover { position: absolute; z-index: 60; top: calc(100% + 12px); left: 0; width: min(420px, calc(100vw - 48px)); padding: 20px; border: 1px solid var(--vit-border); border-radius: 14px; background: var(--vit-surface); color: var(--vit-text); box-shadow: 0 14px 48px #0f172a26, 0 3px 10px #0f172a0a; text-align: left; font-size: 13px; }
+.vit-meta-popover { position: absolute; z-index: 60; top: calc(100% + 12px); left: 0; width: min(420px, calc(100vw - 48px)); padding: 20px; border: 1px solid var(--vit-border); border-radius: 14px; background: var(--vit-surface); color: var(--vit-text); box-shadow: 0 14px 48px #0f172a26, 0 3px 10px #0f172a0a; text-align: left; font-size: var(--ui-text-help, 0.875rem); }
 .vit-meta-popover-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .vit-meta-popover-header h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -.02em; }
-.vit-meta-popover-header p { margin: 5px 0 0; font-size: 12px; color: var(--vit-muted); }
+.vit-meta-popover-header p { margin: 5px 0 0; font-size: var(--ui-text-help, 0.875rem); color: var(--vit-muted); }
 .vit-meta-icon-button { display: inline-flex; padding: 4px; border: 0; border-radius: 5px; background: transparent; color: var(--vit-muted); cursor: pointer; }
 .vit-meta-icon-button:hover { background: var(--vit-card-hover-bg); color: var(--vit-text); }
-.vit-meta-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; font-size: 12px; }
-.vit-meta-badge { padding: 3px 7px; border-radius: 5px; color: var(--vit-muted); background: var(--vit-card-hover-bg); font-size: 10px; font-weight: 600; }
+.vit-meta-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; font-size: var(--ui-text-help, 0.875rem); }
+.vit-meta-badge { padding: 3px 7px; border-radius: 5px; color: var(--vit-muted); background: var(--vit-card-hover-bg); font-size: var(--ui-text-help, 0.875rem); font-weight: 600; }
 .vit-meta-badge.active { color: #047857; background: #10b9811a; }
-.vit-meta-url-label { display: block; margin-bottom: 7px; font-size: 11px; color: var(--vit-muted); }
+.vit-meta-url-label { display: block; margin-bottom: 7px; font-size: var(--ui-text-help, 0.875rem); color: var(--vit-muted); }
 .vit-meta-url { display: flex; border: 1px solid var(--vit-border); border-radius: 8px; overflow: hidden; }
-.vit-meta-url input { width: 100%; min-width: 0; padding: 10px; border: 0; background: var(--vit-bg); color: var(--vit-text); font-size: 11px; text-overflow: ellipsis; }
-.vit-meta-copy { display: inline-flex; align-items: center; flex-shrink: 0; gap: 5px; padding: 0 11px; border: 0; border-left: 1px solid var(--vit-border); background: var(--vit-surface); color: #0866ff; font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
-.vit-meta-prepare { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; margin-top: 12px; padding: 10px 12px; border: 0; border-radius: 8px; background: #0866ff; color: white; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-.vit-meta-hint { margin: 12px 0; font-size: 11px; line-height: 1.6; color: var(--vit-muted); }
+.vit-meta-url input { width: 100%; min-width: 0; padding: 10px; border: 0; background: var(--vit-bg); color: var(--vit-text); font-size: var(--ui-text-help, 0.875rem); text-overflow: ellipsis; }
+.vit-meta-copy { display: inline-flex; align-items: center; flex-shrink: 0; gap: 5px; padding: 0 11px; border: 0; border-left: 1px solid var(--vit-border); background: var(--vit-surface); color: #0866ff; font: inherit; font-size: var(--ui-text-help, 0.875rem); font-weight: 600; cursor: pointer; }
+.vit-meta-prepare { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; margin-top: 12px; padding: 10px 12px; border: 0; border-radius: 8px; background: #0866ff; color: white; font: inherit; font-size: var(--ui-text-help, 0.875rem); font-weight: 600; cursor: pointer; }
+.vit-meta-hint { margin: 12px 0; font-size: var(--ui-text-help, 0.875rem); line-height: 1.6; color: var(--vit-muted); }
 .vit-meta-secondary-actions { display: flex; align-items: center; gap: 15px; margin: 14px 0; }
-.vit-meta-secondary-actions a, .vit-meta-secondary-actions button, .vit-meta-details a { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: var(--vit-muted); font: inherit; font-size: 11px; text-decoration: none; cursor: pointer; }
-.vit-meta-details { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--vit-border); font-size: 11px; line-height: 1.65; color: var(--vit-muted); }
+.vit-meta-secondary-actions a, .vit-meta-secondary-actions button, .vit-meta-details a { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: var(--vit-muted); font: inherit; font-size: var(--ui-text-help, 0.875rem); text-decoration: none; cursor: pointer; }
+.vit-meta-details { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--vit-border); font-size: var(--ui-text-help, 0.875rem); line-height: 1.65; color: var(--vit-muted); }
 .vit-meta-details summary { cursor: pointer; font-weight: 500; }
 .vit-meta-details ol, .vit-meta-details ul { padding-left: 17px; margin: 10px 0; }
 .vit-meta-details li { margin: 5px 0; overflow-wrap: anywhere; }
 .vit-meta-details a { color: #0866ff; }
-.vit-meta-error { padding: 9px 10px; border-radius: 7px; background: var(--bg-danger-soft, #ef444412); color: var(--color-danger); font-size: 11px; line-height: 1.5; }
-.vit-meta-loading { display: flex; align-items: center; gap: 8px; color: var(--vit-muted); font-size: 12px; }
+.vit-meta-error { padding: 9px 10px; border-radius: 7px; background: var(--bg-danger-soft, #ef444412); color: var(--color-danger); font-size: var(--ui-text-help, 0.875rem); line-height: 1.5; }
+.vit-meta-loading { display: flex; align-items: center; gap: 8px; color: var(--vit-muted); font-size: var(--ui-text-help, 0.875rem); }
 .vit-meta-popover button:disabled { opacity: .5; cursor: not-allowed; }
 .vit-meta-popover :focus-visible { outline: 2px solid #0866ff; outline-offset: 2px; }
 .vit-meta-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
@@ -232,7 +232,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--vit-muted);
   background: var(--vit-card-bg);
@@ -278,7 +278,7 @@
   border: 1px solid var(--vit-border);
   border-radius: 10px;
   padding: 0.55rem 2.2rem 0.55rem 2.35rem;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-family: var(--font-sans);
   color: var(--vit-text);
   outline: none;
@@ -318,7 +318,7 @@
   color: var(--vit-muted);
   padding: 0.38rem 0.9rem;
   border-radius: 7px;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   font-family: var(--font-sans);
   cursor: pointer;
@@ -360,7 +360,7 @@
   background: transparent;
   color: var(--vit-muted);
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -373,7 +373,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-fg) 7%, transparent);
   color: var(--vit-text);
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-variant-numeric: tabular-nums;
 }
 
@@ -403,7 +403,7 @@
   border: 1px solid var(--vit-border);
   border-radius: 10px;
   color: var(--vit-muted);
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   font-family: var(--font-sans);
   padding: 0.5rem 2rem 0.5rem 0.9rem;
@@ -425,7 +425,7 @@
   gap: 0.4rem;
   min-height: 2.35rem;
   padding: 0.5rem 0.95rem;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -494,7 +494,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--vit-muted);
 }
 
@@ -508,7 +508,7 @@
   border-radius: 999px;
   background: var(--color-primary);
   color: var(--color-primary-fg);
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -525,7 +525,7 @@
   padding: 0.5rem 0.6rem;
   border-radius: 8px;
   color: var(--vit-muted);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -575,7 +575,7 @@
   border: none;
   padding: 0.55rem 1rem;
   border-radius: 8px;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -667,7 +667,7 @@
   border: 1px solid color-mix(in srgb, var(--color-fg) 42%, transparent);
   color: color-mix(in srgb, var(--color-fg) 82%, transparent);
   font: inherit;
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 800;
   line-height: 1;
   backdrop-filter: blur(6px);
@@ -727,7 +727,7 @@
   gap: 0.6rem;
   background: var(--color-placeholder);
   color: var(--color-placeholder-fg);
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -753,7 +753,7 @@
   gap: 0.3rem;
   padding: 0.22rem 0.6rem;
   border-radius: 999px;
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   letter-spacing: 0.2px;
   backdrop-filter: blur(8px);
@@ -822,7 +822,7 @@
 }
 
 .vit-card-desc {
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--vit-muted);
   margin: 0 0 0.75rem;
   line-height: 1.45;
@@ -833,7 +833,7 @@
 }
 
 .vit-card-includes {
-  font-size: 0.73rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: color-mix(in srgb, var(--color-primary-text) 75%, transparent);
   margin: 0 0 0.6rem;
   white-space: nowrap;
@@ -854,7 +854,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.7rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--vit-muted);
 }
@@ -889,7 +889,7 @@
 }
 
 .vit-price-min {
-  font-size: 0.73rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--vit-muted-2);
   display: flex;
   align-items: center;
@@ -919,13 +919,13 @@
 }
 
 .vit-costo-fila dt {
-  font-size: 0.76rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--vit-muted);
 }
 
 .vit-costo-fila dd {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--vit-text);
   font-variant-numeric: tabular-nums;
@@ -939,7 +939,7 @@
 }
 
 .vit-price-label {
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   color: var(--vit-text);
   letter-spacing: 0.04em;
@@ -981,7 +981,7 @@
 .vit-price-input::-webkit-inner-spin-button { opacity: 0.4; }
 
 .vit-price-suffix {
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--vit-muted);
   flex-shrink: 0;
@@ -1003,7 +1003,7 @@
 }
 
 .vit-margen-label {
-  font-size: 0.74rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
 }
 
@@ -1011,13 +1011,13 @@
   display: inline-flex;
   align-items: baseline;
   gap: 0.4rem;
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .vit-margen-pct {
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   opacity: 0.75;
 }
@@ -1047,7 +1047,7 @@
   border: none;
   padding: 0.45rem 0.85rem;
   border-radius: 8px;
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -1059,7 +1059,7 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-danger);
 }
 
@@ -1078,7 +1078,7 @@
   background: transparent;
   border: none;
   color: var(--vit-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   font-family: var(--font-sans);
   cursor: pointer;
@@ -1143,7 +1143,7 @@
   z-index: 2;
 }
 .vit-modal-header h2 { margin: 0; font-size: 1.05rem; color: var(--vit-text); font-weight: 700; }
-.vit-modal-header p  { margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--vit-muted); }
+.vit-modal-header p  { margin: 0.2rem 0 0; font-size: var(--ui-text-help, 0.875rem); color: var(--vit-muted); }
 .vit-modal-close {
   background: transparent; border: none; color: var(--vit-muted); cursor: pointer;
   padding: 0.3rem; border-radius: 6px; line-height: 1;
@@ -1169,7 +1169,7 @@
   background: transparent;
   color: var(--vit-muted);
   font: inherit;
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
@@ -1196,7 +1196,7 @@
 
 .vit-simulator-field > span {
   color: var(--vit-muted-2);
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
@@ -1231,7 +1231,7 @@
 
 .vit-simulator-input-wrap small {
   color: var(--vit-muted);
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
 }
 
@@ -1239,7 +1239,7 @@
   width: 100%;
   padding: 0 0.75rem;
   font: inherit;
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 @media (max-width: 640px) {
@@ -1260,7 +1260,7 @@
 }
 
 .vit-category-field span {
-  font-size: 0.76rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   color: var(--vit-text);
   text-transform: uppercase;
@@ -1300,7 +1300,7 @@
   padding: 0.3rem 0.65rem;
   color: var(--vit-muted);
   background: color-mix(in srgb, var(--color-fg) 3%, transparent);
-  font-size: 0.76rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
 }
 
@@ -1325,9 +1325,9 @@
   padding: 0.75rem 0.9rem;
   display: flex; flex-direction: column; gap: 0.25rem;
 }
-.vit-sensib-metric .label { font-size: 0.68rem; color: var(--vit-muted-2); text-transform: uppercase; letter-spacing: 0.3px; }
+.vit-sensib-metric .label { font-size: var(--ui-text-help, 0.875rem); color: var(--vit-muted-2); text-transform: uppercase; letter-spacing: 0.3px; }
 .vit-sensib-metric .value { font-size: 1.05rem; font-weight: 700; color: var(--vit-text); display: flex; align-items: center; gap: 0.3rem; }
-.vit-sensib-metric .hint  { font-size: 0.68rem; color: var(--vit-muted); }
+.vit-sensib-metric .hint  { font-size: var(--ui-text-help, 0.875rem); color: var(--vit-muted); }
 
 .vit-sensib-costs {
   display: grid;
@@ -1347,7 +1347,7 @@
 .vit-sensib-cost small {
   display: block;
   color: var(--vit-muted);
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   line-height: 1.35;
 }
 
@@ -1367,21 +1367,21 @@
 .vit-sensib-warnings { display: flex; flex-direction: column; gap: 0.4rem; }
 .vit-warning-item {
   display: flex; align-items: center; gap: 0.4rem;
-  font-size: 0.78rem; color: var(--color-warning);
+  font-size: var(--ui-text-help, 0.875rem); color: var(--color-warning);
   background: color-mix(in srgb, var(--color-warning) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-warning) 20%, transparent);
   padding: 0.5rem 0.7rem;
   border-radius: 8px;
 }
 
-.vit-sensib-table-title { font-size: 0.82rem; color: var(--vit-muted); margin: 0; }
+.vit-sensib-table-title { font-size: var(--ui-text-help, 0.875rem); color: var(--vit-muted); margin: 0; }
 
-.vit-sensitivity-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.vit-sensitivity-table { width: 100%; border-collapse: collapse; font-size: var(--ui-text-help, 0.875rem); }
 .vit-sensitivity-table th {
   text-align: right;
   color: var(--vit-muted-2);
   font-weight: 600;
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   text-transform: uppercase;
   letter-spacing: 0.3px;
   padding: 0.5rem 0.6rem;
@@ -1405,7 +1405,7 @@
   background: color-mix(in srgb, var(--color-primary) 8%, transparent);
   color: var(--vit-text);
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -1425,7 +1425,7 @@
   display: inline-flex; align-items: center;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
 }
 .vit-badge.saludable   { background: color-mix(in srgb, var(--color-success) 12%, transparent); color: var(--color-success); }
@@ -1443,7 +1443,7 @@
   color: var(--vit-text);
   padding: 0.5rem 1rem;
   border-radius: 8px;
-  font-size: 0.82rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-family: var(--font-sans);
   font-weight: 600;
   cursor: pointer;
@@ -1472,7 +1472,7 @@
   padding: 0.15rem 0.2rem 0.15rem 0.5rem;
   border: 1px solid var(--vit-border);
   border-radius: 999px;
-  font-size: 0.68rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--vit-muted);
   background: var(--vit-surface);

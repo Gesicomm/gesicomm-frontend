@@ -124,7 +124,7 @@
 .ad-kpi small {
   display: block;
   color: var(--color-fg-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .ad-kpi strong {
@@ -182,7 +182,7 @@
 .ad-cash-metric small {
   display: block;
   color: var(--color-fg-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .ad-cash-metric strong {
@@ -231,7 +231,7 @@
 
 .ad-table td {
   color: var(--color-fg-muted);
-  font-size: 0.86rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .ad-table strong {
@@ -266,7 +266,7 @@
 .ad-activity-list span {
   display: block;
   color: var(--color-fg-muted);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
 }
 
 .ad-pay-state strong {

@@ -26,7 +26,7 @@ export default function SeleccionModulo() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-bg-muted p-4">
+    <div className="gc-panel flex min-h-screen flex-col items-center justify-center bg-bg-muted p-4">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-fg mb-2">¡Hola, {usuario?.nombre || 'Usuario'}!</h1>
         <p className="text-fg-muted">Selecciona el módulo con el que deseas trabajar hoy</p>

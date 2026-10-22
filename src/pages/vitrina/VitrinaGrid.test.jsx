@@ -7,6 +7,7 @@ import { landingService } from '../../services/landingService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { metaFeedService } from '../../services/metaFeedService';
 import { BrowserRouter } from 'react-router-dom';
+import { verificarSesion } from '../../utils/auth';
 
 vi.mock('../../services/metaFeedService', () => ({ metaFeedService: {
   estadoActual: vi.fn(), activar: vi.fn(), actualizar: vi.fn(), estado: vi.fn(),
@@ -50,6 +51,7 @@ function renderWithRouter(ui) {
 describe('VitrinaGrid Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    verificarSesion.mockResolvedValue({ id: 42, rol: 'usuario' });
     metaFeedService.estadoActual.mockResolvedValue({ landing_id: 91, url: 'https://tienda.example/api/l/feed-productos.csv?landing=91', activo: false, seleccionados: 1, cantidad: 0, limite: 5000, omitidos: [] });
     vitrinaService.catalogoPaginado.mockResolvedValue({
       items: [
@@ -160,6 +162,33 @@ describe('VitrinaGrid Component', () => {
     expect(vitrinaService.catalogoPaginado.mock.calls[0][0]).toMatchObject({ busqueda: 'adaptador', page: 1 });
     await new Promise(resolve => setTimeout(resolve, 250));
     expect(vitrinaService.catalogoPaginado).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['usuario', 'administrador'])('muestra stock solo en productos propios en una lista mixta para %s', async rol => {
+    verificarSesion.mockResolvedValue({ id: 42, rol });
+    const base = { tipo: 'producto', precio_base: 50000, precio_efectivo: 50000, categoria: 'Hogar' };
+    vitrinaService.catalogoPaginado.mockResolvedValue({
+      items: [
+        { ...base, id: 11, nombre: 'Propio disponible', creado_por: '42', stock: 8 },
+        { ...base, id: 12, nombre: 'Propio agotado', creado_por: 42, stock: 0 },
+        { ...base, id: 13, nombre: 'Proveedor disponible', creado_por: 7, stock: 30 },
+        { ...base, id: 14, nombre: 'Proveedor agotado', creado_por: 7, stock: 0 },
+        { ...base, id: 15, nombre: 'Global sin creador', creado_por: null, stock: 0 },
+        { ...base, id: 16, nombre: 'Propio sin dato', creado_por: 42, stock: null },
+        { ...base, id: 17, nombre: 'Combo propio', tipo: 'combo', creado_por: 42, stock: 0 },
+      ], categorias: ['Hogar'], proveedores: [], total: 7, totalPages: 1,
+    });
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Propio disponible');
+    await screen.findByText('Stock: 8');
+    const card = nombre => screen.getByText(nombre).closest('.vit-card');
+    expect(within(card('Propio agotado')).getByText('Sin stock')).toBeVisible();
+    expect(within(card('Propio agotado')).getByText('Stock: 0')).toBeVisible();
+    for (const nombre of ['Proveedor disponible', 'Proveedor agotado', 'Global sin creador', 'Propio sin dato', 'Combo propio']) {
+      expect(within(card(nombre)).queryByText(/Stock:/)).toBeNull();
+      expect(within(card(nombre)).queryByText('Sin stock')).toBeNull();
+      expect(card(nombre).querySelector('.vit-card-meta-sep')).toBeNull();
+    }
   });
 
   it('renderiza la cabecera con el botón de "Agregar Mis Productos", la pestaña de landing y la pestaña de productos propios', async () => {

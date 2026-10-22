@@ -73,16 +73,16 @@ beforeEach(() => {
   solicitudAbastecimientoService.crear.mockResolvedValue({ id: 99 });
 });
 
-it('muestra los tres accesos y navega a abastecimientos y envíos RAHA', async () => {
+it('prioriza agregar un depósito y separa los movimientos de mercadería', async () => {
   render(<DepositosPage />);
   await waitFor(() => expect(depositoService.listarDepositos).toHaveBeenCalled());
   const acciones = screen.getByRole('navigation', { name: 'Acciones de depósitos' });
   expect([...acciones.querySelectorAll('button')].map(boton => boton.textContent.trim()))
-    .toEqual(['Agregar depósito', 'Ver abastecimientos RAHA', 'Enviar mercadería a RAHA']);
+    .toEqual(['Agregar depósito']);
   expect(screen.queryByRole('button', { name: 'Abastecerme', exact: true })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'Ver abastecimientos RAHA' }));
+  fireEvent.click(screen.getByRole('button', { name: /Traer productos de RAHA/ }));
   expect(navigate).toHaveBeenLastCalledWith('/mis-abastecimientos');
-  fireEvent.click(screen.getByRole('button', { name: 'Enviar mercadería a RAHA' }));
+  fireEvent.click(screen.getByRole('button', { name: /Enviar mercadería a RAHA/ }));
   expect(navigate).toHaveBeenLastCalledWith('/mis-envios-raha');
 });
 

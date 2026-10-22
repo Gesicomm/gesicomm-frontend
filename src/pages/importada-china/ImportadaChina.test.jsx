@@ -5,8 +5,9 @@ import { importadaChinaService } from '../../services/importadaChina.service';
 vi.mock('../../services/importadaChina.service', () => ({ importadaChinaService: { solicitar: vi.fn() } }));
 const ok = { ok: true, solicitud: { id: 40, estado: 'Pendiente de cotización' } };
 const completar = () => {
-  fireEvent.change(screen.getByLabelText(/Enlace del producto en Alibaba/), { target: { value: 'https://www.alibaba.com/product-detail/Test_123.html' } });
+  fireEvent.change(screen.getByLabelText(/Enlace del producto o proveedor/), { target: { value: 'https://www.alibaba.com/product-detail/Test_123.html' } });
   fireEvent.change(screen.getByLabelText(/Cantidad de unidades/), { target: { value: '100' } });
+  fireEvent.change(screen.getByLabelText(/País de origen/), { target: { value: 'Brasil' } });
 };
 beforeEach(() => { vi.clearAllMocks(); importadaChinaService.solicitar.mockResolvedValue(ok); });
 
@@ -19,16 +20,32 @@ test('envía todos los campos y solo confirma después de recibir un registro gu
   await screen.findByRole('status');
   expect(importadaChinaService.solicitar).toHaveBeenCalledWith(expect.objectContaining({ cantidad: 100, transporte: 'maritimo', observaciones: 'Modelo azul', clave_idempotencia: expect.any(String) }));
   expect(screen.getByRole('status')).toHaveTextContent('Solicitud #40 · Pendiente de cotización');
-  expect(screen.getByLabelText(/Enlace del producto en Alibaba/)).toHaveValue('');
+  expect(screen.getByLabelText(/Enlace del producto o proveedor/)).toHaveValue('');
 });
 
-test('rechaza URL falsa de Alibaba y cantidades no enteras sin llamar al servidor', async () => {
+test.each([
+  ['Brasil', 'https://proveedor.com.br/produto', 'terrestre'],
+  ['Estados Unidos', 'https://supplier.com/product', 'aereo'],
+  ['China', 'https://www.alibaba.com/product-detail/Test.html', 'maritimo'],
+  ['Alemania', 'https://anbieter.de/produkt', 'conveniente'],
+])('acepta proveedores de %s y envía país y transporte', async (pais_origen, producto_url, transporte) => {
   render(<ImportadaChina />);
   completar();
-  fireEvent.change(screen.getByLabelText(/Enlace del producto en Alibaba/), { target: { value: 'https://alibaba.com.evil.example/producto' } });
+  fireEvent.change(screen.getByLabelText(/Enlace del producto o proveedor/), { target: { value: producto_url } });
+  fireEvent.change(screen.getByLabelText(/País de origen/), { target: { value: pais_origen } });
+  fireEvent.change(screen.getByLabelText('Método de transporte preferido'), { target: { value: transporte } });
+  fireEvent.click(screen.getByRole('button', { name: /SOLICITAR MI PRESUPUESTO/ }));
+  await screen.findByRole('status');
+  expect(importadaChinaService.solicitar).toHaveBeenCalledWith(expect.objectContaining({ pais_origen, producto_url, transporte }));
+});
+
+test('rechaza enlaces sin HTTPS y cantidades no enteras sin llamar al servidor', async () => {
+  render(<ImportadaChina />);
+  completar();
+  fireEvent.change(screen.getByLabelText(/Enlace del producto o proveedor/), { target: { value: 'http://proveedor.example/producto' } });
   fireEvent.change(screen.getByLabelText(/Cantidad de unidades/), { target: { value: '1.5' } });
   fireEvent.click(screen.getByRole('button', { name: /SOLICITAR MI PRESUPUESTO/ }));
-  expect(screen.getByLabelText(/Enlace del producto en Alibaba/)).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByLabelText(/Enlace del producto o proveedor/)).toHaveAttribute('aria-invalid', 'true');
   expect(screen.getByLabelText(/Cantidad de unidades/)).toHaveAttribute('aria-invalid', 'true');
   expect(importadaChinaService.solicitar).not.toHaveBeenCalled();
   expect(screen.queryByRole('status')).not.toBeInTheDocument();

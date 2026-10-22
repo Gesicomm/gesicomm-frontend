@@ -124,7 +124,7 @@
 
 .rp-field label,
 .rp-field > span {
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--rp-text-muted);
 }
@@ -191,7 +191,7 @@
 .rp-alert {
   padding: 0.75rem 1rem;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -270,7 +270,7 @@
 .rp-header-tag {
   display: inline-block;
   max-width: 100%;
-  font-size: 0.7rem;
+  font-size: var(--ui-text-help, 0.875rem);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   background: var(--rp-primary-btn-bg);
@@ -329,7 +329,7 @@
   background: var(--rp-chip-bg);
   border: 1px solid var(--rp-chip-border);
   color: var(--rp-chip-color);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -416,7 +416,7 @@
 }
 
 .rp-stat-lbl {
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--rp-text-muted);
   margin-top: 0.25rem;
 }
@@ -447,7 +447,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--rp-text-muted);
   margin-right: 0.25rem;
@@ -459,7 +459,7 @@
   background: var(--rp-chip-bg);
   border: 1px solid var(--rp-chip-border);
   color: var(--rp-chip-color);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -488,7 +488,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--rp-text-muted);
 }
 
@@ -499,7 +499,7 @@
   border-radius: 7px;
   color: var(--rp-input-color);
   padding: 0.35rem 0.6rem;
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -517,7 +517,7 @@
   background: color-mix(in srgb, var(--color-danger) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
   color: var(--color-danger);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -585,7 +585,7 @@
   background: var(--rp-chip-bg);
   border: 1px solid var(--rp-chip-border);
   color: var(--rp-chip-color);
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -628,7 +628,7 @@
 .rp-list-header {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--rp-row-border);
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   color: var(--rp-text-muted);
   display: flex;
@@ -679,7 +679,7 @@
 }
 
 .rp-item-sub {
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--rp-text-muted);
 }
 
@@ -738,7 +738,7 @@
 
 .rp-resolve-desc {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--rp-text-muted);
   line-height: 1.45;
 }
@@ -755,7 +755,7 @@
   gap: 0.45rem;
   padding: 0.6rem 1.15rem;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   cursor: pointer;
   border: none;
@@ -795,7 +795,7 @@
   padding: 0.7rem 1rem;
   border-top: 1px solid var(--rp-row-border);
   background: var(--rp-subcard-bg);
-  font-size: 0.8rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--rp-text-muted);
 }
 
@@ -810,7 +810,7 @@
 }
 
 .rp-pagination-total {
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   color: var(--rp-text-subtle);
 }
 
@@ -857,7 +857,7 @@
   background: var(--rp-input-bg);
   border: 1px solid var(--rp-input-border);
   color: var(--rp-input-color);
-  font-size: 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
   outline: none;
@@ -883,7 +883,7 @@
 
 .rp-portal .raha-fields dt {
   color: var(--rp-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--ui-text-help, 0.875rem);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1017,7 +1017,7 @@
 
   .rp-user-name {
     margin-right: auto;
-    font-size: 0.75rem;
+    font-size: var(--ui-text-help, 0.875rem);
   }
 
   .rp-main {

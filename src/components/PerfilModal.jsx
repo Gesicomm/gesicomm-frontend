@@ -16,6 +16,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { api } from '../utils/api';
+import './perfilModal.css';
 
 /**
  * Componente de 6 celdas para el código OTP.
@@ -76,7 +77,7 @@ function OTPCells({ value = '', onChange, disabled }) {
   };
 
   return (
-    <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+    <div className="profile-otp-cells flex gap-2 justify-center" onPaste={handlePaste}>
       {digits.map((digit, idx) => (
         <input
           key={idx}
@@ -84,6 +85,8 @@ function OTPCells({ value = '', onChange, disabled }) {
             inputsRef.current[idx] = el;
           }}
           type="text"
+          aria-label={`Dígito ${idx + 1} del código`}
+          autoComplete={idx === 0 ? 'one-time-code' : 'off'}
           inputMode="numeric"
           pattern="[0-9]*"
           maxLength={6}
@@ -110,6 +113,9 @@ function formatearSegundos(seg) {
 }
 
 export default function PerfilModal({ isOpen, onClose, usuarioActual, onUsuarioActualizado }) {
+  const dialogRef = useRef(null);
+  const accionesRef = useRef(null);
+  accionesRef.current = { onClose, cargando: false };
   const [paso, setPaso] = useState('formulario'); // 'formulario' | 'otp' | 'exito'
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
@@ -132,10 +138,36 @@ export default function PerfilModal({ isOpen, onClose, usuarioActual, onUsuarioA
   const [error, setError] = useState(null);
   const [mensajeExito, setMensajeExito] = useState(null);
 
+  accionesRef.current.cargando = cargando;
+  useEffect(() => {
+    if (!isOpen) return;
+    const anterior = document.activeElement;
+    const dialogo = dialogRef.current;
+    dialogo?.focus();
+    const teclado = event => {
+      if (event.key === 'Escape' && !accionesRef.current.cargando) {
+        event.preventDefault();
+        accionesRef.current.onClose();
+      }
+      if (event.key !== 'Tab') return;
+      const controles = [...dialogo.querySelectorAll('button:not(:disabled), input:not(:disabled), a[href], select, textarea')].filter(el => el.getClientRects().length);
+      const primero = controles[0], ultimo = controles.at(-1);
+      if (!primero) { event.preventDefault(); return; }
+      if (event.shiftKey && (document.activeElement === primero || document.activeElement === dialogo)) {
+        event.preventDefault(); ultimo.focus();
+      } else if (!event.shiftKey && (document.activeElement === ultimo || document.activeElement === dialogo)) {
+        event.preventDefault(); primero.focus();
+      }
+    };
+    dialogo?.addEventListener('keydown', teclado);
+    return () => { dialogo?.removeEventListener('keydown', teclado); anterior?.focus?.(); };
+  }, [isOpen]);
+
   // Cargar datos actuales cuando se abre el modal
   useEffect(() => {
     if (!isOpen) return;
 
+    let vigente = true;
     setError(null);
     setPaso('formulario');
     setOtpCode('');
@@ -152,14 +184,16 @@ export default function PerfilModal({ isOpen, onClose, usuarioActual, onUsuarioA
     // Traer datos frescos del perfil (incluyendo teléfono de la BD)
     api.get('/api/auth/perfil')
       .then((data) => {
-        if (data) {
+        if (vigente && data) {
           if (data.nombre) setNombre(data.nombre);
           if (data.email) setEmail(data.email);
           if (data.telefono !== undefined && data.telefono !== null) setTelefono(data.telefono);
         }
       })
       .catch(() => {});
-  }, [isOpen, usuarioActual]);
+    return () => { vigente = false; };
+    // Inicializar al abrir: actualizar el usuario al guardar no debe reiniciar el paso de éxito.
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Temporizadores para OTP
   useEffect(() => {
@@ -305,24 +339,30 @@ export default function PerfilModal({ isOpen, onClose, usuarioActual, onUsuarioA
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-ink/60 backdrop-blur-sm"
+      className="profile-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-ink/60 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget && !cargando) onClose();
       }}
     >
       <div
-        className="w-full max-w-lg rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden flex flex-col"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-title"
+        aria-describedby="profile-description"
+        tabIndex={-1}
+        className="profile-dialog rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden flex flex-col"
         style={{ maxHeight: '90vh' }}
       >
         {/* Encabezado */}
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-text font-bold text-base">
+        <div className="profile-header">
+          <div className="profile-header-main">
+            <div className="profile-avatar">
               {nombre ? nombre.slice(0, 1).toUpperCase() : <User size={20} />}
             </div>
             <div>
-              <h2 className="text-base font-semibold text-fg m-0">Configuración de Perfil</h2>
-              <p className="text-xs text-fg-subtle m-0">Administra tus datos personales y credenciales</p>
+              <h2 id="profile-title" className="text-base font-semibold text-fg m-0">Configuración de Perfil</h2>
+              <p id="profile-description">Tu información personal y la seguridad de tu cuenta, en un solo lugar.</p>
             </div>
           </div>
           <button
@@ -337,16 +377,16 @@ export default function PerfilModal({ isOpen, onClose, usuarioActual, onUsuarioA
         </div>
 
         {/* Contenido */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="profile-body overflow-y-auto flex-1">
           {error && (
-            <div className="mb-4 rounded-lg bg-danger/10 border border-danger/20 p-3 text-sm text-danger flex items-start gap-2">
+            <div role="alert" className="mb-4 rounded-lg bg-danger/10 border border-danger/20 p-3 text-sm text-danger flex items-start gap-2">
               <span className="font-bold flex-shrink-0">Advertencia:</span>
               <span>{error}</span>
             </div>
           )}
 
           {mensajeExito && (
-            <div className="mb-4 rounded-lg bg-success/10 border border-success/20 p-3 text-sm text-success flex items-center gap-2">
+            <div role="status" className="mb-4 rounded-lg bg-success/10 border border-success/20 p-3 text-sm text-success flex items-center gap-2">
               <Check size={16} className="flex-shrink-0" />
               <span>{mensajeExito}</span>
             </div>
@@ -354,178 +394,52 @@ export default function PerfilModal({ isOpen, onClose, usuarioActual, onUsuarioA
 
           {/* PASO 1: Formulario de edición */}
           {paso === 'formulario' && (
-            <form onSubmit={handleSolicitarOTP} className="flex flex-col gap-4">
-              {/* Nombre */}
-              <div>
-                <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
-                  Nombre completo
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-fg-subtle pointer-events-none">
-                    <User size={16} />
-                  </span>
-                  <input
-                    type="text"
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
-                    required
-                    placeholder="Ej. Juan Pérez"
-                    className="w-full rounded-lg border border-border bg-canvas pl-9 pr-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-              </div>
-
-              {/* Correo electrónico (Solo lectura) */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-semibold text-fg-muted uppercase tracking-wider">
-                    Correo electrónico
-                  </label>
-                  <span className="inline-flex items-center gap-1 text-[11px] text-fg-subtle">
-                    <Lock size={11} /> No modificable
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-fg-subtle pointer-events-none">
-                    <Mail size={16} />
-                  </span>
-                  <input
-                    type="email"
-                    value={email}
-                    readOnly
-                    disabled
-                    className="w-full rounded-lg border border-border bg-surface-2 pl-9 pr-3 py-2 text-sm text-fg-muted cursor-not-allowed opacity-80"
-                  />
-                </div>
-                <p className="mt-1 text-[11px] text-fg-subtle">
-                  El correo identifica tu cuenta y tus pagos, por lo que no puede ser modificado.
-                </p>
-              </div>
-
-              {/* Teléfono */}
-              <div>
-                <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
-                  Número de teléfono / WhatsApp
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-fg-subtle pointer-events-none">
-                    <Phone size={16} />
-                  </span>
-                  <input
-                    type="tel"
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                    placeholder="Ej. +595 981 123456"
-                    className="w-full rounded-lg border border-border bg-canvas pl-9 pr-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-                <p className="mt-1 text-[11px] text-fg-subtle">
-                  Número de contacto personal para avisos de la plataforma.
-                </p>
-              </div>
-
-              {/* Sección Contraseña */}
-              <div className="pt-2 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCambiarPassword(!cambiarPassword);
-                    if (cambiarPassword) {
-                      setPassword('');
-                      setConfirmarPassword('');
-                    }
-                  }}
-                  className="flex items-center justify-between w-full py-2 text-left bg-transparent border-none cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2">
-                    <KeyRound size={16} className="text-primary-text" />
-                    <span className="text-sm font-semibold text-fg group-hover:text-primary-text transition-colors">
-                      {cambiarPassword ? 'Cancelar cambio de contraseña' : '¿Deseas cambiar tu contraseña?'}
-                    </span>
+            <form onSubmit={handleSolicitarOTP} className="profile-form">
+              <section className="profile-section" aria-labelledby="profile-personal-title">
+                <div className="profile-section-heading"><span className="profile-section-icon"><User size={20} /></span><div><h3 id="profile-personal-title">Datos personales</h3><p>Así te identificamos y nos ponemos en contacto con vos.</p></div></div>
+                <div className="profile-personal-grid">
+                  <div className="profile-field">
+                    <label htmlFor="profile-name">Nombre completo</label>
+                    <div className="profile-input"><User size={18} /><input id="profile-name" type="text" autoComplete="name" value={nombre} onChange={e => setNombre(e.target.value)} required placeholder="Ej. Juan Pérez" disabled={cargando} /></div>
                   </div>
-                  {cambiarPassword ? (
-                    <ChevronUp size={16} className="text-fg-subtle" />
-                  ) : (
-                    <ChevronDown size={16} className="text-fg-subtle" />
-                  )}
+                  <div className="profile-field">
+                    <label htmlFor="profile-phone">Número de teléfono / WhatsApp</label>
+                    <div className="profile-input"><Phone size={18} /><input id="profile-phone" type="tel" autoComplete="tel" value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="Ej. +595 981 123456" disabled={cargando} aria-describedby="profile-phone-help" /></div>
+                    <p className="profile-help" id="profile-phone-help">Tu contacto personal para avisos de la plataforma.</p>
+                  </div>
+                </div>
+                <div className="profile-email-card profile-field">
+                  <div className="profile-label-row"><label htmlFor="profile-email">Correo electrónico</label><span className="profile-readonly"><Lock size={13} /> No modificable</span></div>
+                  <div className="profile-input"><Mail size={18} /><input id="profile-email" type="email" value={email} readOnly disabled aria-describedby="profile-email-help" /></div>
+                  <p className="profile-help" id="profile-email-help">Este correo identifica tu cuenta y tus pagos, por eso no se puede modificar.</p>
+                </div>
+              </section>
+              <section className="profile-section profile-security" aria-labelledby="profile-security-title">
+                <div className="profile-section-heading"><span className="profile-section-icon"><ShieldCheck size={20} /></span><div><h3 id="profile-security-title">Seguridad de tu cuenta</h3><p>Actualizá tu contraseña cuando lo necesites.</p></div></div>
+                <button type="button" className="profile-security-toggle" aria-expanded={cambiarPassword} aria-controls="profile-password-fields" disabled={cargando} onClick={() => {
+                  setCambiarPassword(!cambiarPassword);
+                  if (cambiarPassword) { setPassword(''); setConfirmarPassword(''); }
+                }}>
+                  <span><KeyRound size={19} />{cambiarPassword ? 'Cancelar cambio de contraseña' : 'Cambiar contraseña'}</span>
+                  {cambiarPassword ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </button>
-
-                {cambiarPassword && (
-                  <div className="mt-3 flex flex-col gap-3 p-3.5 rounded-xl bg-surface-2 border border-border/60">
-                    <div>
-                      <label className="block text-xs font-medium text-fg-muted mb-1">
-                        Nueva contraseña
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={mostrarPassword ? 'text' : 'password'}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Mínimo 8 caracteres, 1 mayúscula y 1 número"
-                          className="w-full rounded-lg border border-border bg-canvas px-3 py-2 pr-10 text-sm text-fg focus:border-primary focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setMostrarPassword(!mostrarPassword)}
-                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-fg-subtle hover:text-fg border-none bg-transparent cursor-pointer"
-                        >
-                          {mostrarPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-fg-muted mb-1">
-                        Confirmar nueva contraseña
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={mostrarConfirmarPassword ? 'text' : 'password'}
-                          value={confirmarPassword}
-                          onChange={(e) => setConfirmarPassword(e.target.value)}
-                          placeholder="Repite la nueva contraseña"
-                          className="w-full rounded-lg border border-border bg-canvas px-3 py-2 pr-10 text-sm text-fg focus:border-primary focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setMostrarConfirmarPassword(!mostrarConfirmarPassword)}
-                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-fg-subtle hover:text-fg border-none bg-transparent cursor-pointer"
-                        >
-                          {mostrarConfirmarPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
+                {cambiarPassword && <div id="profile-password-fields" className="profile-password-fields">
+                  <div className="profile-field"><label htmlFor="profile-password">Nueva contraseña</label>
+                    <div className="profile-input"><input id="profile-password" type={mostrarPassword ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} aria-describedby="profile-password-help" disabled={cargando} />
+                      <button type="button" aria-label={mostrarPassword ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'} onClick={() => setMostrarPassword(!mostrarPassword)}>{mostrarPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    </div><p id="profile-password-help" className="profile-help">Usá al menos 8 caracteres, una mayúscula y un número.</p>
+                  </div>
+                  <div className="profile-field"><label htmlFor="profile-password-confirm">Confirmar nueva contraseña</label>
+                    <div className="profile-input"><input id="profile-password-confirm" type={mostrarConfirmarPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmarPassword} onChange={e => setConfirmarPassword(e.target.value)} disabled={cargando} />
+                      <button type="button" aria-label={mostrarConfirmarPassword ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'} onClick={() => setMostrarConfirmarPassword(!mostrarConfirmarPassword)}>{mostrarConfirmarPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Botones de acción */}
-              <div className="mt-4 flex items-center justify-end gap-3 pt-3 border-t border-border">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={cargando}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg transition-colors border border-border bg-transparent cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={cargando}
-                  className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover transition-colors border-none cursor-pointer disabled:opacity-60"
-                >
-                  {cargando ? (
-                    <>
-                      <Loader size={16} className="animate-spin" />
-                      Enviando código...
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck size={16} />
-                      Guardar cambios
-                    </>
-                  )}
-                </button>
+                </div>}
+              </section>
+              <div className="profile-verification-note"><ShieldCheck size={19} /><p>Para guardar, te enviaremos un código de verificación a tu correo.</p></div>
+              <div className="profile-actions">
+                <button type="button" className="profile-cancel" onClick={onClose} disabled={cargando}>Cancelar</button>
+                <button type="submit" className="profile-save" disabled={cargando}>{cargando ? <Loader size={18} className="animate-spin" /> : <ShieldCheck size={18} />}{cargando ? 'Enviando código...' : 'Guardar cambios'}</button>
               </div>
             </form>
           )}

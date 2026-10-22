@@ -1,0 +1,108 @@
+/* Referencia compartida del panel: docs/typography.md. */
+:root {
+  --ui-text-page: 2rem;
+  --ui-text-section: 1.375rem;
+  --ui-text-card: 1.125rem;
+  --ui-text-body: 1rem;
+  --ui-text-label: 0.9375rem;
+  --ui-text-help: 0.875rem;
+  --ui-text-meta: 0.8125rem;
+  --ui-leading-body: 1.6;
+}
+
+:is(.tn-page, .dep-page, .dep-detail, .dep-form) {
+  font-family: var(--font-sans);
+  font-size: var(--ui-text-body);
+  line-height: var(--ui-leading-body);
+}
+.tn-page .tn-page-head h1, .dep-page .dep-page-heading h1 {
+  font-size: var(--ui-text-page);
+  line-height: 1.25;
+  font-weight: 750;
+}
+:is(.tn-page, .dep-page, .dep-detail, .dep-form) p {
+  font-size: var(--ui-text-body);
+  line-height: var(--ui-leading-body);
+}
+.tn-page .tn-panel-head h2, .tn-page .tn-whatsapp-heading h3,
+.dep-page .dep-stock-section h2, .dep-form h2, .dep-detail h2 {
+  font-size: var(--ui-text-section);
+  line-height: 1.35;
+  font-weight: 700;
+}
+.tn-page .tn-group-head h3, .tn-page .tn-message-category h4,
+.tn-page .tn-message-title, .dep-page .dep-deposit-card h3,
+.dep-detail .dep-detail-block h3, .dep-form .dep-fields-heading {
+  font-size: var(--ui-text-card);
+  font-weight: 650;
+  line-height: 1.4;
+}
+.tn-page .tn-field-label, .dep-form label, .dep-page .dep-filters label,
+.tn-page .tn-msg-builder > label, .tn-page .tn-message-data-label {
+  font-size: var(--ui-text-label);
+  font-weight: 550;
+  color: var(--color-fg);
+}
+:is(.tn-page, .dep-page, .dep-form) :is(input:not([type='checkbox']):not([type='color']), select, textarea) {
+  font-size: var(--ui-text-body);
+  line-height: 1.5;
+}
+.tn-page .tn-field-hint, .tn-page .tn-logo-hint,
+.tn-page .tn-message-help, .tn-page .tn-message-text-meta,
+.tn-page .tn-message-use, .tn-page .tn-message-excerpt,
+.tn-page .tn-message-delivery-note, .tn-page .tn-message-dirty,
+.tn-page .tn-footer-note, .tn-page .tn-store-address,
+.dep-page .dep-stock-grid small, .dep-page .dep-list-summary {
+  font-size: var(--ui-text-help);
+  line-height: var(--ui-leading-body);
+}
+.tn-page .tn-msg-preview-bubble { font-size: var(--ui-text-body); line-height: var(--ui-leading-body); }
+.tn-page .tn-preview-time, .tn-page .tn-store-card-info .tn-store-eyebrow,
+.tn-page .tn-message-direction, .tn-page .tn-message-state,
+.tn-page .tn-message-chat-head small, .tn-page .tn-section-status,
+.tn-page .tn-mobile-section-label small, .tn-page .tn-mobile-nav-hint,
+.dep-page .dep-filter-count, .dep-page .dep-deposit-card .text-\[11px\] {
+  font-size: var(--ui-text-meta);
+}
+.tn-page .tn-section-status.compact { font-size: inherit; }
+.tn-page .tn-tab, .tn-page .tn-btn-tiendas, .tn-page .tn-visit-store,
+.tn-page .tn-mobile-section-grid button, .tn-page .tn-mobile-section-label strong,
+.tn-page .tn-footer button, .tn-page .tn-msg-var-chip, .tn-page .tn-message-reset,
+.dep-page button, .dep-page .dep-more-filters summary, .dep-page .dep-configure-label,
+.dep-detail button, .dep-form button {
+  font-size: var(--ui-text-label);
+  line-height: 1.5;
+}
+.tn-page .tn-tab, .tn-page .tn-btn-tiendas, .dep-page button, .dep-detail button, .dep-form button { min-height: 44px; }
+.tn-page .tn-payment-fee small, .tn-page .tn-payment-card dl > div,
+.tn-page .tn-payment-card-head strong { font-size: var(--ui-text-help); }
+.tn-page .tn-payment-fee { font-size: var(--ui-text-card); }
+.tn-page .tn-token-guide, .tn-page .tn-payment-guide { font-size: var(--ui-text-help); }
+.tn-page .tn-store-card h2 { font-size: 1.5rem; line-height: 1.35; }
+.dep-page .dep-stock-grid strong { font-size: var(--ui-text-card); line-height: 1.4; }
+.dep-page .dep-deposit-card > button span.block { font-size: var(--ui-text-body); }
+.dep-detail .text-\[11px\], .dep-detail .text-\[12px\] { font-size: var(--ui-text-meta); }
+.tn-page .tn-group { grid-template-columns: minmax(0, 200px) minmax(0, 1fr); }
+.tn-page .tn-group-plena { grid-template-columns: minmax(0, 1fr); }
+.tn-page .tn-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.tn-page .tn-tabs { gap: 0.4rem; }
+.tn-page .tn-tab-step { max-width: 100%; }
+.tn-page .tn-tab { white-space: normal; text-align: left; }
+.tn-page .tn-mobile-section-grid button { overflow-wrap: anywhere; }
+.dep-page .dep-deposit-card > div:nth-child(3) { min-width: 0; display: flex; flex-wrap: wrap; }
+.dep-page .dep-deposit-card > div:nth-child(3) > span { flex: 1 0 auto; min-width: max-content; }
+.dep-page .dep-deposit-card > div:nth-child(3) .block { font-size: var(--ui-text-meta); text-transform: none; white-space: nowrap; }
+.dep-form [role='combobox'] { font-size: var(--ui-text-body); }
+@media (max-width: 1100px) { .tn-page .tn-group { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .tn-page .tn-page-head h1, .dep-page .dep-page-heading h1 { font-size: 1.75rem; }
+  .tn-page .tn-page-head-top { flex-wrap: wrap; }
+  .tn-page .tn-page-head p { max-width: none; }
+  .tn-page .tn-mobile-section-grid { grid-template-columns: minmax(0, 1fr); }
+  .tn-page .tn-mobile-nav-hint { font-size: var(--ui-text-meta); }
+  .tn-page .tn-message-summary { gap: 0.6rem; }
+  .tn-page .tn-mobile-navigation summary { flex-wrap: wrap; }
+  .tn-page .tn-footer-actions { flex-wrap: wrap; }
+  .dep-page .dep-stock-grid button { flex-wrap: wrap; }
+  .dep-detail .dep-detail-block > .flex { gap: 0.85rem; }
+}

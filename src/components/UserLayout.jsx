@@ -18,6 +18,7 @@ import PerfilModal from './PerfilModal';
 import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
 import '../pages/educacion/EducacionView.css';
+import './userSidebar.css';
 
 // Editor de landing: el contenedor principal no se desplaza nunca (cada panel
 // tiene su propio scroll). Con overflow:hidden igual se podia correr por codigo
@@ -221,6 +222,7 @@ const UserLayout = ({ children }) => {
       <li key={item.path} className="sidebar-item">
         <Link
           to={bloqueo ? '#' : item.path}
+          aria-current={active ? 'page' : undefined}
           onClick={(e) => handleItemClick(e, item, bloqueo)}
           className={`sidebar-link ${active ? 'active' : ''} ${bloqueo ? 'locked-link' : ''}`}
           style={bloqueo ? { opacity: 0.65 } : {}}
@@ -231,7 +233,7 @@ const UserLayout = ({ children }) => {
           <span style={{ flex: 1, ...(danger ? { color: "var(--color-danger)", fontWeight: 600 } : {}) }}>{item.label}</span>
           {bloqueo && (
             <span style={{
-              fontSize: '10px',
+              fontSize: 'var(--ui-text-meta, .8125rem)',
               background: "color-mix(in srgb, var(--color-warning) 15%, transparent)",
               color: "var(--color-warning)",
               padding: '2px 6px',
@@ -243,7 +245,7 @@ const UserLayout = ({ children }) => {
           )}
           {item.badge && !item.badgeDanger && (
             <span style={{
-              fontSize: '10px',
+              fontSize: 'var(--ui-text-meta, .8125rem)',
               background: "color-mix(in srgb, var(--color-primary) 20%, transparent)",
               color: "var(--color-primary-text)",
               padding: '2px 6px',
@@ -255,7 +257,7 @@ const UserLayout = ({ children }) => {
           )}
           {item.badgeDanger && (
             <span style={{
-              fontSize: '10px',
+              fontSize: 'var(--ui-text-meta, .8125rem)',
               background: "color-mix(in srgb, var(--color-danger) 15%, transparent)",
               color: "var(--color-danger)",
               border: "1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)",
@@ -278,7 +280,7 @@ const UserLayout = ({ children }) => {
       ? vencidosCount
       : null;
     const menuKey = item.menuKey || item.menu_key;
-    const label = item.label || item.etiqueta;
+    const label = item.path === '/importada-de-china' ? 'Proveete con Gesicom' : (item.label || item.etiqueta);
 
     return {
       ...item,
@@ -325,8 +327,8 @@ const UserLayout = ({ children }) => {
 
     const secciones = Array.from(grupos.entries());
     return secciones.map(([seccion, items]) => (
-      <React.Fragment key={`${contexto}-${seccion}`}>
-        <div className="sidebar-section-label" style={{ color: "var(--color-fg-muted)", fontSize: '10px', fontWeight: 700 }}>
+      <section className="user-sidebar-group" aria-label={seccion} key={`${contexto}-${seccion}`}>
+        <div className="sidebar-section-label">
           {seccion}
         </div>
         <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
@@ -334,12 +336,12 @@ const UserLayout = ({ children }) => {
             {items.map(renderLink)}
           </ul>
         </div>
-      </React.Fragment>
+      </section>
     ));
   };
 
   return (
-    <div className="dashboard-layout user-layout-container">
+    <div className="gc-panel dashboard-layout user-layout-container">
       {mobileOpen && (
         <div
           className="fixed inset-0 z-30 bg-brand-ink/60 backdrop-blur-sm lg:hidden"
@@ -359,7 +361,7 @@ const UserLayout = ({ children }) => {
         <header className="sidebar-header" style={{ borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
             <Logo size={26} className="text-fg" />
-            <span style={{ fontSize: '0.68rem', color: "var(--color-fg-muted)", textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+            <span style={{ fontSize: 'var(--ui-text-meta, .8125rem)', color: "var(--color-fg-muted)", textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
               Panel de Usuario
             </span>
           </div>
@@ -399,11 +401,12 @@ const UserLayout = ({ children }) => {
         </header>
 
         {usuario?.rol === 'usuario' && tiendaActiva && (
-          <div style={{ position: 'relative', margin: '0.5rem 0.75rem' }}>
+          <div className="user-sidebar-store">
             <button
               type="button"
               onClick={() => setTiendaMenuAbierto(v => !v)}
               title="Cambiar de tienda"
+              className="user-sidebar-store-trigger"
               aria-expanded={tiendaMenuAbierto}
               aria-haspopup="listbox"
               disabled={cambiandoTienda}
@@ -415,16 +418,16 @@ const UserLayout = ({ children }) => {
               }}
             >
               <span style={{
-                width: '22px', height: '22px', borderRadius: '6px', flexShrink: 0,
+                width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: "var(--color-primary-text)", overflow: 'hidden',
               }}>
                 {tiendaActiva.logo_imagen
                   ? <img src={tiendaActiva.logo_imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <Store size={12} />}
+                  : <Store size={18} />}
               </span>
               <span style={{
-                flex: 1, minWidth: 0, fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-fg)',
+                flex: 1, minWidth: 0, fontSize: 'var(--ui-text-label, 0.875rem)', fontWeight: 600, color: 'var(--color-fg)',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {tiendaActiva.nombre}
@@ -474,7 +477,7 @@ const UserLayout = ({ children }) => {
                             : <Store size={11} />}
                         </span>
                         <span style={{
-                          flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--color-fg)',
+                          flex: 1, minWidth: 0, fontSize: 'var(--ui-text-help, .875rem)', color: 'var(--color-fg)',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
                           {t.nombre}
@@ -491,7 +494,7 @@ const UserLayout = ({ children }) => {
                         display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
                         padding: '0.5rem 0.6rem', borderRadius: '6px', border: 'none',
                         background: 'transparent', cursor: 'pointer', textAlign: 'left',
-                        fontSize: '0.78rem', color: "var(--color-fg-muted, var(--color-fg-muted))",
+                        fontSize: 'var(--ui-text-help, .875rem)', color: "var(--color-fg-muted, var(--color-fg-muted))",
                       }}
                     >
                       <Plus size={14} /> Crear otra tienda
@@ -511,22 +514,22 @@ const UserLayout = ({ children }) => {
           <button
             type="button"
             onClick={() => setPerfilModalAbierto(true)}
-            className="w-full flex items-center justify-between gap-2 p-2 rounded-lg text-left transition-colors hover:bg-surface-2 group cursor-pointer border border-transparent hover:border-border bg-transparent mb-1"
+            className="user-sidebar-profile w-full flex items-center justify-between gap-2 p-2 rounded-lg text-left transition-colors hover:bg-surface-2 group cursor-pointer border border-transparent hover:border-border bg-transparent mb-1"
             title="Editar perfil y contraseña"
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
               <div style={{
-                width: '24px', height: '24px', borderRadius: '50%',
+                width: '36px', height: '36px', borderRadius: '12px',
                 background: "color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-primary-text)",
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '11px', fontWeight: 'bold', flexShrink: 0
+                fontSize: 'var(--ui-text-meta, .8125rem)', fontWeight: 'bold', flexShrink: 0
               }}>
                 {usuario?.nombre ? usuario.nombre.slice(0, 1).toUpperCase() : <User size={12} />}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <span style={{
                   display: 'block',
-                  fontSize: '0.78rem',
+                  fontSize: 'var(--ui-text-help, .875rem)',
                   fontWeight: 600,
                   color: 'var(--color-fg)',
                   overflow: 'hidden',
@@ -537,7 +540,7 @@ const UserLayout = ({ children }) => {
                 </span>
                 <span style={{
                   display: 'block',
-                  fontSize: '0.68rem',
+                  fontSize: 'var(--ui-text-meta, .8125rem)',
                   color: "var(--color-fg-subtle, var(--color-fg-muted))",
                 }}>
                   Editar perfil

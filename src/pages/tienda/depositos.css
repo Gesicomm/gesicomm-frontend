@@ -1,0 +1,93 @@
+.dep-page { width: 100%; min-width: 0; box-sizing: border-box; }
+.dep-page-heading { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.dep-primary-actions button { min-height: 44px; border-radius: 14px; }
+.dep-list-summary { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-bottom: 1rem; color: var(--color-fg-muted); font-size: var(--ui-text-help, 0.875rem); }
+.dep-list-summary strong { color: var(--color-fg); }
+.dep-delivery { border-radius: 22px; background: var(--color-surface); box-shadow: 0 3px 16px color-mix(in srgb, var(--color-fg) 3%, transparent); }
+.dep-delivery [hidden] { display: none; }
+.dep-delivery-heading { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1.5rem; flex-wrap: wrap; }
+.dep-delivery-copy { display: flex; align-items: flex-start; gap: 1rem; min-width: 0; flex: 1 1 340px; }
+.dep-delivery-icon { display: grid; place-items: center; width: 50px; height: 50px; flex: 0 0 50px; border-radius: 16px; background: var(--bg-primary-soft); color: var(--color-primary-text); }
+.dep-delivery-copy h2, .dep-list-heading h2 { margin: 0 0 0.5rem; font-size: var(--ui-text-section, 1.375rem); font-weight: 700; color: var(--color-fg); }
+.dep-delivery-copy p { margin: 0; color: var(--color-fg-muted); }
+.dep-delivery-current { display: block; margin-top: 0.65rem; color: var(--color-fg); font-size: var(--ui-text-help, 0.875rem); }
+.dep-delivery-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+.dep-delivery-actions button { display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; padding: 0.65rem 0.85rem; border: 1px solid var(--color-border); border-radius: 12px; cursor: pointer; }
+.dep-delivery-toggle { background: var(--bg-primary-soft); color: var(--color-primary-text); font-weight: 600; }
+.dep-courier-catalog { background: var(--color-surface); color: var(--color-fg); }
+.dep-list-heading { margin: 1.75rem 0 1rem; }
+.dep-list-heading p { max-width: 75ch; margin: 0; color: var(--color-fg-muted); }
+.dep-configure-label { display: inline-block; margin-top: 0.4rem; color: var(--color-primary-text); font-size: var(--ui-text-help, 0.875rem); font-weight: 600; }
+.dep-filters { padding: 1.1rem; border: 1px solid var(--color-border); border-radius: 22px; background: var(--color-surface); }
+.dep-filter-main { display: flex; align-items: end; gap: 0.85rem; }
+.dep-filters label { display: grid; gap: 0.4rem; min-width: 0; flex: 0 1 170px; font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted); }
+.dep-filters label.dep-filter-search { flex: 1; }
+.dep-filter-search > div { position: relative; }
+.dep-filter-search svg { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); }
+.dep-filters input, .dep-filters select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--color-border); border-radius: 12px; padding: 0.6rem 0.75rem; background: var(--color-canvas); color: var(--color-fg); font: inherit; font-size: var(--ui-text-help, 0.875rem); }
+.dep-filter-search input { padding-left: 2.3rem; }
+.dep-more-filters { margin-top: 0.85rem; }
+.dep-more-filters summary { display: flex; align-items: center; gap: 0.5rem; min-height: 36px; cursor: pointer; font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted); list-style: none; }
+.dep-more-filters summary::-webkit-details-marker { display: none; }
+.dep-filter-extra { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.85rem; padding-top: 0.75rem; }
+.dep-filter-count { background: var(--color-selection); color: var(--color-selection-fg); padding: 0.2rem 0.45rem; border-radius: 999px; font-size: var(--ui-text-help, 0.875rem); }
+.dep-clear-filters { margin-top: 0.75rem; min-height: 36px; border: 0; background: transparent; color: var(--color-primary-text); font-size: var(--ui-text-help, 0.875rem); cursor: pointer; }
+.dep-deposit-card { border-radius: 22px; padding: 1.25rem; }
+.dep-deposit-card h3 { overflow-wrap: anywhere; }
+.dep-deposit-card button { min-height: 40px; border-radius: 12px; }
+.dep-deposit-card > button { min-width: 0; }
+.dep-stock-section { padding: 1.5rem; border: 1px solid var(--color-border); border-radius: 24px; background: var(--color-surface); margin: 1.5rem 0; }
+.dep-stock-section h2 { margin: 0 0 0.35rem; color: var(--color-fg); font-size: 1rem; }
+.dep-stock-section header p { margin: 0; font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted); }
+.dep-stock-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; margin-top: 1rem; }
+.dep-stock-grid button { display: flex; align-items: start; gap: 0.85rem; padding: 1.15rem; border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-canvas); text-align: left; color: var(--color-fg); cursor: pointer; }
+.dep-stock-grid button:hover { border-color: var(--color-primary-text); }
+.dep-stock-grid button > svg { flex-shrink: 0; color: var(--color-primary-text); }
+.dep-stock-grid button span { display: grid; gap: 0.5rem; flex: 1; min-width: 0; }
+.dep-stock-grid strong { font-size: var(--ui-text-help, 0.875rem); }
+.dep-stock-grid small { font-size: var(--ui-text-help, 0.875rem); line-height: 1.6; color: var(--color-fg-muted); }
+.dep-detail { border-radius: 24px 0 0 24px; }
+.dep-detail-block { padding: 1.25rem; border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-surface); }
+.dep-detail-block button { min-height: 40px; border-radius: 12px; }
+.dep-detail-block .flex.items-center.justify-between { flex-wrap: wrap; }
+.dep-detail-stock { background: var(--color-canvas); }
+.dep-form { border-radius: 26px; }
+.dep-form form { min-height: 0; }
+.dep-form-intro { margin: 0 0 1.25rem; color: var(--color-fg-muted); font-size: var(--ui-text-help, 0.875rem); line-height: 1.6; }
+.dep-fields-heading { margin: 0; padding-top: 1rem; border-top: 1px solid var(--color-border); color: var(--color-fg); font-size: var(--ui-text-help, 0.875rem); font-weight: 650; }
+.dep-fields-heading:first-child { border-top: 0; padding-top: 0; }
+.dep-fields-heading small { font-weight: 400; color: var(--color-fg-muted); }
+.dep-form input, .dep-form button { border-radius: 12px; }
+.dep-form input { min-height: 42px; }
+.dep-discard { margin-top: 1rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 15px; background: var(--color-canvas); color: var(--color-fg); font-size: var(--ui-text-help, 0.875rem); }
+.dep-discard button { min-height: 40px; border: 1px solid var(--color-border); background: var(--color-surface); padding: 0.5rem; margin: 0.25rem; cursor: pointer; }
+.dep-page button:focus-visible, .dep-form button:focus-visible, .dep-filters input:focus-visible, .dep-filters select:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
+@media (min-width: 1024px) and (max-width: 1099px) { .dep-deposit-card { display: flex; align-items: stretch; } }
+@media (min-width: 1100px) {
+  .dep-deposit-card { display: grid; grid-template-columns: minmax(0,1fr) 270px auto; align-items: center; gap: 0.75rem 1rem; }
+  .dep-deposit-card > button:first-child { grid-column: 1; grid-row: 1; }
+  .dep-deposit-card > div:nth-child(2) { grid-column: 1; grid-row: 2; padding-left: 3.25rem; }
+  .dep-deposit-card > div:nth-child(3) { grid-column: 2; grid-row: 1 / span 2; }
+  .dep-deposit-card > div:nth-child(4) { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+}
+@media (max-width: 640px) {
+  .dep-delivery-heading { padding: 1.1rem; gap: 1rem; }
+  .dep-delivery-copy { flex-basis: 100%; gap: 0.7rem; }
+  .dep-delivery-icon { width: 40px; height: 40px; flex-basis: 40px; border-radius: 12px; }
+  .dep-delivery-actions { width: 100%; }
+  .dep-delivery-actions button { flex: 1 1 100%; }
+  .dep-page-heading { align-items: stretch; }
+  .dep-primary-actions, .dep-primary-actions button { width: 100%; }
+  .dep-filter-main { flex-wrap: wrap; }
+  .dep-filter-main label, .dep-filter-main label.dep-filter-search { flex: 1 0 100%; }
+  .dep-filter-extra, .dep-stock-grid { grid-template-columns: minmax(0,1fr); }
+  .dep-stock-section, .dep-deposit-card { padding: 1rem; border-radius: 20px; }
+  .dep-detail { border-radius: 0; }
+  .dep-detail > .space-y-5 { padding: 1rem; }
+  .dep-detail-block { padding: 1rem; }
+  .dep-detail-block > .flex { flex-wrap: wrap; }
+  .dep-form-overlay { padding: 0.65rem; }
+  .dep-form { max-height: 94dvh; border-radius: 22px; }
+  .dep-form .px-6 { padding-left: 1rem; padding-right: 1rem; }
+  .dep-form input, .dep-filters input, .dep-filters select { font-size: 16px; }
+}

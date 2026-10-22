@@ -66,7 +66,7 @@ const DashboardLayout = ({ children }) => {
     );
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-canvas text-fg">
+        <div className="gc-panel flex h-screen w-screen overflow-hidden bg-canvas text-fg">
             <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
             <div className="flex min-w-0 flex-1 flex-col">

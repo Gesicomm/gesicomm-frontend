@@ -30,7 +30,7 @@ export default function CourierLogin() {
   }
 
   return (
-    <main className="cp-root cp-login">
+    <main className="gc-panel cp-root cp-login">
       <form className="cp-login-card" onSubmit={submit}>
         <span className="cp-login-badge"><Truck size={24} /></span>
 

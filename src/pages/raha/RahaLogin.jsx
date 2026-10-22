@@ -35,7 +35,7 @@ export default function RahaLogin() {
   }
 
   return (
-    <main className="rp-root rp-login-wrap">
+    <main className="gc-panel rp-root rp-login-wrap">
       <div style={{ position: 'absolute', top: '1.25rem', right: '1.5rem', zIndex: 10 }}>
         <button
           type="button"

@@ -1,0 +1,43 @@
+@import './settingsTypography.css';
+
+/* Capa de compatibilidad del panel: unifica CSS legacy, Tailwind y portales.
+   !important se limita a tipografía para superar tamaños inline heredados.
+   Las vistas de diseño y código conservan sus propias fuentes y tamaños. */
+@scope (body:has(.gc-panel, .onb-page, .st-page)) to (.tn-typography-preview, .monaco-editor, [data-typography-preview]) {
+  p, p[class] { font-size: var(--ui-text-body) !important; line-height: var(--ui-leading-body) !important; }
+  h1 { font-size: var(--ui-text-page) !important; line-height: 1.25 !important; font-weight: 750 !important; }
+  h2 { font-size: var(--ui-text-section) !important; line-height: 1.35 !important; font-weight: 700 !important; }
+  h3, h4, h3[class], h4[class] { font-size: var(--ui-text-card) !important; line-height: 1.4 !important; font-weight: 650 !important; }
+  h5, h6 { font-size: var(--ui-text-body) !important; line-height: 1.4 !important; font-weight: 600 !important; }
+  input:not([type='checkbox']):not([type='radio']):not([type='color']), select, select[class], textarea, textarea[class], [role='combobox'] {
+    font-family: var(--font-sans) !important;
+    font-size: var(--ui-text-body) !important;
+    line-height: 1.5 !important;
+  }
+  button, label, summary, [role='button'], [role='tab'] {
+    font-size: var(--ui-text-label) !important;
+    line-height: 1.5 !important;
+  }
+  button, input, select, textarea { font-family: var(--font-sans); }
+  label { font-weight: 550; }
+  small, [role='tooltip'], .text-xs, .text-sm,
+  .text-\[8px\], .text-\[9px\], .text-\[10px\], .text-\[11px\], .text-\[12px\], .text-\[13px\],
+  .text-\[0\.65rem\], .text-\[0\.7rem\], .text-\[0\.75rem\], .text-\[0\.8rem\] {
+    font-size: var(--ui-text-help) !important;
+    line-height: 1.5 !important;
+  }
+  /* Las etiquetas de campo suelen ser un span dentro del label. */
+  label > span:first-child { font-size: var(--ui-text-label); }
+  th { font-size: var(--ui-text-help) !important; line-height: 1.5 !important; }
+  td { font-size: var(--ui-text-label); line-height: 1.5; }
+  .sidebar-link, .sidebar-nav-container a { font-size: var(--ui-text-label); line-height: 1.5; }
+  .tn-field-hint, .tn-message-help, .tn-message-text-meta, .tn-message-direction,
+  .tn-message-state, .tn-message-excerpt, .tn-footer-note, .tn-store-eyebrow {
+    font-size: var(--ui-text-help) !important;
+    line-height: 1.5 !important;
+  }
+  @media (max-width: 640px) {
+    h1 { font-size: 1.75rem !important; }
+    button { overflow-wrap: anywhere; }
+  }
+}

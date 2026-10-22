@@ -30,7 +30,7 @@ function formatGs(valor) {
  * compra): son decisiones distintas y se configuran por separado. Acá sólo
  * se decide qué pasa cuando hay una venta.
  */
-export default function FulfillmentCard({ onCambio }) {
+export default function FulfillmentCard({ onCambio, onConfiguracion }) {
   const [config, setConfig] = useState(null);
   const [modalidad, setModalidad] = useState('PROPIA');
   const [depositoId, setDepositoId] = useState(null);
@@ -50,6 +50,8 @@ export default function FulfillmentCard({ onCambio }) {
   const [verCobertura, setVerCobertura] = useState(false);
   const debouncedBuscarDeposito = useDebounce(buscarDeposito, 350);
   const depositosLimit = 6;
+
+  useEffect(() => { onConfiguracion?.(config); }, [config, onConfiguracion]);
 
   const cargar = () => {
     setCargando(true);
