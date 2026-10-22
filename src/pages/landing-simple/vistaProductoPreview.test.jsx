@@ -242,7 +242,7 @@ describe('Vista producto: cada campo llega a la preview', () => {
   it('ocultar paneles deja solo la landing y se vuelve a mostrar', () => {
     montar();
     expect(screen.getAllByRole('button', { name: /Guardar/ })).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: /Ocultar paneles/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Vista previa', exact: true }));
     expect(screen.queryByRole('heading', { name: 'Configurar tienda' })).toBeNull();
     expect(screen.queryByRole('tablist', { name: 'Pantalla' })).toBeNull();
     expect(screen.getAllByTestId('preview')).toHaveLength(1);
@@ -250,7 +250,7 @@ describe('Vista producto: cada campo llega a la preview', () => {
     const escritorio = screen.getByRole('radio', { name: 'Escritorio', exact: true });
     fireEvent.click(escritorio);
     expect(escritorio.getAttribute('aria-checked')).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: /Mostrar paneles/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Editar', exact: true }));
     expect(screen.getByRole('heading', { name: 'Configurar tienda' })).toBeTruthy();
     expect(screen.getByText('Landing HTML')).toBeTruthy();
   });

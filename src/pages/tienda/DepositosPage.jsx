@@ -266,39 +266,32 @@ export default function DepositosPage() {
         </nav>
       </div>
 
-      <div className="dep-list-summary"><strong>{total} {total === 1 ? 'depósito' : 'depósitos'}</strong><span>{depositosActivos} activos en esta página</span></div>
-
       {!esAdmin && (
-        <div className="dep-delivery mb-6 rounded-lg border border-border bg-surface">
+        <div className="dep-delivery">
           <div className="dep-delivery-heading">
             <div className="dep-delivery-copy">
-              <span className="dep-delivery-icon" aria-hidden="true"><Truck size={24} /></span>
+              <Truck size={20} aria-hidden="true" />
               <div>
-                <h2>Entrega de pedidos</h2>
-                <p>Elegí quién prepara y entrega los pedidos de tu tienda.</p>
                 <span className="dep-delivery-current">{fulfillmentConfig ? (fulfillmentConfig.modalidad === 'PROPIA' ? 'Despachás con tus depósitos y transportistas.' : 'Gesicom-RAHA prepara y entrega tus pedidos.') : 'Consultá o cambiá cómo entregás tus pedidos.'}</span>
               </div>
             </div>
             <div className="dep-delivery-actions">
               <button type="button" className="dep-delivery-toggle" onClick={() => setFulfillmentOpen(open => !open)} aria-label={`Entrega de pedidos: ${fulfillmentOpen ? 'cerrar' : 'cambiar'} configuración`} aria-expanded={fulfillmentOpen} aria-controls="dep-delivery-options">
-                {fulfillmentOpen ? 'Cerrar configuración' : 'Cambiar configuración'}<ChevronDown size={18} className={fulfillmentOpen ? 'rotate-180' : ''} />
+                {fulfillmentOpen ? 'Cerrar configuración' : 'Cambiar'}<ChevronDown size={18} className={fulfillmentOpen ? 'rotate-180' : ''} />
               </button>
-              <button type="button" className="dep-courier-catalog" onClick={() => navigate('/mi-tienda/couriers')}><Truck size={16} />Catálogo de couriers</button>
             </div>
           </div>
           <div id="dep-delivery-options" hidden={!fulfillmentOpen} className="border-t border-border p-4">
+              <button type="button" className="dep-courier-catalog" onClick={() => navigate('/mi-tienda/couriers')}><Truck size={16} />Catálogo de couriers</button>
               <FulfillmentCard onConfiguracion={setFulfillmentConfig} />
             </div>
         </div>
       )}
 
-      <header className="dep-list-heading">
-        <h2>Tus depósitos</h2>
-        <p>En cada depósito, entrá a <strong>Administrar</strong> para editar la ubicación y el contacto, asignar transportistas y configurar las ciudades de entrega.</p>
-      </header>
-      <div className="mb-6">
+      <div className="dep-list-controls">
         <DepositoFilters key={filtersKey} onChange={handleFiltrosChange} />
       </div>
+      <div className="dep-list-summary"><strong>{total} {total === 1 ? 'depósito' : 'depósitos'}</strong><span>{depositosActivos} activos en esta página</span></div>
 
       <div className="relative min-h-[300px]">
         {loading && (

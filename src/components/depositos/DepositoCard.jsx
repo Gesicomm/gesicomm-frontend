@@ -17,7 +17,7 @@ export default function DepositoCard({
 }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const couriersAsignados = courierSummary?.enabledCount ?? 0;
-  const ciudades = courierSummary?.totalCities ?? 0;
+  const ciudades = Number(courierSummary?.enabledCouriers?.[0]?.ciudades_cubiertas ?? courierSummary?.totalCities ?? 0);
   const pendientes = courierSummary?.pendingCount ?? 0;
 
   return (
@@ -52,7 +52,7 @@ export default function DepositoCard({
         </span>
       </button>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-subtle">
+      <div hidden={!deposito.personaContacto && !deposito.telefonoContacto} className="dep-deposit-contact flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-subtle">
         {deposito.personaContacto ? (
           <span className="flex min-w-0 items-center gap-1.5">
             <User size={13} /> <span className="truncate">{deposito.personaContacto}</span>
@@ -67,15 +67,11 @@ export default function DepositoCard({
         )}
       </div>
 
-      <div className="grid w-full grid-cols-2 gap-2 text-sm">
-        <span className="rounded-md border border-border bg-surface-50 px-3 py-2">
-          <span className="block text-[11px] font-medium uppercase text-fg-muted">Transportistas</span>
-          <span className="font-semibold text-fg">{summaryLoading ? '...' : courierSummary ? couriersAsignados : '—'}</span>
-        </span>
-        <span className="rounded-md border border-border bg-surface-50 px-3 py-2">
-          <span className="block text-[11px] font-medium uppercase text-fg-muted">Ciudades</span>
-          <span className="font-semibold text-fg">{summaryLoading ? '...' : courierSummary ? ciudades : '—'}</span>
-        </span>
+      <div className="dep-deposit-meta" aria-label="Transportistas y cobertura" aria-busy={summaryLoading}>
+        {summaryLoading ? <span role="status">Cargando cobertura…</span> : courierSummary ? <>
+          <span className="font-semibold text-fg">{couriersAsignados ? `${courierSummary.enabledCouriers?.[0]?.nombre || 'Transportista asignado'}${couriersAsignados > 1 ? ` + ${couriersAsignados - 1}` : ''}` : 'Sin transportistas'}</span>
+          <span>{ciudades} {ciudades === 1 ? 'ciudad cubierta' : 'ciudades cubiertas'}{couriersAsignados > 1 ? ' con el principal' : ''}</span>
+        </> : <span>Cobertura no disponible</span>}
       </div>
 
       <div className="flex items-center justify-end gap-2 self-end lg:self-auto">

@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import {
   Plus, Copy, Check, Edit2, Trash2, Archive, Play, Pause,
-  MessageCircle, Globe, Megaphone, ChevronRight, History, Wallet,
+  MessageCircle, Globe, Megaphone, ChevronRight, History, Wallet, RefreshCw,
 } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
 import CampanaInternaModal from './CampanaInternaModal';
 import GastoCampanaModal from './GastoCampanaModal';
 import AdsCampanaHistorial from './AdsCampanaHistorial';
 import { formatPYG, formatFecha, BADGE_ESTADO } from './adsShared';
-import { EncabezadoSeccion, EstadoVacio } from './adsUI';
+import { EstadoVacio } from './adsUI';
 
 /**
  * Vista "Campañas": las campañas internas y lo que se lleva gastado en
@@ -93,58 +93,28 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
 
   return (
     <div className="ads-campaign-list flex flex-col gap-3">
-      <EncabezadoSeccion
-        titulo="Campañas"
-        descripcion="Registrá tus campañas y cargá lo que gastaste. Publicar y administrar los anuncios se hace en Meta Ads Manager."
-      >
+      <div className="ads-campaign-toolbar" role="group" aria-label="Acciones de campañas">
+        <label className="ads-state-filter"><span>Estado de campaña</span>
         <select aria-label="Filtrar campañas por estado" className="filter-input" style={{ maxWidth: '170px' }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
           <option value="activas">Sin archivar</option>
           <option value="archivadas">Archivadas</option>
           <option value="todas">Todas</option>
         </select>
+        </label>
+        <button type="button" className="btn-secondary" onClick={onCambio} disabled={cargando}><RefreshCw size={16} aria-hidden="true" /> Actualizar</button>
         <button type="button" className="btn-primary" onClick={() => { setCampanaEditar(null); setModalOpen(true); }}>
           <Plus size={16} style={{ marginRight: '0.35rem' }} /> Nueva campaña
         </button>
-      </EncabezadoSeccion>
+
+      </div>
 
       {errorAccion && <div className="ads-error" role="alert">{errorAccion}</div>}
       <div className="ads-summary" aria-label="Resumen de campañas">
-        <article><span>Campañas visibles</span><strong>{visibles.length}</strong></article>
-        <article><span>Gasto registrado acumulado</span><strong>{formatPYG(totalVisible)}</strong></article>
-        <article><span>Sin gasto registrado</span><strong>{visibles.filter(c => !(c.gasto_registros > 0)).length}</strong></article>
+        <article><span>Campañas</span><strong>{visibles.length}</strong></article>
+        <article><span>Gasto acumulado</span><strong>{formatPYG(totalVisible)}</strong></article>
+        <article><span>Sin gasto</span><strong>{visibles.filter(c => !(c.gasto_registros > 0)).length}</strong></article>
       </div>
-      <details className="ads-guide">
-        <summary>
-          <span>Cómo organizar tu primera campaña</span>
-          <span className="ads-guide-caption">3 pasos: crear → publicar → registrar el gasto</span>
-        </summary>
-        <ol className="ads-guide-steps" role="list">
-          <li>
-            <span className="ads-guide-number" aria-hidden="true">1</span>
-            <div>
-              <span className="ads-guide-place">En Gesicom</span>
-              <h3>Creá tu campaña</h3>
-              <p>Hacé clic en <strong>Nueva campaña</strong>. Elegí el producto, el canal, el objetivo y la distribución del presupuesto para generar su nombre.</p>
-            </div>
-          </li>
-          <li>
-            <span className="ads-guide-number" aria-hidden="true">2</span>
-            <div>
-              <span className="ads-guide-place">En Meta Ads Manager</span>
-              <h3>Publicá tus anuncios</h3>
-              <p>Copiá el nombre generado en Gesicom y pegalo al crear la campaña en Meta. Allí configurás los anuncios y los publicás.</p>
-            </div>
-          </li>
-          <li>
-            <span className="ads-guide-number" aria-hidden="true">3</span>
-            <div>
-              <span className="ads-guide-place">De vuelta en Gesicom</span>
-              <h3>Registrá lo que gastaste</h3>
-              <p>En tu campaña, elegí <strong>Cargar gasto</strong>. Indicá el rango de fechas y el monto invertido para consultar el total y su historial.</p>
-            </div>
-          </li>
-        </ol>
-      </details>
+
       {/* El esqueleto es solo para la primera carga: al refrescar después de
           guardar un gasto, la tabla se queda en pantalla. */}
       {cargando && campanas.length === 0 ? (
@@ -155,11 +125,6 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
           titulo={filtroEstado === 'archivadas' ? 'No hay campañas archivadas' : 'Todavía no creaste ninguna campaña'}
           descripcion="Creá una campaña, copiá el nombre generado en Meta Ads Manager y después cargá cuánto gastaste en cada rango de fechas."
         >
-          {filtroEstado !== 'archivadas' && (
-            <button type="button" className="btn-primary mt-1" onClick={() => { setCampanaEditar(null); setModalOpen(true); }}>
-              <Plus size={16} style={{ marginRight: '0.35rem' }} /> Nueva campaña
-            </button>
-          )}
         </EstadoVacio>
       ) : (
         <div className="ads-campaigns data-table-wrapper">
@@ -299,6 +264,38 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
         </div>
       )}
 
+      <details className="ads-guide" onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
+        <summary>
+          <span>Cómo empezar</span>
+        </summary>
+        <div className="ads-guide-content"><strong>Cómo organizar tu primera campaña</strong>
+        <ol className="ads-guide-steps" role="list">
+          <li>
+            <span className="ads-guide-number" aria-hidden="true">1</span>
+            <div>
+              <span className="ads-guide-place">En Gesicom</span>
+              <h3>Creá tu campaña</h3>
+              <p>Hacé clic en <strong>Nueva campaña</strong>. Elegí el producto, el canal, el objetivo y la distribución del presupuesto para generar su nombre.</p>
+            </div>
+          </li>
+          <li>
+            <span className="ads-guide-number" aria-hidden="true">2</span>
+            <div>
+              <span className="ads-guide-place">En Meta Ads Manager</span>
+              <h3>Publicá tus anuncios</h3>
+              <p>Copiá el nombre generado en Gesicom y pegalo al crear la campaña en Meta. Allí configurás los anuncios y los publicás.</p>
+            </div>
+          </li>
+          <li>
+            <span className="ads-guide-number" aria-hidden="true">3</span>
+            <div>
+              <span className="ads-guide-place">De vuelta en Gesicom</span>
+              <h3>Registrá lo que gastaste</h3>
+              <p>En tu campaña, elegí <strong>Cargar gasto</strong>. Indicá el rango de fechas y el monto invertido para consultar el total y su historial.</p>
+            </div>
+          </li>
+        </ol>
+      </div></details>
       <p className="ads-footnote m-0 text-[0.72rem] text-fg-subtle">
         El gasto de cada campaña es la suma de todos los rangos de fechas que cargaste. Tocá el nombre de la campaña para ver el histórico completo.
       </p>

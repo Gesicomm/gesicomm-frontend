@@ -55,7 +55,7 @@ describe('Resetear el diseño MCP y guardar la landing publicada', () => {
       return structuredClone(persistida);
     });
     const vista = montar(persistida);
-    fireEvent.change(await screen.findByLabelText('Qué querés editar'), { target: { value: 'legales' } });
+    fireEvent.change(await screen.findByLabelText('Página de la tienda'), { target: { value: 'legal:politica_privacidad' } });
     const editor = screen.getByRole('textbox', { name: 'Contenido de Política de privacidad' });
     expect(editor).toHaveTextContent('Texto actual de la tienda');
     editor.innerHTML = '<p><u>Privacidad editada</u></p><ul><li>Condición propia</li></ul>';
@@ -71,7 +71,7 @@ describe('Resetear el diseño MCP y guardar la landing publicada', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar', exact: true })).toBeEnabled());
     vista.unmount();
     montar(persistida);
-    fireEvent.change(await screen.findByLabelText('Qué querés editar'), { target: { value: 'legales' } });
+    fireEvent.change(await screen.findByLabelText('Página de la tienda'), { target: { value: 'legal:politica_privacidad' } });
     expect(screen.getByRole('textbox', { name: 'Contenido de Política de privacidad' })).toHaveTextContent('Privacidad editada');
   });
   it('envía el código restaurado y conserva la plantilla al volver a abrir', async () => {

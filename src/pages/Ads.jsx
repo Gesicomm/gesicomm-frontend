@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Megaphone, Globe, RefreshCw, Loader2 } from 'lucide-react';
+import { Megaphone, Globe } from 'lucide-react';
 import { api } from '../utils/api';
 import { metaReportesService } from '../services/metaReportesService';
 import AdsCampanas from './ads/AdsCampanas';
@@ -80,21 +80,7 @@ export default function Ads() {
   return (
     <div className="ads-page settings-container" style={{ maxWidth: '100%' }}>
       <div className="settings-header flex flex-wrap items-start justify-between gap-3">
-        <div><h1>Publicidad</h1><p>Organizá tus campañas y llevá el control de tu inversión.</p></div>
-        {seccion === 'campanas' && (
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={cargarCampanas}
-            disabled={cargandoCampanas}
-            title="Volver a traer los datos"
-          >
-            {cargandoCampanas
-              ? <Loader2 size={15} className="animate-spin" style={{ marginRight: '0.35rem' }} />
-              : <RefreshCw size={15} style={{ marginRight: '0.35rem' }} />}
-            Actualizar
-          </button>
-        )}
+        <div><h1>Publicidad</h1><p>Publicá anuncios en Meta; registrá tus gastos acá.</p></div>
       </div>
 
       {/* Navegación — con una sola sección no hay entre qué elegir */}

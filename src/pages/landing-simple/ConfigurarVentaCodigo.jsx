@@ -7,7 +7,7 @@ import {
   Eye, EyeOff, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
   ChevronsUpDown, ChevronsDownUp,
   Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, RotateCcw, Trash2, ExternalLink, Save, Settings2, Copy, Sparkles,
-  GripVertical, Lock, PanelLeftClose, PanelLeftOpen, Cpu, Terminal,
+  GripVertical, Lock, Cpu, Terminal,
 } from 'lucide-react';
 import ConectarMcpPanel from './panels/ConectarMcpPanel';
 import { MCP_EDITOR_HABILITADO } from './mcpEditorConfig';
@@ -2485,7 +2485,7 @@ export default function ConfigurarVentaCodigo({
     dispositivo,
     onDispositivo: setDispositivo,
   };
-  const vistaPrevia = <VistaPrevia {...propsVistaPrevia} onAmpliar={() => setPreviewAmpliada(true)} />;
+  const vistaPrevia = <VistaPrevia {...propsVistaPrevia} compacta onAmpliar={() => setPreviewAmpliada(true)} />;
 
   return (
     <div className="ecommerce-builder h-full min-h-0 w-full overflow-hidden flex flex-col bg-canvas">
@@ -2495,41 +2495,16 @@ export default function ConfigurarVentaCodigo({
           ahí y ahora viven acá. */}
       {/* Sin "Volver": mandaba a /landing, que con una landing existente
           redirige de vuelta acá — el botón no hacía nada. */}
-      <div className="ecommerce-builder-toolbar shrink-0 border-b border-border bg-surface px-4 md:px-6 py-2.5 flex items-center justify-end gap-3">
+      <div hidden={panelesOcultos} className="ecommerce-builder-toolbar shrink-0 border-b border-border bg-surface px-4 md:px-6 py-2.5 flex items-center justify-end gap-3">
         <div className="ecommerce-save-context mr-auto min-w-0 text-sm text-fg-muted" role="note" aria-label="Alcance del guardado">
           <strong className="text-fg">{landingActiva ? 'Publicado' : 'Sin publicar'}</strong>
           <span className="block">{landingActiva ? 'Guardar actualiza la tienda publicada.' : 'Guardar conserva los cambios; Publicar habilita el acceso público.'}</span>
           {(landing?.updatedAt || landing?.updated_at) && <span className="block">Último guardado: {new Date(landing.updatedAt || landing.updated_at).toLocaleString('es-PY', { timeZone: 'America/Asuncion' })}</span>}
         </div>
         <div className="ecommerce-builder-actions flex items-center gap-1.5">
-          {panelesOcultos && (
-            <div role="radiogroup" aria-label="Dispositivo" className="flex rounded-lg bg-surface-2 p-0.5 border border-border">
-              {[['movil', 'Celular', Smartphone], ['escritorio', 'Escritorio', Monitor]].map(([k, label, Icono]) => (
-                <button
-                  key={k}
-                  type="button"
-                  role="radio"
-                  aria-checked={dispositivo === k}
-                  onClick={() => setDispositivo(k)}
-                  title={label}
-                  className={`inline-flex items-center gap-1 h-8 px-2 rounded-md text-xs font-medium transition-colors ${dispositivo === k ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
-                >
-                  <Icono size={13} /> <span className="hidden sm:inline">{label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => setPanelesOcultos(v => !v)}
-            aria-pressed={panelesOcultos}
-            aria-label={panelesOcultos ? 'Mostrar paneles' : 'Ocultar paneles'}
-            title={panelesOcultos ? 'Volver a mostrar la configuración y la vista previa' : 'Ocultar la configuración y ver solo la landing'}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold text-fg-muted hover:bg-surface-2 hover:text-fg"
-          >
-            {panelesOcultos ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-            <span>{panelesOcultos ? 'Mostrar paneles' : 'Ocultar paneles'}</span>
-          </button>
+          {(onAbrirCodigo || MCP_EDITOR_HABILITADO || onEliminar) && <details className="ecommerce-editor-tools" onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
+            <summary>Herramientas</summary>
+            <div className="ecommerce-editor-tools-menu">
           {onAbrirCodigo && (
             <button
               type="button"
@@ -2537,12 +2512,12 @@ export default function ConfigurarVentaCodigo({
               title="Código avanzado: HTML/CSS/JS, Secciones, Footer y Prompt IA"
               className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold text-fg-muted hover:bg-surface-2 hover:text-fg"
             >
-              <Settings2 size={14} /> <span className="hidden sm:inline">Código avanzado</span>
+              <Settings2 size={14} /> <span>Código avanzado</span>
             </button>
           )}
           {MCP_EDITOR_HABILITADO && <button
             type="button"
-            onClick={() => setSeccionConfig(s => s === 'mcp' ? 'inicio' : 'mcp')}
+            onClick={e => { e.currentTarget.closest('details').open = false; setPanelesOcultos(false); setSeccionConfig(s => s === 'mcp' ? 'inicio' : 'mcp'); }}
             title="Conectar con Claude o Codex mediante MCP (Model Context Protocol)"
             className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold transition-colors ${
               seccionConfig === 'mcp'
@@ -2551,8 +2526,11 @@ export default function ConfigurarVentaCodigo({
             }`}
           >
             <Cpu size={14} className={seccionConfig === 'mcp' ? 'text-primary-fg' : 'text-primary-text'} />
-            <span className="hidden sm:inline">Conectar MCP</span>
+            <span>Conectar MCP</span>
           </button>}
+          {onEliminar && <button type="button" onClick={e => { e.currentTarget.closest('details').open = false; onEliminar(); }} className="ecommerce-delete-page"><Trash2 size={16} aria-hidden="true" /> Eliminar página</button>}
+            </div>
+          </details>}
           {publicUrl && (
             <a
               href={publicUrl} target="_blank" rel="noreferrer"
@@ -2561,11 +2539,6 @@ export default function ConfigurarVentaCodigo({
             >
               <ExternalLink size={16} aria-hidden="true" /> Ver página publicada
             </a>
-          )}
-          {onEliminar && (
-            <button type="button" onClick={onEliminar} title="Eliminar esta página" className="ecommerce-delete-page inline-flex items-center gap-2 px-3 rounded-lg text-fg-muted hover:bg-danger/10 hover:text-danger">
-              <Trash2 size={16} aria-hidden="true" /> Eliminar página
-            </button>
           )}
           {onPublicar && (
             <button
@@ -2592,17 +2565,30 @@ export default function ConfigurarVentaCodigo({
         </div>
       </div>
 
+      <div className="ecommerce-editor-context">
+        <div role="group" aria-label="Modo del editor" className="ecommerce-mode-switch">
+          <button type="button" aria-pressed={!panelesOcultos} onClick={() => setPanelesOcultos(false)}>Editar</button>
+          <button type="button" aria-pressed={panelesOcultos} onClick={() => setPanelesOcultos(true)}>Vista previa</button>
+        </div>
+        <label className="ecommerce-page-context"><span>Página</span>
+          <select aria-label="Página de la tienda" value={esPaginaLegal ? `legal:${paginaLegal}` : vistaPreview === 'catalogo' ? 'categoria' : vistaPreview} onChange={e => {
+            const destino = e.target.value;
+            if (destino.startsWith('legal:')) { setModoPreview('legales'); setPaginaLegal(destino.slice(6)); }
+            else { setModoPreview('venta'); propsVistaPrevia.onVista(destino); }
+          }}>
+            {VISTAS_PREVIEW_TIENDA.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            <optgroup label="Páginas legales">{PAGINAS_LEGALES_CODIGO.map(p => <option key={p.key} value={`legal:${p.key}`}>{p.label}</option>)}</optgroup>
+          </select>
+        </label>
+        <div role="radiogroup" aria-label="Dispositivo" className="ecommerce-device-switch">
+          {[['movil', 'Celular', Smartphone], ['escritorio', 'Escritorio', Monitor]].map(([key, label, Icono]) => <button key={key} type="button" role="radio" aria-checked={dispositivo === key} onClick={() => setDispositivo(key)}><Icono size={16} aria-hidden="true" />{label}</button>)}
+        </div>
+      </div>
       <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex">
         {/* Configuración: oculta, no desmontada, para no perder lo que se
             está editando (formularios abiertos, borradores). */}
         <div hidden={panelesOcultos} className="ecommerce-builder-config relative flex-1 min-w-0 overflow-y-auto overscroll-contain">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
-            <div className="mb-6">
-              <label htmlFor="contenido-configuracion" className="block text-xs font-semibold text-fg-muted mb-2">Qué querés editar</label>
-              <select id="contenido-configuracion" value={modoPreview} onChange={e => setModoPreview(e.target.value)} className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-fg">
-                <option value="venta">Vista previa de venta</option><option value="legales">Páginas legales</option>
-              </select>
-            </div>
             {esPaginaLegal && <section aria-label="Editar páginas legales">
               <h1 className="text-2xl font-bold text-fg mb-2">Páginas del footer</h1>
               <p className="text-sm text-fg-muted mb-6">Editá las políticas y la información de contacto que aparecen al pie de esta tienda.</p>
@@ -3721,15 +3707,6 @@ export default function ConfigurarVentaCodigo({
               </p>
             )}
           </div>
-          {!panelesOcultos && (
-            <button
-              type="button"
-              onClick={() => setPreviewMovil(true)}
-              className="xl:hidden inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-border text-sm font-medium text-fg hover:border-border-strong"
-            >
-              <Eye size={15} /> Vista previa
-            </button>
-          )}
         </div>
       </div>
 
@@ -4036,7 +4013,7 @@ function VistaPrevia({
   dispositivo, onDispositivo, onAmpliar, ampliada, onCerrar, disenoPendienteIA = false,
   // Solo la landing, sin la cabecera (paneles ocultos): el dispositivo se
   // elige desde la barra superior y se navega con los links de la página.
-  soloLienzo = false,
+  soloLienzo = false, compacta = false,
 }) {
   const productosFicha = productos.filter(p => p.tipo === 'producto' || p.tipo === 'combo');
   const vistaSeleccionada = vista === 'catalogo' ? 'categoria' : vista;
@@ -4069,7 +4046,11 @@ function VistaPrevia({
 
   return (
     <>
-      {!soloLienzo && (
+      {(compacta || soloLienzo) && <div className="ecommerce-preview-summary">
+        <span>{escritorio ? `Escritorio · ${Math.round(anchoLienzo)} px · ${Math.round(escala * 100)} %` : 'Celular · 390 px'}</span>
+        {!soloLienzo && <button type="button" onClick={onAmpliar}><Maximize2 size={16} aria-hidden="true" />Ampliar vista previa</button>}
+      </div>}
+      {!soloLienzo && !compacta && (
       <div className={`px-4 pt-4 pb-3 space-y-3 shrink-0 ${ampliada ? 'border-b border-border bg-surface' : ''}`}>
         <div className="flex items-center justify-between gap-2">
           <select aria-label="Contenido de vista previa" value={modo} onChange={e => onModo?.(e.target.value)} className="min-w-0 h-9 max-w-[220px] rounded-lg border border-border bg-surface px-2 text-sm font-semibold text-fg">
@@ -4149,11 +4130,11 @@ function VistaPrevia({
           // En marcos angostos se simula un escritorio de 1280 px. Si hay
           // más espacio, el viewport crece y la página adapta su propio layout.
           <div className={`ecommerce-desktop-preview w-full h-full min-w-0 flex flex-col overflow-hidden bg-surface ${soloLienzo ? '' : 'rounded-xl border border-border-strong shadow-xl'}`}>
-            <div className="h-7 shrink-0 flex items-center gap-1.5 px-3 bg-surface border-b border-border" aria-hidden="true">
+            {!soloLienzo && <div className="h-7 shrink-0 flex items-center gap-1.5 px-3 bg-surface border-b border-border" aria-hidden="true">
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
-            </div>
+            </div>}
             <div ref={marcoRef} className="flex-1 min-h-0 relative overflow-hidden">
               {tam.w > 0 && (
                 <div

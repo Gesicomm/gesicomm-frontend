@@ -53,7 +53,7 @@ describe('Vista previa de escritorio: se vuelve a medir', () => {
     );
     expect(lienzo().style.transform).toBe(`scale(${1190 / 1280})`);
 
-    fireEvent.click(screen.getByRole('button', { name: /Ocultar paneles/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Vista previa', exact: true }));
     marco.w = 1700; marco.h = 820;
     const activos = observadores.filter(o => o.activo);
     expect(activos.length).toBeGreaterThan(0);

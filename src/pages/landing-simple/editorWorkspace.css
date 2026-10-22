@@ -1,10 +1,25 @@
 .ecommerce-builder-toolbar { flex-wrap: wrap; gap: 12px 24px; }
+.ecommerce-builder-toolbar[hidden] { display: none; }
 .ecommerce-builder-toolbar .ecommerce-save-context { flex: 1 1 260px; }
 .ecommerce-builder-actions { flex-wrap: wrap; min-width: 0; gap: 8px; }
 .ecommerce-builder-actions > :is(button, a) { min-height: 40px; font-size: 14px; line-height: 1.4; }
 .ecommerce-builder-actions svg { flex-shrink: 0; }
-.ecommerce-builder-actions .ecommerce-delete-page { margin-right: 12px; }
 .ecommerce-builder-actions .ecommerce-public-page { text-decoration: none; font-weight: 600; }
+.ecommerce-editor-tools { position: relative; }
+.ecommerce-editor-tools > summary { display: flex; align-items: center; min-height: 40px; padding: 8px 12px; cursor: pointer; color: var(--color-fg-muted); list-style: none; }
+.ecommerce-editor-tools > summary::after { content: '⌄'; margin-left: 8px; }
+.ecommerce-editor-tools > summary::-webkit-details-marker { display: none; }
+.ecommerce-editor-tools-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; display: grid; gap: 4px; min-width: 220px; padding: 8px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); box-shadow: var(--ui-overlay-shadow); }
+.ecommerce-editor-tools-menu > button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; text-align: left; }
+.ecommerce-editor-tools-menu .ecommerce-delete-page { color: var(--color-danger); margin: 0; }
+.ecommerce-editor-context { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 8px 16px; padding: 8px 16px; border-bottom: 1px solid var(--color-border); background: var(--color-surface); }
+.ecommerce-mode-switch, .ecommerce-device-switch { display: flex; align-items: center; gap: 4px; }
+.ecommerce-mode-switch button, .ecommerce-device-switch button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 0; background: transparent; color: var(--color-fg-muted); }
+.ecommerce-mode-switch [aria-pressed='true'], .ecommerce-device-switch [aria-checked='true'] { background: var(--color-surface-2); color: var(--color-fg); box-shadow: inset 0 -2px var(--color-primary-text); font-weight: 600; }
+.ecommerce-page-context { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--color-fg-muted); }
+.ecommerce-page-context select { min-width: 0; width: min(220px, 100%); min-height: 40px; padding: 6px 12px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-fg); }
+.ecommerce-preview-summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; padding: 8px 16px; color: var(--color-fg-muted); font-size: 14px; }
+.ecommerce-preview-summary button { display: inline-flex; align-items: center; gap: 8px; padding-inline: 8px; color: var(--color-fg); }
 .ecommerce-builder-config > div { padding-inline: 24px; }
 .ecommerce-builder-config [role='tablist'][aria-label='Área de configuración'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .ecommerce-builder-config [role='tablist'][aria-label='Área de configuración'] button span { white-space: normal; overflow: visible; }
@@ -14,7 +29,11 @@
 @media (max-width: 767px) {
   .ecommerce-builder-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
   .ecommerce-builder-actions > :is(button, a) { min-height: 44px; justify-content: center; text-align: center; }
-  .ecommerce-builder-actions > [role='radiogroup'], .ecommerce-builder-actions > button:last-child { grid-column: 1 / -1; }
-  .ecommerce-builder-actions .ecommerce-delete-page { margin-right: 0; }
   .ecommerce-builder-config > div { padding-inline: 16px; }
+  .ecommerce-editor-tools > summary { justify-content: center; min-height: 44px; }
+  .ecommerce-editor-tools-menu { left: 0; right: auto; max-width: calc(100vw - 32px); }
+  .ecommerce-editor-context { gap: 8px; }
+  .ecommerce-page-context { order: 2; width: 100%; }
+  .ecommerce-page-context select { flex: 1; width: auto; }
+  .ecommerce-mode-switch button, .ecommerce-device-switch button { min-height: 44px; padding-inline: 4px; gap: 4px; }
 }
