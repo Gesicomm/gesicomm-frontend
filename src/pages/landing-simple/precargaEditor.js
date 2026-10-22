@@ -18,6 +18,11 @@ import { sesionVerificadaVigente, verificarSesion } from '../../utils/auth';
  * guardar precios, activar un combo...) siempre va al servidor.
  */
 const VIGENCIA_MS = 60_000;
+// El guard (RequireTienda), la entrada y EditorSegunModo piden la precarga
+// uno detrás del otro: comparten la que está en vuelo o recién llegada. Una
+// más vieja se vuelve a pedir — si no, un producto cargado mientras tanto
+// (ir a Productos y volver) no aparecería en el editor.
+const REUSO_MS = 5_000;
 // El detalle se usa enseguida (la entrada navega apenas responde la lista):
 // vida corta para no abrir nunca una copia vieja de la landing.
 const VIGENCIA_DETALLE_MS = 15_000;
@@ -25,12 +30,13 @@ let precarga = null;
 let detalle = null;
 
 export function precargarEditor() {
-  if (precarga && Date.now() - precarga.desde < VIGENCIA_MS) return;
+  if (precarga && (precarga.llego == null || Date.now() - precarga.llego < REUSO_MS)) return;
   const catalogo = vitrinaService.catalogo();
   const tienda = tiendaService.obtener().catch(() => null);
-  // Sin esto, un error del catálogo sin consumir queda como rechazo sin manejar.
-  catalogo.catch(() => {});
-  precarga = { desde: Date.now(), catalogo, tienda };
+  const actual = { desde: Date.now(), llego: null, catalogo, tienda };
+  // Sin el catch, un error del catálogo sin consumir queda como rechazo sin manejar.
+  catalogo.then(() => { actual.llego = Date.now(); }, () => { if (precarga === actual) precarga = null; });
+  precarga = actual;
   // El código del editor también: es el chunk más grande del panel.
   import('./EditorSegunModo').catch(() => {});
 }

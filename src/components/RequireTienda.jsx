@@ -9,6 +9,7 @@ import {
 import { tiendaService } from '../services/tiendaService';
 import { planesService } from '../services/planesService';
 import { huboSesion } from '../utils/sesion';
+import { verificarSesionDetallada } from '../utils/auth';
 
 /**
  * Igual que ProtectedRoute, pero además exige que el usuario (rol
@@ -33,7 +34,21 @@ export default function RequireTienda({ children }) {
   // cookie): se pide a la par en vez de esperar a la sesión. Solo si esta
   // pestaña ya tuvo sesión — sin eso, un 401 acá mandaría al login con el
   // aviso de "sesión vencida" a quien nunca entró.
-  useEffect(() => { if (huboSesion()) planesService.miEstado().catch(() => {}); }, []);
+  useEffect(() => {
+    if (!huboSesion()) return;
+    planesService.miEstado().catch(() => {});
+    // Mi e-commerce: el editor espera al catálogo completo para armar la
+    // selección, y el catálogo es el pedido más lento. Arranca acá, junto con
+    // la sesión, en vez de esperar a que se monte la entrada (ver
+    // precargaEditor). El detalle necesita saber quién es el usuario.
+    if (/^\/landing(\/|$)/.test(location.pathname)) {
+      import('../pages/landing-simple/precargaEditor').then((m) => {
+        m.precargarEditor();
+        verificarSesionDetallada().then((r) => { if (r.estado === 'autenticado') m.precargarDetalleUltimaLanding(); });
+      }).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (estado !== 'autenticado') return;
