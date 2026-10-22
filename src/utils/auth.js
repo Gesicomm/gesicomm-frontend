@@ -15,6 +15,8 @@
  */
 import {
   baseApi,
+  compartirPorSesion,
+  valorCompartidoVigente,
   marcarSesionActiva,
   olvidarSesion,
   registrarSesionPerdida,
@@ -35,7 +37,19 @@ import {
  *   'sin-sesion'  → el backend dijo 401, incluso después de intentar renovar
  *   'error'       → no se pudo determinar (backend caído / sin conexión)
  */
-export async function verificarSesionDetallada({ permitirRenovar = true } = {}) {
+export function verificarSesionDetallada() {
+  // Guards, layouts y página preguntan lo mismo al montar: una sola
+  // petición para todos (ver compartirPorSesion). Solo se reusa una sesión
+  // confirmada; "sin sesión" o "error" se vuelven a preguntar.
+  return compartirPorSesion('auth/me', () => consultarSesion(), r => r.estado === 'autenticado');
+}
+
+/** Respuesta ya confirmada y vigente, sin esperar (para no mostrar spinner). */
+export function sesionVerificadaVigente() {
+  return valorCompartidoVigente('auth/me');
+}
+
+async function consultarSesion({ permitirRenovar = true } = {}) {
   let res;
   try {
     res = await fetch(`${baseApi()}/api/auth/me`, {
@@ -52,7 +66,8 @@ export async function verificarSesionDetallada({ permitirRenovar = true } = {}) 
     // que usar el refresh token (7 días), si no el usuario vuelve al login
     // cada 15 minutos de uso.
     if (permitirRenovar && (await renovarSesion())) {
-      return verificarSesionDetallada({ permitirRenovar: false });
+      // Directo, sin la caché: la entrada compartida es esta misma llamada.
+      return consultarSesion({ permitirRenovar: false });
     }
     registrarSesionPerdida();
     return { estado: 'sin-sesion', usuario: null };

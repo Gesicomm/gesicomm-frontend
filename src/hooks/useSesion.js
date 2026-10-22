@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { verificarSesionDetallada } from '../utils/auth';
+import { sesionVerificadaVigente, verificarSesionDetallada } from '../utils/auth';
 
 /**
  * Verifica la sesión contra el backend y expone un estado terminal.
@@ -13,13 +13,17 @@ import { verificarSesionDetallada } from '../utils/auth';
  *             usuario: object|null, reintentar: () => void }}
  */
 export default function useSesion() {
-  const [estado, setEstado] = useState('verificando');
-  const [usuario, setUsuario] = useState(null);
+  // Un guard que se monta debajo de otro (RequireTienda → DynamicLayout) ya
+  // tiene la sesión confirmada hace instantes: arranca con ella en vez de
+  // pasar por el spinner y una segunda ida al servidor.
+  const [inicial] = useState(() => sesionVerificadaVigente());
+  const [estado, setEstado] = useState(inicial ? inicial.estado : 'verificando');
+  const [usuario, setUsuario] = useState(inicial ? inicial.usuario : null);
   const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     let vigente = true;
-    setEstado('verificando');
+    if (!(intento === 0 && inicial)) setEstado('verificando');
 
     verificarSesionDetallada().then((resultado) => {
       if (!vigente) return;
@@ -28,6 +32,7 @@ export default function useSesion() {
     });
 
     return () => { vigente = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intento]);
 
   const reintentar = useCallback(() => setIntento((n) => n + 1), []);

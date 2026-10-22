@@ -1,4 +1,5 @@
 import API from './api';
+import { compartirPorSesion } from '../utils/sesion';
 
 /**
  * Planes y suscripciones de Gesicomm. Son endpoints PÚBLICOS: el flujo es
@@ -9,8 +10,12 @@ export const planesService = {
   /** Catálogo activo, ordenado. Reemplaza al catálogo hardcodeado del front. */
   listar: () => API.get('/planes', { headers: { 'Cache-Control': 'no-cache' } }).then(r => r.data),
 
-  /** Estado de suscripción de la cuenta logueada. */
-  miEstado: () => API.get('/suscripciones/mi-estado').then(r => r.data),
+  /**
+   * Estado de suscripción de la cuenta logueada. RequireTienda y UserLayout
+   * lo piden al montar cada pantalla: comparten la misma respuesta (ver
+   * compartirPorSesion en utils/sesion.js).
+   */
+  miEstado: () => compartirPorSesion('suscripciones/mi-estado', () => API.get('/suscripciones/mi-estado').then(r => r.data)),
 
   /**
    * Arranca el pago de un plan.

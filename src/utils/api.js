@@ -9,7 +9,7 @@
  *   hay nada que renovar, manda al login con el aviso correspondiente en vez
  *   de devolver un error críptico a la pantalla.
  */
-import { irALoginPorSesionPerdida, renovarSesion } from './sesion';
+import { invalidarCacheSesion, irALoginPorSesionPerdida, renovarSesion } from './sesion';
 import { apiOrigin } from './apiBase';
 
 const API_URL = apiOrigin();
@@ -61,6 +61,10 @@ async function peticion(ruta, opciones = {}, { reintentado = false } = {}) {
   }
 
   const data = await leerCuerpo(res);
+
+  // Login, cambio de tienda, pago...: lo compartido de /auth/me y mi-estado
+  // deja de valer (ver utils/sesion.js).
+  if (res.ok && (opciones.method || 'GET') !== 'GET') invalidarCacheSesion();
 
   if (!res.ok) {
     // ✅ Solo mostramos el mensaje genérico que envía el backend.

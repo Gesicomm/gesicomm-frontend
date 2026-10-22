@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import ModoSelector from './ModoSelector';
-import { precargarEditor } from './precargaEditor';
+import { precargarDetalleUltimaLanding, precargarEditor } from './precargaEditor';
 
 /**
  * Puerta de entrada de "/landing" — si el comercio ya tiene una landing,
@@ -26,6 +26,7 @@ export default function LandingSimpleEntry() {
     setSinLandings(false);
     setError('');
     precargarEditor();
+    precargarDetalleUltimaLanding();
     landingSimpleService.listar()
       .then(landings => {
         if (!activo) return;

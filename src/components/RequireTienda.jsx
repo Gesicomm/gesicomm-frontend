@@ -8,6 +8,7 @@ import {
 } from './EstadoSesion';
 import { tiendaService } from '../services/tiendaService';
 import { planesService } from '../services/planesService';
+import { huboSesion } from '../utils/sesion';
 
 /**
  * Igual que ProtectedRoute, pero además exige que el usuario (rol
@@ -27,6 +28,12 @@ export default function RequireTienda({ children }) {
   const location = useLocation();
   // 'pendiente' | 'ok' | 'sin-plan' | 'sin-tienda' | 'sin-tienda-activa'
   const [acceso, setAcceso] = useState('pendiente');
+
+  // El plan no depende de la respuesta de /auth/me (los dos salen de la
+  // cookie): se pide a la par en vez de esperar a la sesión. Solo si esta
+  // pestaña ya tuvo sesión — sin eso, un 401 acá mandaría al login con el
+  // aviso de "sesión vencida" a quien nunca entró.
+  useEffect(() => { if (huboSesion()) planesService.miEstado().catch(() => {}); }, []);
 
   useEffect(() => {
     if (estado !== 'autenticado') return;

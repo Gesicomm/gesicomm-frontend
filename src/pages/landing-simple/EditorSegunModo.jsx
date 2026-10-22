@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import LandingCodigoEditor from './LandingCodigoEditor';
-import { precargarEditor } from './precargaEditor';
+import { precargarEditor, recordarUltimaLanding, tomarDetallePrecargado } from './precargaEditor';
 
 // Las plantillas rígidas ya casi no se usan (todo es lienzo): su editor no
 // viaja en el mismo chunk que el del lienzo.
@@ -32,8 +32,13 @@ export default function EditorSegunModo() {
     // Entrando directo a /landing/:id (recarga, link guardado) no pasó por
     // LandingSimpleEntry: el catálogo arranca acá, junto con el detalle.
     precargarEditor();
-    landingSimpleService.obtener(id)
-      .then(l => { if (activo) setLanding(l); })
+    // Si la entrada ya lo pidió junto con la lista, se usa ese.
+    (tomarDetallePrecargado(id) || landingSimpleService.obtener(id))
+      .then(l => {
+        if (!activo) return;
+        setLanding(l);
+        recordarUltimaLanding(l?.id);
+      })
       .catch(err => {
         if (activo) setError(err?.response?.data?.message || 'No se pudo cargar la landing.');
       });

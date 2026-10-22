@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { irALoginPorSesionPerdida, renovarSesion } from '../utils/sesion';
+import { invalidarCacheSesion, irALoginPorSesionPerdida, renovarSesion } from '../utils/sesion';
 import { apiBaseURL } from '../utils/apiBase';
 
 const apiURL = apiBaseURL();
@@ -34,7 +34,12 @@ export function getMediaUrl(url) {
 // va al login con el aviso, nunca se deja al usuario mirando un spinner.
 // ─────────────────────────────────────────────────────────────────────────
 API.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Una escritura puede cambiar lo que dicen /auth/me o mi-estado (tienda
+    // activa, plan): la respuesta compartida deja de valer. Ver utils/sesion.js.
+    if (response.config?.method && response.config.method.toLowerCase() !== 'get') invalidarCacheSesion();
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 

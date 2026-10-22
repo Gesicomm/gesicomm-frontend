@@ -50,8 +50,65 @@ export function huboSesion() {
   return leer(CLAVE_SESION_ACTIVA) === '1';
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Respuestas de sesión compartidas por los guards y layouts
+//
+// Al abrir una pantalla del panel, RequireTienda, DynamicLayout, UserLayout
+// y la página misma preguntaban cada uno /auth/me (y dos de ellos
+// /suscripciones/mi-estado), uno detrás del otro: cada pregunta a
+// producción cuesta 0,2–0,4 s y el panel esperaba varias en cadena antes de
+// pedir sus datos. Acá se comparte la respuesta: la misma petición en vuelo
+// y, ya resuelta, durante unos segundos.
+//
+// Solo en memoria (nada de storage) y con vida corta. Se descarta al cerrar
+// o perder la sesión y con cualquier escritura exitosa (login, cambio de
+// tienda, pago de plan...: ver invalidarCacheSesion en services/api.js y
+// utils/api.js), así nunca se reusa la identidad o la tienda de antes.
+// ─────────────────────────────────────────────────────────────────────────
+const VIGENCIA_CACHE_SESION_MS = 5000;
+let cacheSesion = new Map();
+
+/**
+ * Devuelve la promesa compartida de `clave` o llama a `pedir()`. Una
+ * respuesta que `esReusable` descarta (error, sin sesión) no se guarda: la
+ * próxima llamada vuelve a preguntar.
+ */
+export function compartirPorSesion(clave, pedir, esReusable = () => true) {
+  const previa = cacheSesion.get(clave);
+  if (previa && (previa.enCurso || Date.now() - previa.desde < VIGENCIA_CACHE_SESION_MS)) return previa.promesa;
+  const generacion = cacheSesion;
+  const entrada = { enCurso: true, desde: 0, valor: undefined, promesa: null };
+  entrada.promesa = Promise.resolve().then(pedir).then(
+    (valor) => {
+      // Si se invalidó mientras estaba en vuelo, no se guarda.
+      if (generacion === cacheSesion && cacheSesion.get(clave) === entrada) {
+        if (esReusable(valor)) Object.assign(entrada, { enCurso: false, desde: Date.now(), valor });
+        else cacheSesion.delete(clave);
+      }
+      return valor;
+    },
+    (err) => {
+      if (cacheSesion.get(clave) === entrada) cacheSesion.delete(clave);
+      throw err;
+    },
+  );
+  cacheSesion.set(clave, entrada);
+  return entrada.promesa;
+}
+
+/** Valor ya resuelto y vigente de `clave` (sin esperar), o undefined. */
+export function valorCompartidoVigente(clave) {
+  const e = cacheSesion.get(clave);
+  return e && !e.enCurso && Date.now() - e.desde < VIGENCIA_CACHE_SESION_MS ? e.valor : undefined;
+}
+
+export function invalidarCacheSesion() {
+  cacheSesion = new Map();
+}
+
 /** Cierre de sesión explícito: no hay nada que avisar después. */
 export function olvidarSesion() {
+  invalidarCacheSesion();
   borrar(CLAVE_SESION_ACTIVA);
   borrar(CLAVE_AVISO);
   avisoDeEstaCarga = undefined;
@@ -62,6 +119,7 @@ export function olvidarSesion() {
  * Devuelve true si corresponde avisarle (o sea: había sesión antes).
  */
 export function registrarSesionPerdida() {
+  invalidarCacheSesion();
   if (!huboSesion()) return false;
   borrar(CLAVE_SESION_ACTIVA);
   escribir(CLAVE_AVISO, AVISO_SESION_EXPIRADA);
