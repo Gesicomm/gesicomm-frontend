@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import PublicNavbar from './PublicNavbar';
-import PublicFooter from './PublicFooter';
+import MarketingChrome from './MarketingChrome';
 
 /**
  * Restaura la posición de scroll al navegar.
@@ -41,22 +40,13 @@ function RestaurarScroll() {
  * navega con teclado no tenga que recorrer el menú en cada página.
  */
 export default function PublicLayout({ children }) {
+  const { pathname } = useLocation();
+  // La portada incluye el encabezado y el pie del HTML de referencia.
+  if (pathname === '/') return <><RestaurarScroll />{children}</>;
   return (
     <>
       <RestaurarScroll />
-      <div className="sitio-publico flex min-h-screen flex-col bg-canvas text-fg">
-        <a href="#contenido" className="saltar-al-contenido no-imprimir">
-          Saltar al contenido
-        </a>
-
-        <PublicNavbar />
-
-        <main id="contenido" className="min-w-0 flex-1 overflow-x-clip">
-          {children}
-        </main>
-
-        <PublicFooter />
-      </div>
+      <MarketingChrome>{children}</MarketingChrome>
     </>
   );
 }

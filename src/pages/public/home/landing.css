@@ -1,0 +1,99 @@
+/* Cambiar estos tokens actualiza toda la portada; no modifica el panel ni las tiendas. */
+.gl-landing {
+  --gc-bg: #08111f;
+  --gc-surface: #0d1b2a;
+  --gc-surface2: #12283b;
+  --gc-border: #294358;
+  --gc-white: #f7fafc;
+  --gc-muted: #a3b7ca;
+  --gc-cyan: #76e4ff;
+  --gc-coral: #ff5c45;
+  --gc-success: #79e3b7;
+  --gc-shadow: #000;
+  --gc-border-strong: color-mix(in srgb, var(--gc-border) 65%, var(--gc-cyan));
+  --gc-success-surface: color-mix(in srgb, var(--gc-success) 20%, var(--gc-bg));
+  --gc-font: 'Manrope Variable', Manrope, system-ui, sans-serif;
+  min-height: 100vh;
+  background: var(--gc-bg);
+  color: var(--gc-white);
+  font-family: var(--gc-font);
+  color-scheme: dark;
+}
+@scope (.gl-landing) {
+  h1, h2, h3 { font-weight: 700; }
+  .home-brand { display: block; width: 150px; height: 48px; object-fit: contain; }
+  .home-nav-actions { display: flex; align-items: center; gap: 14px; }
+  .home-login { font-size: 14px; color: var(--gc-muted); }
+  .home-menu-button, .home-mobile-menu { display: none; }
+  [hidden] { display: none !important; }
+  :is(a, button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--gc-cyan); outline-offset: 4px; }
+  :is(input, select, textarea) { font-size: 16px !important; }
+  button:disabled { cursor: wait; }
+  a, button { -webkit-tap-highlight-color: transparent; }
+  section[id], .home-anchor, #faq { scroll-margin-top: 95px; }
+  .home-anchor { display: block; height: 0; }
+  .home-skip-link { position: fixed; left: 1rem; top: 1rem; transform: translateY(-200%); z-index: 100; padding: 12px 18px; border-radius: 10px; background: var(--gc-white); color: var(--gc-bg); }
+  .home-skip-link:focus { transform: none; }
+  .feature p, .faq p { font-size: 16px; }
+  .plan-list { list-style: disc; }
+  .home-selected-plan { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--gc-cyan); color: var(--gc-white); font-size: 14px; }
+  .home-form-privacy { font-size: 13px; margin: 20px 0 0; }
+  .home-form-privacy a { color: var(--gc-cyan); text-decoration: underline; text-underline-offset: 3px; }
+  .gc-status[data-error='true'] { color: var(--gc-coral); }
+  .gc-status { overflow-wrap: anywhere; }
+  .gc-top h2 { max-width: none; }
+  .home-footer-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 36px; margin-top: 28px; padding-top: 30px; border-top: 1px solid var(--gc-border); }
+  .home-footer-grid h3 { margin: 0 0 18px; font-size: 16px; letter-spacing: 0; }
+  .home-footer-grid a { display: block; width: fit-content; margin: 10px 0; font-size: 14px; color: var(--gc-muted); }
+  .home-footer-grid a:hover { color: var(--gc-cyan); }
+  .home-footer-grid p { margin: 10px 0; font-size: 14px; }
+  .footer { padding-bottom: 96px; }
+  .floating-wa { min-height: 44px; }
+  @media(max-width: 1000px) {
+    .nav-links { gap: 12px; }
+    .nav-links a { font-size: 13px; }
+    .home-login { display: none; }
+  }
+  @media(max-width: 800px) {
+    .home-menu-button { display: inline-flex; min-width: 44px; padding: 10px !important; font-size: 18px !important; }
+    .home-mobile-menu { display: grid; padding: 16px 24px 24px; gap: 8px; background: var(--gc-surface); border-top: 1px solid var(--gc-border); }
+    .home-mobile-menu a { padding: 10px; border-radius: 8px; font-size: 16px; }
+    .home-mobile-menu a:hover { background: var(--gc-surface2); }
+    .home-nav-actions { gap: 8px; }
+    .home-footer-grid { grid-template-columns: 1fr 1fr; }
+    .home-footer-grid > :last-child { grid-column: 1 / -1; }
+  }
+  @media(max-width: 530px) {
+    .home-brand { width: 125px; height: 40px; }
+    .nav-in { gap: 8px; }
+    .nav .btn { font-size: 13px; }
+    .home-footer-grid { grid-template-columns: 1fr; gap: 20px; }
+    .home-dashboard-main { padding: 16px; }
+    .stat { padding: 14px 10px; }
+    .hero { padding-top: 70px; }
+    .bars { gap: 6px; }
+    .gc-form-area { padding: 24px 20px; }
+    .gc-intro { padding: 28px 20px; }
+    .gc-submit .gc-button { width: 100%; min-height: 48px; }
+    .route-panel h3 { font-size: 25px; }
+  }
+}
+
+/* Los documentos usan la misma identidad; el tamaño de sus títulos facilita la lectura larga. */
+.gl-landing.home-document {
+  --color-canvas: var(--gc-bg);
+  --color-surface: var(--gc-surface);
+  --color-surface-2: var(--gc-surface2);
+  --color-fg: var(--gc-white);
+  --color-fg-muted: var(--gc-muted);
+  --color-fg-subtle: var(--gc-muted);
+  --color-border: var(--gc-border);
+  --color-primary: var(--gc-coral);
+  --color-primary-fg: var(--gc-bg);
+  --color-primary-text: var(--gc-cyan);
+  --color-primary-hover: color-mix(in srgb, var(--gc-coral) 80%, var(--gc-white));
+}
+.home-document main h1 { font-size: clamp(30px, 4vw, 48px); max-width: none; margin-inline: 0; }
+.home-document main h2 { font-size: 24px; letter-spacing: -.025em; }
+.home-document main h3 { font-size: 18px; letter-spacing: -.015em; }
+.home-document main p { font-size: 16px; }
