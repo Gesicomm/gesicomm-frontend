@@ -494,7 +494,12 @@ export function presentacionComercial(item, venta) {
     ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'cta_descuento_pct', 'agregar_carrito_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, texto(campo)])),
     // La frase destacada es del producto; la landing puede pisarla o vaciarla.
     ...(propio('propuesta_valor') ? { propuesta_valor: String(fuente.propuesta_valor).trim() || null } : {}),
-    resenas_texto: propio('resenas_texto') ? texto('resenas_texto') : (texto('resenas_texto') || resenasAuto),
+    // Ausente = generar desde las opiniones. Vacío en el producto = el
+    // comercio lo borró: no regenerarlo en cada preview o visita pública.
+    resenas_texto: propio('resenas_texto') ? texto('resenas_texto')
+      : (String(fuente.resenas_texto || '').trim()
+        || (Object.prototype.hasOwnProperty.call(delProducto, 'resenas_texto') && delProducto.resenas_texto != null
+          ? String(delProducto.resenas_texto).trim() : resenasAuto)),
     resenas_calificacion: resenasCalificacion,
     vacios,
     ficha_bloques: bloquesCompatibles,

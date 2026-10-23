@@ -41,3 +41,14 @@ test('el borrador de nombre y estrellas se refleja aunque la landing tenga otros
  await waitFor(()=>expect(capture.props.datos.producto).toMatchObject({titulo_comercial:'Otro nombre',resenas_calificacion:2.5}));
  expect(landing.content.venta.presentacion_productos['producto:12'].titulo_comercial).toBe('Nombre anterior');
 });
+
+test('informa al formulario el texto real resuelto y respeta cuando se borra',async()=>{
+ tiendaService.obtener.mockResolvedValue({nombre:'Tienda'});
+ const onTextoResenas=vi.fn();
+ const producto={nombre:'Producto',ficha_datos:{product_page_opiniones:[{comentario:'Excelente',calificacion:5},{comentario:'Bueno',calificacion:4}]}};
+ const {rerender}=render(<ProductLandingPreview producto={producto} onTextoResenas={onTextoResenas}/>);
+ await waitFor(()=>expect(onTextoResenas).toHaveBeenLastCalledWith('4,5 de 5 · 2 opiniones'));
+ rerender(<ProductLandingPreview producto={{...producto,ficha_datos:{...producto.ficha_datos,presentacion:{resenas_texto:''}}}} onTextoResenas={onTextoResenas}/>);
+ await waitFor(()=>expect(onTextoResenas).toHaveBeenLastCalledWith(''));
+ expect(capture.props.datos.producto.resenas_texto).toBe('');
+});

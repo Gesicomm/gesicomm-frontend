@@ -19,7 +19,10 @@ vi.mock('../../services/catalogoService', () => ({ categoriaService: { buscar: v
 vi.mock('../../services/costosGastosService', () => ({ proveedoresService: { buscar: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { obtenerConfiguracion: vi.fn().mockResolvedValue(null) } }));
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 9, rol: 'tienda' }) }));
-vi.mock('./ProductLandingPreview', () => ({ default: () => null }));
+vi.mock('./ProductLandingPreview', () => ({ default: ({ onTextoResenas }) => {
+  React.useEffect(() => { onTextoResenas?.('4,5 de 5 · 2 opiniones'); }, [onTextoResenas]);
+  return null;
+} }));
 vi.mock('./FichaRubroTab', () => ({ default: () => null }));
 vi.mock('../landing-simple/panels/FaqPanel', () => ({ default: () => null }));
 vi.mock('../landing/ProductPicker', () => ({ default: ({ onToggle }) => <button type="button" onClick={() => onToggle({ id: 7 })}>Elegir extra QA</button> }));
@@ -71,13 +74,16 @@ describe('Alta de producto por secciones', () => {
     expect(screen.getByLabelText('Nombre comercial', { exact: true })).toHaveValue('Nombre para mi tienda');
     fireEvent.click(within(editor).getByRole('button', { name: 'Bloques del producto' }));
     fireEvent.click(within(editor).getByRole('button', { name: /Opiniones y estrellas/ }));
+    expect(screen.getByLabelText('Texto de reseñas')).toHaveValue('4,5 de 5 · 2 opiniones');
+    fireEvent.change(screen.getByLabelText('Texto de reseñas'), { target: { value: '' } });
+    expect(screen.getByLabelText('Texto de reseñas')).toHaveValue('');
     fireEvent.change(screen.getByLabelText('Estrellas comerciales'), { target: { value: '3.5' } });
     expect(screen.getByLabelText('Estrellas comerciales')).toHaveValue(3.5);
     fireEvent.click(within(editor).getByRole('button', { name: 'Bloques del producto' }));
     fireEvent.click(within(editor).getByRole('button', { name: /Presentación/ }));
     expect(screen.getByLabelText('Nombre comercial', { exact: true })).toHaveValue('Nombre para mi tienda');
     guardar(); await screen.findByText('Catálogo guardado');
-    expect(productService.crear.mock.calls[0][0].ficha_datos.presentacion).toMatchObject({ titulo_comercial: 'Nombre para mi tienda', resenas_calificacion: '3.5' });
+    expect(productService.crear.mock.calls[0][0].ficha_datos.presentacion).toMatchObject({ titulo_comercial: 'Nombre para mi tienda', resenas_calificacion: '3.5', resenas_texto: '' });
   });
   it('conserva un costo cero intencional al guardar', async () => {
     await montar();

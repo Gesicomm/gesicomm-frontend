@@ -68,6 +68,7 @@ export default function ProductLandingPreview({
   onExpand,
   seleccionBloque,
   onSeleccionarBloque,
+  onTextoResenas,
 }) {
   const [ofertas, setOfertas] = useState([]);
   const [tienda, setTienda] = useState(null);
@@ -225,6 +226,11 @@ export default function ProductLandingPreview({
       },
     };
   }, [landing, tienda, dto, producto, productoId, pagoparConectado, onSeleccionarBloque, seleccionBloque?.id]);
+
+  const textoResenas = previewLienzo.datos.producto?.resenas_texto || '';
+  useEffect(() => {
+    if (activo && !cargandoDiseno && !errorDiseno) onTextoResenas?.(textoResenas);
+  }, [activo, cargandoDiseno, errorDiseno, textoResenas, onTextoResenas]);
 
   const preview = useMemo(() => (
     <div style={{ height: '100%' }}>

@@ -82,6 +82,19 @@ describe('ficha v2: lo que la landing tocó manda, también vacío', () => {
     expect(fichaCon({ v: 2, resenas_calificacion: '3.5' }).resenas_calificacion).toBe(3.5);
   });
 
+  it('genera el texto de opiniones solo si no fue borrado explícitamente del producto', () => {
+    const opiniones = [{ comentario: 'Excelente', calificacion: 5 }, { comentario: 'Muy bueno', calificacion: 4 }];
+    const item = { ...producto, ficha_datos: { product_page_opiniones: opiniones } };
+    expect(presentacionComercial(item, null).resenas_texto).toBe('4,5 de 5 · 2 opiniones');
+    const borrado = { ...item, ficha_datos: { ...item.ficha_datos, presentacion: { resenas_texto: '' } } };
+    expect(presentacionComercial(borrado, null).resenas_texto).toBe('');
+    expect(presentacionComercial(borrado, { presentacion_productos: { 'producto:10': { v: 2 } } }).resenas_texto).toBe('');
+    const datos = datosRuntimePreview({ productos: [borrado], vista: 'producto', productoId: 'air' });
+    const { visible, dom } = montar(datos);
+    expect(visible('[data-gesicomm-bind="resenas_texto"]')).toBeFalsy();
+    dom.window.close();
+  });
+
   it('hereda las estrellas editadas en el producto y respeta un ajuste específico de la landing', () => {
     const item = { ...producto, ficha_datos: { presentacion: { titulo_comercial: 'Nombre editado', resenas_calificacion: '3.5' } } };
     expect(presentacionComercial(item, null)).toMatchObject({ titulo_comercial: 'Nombre editado', resenas_calificacion: 3.5 });

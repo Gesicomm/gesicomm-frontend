@@ -327,7 +327,7 @@ function EncabezadoProductoFields({ datos, onDatos }) {
   );
 }
 
-function LienzoProductoFields({ datos, onDatos, seccion = null }) {
+function LienzoProductoFields({ datos, onDatos, seccion = null, textoResenas = '' }) {
   const datosActuales = datos && typeof datos === 'object' && !Array.isArray(datos) ? datos : {};
   const presentacion = datosActuales.presentacion && typeof datosActuales.presentacion === 'object' && !Array.isArray(datosActuales.presentacion)
     ? datosActuales.presentacion
@@ -390,9 +390,9 @@ function LienzoProductoFields({ datos, onDatos, seccion = null }) {
           {!(seccion && seccion !== "opiniones") && (<label className="rubro-field">
             <span>Texto de reseñas</span>
             <input
-              value={presentacion.resenas_texto || ''}
+              value={presentacion.resenas_texto ?? textoResenas}
               maxLength={80}
-              placeholder="Ej: 4.9 de 5 · 12 opiniones"
+              placeholder="Sin texto de reseñas"
               onChange={e => cambiarPresentacion('resenas_texto', e.target.value)}
             />
           </label>)}
@@ -2067,6 +2067,7 @@ export default function ProductForm() {
   };
 
   const valoresProducto = watch();
+  const [textoResenasResuelto, setTextoResenasResuelto] = useState('');
   // El disponible se deriva del stock en depósito en vivo:
   // así el número y la barra de abajo reaccionan mientras se tipea, sin
   // esperar a guardar. El backend vuelve a hacer la misma suma al persistir.
@@ -3703,7 +3704,7 @@ export default function ProductForm() {
 
 </> },
               { id: 'incluye', contenido: <><Controller control={control} name="ficha_datos" render={({ field }) => <LienzoProductoFields datos={field.value} onDatos={field.onChange} seccion="incluye" />} /></> },
-              { id: 'opiniones', contenido: <><Controller control={control} name="ficha_datos" render={({ field }) => <LienzoProductoFields datos={field.value} onDatos={field.onChange} seccion="opiniones" />} /></> },
+              { id: 'opiniones', contenido: <><Controller control={control} name="ficha_datos" render={({ field }) => <LienzoProductoFields datos={field.value} onDatos={field.onChange} seccion="opiniones" textoResenas={textoResenasResuelto} />} /></> },
               { id: 'preguntas', contenido: <>              <div className="form-group">
                 <label htmlFor="prod-faq-titulo">Título de la sección</label>
                 <input
@@ -3752,6 +3753,7 @@ export default function ProductForm() {
 
             <ProductLandingPreview
               seleccionBloque={bloqueVistaProducto} onSeleccionarBloque={seleccionarBloqueVista}
+              onTextoResenas={setTextoResenasResuelto}
               onExpand={() => setPreviewAbierta(true)}
               activo={tabActiva === 'marketing'}
               productoId={esEdicion ? id : null}
