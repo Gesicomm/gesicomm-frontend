@@ -4089,8 +4089,8 @@ function VistaPrevia({
         {!soloLienzo && <button type="button" onClick={onAmpliar}><Maximize2 size={16} aria-hidden="true" />Ampliar vista previa</button>}
       </div>}
       {!soloLienzo && !compacta && (
-      <div className={`px-4 pt-4 pb-3 space-y-3 shrink-0 ${ampliada ? 'border-b border-border bg-surface' : ''}`}>
-        <div className="flex items-center justify-between gap-2">
+      <div className={`ecommerce-preview-controls px-4 pt-4 pb-3 space-y-3 shrink-0 ${ampliada ? 'border-b border-border bg-surface' : ''}`}>
+        <div className="ecommerce-preview-toolbar flex items-center justify-between gap-2">
           <select aria-label="Contenido de vista previa" value={modo} onChange={e => onModo?.(e.target.value)} className="min-w-0 h-9 max-w-[220px] rounded-lg border border-border bg-surface px-2 text-sm font-semibold text-fg">
             <option value="venta">Vista previa de venta</option><option value="legales">Páginas legales</option>
           </select>
@@ -4121,10 +4121,10 @@ function VistaPrevia({
             )}
           </div>
         </div>
-        <div className={`flex flex-col ${ampliada ? 'sm:flex-row' : ''} gap-2`}>
+        <div className="ecommerce-preview-navigation">
           {modo === 'legales' ? <select aria-label="Página legal en vista previa" value={paginaLegal} onChange={e => onPaginaLegal?.(e.target.value)} className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg">
             {PAGINAS_LEGALES_CODIGO.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-          </select> : <div role="tablist" aria-label="Pantalla" className={`flex rounded-lg bg-surface p-1 border border-border ${ampliada ? 'sm:w-80' : ''}`}>
+          </select> : <div role="tablist" aria-label="Pantalla" className="ecommerce-preview-tabs rounded-lg bg-surface border border-border">
             {VISTAS_PREVIEW_TIENDA.map(([k, label, Icono]) => (
               <button
                 key={k}
@@ -4134,7 +4134,7 @@ function VistaPrevia({
                 onClick={() => onVista(k)}
                 className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-md text-[13px] font-medium transition-colors ${vistaSeleccionada === k ? 'bg-surface-2 text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
               >
-                <Icono size={14} /> {k === 'producto' && productoFicha?.tipo === 'combo' ? 'Vista combo' : label}
+                <Icono size={16} aria-hidden="true" /><span>{k === 'producto' && productoFicha?.tipo === 'combo' ? 'Vista combo' : label}</span>
               </button>
             ))}
           </div>}

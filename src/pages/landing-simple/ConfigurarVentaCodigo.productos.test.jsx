@@ -183,7 +183,10 @@ describe('Presentación de los productos del lienzo', () => {
     expect(payload.venta.presentacion_productos['producto:1'].beneficios).toEqual(
       expect.arrayContaining([expect.objectContaining({ titulo: 'Probado en tienda' })]),
     );
-    expect(payload.venta.payment_logos).toEqual([]);
+    // El bloque modifica esta ficha; los logos generales siguen disponibles
+    // para las demás fichas de la tienda.
+    expect(payload.venta.presentacion_productos['producto:1'].payment_logos).toEqual([]);
+    expect(payload.venta.payment_logos.length).toBeGreaterThan(0);
   });
 
   it('permite quitar el ancla guardada y ocultar del inicio desde la ficha', () => {

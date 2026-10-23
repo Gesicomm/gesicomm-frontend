@@ -24,3 +24,20 @@ test('un error ofrece reintentar y evita mostrar colores predeterminados',async(
  await screen.findByRole('alert');expect(screen.queryByTitle('Ficha preparada')).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'Reintentar vista previa'}));await screen.findByTitle('Ficha preparada');expect(capture.props.datos.tienda.colores.primario).toBe('#123456');
 });
+
+test('el borrador de nombre y estrellas se refleja aunque la landing tenga otros valores',async()=>{
+ tiendaService.obtener.mockResolvedValue({nombre:'Tienda'});
+ const landing={content:{venta:{presentacion_productos:{'producto:12':{v:2,titulo_comercial:'Nombre anterior',resenas_calificacion:5}}}}};
+ landingSimpleService.obtener.mockResolvedValue(landing);
+ const seleccionar=vi.fn();
+ const props={productoId:12,producto:{nombre:'Producto',ficha_datos:{presentacion:{titulo_comercial:'Nuevo nombre',resenas_calificacion:'3.5'}}},onSeleccionarBloque:seleccionar};
+ const {rerender}=render(<ProductLandingPreview {...props}/>);
+ await screen.findByTitle('Ficha preparada');
+ expect(capture.props.datos.producto).toMatchObject({titulo_comercial:'Nuevo nombre',resenas_calificacion:3.5});
+ expect(capture.props.datos.editor_bloques.resenas_comerciales).toBe('Opiniones y estrellas');
+ capture.props.onBloque('resenas_comerciales');expect(seleccionar).toHaveBeenCalledWith('opiniones');
+ capture.props.onBloque('nombre_comercial');expect(seleccionar).toHaveBeenCalledWith('presentacion');
+ rerender(<ProductLandingPreview {...props} producto={{...props.producto,ficha_datos:{presentacion:{titulo_comercial:'Otro nombre',resenas_calificacion:'2.5'}}}}/>);
+ await waitFor(()=>expect(capture.props.datos.producto).toMatchObject({titulo_comercial:'Otro nombre',resenas_calificacion:2.5}));
+ expect(landing.content.venta.presentacion_productos['producto:12'].titulo_comercial).toBe('Nombre anterior');
+});

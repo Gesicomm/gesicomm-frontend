@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOff, Minus, Package, ChevronLeft, ChevronRight, CheckCircle2, ClipboardCheck, Receipt, Save, Pencil, Check, Loader2, MessageCircle } from "lucide-react";
 import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
-import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio, getCourierGeografia } from "../../services/courierApi";
+import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio, getCourierGeografia, cotizarEntregaRaha } from "../../services/courierApi";
 import { depositoService } from "../../services/deposito.service";
 import { inventarioService } from "../../services/inventario.service";
 import { canalVentaService } from "../../services/canalVentaService";
@@ -85,10 +85,12 @@ const imagenProducto = (producto) => (
 
 const PASOS_PEDIDO = [
   { id: "cliente", label: "Cliente", icon: User },
-  { id: "entrega", label: "Entrega", icon: MapPin },
   { id: "productos", label: "Productos", icon: ShoppingBag },
+  { id: "entrega", label: "Entrega", icon: MapPin },
   { id: "revision", label: "Revisión", icon: ClipboardCheck },
 ];
+
+const indicePasoPedido = id => PASOS_PEDIDO.findIndex(paso => paso.id === id);
 
 const ERROR_KEYS_POR_PASO = {
   cliente: ["nombre_cliente", "telefono"],
@@ -259,6 +261,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   const [itemsEditados, setItemsEditados] = useState(false);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [couriers, setCouriers] = useState([]);
+  const [cotizandoRaha, setCotizandoRaha] = useState(false);
+  const [avisoTarifaRaha, setAvisoTarifaRaha] = useState('');
+  const costoManualVersion = useRef(0);
   const [courierIdsPorDeposito, setCourierIdsPorDeposito] = useState({});
   const [couriersDepositoLoading, setCouriersDepositoLoading] = useState("");
   const [couriersDepositoError, setCouriersDepositoError] = useState("");
@@ -402,6 +407,32 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
         ...it,
         subtotal: Number(it.subtotal) || (Number(it.precio_unitario) * Number(it.cantidad)),
       }));
+  const cantidadParaRaha = itemsBasePedido.reduce((total, it) => total + (Number(it.cantidad) || 0), 0);
+  useEffect(() => {
+    if (!open || !pedidoRaha || !form.ciudad || cantidadParaRaha < 1 || (modoCompletar && !vaAConfirmar)) {
+      setCotizandoRaha(false);
+      setAvisoTarifaRaha('');
+      return;
+    }
+    let cancelado = false;
+    const version = costoManualVersion.current;
+    setCotizandoRaha(true);
+    setAvisoTarifaRaha('');
+    cotizarEntregaRaha({ ciudad: form.ciudad, departamento: form.departamento, cantidad: cantidadParaRaha, pago_anticipado: form.pago_anticipado })
+      .then(resultado => {
+        if (cancelado || costoManualVersion.current !== version) return;
+        if (resultado.cubierto && Number.isFinite(Number(resultado.costo)) && resultado.costo !== null) {
+          setForm(prev => ({ ...prev, courier_id: '', costo_envio: Number(resultado.costo) }));
+          setAvisoTarifaRaha('Tarifa RAHA aplicada para este destino.');
+        } else {
+          setForm(prev => ({ ...prev, costo_envio: 0 }));
+          setAvisoTarifaRaha('RAHA no tiene una tarifa para este destino y cantidad. Revisá el costo del envío.');
+        }
+      }).catch(() => {
+        if (!cancelado) setAvisoTarifaRaha('No pudimos consultar la tarifa RAHA. Revisá el costo del envío antes de confirmar.');
+      }).finally(() => { if (!cancelado) setCotizandoRaha(false); });
+    return () => { cancelado = true; };
+  }, [open, pedidoRaha, form.ciudad, form.departamento, form.pago_anticipado, cantidadParaRaha, modoCompletar, vaAConfirmar]);
   const itemsStockPedido = useMemo(() => (
     itemsBasePedido
       .filter(it => !itemEsRaha(it))
@@ -564,9 +595,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   // Si se está completando un pedido sin courier asignado, intenta
   // autocompletarlo apenas ciudad + couriers + métodos de pago están listos.
   useEffect(() => {
-    if (!open || !modoCompletar || pedidoRaha) return;
+    if (!open || pedidoRaha) return;
     if (form.courier_id) return;
-    if (!form.ciudad || metodosPago.length === 0) return;
+    if (!form.ciudad) return;
     const esAnticipado = form.pago_anticipado;
     const resultado = buscarZonaDelivery(deliveryZonasParaOrigen, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento)
       || buscarCourierYTarifa(couriersParaOrigen, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento);
@@ -905,7 +936,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   const guardarProductosPendientes = async () => {
     if (!items.length) {
       setErrors(prev => ({ ...prev, items: 'Agregá al menos un producto o cancelá el pedido completo.' }));
-      setPasoActivo(2);
+      setPasoActivo(indicePasoPedido("productos"));
       return;
     }
     setGuardando(true);
@@ -1102,6 +1133,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
       return;
     }
 
+    if (cotizandoRaha) return;
+
     if (!validarFormulario()) {
       return;
     }
@@ -1146,7 +1179,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     } catch (err) {
       const data = err.response?.data || {};
       if (data.code === 'STOCK_DISTRIBUIDO_ENTRE_UBICACIONES') {
-        setPasoActivo(1);
+        setPasoActivo(indicePasoPedido("entrega"));
         setErrors(prev => ({
           ...prev,
           origen_preferido_id: data.error || 'El origen de despacho elegido no tiene stock suficiente. Revisá el depósito antes de confirmar.',
@@ -1166,8 +1199,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     : contenidosSeleccionados.reduce((acc, c) => acc + c.unidades, 0);
   const resumenCarga = [
     { label: "Cliente", ok: Boolean(form.nombre_cliente.trim()) },
-    { label: "Entrega", ok: Boolean(form.ciudad.trim() && form.direccion.trim()) },
     { label: "Productos", ok: itemsParaTarifa.length > 0 },
+    { label: "Entrega", ok: Boolean(form.ciudad.trim() && form.direccion.trim()) },
     { label: "Total", ok: precioTotalVendido > 0 },
   ];
   const pasoActual = PASOS_PEDIDO[pasoActivo];
@@ -1194,9 +1227,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
       setPasoActivo(index);
       return;
     }
-    if (validarPaso(pasoActual.id)) {
-      setPasoActivo(index);
+    for (let paso = pasoActivo; paso < index; paso += 1) {
+      if (!validarPaso(PASOS_PEDIDO[paso].id)) {
+        setPasoActivo(paso);
+        return;
+      }
     }
+    setPasoActivo(index);
   };
 
   const continuarPaso = () => {
@@ -1343,8 +1380,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
             <div className="np-wizard-main">
           <div className="np-grid">
 
-            {/* Columna Izquierda: Datos del Cliente */}
-            <div className={`np-section np-step-panel ${pasoActivo === 0 ? 'is-active' : ''}`}>
+            {/* Datos del cliente. */}
+            <div className={`np-section np-step-panel ${pasoActual.id === 'cliente' ? 'is-active' : ''}`}>
               <h3 className="np-section-title">
                 <User size={16} /> Datos del Cliente y Registro
               </h3>
@@ -1455,8 +1492,224 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
               </div>
             </div>
 
-            {/* Columna Derecha: Ubicación de Entrega y Delivery */}
-            <div className={`np-section np-step-panel ${pasoActivo === 1 ? 'is-active' : ''}`}>
+            {/* Elegir productos antes de resolver la entrega. */}
+          <div className={`np-section np-full-width np-step-panel ${pasoActual.id === 'productos' ? 'is-active' : ''}`}>
+            <h3 className="np-section-title">
+              <ShoppingBag size={16} /> Productos Vendidos en el Pedido
+            </h3>
+            <div className="np-products-hero">
+              <div>
+                <span className="np-kicker">{puedeSeleccionarProductos ? 'Selección visual' : 'Detalle de la compra'}</span>
+                <p>{puedeSeleccionarProductos ? 'Buscá en el catálogo, elegí por imagen y ajustá cada línea antes de confirmar.' : 'Revisá la presentación comprada y las unidades de cada producto que hay que preparar.'}</p>
+              </div>
+              <div className="np-products-metrics">
+                <span><strong>{itemsParaTarifa.length}</strong> ítems</span>
+                <span><strong>{unidadesSeleccionadas}</strong> unidades</span>
+              </div>
+            </div>
+
+            <div className="np-product-workbench">
+              {puedeSeleccionarProductos && (
+                <div className="np-picker-panel">
+                  <div className="np-panel-head">
+                    <div>
+                      <span className="np-kicker">Catálogo</span>
+                      <strong>Elegí productos con imagen y búsqueda</strong>
+                    </div>
+                    <Package size={18} />
+                  </div>
+
+                  <ProductPicker
+                    catalogo={catalogoPedidoPicker}
+                    seleccion={seleccionPedidoPicker}
+                    onToggle={handleToggleProductoPedido}
+                    max={80}
+                    mostrarLista={false}
+                    mostrarInputs={false}
+                    zIndexModal={1300}
+                    themeScopeClassName="np-picker-theme"
+                    triggerLabel="Abrir catálogo visual"
+                    modalTitle="Agregar productos al pedido"
+                    refrescarCatalogoAlAbrir
+                    permitirCombos={false}
+                  />
+
+                  {errors.producto && <span className="field-error">{errors.producto}</span>}
+                  {errors.items && <span className="field-error">{errors.items}</span>}
+                </div>
+              )}
+
+              <div className="np-cart-panel">
+                <div className="np-panel-head">
+                  <div>
+                    <span className="np-kicker">Pedido</span>
+                    <strong>Productos seleccionados</strong>
+                  </div>
+                  <span className="np-count-pill">{itemsParaTarifa.length}</span>
+                </div>
+
+                {itemsParaTarifa.length > 0 ? (
+                  <div className="np-order-items-list">
+                    {itemsParaTarifa.map((it, idx) => {
+                      const productoCatalogo = productoPorId.get(Number(it.producto_id));
+                      const foto = imagenProducto(productoCatalogo);
+                      const ofertas = ofertasPorProducto[Number(it.producto_id)] || [];
+                      const pUnit = Number(it.precio_unitario) || 0;
+                      const cantLinea = Number(it.cantidad) || 1;
+                      const contenido = contenidoItem(it);
+                      const sub = Number(it.subtotal) || (pUnit * cantLinea);
+
+                      return (
+                        <div className="np-order-item-card" key={`${it.producto_id || idx}-${idx}`}>
+                          <div className="np-order-item-media">
+                            {foto ? (
+                              <img src={getMediaUrl(foto)} alt="" loading="lazy" />
+                            ) : (
+                              <ImageOff size={18} />
+                            )}
+                          </div>
+
+                          <div className="np-order-item-main">
+                            <div className="np-order-item-title-row">
+                              <div>
+                                <strong>{nombreBaseItem(it)}</strong>
+                                {tipoLineaItem(it) && (
+                                  <span className="np-line-badge">{tipoLineaItem(it)}</span>
+                                )}
+                                {modoCompletar && precioEditandoId === it.id ? (
+                                  <div className="np-order-item-price-edit">
+                                    <CurrencyInput
+                                      value={precioTemp}
+                                      onChange={setPrecioTemp}
+                                      className="form-input np-price-input"
+                                      style={{ textAlign: 'left' }}
+                                    />
+                                    <button
+                                      type="button"
+                                      className="btn-icon"
+                                      title="Guardar precio"
+                                      disabled={guardandoPrecioId === it.id}
+                                      onClick={() => guardarPrecioItem(it)}
+                                    >
+                                      {guardandoPrecioId === it.id ? <Loader2 size={14} /> : <Check size={14} />}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn-icon"
+                                      title="Cancelar"
+                                      disabled={guardandoPrecioId === it.id}
+                                      onClick={() => { setPrecioEditandoId(null); setPrecioError(null); }}
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="np-order-item-price-view">
+                                    Gs. {pUnit.toLocaleString('es-PY')} / {contenido.esOferta ? 'presentación' : 'unidad'}
+                                    {modoCompletar && !puedeSeleccionarProductos && (
+                                      <button
+                                        type="button"
+                                        className="btn-icon"
+                                        title="Cambiar el precio de este ítem solo para este pedido (ej. descuento por seguimiento comercial)"
+                                        onClick={() => { setPrecioEditandoId(it.id); setPrecioTemp(pUnit); setPrecioError(null); }}
+                                      >
+                                        <Pencil size={12} />
+                                      </button>
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                              {puedeSeleccionarProductos && (
+                                <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger" title="Quitar producto" aria-label={`Quitar ${nombreBaseItem(it)}`} disabled={guardando}>
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                            {modoCompletar && precioEditandoId === it.id && precioError && (
+                              <p style={{ color: 'var(--color-danger)', fontSize: '0.75rem', margin: '0.2rem 0 0' }}>{precioError}</p>
+                            )}
+
+                            <div className="np-item-contents">
+                              <span className="np-item-presentation">{it.oferta_nombre || (contenido.esOferta ? 'Combo' : 'Venta individual')}</span>
+                              <span className="np-item-purchased">Comprado: {cantLinea} {contenido.esOferta ? (cantLinea === 1 ? 'presentación' : 'presentaciones') : (cantLinea === 1 ? 'unidad' : 'unidades')}</span>
+                              <strong className="np-item-prepare">{contenido.unidades === null ? 'Contenido por verificar' : `Preparar: ${contenido.unidades} ${contenido.unidades === 1 ? 'unidad' : 'unidades'}`}</strong>
+                              {contenido.componentes.length > 0 ? (
+                                <ul>{contenido.componentes.map((c, i) => <li key={i}><b>{c.cantidad} ×</b> {c.nombre}{c.variante ? ` · ${c.variante}` : ''}</li>)}</ul>
+                              ) : <small>No hay desglose disponible para esta presentación.</small>}
+                            </div>
+
+                            <div className="np-order-item-controls">
+                              {puedeSeleccionarProductos ? (
+                                <>
+                                  <label>
+                                    Presentación
+                                    <select
+                                      className="form-input np-offer-select"
+                                      value={it.oferta_id || ""}
+                                      onFocus={() => cargarOfertasProducto(it.producto_id)}
+                                      onChange={e => handleOfertaItemChange(idx, e.target.value)}
+                                    >
+                                      <option value="">Individual (Gs. {precioProducto(productoCatalogo || it).toLocaleString('es-PY')})</option>
+                                      {it.oferta_id && !ofertas.some(o => Number(o.id) === Number(it.oferta_id)) && <option value={it.oferta_id}>{it.oferta_nombre || 'Presentación comprada'} (Gs. {pUnit.toLocaleString('es-PY')})</option>}
+                                      {ofertas.map(o => (
+                                        <option key={o.id} value={o.id}>{o.nombre} (Gs. {Number(o.precio).toLocaleString('es-PY')})</option>
+                                      ))}
+                                    </select>
+                                  </label>
+
+                                  <label>
+                                    {contenido.esOferta ? 'Cantidad de presentaciones' : 'Cantidad de unidades'}
+                                    <div className="np-qty-control">
+                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea - 1)} title="Restar" aria-label={`Restar ${nombreBaseItem(it)}`} disabled={cantLinea <= 1 || guardando}>
+                                        <Minus size={14} />
+                                      </button>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        aria-label={`Cantidad de ${nombreBaseItem(it)}`}
+                                        disabled={guardando}
+                                        value={cantLinea}
+                                        onChange={e => handleCantidadItemChange(idx, e.target.value)}
+                                      />
+                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea + 1)} title="Sumar" aria-label={`Sumar ${nombreBaseItem(it)}`} disabled={guardando}>
+                                        <Plus size={14} />
+                                      </button>
+                                    </div>
+                                  </label>
+                                </>
+                              ) : null}
+
+                              <div className="np-line-subtotal">
+                                <span>Subtotal</span>
+                                <strong>Gs. {sub.toLocaleString('es-PY')}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="np-empty-items">
+                    Sin productos seleccionados aún. Abrí el catálogo visual para buscar y agregar ítems.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Resumen Total Desglosado */}
+            <div className="np-total-row">
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>
+                <span>Subtotal productos: Gs. {(Number(subtotalProductos) || 0).toLocaleString('es-PY')}</span>
+                <span>Delivery: Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</span>
+              </div>
+              <strong className="np-total-amount">
+                Total: Gs. {(Number(precioTotalVendido) || 0).toLocaleString('es-PY')}
+              </strong>
+            </div>
+          </div>
+
+            <div className={`np-section np-step-panel ${pasoActual.id === 'entrega' ? 'is-active' : ''}`}>
               <h3 className="np-section-title">
                 <MapPin size={16} /> Ubicación de Entrega y Courier
               </h3>
@@ -1726,9 +1979,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                     className="form-input"
                     style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                     value={form.costo_envio}
-                    onChange={val => setForm({ ...form, costo_envio: val })}
+                    onChange={val => { costoManualVersion.current += 1; setForm({ ...form, costo_envio: val }); }}
                     prefix=""
                   />
+                  {pedidoRaha && (cotizandoRaha || avisoTarifaRaha) && <span className="np-hint" role="status">{cotizandoRaha ? 'Consultando tarifa RAHA…' : avisoTarifaRaha}</span>}
                 </div>
 
                 {/* El toggle en sí es sobre el MOMENTO del cobro, no el
@@ -1840,224 +2094,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
 
           </div>
 
-          {/* Sección de Productos Vendidos */}
-          <div className={`np-section np-full-width np-step-panel ${pasoActivo === 2 ? 'is-active' : ''}`}>
-            <h3 className="np-section-title">
-              <ShoppingBag size={16} /> Productos Vendidos en el Pedido
-            </h3>
-            <div className="np-products-hero">
-              <div>
-                <span className="np-kicker">{puedeSeleccionarProductos ? 'Selección visual' : 'Detalle de la compra'}</span>
-                <p>{puedeSeleccionarProductos ? 'Buscá en el catálogo, elegí por imagen y ajustá cada línea antes de confirmar.' : 'Revisá la presentación comprada y las unidades de cada producto que hay que preparar.'}</p>
-              </div>
-              <div className="np-products-metrics">
-                <span><strong>{itemsParaTarifa.length}</strong> ítems</span>
-                <span><strong>{unidadesSeleccionadas}</strong> unidades</span>
-              </div>
-            </div>
-
-            <div className="np-product-workbench">
-              {puedeSeleccionarProductos && (
-                <div className="np-picker-panel">
-                  <div className="np-panel-head">
-                    <div>
-                      <span className="np-kicker">Catálogo</span>
-                      <strong>Elegí productos con imagen y búsqueda</strong>
-                    </div>
-                    <Package size={18} />
-                  </div>
-
-                  <ProductPicker
-                    catalogo={catalogoPedidoPicker}
-                    seleccion={seleccionPedidoPicker}
-                    onToggle={handleToggleProductoPedido}
-                    max={80}
-                    mostrarLista={false}
-                    mostrarInputs={false}
-                    zIndexModal={1300}
-                    themeScopeClassName="np-picker-theme"
-                    triggerLabel="Abrir catálogo visual"
-                    modalTitle="Agregar productos al pedido"
-                    refrescarCatalogoAlAbrir
-                    permitirCombos={false}
-                  />
-
-                  {errors.producto && <span className="field-error">{errors.producto}</span>}
-                  {errors.items && <span className="field-error">{errors.items}</span>}
-                </div>
-              )}
-
-              <div className="np-cart-panel">
-                <div className="np-panel-head">
-                  <div>
-                    <span className="np-kicker">Pedido</span>
-                    <strong>Productos seleccionados</strong>
-                  </div>
-                  <span className="np-count-pill">{itemsParaTarifa.length}</span>
-                </div>
-
-                {itemsParaTarifa.length > 0 ? (
-                  <div className="np-order-items-list">
-                    {itemsParaTarifa.map((it, idx) => {
-                      const productoCatalogo = productoPorId.get(Number(it.producto_id));
-                      const foto = imagenProducto(productoCatalogo);
-                      const ofertas = ofertasPorProducto[Number(it.producto_id)] || [];
-                      const pUnit = Number(it.precio_unitario) || 0;
-                      const cantLinea = Number(it.cantidad) || 1;
-                      const contenido = contenidoItem(it);
-                      const sub = Number(it.subtotal) || (pUnit * cantLinea);
-
-                      return (
-                        <div className="np-order-item-card" key={`${it.producto_id || idx}-${idx}`}>
-                          <div className="np-order-item-media">
-                            {foto ? (
-                              <img src={getMediaUrl(foto)} alt="" loading="lazy" />
-                            ) : (
-                              <ImageOff size={18} />
-                            )}
-                          </div>
-
-                          <div className="np-order-item-main">
-                            <div className="np-order-item-title-row">
-                              <div>
-                                <strong>{nombreBaseItem(it)}</strong>
-                                {tipoLineaItem(it) && (
-                                  <span className="np-line-badge">{tipoLineaItem(it)}</span>
-                                )}
-                                {modoCompletar && precioEditandoId === it.id ? (
-                                  <div className="np-order-item-price-edit">
-                                    <CurrencyInput
-                                      value={precioTemp}
-                                      onChange={setPrecioTemp}
-                                      className="form-input np-price-input"
-                                      style={{ textAlign: 'left' }}
-                                    />
-                                    <button
-                                      type="button"
-                                      className="btn-icon"
-                                      title="Guardar precio"
-                                      disabled={guardandoPrecioId === it.id}
-                                      onClick={() => guardarPrecioItem(it)}
-                                    >
-                                      {guardandoPrecioId === it.id ? <Loader2 size={14} /> : <Check size={14} />}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="btn-icon"
-                                      title="Cancelar"
-                                      disabled={guardandoPrecioId === it.id}
-                                      onClick={() => { setPrecioEditandoId(null); setPrecioError(null); }}
-                                    >
-                                      <X size={14} />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span className="np-order-item-price-view">
-                                    Gs. {pUnit.toLocaleString('es-PY')} / {contenido.esOferta ? 'presentación' : 'unidad'}
-                                    {modoCompletar && !puedeSeleccionarProductos && (
-                                      <button
-                                        type="button"
-                                        className="btn-icon"
-                                        title="Cambiar el precio de este ítem solo para este pedido (ej. descuento por seguimiento comercial)"
-                                        onClick={() => { setPrecioEditandoId(it.id); setPrecioTemp(pUnit); setPrecioError(null); }}
-                                      >
-                                        <Pencil size={12} />
-                                      </button>
-                                    )}
-                                  </span>
-                                )}
-                              </div>
-                              {puedeSeleccionarProductos && (
-                                <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger" title="Quitar producto" aria-label={`Quitar ${nombreBaseItem(it)}`} disabled={guardando}>
-                                  <Trash2 size={14} />
-                                </button>
-                              )}
-                            </div>
-                            {modoCompletar && precioEditandoId === it.id && precioError && (
-                              <p style={{ color: 'var(--color-danger)', fontSize: '0.75rem', margin: '0.2rem 0 0' }}>{precioError}</p>
-                            )}
-
-                            <div className="np-item-contents">
-                              <span className="np-item-presentation">{it.oferta_nombre || (contenido.esOferta ? 'Combo' : 'Venta individual')}</span>
-                              <span className="np-item-purchased">Comprado: {cantLinea} {contenido.esOferta ? (cantLinea === 1 ? 'presentación' : 'presentaciones') : (cantLinea === 1 ? 'unidad' : 'unidades')}</span>
-                              <strong className="np-item-prepare">{contenido.unidades === null ? 'Contenido por verificar' : `Preparar: ${contenido.unidades} ${contenido.unidades === 1 ? 'unidad' : 'unidades'}`}</strong>
-                              {contenido.componentes.length > 0 ? (
-                                <ul>{contenido.componentes.map((c, i) => <li key={i}><b>{c.cantidad} ×</b> {c.nombre}{c.variante ? ` · ${c.variante}` : ''}</li>)}</ul>
-                              ) : <small>No hay desglose disponible para esta presentación.</small>}
-                            </div>
-
-                            <div className="np-order-item-controls">
-                              {puedeSeleccionarProductos ? (
-                                <>
-                                  <label>
-                                    Presentación
-                                    <select
-                                      className="form-input np-offer-select"
-                                      value={it.oferta_id || ""}
-                                      onFocus={() => cargarOfertasProducto(it.producto_id)}
-                                      onChange={e => handleOfertaItemChange(idx, e.target.value)}
-                                    >
-                                      <option value="">Individual (Gs. {precioProducto(productoCatalogo || it).toLocaleString('es-PY')})</option>
-                                      {it.oferta_id && !ofertas.some(o => Number(o.id) === Number(it.oferta_id)) && <option value={it.oferta_id}>{it.oferta_nombre || 'Presentación comprada'} (Gs. {pUnit.toLocaleString('es-PY')})</option>}
-                                      {ofertas.map(o => (
-                                        <option key={o.id} value={o.id}>{o.nombre} (Gs. {Number(o.precio).toLocaleString('es-PY')})</option>
-                                      ))}
-                                    </select>
-                                  </label>
-
-                                  <label>
-                                    {contenido.esOferta ? 'Cantidad de presentaciones' : 'Cantidad de unidades'}
-                                    <div className="np-qty-control">
-                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea - 1)} title="Restar" aria-label={`Restar ${nombreBaseItem(it)}`} disabled={cantLinea <= 1 || guardando}>
-                                        <Minus size={14} />
-                                      </button>
-                                      <input
-                                        type="number"
-                                        min="1"
-                                        aria-label={`Cantidad de ${nombreBaseItem(it)}`}
-                                        disabled={guardando}
-                                        value={cantLinea}
-                                        onChange={e => handleCantidadItemChange(idx, e.target.value)}
-                                      />
-                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea + 1)} title="Sumar" aria-label={`Sumar ${nombreBaseItem(it)}`} disabled={guardando}>
-                                        <Plus size={14} />
-                                      </button>
-                                    </div>
-                                  </label>
-                                </>
-                              ) : null}
-
-                              <div className="np-line-subtotal">
-                                <span>Subtotal</span>
-                                <strong>Gs. {sub.toLocaleString('es-PY')}</strong>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="np-empty-items">
-                    Sin productos seleccionados aún. Abrí el catálogo visual para buscar y agregar ítems.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Resumen Total Desglosado */}
-            <div className="np-total-row">
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>
-                <span>Subtotal productos: Gs. {(Number(subtotalProductos) || 0).toLocaleString('es-PY')}</span>
-                <span>Delivery: Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</span>
-              </div>
-              <strong className="np-total-amount">
-                Total: Gs. {(Number(precioTotalVendido) || 0).toLocaleString('es-PY')}
-              </strong>
-            </div>
-          </div>
-
-          <div className={`np-section np-full-width np-step-panel ${pasoActivo === 3 ? 'is-active' : ''}`}>
+          {/* Revisión final del pedido. */}
+          <div className={`np-section np-full-width np-step-panel ${pasoActual.id === 'revision' ? 'is-active' : ''}`}>
             <h3 className="np-section-title">
               <Receipt size={16} /> Revisar pedido
             </h3>
@@ -2075,7 +2113,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
               <div className="np-review-card">
                 <div className="np-review-card-head">
                   <strong>Entrega</strong>
-                  <button type="button" onClick={() => setPasoActivo(1)}>Editar</button>
+                  <button type="button" onClick={() => setPasoActivo(indicePasoPedido("entrega"))}>Editar</button>
                 </div>
                 <p>{form.ciudad || "Sin ciudad"}{form.departamento ? `, ${form.departamento}` : ""}</p>
                 <span>
@@ -2089,7 +2127,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
               <div className="np-review-card np-review-card-wide">
                 <div className="np-review-card-head">
                   <strong>Productos</strong>
-                  <button type="button" onClick={() => setPasoActivo(2)}>Editar</button>
+                  <button type="button" onClick={() => setPasoActivo(indicePasoPedido("productos"))}>Editar</button>
                 </div>
                 {itemsParaTarifa.length > 0 ? (
                   <div className="np-review-products">
@@ -2234,7 +2272,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                 <button
                   type="button"
                   className="btn-confirmar-pedido"
-                  disabled={guardando}
+                  disabled={guardando || cotizandoRaha}
                   onClick={(e) => handleSubmit(e, { explicit: true })}
                 >
                   {guardando ? "Guardando..." : (modoCompletar && !vaAConfirmar ? "Guardar cambios" : envio?.es_lead ? "Crear y confirmar pedido" : "Confirmar pedido")}

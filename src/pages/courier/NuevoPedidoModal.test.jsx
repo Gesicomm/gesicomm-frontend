@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { NuevoPedidoModal } from './NuevoPedidoModal';
 import { productService } from '../../services/productService';
-import { getCouriers } from '../../services/courierApi';
+import { getCouriers, cotizarEntregaRaha } from '../../services/courierApi';
 import { depositoService } from '../../services/deposito.service';
 import { canalVentaService } from '../../services/canalVentaService';
 import { inventarioService } from '../../services/inventario.service';
@@ -15,6 +15,7 @@ vi.mock('../../services/ofertaService', () => ({
 }));
 vi.mock('../../services/courierApi', () => ({
   getCouriers: vi.fn().mockResolvedValue([]),
+  cotizarEntregaRaha: vi.fn().mockResolvedValue({ cubierto: false, costo: null }),
   getMetodosPago: vi.fn().mockResolvedValue([
     { id: 1, nombre: 'Efectivo contra entrega', comision_porcentaje: 0, es_anticipado: false, activo: true },
     { id: 3, nombre: 'POS / Tarjeta', comision_porcentaje: 2.2, es_anticipado: true, activo: true },
@@ -73,7 +74,7 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Guardar cambios|Confirmar pedido/i }));
   };
 
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); cotizarEntregaRaha.mockResolvedValue({ cubierto: false, costo: null }); });
   afterEach(() => cleanup());
 
   it('reduce cantidades de un pedido web pendiente y guarda sin confirmar ni exigir datos de entrega', async () => {
@@ -145,8 +146,9 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
     await abrir({ ...pedidoEntregado, id: 90, estado: 'Pendiente', origen: 'WHATSAPP', es_lead: true, monto: 0, costo_envio: 0, items: [] }, onSubmit);
     await waitFor(() => expect(screen.getByText(/WhatsApp · Cargado/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    expect(screen.getByRole('tab', { name: /Productos/ })).toHaveAttribute('aria-selected', 'true');
     fireEvent.click(screen.getByRole('button', { name: 'Elegir producto de prueba' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
     fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Crear y confirmar pedido' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ id: 90, estado: 'Confirmado', monto: 100000, items: [expect.objectContaining({ producto_id: 202, cantidad: 1 })] }), true));
@@ -178,6 +180,7 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
   it('exige ubicación y dirección antes de confirmar un lead', async () => {
     const onSubmit = vi.fn();
     await abrir({ ...pedidoEntregado, estado: 'EnSeguimiento', origen: 'WHATSAPP', es_lead: true, ciudad: '', direccion: '' }, onSubmit);
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
     fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
     fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
     expect(screen.getAllByText(/ciudad de destino/).length).toBeGreaterThan(0);
@@ -330,6 +333,72 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
       expect(opciones).toContain('Courier Luque (Auto)');
       expect(opciones).not.toContain('Courier Central (Moto)');
     });
+  });
+
+  it('autocompleta el envío RAHA por destino aunque no se haya elegido método de pago', async () => {
+    cotizarEntregaRaha.mockResolvedValue({ cubierto: true, costo: 27000 });
+    await abrir({ ...pedidoEntregado, estado: 'Pendiente', costo_envio: 0, items: [{ ...pedidoEntregado.items[0], es_raha: true }] }, vi.fn());
+    await waitFor(() => expect(cotizarEntregaRaha).toHaveBeenCalledWith({ ciudad: 'Luque', departamento: 'Central', cantidad: 1, pago_anticipado: false }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    await waitFor(() => expect(screen.getByLabelText('Costo del envío (Gs)').value).toContain('27'));
+    expect(screen.getByText('Tarifa RAHA aplicada para este destino.')).toBeInTheDocument();
+    cotizarEntregaRaha.mockResolvedValue({ cubierto: true, costo: 23000 });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pago anticipado', exact: true }));
+    await waitFor(() => expect(cotizarEntregaRaha).toHaveBeenLastCalledWith(expect.objectContaining({ pago_anticipado: true })));
+    await waitFor(() => expect(screen.getByLabelText('Costo del envío (Gs)').value).toContain('23'));
+  });
+
+  it('una cotización tardía no pisa un costo que el usuario escribió a mano', async () => {
+    let resolver;
+    cotizarEntregaRaha.mockReturnValue(new Promise(resolve => { resolver = resolve; }));
+    await abrir({ ...pedidoEntregado, estado: 'Pendiente', costo_envio: 0, items: [{ ...pedidoEntregado.items[0], es_raha: true }] }, vi.fn());
+    await waitFor(() => expect(cotizarEntregaRaha).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    const costo = screen.getByLabelText('Costo del envío (Gs)');
+    fireEvent.change(costo, { target: { value: '18000' } });
+    resolver({ cubierto: true, costo: 27000 });
+    await waitFor(() => expect(screen.queryByText('Consultando tarifa RAHA…')).toBeNull());
+    expect(costo.value).toContain('18');
+    expect(costo.value).not.toContain('27');
+  });
+
+  it('Cliente → Productos → Entrega resuelve RAHA y vuelve al courier propio al quitar ese producto', async () => {
+    productService.buscar.mockResolvedValueOnce({ productos: [{ id: 202, nombre: 'Producto RAHA', precio_base: 100000, es_raha: true }] });
+    getCouriers.mockResolvedValueOnce([{ id: 76, nombre: 'Courier propio', vehiculo: 'Moto', tarifas: [{ ciudad: 'Luque', departamento: 'Central', costo: 12000, tipo_pago: 'Ambos' }] }]);
+    cotizarEntregaRaha.mockResolvedValue({ cubierto: true, costo: 27000 });
+    const { container } = render(<NuevoPedidoModal open envio={{ ...pedidoEntregado, estado: 'Pendiente', courier_id: null }} onClose={() => {}} onSubmit={vi.fn()} />);
+    await waitFor(() => expect(productService.buscar).toHaveBeenCalled());
+    expect(screen.getAllByRole('tab').map(el => el.textContent)).toEqual(['Paso 1Cliente', 'Paso 2Productos', 'Paso 3Entrega', 'Paso 4Revisión']);
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    expect(screen.getByRole('tab', { name: /Productos/ })).toHaveAttribute('aria-selected', 'true');
+    expect(container.querySelector('.np-step-panel.is-active').textContent).toContain('Productos');
+    fireEvent.click(screen.getByRole('button', { name: 'Elegir producto de prueba' }));
+    await waitFor(() => expect(cotizarEntregaRaha).toHaveBeenCalledWith(expect.objectContaining({ cantidad: 2 })));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    expect(screen.getByRole('tab', { name: /Entrega/ })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(screen.getByLabelText('Costo del envío (Gs)').value).toBe('27.000'));
+    expect([...container.querySelectorAll('select')].filter(el => el.value === '__RAHA__')).toHaveLength(2);
+    fireEvent.click(screen.getByRole('tab', { name: /Productos/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar Producto RAHA' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    await waitFor(() => expect(screen.getByLabelText('Costo del envío (Gs)').value).toBe('12.000'));
+    expect([...container.querySelectorAll('select')].filter(el => el.value === '__RAHA__')).toHaveLength(0);
+    fireEvent.click(screen.getByRole('tab', { name: /Revisión/ }));
+    const entrega = [...container.querySelectorAll('.np-review-card')].find(el => el.querySelector('strong')?.textContent === 'Entrega');
+    fireEvent.click(entrega.querySelector('button'));
+    expect(screen.getByRole('tab', { name: /Entrega/ })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: /Revisión/ }));
+    const productos = [...container.querySelectorAll('.np-review-card')].find(el => el.querySelector('strong')?.textContent === 'Productos');
+    fireEvent.click(productos.querySelector('button'));
+    expect(screen.getByRole('tab', { name: /Productos/ })).toHaveAttribute('aria-selected', 'true');
+
+  });
+
+  it('no permite saltar desde Cliente a Entrega sin seleccionar productos', async () => {
+    await abrir({ ...pedidoEntregado, estado: 'Pendiente', items: [] }, vi.fn());
+    fireEvent.click(screen.getByRole('tab', { name: /Entrega/ }));
+    expect(screen.getByRole('tab', { name: /Productos/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByText(/Debes agregar al menos un producto/).length).toBeGreaterThan(0);
   });
 
   it('muestra RAHA como origen y courier cuando el pedido tiene producto RAHA', async () => {

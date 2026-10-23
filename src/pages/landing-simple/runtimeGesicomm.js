@@ -4151,6 +4151,7 @@ export function runtimeGesicomm(plantillas) {
   function resaltar(lista, desplazar) {
     if (!/^[a-z_]+$/.test(String(lista || ''))) return;
     var el = document.querySelector('[data-gesicomm-lista="' + lista + '"]')
+      || document.querySelector('[data-gesicomm-ficha-bloque="' + lista + '"]')
       || document.querySelector('[data-gesicomm-bloque="' + lista + '"]')
       || document.querySelector('[data-combo-bloque="' + lista + '"], [data-combo-sub-bloque="' + lista + '"]');
     if (!el || el.style.display === 'none') return;

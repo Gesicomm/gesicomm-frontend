@@ -1,5 +1,10 @@
 import api from './api';
 
+export const cotizarEntregaRaha = async (payload) => {
+  const { data } = await api.post('/envios/cotizar-entrega-raha', payload);
+  return data;
+};
+
 export const getCouriers = async () => {
   const { data } = await api.get('/couriers');
   return data;

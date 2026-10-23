@@ -65,7 +65,7 @@ function elegirTarifa(tarifas, targetTipoPago, cantEval, departamentoNorm = '') 
     const rMax = (t.rango_max === null || t.rango_max === undefined || t.rango_max === '') ? Infinity : Number(t.rango_max);
     return cantEval >= rMin && cantEval <= rMax;
   };
-  const pagoCompatible = (t) => t.tipo_pago === 'Ambos' || t.tipo_pago === targetTipoPago;
+  const pagoCompatible = (t) => !t.tipo_pago || t.tipo_pago === 'Ambos' || t.tipo_pago === targetTipoPago;
   // Sin fallbacks a propósito: o hay una tarifa que cubre esta ciudad, este
   // tipo de pago Y esta cantidad, o no se autocompleta nada. Antes se degradaba
   // a "cualquier tarifa compatible" y de ahí a "la más barata de la ciudad",

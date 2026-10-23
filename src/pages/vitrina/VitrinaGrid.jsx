@@ -1109,26 +1109,6 @@ export default function VitrinaGrid() {
 
       {/* ── Toolbar ── */}
       <div className="vit-toolbar">
-        {/* Buscador */}
-        <div className="vit-search-wrap">
-          <Search size={14} className="vit-search-icon" />
-          <input
-            type="text"
-            className="vit-search-input"
-            placeholder="Buscar producto o combo..."
-            aria-label="Buscar productos o combos"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            onKeyDown={e => {
-              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
-              e.preventDefault();
-              setBusquedaAplicada(busqueda.trim());
-              setPage(1);
-            }}
-          />
-          {buscando && <span role="status" aria-label="Buscando productos" className="vit-search-loading"><Loader size={14} className="spin-icon" /></span>}
-        </div>
-
         {/* Filtros de tipo y filtro de Mis Productos */}
         <div className="vit-filters-row">
         <div className="vit-filters">
@@ -1148,6 +1128,26 @@ export default function VitrinaGrid() {
             </button>
           ))}
         </div>
+        </div>
+
+        {/* Buscador */}
+        <div className="vit-search-wrap">
+          <Search size={18} className="vit-search-icon" />
+          <input
+            type="text"
+            className="vit-search-input"
+            placeholder="Buscar producto o combo..."
+            aria-label="Buscar productos o combos"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            onKeyDown={e => {
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              setBusquedaAplicada(busqueda.trim());
+              setPage(1);
+            }}
+          />
+          {buscando && <span role="status" aria-label="Buscando productos" className="vit-search-loading"><Loader size={14} className="spin-icon" /></span>}
         </div>
 
         <div className="vit-bulk-select">

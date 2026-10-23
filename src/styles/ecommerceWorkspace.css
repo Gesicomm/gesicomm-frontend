@@ -82,11 +82,12 @@
 :scope .vit-seleccion-bar { box-shadow: none; padding: .75rem 1rem; margin-block: 0 1rem; border-radius: var(--workspace-radius); }
 :scope .vit-seleccion-acciones { flex-wrap: wrap; }
 :scope .vit-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; padding: 1rem; border-radius: var(--workspace-radius); }
-:scope .vit-search-wrap { flex: 1 1 280px; min-width: 0; }
+:scope .vit-search-wrap { flex: 0 0 100%; min-width: 0; max-width: none; }
 :scope .vit-filters-row { flex: 0 0 100%; min-width: 0; }
 :scope .vit-filters { width: fit-content; max-width: 100%; box-sizing: border-box; flex-wrap: wrap; gap: .375rem; }
 :scope .vit-bulk-select { margin-left: 0; flex-wrap: wrap; }
 :scope :is(.vit-sort-select, .vit-search-input) { min-height: 44px; max-width: 100%; }
+:scope .vit-search-input { --ui-control-height: 52px; min-height: 52px; }
 :scope .vit-price-status { display: block; font-size: var(--ui-text-help); line-height: 1.5; color: var(--color-fg-muted); }
 
 :scope .dep-list-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1rem; margin-block: 1rem .75rem; }

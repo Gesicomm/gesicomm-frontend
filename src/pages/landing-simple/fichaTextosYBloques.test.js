@@ -82,6 +82,13 @@ describe('ficha v2: lo que la landing tocó manda, también vacío', () => {
     expect(fichaCon({ v: 2, resenas_calificacion: '3.5' }).resenas_calificacion).toBe(3.5);
   });
 
+  it('hereda las estrellas editadas en el producto y respeta un ajuste específico de la landing', () => {
+    const item = { ...producto, ficha_datos: { presentacion: { titulo_comercial: 'Nombre editado', resenas_calificacion: '3.5' } } };
+    expect(presentacionComercial(item, null)).toMatchObject({ titulo_comercial: 'Nombre editado', resenas_calificacion: 3.5 });
+    expect(presentacionComercial(item, { presentacion_productos: { 'producto:10': { v: 2 } } }).resenas_calificacion).toBe(3.5);
+    expect(presentacionComercial(item, { presentacion_productos: { 'producto:10': { v: 2, resenas_calificacion: 4 } } }).resenas_calificacion).toBe(4);
+  });
+
   it('la página no dibuja el texto vaciado y sí el que viene del producto', () => {
     const datos = venta => datosRuntimePreview({ productos: [producto, otro], venta, vista: 'producto', productoId: 'air' });
     const sinTocar = montar(datos({ presentacion_productos: { 'producto:10': { v: 2 } } }));

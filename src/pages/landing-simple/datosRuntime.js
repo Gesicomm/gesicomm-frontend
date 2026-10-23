@@ -451,7 +451,8 @@ export function presentacionComercial(item, venta) {
     ? `${promedio.toLocaleString('es-PY', { maximumFractionDigits: 1 })} de 5 · ${opinionesReales.length} ${opinionesReales.length === 1 ? 'opinión' : 'opiniones'}`
     : '';
   const resenasCalificacion = normalizarCalificacion(
-    fuente.resenas_calificacion ?? fuente.rating_comercial ?? fuente.estrellas_comerciales,
+    fuente.resenas_calificacion ?? fuente.rating_comercial ?? fuente.estrellas_comerciales
+      ?? delProducto.resenas_calificacion ?? delProducto.rating_comercial ?? delProducto.estrellas_comerciales,
     promedio || PRESENTACION_PRODUCTO_DEFAULT.resenas_calificacion,
   );
   const logosPersonalizados = (Array.isArray(fuente.metodos_pago) ? fuente.metodos_pago : [])

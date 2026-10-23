@@ -14,6 +14,7 @@ import CurrencyInput from '../../components/CurrencyInput';
 import SelectorIcono from '../../components/SelectorIcono';
 import OfertasProductoTab from './OfertasProductoTab';
 import ProductLandingPreview from './ProductLandingPreview';
+import ProductContentBlocks from './ProductContentBlocks';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
 import { estiloVisualMedio } from '../landing-simple/templates/mediaGaleria';
 import { CATALOGO_ICONOS_BENEFICIOS } from '../landing-simple/templates/iconosBeneficios';
@@ -326,7 +327,7 @@ function EncabezadoProductoFields({ datos, onDatos }) {
   );
 }
 
-function LienzoProductoFields({ datos, onDatos }) {
+function LienzoProductoFields({ datos, onDatos, seccion = null }) {
   const datosActuales = datos && typeof datos === 'object' && !Array.isArray(datos) ? datos : {};
   const presentacion = datosActuales.presentacion && typeof datosActuales.presentacion === 'object' && !Array.isArray(datosActuales.presentacion)
     ? datosActuales.presentacion
@@ -341,15 +342,15 @@ function LienzoProductoFields({ datos, onDatos }) {
 
   return (
     <>
-      <div className="rubro-field-card">
+      {!(seccion && !["presentacion", "precio", "opiniones"].includes(seccion)) && (<div className="rubro-field-card">
         <div className="rubro-card-header">
           <div>
-            <label>Bloques del lienzo en blanco</label>
-            <p>Textos que toma la ficha pública cuando la landing usa la vista de producto del lienzo.</p>
+            <label>Textos del bloque</label>
+            <p>Personalizá lo que verá el cliente en esta sección.</p>
           </div>
         </div>
         <div className="rubro-row-fields">
-          <label className="rubro-field">
+          {!(seccion && seccion !== "presentacion") && (<label className="rubro-field">
             <span>Encabezado</span>
             <input
               value={presentacion.insignia_principal || ''}
@@ -357,8 +358,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Ej: Más vendido"
               onChange={e => cambiarPresentacion('insignia_principal', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "presentacion") && (<label className="rubro-field">
             <span>Nombre comercial</span>
             <input
               value={presentacion.titulo_comercial || ''}
@@ -366,8 +367,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Vacío = nombre del producto"
               onChange={e => cambiarPresentacion('titulo_comercial', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "precio") && (<label className="rubro-field">
             <span>Badge de precio</span>
             <input
               value={presentacion.insignia_secundaria || ''}
@@ -375,8 +376,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Ej: Oferta especial"
               onChange={e => cambiarPresentacion('insignia_secundaria', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "precio") && (<label className="rubro-field">
             <span>Texto debajo del precio</span>
             <textarea
               rows={2}
@@ -385,8 +386,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Ej: Producto seleccionado para resolver tu compra en pocos pasos."
               onChange={e => cambiarPresentacion('mensaje_comercial', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "opiniones") && (<label className="rubro-field">
             <span>Texto de reseñas</span>
             <input
               value={presentacion.resenas_texto || ''}
@@ -394,8 +395,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Ej: 4.9 de 5 · 12 opiniones"
               onChange={e => cambiarPresentacion('resenas_texto', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "opiniones") && (<label className="rubro-field">
             <span>Estrellas comerciales</span>
             <input
               type="number"
@@ -406,11 +407,11 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="4.9"
               onChange={e => cambiarPresentacion('resenas_calificacion', e.target.value)}
             />
-          </label>
+          </label>)}
         </div>
-      </div>
+      </div>)}
 
-      <div className="rubro-field-card">
+      {!(seccion && !["oferta"].includes(seccion)) && (<div className="rubro-field-card">
         <div className="rubro-card-header">
           <div>
             <label>Oferta por tiempo limitado</label>
@@ -447,9 +448,9 @@ function LienzoProductoFields({ datos, onDatos }) {
             />
           </label>
         </div>
-      </div>
+      </div>)}
 
-      <div className="rubro-field-card">
+      {!(seccion && !["incluye"].includes(seccion)) && (<div className="rubro-field-card">
         <div className="rubro-card-header">
           <div>
             <label>Qué incluye tu pedido</label>
@@ -491,9 +492,9 @@ function LienzoProductoFields({ datos, onDatos }) {
             ))}
           </div>
         )}
-      </div>
+      </div>)}
 
-      <div className="rubro-field-card">
+      {!(seccion && !["opiniones", "preguntas"].includes(seccion)) && (<div className="rubro-field-card">
         <div className="rubro-card-header">
           <div>
             <label>Títulos de secciones</label>
@@ -501,7 +502,7 @@ function LienzoProductoFields({ datos, onDatos }) {
           </div>
         </div>
         <div className="rubro-row-fields">
-          <label className="rubro-field">
+          {!(seccion && seccion !== "opiniones") && (<label className="rubro-field">
             <span>Rótulo de opiniones</span>
             <input
               value={presentacion.opiniones_kicker || ''}
@@ -509,8 +510,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Opiniones"
               onChange={e => cambiarPresentacion('opiniones_kicker', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "opiniones") && (<label className="rubro-field">
             <span>Título de opiniones</span>
             <input
               value={presentacion.opiniones_titulo || ''}
@@ -518,8 +519,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Personas que ya lo probaron"
               onChange={e => cambiarPresentacion('opiniones_titulo', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "opiniones") && (<label className="rubro-field">
             <span>Subtítulo de opiniones</span>
             <textarea
               rows={2}
@@ -528,8 +529,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Texto opcional debajo del título"
               onChange={e => cambiarPresentacion('opiniones_subtitulo', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "preguntas") && (<label className="rubro-field">
             <span>Rótulo de preguntas</span>
             <input
               value={presentacion.preguntas_kicker || ''}
@@ -537,8 +538,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Resolvemos tus dudas"
               onChange={e => cambiarPresentacion('preguntas_kicker', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "preguntas") && (<label className="rubro-field">
             <span>Título de preguntas</span>
             <input
               value={presentacion.preguntas_titulo || ''}
@@ -546,8 +547,8 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Preguntas frecuentes"
               onChange={e => cambiarPresentacion('preguntas_titulo', e.target.value)}
             />
-          </label>
-          <label className="rubro-field">
+          </label>)}
+          {!(seccion && seccion !== "preguntas") && (<label className="rubro-field">
             <span>Subtítulo de preguntas</span>
             <textarea
               rows={2}
@@ -556,9 +557,9 @@ function LienzoProductoFields({ datos, onDatos }) {
               placeholder="Texto opcional debajo del título"
               onChange={e => cambiarPresentacion('preguntas_subtitulo', e.target.value)}
             />
-          </label>
+          </label>)}
         </div>
-      </div>
+      </div>)}
     </>
   );
 }
@@ -1089,6 +1090,8 @@ export default function ProductForm() {
   // así se pueden tocar varias pestañas (Venta, Ficha avanzada, etc.) sin
   // tener que reabrir el producto entre cada guardado.
   const [aviso, setAviso] = useState(null);
+  const [bloqueVistaProducto, setBloqueVistaProducto] = useState({ id: null, n: 0 });
+  const seleccionarBloqueVista = id => setBloqueVistaProducto(prev => ({ id, n: prev.n + 1 }));
   const importarIaRef = useRef(null);
   const jsonIaRef = useRef(null);
   const [errorImportacion, setErrorImportacion] = useState(null);
@@ -3592,8 +3595,7 @@ export default function ProductForm() {
 
         <div className={`tab-content ${tabActiva === 'marketing' ? 'active' : ''}`}>
           <div className="product-view-workspace">
-            <div className="product-view-editor">
-              <div className="product-content-heading">
+            <ProductContentBlocks seleccionado={bloqueVistaProducto.id} onSeleccionar={seleccionarBloqueVista} introduccion={<>              <div className="product-content-heading">
                 <h2><Eye size={18} aria-hidden="true" /> Contenido de la página</h2>
                 {muestraLienzoProducto && (
                   <button type="button" className="btn-secondary btn-small" onClick={aplicarEjemploVista} disabled={!!muestrasAplicadas.lienzo}>
@@ -3602,7 +3604,8 @@ export default function ProductForm() {
                 )}
               </div>
 
-              <div className="form-group full">
+</>} bloques={[
+              { id: 'presentacion', contenido: <>              <div className="form-group full">
                 <label>Propuesta de valor</label>
                 <textarea
                   {...register('propuesta_valor')}
@@ -3648,29 +3651,10 @@ export default function ProductForm() {
                 )}
               />
 
-              <Controller
-                control={control}
-                name="ficha_datos"
-                render={({ field: campoDatos }) => (
-                  <EncabezadoProductoFields
-                    datos={campoDatos.value}
-                    onDatos={campoDatos.onChange}
-                  />
-                )}
-              />
-
-              <Controller
-                control={control}
-                name="ficha_datos"
-                render={({ field: campoDatos }) => (
-                  <LienzoProductoFields
-                    datos={campoDatos.value}
-                    onDatos={campoDatos.onChange}
-                  />
-                )}
-              />
-
-              <div className="form-group full">
+<Controller control={control} name="ficha_datos" render={({ field }) => <LienzoProductoFields datos={field.value} onDatos={field.onChange} seccion="presentacion" />} /></> },
+              { id: 'precio', contenido: <><Controller control={control} name="ficha_datos" render={({ field }) => <EncabezadoProductoFields datos={field.value} onDatos={field.onChange} />} /><Controller control={control} name="ficha_datos" render={({ field }) => <LienzoProductoFields datos={field.value} onDatos={field.onChange} seccion="precio" />} /></> },
+              { id: 'oferta', contenido: <><Controller control={control} name="ficha_datos" render={({ field }) => <LienzoProductoFields datos={field.value} onDatos={field.onChange} seccion="oferta" />} /></> },
+              { id: 'detalles', contenido: <>              <div className="form-group full">
                 <label>Sobre este producto</label>
                 <textarea
                   {...register('sobre_este_producto')}
@@ -3680,7 +3664,8 @@ export default function ProductForm() {
                 <p className="field-hint">Se usa en la sección de detalles de la vista de producto del lienzo en blanco.</p>
               </div>
 
-              <div className="form-group full">
+</> },
+              { id: 'beneficios', contenido: <>              <div className="form-group full">
                 <div className="inline-section-head">
                   <label>Beneficios</label>
                   <button type="button" className="btn-secondary btn-small" onClick={() => appendBeneficio({ titulo: '', texto: '' })}>
@@ -3716,7 +3701,10 @@ export default function ProductForm() {
                 )}
               </div>
 
-              <div className="form-group">
+</> },
+              { id: 'incluye', contenido: <><Controller control={control} name="ficha_datos" render={({ field }) => <LienzoProductoFields datos={field.value} onDatos={field.onChange} seccion="incluye" />} /></> },
+              { id: 'opiniones', contenido: <><Controller control={control} name="ficha_datos" render={({ field }) => <LienzoProductoFields datos={field.value} onDatos={field.onChange} seccion="opiniones" />} /></> },
+              { id: 'preguntas', contenido: <>              <div className="form-group">
                 <label htmlFor="prod-faq-titulo">Título de la sección</label>
                 <input
                   id="prod-faq-titulo"
@@ -3733,7 +3721,8 @@ export default function ProductForm() {
                 <FaqPanel faq={faq} onChange={setFaq} />
               </div>
 
-              <div className="form-group full">
+<Controller control={control} name="ficha_datos" render={({ field }) => <LienzoProductoFields datos={field.value} onDatos={field.onChange} seccion="preguntas" />} /></> },
+              { id: 'confianza', contenido: <>              <div className="form-group full">
                 <div className="inline-section-head">
                   <label>Confianza y garantías</label>
                   <button type="button" className="btn-secondary btn-small" onClick={() => appendConfianza({ icono: '', titulo: '', texto: '' })}>
@@ -3758,9 +3747,11 @@ export default function ProductForm() {
 
               
 
-            </div>
+</> },
+            ]} />
 
             <ProductLandingPreview
+              seleccionBloque={bloqueVistaProducto} onSeleccionarBloque={seleccionarBloqueVista}
               onExpand={() => setPreviewAbierta(true)}
               activo={tabActiva === 'marketing'}
               productoId={esEdicion ? id : null}

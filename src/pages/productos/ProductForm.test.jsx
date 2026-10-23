@@ -62,6 +62,23 @@ async function prepararPack() {
 }
 
 describe('Alta de producto por secciones', () => {
+  it('permite editar nombre comercial y estrellas por bloques y guarda ambos sin perder el borrador', async () => {
+    await montar(); completarIdentidad(); completarPrecio();
+    fireEvent.click(screen.getByRole('button', { name: /Vista del producto/ }));
+    const editor = screen.getByRole('region', { name: 'Bloques de la página del producto', exact: true });
+    fireEvent.click(within(editor).getByRole('button', { name: /Presentación/ }));
+    fireEvent.change(screen.getByLabelText('Nombre comercial', { exact: true }), { target: { value: 'Nombre para mi tienda' } });
+    expect(screen.getByLabelText('Nombre comercial', { exact: true })).toHaveValue('Nombre para mi tienda');
+    fireEvent.click(within(editor).getByRole('button', { name: 'Bloques del producto' }));
+    fireEvent.click(within(editor).getByRole('button', { name: /Opiniones y estrellas/ }));
+    fireEvent.change(screen.getByLabelText('Estrellas comerciales'), { target: { value: '3.5' } });
+    expect(screen.getByLabelText('Estrellas comerciales')).toHaveValue(3.5);
+    fireEvent.click(within(editor).getByRole('button', { name: 'Bloques del producto' }));
+    fireEvent.click(within(editor).getByRole('button', { name: /Presentación/ }));
+    expect(screen.getByLabelText('Nombre comercial', { exact: true })).toHaveValue('Nombre para mi tienda');
+    guardar(); await screen.findByText('Catálogo guardado');
+    expect(productService.crear.mock.calls[0][0].ficha_datos.presentacion).toMatchObject({ titulo_comercial: 'Nombre para mi tienda', resenas_calificacion: '3.5' });
+  });
   it('conserva un costo cero intencional al guardar', async () => {
     await montar();
     completarIdentidad();

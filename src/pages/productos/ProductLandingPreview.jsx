@@ -7,6 +7,7 @@ import { codigoFichaProducto } from '../landing-simple/fichaCodigoLanding';
 import { datosRuntimePublico } from '../landing-simple/datosRuntime';
 import { usePagoparConectado } from '../landing-simple/usePagoparConectado';
 import { landingSimpleService } from '../../services/landingSimpleService';
+import { BLOQUES_CONTENIDO_PRODUCTO } from './ProductContentBlocks';
 
 const DEVICE_OPTIONS = [
   { id: 'desktop', label: 'Desktop', icon: Monitor },
@@ -65,6 +66,8 @@ export default function ProductLandingPreview({
   device,
   onDeviceChange,
   onExpand,
+  seleccionBloque,
+  onSeleccionarBloque,
 }) {
   const [ofertas, setOfertas] = useState([]);
   const [tienda, setTienda] = useState(null);
@@ -199,11 +202,29 @@ export default function ProductLandingPreview({
         incluir_url: !!landing?.whatsapp_incluir_url,
       },
     };
+    // En Productos se está editando la ficha original. Los ajustes ya guardados
+    // en la landing no deben tapar el borrador de estos campos en su preview.
+    const presentacion = dto.ficha_datos.presentacion || {};
+    const camposEditables = ['titulo_comercial', 'resenas_calificacion', 'resenas_texto'];
+    const borrador = Object.fromEntries(camposEditables
+      .filter(campo => Object.prototype.hasOwnProperty.call(presentacion, campo))
+      .map(campo => [campo, campo === 'titulo_comercial' ? (presentacion[campo] || dto.nombre) : presentacion[campo]]));
+    if (Object.keys(borrador).length) {
+      const clave = `producto:${item.referencia_id}`;
+      data.content = { ...data.content, venta: { ...data.content.venta,
+        presentacion_productos: { ...data.content.venta?.presentacion_productos,
+          [clave]: { ...data.content.venta?.presentacion_productos?.[clave], ...borrador },
+        },
+      } };
+    }
     return {
       codigo: codigoFichaProducto(landing?.content, contentId),
-      datos: datosRuntimePublico(data, landing?.slug || null, item, { vista: 'producto', pagoparConectado }),
+      datos: {
+        ...datosRuntimePublico(data, landing?.slug || null, item, { vista: 'producto', pagoparConectado }),
+        ...(onSeleccionarBloque ? { editor_bloques: Object.fromEntries(BLOQUES_CONTENIDO_PRODUCTO.flatMap(b => (b.zonas || [b.destino]).map(zona => [zona, b.titulo]))), editor_seleccion: BLOQUES_CONTENIDO_PRODUCTO.find(b => b.id === seleccionBloque?.id)?.destino || null } : {}),
+      },
     };
-  }, [landing, tienda, dto, producto, productoId, pagoparConectado]);
+  }, [landing, tienda, dto, producto, productoId, pagoparConectado, onSeleccionarBloque, seleccionBloque?.id]);
 
   const preview = useMemo(() => (
     <div style={{ height: '100%' }}>
@@ -213,10 +234,13 @@ export default function ProductLandingPreview({
         datos={previewLienzo.datos}
         typography={landing?.typography?.resolved || tienda?.typography}
         previewDevice={device}
+        preservarScroll
+        resaltar={onSeleccionarBloque ? { lista: BLOQUES_CONTENIDO_PRODUCTO.find(b => b.id === seleccionBloque?.id)?.destino || 'nombre_comercial', n: seleccionBloque?.n || 0 } : null}
+        onBloque={clave => { const bloque = BLOQUES_CONTENIDO_PRODUCTO.find(b => (b.zonas || [b.destino]).includes(clave)); if (bloque) onSeleccionarBloque?.(bloque.id); }}
         style={{ width: '100%', height: '100%', border: 0 }}
       />
     </div>
-  ), [device, dto.nombre, previewLienzo, landing?.typography?.resolved, tienda?.typography]);
+  ), [device, dto.nombre, previewLienzo, landing?.typography?.resolved, tienda?.typography, seleccionBloque, onSeleccionarBloque]);
 
   return (
     <section className="product-preview-panel" aria-label="Vista pública del producto">
