@@ -117,8 +117,6 @@
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
-  border-top: 1px solid color-mix(in srgb, var(--color-fg) 6%, transparent);
-  padding-top: 1rem;
 }
 
 .cic-preset-pill {
@@ -148,10 +146,10 @@
 /* Dropdown Filters */
 .cic-filters-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 0.75rem;
-  align-items: center;
-  margin-top: 1.5rem;
+  align-items: end;
+  margin-top: 1rem;
 }
 
 .cic-filter-item {
@@ -162,17 +160,18 @@
 
 .cic-filter-label {
   font-size: var(--ui-text-help, 0.875rem);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--color-fg-muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .cic-select {
   background: var(--color-surface-2);
   border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   color: var(--color-fg);
-  font-size: var(--ui-text-help, 0.875rem);
+  font-size: 1rem;
+  min-height: 44px;
+  width: 100%;
+  font-family: inherit;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   outline: none;
@@ -361,9 +360,10 @@
 /* ==========================================================================
    C. FINANCIAL & OPERATIONAL KPIS GRID
    ========================================================================== */
-.cic-kpis-grid {
+.cic-kpis-grid,
+.cic-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 0.85rem;
 }
 
@@ -703,4 +703,271 @@
 
 .cic-input:focus {
   border-color: var(--color-primary);
+}
+
+/* ==========================================================================
+   FILTRO DE PERÍODO Y FILTROS ACTIVOS
+   ========================================================================== */
+.cic-filters-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.cic-periodo-actual {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-primary-text);
+}
+
+.cic-periodo-actual > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+}
+
+.cic-periodo-label {
+  font-size: var(--ui-text-help, 0.875rem);
+  color: var(--color-fg-muted);
+  font-weight: 500;
+}
+
+.cic-periodo-rango {
+  font-size: 1.125rem;
+  color: var(--color-fg);
+  font-weight: 700;
+}
+
+.cic-periodo-dias {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  padding: 0.1rem 0.55rem;
+  border-radius: 9999px;
+}
+
+.cic-preset-pill {
+  min-height: 40px;
+}
+
+.cic-preset-pill:focus-visible,
+.cic-nav-item:focus-visible,
+.cic-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.cic-periodo-detalle {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 220px));
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.cic-btn-mas-filtros {
+  min-height: 44px;
+  justify-content: center;
+}
+
+.cic-contador {
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  min-width: 1.4rem;
+  padding: 0 0.4rem;
+  border-radius: 9999px;
+  text-align: center;
+}
+
+.cic-chips-activos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--ui-text-help, 0.875rem);
+  color: var(--color-fg-muted);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  border-radius: 9999px;
+  padding: 0.25rem 0.35rem 0.25rem 0.75rem;
+}
+
+.cic-chip strong {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+.cic-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+}
+
+.cic-chip button:hover {
+  background: color-mix(in srgb, var(--color-fg) 10%, transparent);
+  color: var(--color-fg);
+}
+
+.cic-limpiar {
+  border: none;
+  background: transparent;
+  color: var(--color-primary-text);
+  font-size: var(--ui-text-help, 0.875rem);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+}
+
+.cic-aviso-filtros {
+  margin: 0;
+  font-size: var(--ui-text-help, 0.875rem);
+  color: var(--color-warning);
+}
+
+/* Selector de reporte: solo en pantallas angostas, reemplaza la barra lateral */
+.cic-nav-movil {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .cic-nav-movil {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: var(--ui-text-help, 0.875rem);
+    font-weight: 600;
+    color: var(--color-fg-muted);
+  }
+  .cic-layout .cic-sidebar-nav {
+    display: none;
+  }
+  .cic-layout {
+    margin-top: 0;
+    align-items: stretch;
+  }
+  .cic-content-area {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .cic-top-bar {
+    padding: 1rem;
+  }
+  .cic-presets-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    margin: 0 -1rem;
+    padding-inline: 1rem;
+    scrollbar-width: none;
+  }
+  .cic-preset-pill {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .cic-periodo-detalle {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ==========================================================================
+   CLIENTES: CALIFICACIÓN
+   ========================================================================== */
+.cic-calif {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+.cic-calif-recurrente { background: color-mix(in srgb, var(--color-success) 16%, transparent); color: var(--color-success); }
+.cic-calif-bueno { background: color-mix(in srgb, var(--color-success) 10%, transparent); color: var(--color-success); }
+.cic-calif-problematico { background: color-mix(in srgb, var(--color-danger) 12%, transparent); color: var(--color-danger); }
+.cic-calif-sin_entregas { background: color-mix(in srgb, var(--color-fg) 7%, transparent); color: var(--color-fg-muted); }
+
+.cic-segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.cic-busqueda {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.cic-busqueda svg {
+  position: absolute;
+  left: 0.85rem;
+  color: var(--color-fg-muted);
+  pointer-events: none;
+}
+.cic-busqueda .cic-select {
+  padding-left: 2.6rem;
+  cursor: text;
+}
+
+/* Gráfico angosto + tabla ancha; en pantallas chicas, uno debajo del otro */
+.cic-split {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, 3fr);
+  gap: 1.5rem;
+}
+@media (max-width: 1500px) {
+  .cic-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cic-leyenda {
+  list-style: none;
+  margin: 0.75rem auto 0;
+  padding: 0;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: var(--ui-text-help, 0.875rem);
+}
+.cic-leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-fg-muted);
+}
+.cic-leyenda li strong {
+  margin-left: auto;
+  color: var(--color-fg);
+}
+.cic-leyenda-punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }

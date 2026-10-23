@@ -8,7 +8,7 @@ export function VistaComisiones({ filters }) {
   const [kpis, setKpis] = useState({ total_facturado: 0, total_comisiones: 0, total_neto: 0 });
   const [distribucionMetodos, setDistribucionMetodos] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [localSearch, setLocalSearch] = useState({ buscador: '', fecha_desde: '', fecha_hasta: '' });
+  const [localSearch, setLocalSearch] = useState({ buscador: '' });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -26,8 +26,6 @@ export function VistaComisiones({ filters }) {
       };
       
       if (localSearch.buscador) payload.buscador = localSearch.buscador;
-      if (localSearch.fecha_desde) payload.fecha_desde = localSearch.fecha_desde;
-      if (localSearch.fecha_hasta) payload.fecha_hasta = localSearch.fecha_hasta;
 
       const response = await reportesService.obtenerReporteComisiones(payload);
       
@@ -72,7 +70,7 @@ export function VistaComisiones({ filters }) {
             <DollarSign size={16} color="var(--color-success)" />
           </div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_facturado)}</div>
-          <div className="cic-kpi-sub">Base de cálculo (Entregados/Confirmados)</div>
+          <div className="cic-kpi-sub">Pedidos entregados del período</div>
         </div>
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-danger) 30%, transparent)' }}>
@@ -127,41 +125,17 @@ export function VistaComisiones({ filters }) {
 
       {/* Data Table */}
       
-      {/* Barra de Filtros Locales */}
-      <div className="flex flex-col md:flex-row gap-4 mb-4 bg-[var(--color-surface-2)] p-4 rounded-xl border border-[color-mix(in srgb, var(--color-fg) 8%, transparent)] items-end">
-        <div className="flex-1 w-full">
-          <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1 block">Buscar</span>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-fg-muted)]" size={18} />
-            <input 
-              type="text" 
-              placeholder="Buscar por ID, Cliente o Teléfono..." 
-              className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg pl-10 pr-4 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-              value={localSearch.buscador}
-              onChange={(e) => setLocalSearch(prev => ({ ...prev, buscador: e.target.value }))}
-            />
-          </div>
-        </div>
-        <div className="flex gap-4 w-full md:w-auto">
-          <div className="flex flex-col flex-1 md:flex-none">
-            <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1">Desde</span>
-            <input 
-              type="date" 
-              className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-              value={localSearch.fecha_desde}
-              onChange={(e) => setLocalSearch(prev => ({ ...prev, fecha_desde: e.target.value }))}
-            />
-          </div>
-          <div className="flex flex-col flex-1 md:flex-none">
-            <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1">Hasta</span>
-            <input 
-              type="date" 
-              className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-              value={localSearch.fecha_hasta}
-              onChange={(e) => setLocalSearch(prev => ({ ...prev, fecha_hasta: e.target.value }))}
-            />
-          </div>
-        </div>
+      {/* Las fechas las define el período de arriba; acá solo se busca. */}
+      <div className="cic-busqueda">
+        <Search size={18} aria-hidden="true" />
+        <input
+          type="search"
+          className="cic-select"
+          aria-label="Buscar pedido"
+          placeholder="Buscar por número, cliente o teléfono"
+          value={localSearch.buscador}
+          onChange={(e) => setLocalSearch({ buscador: e.target.value })}
+        />
       </div>
 
       <div className="cic-table-card">
@@ -175,7 +149,7 @@ export function VistaComisiones({ filters }) {
                 <th>Estado</th>
                 <th>Método de Pago</th>
                 <th style={{ textAlign: 'right' }}>Comisión (%)</th>
-                <th style={{ textAlign: 'right' }}>Precio (Total)</th>
+                <th style={{ textAlign: 'right' }}>Cobrado al cliente</th>
                 <th style={{ textAlign: 'right', color: 'var(--color-danger)' }}>Costo Comisión</th>
                 <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Precio Neto</th>
               </tr>
@@ -202,7 +176,7 @@ export function VistaComisiones({ filters }) {
                     </td>
                     <td>{row.metodo_pago || 'N/A'}</td>
                     <td style={{ textAlign: 'right' }}>{Number(row.comision_pct_aplicada || 0).toFixed(1)}%</td>
-                    <td style={{ textAlign: 'right' }}>{formatMoney(row.monto)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatMoney(row.monto_cobrado ?? row.monto)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--color-danger)' }}>-{formatMoney(row.costo_comision)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--color-success)', fontWeight: 'bold' }}>{formatMoney(row.precio_neto)}</td>
                   </tr>

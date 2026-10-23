@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { TrendingUp, LayoutDashboard, ShoppingCart, Package, UserCheck, DollarSign, PiggyBank, List, MapPin, Truck, Shuffle, Users } from 'lucide-react';
 import './CentroInteligenciaComercial.css';
@@ -6,6 +6,7 @@ import './analytics/analytics.css';
 import './analytics/grouped-nav.css';
 
 import { AnalyticsFilters } from './analytics/AnalyticsFilters';
+import { resolverRango } from './analytics/periodo';
 import { ReporteResumen } from './analytics/reports/ReporteResumen';
 import { ReporteVentas } from './analytics/reports/ReporteVentas';
 import ReporteProductos from './analytics/reports/ReporteProductos';
@@ -19,7 +20,56 @@ import { ReporteAfinidad } from './analytics/reports/ReporteAfinidad';
 import ReporteConfirmadores from './analytics/reports/ReporteConfirmadores';
 import { ReporteFinanzas } from './analytics/reports/ReporteFinanzas';
 
-export function CentroInteligenciaComercial({ couriers = [] }) {
+const REPORTES = [
+  { grupo: 'Resumen', items: [
+    { id: 'resumen', label: 'Resumen operativo', icon: LayoutDashboard },
+  ] },
+  { grupo: 'Ventas', items: [
+    { id: 'ventas', label: 'Vista de pedidos', icon: ShoppingCart },
+    { id: 'productos', label: 'Rendimiento de productos', icon: Package },
+    { id: 'composicion', label: 'Composición (upsells)', icon: List },
+    { id: 'afinidad', label: 'Afinidad de productos', icon: Shuffle },
+  ] },
+  { grupo: 'Clientes', items: [
+    { id: 'clientes', label: 'Clientes: buenos y problemáticos', icon: Users },
+  ] },
+  { grupo: 'Operaciones', items: [
+    { id: 'confirmadores', label: 'Desempeño de confirmadores', icon: UserCheck },
+    { id: 'fallos', label: 'Fallos y devoluciones', icon: TrendingUp },
+    { id: 'geografia', label: 'Geografía', icon: MapPin },
+    { id: 'logistica', label: 'Logística y couriers', icon: Truck },
+  ] },
+  { grupo: 'Pagos y finanzas', items: [
+    { id: 'metodos_pago', label: 'Métodos de pago', icon: PiggyBank },
+    { id: 'finanzas', label: 'Comisiones, facturación e IVA', icon: DollarSign },
+  ] },
+];
+
+const FILTROS_INICIALES = {
+  periodo: 'este_mes',
+  mes: new Date().getMonth() + 1,
+  anio: new Date().getFullYear(),
+  confirmador: 'TODOS',
+  courierId: 'TODOS',
+  canal_venta_id: 'TODOS',
+  estado: 'TODOS',
+  producto_id: 'TODOS',
+  metodo_pago: 'TODOS',
+  ciudad: '',
+};
+
+// Filtros y reporte abierto sobreviven a recargar o a ir y volver dentro de
+// la pestaña (sessionStorage, nunca la URL).
+const CLAVE_SESION = 'gesicomm.dashboardOperativo.v1';
+function leerSesion() {
+  try {
+    return JSON.parse(sessionStorage.getItem(CLAVE_SESION) || 'null') || {};
+  } catch {
+    return {};
+  }
+}
+
+export function CentroInteligenciaComercial() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
@@ -29,125 +79,87 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
     }
   }, [searchParams, setSearchParams]);
 
-  const [activeReport, setActiveReport] = useState('resumen');
-  const [analyticsFilters, setAnalyticsFilters] = useState({
-    periodo: 'este_mes',
-    mes: new Date().getMonth() + 1,
-    anio: new Date().getFullYear(),
-    confirmador: 'TODOS',
-    courierId: 'TODOS',
-    canal_venta_id: 'TODOS',
-  });
+  const sesion = useMemo(leerSesion, []);
+  const [activeReport, setActiveReport] = useState(sesion.reporte || 'resumen');
+  const [analyticsFilters, setAnalyticsFilters] = useState({ ...FILTROS_INICIALES, ...(sesion.filtros || {}) });
   const [confirmadoresDisponibles, setConfirmadoresDisponibles] = useState([]);
 
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CLAVE_SESION, JSON.stringify({ reporte: activeReport, filtros: analyticsFilters }));
+    } catch { /* almacenamiento bloqueado: se pierde solo la preferencia */ }
+  }, [activeReport, analyticsFilters]);
+
+  // Lo que reciben los reportes: el período ya traducido a fechas. Pisa
+  // cualquier fecha vieja de un rango personalizado anterior.
+  const filtrosReporte = useMemo(
+    () => ({ ...analyticsFilters, ...resolverRango(analyticsFilters) }),
+    [analyticsFilters],
+  );
+
   const renderActiveReport = () => {
+    const f = filtrosReporte;
     switch (activeReport) {
-      case 'resumen': return <ReporteResumen filters={analyticsFilters} setConfirmadoresDisponibles={setConfirmadoresDisponibles} />;
-      case 'ventas': return <ReporteVentas filters={analyticsFilters} />;
-      case 'productos': return <ReporteProductos filters={analyticsFilters} />;
-      case 'composicion': return <ReporteComposicion filters={analyticsFilters} />;
-      case 'afinidad': return <ReporteAfinidad filters={analyticsFilters} />;
-      case 'clientes': return <ReporteClientes filters={analyticsFilters} />;
-      case 'confirmadores': return <ReporteConfirmadores filters={analyticsFilters} />;
-      case 'fallos': return <ReporteFallos filters={analyticsFilters} />;
-      case 'geografia': return <ReporteGeografia filters={analyticsFilters} />;
-      case 'logistica': return <ReporteLogistica filters={analyticsFilters} />;
-      case 'metodos_pago': return <ReporteMetodosPago filters={analyticsFilters} />;
-      case 'finanzas': return <ReporteFinanzas filters={analyticsFilters} />;
-      default: return <ReporteResumen filters={analyticsFilters} setConfirmadoresDisponibles={setConfirmadoresDisponibles} />;
+      case 'ventas': return <ReporteVentas filters={f} />;
+      case 'productos': return <ReporteProductos filters={f} />;
+      case 'composicion': return <ReporteComposicion filters={f} />;
+      case 'afinidad': return <ReporteAfinidad filters={f} />;
+      case 'clientes': return <ReporteClientes filters={f} />;
+      case 'confirmadores': return <ReporteConfirmadores filters={f} />;
+      case 'fallos': return <ReporteFallos filters={f} />;
+      case 'geografia': return <ReporteGeografia filters={f} />;
+      case 'logistica': return <ReporteLogistica filters={f} />;
+      case 'metodos_pago': return <ReporteMetodosPago filters={f} />;
+      case 'finanzas': return <ReporteFinanzas filters={f} />;
+      case 'resumen':
+      default: return <ReporteResumen filters={f} setConfirmadoresDisponibles={setConfirmadoresDisponibles} />;
     }
   };
 
   return (
     <div className="cic-wrapper">
       <div className="cic-top-bar">
-        <div className="cic-header-row">
-          <div className="cic-title-box">
-            <div style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-active))', padding: '0.6rem', borderRadius: '12px', color: 'var(--color-primary-fg)', display: 'flex' }}>
-              <TrendingUp size={22} />
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-fg)' }}>Inteligencia Comercial</h2>
-                <span className="cic-badge-live">
-                  <span className="pulse-dot" /> En Vivo
-                </span>
-              </div>
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)', margin: '0.2rem 0 0 0' }}>
-                Insights automáticos y reportes deep-dive.
-              </p>
-            </div>
-          </div>
-        </div>
-
         <AnalyticsFilters
           filters={analyticsFilters}
           setFilters={setAnalyticsFilters}
+          filtrosIniciales={FILTROS_INICIALES}
+          reporteActivo={activeReport}
           confirmadoresDisponibles={confirmadoresDisponibles}
         />
       </div>
 
+      {/* En celular la lista de 12 reportes se vuelve un selector. */}
+      <label className="cic-nav-movil">
+        <span>Reporte</span>
+        <select className="cic-select" value={activeReport} onChange={e => setActiveReport(e.target.value)}>
+          {REPORTES.map(g => (
+            <optgroup key={g.grupo} label={g.grupo}>
+              {g.items.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </optgroup>
+          ))}
+        </select>
+      </label>
+
       <div className="cic-layout">
-        {/* Sidebar de Navegación Agrupada */}
-        <aside className="cic-sidebar-nav">
-          <div className="cic-nav-group">
-            <h4>Overview</h4>
-            <button className={`cic-nav-item ${activeReport === 'resumen' ? 'active' : ''}`} onClick={() => setActiveReport('resumen')}>
-              <LayoutDashboard size={15} /> Resumen General
-            </button>
-          </div>
-
-          <div className="cic-nav-group">
-            <h4>Ventas</h4>
-            <button className={`cic-nav-item ${activeReport === 'ventas' ? 'active' : ''}`} onClick={() => setActiveReport('ventas')}>
-              <ShoppingCart size={15} /> Vista de Pedidos
-            </button>
-            <button className={`cic-nav-item ${activeReport === 'productos' ? 'active' : ''}`} onClick={() => setActiveReport('productos')}>
-              <Package size={15} /> Rendimiento de Productos
-            </button>
-            <button className={`cic-nav-item ${activeReport === 'composicion' ? 'active' : ''}`} onClick={() => setActiveReport('composicion')}>
-              <List size={15} /> Composición (Upsells)
-            </button>
-            <button className={`cic-nav-item ${activeReport === 'afinidad' ? 'active' : ''}`} onClick={() => setActiveReport('afinidad')}>
-              <Shuffle size={15} /> Afinidad de Productos
-            </button>
-          </div>
-
-          <div className="cic-nav-group">
-            <h4>Clientes</h4>
-            <button className={`cic-nav-item ${activeReport === 'clientes' ? 'active' : ''}`} onClick={() => setActiveReport('clientes')}>
-              <Users size={15} /> Comportamiento e Histórico
-            </button>
-          </div>
-
-          <div className="cic-nav-group">
-            <h4>Operaciones</h4>
-            <button className={`cic-nav-item ${activeReport === 'confirmadores' ? 'active' : ''}`} onClick={() => setActiveReport('confirmadores')}>
-              <UserCheck size={15} /> Desempeño Confirmadores
-            </button>
-            <button className={`cic-nav-item ${activeReport === 'fallos' ? 'active' : ''}`} onClick={() => setActiveReport('fallos')}>
-              <TrendingUp size={15} /> Fallos y Devoluciones
-            </button>
-            <button className={`cic-nav-item ${activeReport === 'geografia' ? 'active' : ''}`} onClick={() => setActiveReport('geografia')}>
-              <MapPin size={15} /> Geografía
-            </button>
-            <button className={`cic-nav-item ${activeReport === 'logistica' ? 'active' : ''}`} onClick={() => setActiveReport('logistica')}>
-              <Truck size={15} /> Logística y Couriers
-            </button>
-          </div>
-
-          <div className="cic-nav-group">
-            <h4>Pagos y Finanzas</h4>
-            <button className={`cic-nav-item ${activeReport === 'metodos_pago' ? 'active' : ''}`} onClick={() => setActiveReport('metodos_pago')}>
-              <PiggyBank size={15} /> Métodos de Pago
-            </button>
-            <button className={`cic-nav-item ${activeReport === 'finanzas' ? 'active' : ''}`} onClick={() => setActiveReport('finanzas')}>
-              <DollarSign size={15} /> Rentabilidad (Costos)
-            </button>
-          </div>
+        <aside className="cic-sidebar-nav" aria-label="Reportes">
+          {REPORTES.map(g => (
+            <div className="cic-nav-group" key={g.grupo}>
+              <h4>{g.grupo}</h4>
+              {g.items.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`cic-nav-item ${activeReport === id ? 'active' : ''}`}
+                  aria-current={activeReport === id ? 'page' : undefined}
+                  onClick={() => setActiveReport(id)}
+                >
+                  <Icon size={16} /> {label}
+                </button>
+              ))}
+            </div>
+          ))}
         </aside>
 
-        {/* Content Area */}
         <main className="cic-content-area">
           {renderActiveReport()}
         </main>

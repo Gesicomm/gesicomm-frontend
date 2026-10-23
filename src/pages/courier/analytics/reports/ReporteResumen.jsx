@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   TrendingUp, Package, CheckCircle2, RotateCcw,
-  AlertTriangle, DollarSign, Trophy, TrendingDown, Info
+  AlertTriangle, Trophy, TrendingDown, Truck
 } from 'lucide-react';
 import { getMetricasDashboardPedidos } from '../../../../services/courierApi';
-import { formatGs } from '../../../../lib/courier';
-import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 import '../../CentroInteligenciaComercial.css';
 
 // ─── Gráfico SVG de evolución temporal ───────────────────────────────────────
@@ -192,18 +190,16 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
   const cargarMetricas = async () => {
     try {
       setLoading(true);
+      // fecha_desde/fecha_hasta ya vienen resueltas desde el contenedor
+      // (analytics/periodo.js) para cualquier preset.
       const payload = {
-        periodo:       filters.periodo,
-        mes:           filters.periodo === 'personalizado_mes' ? filters.mes : undefined,
-        anio:          filters.anio,
-        // Rango personalizado — el backend (resolverRangoFechas) prioriza
-        // fecha_desde/fecha_hasta si ambas están presentes. Se envían
-        // siempre pero solo tienen efecto cuando periodo === 'personalizado_rango'.
-        fecha_desde:   filters.periodo === 'personalizado_rango' ? (filters.fecha_desde || undefined) : undefined,
-        fecha_hasta:   filters.periodo === 'personalizado_rango' ? (filters.fecha_hasta || undefined) : undefined,
-        confirmador:   filters.confirmador !== 'TODOS' ? filters.confirmador : undefined,
-        courier_id:    filters.courierId !== 'TODOS' ? filters.courierId : undefined,
+        periodo:        filters.periodo,
+        fecha_desde:    filters.fecha_desde || undefined,
+        fecha_hasta:    filters.fecha_hasta || undefined,
+        confirmador:    filters.confirmador !== 'TODOS' ? filters.confirmador : undefined,
+        courier_id:     filters.courierId !== 'TODOS' ? filters.courierId : undefined,
         canal_venta_id: filters.canal_venta_id !== 'TODOS' ? filters.canal_venta_id : undefined,
+        producto_id:    filters.producto_id && filters.producto_id !== 'TODOS' ? filters.producto_id : undefined,
       };
       const res = await getMetricasDashboardPedidos(payload);
       setData(res);
@@ -229,73 +225,44 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
   if (!data) return null;
 
   const funnel = data.funnel;
-  const kpis   = data.kpis;
   const cmp    = data.comparativo || null; // variación vs. período anterior
+  const porConfirmar = funnel.por_estado_actual?.Pendiente || 0;
+  const fallidos = (funnel.devueltos || 0) + (funnel.perdidos || 0);
+  const tasaFallo = funnel.total_creados > 0 ? Math.round((fallidos / funnel.total_creados) * 1000) / 10 : 0;
 
   return (
     <div className="cic-wrapper" style={{ marginTop: '1rem' }}>
 
-      {/* ── Zona 1: KPIs con variación ───────────────────────────────────── */}
-      <div className="cic-kpis-grid" style={{ marginBottom: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
-
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-info)' }}>
-          <div className="cic-kpi-header"><span>Pedidos Creados</span><Package size={16} style={{ color: 'var(--color-info)' }} /></div>
-          <div className="cic-kpi-val">{funnel.total_creados}</div>
-          <div className="cic-kpi-sub">Volumen base del período</div>
-        </div>
-
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-success)' }}>
-          <div className="cic-kpi-header"><span>Confirmados</span><CheckCircle2 size={16} style={{ color: 'var(--color-success)' }} /></div>
-          <div className="cic-kpi-val">
-            {funnel.confirmados}
-            <Variacion actual={funnel.confirmados} previo={cmp?.pedidos_entregados} />
-          </div>
-          <div className="cic-kpi-sub">{funnel.tasa_confirmacion}% de creados</div>
-        </div>
-
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-primary-text)' }}>
-          <div className="cic-kpi-header"><span>Entregados</span><Trophy size={16} style={{ color: 'var(--color-primary-text)' }} /></div>
-          <div className="cic-kpi-val">
-            {funnel.entregados}
-            <Variacion actual={funnel.entregados} previo={cmp?.pedidos_entregados} />
-          </div>
-          <div className="cic-kpi-sub">{funnel.tasa_entrega}% de creados</div>
-        </div>
-
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-accent-text, #f59e0b)' }}>
-          <div className="cic-kpi-header">
-            <span className="cic-tooltip-trigger">
-              {METRIC_TERMS.ventasNetas} entregadas <Info size={12} style={{ color: 'var(--color-fg-muted)' }} />
-              <div className="cic-tooltip">Venta de producto exclusivamente por pedidos en estado 'Entregado'. No incluye envíos pendientes ni cobros de delivery.</div>
-            </span>
-            <DollarSign size={16} style={{ color: 'var(--color-accent-text)' }} />
-          </div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-accent-text)' }}>
-            {formatGs(kpis.facturacion_entregada)}
-            <Variacion actual={kpis.facturacion_entregada} previo={cmp?.facturacion_entregada} />
-          </div>
-          <div className="cic-kpi-sub">
-            <span className="cic-tooltip-trigger">
-              {METRIC_TERMS.ventasNetas}
-              <div className="cic-tooltip">Venta de producto generada por tus pedidos entregados, sin incluir costos extras que paga el cliente.</div>
-            </span>
-          </div>
-        </div>
-
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-warning)' }}>
-          <div className="cic-kpi-header">
-            <span className="cic-tooltip-trigger">
-              {METRIC_TERMS.utilidadBruta} est. <Info size={12} style={{ color: 'var(--color-fg-muted)' }} />
-              <div className="cic-tooltip">Es 'Estimado' porque asume que cargaste correctamente el precio de costo de cada producto. Es 'Bruto' porque solo descuenta ese costo, sin restar publicidad, empaque o sueldos.</div>
-            </span>
-            <TrendingUp size={16} style={{ color: 'var(--color-warning)' }} />
-          </div>
-          <div className="cic-kpi-val" style={{ color: kpis.margen_bruto_estimado < 0 ? 'var(--color-danger)' : 'var(--color-warning)' }}>
-            {formatGs(kpis.margen_bruto_estimado)}
-          </div>
-          <div className="cic-kpi-sub">{kpis.pct_margen_bruto}% sobre ventas</div>
-        </div>
-
+      {/* ── Zona 1: la operación del período ─────────────────────────────
+          Ventas netas y utilidad ya están en el Dashboard General; acá va lo
+          que necesita quien confirma y despacha: cuánto entra, cuánto falta
+          confirmar, cuánto está en la calle y cuánto se cae. */}
+      <div className="cic-kpis-grid" style={{ marginBottom: '1.5rem' }}>
+        <KpiOperativo titulo="Pedidos creados" valor={funnel.total_creados} sub="En el período elegido" icon={Package} color="var(--color-info)" />
+        <KpiOperativo
+          titulo="Por confirmar"
+          valor={porConfirmar}
+          sub={porConfirmar > 0 ? 'Siguen en Pendiente: es la cola de Gestión Comercial' : 'No queda nada pendiente'}
+          icon={AlertTriangle}
+          color={porConfirmar > 0 ? 'var(--color-warning)' : 'var(--color-success)'}
+        />
+        <KpiOperativo titulo="Confirmados" valor={funnel.confirmados} sub={`${funnel.tasa_confirmacion}% de los creados`} icon={CheckCircle2} color="var(--color-success)" />
+        <KpiOperativo titulo="En camino" valor={funnel.en_transito || 0} sub="Despachados, todavía sin entregar" icon={Truck} color="var(--color-primary-text)" />
+        <KpiOperativo
+          titulo="Entregados"
+          valor={funnel.entregados}
+          extra={<Variacion actual={funnel.entregados} previo={cmp?.pedidos_entregados} />}
+          sub={`${funnel.tasa_entrega}% de los creados`}
+          icon={Trophy}
+          color="var(--color-success)"
+        />
+        <KpiOperativo
+          titulo="Devueltos o perdidos"
+          valor={fallidos}
+          sub={`${tasaFallo}% de los creados`}
+          icon={RotateCcw}
+          color={fallidos > 0 ? 'var(--color-danger)' : 'var(--color-fg-muted)'}
+        />
       </div>
 
       {/* ── Zona 2: Embudo (2/3) + Insights (1/3) ───────────────────────── */}
@@ -375,6 +342,16 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
         </div>
       )}
 
+    </div>
+  );
+}
+
+function KpiOperativo({ titulo, valor, sub, icon: Icon, color, extra = null }) {
+  return (
+    <div className="cic-kpi-card" style={{ borderTop: `3px solid ${color}` }}>
+      <div className="cic-kpi-header"><span>{titulo}</span><Icon size={16} style={{ color }} /></div>
+      <div className="cic-kpi-val">{valor}{extra}</div>
+      <div className="cic-kpi-sub">{sub}</div>
     </div>
   );
 }

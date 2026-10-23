@@ -158,7 +158,7 @@ export function RendicionTab({ couriers = [] }) {
                 {desglose.detalle.map((d) => (
                   <div key={d.envio_id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: "var(--color-fg-muted)", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)", padding: "0.25rem 0" }}>
                     <span>{numeroPedidoVisible(d)} · {d.cliente} · {d.estado} · {d.metodo_pago || "—"}</span>
-                    <span>{formatGs(d.dinero_courier)} / envío {formatGs(d.costo_envio)}{d.cargo_perdida_courier ? ` / pérdida ${formatGs(d.cargo_perdida_courier)}` : ""}</span>
+                    <span>{formatGs(d.dinero_courier)} / envío {formatGs(d.costo_servicio ?? d.costo_envio)}{d.cargo_perdida_courier ? ` / pérdida ${formatGs(d.cargo_perdida_courier)}` : ""}</span>
                   </div>
                 ))}
               </div>

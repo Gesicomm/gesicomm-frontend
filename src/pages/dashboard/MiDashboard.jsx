@@ -170,10 +170,11 @@ function DesgloseCosto({ producto }) {
   // entregarla, y al final la parte de los gastos generales. Si las dos
   // vistas ordenaran distinto, el comerciante tendría que traducir.
   const costosVenta = [
-    { label: 'Envío', valor: d.envio, ayuda: 'lo que se le pagó al courier' },
+    { label: 'Envío a tu cargo', valor: d.envio, ayuda: 'lo pagado al courier menos el delivery que pagó el cliente' },
     { label: 'Comisión de pago', valor: d.comision, ayuda: 'lo que se queda la pasarela' },
     { label: 'IVA', valor: d.iva, ayuda: 'de los pedidos con factura' },
-  ].filter(r => Number(r.valor) > 0);
+    { label: 'Pedidos devueltos o perdidos', valor: d.pedidos_fallidos, ayuda: 'viaje del courier y mercadería perdida, menos lo cargado al courier' },
+  ].filter(r => Number(r.valor) !== 0);
 
   // Los gastos del negocio llegan al producto por cuatro caminos distintos,
   // y cada uno se explica distinto: dos los eligió el usuario o su campaña
@@ -905,7 +906,7 @@ function TablaRendimientoCanal({ filas }) {
           <tr>
             <th>Canal</th>
             <th>{METRIC_TERMS.ventasNetas} <Ayuda texto="Venta neta de productos entregados por este canal, sin contar delivery/flete." /></th>
-            <th>Costos totales <Ayuda texto="Mercadería, publicidad, comisiones, logística, IVA y gastos operativos atribuibles a este canal." /></th>
+            <th>Costos totales <Ayuda texto="Mercadería, publicidad, comisiones, logística, IVA, pedidos devueltos o perdidos y gastos operativos atribuibles a este canal." /></th>
             <th>{METRIC_TERMS.utilidadNeta} <Ayuda texto="Ventas menos todos los costos atribuibles del canal." /></th>
             <th>{METRIC_TERMS.margen} <Ayuda texto="De cada Gs 100 vendidos por este canal, cuántos quedan como utilidad." /></th>
             <th>{METRIC_TERMS.roiCanal} <Ayuda texto="Fórmula: utilidad neta / costos totales x 100. Puede superar 100%; si querés porcentaje sobre ventas, mirá Margen." /></th>
@@ -1006,8 +1007,9 @@ function TablaRankingLandings({ ranking }) {
  * desde el backend: acá no aparece ni como columna ni como concepto, porque
  * es mecanismo de cálculo, no información de negocio.
  *
- * `perdida` va aparte y NO se descuenta de la ganancia — descontarla otra
- * vez sería contar dos veces la misma plata.
+ * `perdida` es informativa: la mercadería perdida ya está adentro del Costo
+ * (renglón "Pedidos devueltos o perdidos" del desglose), así que no se
+ * vuelve a restar acá.
  */
 /** Margen bruto con red: si el backend todavía no lo manda, se reconstruye
  * con el desglose de costo en vez de mostrar "Gs NaN". Mismo criterio que
@@ -1049,7 +1051,7 @@ function TablaMasVendidos({ filas }) {
             <th>{METRIC_TERMS.margenBruto} <Ayuda texto="La Venta menos lo que te costó la mercadería, sin contar nada más. Te dice si el producto está bien pescado: si acá ya estás en cero, ningún gasto que recortes lo va a salvar." /></th>
             <th>Costo <Ayuda texto="Todo lo que te costó este producto. Tocá el número para abrir el desglose renglón por renglón." /></th>
             <th>{METRIC_TERMS.ganancia} <Ayuda texto="La Venta menos el Costo. Es la plata que te dejó este producto." /></th>
-            <th>Pérdida <Ayuda texto="Mercadería que se perdió o volvió rota, contada a lo que te costó. Lo que se devolvió en buen estado no cuenta porque vuelve al stock. No se resta de la Ganancia para no descontarla dos veces." /></th>
+            <th>Pérdida <Ayuda texto="Mercadería que se perdió o volvió rota, contada a lo que te costó. Lo que se devolvió en buen estado no cuenta porque vuelve al stock. Ya está incluida en el Costo de la fila, junto con el viaje del courier de esos pedidos." /></th>
             <th>{METRIC_TERMS.rentabilidad} <Ayuda texto={METRIC_HELP.rentabilidad} /></th>
           </tr>
         </thead>
@@ -1835,63 +1837,92 @@ export default function MiDashboard() {
           </>
         )}
       >
-        {/* La cuenta del período, de arriba hacia abajo y en el orden en que
-            el comercio la lee: arrancás con lo que facturaste y le vas
-            restando cada gasto hasta llegar a lo que te quedó.
+        {/* Estado de resultados del período, de arriba hacia abajo. Cada
+            renglón se RESTA del anterior y los dos totales salen tal cual del
+            backend (margen_bruto_estimado y ganancia_neta_estimada), así que
+            la cuenta cierra a la vista:
 
               Ventas netas
-              - Meta (ads)
-              - Producto
-              - Envíos
-              - Costos fijos
-              (- Costos variables, si hubo)
-              (- Comisión, si hubo)
+              − Producto − Envíos a tu cargo − Comisión de pago − IVA
+              − Pedidos devueltos o perdidos
               = Utilidad Bruta
-              - IVA
+              − Meta (ads) − Costos fijos − Costos variables − Gastos de productos
+              = Utilidad Neta
 
-            "Envíos" es SIEMPRE el costo real pagado al courier, tildado o
-            no "Incluye delivery" — al courier se le paga igual. Cuando el
-            cliente cubre el flete, esa plata se ve como cobro total, pero no
-            dentro de Ventas netas. El renglón de Envíos muestra el costo real
-            pagado al courier para que no se confunda venta de producto con caja. */}
+            Antes IVA aparecía después de la Utilidad Bruta (ya estaba restado),
+            Meta y fijos antes (no lo estaban) y la comisión no aparecía: la
+            tarjeta no cerraba. Las reglas de cada renglón viven en el backend,
+            utils/contabilidadPedido.js. Los renglones en cero no se muestran,
+            salvo Producto y Envíos. */}
         <div className="md-rentabilidad-grid">
           <div className="md-rent-item md-rent-destacado">
             <span className="md-rent-label">{METRIC_TERMS.ventasNetas} <Ayuda texto={METRIC_HELP.ventasNetas} /></span>
             <span className="md-rent-valor">{gs(kpis.facturacion_entregada)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en Meta Ads en este período. Sale del gasto que cargaste en cada campaña de Ads & Campañas. Si un rango cargado abarca más días que el período que estás viendo, se toma solo la parte proporcional. La publicidad que cargues a mano en Control financiero no entra acá: va en Costos Fijos o Variables, según cómo la hayas clasificado." /></span>
-            <span className="md-rent-valor">{gs(gastoMetaAds)}</span>
-          </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">Producto <Ayuda texto="Lo que pagaste por la mercadería que entregaste. Se usa el costo que tenía el producto el día de la venta, no el de hoy." /></span>
+            <span className="md-rent-label">− Producto <Ayuda texto="Lo que pagaste por la mercadería que entregaste. Se usa el costo que tenía el producto el día de la venta, no el de hoy." /></span>
             <span className="md-rent-valor">{gs(kpis.costo_mercaderia_entregada)}</span>
           </div>
           <div className="md-rent-item">
             <span className="md-rent-label">
-              Envíos
-              <Ayuda texto="La suma de lo que se le pagó al courier por los pedidos entregados de este período." />
+              − Envíos a tu cargo
+              <Ayuda texto={`Lo que le pagaste al courier por los pedidos entregados (${gs(kpis.costo_logistico_bruto_entregados ?? kpis.costo_logistico_entregados)}) menos lo que el cliente te pagó de delivery (${gs(kpis.delivery_cobrado_entregados || 0)}). Las ventas netas no incluyen el delivery, así que el costo tampoco puede incluir la parte que pagó el cliente.`} />
             </span>
             <span className="md-rent-valor">{gs(kpis.costo_logistico_entregados)}</span>
           </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">{METRIC_TERMS.costosFijos} <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios. Se cargan en Finanzas → Control financiero con clasificación 'Fijo' (o sin clasificar: por defecto cuentan como fijos)." /></span>
-            <span className="md-rent-valor">{gs(costosFijos)}</span>
-          </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">{METRIC_TERMS.costosVariables} <Ayuda texto="Gastos que se mueven con la venta: comisiones bancarias, marketing sin producto puntual, etc. Se cargan en Finanzas → Control financiero con clasificación 'Variable'." /></span>
-            <span className="md-rent-valor">{gs(costosVariables)}</span>
-          </div>
+          {Number(kpis.costo_comision_total) > 0 && (
+            <div className="md-rent-item">
+              <span className="md-rent-label">− Comisión de pago <Ayuda texto="Lo que se quedan la pasarela o el POS, sobre todo lo que pagó el cliente (delivery incluido)." /></span>
+              <span className="md-rent-valor">{gs(kpis.costo_comision_total)}</span>
+            </div>
+          )}
+          {Number(kpis.iva_facturado_total) > 0 && (
+            <div className="md-rent-item">
+              <span className="md-rent-label">− IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. Esa plata no es tuya: la cobrás al cliente y se la pagás a Hacienda. Si el producto tiene marcado 'Precio incluye IVA' se saca de adentro del precio (precio ÷ 11); si no, es el 10% del precio." /></span>
+              <span className="md-rent-valor">{gs(kpis.iva_facturado_total)}</span>
+            </div>
+          )}
+          {Number(kpis.costo_pedidos_fallidos || 0) !== 0 && (
+            <div className="md-rent-item">
+              <span className="md-rent-label">
+                − Pedidos devueltos o perdidos
+                <Ayuda texto={`${kpis.pedidos_fallidos_detalle?.pedidos ?? 0} pedidos que no se entregaron: viaje del courier ${gs(kpis.pedidos_fallidos_detalle?.envio || 0)} + mercadería perdida o devuelta dañada ${gs(kpis.pedidos_fallidos_detalle?.mercaderia || 0)} − lo que se le cargó al courier por pérdidas ${gs(kpis.pedidos_fallidos_detalle?.recupero || 0)}.`} />
+              </span>
+              <span className="md-rent-valor">{gs(kpis.costo_pedidos_fallidos)}</span>
+            </div>
+          )}
           <div className="md-rent-item md-rent-destacado">
             <span className="md-rent-label">
-              {METRIC_TERMS.utilidadBruta} <small>({kpis.pct_margen_bruto}%)</small>
+              = {METRIC_TERMS.utilidadBruta} <small>({kpis.pct_margen_bruto}%)</small>
               <Ayuda texto={METRIC_HELP.utilidadBruta} />
             </span>
             <span className={`md-rent-valor ${claseValor(utilidadBruta)}`}>{gs(utilidadBruta)}</span>
           </div>
+          {gastoMetaAds > 0 && (
+            <div className="md-rent-item">
+              <span className="md-rent-label">− Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en Meta Ads en este período. Sale del gasto que cargaste en cada campaña de Ads & Campañas. Si un rango cargado abarca más días que el período que estás viendo, se toma solo la parte proporcional. La publicidad que cargues a mano en Control financiero no entra acá: va en Costos Fijos o Variables, según cómo la hayas clasificado." /></span>
+              <span className="md-rent-valor">{gs(gastoMetaAds)}</span>
+            </div>
+          )}
           <div className="md-rent-item">
-            <span className="md-rent-label">IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. Esa plata no es tuya: la cobrás al cliente y se la pagás a Hacienda." /></span>
-            <span className="md-rent-valor">{gs(kpis.iva_facturado_total)}</span>
+            <span className="md-rent-label">− {METRIC_TERMS.costosFijos} <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios. Se cargan en Finanzas → Control financiero con clasificación 'Fijo' (o sin clasificar: por defecto cuentan como fijos)." /></span>
+            <span className="md-rent-valor">{gs(costosFijos)}</span>
+          </div>
+          {costosVariables > 0 && (
+            <div className="md-rent-item">
+              <span className="md-rent-label">− {METRIC_TERMS.costosVariables} <Ayuda texto="Gastos que se mueven con la venta: comisiones bancarias, marketing sin producto puntual, etc. Se cargan en Finanzas → Control financiero con clasificación 'Variable'." /></span>
+              <span className="md-rent-valor">{gs(costosVariables)}</span>
+            </div>
+          )}
+          {Number(kpis.gastos_directos_mostrados) > 0 && (
+            <div className="md-rent-item">
+              <span className="md-rent-label">− Gastos de productos <Ayuda texto="Gastos cargados en Control financiero y atados a un producto puntual." /></span>
+              <span className="md-rent-valor">{gs(kpis.gastos_directos_mostrados)}</span>
+            </div>
+          )}
+          <div className="md-rent-item md-rent-destacado">
+            <span className="md-rent-label">= {METRIC_TERMS.utilidadNeta} {kpis.pct_margen_neto != null && <small>({kpis.pct_margen_neto}%)</small>}</span>
+            <span className={`md-rent-valor ${claseValor(kpis.ganancia_neta_estimada)}`}>{gs(kpis.ganancia_neta_estimada)}</span>
           </div>
         </div>
 

@@ -23,7 +23,7 @@ export const METRIC_HELP = Object.freeze({
   ventasNetas: 'Venta de productos entregados, sin delivery/flete. Los pedidos pendientes o cancelados no entran.',
   ticketPromedio: 'Promedio vendido por cada pedido entregado. Fórmula: ventas netas divididas por pedidos entregados.',
   utilidadNeta: 'Lo que te quedó limpio: las ventas netas menos todos los costos y gastos del período.',
-  utilidadBruta: 'Ventas netas menos producto, envíos, comisiones e IVA. Todavía no descuenta Meta ni costos fijos.',
+  utilidadBruta: 'Ventas netas menos producto, envíos a tu cargo, comisiones, IVA y lo que costaron los pedidos devueltos o perdidos. Todavía no descuenta Meta ni costos fijos.',
   margen: 'De cada 100 guaraníes de ventas netas, cuántos te quedaron limpios.',
   conversion: 'De cada 100 pedidos que entraron, cuántos lograste confirmar.',
   rentabilidad: 'De cada Gs 100 que vendiste, cuántos te quedaron de ganancia.',

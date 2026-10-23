@@ -39,58 +39,64 @@ export function ReporteMetodosPago({ filters }) {
     if (exito === null) return '-';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ flex: 1, background: 'var(--color-fg-subtle)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+        <div style={{ flex: 1, background: 'color-mix(in srgb, var(--color-fg) 10%, transparent)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
           <div style={{ width: `${exito}%`, background: 'var(--color-success)', height: '100%' }}></div>
         </div>
-        <span style={{ fontSize: '0.8rem', minWidth: '35px', textAlign: 'right' }}>{exito.toFixed(1)}%</span>
+        <span style={{ fontSize: '0.875rem', minWidth: '45px', textAlign: 'right' }}>{exito.toFixed(1)}%</span>
       </div>
     );
   };
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'];
 
-  const chartData = data.filter(d => d.ventas_netas > 0).map(d => ({
-    name: d.nombre,
-    value: d.ventas_netas
-  }));
+  // Sin entregas todavía, la torta de ventas quedaba vacía: se reparte por
+  // cantidad de pedidos, que ya dice qué métodos elige la gente.
+  const hayVentas = data.some(d => d.ventas_netas > 0);
+  const chartData = data
+    .map(d => ({
+      name: d.nombre,
+      value: hayVentas ? d.ventas_netas : (d.pedidos_exitosos + d.pedidos_fallidos + d.pedidos_abiertos),
+    }))
+    .filter(d => d.value > 0);
 
   return (
     <div className="cic-report-container animate-fade-in">
       <div className="cic-report-header">
         <div>
-          <h2 className="cic-report-title">Rendimiento por Métodos de Pago</h2>
+          <h2 className="cic-report-title">Métodos de pago</h2>
           <p className="cic-report-desc">Análisis de participación en ventas netas y tasas de éxito de cada método.</p>
         </div>
       </div>
 
       <div className="cic-kpi-grid">
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">{METRIC_TERMS.ventasNetas} <DollarSign size={14}/></div>
+          <div className="cic-kpi-header"><span>{METRIC_TERMS.ventasNetas}</span><DollarSign size={16}/></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_ventas_netas)}</div>
           <div className="cic-kpi-sub">Total en todos los métodos</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Pedidos Cerrados <CheckCircle size={14}/></div>
+          <div className="cic-kpi-header"><span>Pedidos cerrados</span><CheckCircle size={16}/></div>
           <div className="cic-kpi-val">{kpis.pedidos_cerrados}</div>
-          <div className="cic-kpi-sub">Resolución final alcanzada</div>
+          <div className="cic-kpi-sub">Entregados, cancelados o devueltos</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Pedidos Abiertos <AlertCircle size={14}/></div>
+          <div className="cic-kpi-header"><span>Pedidos abiertos</span><AlertCircle size={16}/></div>
           <div className="cic-kpi-val">{kpis.total_abiertos}</div>
           <div className="cic-kpi-sub">En tránsito o pendientes</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Pedidos Fallidos <XCircle size={14}/></div>
+          <div className="cic-kpi-header"><span>Pedidos fallidos</span><XCircle size={16}/></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-danger)' }}>{kpis.total_fallidos}</div>
-          <div className="cic-kpi-sub">Cancelados / Devueltos</div>
+          <div className="cic-kpi-sub">Cancelados, devueltos o perdidos</div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+      <div className="cic-split" style={{ marginTop: '1.5rem' }}>
         <div className="cic-table-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '0.85rem', alignSelf: 'flex-start', color: 'var(--color-fg)' }}>Distribución de {METRIC_TERMS.ventasNetas.toLowerCase()}</h3>
+          <h3 className="cic-card-title" style={{ alignSelf: 'flex-start' }}>{hayVentas ? `Distribución de ${METRIC_TERMS.ventasNetas.toLowerCase()}` : 'Pedidos por método'}</h3>
           {chartData.length > 0 ? (
-            <div style={{ width: '100%', height: 250, marginTop: '1rem' }}>
+            <div style={{ width: '100%', marginTop: '1rem' }}>
+              <div style={{ height: 220 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie data={chartData} innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value" stroke="none">
@@ -98,17 +104,27 @@ export function ReporteMetodosPago({ filters }) {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => formatMoney(value)} contentStyle={{ background: '#1e1e1e', border: '1px solid #333', borderRadius: '8px', color: '#fff' }} />
+                  <Tooltip formatter={(value) => (hayVentas ? formatMoney(value) : `${value} pedidos`)} contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', color: 'var(--color-fg)' }} />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
+              <ul className="cic-leyenda">
+                {chartData.map((d, i) => (
+                  <li key={d.name}>
+                    <span className="cic-leyenda-punto" style={{ background: COLORS[i % COLORS.length] }} />
+                    {d.name}
+                    <strong>{hayVentas ? formatMoney(d.value) : `${d.value} pedidos`}</strong>
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : (
-             <div style={{ flex: 1, display: 'flex', alignItems: 'center', color: 'var(--color-fg-muted)' }}>Sin {METRIC_TERMS.ventasNetas.toLowerCase()}</div>
+             <div style={{ flex: 1, display: 'flex', alignItems: 'center', color: 'var(--color-fg-muted)' }}>Sin pedidos en el período</div>
           )}
         </div>
         
         <div className="cic-table-card">
-          <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', color: 'var(--color-fg)' }}>Detalle por Método</h3>
+          <h3 className="cic-card-title" style={{ marginBottom: '1rem' }}>Detalle por método</h3>
           <div className="cic-table-wrapper">
             {loading ? (
               <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando datos...</div>
@@ -139,7 +155,7 @@ export function ReporteMetodosPago({ filters }) {
                   ))}
                   {data.length === 0 && (
                     <tr>
-                      <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>No hay transacciones.</td>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>No hay pedidos en este período.</td>
                     </tr>
                   )}
                 </tbody>

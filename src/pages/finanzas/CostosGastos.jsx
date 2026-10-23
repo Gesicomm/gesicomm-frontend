@@ -381,8 +381,11 @@ function ReporteFlujoCajaVisual({ reporte, loading }) {
     { id: 'ventas_whatsapp', label: 'Ventas WhatsApp', valor: reporte.ingresos.ventas_whatsapp },
     { id: 'ventas_organicas', label: 'Ventas orgánicas', valor: reporte.ingresos.ventas_organicas },
     { id: 'otros_ingresos', label: 'Otros ingresos registrados', valor: reporte.ingresos.otros_ingresos },
-    { id: 'devoluciones', label: 'Reembolsos/devoluciones (-)', valor: reporte.ingresos.devoluciones },
   ];
+  // Los pedidos devueltos o perdidos ya no restan de los ingresos (nunca se
+  // contaron como venta): su costo real aparece en Gastos como
+  // "Pedidos devueltos o perdidos".
+
 
   return (
     <div className="mb-6 space-y-4">

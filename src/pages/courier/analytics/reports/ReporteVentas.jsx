@@ -11,55 +11,7 @@ import VistaItems from '../../../reportes/VistaItems';
 import {
   ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer
 } from 'recharts';
-
-function resolverRango(filters) {
-  const hoy = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-  if (filters.periodo === 'personalizado_rango') {
-    return { fecha_desde: filters.fecha_desde || '', fecha_hasta: filters.fecha_hasta || '' };
-  }
-
-  if (filters.periodo === 'personalizado_mes' && filters.mes) {
-    const anio = filters.anio || hoy.getFullYear();
-    const m = parseInt(filters.mes, 10);
-    const desde = new Date(anio, m - 1, 1);
-    const hasta = new Date(anio, m, 0);
-    return { fecha_desde: fmt(desde), fecha_hasta: fmt(hasta) };
-  }
-
-  const anio = filters.anio || hoy.getFullYear();
-
-  switch (filters.periodo) {
-    case 'hoy': {
-      const s = fmt(hoy); return { fecha_desde: s, fecha_hasta: s };
-    }
-    case 'ayer': {
-      const a = new Date(hoy); a.setDate(a.getDate() - 1);
-      const s = fmt(a); return { fecha_desde: s, fecha_hasta: s };
-    }
-    case '7d': {
-      const d = new Date(hoy); d.setDate(d.getDate() - 6);
-      return { fecha_desde: fmt(d), fecha_hasta: fmt(hoy) };
-    }
-    case '30d': {
-      const d = new Date(hoy); d.setDate(d.getDate() - 29);
-      return { fecha_desde: fmt(d), fecha_hasta: fmt(hoy) };
-    }
-    case 'mes_anterior': {
-      const prevM = hoy.getMonth() === 0 ? 12 : hoy.getMonth();
-      const prevY = hoy.getMonth() === 0 ? hoy.getFullYear() - 1 : hoy.getFullYear();
-      return { fecha_desde: fmt(new Date(prevY, prevM - 1, 1)), fecha_hasta: fmt(new Date(prevY, prevM, 0)) };
-    }
-    case 'este_anio':
-      return { fecha_desde: `${anio}-01-01`, fecha_hasta: `${anio}-12-31` };
-    case 'este_mes':
-    default: {
-      return { fecha_desde: fmt(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), fecha_hasta: fmt(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)) };
-    }
-  }
-}
+import { resolverRango } from '../periodo';
 
 export function ReporteVentas({ filters }) {
   const [activeTab, setActiveTab] = useState('pedidos');

@@ -18,7 +18,7 @@ export function DashboardOperativo() {
             </div>
             <div>
               <h1 className="prod-title">Dashboard Operativo</h1>
-              <p className="prod-subtitle">Reportes e insights de ventas, logística y finanzas</p>
+              <p className="prod-subtitle">Cómo se mueven tus pedidos: confirmación, entregas, devoluciones y clientes</p>
             </div>
           </div>
         </div>

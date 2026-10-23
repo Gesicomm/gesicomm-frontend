@@ -1,13 +1,13 @@
 import { numeroPedidoVisible } from '../../../pedidoNumero';
 import React, { useState, useEffect } from 'react';
-import { FileText, Calculator, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Calculator, Search } from 'lucide-react';
 import { reportesService } from '../../../../../services/reportesApi';
 
 export function VistaFacturacion({ filters }) {
   const [data, setData] = useState([]);
-  const [kpis, setKpis] = useState({ total_sujeto_iva: 0, total_iva: 0 });
+  const [kpis, setKpis] = useState({ total_sujeto_iva: 0, total_iva: 0, en_curso_monto: 0, en_curso_iva: 0, pedidos_entregados: 0, pedidos_en_curso: 0 });
   const [loading, setLoading] = useState(true);
-  const [localSearch, setLocalSearch] = useState({ buscador: '', fecha_desde: '', fecha_hasta: '' });
+  const [localSearch, setLocalSearch] = useState({ buscador: '' });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -25,13 +25,11 @@ export function VistaFacturacion({ filters }) {
       };
       
       if (localSearch.buscador) payload.buscador = localSearch.buscador;
-      if (localSearch.fecha_desde) payload.fecha_desde = localSearch.fecha_desde;
-      if (localSearch.fecha_hasta) payload.fecha_hasta = localSearch.fecha_hasta;
 
       const response = await reportesService.obtenerReporteFacturacion(payload);
       
       setData(response.data || []);
-      setKpis(response.kpis || { total_sujeto_iva: 0, total_iva: 0 });
+      setKpis(prev => ({ ...prev, ...(response.kpis || {}) }));
       setPagination({
         ...pagination,
         page: response.actual || 1,
@@ -62,64 +60,31 @@ export function VistaFacturacion({ filters }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* KPIs */}
-      <div className="cic-kpis-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
-        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
-          <div className="cic-kpi-header">
-            TOTAL SUJETO A IVA
-            <FileText size={16} color="var(--color-primary-text)" />
-          </div>
+      {/* KPIs: lo entregado es lo que ya corresponde facturar; lo que sigue
+          en curso se muestra aparte para que no parezca que no hay nada. */}
+      <div className="cic-kpi-grid">
+        <div className="cic-kpi-card">
+          <div className="cic-kpi-header"><span>Entregados con factura</span><FileText size={16} /></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)' }}>{formatMoney(kpis.total_sujeto_iva)}</div>
-          <div className="cic-kpi-sub">Base de cálculo (Factura solicitada)</div>
+          <div className="cic-kpi-sub">{kpis.pedidos_entregados === 1 ? '1 pedido' : `${kpis.pedidos_entregados} pedidos`} · IVA (10%): <strong>{formatMoney(kpis.total_iva)}</strong></div>
         </div>
-
-        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 30%, transparent)' }}>
-          <div className="cic-kpi-header">
-            TOTAL IVA (10%)
-            <Calculator size={16} color="var(--color-accent-text)" />
-          </div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-accent-text)' }}>{formatMoney(kpis.total_iva)}</div>
-          <div className="cic-kpi-sub">IVA generado en este período</div>
+        <div className="cic-kpi-card">
+          <div className="cic-kpi-header"><span>En curso con factura</span><Calculator size={16} /></div>
+          <div className="cic-kpi-val">{formatMoney(kpis.en_curso_monto)}</div>
+          <div className="cic-kpi-sub">{kpis.pedidos_en_curso === 1 ? '1 pedido todavía sin entregar' : `${kpis.pedidos_en_curso} pedidos todavía sin entregar`} · IVA (10%): <strong>{formatMoney(kpis.en_curso_iva)}</strong></div>
         </div>
       </div>
 
-      {/* Data Table */}
-      
-      {/* Barra de Filtros Locales */}
-      <div className="flex flex-col md:flex-row gap-4 mb-4 bg-[var(--color-surface-2)] p-4 rounded-xl border border-[color-mix(in srgb, var(--color-fg) 8%, transparent)] items-end">
-        <div className="flex-1 w-full">
-          <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1 block">Buscar</span>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-fg-muted)]" size={18} />
-            <input 
-              type="text" 
-              placeholder="Buscar por ID, Cliente, Teléfono, RUC o Razón Social..." 
-              className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg pl-10 pr-4 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-              value={localSearch.buscador}
-              onChange={(e) => setLocalSearch(prev => ({ ...prev, buscador: e.target.value }))}
-            />
-          </div>
-        </div>
-        <div className="flex gap-4 w-full md:w-auto">
-          <div className="flex flex-col flex-1 md:flex-none">
-            <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1">Desde</span>
-            <input 
-              type="date" 
-              className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-              value={localSearch.fecha_desde}
-              onChange={(e) => setLocalSearch(prev => ({ ...prev, fecha_desde: e.target.value }))}
-            />
-          </div>
-          <div className="flex flex-col flex-1 md:flex-none">
-            <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1">Hasta</span>
-            <input 
-              type="date" 
-              className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-              value={localSearch.fecha_hasta}
-              onChange={(e) => setLocalSearch(prev => ({ ...prev, fecha_hasta: e.target.value }))}
-            />
-          </div>
-        </div>
+      <div className="cic-busqueda">
+        <Search size={18} aria-hidden="true" />
+        <input
+          type="search"
+          className="cic-select"
+          aria-label="Buscar pedido con factura"
+          placeholder="Buscar por número, cliente, teléfono, RUC o razón social"
+          value={localSearch.buscador}
+          onChange={(e) => setLocalSearch({ buscador: e.target.value })}
+        />
       </div>
 
       <div className="cic-table-card">
@@ -127,13 +92,13 @@ export function VistaFacturacion({ filters }) {
           <table className="cic-table">
             <thead>
               <tr>
-                <th>ID Pedido</th>
+                <th>Pedido</th>
                 <th>Fecha</th>
                 <th>Confirmador</th>
                 <th>Estado</th>
                 <th>RUC</th>
                 <th>Razón Social</th>
-                <th style={{ textAlign: 'right' }}>Monto Facturable</th>
+                <th style={{ textAlign: 'right' }}>Monto</th>
                 <th style={{ textAlign: 'right', color: 'var(--color-accent-text)' }}>IVA (10%)</th>
               </tr>
             </thead>
@@ -144,7 +109,7 @@ export function VistaFacturacion({ filters }) {
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-4 text-muted">No se encontraron pedidos con solicitud de factura en este período.</td>
+                  <td colSpan="8" className="text-center py-4 text-muted">Ningún pedido de este período pidió factura (los cancelados, rechazados y devueltos no cuentan).</td>
                 </tr>
               ) : (
                 data.map((row) => (
