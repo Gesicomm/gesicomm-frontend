@@ -4,6 +4,7 @@ import { Loader } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import LandingCodigoEditor from './LandingCodigoEditor';
 import { precargarEditor, recordarUltimaLanding, tomarDetallePrecargado } from './precargaEditor';
+import './pestanasEditor.css';
 
 // Las plantillas rígidas ya casi no se usan (todo es lienzo): su editor no
 // viaja en el mismo chunk que el del lienzo.

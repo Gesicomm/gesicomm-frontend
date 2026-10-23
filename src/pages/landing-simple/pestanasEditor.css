@@ -1,0 +1,37 @@
+/*
+ * Pestañas del editor de Mi e-commerce: "Área de configuración" (Inicio,
+ * Categorías, Vista producto, Checkout, Ofertas, Combos) y "Pantalla" de la
+ * vista previa. El hover solo cambiaba el color del texto y no se notaba
+ * qué se iba a abrir; la activa tampoco se distinguía a simple vista.
+ * Mismo criterio que editorWorkspace.css: se apunta por el aria-label.
+ */
+:is([role='tablist'][aria-label='Área de configuración'], [role='tablist'][aria-label='Pantalla']) > [role='tab'] {
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+/* Hover: el fondo de la pestaña activa, más suave (en cada barra es al revés). */
+[role='tablist'][aria-label='Área de configuración'] > [role='tab'][aria-selected='false']:hover {
+  background-color: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  color: var(--color-fg);
+}
+[role='tablist'][aria-label='Pantalla'] > [role='tab'][aria-selected='false']:hover {
+  background-color: color-mix(in srgb, var(--color-surface-2) 70%, transparent);
+  color: var(--color-fg);
+}
+
+/* La activa lleva una línea del color de marca: se ve cuál está abierta. */
+:is([role='tablist'][aria-label='Área de configuración'], [role='tablist'][aria-label='Pantalla']) > [role='tab'][aria-selected='true'] {
+  box-shadow: inset 0 -2px 0 var(--color-primary), 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+:is([role='tablist'][aria-label='Área de configuración'], [role='tablist'][aria-label='Pantalla']) > [role='tab']:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is([role='tablist'][aria-label='Área de configuración'], [role='tablist'][aria-label='Pantalla']) > [role='tab'] {
+    transition: none;
+  }
+}
