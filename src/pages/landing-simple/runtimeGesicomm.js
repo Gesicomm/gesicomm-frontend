@@ -1668,10 +1668,20 @@ export function runtimeGesicomm(plantillas) {
     var headers = document.querySelectorAll('.commerce-header');
     var trust = document.querySelector('.trust-bar:not([hidden]), .announcement:not([hidden])');
     if (trust) {
+      var barraConfig = inicioConfig().barra_anuncios;
+      if (barraConfig && typeof barraConfig === 'object') {
+        trust.setAttribute('data-anuncios-posicion', barraConfig.posicion === 'fija' ? 'fija' : 'fluida');
+        trust.style.setProperty('--gc-anuncios-altura', Math.max(32, Math.min(96, Number(barraConfig.altura) || 38)) + 'px');
+      } else {
+        trust.removeAttribute('data-anuncios-posicion');
+        trust.style.removeProperty('--gc-anuncios-altura');
+      }
       var altoTrust = trust.getBoundingClientRect().height;
       if (altoTrust > 0) document.documentElement.style.setProperty('--gc-trust-bar-alto', altoTrust + 'px');
+      document.documentElement.style.setProperty('--gc-anuncios-fijos-alto', barraConfig && barraConfig.posicion === 'fija' ? altoTrust + 'px' : '0px');
     } else {
       document.documentElement.style.setProperty('--gc-trust-bar-alto', '0px');
+      document.documentElement.style.setProperty('--gc-anuncios-fijos-alto', '0px');
     }
     if (headers.length) {
       var altoHeaderBase = headers[0].getBoundingClientRect().height;
@@ -2017,6 +2027,8 @@ export function runtimeGesicomm(plantillas) {
       if (tipo === 'encabezado') continue;
       if (Object.prototype.hasOwnProperty.call(mapa, tipo) && !configurados[tipo]) mapa[tipo].hidden = true;
     }
+    // La visibilidad final define el espacio que reservan el encabezado y la barra fija.
+    aplicarEncabezadoInicio();
   }
 
   function pintarProductosCategoria() {
@@ -2227,6 +2239,9 @@ export function runtimeGesicomm(plantillas) {
     // También funciona con plantillas guardadas antes de los binds de texto.
     var titulo = bloque.querySelector('[data-gesicomm-venta="colecciones_titulo"], .section-heading h2');
     var subtitulo = bloque.querySelector('[data-gesicomm-venta="colecciones_subtitulo"], .section-heading p');
+    var tipografia = conf.tipografia || {};
+    bloque.style.setProperty('--col-titulo-size', Math.max(20, Math.min(56, Number(tipografia.titulo) || 32)) + 'px');
+    bloque.style.setProperty('--col-subtitulo-size', Math.max(14, Math.min(24, Number(tipografia.subtitulo) || 18)) + 'px');
     if (titulo && typeof conf.titulo === 'string') { titulo.textContent = conf.titulo; titulo.hidden = !conf.titulo.trim(); }
     if (subtitulo && typeof conf.subtitulo === 'string') { subtitulo.textContent = conf.subtitulo; subtitulo.hidden = !conf.subtitulo.trim(); }
     var columnas = Math.max(1, Math.min(6, Math.floor(Number(conf.columnas) || 4)));
@@ -3049,6 +3064,14 @@ export function runtimeGesicomm(plantillas) {
     pintarProductosCategoria();
     prepararCarruselOfertas();
     aplicarBloquesInicio();
+    if (nuevosDatos.editor_seleccion) resaltar(nuevosDatos.editor_seleccion, false);
+    else if (zonaResaltada && estiloResaltado) {
+      clearTimeout(resaltadoTimer);
+      zonaResaltada.style.outline = estiloResaltado.outline;
+      zonaResaltada.style.outlineOffset = estiloResaltado.offset;
+      zonaResaltada = null;
+      estiloResaltado = null;
+    }
     if (paginado && document.querySelector('[data-gesicomm-lista="catalogo"]')) pedirPagina('reemplazar');
     if (conservarScroll !== null) {
       try { window.scrollTo(0, conservarScroll); } catch (err) { /* noop */ }
@@ -4113,14 +4136,20 @@ export function runtimeGesicomm(plantillas) {
   window.addEventListener('scroll', desmarcarBloqueEditor, true);
   document.addEventListener('click', function (e) {
     var bloque = bloqueEditorDe(e.target);
-    if (!bloque || (e.target.closest && e.target.closest(ZONAS_CON_ACCION))) return;
+    if (!bloque) return;
+    // En Inicio el lienzo selecciona secciones; la navegación queda para Vista previa.
+    if (datos.vista === 'inicio') { e.preventDefault(); e.stopImmediatePropagation(); }
+    else if (e.target.closest && e.target.closest(ZONAS_CON_ACCION)) return;
     enviar({ tipo: 'gesicomm:bloque', clave: bloque.getAttribute(atributoBloqueEditor()) });
-  });
+  }, true);
 
   var resaltadoTimer = null;
+  var zonaResaltada = null;
+  var estiloResaltado = null;
   function resaltar(lista, desplazar) {
     if (!/^[a-z_]+$/.test(String(lista || ''))) return;
     var el = document.querySelector('[data-gesicomm-lista="' + lista + '"]')
+      || document.querySelector('[data-gesicomm-bloque="' + lista + '"]')
       || document.querySelector('[data-combo-bloque="' + lista + '"], [data-combo-sub-bloque="' + lista + '"]');
     if (!el || el.style.display === 'none') return;
     // Salto directo, no 'smooth': la animación no siempre termina (iframe
@@ -4132,11 +4161,19 @@ export function runtimeGesicomm(plantillas) {
     raiz.style.scrollBehavior = 'auto';
     if (desplazar !== false) desplazarA(el, 'center', false);
     raiz.style.scrollBehavior = comportamiento;
-    var previo = el.style.outline;
-    el.style.outline = '3px dashed #ffc107';
-    el.style.outlineOffset = '6px';
     clearTimeout(resaltadoTimer);
-    resaltadoTimer = setTimeout(function () { el.style.outline = previo; }, 2600);
+    if (zonaResaltada && estiloResaltado) {
+      zonaResaltada.style.outline = estiloResaltado.outline;
+      zonaResaltada.style.outlineOffset = estiloResaltado.offset;
+    }
+    zonaResaltada = el;
+    estiloResaltado = { outline: el.style.outline, offset: el.style.outlineOffset };
+    el.style.outline = '1px solid #2563eb';
+    el.style.outlineOffset = '-1px';
+    if (!datos.editor_seleccion) resaltadoTimer = setTimeout(function () {
+      el.style.outline = estiloResaltado.outline;
+      el.style.outlineOffset = estiloResaltado.offset;
+    }, 2600);
   }
 
   window.addEventListener('message', function (e) {

@@ -8,13 +8,15 @@
 .ads-page :is(.btn-primary,.btn-secondary,.filter-input) { border-radius: 12px; min-height: 44px; }
 .ads-page .filter-input { width: 100%; }
 .ads-campaign-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
-.ads-state-filter { display: grid; gap: 4px; margin-right: auto; font-size: var(--ui-text-help); color: var(--color-fg-muted); }
+.ads-state-filter { display: grid; gap: 8px; width: 200px; max-width: 100%; margin-right: auto; font-size: 14px; color: var(--color-fg-muted); }
+.ads-state-select { width: 100%; min-height: 44px; box-sizing: border-box; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-fg); font-family: inherit; font-size: 16px; line-height: 1.5; text-align: left; cursor: pointer; color-scheme: inherit; }
+.ads-state-select:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
 .ads-campaign-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .ads-summary { display: flex; flex-wrap: wrap; gap: 8px 24px; padding-block: 12px; border-bottom: 1px solid var(--color-border); }
 .ads-summary article { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
 .ads-summary span { color: var(--color-fg-muted); font-size: var(--ui-text-help); }
 .ads-summary strong { font-size: 16px; color: var(--color-fg); overflow-wrap: anywhere; }
-.ads-guide { position: relative; }
+.ads-guide { position: relative; border-bottom: 1px solid var(--color-border); padding-bottom: 8px; margin-bottom: 8px; }
 .ads-guide-content { padding: 16px 0; border-top: 1px solid var(--color-border); container-type: inline-size; }
 .ads-guide:not([open]) .ads-guide-content { display: none; }
 .ads-guide summary { cursor: pointer; color: var(--color-fg-muted); font-weight: 600; min-height: 44px; padding-block: 10px; }
@@ -85,7 +87,7 @@
   .ads-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
   .ads-summary article { display: flex; flex-direction: column; gap: 4px; }
   .ads-state-filter { flex: 1 1 100%; }
-  .ads-state-filter { grid-column: 1 / -1; }
+  .ads-state-filter { grid-column: 1 / -1; width: 100%; }
   .ads-state-filter select { max-width: none !important; }
   .ads-campaign-toolbar button { padding-inline: 8px; white-space: nowrap; }
   .ads-campaigns .table-scroll-container { overflow: visible; }

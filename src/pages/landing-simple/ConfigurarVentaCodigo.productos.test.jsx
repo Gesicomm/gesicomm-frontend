@@ -45,6 +45,29 @@ function bloqueFicha(titulo) {
 }
 
 describe('Presentación de los productos del lienzo', () => {
+  it('guarda un contador común solo en seis fichas seleccionadas y lo recupera al reabrir', async () => {
+    const productos = Array.from({ length: 7 }, (_, i) => ({ ...catalogo.productos[0], id: i + 1, slug: `producto-${i + 1}`, nombre: i === 0 ? 'Cacerola' : `Producto ${i + 1}` }));
+    const guardar = montar(null, { productos, combos: [] });
+    await abrirFichaProducto('Cacerola');
+    fireEvent.click(screen.getByRole('button', { name: 'Editar varios o todos', exact: true }));
+    for (let id = 2; id <= 6; id++) fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^Producto ${id}`), pressed: false }));
+    const grupo = screen.getByRole('region', { name: 'Edición de varios productos' });
+    fireEvent.change(within(grupo).getByLabelText('Horas'), { target: { value: '2' } });
+    fireEvent.change(within(grupo).getByLabelText('Minutos'), { target: { value: '30' } });
+    fireEvent.change(within(grupo).getByLabelText('Segundos'), { target: { value: '50' } });
+    fireEvent.click(within(grupo).getByRole('button', { name: 'Aplicar contador a 6 productos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar', exact: true }));
+    const venta = guardar.mock.calls[0][0].venta;
+    for (let id = 1; id <= 6; id++) expect(venta.presentacion_productos[`producto:${id}`]).toMatchObject({ urgencia_horas: 2, urgencia_minutos: 30, urgencia_segundos: 50 });
+    expect(venta.presentacion_productos).not.toHaveProperty('producto:7');
+    expect(venta.ficha_compartida?.urgencia_horas).toBeUndefined();
+    cleanup(); montar({ seleccion: productos, venta }, { productos, combos: [] });
+    await abrirFichaProducto('Cacerola');
+    const oferta = bloqueFicha('Oferta por tiempo limitado');
+    expect(within(oferta).getByLabelText('Horas')).toHaveValue(2);
+    expect(within(oferta).getByLabelText('Minutos')).toHaveValue(30);
+    expect(within(oferta).getByLabelText('Segundos')).toHaveValue(50);
+  });
   it('actualiza ancla y etiquetas en el preview y guarda los mismos valores', async () => {
     const confirmar = montar();
     abrirFichaProducto('Cacerola');

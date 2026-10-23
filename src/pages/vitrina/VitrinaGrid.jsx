@@ -1130,6 +1130,7 @@ export default function VitrinaGrid() {
         </div>
 
         {/* Filtros de tipo y filtro de Mis Productos */}
+        <div className="vit-filters-row">
         <div className="vit-filters">
           {FILTROS.map(f => (
             <button
@@ -1146,6 +1147,7 @@ export default function VitrinaGrid() {
               {f.label}
             </button>
           ))}
+        </div>
         </div>
 
         <div className="vit-bulk-select">

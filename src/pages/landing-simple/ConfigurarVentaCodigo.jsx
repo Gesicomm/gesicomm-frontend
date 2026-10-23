@@ -36,7 +36,7 @@ import { plantillaInicioPara, formatoDeBase, esBaseIntacta, marcarPersonalizado,
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
 import EditorColeccionesInicio from './EditorColeccionesInicio';
-import { aplicarCambiosFichas, combinarFichaCompartida } from './fichasEnLote';
+import { aplicarCambiosFichas, combinarFichaCompartida, cambiosContadorFichas } from './fichasEnLote';
 import OrganizadorProductos, { BADGES_OFERTA, MAX_PRODUCTOS_CONTADOR, conEtiqueta, sinEtiqueta } from './OrganizadorProductos';
 import { conGlobalesHeredados } from './globalesCodigo';
 import { extraerFragmentoHtml, reemplazarFragmentoHtml, extraerSeccionCss, reemplazarSeccionCss, bindsDeTiendaPerdidos } from './seccionesCodigo';
@@ -611,6 +611,10 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     // Acepta el string suelto que guardaban las landings de antes del
     // selector de ícono (ver limpiarAnuncioInicio, backend).
     anuncios: tieneAnunciosGuardados ? anunciosConTexto : ANUNCIOS_INICIO_DEFAULT,
+    barra_anuncios: inicio.barra_anuncios && typeof inicio.barra_anuncios === 'object' ? {
+      altura: Math.max(32, Math.min(96, Number(inicio.barra_anuncios.altura) || 38)),
+      posicion: inicio.barra_anuncios.posicion === 'fija' ? 'fija' : 'fluida',
+    } : null,
     confianza: confianzaConTexto.length ? confianzaConTexto : CONFIANZA_INICIO_DEFAULT,
     confianza_estilo: ['tarjetas', 'destacada'].includes(inicio.confianza_estilo) ? inicio.confianza_estilo : 'compacta',
     productos_categoria: {
@@ -653,6 +657,10 @@ function normalizarColeccionesInicio(c) {
     modo: c.modo === 'colecciones' ? 'colecciones' : 'categorias',
     ...(typeof c.titulo === 'string' ? { titulo: c.titulo } : {}),
     ...(typeof c.subtitulo === 'string' ? { subtitulo: c.subtitulo } : {}),
+    ...(c.tipografia && typeof c.tipografia === 'object' ? { tipografia: {
+      titulo: Math.max(20, Math.min(56, Number(c.tipografia.titulo) || 32)),
+      subtitulo: Math.max(14, Math.min(24, Number(c.tipografia.subtitulo) || 18)),
+    } } : {}),
     ...(c.imagenes && typeof c.imagenes === 'object' ? { imagenes: c.imagenes } : {}),
     items: Array.isArray(c.items) ? c.items.filter(v => typeof v === 'string' && v.trim()).slice(0, 24) : [],
     columnas: Math.max(1, Math.min(6, Math.floor(Number(c.columnas) || 4))),
@@ -959,7 +967,14 @@ export default function ConfigurarVentaCodigo({
   // previa (pantallas, producto, avisos); queda solo la landing a todo el
   // ancho para verla sin ruido. Se vuelve con el mismo botón.
   const [panelesOcultos, setPanelesOcultos] = useState(false);
+  const [editandoBloqueInicio, setEditandoBloqueInicio] = useState(false);
+  const [edicionAmplia, setEdicionAmplia] = useState(false);
+  const [verInventario, setVerInventario] = useState(false);
+  const resumenToggleRef = useRef(null);
   const [seccionConfig, setSeccionConfig] = useState('inicio'); // 'inicio' | 'categorias' | 'fichas' | 'checkout' | 'ofertas' | 'combos'
+  useEffect(() => {
+    if (seccionConfig !== 'inicio') setEditandoBloqueInicio(false);
+  }, [seccionConfig]);
   const [categoriaPreview, setCategoriaPreview] = useState('');
   const [productoEditando, setProductoEditando] = useState(null); // content_id
   const [promoEditando, setPromoEditando] = useState(null); // content_id
@@ -1264,8 +1279,9 @@ export default function ConfigurarVentaCodigo({
   function cambiarFichaSeleccionada(campo, valor) {
     if (!productoConfigActual) return;
     if (!editandoGrupo) { cambiarPresentacion(productoConfigActual, campo, valor); return; }
-    if (!['ficha_bloques', 'confianza', 'metodos_pago', 'payment_logos'].includes(campo)) return;
-    const cambios = { [campo]: valor };
+    if (!['ficha_bloques', 'confianza', 'metodos_pago', 'payment_logos', 'urgencia_duracion'].includes(campo)) return;
+    const cambios = campo === 'urgencia_duracion' ? cambiosContadorFichas(valor) : { [campo]: valor };
+    if (!cambios) return;
     const resultado = aplicarCambiosFichas({
       compartida: fichaCompartida, presentaciones: presentacion,
       cambios, todos: todasLasFichas && !datosProductoConCombos, claves: fichasElegidas.map(claveItem),
@@ -2459,6 +2475,7 @@ export default function ConfigurarVentaCodigo({
   );
 
   const propsVistaPrevia = {
+    typography: landing?.typography?.resolved || tienda?.typography,
     modo: modoPreview,
     onModo: setModoPreview,
     paginaLegal,
@@ -2470,7 +2487,7 @@ export default function ConfigurarVentaCodigo({
     onProducto: id => { seleccionarProductoConfig(id); setResaltado(null); },
     codigo: codigoPreviewActual,
     codigoInicio: codigoInicioPreview,
-    datos: esPaginaLegal ? { ...datosPreview, vista: 'legal' } : datosPreview,
+    datos: esPaginaLegal ? { ...datosPreview, vista: 'legal' } : panelesOcultos ? { ...datosPreview, editor_bloques_inicio: null, editor_bloques: null } : { ...datosPreview, editor_seleccion: editandoBloqueInicio && seccionConfig === 'inicio' ? resaltado?.lista : null },
     content: { ...landing?.content, venta: ventaActual },
     comboBloqueActivo,
     onComboActivo: setComboBloqueActivo,
@@ -2481,30 +2498,49 @@ export default function ConfigurarVentaCodigo({
     onNavegar: alNavegarPreview,
     onComprar: alComprarPreview,
     onCarrito: alCarritoPreview,
-    onBloque: alBloquePreview,
+    onBloque: panelesOcultos ? undefined : alBloquePreview,
     dispositivo,
     onDispositivo: setDispositivo,
   };
   const vistaPrevia = <VistaPrevia {...propsVistaPrevia} compacta onAmpliar={() => setPreviewAmpliada(true)} />;
 
   return (
-    <div className="ecommerce-builder h-full min-h-0 w-full overflow-hidden flex flex-col bg-canvas">
+    <div className={`ecommerce-builder ${edicionAmplia ? 'is-expanded-editor' : ''} ${editandoBloqueInicio && seccionConfig === 'inicio' ? 'is-block-editing' : ''} h-full min-h-0 w-full overflow-hidden flex flex-col bg-canvas`}>
       {/* Barra superior: siempre a la vista, con las acciones de la landing
           ya guardada. Reemplaza al antiguo editor de código como pantalla
           de entrada — esas acciones (publicar, guardar, eliminar) vivían
           ahí y ahora viven acá. */}
       {/* Sin "Volver": mandaba a /landing, que con una landing existente
           redirige de vuelta acá — el botón no hacía nada. */}
-      <div hidden={panelesOcultos} className="ecommerce-builder-toolbar shrink-0 border-b border-border bg-surface px-4 md:px-6 py-2.5 flex items-center justify-end gap-3">
-        <div className="ecommerce-save-context mr-auto min-w-0 text-sm text-fg-muted" role="note" aria-label="Alcance del guardado">
+      <div className="ecommerce-builder-toolbar shrink-0 border-b border-border bg-surface px-4 md:px-6 py-2.5 flex items-center justify-end gap-3">
+      <div className="ecommerce-editor-context">
+        <div role="group" aria-label="Modo del editor" className="ecommerce-mode-switch">
+          <button type="button" title="Abrir los ajustes para editar el contenido y el diseño de la tienda." aria-pressed={!panelesOcultos} onClick={() => setPanelesOcultos(false)}><Pencil size={16} aria-hidden="true" />Editar</button>
+          <button type="button" title="Ver la tienda a todo el ancho y probar sus enlaces. Volvé a Editar para cambiar el contenido." aria-pressed={panelesOcultos} onClick={() => setPanelesOcultos(true)}><Eye size={16} aria-hidden="true" />Vista previa</button>
+        </div>
+        <label className="ecommerce-page-context"><span>Página</span>
+          <select aria-label="Página de la tienda" value={esPaginaLegal ? `legal:${paginaLegal}` : vistaPreview === 'catalogo' ? 'categoria' : vistaPreview} onChange={e => {
+            const destino = e.target.value;
+            if (destino.startsWith('legal:')) { setModoPreview('legales'); setPaginaLegal(destino.slice(6)); }
+            else { setModoPreview('venta'); propsVistaPrevia.onVista(destino); }
+          }}>
+            {VISTAS_PREVIEW_TIENDA.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            <optgroup label="Páginas legales">{PAGINAS_LEGALES_CODIGO.map(p => <option key={p.key} value={`legal:${p.key}`}>{p.label}</option>)}</optgroup>
+          </select>
+        </label>
+
+      </div>
+        <div hidden={panelesOcultos} className="ecommerce-save-context mr-auto min-w-0 text-sm text-fg-muted" role="note" aria-label="Alcance del guardado">
           <strong className="text-fg">{landingActiva ? 'Publicado' : 'Sin publicar'}</strong>
           <span className="block">{landingActiva ? 'Guardar actualiza la tienda publicada.' : 'Guardar conserva los cambios; Publicar habilita el acceso público.'}</span>
-          {(landing?.updatedAt || landing?.updated_at) && <span className="block">Último guardado: {new Date(landing.updatedAt || landing.updated_at).toLocaleString('es-PY', { timeZone: 'America/Asuncion' })}</span>}
+
         </div>
-        <div className="ecommerce-builder-actions flex items-center gap-1.5">
-          {(onAbrirCodigo || MCP_EDITOR_HABILITADO || onEliminar) && <details className="ecommerce-editor-tools" onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
-            <summary>Herramientas</summary>
+        <div hidden={panelesOcultos} className="ecommerce-builder-actions flex items-center gap-1.5">
+          <button ref={resumenToggleRef} type="button" className="ecommerce-inventory-toggle" title="Ver cuántos productos, ofertas y recomendados incluye esta landing." aria-expanded={verInventario} aria-controls="ecommerce-landing-summary" onClick={() => setVerInventario(v => !v)}><PackagePlus size={16} aria-hidden="true" />Resumen de productos<ChevronDown size={16} aria-hidden="true" /></button>
+          {(onAbrirCodigo || MCP_EDITOR_HABILITADO || onEliminar || (onPublicar && landingActiva)) && <details className="ecommerce-editor-tools" onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
+            <summary title="Abrir opciones avanzadas de diseño y administración de esta página."><Settings2 size={16} aria-hidden="true" />Herramientas</summary>
             <div className="ecommerce-editor-tools-menu">
+          {onPublicar && landingActiva && <button type="button" title="Quitar el acceso público a esta página. Podés volver a publicarla." onClick={e => { e.currentTarget.closest('details').open = false; onPublicar(); }}><EyeOff size={16} aria-hidden="true" /> Despublicar</button>}
           {onAbrirCodigo && (
             <button
               type="button"
@@ -2528,7 +2564,7 @@ export default function ConfigurarVentaCodigo({
             <Cpu size={14} className={seccionConfig === 'mcp' ? 'text-primary-fg' : 'text-primary-text'} />
             <span>Conectar MCP</span>
           </button>}
-          {onEliminar && <button type="button" onClick={e => { e.currentTarget.closest('details').open = false; onEliminar(); }} className="ecommerce-delete-page"><Trash2 size={16} aria-hidden="true" /> Eliminar página</button>}
+          {onEliminar && <button type="button" title="Eliminar esta página y su diseño. Se pedirá confirmación." onClick={e => { e.currentTarget.closest('details').open = false; onEliminar(); }} className="ecommerce-delete-page"><Trash2 size={16} aria-hidden="true" /> Eliminar página</button>}
             </div>
           </details>}
           {publicUrl && (
@@ -2540,7 +2576,7 @@ export default function ConfigurarVentaCodigo({
               <ExternalLink size={16} aria-hidden="true" /> Ver página publicada
             </a>
           )}
-          {onPublicar && (
+          {onPublicar && !landingActiva && (
             <button
               type="button"
               onClick={onPublicar}
@@ -2565,29 +2601,16 @@ export default function ConfigurarVentaCodigo({
         </div>
       </div>
 
-      <div className="ecommerce-editor-context">
-        <div role="group" aria-label="Modo del editor" className="ecommerce-mode-switch">
-          <button type="button" aria-pressed={!panelesOcultos} onClick={() => setPanelesOcultos(false)}>Editar</button>
-          <button type="button" aria-pressed={panelesOcultos} onClick={() => setPanelesOcultos(true)}>Vista previa</button>
-        </div>
-        <label className="ecommerce-page-context"><span>Página</span>
-          <select aria-label="Página de la tienda" value={esPaginaLegal ? `legal:${paginaLegal}` : vistaPreview === 'catalogo' ? 'categoria' : vistaPreview} onChange={e => {
-            const destino = e.target.value;
-            if (destino.startsWith('legal:')) { setModoPreview('legales'); setPaginaLegal(destino.slice(6)); }
-            else { setModoPreview('venta'); propsVistaPrevia.onVista(destino); }
-          }}>
-            {VISTAS_PREVIEW_TIENDA.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-            <optgroup label="Páginas legales">{PAGINAS_LEGALES_CODIGO.map(p => <option key={p.key} value={`legal:${p.key}`}>{p.label}</option>)}</optgroup>
-          </select>
-        </label>
-        <div role="radiogroup" aria-label="Dispositivo" className="ecommerce-device-switch">
-          {[['movil', 'Celular', Smartphone], ['escritorio', 'Escritorio', Monitor]].map(([key, label, Icono]) => <button key={key} type="button" role="radio" aria-checked={dispositivo === key} onClick={() => setDispositivo(key)}><Icono size={16} aria-hidden="true" />{label}</button>)}
-        </div>
-      </div>
       <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex">
         {/* Configuración: oculta, no desmontada, para no perder lo que se
             está editando (formularios abiertos, borradores). */}
         <div hidden={panelesOcultos} className="ecommerce-builder-config relative flex-1 min-w-0 overflow-y-auto overscroll-contain">
+          <header className="ecommerce-editor-width-controls">
+            <span>Edición de la tienda</span>
+            <button type="button" aria-pressed={edicionAmplia} onClick={() => setEdicionAmplia(v => !v)}>
+              <Maximize2 size={16} aria-hidden="true" /> {edicionAmplia ? 'Ver edición y lienzo' : 'Ampliar edición'}
+            </button>
+          </header>
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
             {esPaginaLegal && <section aria-label="Editar páginas legales">
               <h1 className="text-2xl font-bold text-fg mb-2">Páginas del footer</h1>
@@ -2595,7 +2618,7 @@ export default function ConfigurarVentaCodigo({
               <PaginasFooterEditor tipo={paginaLegal} onTipo={setPaginaLegal} contenido={textoLegalActual} onEditar={editarTextoLegal} onSubirImagen={onSubirImagen} onEstadoSubida={subiendo => setSubidasPendientes(n => n + (subiendo ? 1 : -1))} disabled={guardando || !onCambiarCodigo} />
             </section>}
             <div hidden={esPaginaLegal}>
-            <header className="mb-7">
+            <header className="ecommerce-config-intro mb-7">
               <div className="flex items-center gap-2">
                 <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML</p>
                 {MCP_EDITOR_HABILITADO && esGeneradoIa && (
@@ -2703,6 +2726,7 @@ export default function ConfigurarVentaCodigo({
 
                   {editandoGrupo ? (
                     <EdicionConjuntaFichas cantidad={fichasElegidas.length} referencia={fichaGrupoEdicion}
+                      urgenciaGlobalActiva={urgenciaActiva && (urgenciaRenovar || !!inputLocalAIso(urgenciaFinAt))}
                       fichas={fichasElegidas.map(i => itemPanelARuntime({ ...fichasProducto[claveItem(i)], ...i }, [], () => null, ventaActual))}
                       onCambiar={cambiarFichaSeleccionada} paymentLogosCatalogo={paymentLogosCatalogo} onSubirImagen={onSubirImagen ? subirImagenLanding : null} />
                   ) : productoConfigActual && (!seleccionMultipleFichas || fichasElegidas.length > 0) ? (
@@ -2783,6 +2807,7 @@ export default function ConfigurarVentaCodigo({
               </Bloque>
 
               <Bloque
+                className="ecommerce-home-blocks"
                 titulo="Bloques del Inicio"
                 ayuda={bloquesInicioBloqueados ? "Esta landing tiene diseño único generado con IA (MCP). Los bloques estándar están bloqueados para proteger tu diseño." : "Todo lo que se ve en el homepage se edita acá, bloque por bloque: abrí uno para cambiar su contenido, reordená o mostrá/ocultá con los controles de la derecha."}
                 verDonde={() => verDonde('inicio', null)}
@@ -2874,6 +2899,10 @@ export default function ConfigurarVentaCodigo({
                     )}
                     <EditorBloquesInicio
                   bloqueAbierto={bloqueInicioAbierto}
+                  onSeleccionar={clave => {
+                    setEditandoBloqueInicio(!!clave);
+                    setResaltado(clave ? { lista: clave === '__menu__' ? 'encabezado' : clave, n: Date.now() } : null);
+                  }}
                   bloques={inicioComercial.bloques}
                   onReordenar={reordenarBloqueInicio}
                   onAlternar={alternarBloqueInicio}
@@ -2900,6 +2929,8 @@ export default function ConfigurarVentaCodigo({
                     anuncios: (
                       <EditorAnuncios
                         anuncios={inicioComercial.anuncios}
+                        config={inicioComercial.barra_anuncios}
+                        onConfig={v => cambiarInicio('barra_anuncios', v)}
                         variante={normalizarEncabezadoInicio(inicioComercial.encabezado).variante}
                         onCambiar={cambiarAnuncio}
                         onAgregar={agregarAnuncio}
@@ -3679,11 +3710,11 @@ export default function ConfigurarVentaCodigo({
       </div>
 
       {/* Barra de resumen: con los paneles ocultos solo aparece si hay un error */}
-      <div hidden={panelesOcultos && !errorGuardado && !error} className="shrink-0 border-t border-border bg-surface px-4 md:px-6 py-3">
+      <div id="ecommerce-landing-summary" role="region" aria-label="Resumen de productos de la landing" hidden={(!verInventario || panelesOcultos) && !errorGuardado && !error} className="shrink-0 border-t border-border bg-surface px-4 md:px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-fg truncate">
-              Inventario de la landing · <span className="font-mono font-normal">{resumenProductos}</span>
+              Productos en esta landing · <span className="font-mono font-normal">{resumenProductos}</span>
             </p>
             {errorGuardado ? (
               <div className="text-xs text-danger">
@@ -3707,6 +3738,7 @@ export default function ConfigurarVentaCodigo({
               </p>
             )}
           </div>
+          {verInventario && <button type="button" onClick={() => { setVerInventario(false); resumenToggleRef.current?.focus(); }} className="ecommerce-summary-close" aria-label="Cerrar resumen de productos"><X size={18} aria-hidden="true" /></button>}
         </div>
       </div>
 
@@ -4008,6 +4040,7 @@ function presentacionGuardada(fichas) {
  * en el lugar disponible (como se ve en una notebook, en miniatura).
  */
 function VistaPrevia({
+  typography,
   modo = 'venta', onModo, paginaLegal, onPaginaLegal,
   vista, onVista, productos, productoFicha, onProducto, codigo, codigoInicio, datos, content, comboBloqueActivo, onComboActivo, resaltado, aviso, inicioEsBase, onNavegar, onComprar, onCarrito, onBloque,
   dispositivo, onDispositivo, onAmpliar, ampliada, onCerrar, disenoPendienteIA = false,
@@ -4034,9 +4067,11 @@ function VistaPrevia({
       key={`${vista}-${dispositivo}`}
       codigo={codigo}
       titulo="Vista previa"
+      typography={typography}
       datos={datos}
       previewDevice={dispositivo === 'movil' ? 'mobile' : 'desktop'}
       resaltar={resaltado}
+      preservarScroll
       onNavegar={onNavegar}
       onCheckout={onComprar}
       onCarrito={onCarrito}
@@ -4046,8 +4081,11 @@ function VistaPrevia({
 
   return (
     <>
-      {(compacta || soloLienzo) && <div className="ecommerce-preview-summary">
+      {(compacta || soloLienzo) && <div className={`ecommerce-preview-summary ${soloLienzo ? 'is-reading' : ''}`}>
         <span>{escritorio ? `Escritorio · ${Math.round(anchoLienzo)} px · ${Math.round(escala * 100)} %` : 'Celular · 390 px'}</span>
+        <div role="radiogroup" aria-label="Dispositivo" className="ecommerce-device-switch">
+          {[['movil', 'Celular', Smartphone], ['escritorio', 'Escritorio', Monitor]].map(([key, label, Icono]) => <button key={key} type="button" role="radio" aria-checked={dispositivo === key} onClick={() => onDispositivo(key)}><Icono size={16} aria-hidden="true" />{label}</button>)}
+        </div>
         {!soloLienzo && <button type="button" onClick={onAmpliar}><Maximize2 size={16} aria-hidden="true" />Ampliar vista previa</button>}
       </div>}
       {!soloLienzo && !compacta && (
@@ -4209,6 +4247,7 @@ function CampoTexto({ label, value, onChange, placeholder, maxLength = 120, mult
     <label className="block">
       <span className="block text-xs font-medium text-fg-muted mb-1">{label}</span>
       <Elemento
+        aria-label={label}
         value={value || ''}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
@@ -4385,52 +4424,30 @@ function SelectorEnlaceBanner({ value, onChange, categorias = [] }) {
   const categoriaActual = categoriasLista.find(cat => value === `/categoria/${slugCategoria(cat)}`) || '';
   const esCategoria = !!categoriaActual;
   return (
-    <div className="sm:col-span-2 rounded-xl border border-border bg-surface p-3">
-      <p className="mb-2 text-xs font-semibold text-fg">Destino del botón</p>
-      <div className="flex flex-wrap gap-2">
-        {ENLACES_BANNER_INICIO.map(([href, label]) => (
-          <button
-            key={href}
-            type="button"
-            onClick={() => onChange(href)}
-            className={`h-8 rounded-lg border px-3 text-xs font-semibold ${value === href ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:text-fg'}`}
-          >
-            {label}
-          </button>
-        ))}
-        {categoriasLista.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onChange(`/categoria/${slugCategoria(categoriaActual || categoriasLista[0])}`)}
-            className={`h-8 rounded-lg border px-3 text-xs font-semibold ${esCategoria ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:text-fg'}`}
-          >
-            Categoría específica
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => { if (esAtajo || esCategoria) onChange(''); }}
-          className={`h-8 rounded-lg border px-3 text-xs font-semibold ${!esAtajo && !esCategoria ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:text-fg'}`}
-        >
-          Personalizado
-        </button>
-      </div>
-      {esCategoria && categoriasLista.length > 0 && (
-        <select
-          value={categoriaActual}
-          onChange={e => onChange(`/categoria/${slugCategoria(e.target.value)}`)}
-          className="mt-2 w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
-        >
+    <div className="banner-link-settings">
+      <label className="block">
+        <span>Destino del botón</span>
+        <select aria-label="Destino del botón" value={esAtajo ? value : esCategoria ? '__categoria__' : '__personalizado__'} onChange={e => {
+          const destino = e.target.value;
+          if (destino === '__categoria__') onChange(`/categoria/${slugCategoria(categoriaActual || categoriasLista[0])}`);
+          else onChange(destino === '__personalizado__' ? '' : destino);
+        }}>
+          {ENLACES_BANNER_INICIO.map(([href, label]) => <option key={href} value={href}>{label}</option>)}
+          {categoriasLista.length > 0 && <option value="__categoria__">Categoría específica</option>}
+          <option value="__personalizado__">Enlace personalizado</option>
+        </select>
+      </label>
+      {esCategoria && <label className="block">
+        <span>Categoría de destino</span>
+        <select aria-label="Categoría de destino" value={categoriaActual} onChange={e => onChange(`/categoria/${slugCategoria(e.target.value)}`)}>
           {categoriasLista.map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </select>
-      )}
-      <input
-        value={value || ''}
-        onChange={e => onChange(e.target.value)}
-        placeholder="Ej: #ofertas, /catalogo o https://..."
-        className="mt-2 w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-      />
-      <p className="mt-1 text-[11px] text-fg-muted">Los destinos con # llevan a una sección de esta misma landing.</p>
+      </label>}
+      {!esAtajo && !esCategoria && <label className="block">
+        <span>Dirección del enlace</span>
+        <input aria-label="Dirección del enlace" value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Ej: /catalogo o https://..." />
+      </label>}
+      <p>Los destinos de esta página llevan a una sección de tu tienda.</p>
     </div>
   );
 }
@@ -4442,36 +4459,20 @@ function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCam
     setColapsados(prev => ({ ...prev, [id]: !prev[id] }));
   }
   return (
-    <div className="space-y-3">
+    <div className="ecommerce-banner-editor space-y-3">
       {variante === 'embebido' && (
         <p className="text-xs text-fg-muted">Estilo: <strong>Encabezado embebido</strong> — se cambia en el panel de Encabezado.</p>
       )}
       {onCambiarTamano && (
-      <div className="rounded-xl border border-border bg-surface-2/50 p-3">
-        <p className="text-sm font-semibold text-fg">Tamaño del banner principal</p>
-        <p className="mt-1 text-xs leading-relaxed text-fg-muted">Elegí cuánto espacio ocupa el banner en tu tienda.</p>
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {Object.entries(TAMANOS_BANNER).map(([valor, info]) => (
-            <button
-              key={valor}
-              type="button"
-              onClick={() => onCambiarTamano(valor)}
-              aria-pressed={tamano === valor}
-              className={`rounded-lg border p-3 text-left transition-colors ${tamano === valor ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface hover:border-border-strong'}`}
-            >
-              {/* Miniatura proporcional al aspect-ratio de escritorio de cada tamaño. */}
-              <div className="mb-2 w-full rounded border border-border bg-surface-2" style={{ aspectRatio: `${info.desktop.w} / ${info.desktop.h}` }} />
-              <span className="block text-sm font-semibold text-fg">
-                {info.etiqueta}
-                {valor === 'mediano' && <span className="ml-1 text-[10px] font-normal text-fg-muted">(recomendado)</span>}
-              </span>
-              <span className="mt-0.5 block text-xs text-fg-muted">{info.ayuda}</span>
-            </button>
-          ))}
-        </div>
-        {!tamano && (
-          <p className="mt-2 text-[11px] text-fg-muted">Sin elegir, el banner mantiene el alto de siempre (no se le cambia el aspecto solo).</p>
-        )}
+      <div className="ecommerce-banner-size">
+        <label>
+          <span>Tamaño del banner principal</span>
+          <select aria-label="Tamaño del banner principal" value={tamano || ''} onChange={e => onCambiarTamano(e.target.value)}>
+            <option value="">Mantener tamaño actual</option>
+            {Object.entries(TAMANOS_BANNER).map(([valor, info]) => <option key={valor} value={valor}>{info.etiqueta}{valor === 'mediano' ? ' (recomendado)' : ''}</option>)}
+          </select>
+        </label>
+        <p>{TAMANOS_BANNER[tamano]?.ayuda || 'Elegí cuánto espacio ocupa el banner en tu tienda.'}</p>
         {variante === 'embebido' && tamano === 'pequeno' && (
           <p className="mt-2 flex items-start gap-1.5 text-[11px] font-medium text-warning">
             <AlertTriangle size={13} className="mt-px shrink-0" /> Banner pequeño + encabezado embebido puede quedar justo de espacio en pantallas chicas — revisá la vista previa en celular.
@@ -4489,8 +4490,8 @@ function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCam
         const tituloResumen = banner.titulo || banner.etiqueta || `Banner ${idx + 1}`;
         const medioResumen = banner.tipo_medio === 'video' ? 'Video' : banner.tipo_medio === 'gif' ? 'GIF' : 'Imagen';
         return (
-        <div key={banner.id} className="rounded-xl border border-border bg-surface-2/40 p-3.5">
-          <div className="mb-3 flex items-center justify-between gap-3">
+        <div key={banner.id} className="ecommerce-banner-card">
+          <div className="ecommerce-banner-card-header">
             <div className="min-w-0">
               <label className="flex items-center gap-2 text-sm font-semibold text-fg">
                 <input type="checkbox" checked={banner.activo !== false} onChange={e => onCambiar(banner.id, { activo: e.target.checked })} className="accent-primary" />
@@ -4502,7 +4503,7 @@ function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCam
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="ecommerce-banner-actions">
               <button
                 type="button"
                 onClick={() => alternar(banner.id)}
@@ -4522,11 +4523,11 @@ function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCam
             </div>
           </div>
           {!colapsado && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="ecommerce-banner-fields grid grid-cols-1 sm:grid-cols-2 gap-3">
               <CampoTexto label="Etiqueta" value={banner.etiqueta} onChange={v => onCambiar(banner.id, { etiqueta: v })} placeholder="Semana de cocina" maxLength={40} />
-              <CampoTexto label="CTA" value={banner.cta_texto} onChange={v => onCambiar(banner.id, { cta_texto: v })} placeholder="Ver ofertas" maxLength={40} />
-              <div className="sm:col-span-2"><CampoTexto label="Título" value={banner.titulo} onChange={v => onCambiar(banner.id, { titulo: v })} placeholder="Renová tu cocina" maxLength={90} /></div>
-              <div className="sm:col-span-2"><CampoTexto label="Subtítulo" value={banner.subtitulo} onChange={v => onCambiar(banner.id, { subtitulo: v })} placeholder="Productos seleccionados con precios especiales" maxLength={160} /></div>
+              <CampoTexto label="Texto del botón" value={banner.cta_texto} onChange={v => onCambiar(banner.id, { cta_texto: v })} placeholder="Ver ofertas" maxLength={40} />
+              <div className="sm:col-span-2"><CampoTexto label="Título" multiline value={banner.titulo} onChange={v => onCambiar(banner.id, { titulo: v })} placeholder="Renová tu cocina" maxLength={90} /></div>
+              <div className="sm:col-span-2"><CampoTexto label="Subtítulo" multiline value={banner.subtitulo} onChange={v => onCambiar(banner.id, { subtitulo: v })} placeholder="Productos seleccionados con precios especiales" maxLength={160} /></div>
               <SelectorEnlaceBanner value={banner.enlace} categorias={categorias} onChange={v => onCambiar(banner.id, { enlace: v })} />
               <EditorMedioBanner banner={banner} tamano={tamano} dispositivo={dispositivo} onCambiar={cambio => onCambiar(banner.id, cambio)} onSubir={onSubir} />
               {esMovil && (
@@ -4604,8 +4605,8 @@ function FilaBloqueInicio({ numero, etiqueta, tipo, visible, fijo = false, arras
         <div className="flex items-center gap-1">
           {bloqueado ? <span title="Bloque fijo: no se puede soltar acá" aria-label="Destino bloqueado" className="shrink-0 text-xs text-fg-muted"><Lock size={13} /></span> : fijo && <span className="text-[11px] font-medium text-fg-muted">Fijo</span>}
           {tienePanel && (
-            <button type="button" onClick={() => onAbrir(abierto ? null : numero)} className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2 text-xs font-semibold text-fg-muted hover:text-fg" aria-expanded={abierto} aria-label={`${abierto ? 'Contraer' : 'Expandir'} ${etiqueta}`}>
-              {abierto ? <ChevronsDownUp size={13} /> : <ChevronsUpDown size={13} />}
+            <button type="button" onClick={() => onAbrir(numero)} className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2 text-xs font-semibold text-fg-muted hover:text-fg" aria-label={`Editar ${etiqueta}`}>
+              <ArrowRight size={16} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -4619,20 +4620,29 @@ function FilaBloqueInicio({ numero, etiqueta, tipo, visible, fijo = false, arras
 // duplicado en paneles sueltos más abajo. El Menú entra como bloque 2, fijo
 // (vive en el header: no se reordena ni se oculta), el resto sale de
 // `bloques` (venta.inicio.bloques) con su orden y su "Mostrar".
-export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles = {}, menuPanel, codigoInicio, onCambiarCodigo, tienda, venta, productos, bloqueAbierto = null }) {
+export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles = {}, menuPanel, codigoInicio, onCambiarCodigo, tienda, venta, productos, bloqueAbierto = null, onSeleccionar }) {
   // El bloque abierto se recuerda por tipo, no por posición: al arrastrar
   // otro bloque, el que está abierto sigue abierto.
   const [abierto, setAbierto] = useState(null);
   const listaRef = useRef(null);
+  const scrollLista = useRef(0);
+  const visitados = useRef(new Set());
+  const volverRef = useRef(null);
+  function seleccionar(clave) {
+    const scroll = listaRef.current?.closest('.ecommerce-builder-config');
+    if (!abierto && scroll) scrollLista.current = scroll.scrollTop;
+    if (clave) visitados.current.add(clave);
+    setAbierto(clave);
+    onSeleccionar?.(clave);
+    requestAnimationFrame(() => {
+      if (scroll) scroll.scrollTop = clave ? 0 : scrollLista.current;
+      if (clave) volverRef.current?.focus({ preventScroll: true });
+      else listaRef.current?.querySelector(`[data-bloque-inicio="${abierto}"] button`)?.focus({ preventScroll: true });
+    });
+  }
   useEffect(() => {
     if (!bloqueAbierto?.clave) return;
-    setAbierto(bloqueAbierto.clave);
-    const frame = requestAnimationFrame(() => {
-      const fila = Array.from(listaRef.current?.querySelectorAll('[data-bloque-inicio]') || [])
-        .find(el => el.dataset.bloqueInicio === bloqueAbierto.clave);
-      if (fila) llevarBloqueALaVista(fila);
-    });
-    return () => cancelAnimationFrame(frame);
+    seleccionar(bloqueAbierto.clave);
   }, [bloqueAbierto]);
   const anuncios = bloques.find(b => b.tipo === BLOQUE_INICIO_FIJO) || null;
   const movibles = bloques.filter(b => b.tipo !== BLOQUE_INICIO_FIJO);
@@ -4653,7 +4663,7 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
     filaProps: { onDragOver: e => controlArrastre.sobre(clave, e), onDrop: controlArrastre.soltar },
   });
 
-  function renderFila(b, numero) {
+  function renderFila(b, numero, dedicado = false) {
     const esMenu = b.tipo === '__menu__';
     const tipoSeccion = esMenu ? 'encabezado' : b.tipo;
         const panelCompleto = codigoInicio ? (
@@ -4669,6 +4679,13 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
             />
           </div>
         ) : (esMenu ? menuPanel : paneles[b.tipo]);
+    if (dedicado) return <section hidden={abierto !== b.tipo} key={b.tipo} aria-label={`Ajustes de ${esMenu ? 'Encabezado' : ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo}`} className="ecommerce-block-settings">
+      <button ref={abierto === b.tipo ? volverRef : null} type="button" onClick={() => seleccionar(null)} className="ecommerce-back-blocks"><ArrowLeft size={16} aria-hidden="true" /> Bloques de Inicio</button>
+      <h2>{esMenu ? 'Encabezado' : ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo}</h2>
+      {b.visible === false && <p role="status">Este bloque está oculto en la tienda. Activá Mostrar para verlo en el lienzo.</p>}
+      {!esMenu && <label className="ecommerce-block-visibility"><input type="checkbox" checked={b.visible} onChange={() => onAlternar(b.tipo)} /> Mostrar este bloque</label>}
+      {panelCompleto}
+    </section>;
     return (
       <FilaBloqueInicio
         key={b.tipo}
@@ -4680,20 +4697,23 @@ export function EditorBloquesInicio({ bloques, onReordenar, onAlternar, paneles 
         arrastre={controles(b.tipo)}
         onAlternar={esMenu ? null : () => onAlternar(b.tipo)}
         panel={panelCompleto}
-        abierto={abierto === b.tipo}
-        onAbrir={valor => setAbierto(valor === null ? null : b.tipo)}
+        abierto={false}
+        onAbrir={() => seleccionar(b.tipo)}
       />
     );
   }
 
   return (
-    <div ref={el => { listaRef.current = el; listaBloquesRef.current = el; }} className="flex flex-col gap-2" onDragOver={dentroDeLista} onDrop={controlArrastre.soltar}>
+    <>
+    {[...visitados.current].map(clave => renderFila([...fijosArriba, ...movibles].find(b => b.tipo === clave) || { tipo: clave }, orden.indexOf(clave) + 1, true))}
+    <div hidden={!!abierto} ref={el => { listaRef.current = el; listaBloquesRef.current = el; }} className="ecommerce-block-list flex flex-col gap-2" onDragOver={dentroDeLista} onDrop={controlArrastre.soltar}>
       <p style={{ order: -2 }} className="text-xs leading-relaxed text-fg-muted">Podés mover los bloques de contenido entre Encabezado y Footer. <span className="font-semibold">Barra de anuncios, Encabezado y Footer quedan fijos.</span></p>
       <span role="status" className="sr-only" style={{ order: -1 }}>{arrastre ? arrastre.bloqueado ? 'Bloqueado: este bloque es fijo. Soltá entre Encabezado y Footer.' : 'Moviendo un bloque de contenido. Los demás se desplazan para mostrar su nueva posición.' : ''}</span>
       {fijosArriba.map((b, idx) => renderFila(b, idx + 1))}
       {movibles.map((b, idx) => renderFila(b, fijosArriba.length + idx + 1))}
       <FilaBloqueInicio tipo="__footer__" numero={fijosArriba.length + movibles.length + 1} etiqueta="Footer" fijo arrastre={controles('__footer__')} />
     </div>
+    </>
   );
 }
 
@@ -4964,9 +4984,23 @@ function EditorCodigoSeccion({ tipo, codigoInicio, onCambiarCodigo, tienda, vent
   );
 }
 
-function EditorAnuncios({ anuncios, variante, onCambiar, onAgregar, onQuitar }) {
+function EditorAnuncios({ anuncios, variante, onCambiar, onAgregar, onQuitar, config, onConfig }) {
   return (
     <div className="space-y-2">
+      <fieldset className="anuncios-layout-controls">
+        <legend>Altura y comportamiento</legend>
+        <label><span>Altura de la barra · {config?.altura || 38} px</span>
+          <input type="range" aria-label="Altura de la barra de anuncios" min="32" max="96" step="2" value={config?.altura || 38}
+            onChange={e => onConfig({ ...config, altura: Number(e.target.value), posicion: config?.posicion || 'fluida' })} />
+        </label>
+        <label><span>Al desplazarte por la tienda</span>
+          <select aria-label="Posición de la barra de anuncios" value={config?.posicion || 'fluida'} onChange={e => onConfig({ ...config, altura: config?.altura || 38, posicion: e.target.value })}>
+            <option value="fluida">Se desplaza con la página</option>
+            <option value="fija">Permanece visible al bajar</option>
+          </select>
+        </label>
+        <p>La altura se mide en el tamaño real de la tienda. Si la preview está reducida, la barra también se ve reducida.</p>
+      </fieldset>
       <p className="text-xs text-fg-muted">La franja que se mueve arriba del todo. Si no agregás ninguno, se muestran unos de ejemplo. Sin elegir ícono, se van ciclando unos genéricos.</p>
       {variante === 'embebido' && (
         <p className="text-xs text-fg-muted">Estilo: <strong>Encabezado embebido</strong> — se cambia en el panel de Encabezado.</p>
@@ -6716,10 +6750,10 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
   );
 }
 
-function Bloque({ titulo, ayuda, interruptor, verDonde, children }) {
+function Bloque({ titulo, ayuda, interruptor, verDonde, children, className = '' }) {
   const apagado = interruptor && !interruptor.activo;
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 md:p-6">
+    <section className={`rounded-2xl border border-border bg-surface p-5 md:p-6 ecommerce-config-section ${className}`}>
       <div className={`flex items-start justify-between gap-4 ${apagado ? '' : 'mb-4'}`}>
         <div className="min-w-0">
           <h2 className="text-[17px] font-semibold text-fg">{titulo}</h2>

@@ -205,7 +205,9 @@ describe('Importar el JSON de la IA', () => {
     await montar();
     await waitFor(() => expect(document.querySelectorAll('#prod-categoria option').length).toBe(3));
 
-    fireEvent.change(screen.getByPlaceholderText('Pegar JSON aquí...'), { target: { value: JSON.stringify(json) } });
+    fireEvent.click(screen.getByText('Importar con IA', { selector: 'summary' }));
+    fireEvent.change(screen.getByLabelText('JSON del producto para importar'), { target: { value: JSON.stringify(json) } });
+    fireEvent.click(screen.getByRole('button', { name: 'Importar datos al formulario' }));
     expect(document.getElementById('prod-categoria').value).toBe('5');
     guardar();
 
@@ -258,7 +260,9 @@ describe('Importar el JSON de la IA', () => {
         },
       },
     };
-    fireEvent.change(screen.getByPlaceholderText('Pegar JSON aquí...'), { target: { value: JSON.stringify(completo) } });
+    fireEvent.click(screen.getByText('Importar con IA', { selector: 'summary' }));
+    fireEvent.change(screen.getByLabelText('JSON del producto para importar'), { target: { value: JSON.stringify(completo) } });
+    fireEvent.click(screen.getByRole('button', { name: 'Importar datos al formulario' }));
     guardar();
 
     await waitFor(() => expect(productService.crear).toHaveBeenCalled());
@@ -314,7 +318,9 @@ describe('Importar el JSON de la IA', () => {
   it('un costo en USD no se guarda como guaraníes', async () => {
     await montar();
     const enUsd = { product: { ...json.product, pricing: { ...json.product.pricing, purchase_cost: 14, purchase_currency: 'USD' } } };
-    fireEvent.change(screen.getByPlaceholderText('Pegar JSON aquí...'), { target: { value: JSON.stringify(enUsd) } });
+    fireEvent.click(screen.getByText('Importar con IA', { selector: 'summary' }));
+    fireEvent.change(screen.getByLabelText('JSON del producto para importar'), { target: { value: JSON.stringify(enUsd) } });
+    fireEvent.click(screen.getByRole('button', { name: 'Importar datos al formulario' }));
     expect(screen.getByText(/El costo vino en USD y no se cargó/)).toBeVisible();
     guardar();
 
@@ -330,7 +336,8 @@ describe('Importar el JSON de la IA', () => {
     await montar();
     await waitFor(() => expect(document.querySelectorAll('#prod-categoria option').length).toBe(2));
 
-    fireEvent.click(screen.getByRole('button', { name: /Instrucciones para tu IA/ }));
+    fireEvent.click(screen.getByText('Importar con IA', { selector: 'summary' }));
+    fireEvent.click(screen.getByRole('button', { name: /Copiar instrucciones para tu IA/ }));
     const prompt = writeText.mock.calls[0][0];
     expect(prompt).toContain('INVESTIGACIÓN EN INTERNET');
     expect(prompt).toContain('Nunca inventes nombres, comentarios ni estrellas');

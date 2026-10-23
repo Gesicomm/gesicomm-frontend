@@ -1,5 +1,15 @@
 // Las decisiones compartidas se guardan una sola vez, incluso con miles de
 // productos. Las excepciones de una ficha se resuelven por encima de ellas.
+export function cambiosContadorFichas({ horas, minutos, segundos }) {
+  const valores = [horas, minutos, segundos];
+  const limites = [99, 59, 59];
+  if (valores.some((v, i) => v === '' || !Number.isInteger(Number(v)) || Number(v) < 0 || Number(v) > limites[i])) return null;
+  const [h, m, s] = valores.map(Number);
+  if (h * 3600 + m * 60 + s <= 0) return null;
+  return { urgencia_horas: h, urgencia_minutos: m, urgencia_segundos: s,
+    ficha_bloques: { oferta: true, urgencia: true, oferta_duracion: true } };
+}
+
 export function combinarFichaCompartida(compartida, propia = {}) {
   if (!compartida || !Object.keys(compartida).length) return propia;
   const normalizada = propia.v === 2 ? propia

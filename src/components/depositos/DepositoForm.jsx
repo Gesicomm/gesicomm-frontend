@@ -10,8 +10,13 @@ export default function DepositoForm({ initialValues, onSubmit, onClose, loading
   const [errors, setErrors] = useState({});
   const [descartar, setDescartar] = useState(false);
   const dialogRef = useRef(null);
+  const seguirRef = useRef(null);
+  const cerrarRef = useRef(null);
   const inicial = useRef({ ...DEPOSITO_VACIO, ...initialValues });
   const titleId = useId();
+  useEffect(() => {
+    if (descartar) seguirRef.current?.focus();
+  }, [descartar]);
   const cerrar = () => {
     if (loading) return;
     if (JSON.stringify(form) !== JSON.stringify(inicial.current)) setDescartar(true);
@@ -72,6 +77,7 @@ export default function DepositoForm({ initialValues, onSubmit, onClose, loading
           </div>
           <button
             type="button"
+            ref={cerrarRef}
             onClick={cerrar}
             disabled={loading}
             aria-label="Cerrar formulario de depósito"
@@ -82,10 +88,17 @@ export default function DepositoForm({ initialValues, onSubmit, onClose, loading
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
+          {descartar && <div role="alert" className="dep-discard dep-form-discard">
+            <strong>Tenés cambios sin guardar</strong>
+            <p>¿Querés seguir editando o descartar los cambios y cerrar?</p>
+            <div className="dep-form-discard-actions">
+              <button ref={seguirRef} type="button" onClick={() => { setDescartar(false); cerrarRef.current?.focus(); }}>Seguir editando</button>
+              <button type="button" className="dep-discard-confirm" onClick={onClose}>Descartar y cerrar</button>
+            </div>
+          </div>}
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <p className="dep-form-intro">Completá la ubicación desde donde recibís o despachás. Los campos con * son obligatorios.</p>
             <DepositoCampos form={form} errors={errors} onChange={handleCambio} />
-            {descartar && <div role="alert" className="dep-discard"><strong>Tenés cambios sin guardar</strong><p>Podés seguir editando o descartar los cambios para cerrar.</p><button type="button" onClick={() => setDescartar(false)}>Seguir editando</button><button type="button" onClick={onClose}>Descartar cambios</button></div>}
           </div>
 
           <div className="flex flex-shrink-0 items-center justify-end gap-3 border-t border-border bg-surface-50 px-6 py-4">

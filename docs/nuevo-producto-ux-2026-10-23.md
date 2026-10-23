@@ -1,0 +1,8 @@
+# Nuevo producto: edición, IA y carga de la vista previa
+
+- Importar con IA se presenta como una acción con borde, fondo de marca y estados visibles. Su panel flotante separa copiar instrucciones, pegar JSON e importar al formulario. No desplaza la cabecera. Incluye cierre y Escape; los errores de JSON aparecen dentro del panel. Una importación correcta cierra el panel para revisar los datos, sin guardar automáticamente.
+- La edición de beneficios y garantías conserva etiquetas persistentes, usa descripciones de varias líneas y aprovecha el ancho del panel. Las garantías eligen su icono visualmente. El editor tiene espacio final para no quedar tapado por las acciones de guardado.
+- La vista previa espera conjuntamente la tienda y su landing antes de montar el iframe. Mientras tanto muestra un estado de carga; ante un fallo permite reintentar. Evita renderizar primero los colores predeterminados y después sustituirlos por los del comercio. Transmite también la tipografía resuelta.
+- El lienzo tiene una superficie neutra y un solo scroll de contenido. Ampliar abre el diálogo de vista previa existente. Se mantienen los controles de dispositivo.
+
+Validación: 20 pruebas de componentes para importación de producto, carga diferida, recuperación de errores y WhatsApp. Recorridos de navegador con respuestas simuladas a 375, 900 y 1366 px, temas claro y oscuro, comprobando errores de JSON, importación explícita, carga sin iframe inicial, edición de garantías y apertura/cierre de vista ampliada. Móvil emulado; sin dispositivo físico. Compilación de producción correcta e imports verificados.

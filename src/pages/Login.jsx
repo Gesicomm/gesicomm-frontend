@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '../utils/api';
 import Logo from '../components/public/Logo';
+import './login.css';
 import { AvisoSesionExpirada } from '../components/EstadoSesion';
 import { AVISO_SESION_EXPIRADA, tomarAvisoSesion } from '../utils/sesion';
 import { trackearEvento, trackearEventoPersonalizado, generarEventId } from '../lib/metaPixel';
@@ -16,18 +17,13 @@ const LINK_CLASS = 'cursor-pointer font-semibold text-primary-text transition-co
 
 const OTP_TTL = 15 * 60; // 15 minutos en segundos
 
-const BENEFICIOS = [
-  { icono: Store, titulo: 'Crea tu tienda', detalle: 'Publicá tu catálogo, selecciona tus productos y compartí tu link en minutos.' },
-  { icono: ShoppingBag, titulo: 'Pedidos en orden', detalle: 'Consultas, ventas y estados operativos centralizados en un solo panel.' },
-  { icono: BarChart3, titulo: 'Métricas listas', detalle: 'Reportes para saber qué productos y campañas empujan tus ventas.' },
-];
 
 function PasswordToggle({ visible, onClick, label }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-surface-3 hover:text-fg"
+      className="login-password-toggle absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-surface-3 hover:text-fg"
       aria-label={label}
       title={label}
     >
@@ -470,59 +466,42 @@ export default function Login() {
   };
 
   return (
-    <div className="gc-panel min-h-screen overflow-hidden bg-canvas text-fg">
+    <div className="gc-panel login-page text-fg">
       <Link
         to="/"
-        className="absolute left-5 top-5 z-20 flex items-center gap-2 rounded-lg border border-border bg-surface/75 px-3 py-2 text-sm font-semibold text-fg-muted backdrop-blur transition-colors hover:border-border-strong hover:text-fg"
+        className="login-back"
       >
         <ArrowLeft size={18} />
         Volver
       </Link>
 
-      <main className="mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 px-4 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:px-10 lg:py-10">
-        <section className="hidden lg:block">
-          <div className="max-w-xl">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-accent-text">
-              <ShoppingBag size={14} />
-              Ecommerce operativo
-            </div>
-
-            <h1 className="m-0 text-5xl font-bold leading-[1.02] text-fg">
-              Tu negocio, en un solo lugar.
-            </h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-fg-muted">
-              Gestioná tu catálogo, recibí consultas y pedidos directos, y monitoreá tus ventas sin configuraciones complejas.
-            </p>
-
-            {activeForm === 'register' && <div className="mt-9 grid gap-4">
-              {BENEFICIOS.map(({ icono: Icono, titulo, detalle }) => (
-                <div key={titulo} className="flex items-start gap-4 rounded-lg border border-border bg-surface/70 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.18)]">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary-text">
-                    <Icono size={19} />
-                  </span>
-                  <span>
-                    <strong className="block text-sm font-bold text-fg">{titulo}</strong>
-                    <span className="mt-1 block text-sm leading-6 text-fg-muted">{detalle}</span>
-                  </span>
-                </div>
-              ))}
-            </div>}
-
-            {activeForm === 'register' && <div className="mt-8 rounded-lg border border-border bg-surface-2/60 p-4">
-              <p className="m-0 text-sm leading-6 text-fg-muted">
-                El registro crea tu cuenta. La tienda, pagos, dominios, píxeles y datos avanzados se ajustan después desde el panel.
-              </p>
-            </div>}
+      <main className="login-shell">
+        <section className="login-story" aria-labelledby="login-story-title">
+          <Link to="/" className="login-story-brand" aria-label="Gesicom, ir al inicio"><Logo size={38} /></Link>
+          <div className="login-story-copy">
+            <span className="login-eyebrow"><span /> Ecommerce operativo</span>
+            <h1 id="login-story-title">Tu próximo gran paso.<br /><em>Todo conectado.</em></h1>
+            <p>Tu tienda, tus pedidos y tus decisiones. Un solo espacio para hacer crecer tu negocio.</p>
           </div>
+          <div className="login-network" aria-label="Catálogo, pedidos y métricas conectados en Gesicom">
+            <div className="login-orbit login-orbit-outer" aria-hidden="true" />
+            <div className="login-orbit login-orbit-inner" aria-hidden="true" />
+            <svg className="login-network-lines" viewBox="0 0 520 280" fill="none" aria-hidden="true">
+              <path d="M260 140 L105 65 M260 140 L415 75 M260 140 L300 240" stroke="currentColor" strokeDasharray="4 6" />
+            </svg>
+            <div className="login-network-hub" aria-hidden="true"><Logo size={54} conTexto={false} /></div>
+            <div className="login-network-node login-node-catalog"><Store size={20} /><div><strong>Tu catálogo</strong><span>Listo para compartir</span></div><CheckCircle2 size={16} /></div>
+            <div className="login-network-node login-node-orders"><ShoppingBag size={20} /><div><strong>Tus pedidos</strong><span>Todo en orden</span></div><CheckCircle2 size={16} /></div>
+            <div className="login-network-node login-node-metrics"><BarChart3 size={20} /><div><strong>Tus métricas</strong><span>Decisiones más claras</span></div></div>
+          </div>
+          <div className="login-story-footer"><span className="login-status-dot" /> Menos vueltas. Más espacio para crecer.</div>
         </section>
 
-        <section className="mx-auto w-full max-w-[460px]">
-          <div className="rounded-xl border border-border bg-surface/90 p-5 shadow-sm backdrop-blur sm:p-8">
-            <Link to="/" className="mb-7 flex justify-center text-fg">
-              <Logo size={34} />
-            </Link>
-
-            <div className="mb-7 grid grid-cols-2 rounded-lg border border-border bg-canvas p-1">
+        <section className="login-form-panel" aria-label="Acceso a tu cuenta">
+          <div className="login-form-card">
+            <Link to="/" className="login-mobile-brand"><Logo size={34} /></Link>
+            <div className="login-form-eyebrow"><Lock size={14} aria-hidden="true" /> Tu espacio de trabajo</div>
+            <div className="login-segments" aria-label="Opciones de acceso">
               <SegmentOption active={activeForm === 'login'} onSelect={() => switchForm('login')}>
                 Ingresar
               </SegmentOption>
@@ -534,7 +513,7 @@ export default function Login() {
             {sesionExpirada && !error && activeForm === 'login' && <AvisoSesionExpirada />}
 
             {error && (
-              <div className="mb-6 flex items-start gap-3 rounded-lg border border-danger/20 bg-danger/10 p-3.5 text-sm leading-snug text-danger">
+              <div role="alert" className="mb-6 flex items-start gap-3 rounded-lg border border-danger/20 bg-danger/10 p-3.5 text-sm leading-snug text-danger">
                 <AlertCircle size={18} className="mt-0.5 flex-shrink-0" />
                 <div>
                   <strong className="font-semibold">Revisá estos datos</strong>
@@ -611,7 +590,7 @@ export default function Login() {
                   <p className="mt-2 text-sm leading-6 text-fg-muted">
                     {tokenSuscripcion
                       ? `Registrá tu cuenta para activar ${suscripcionRegistro?.plan?.nombre || 'tu plan'} y continuar al onboarding.`
-                      : 'Registrate con tu correo o Gmail. Después vas a preparar tu tienda sin cargar pagos ni píxeles ahora.'}
+                      : 'Creá tu cuenta con tu correo electrónico. Después vas a preparar tu tienda paso a paso.'}
                   </p>
                 </div>
                 {validandoSuscripcion && (

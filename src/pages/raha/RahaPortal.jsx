@@ -667,7 +667,7 @@ export default function RahaPortal() {
                         disabled={busy}
                         onClick={() => setAccion('aprobada')}
                       >
-                        <Check size={16} /> Aprobar como proveedor
+                        <Check size={16} /> Aprobar como vendedor
                       </button>
 
                       <button

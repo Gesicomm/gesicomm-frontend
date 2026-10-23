@@ -23,7 +23,7 @@
 
 /* Como la tipografía compartida, alcanza portales. Las vistas previas y el
    editor de código conservan su contrato propio. Los iframes son aislados. */
-@scope (body:has(.gc-panel, .onb-page, .st-page):not(:has(.courier-page .courier-container))) to (.courier-page:has(.courier-container), .tn-typography-preview, .monaco-editor, [data-typography-preview]) {
+@scope (body:has(.gc-panel, .onb-page, .st-page):not(:has(.courier-page .courier-container, .md-page))) to (.courier-page:has(.courier-container), .tn-typography-preview, .monaco-editor, [data-typography-preview]) {
   :where(button, input, select, textarea, summary) { box-sizing: border-box; }
   button:not([role='switch']),
   :is(input, select, textarea):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='hidden']) {
@@ -45,12 +45,12 @@
   button:disabled { opacity: .55; }
   :is(button, [role='button'])[aria-busy='true'] { cursor: progress; }
   [aria-invalid='true'] { border-style: dashed; border-width: 2px; }
-  :is(.pt-status-chip, .badge, .vit-filter-btn, .md-confirmado-tag) {
+  :is(.pt-status-chip, .badge, .vit-filter-btn) {
     border-radius: var(--ui-radius-chip) !important;
   }
   :is(.btn-primary, .btn-secondary, .btn-ghost, .btn-nuevo-pedido,
       .btn-venta-whatsapp, .af-btn, .pc-btn):not(:disabled) { box-shadow: none; }
-  :is(.md-card, .md-hero, .prod-summary-panel, .vit-card, .cic-kpi-card,
+  :is(.prod-summary-panel, .vit-card, .cic-kpi-card,
       .cic-table-card, .cic-funnel-card, .cic-insight-card, .tn-group,
       .dep-deposit-card, .ads-summary-card) {
     border-radius: var(--ui-radius-card) !important;

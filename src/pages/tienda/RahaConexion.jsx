@@ -89,7 +89,7 @@ export function RahaSemaforo({ estado, compacto = false }) {
 export function RahaHistorial({ solicitud }) {
   return <section className="raha-section"><h3>Seguimiento</h3>
     {solicitud.historial?.length ? <ol className="raha-history">{solicitud.historial.map((entry, index) => <li key={index}>
-      <div><strong>{ESTADOS_RAHA[entry.estado] || entry.estado}</strong><time>{new Date(entry.ocurrido_at).toLocaleString('es-PY')}</time></div>
+      <div><strong>{entry.evento === 'documento_reemplazado' ? 'Documento actualizado' : ESTADOS_RAHA[entry.estado] || entry.estado}</strong><time>{new Date(entry.ocurrido_at).toLocaleString('es-PY')}</time></div>
       {entry.autor && <p className="raha-muted">{entry.autor}</p>}
       {entry.nota && <p>{entry.nota}</p>}{entry.referencia && <p>Referencia: {entry.referencia}</p>}
     </li>)}</ol> : <p className="raha-muted">Todavía no se presentó la solicitud.</p>}
@@ -108,7 +108,8 @@ function RahaSubida({ subida }) {
   </div>;
 }
 
-export function RahaDocumentos({ documentos = [], editable = false, busy, subidas = {}, docErrores = {}, onUpload, onDelete, onDownload }) {
+// editable: se pueden quitar y subir; reemplazable: solo subir otro encima (solicitud ya enviada).
+export function RahaDocumentos({ documentos = [], editable = false, reemplazable = editable, busy, subidas = {}, docErrores = {}, onUpload, onDelete, onDownload }) {
   return <section className="raha-section"><h3>Documentos <span className="raha-req" aria-hidden="true">*</span></h3>
     <div className="raha-docs">{TIPOS_DOC_RAHA.map(([tipo, label]) => {
       const docs = documentos.filter(doc => doc.tipo === tipo);
@@ -123,7 +124,7 @@ export function RahaDocumentos({ documentos = [], editable = false, busy, subida
         </li>)}</ul>
         {subida && <RahaSubida subida={subida} />}
         {tieneError && <span className="raha-error-msg" role="alert"><AlertCircle size={13} /> {docErrores[tipo]}</span>}
-        {editable && <label className={`raha-upload ${busy ? 'raha-disabled' : ''}`}>{subiendo ? <Loader size={15} className="raha-spin" /> : <Upload size={15} />} {subiendo ? 'Subiendo…' : subida?.estado === 'error' ? 'Reintentar' : docs.length ? 'Reemplazar archivo' : 'Adjuntar archivo'}
+        {reemplazable && <label className={`raha-upload ${busy ? 'raha-disabled' : ''}`}>{subiendo ? <Loader size={15} className="raha-spin" /> : <Upload size={15} />} {subiendo ? 'Subiendo…' : subida?.estado === 'error' ? 'Reintentar' : docs.length ? 'Reemplazar archivo' : 'Adjuntar archivo'}
           <input aria-label={`Adjuntar ${label}`} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={busy} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) onUpload(file, tipo); }} />
         </label>}
       </div>;
@@ -175,6 +176,8 @@ export default function RahaConexion({ tienda, onSolicitudChange }) {
   }
 
   const editable = ['borrador', 'observada'].includes(solicitud?.estado);
+  // Ya enviada, Raha puede pedir otra copia de un documento sin devolver la solicitud.
+  const reemplazable = editable || ['en_revision', 'enviada_raha', 'aprobada'].includes(solicitud?.estado);
 
   async function subir(file, tipo) {
     if (busy) return;
@@ -285,7 +288,8 @@ export default function RahaConexion({ tienda, onSolicitudChange }) {
             {errores[key] && <span className="raha-error-msg" role="alert"><AlertCircle size={13} /> {errores[key]}</span>}
           </label>)}
         </div></section>)}
-        <RahaDocumentos documentos={solicitud.documentos} editable={editable} busy={busy} subidas={subidas} docErrores={docErrores} onUpload={subir} onDownload={doc => action(() => rahaService.documento(doc))} onDelete={quitar} />
+        <RahaDocumentos documentos={solicitud.documentos} editable={editable} reemplazable={reemplazable} busy={busy} subidas={subidas} docErrores={docErrores} onUpload={subir} onDownload={doc => action(() => rahaService.documento(doc))} onDelete={quitar} />
+        {!editable && reemplazable && <p className="raha-muted">Los datos ya fueron enviados y no se pueden editar. Si Raha te pide otra copia de un documento, usá «Reemplazar archivo»: queda registrado en el seguimiento y le avisamos. PDF, JPG, PNG o WebP de hasta 8 MB.</p>}
         {editable && <section className="raha-section">
           <p className="raha-muted">PDF, JPG, PNG o WebP de hasta 8 MB. Un archivo por documento (2 en total); si subís otro, reemplaza al anterior. Los documentos no se publican en tu tienda.</p>
           <div className={`raha-consent-wrap ${consentimientoError ? 'raha-consent-error' : ''}`}>

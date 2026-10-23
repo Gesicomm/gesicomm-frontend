@@ -93,9 +93,41 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
 
   return (
     <div className="ads-campaign-list flex flex-col gap-3">
+      <details className="ads-guide" onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
+        <summary>
+          <span>Cómo empezar</span>
+        </summary>
+        <div className="ads-guide-content"><strong>Cómo organizar tu primera campaña</strong>
+        <ol className="ads-guide-steps" role="list">
+          <li>
+            <span className="ads-guide-number" aria-hidden="true">1</span>
+            <div>
+              <span className="ads-guide-place">En Gesicom</span>
+              <h3>Creá tu campaña</h3>
+              <p>Hacé clic en <strong>Nueva campaña</strong>. Elegí el producto, el canal, el objetivo y la distribución del presupuesto para generar su nombre.</p>
+            </div>
+          </li>
+          <li>
+            <span className="ads-guide-number" aria-hidden="true">2</span>
+            <div>
+              <span className="ads-guide-place">En Meta Ads Manager</span>
+              <h3>Publicá tus anuncios</h3>
+              <p>Copiá el nombre generado en Gesicom y pegalo al crear la campaña en Meta. Allí configurás los anuncios y los publicás.</p>
+            </div>
+          </li>
+          <li>
+            <span className="ads-guide-number" aria-hidden="true">3</span>
+            <div>
+              <span className="ads-guide-place">De vuelta en Gesicom</span>
+              <h3>Registrá lo que gastaste</h3>
+              <p>En tu campaña, elegí <strong>Cargar gasto</strong>. Indicá el rango de fechas y el monto invertido para consultar el total y su historial.</p>
+            </div>
+          </li>
+        </ol>
+      </div></details>
       <div className="ads-campaign-toolbar" role="group" aria-label="Acciones de campañas">
         <label className="ads-state-filter"><span>Estado de campaña</span>
-        <select aria-label="Filtrar campañas por estado" className="filter-input" style={{ maxWidth: '170px' }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+        <select aria-label="Filtrar campañas por estado" className="ads-state-select" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
           <option value="activas">Sin archivar</option>
           <option value="archivadas">Archivadas</option>
           <option value="todas">Todas</option>
@@ -264,38 +296,6 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
         </div>
       )}
 
-      <details className="ads-guide" onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
-        <summary>
-          <span>Cómo empezar</span>
-        </summary>
-        <div className="ads-guide-content"><strong>Cómo organizar tu primera campaña</strong>
-        <ol className="ads-guide-steps" role="list">
-          <li>
-            <span className="ads-guide-number" aria-hidden="true">1</span>
-            <div>
-              <span className="ads-guide-place">En Gesicom</span>
-              <h3>Creá tu campaña</h3>
-              <p>Hacé clic en <strong>Nueva campaña</strong>. Elegí el producto, el canal, el objetivo y la distribución del presupuesto para generar su nombre.</p>
-            </div>
-          </li>
-          <li>
-            <span className="ads-guide-number" aria-hidden="true">2</span>
-            <div>
-              <span className="ads-guide-place">En Meta Ads Manager</span>
-              <h3>Publicá tus anuncios</h3>
-              <p>Copiá el nombre generado en Gesicom y pegalo al crear la campaña en Meta. Allí configurás los anuncios y los publicás.</p>
-            </div>
-          </li>
-          <li>
-            <span className="ads-guide-number" aria-hidden="true">3</span>
-            <div>
-              <span className="ads-guide-place">De vuelta en Gesicom</span>
-              <h3>Registrá lo que gastaste</h3>
-              <p>En tu campaña, elegí <strong>Cargar gasto</strong>. Indicá el rango de fechas y el monto invertido para consultar el total y su historial.</p>
-            </div>
-          </li>
-        </ol>
-      </div></details>
       <p className="ads-footnote m-0 text-[0.72rem] text-fg-subtle">
         El gasto de cada campaña es la suma de todos los rangos de fechas que cargaste. Tocá el nombre de la campaña para ver el histórico completo.
       </p>

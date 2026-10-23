@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -22,7 +22,7 @@ import { ImagenCardCompacta, EditorEncuadreModal } from './ImagenEncuadreCards';
 import { erroresDelProducto, PRODUCTO_NUEVO, ofertaBorradorPayload } from './productoFormValidation';
 import { subirImagenPendiente } from '../../components/OfertaImagenPicker';
 import {
-  Package, ChevronLeft, Save, Plus, Trash2, Upload,
+  Package, ChevronLeft, ChevronDown, Save, Plus, Trash2, Upload,
   Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity,
   Settings, Layers, Eye, Circle, AlertTriangle, CheckCircle2, Bot, FileJson
 } from 'lucide-react';
@@ -745,6 +745,14 @@ export default function ProductForm() {
 
   const [tabActiva, setTabActiva] = useState('basica');
   const [previewDevice, setPreviewDevice] = useState('desktop');
+  const [previewAbierta, setPreviewAbierta] = useState(false);
+  const previewDialogRef = useRef(null);
+  useEffect(() => {
+    const dialog = previewDialogRef.current;
+    if (!dialog) return;
+    if (previewAbierta && !dialog.open) dialog.showModal();
+    else if (!previewAbierta && dialog.open) dialog.close();
+  }, [previewAbierta]);
   const [muestrasAplicadas, setMuestrasAplicadas] = useState({});
 
   // Permite abrir directo en una pestaña (ej. desde "Abrir ofertas del
@@ -768,6 +776,7 @@ export default function ProductForm() {
   const [error, setError] = useState(null);
 
   const handleImportarJSON = (e) => {
+    setErrorImportacion(null);
     try {
       const raw = e.target.value;
       if (!raw.trim()) return;
@@ -775,7 +784,10 @@ export default function ProductForm() {
       const p = data.product || (data.identity || data.pricing || data.inventory || data.landing_blocks ? data : {});
       const productPage = data.product_page || p.product_page || p.landing_blocks?.product_page || null;
       const publication = data.publication || p.publication || null;
-      if (!Object.keys(p).length && !productPage && !publication) return;
+      if (!Object.keys(p).length && !productPage && !publication) {
+        setErrorImportacion('El JSON no contiene una ficha de producto. Usá las instrucciones del paso 1 para generarlo.');
+        return;
+      }
       const limpiar = valor => String(valor ?? '').trim();
       const asignarTexto = (campo, valor) => {
         const texto = limpiar(valor);
@@ -1061,9 +1073,13 @@ export default function ProductForm() {
         sinCargar.length ? `El JSON no trajo: ${sinCargar.join(', ')}.` : '',
       ].filter(Boolean).join(' '));
       e.target.value = '';
+      if (importarIaRef.current) {
+        importarIaRef.current.open = false;
+        importarIaRef.current.querySelector('summary')?.focus();
+      }
     } catch (err) {
       console.error(err);
-      setError('El texto pegado no es un JSON válido.');
+      setErrorImportacion('El texto pegado no es un JSON válido. Copiá el JSON completo, sin los bloques de código ni texto adicional.');
     }
   };
 
@@ -1073,6 +1089,9 @@ export default function ProductForm() {
   // así se pueden tocar varias pestañas (Venta, Ficha avanzada, etc.) sin
   // tener que reabrir el producto entre cada guardado.
   const [aviso, setAviso] = useState(null);
+  const importarIaRef = useRef(null);
+  const jsonIaRef = useRef(null);
+  const [errorImportacion, setErrorImportacion] = useState(null);
   useEffect(() => {
     if (!aviso) return;
     // Los avisos largos (ej. el del JSON importado) necesitan más que 4 s para leerse.
@@ -2183,33 +2202,28 @@ export default function ProductForm() {
             </div>
           </div>
           
-          <details className="prod-advanced-import">
-            <summary><Bot size={16} /> Importar con IA</summary>
-          <div className="ia-import-block">
-            <button 
-              type="button" 
-              className="btn-secondary ia-import-copy"
-              onClick={() => {
-                navigator.clipboard.writeText(promptConDatosTienda(categorias, proveedores));
-                setAviso('Prompt copiado al portapapeles. Pégalo en tu IA favorita.');
-              }}
-              title="Copiar instrucciones para la IA"
-            >
-              <Bot size={14} /> Instrucciones para tu IA
-            </button>
-            <div className="ia-import-input-wrap">
-              <FileJson size={14} className="ia-import-input-icon" />
-              <input 
-                type="text" 
-                placeholder="Pegar JSON aquí..." 
-                aria-label="JSON del producto para importar"
-                onChange={handleImportarJSON}
-                className="ia-import-input"
-              />
+          <details className="prod-advanced-import" ref={importarIaRef} onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
+            <summary><Bot size={18} aria-hidden="true" /> Importar con IA <ChevronDown size={16} aria-hidden="true" /></summary>
+            <div className="ia-import-block">
+              <div className="ia-import-heading"><h2>Importar un producto con IA</h2><button type="button" className="btn-icon" aria-label="Cerrar importación con IA" onClick={() => { importarIaRef.current.open = false; importarIaRef.current.querySelector('summary')?.focus(); }}><X size={18} /></button></div>
+              <p>Prepará la ficha en tu IA y traé el resultado para revisarlo antes de guardar.</p>
+              {errorImportacion && <p className="ia-import-error" role="alert">{errorImportacion}</p>}
+              <div className="ia-import-step"><strong>1. Copiá las instrucciones</strong><p>Pegalas en tu IA y completá los datos del producto.</p>
+                <button type="button" className="btn-secondary ia-import-copy" onClick={async () => {
+                  try { await navigator.clipboard.writeText(promptConDatosTienda(categorias, proveedores)); setAviso('Instrucciones copiadas. Pegalas en tu IA para preparar el producto.'); }
+                  catch { setErrorImportacion('No pudimos copiar las instrucciones. Permití el acceso al portapapeles y reintentá.'); }
+                }}><Bot size={16} aria-hidden="true" /> Copiar instrucciones para tu IA</button>
+              </div>
+              <div className="ia-import-step"><label htmlFor="producto-importar-json">2. Pegá el JSON generado</label>
+                <textarea id="producto-importar-json" ref={jsonIaRef} placeholder='Pegá aquí el JSON de tu producto…' aria-label="JSON del producto para importar" rows={5} />
+                <button type="button" className="btn-primary" onClick={() => handleImportarJSON({ target: jsonIaRef.current })}><FileJson size={16} aria-hidden="true" /> Importar datos al formulario</button>
+              </div>
+              <span className="ia-import-note">La importación completa el formulario. Revisá los datos y elegí Guardar cuando esté listo.</span>
             </div>
-          </div>
           </details>
         </div>
+        <div className="prod-header-actions">
+        <button type="button" className="btn-secondary" aria-haspopup="dialog" onClick={() => setPreviewAbierta(true)}><Eye size={16} aria-hidden="true" /> Vista previa</button>
         <button
           className="btn-primary"
           type="button"
@@ -2218,6 +2232,7 @@ export default function ProductForm() {
         >
           <Save size={15} /> {guardando ? 'Guardando...' : 'Guardar'}
         </button>
+        </div>
       </div>
 
       {error && (
@@ -3578,8 +3593,8 @@ export default function ProductForm() {
         <div className={`tab-content ${tabActiva === 'marketing' ? 'active' : ''}`}>
           <div className="product-view-workspace">
             <div className="product-view-editor">
-              <div className="form-section-title">
-                <Eye size={14} /> Contenido para lienzo en blanco
+              <div className="product-content-heading">
+                <h2><Eye size={18} aria-hidden="true" /> Contenido de la página</h2>
                 {muestraLienzoProducto && (
                   <button type="button" className="btn-secondary btn-small" onClick={aplicarEjemploVista} disabled={!!muestrasAplicadas.lienzo}>
                     Cargar contenido de ejemplo
@@ -3689,8 +3704,8 @@ export default function ProductForm() {
                           )}
                         />
                         <div className="repeat-fields">
-                          <input {...register(`beneficios.${index}.titulo`)} placeholder="Título corto (ej: Fácil de usar)" />
-                          <textarea {...register(`beneficios.${index}.texto`)} placeholder="Breve descripción del beneficio..." rows={2} />
+                          <label>Título<input {...register(`beneficios.${index}.titulo`)} placeholder="Ej: Fácil de usar" /></label>
+                          <label>Descripción<textarea {...register(`beneficios.${index}.texto`)} placeholder="Breve descripción del beneficio..." rows={2} /></label>
                         </div>
                         <button type="button" className="btn-icon" onClick={() => removeBeneficio(index)} style={{ color: 'var(--text-muted)' }}>
                           <Trash2 size={16} />
@@ -3720,20 +3735,20 @@ export default function ProductForm() {
 
               <div className="form-group full">
                 <div className="inline-section-head">
-                  <label>Confianza (Garantías) <span className="req">*mínimo 3 recomendados</span></label>
+                  <label>Confianza y garantías</label>
                   <button type="button" className="btn-secondary btn-small" onClick={() => appendConfianza({ icono: '', titulo: '', texto: '' })}>
                     <Plus size={14} /> Agregar
                   </button>
                 </div>
                 <div className="repeat-stack">
                   {confianzaFields.map((field, index) => (
-                    <div key={field._rhfKey} className="repeat-card repeat-card--compact">
-                      <input {...register(`confianza.${index}.icono`)} placeholder="Ícono libre: ♡, 🚚 o shield-check" />
+                    <div key={field._rhfKey} className="repeat-card product-trust-card">
+                      <div className="product-trust-icon"><span>Ícono</span><Controller control={control} name={`confianza.${index}.icono`} render={({ field: icono }) => <SelectorIcono valor={icono.value} onChange={icono.onChange} containerClassName="relative" />} /></div>
                       <div className="repeat-fields">
-                        <input {...register(`confianza.${index}.titulo`)} placeholder="Título, ej: Compra protegida" />
-                        <input {...register(`confianza.${index}.texto`)} placeholder="Subtítulo, ej: Tu pago y tus datos están seguros." />
+                        <label>Título<input {...register(`confianza.${index}.titulo`)} placeholder="Ej: Compra protegida" /></label>
+                        <label>Descripción<textarea {...register(`confianza.${index}.texto`)} placeholder="Ej: Tu pago y tus datos están seguros." rows={2} /></label>
                       </div>
-                      <button type="button" className="btn-icon" onClick={() => removeConfianza(index)} style={{ color: 'var(--text-muted)' }}>
+                      <button type="button" className="btn-icon" aria-label={`Eliminar garantía ${index + 1}`} onClick={() => removeConfianza(index)} style={{ color: 'var(--text-muted)' }}>
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -3746,6 +3761,7 @@ export default function ProductForm() {
             </div>
 
             <ProductLandingPreview
+              onExpand={() => setPreviewAbierta(true)}
               activo={tabActiva === 'marketing'}
               productoId={esEdicion ? id : null}
               producto={valoresProducto}
@@ -3813,7 +3829,7 @@ export default function ProductForm() {
             }
           </div>
 
-          <div>
+          <div className="summary-identity">
             <h2>{nombre || 'Producto sin nombre'}</h2>
             <p>{categoriaActual?.nombre || 'Sin categoría'}</p>
           </div>
@@ -3823,43 +3839,54 @@ export default function ProductForm() {
             <strong>{fmtGs(precioFinalVal)}</strong>
           </div>
 
-          <div className="summary-kpis">
+          <dl className="summary-facts">
             <div>
-              <span>Stock</span>
-              <strong>{stockActualVal}</strong>
+              <dt>Stock</dt>
+              <dd>{stockActualVal}</dd>
             </div>
             <div>
-              <span>Margen</span>
-              <strong className={puedeAnalizarPrecio ? (margenSimpleVal >= 0 ? 'positive' : 'negative') : ''}>{puedeAnalizarPrecio ? fmtPct(margenSimpleVal) : 'Por completar'}</strong>
-            </div>
-          </div>
-
-          <div className="summary-list">
-            <div>
-              <span>Estado</span>
-              <strong>{ESTADO_VENTA_LABELS[estadoVentaVal] || 'En venta'}</strong>
+              <dt>Margen</dt>
+              <dd className={puedeAnalizarPrecio ? (margenSimpleVal >= 0 ? 'positive' : 'negative') : ''}>{puedeAnalizarPrecio ? fmtPct(margenSimpleVal) : 'Por completar'}</dd>
             </div>
             <div>
-              <span>Activo</span>
-              <strong>{activoVal ? 'Sí' : 'No'}</strong>
+              <dt>Estado</dt>
+              <dd>{ESTADO_VENTA_LABELS[estadoVentaVal] || 'En venta'}</dd>
             </div>
             <div>
-              <span>Variantes</span>
-              <strong>{tieneVariantes ? variantesFields.length : 0}</strong>
+              <dt>Activo</dt>
+              <dd>{activoVal ? 'Sí' : 'No'}</dd>
             </div>
             <div>
-              <span>Tags</span>
-              <strong>{tagsVal.split(',').map(t => t.trim()).filter(Boolean).length}</strong>
+              <dt>Variantes</dt>
+              <dd>{tieneVariantes ? variantesFields.length : 0}</dd>
             </div>
-          </div>
+            <div>
+              <dt>Etiquetas</dt>
+              <dd>{tagsVal.split(',').map(t => t.trim()).filter(Boolean).length}</dd>
+            </div>
+          </dl>
 
           {destacadoVal && <span className="summary-featured"><Star size={12} /> Destacado</span>}
+          <div className="summary-preview-action"><button type="button" className="btn-secondary" aria-haspopup="dialog" onClick={() => setPreviewAbierta(true)}><Eye size={16} aria-hidden="true" /> Ver vista previa del producto</button></div>
           </div>
         </details>
         )}
 
       </form>
 
+      <dialog ref={previewDialogRef} className="prod-preview-dialog" aria-labelledby="prod-preview-dialog-title" onClose={() => setPreviewAbierta(false)} onCancel={() => setPreviewAbierta(false)}>
+        <header className="prod-preview-dialog-header">
+          <div><h2 id="prod-preview-dialog-title">Vista previa del producto</h2><p>Así se ve con los datos que estás cargando. Abrir esta vista no guarda ni publica cambios.</p></div>
+          <button type="button" className="btn-secondary" onClick={() => setPreviewAbierta(false)}><X size={18} aria-hidden="true" /> Cerrar</button>
+        </header>
+        {previewAbierta && <ProductLandingPreview
+          activo productoId={esEdicion ? id : null} producto={valoresProducto}
+          categoriaNombre={categoriaActual?.nombre} imagenes={imagenes} imagenesNuevas={imagenesNuevas}
+          variantes={valoresProducto.variantes || []} opciones={valoresProducto.opciones || []}
+          tieneVariantes={tieneVariantes} faq={faq} precioFinal={precioFinalVal}
+          precioAncla={effectiveAnclaVal} device={previewDevice} onDeviceChange={setPreviewDevice}
+        />}
+      </dialog>
       {(isDirty || ofertasBorrador.length > 0) && !guardando && (
         <div className="prod-save-bar">
           <span>Cambios sin guardar</span>

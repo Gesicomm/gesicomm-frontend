@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Monitor, Smartphone, Tablet, Maximize2 } from 'lucide-react';
 import { ofertaAFormaPublica, ofertaService } from '../../services/ofertaService';
 import { tiendaService } from '../../services/tiendaService';
 import CodigoPreview from '../landing-simple/CodigoPreview';
@@ -64,6 +64,7 @@ export default function ProductLandingPreview({
   precioAncla,
   device,
   onDeviceChange,
+  onExpand,
 }) {
   const [ofertas, setOfertas] = useState([]);
   const [tienda, setTienda] = useState(null);
@@ -71,25 +72,27 @@ export default function ProductLandingPreview({
   // MISMA ficha y el mismo runtime que la página publicada, no las
   // plantillas React de las landings rígidas.
   const [landing, setLanding] = useState(null);
+  const [cargandoDiseno, setCargandoDiseno] = useState(true);
+  const [errorDiseno, setErrorDiseno] = useState(false);
+  const [reintentoDiseno, setReintentoDiseno] = useState(0);
   const pagoparConectado = usePagoparConectado();
 
   useEffect(() => {
     if (!activo) return undefined;
     let vivo = true;
-    landingSimpleService.listar()
-      .then(lista => (lista?.length ? landingSimpleService.obtener(lista[0].id) : null))
-      .then(l => { if (vivo) setLanding(l || null); })
-      .catch(() => { if (vivo) setLanding(null); });
+    setCargandoDiseno(true);
+    setErrorDiseno(false);
+    Promise.all([
+      tiendaService.obtener(),
+      landingSimpleService.listar().then(lista => lista?.length ? landingSimpleService.obtener(lista[0].id) : null),
+    ]).then(([t, l]) => {
+      if (!vivo) return;
+      setTienda(t || null);
+      setLanding(l || null);
+    }).catch(() => { if (vivo) setErrorDiseno(true); })
+      .finally(() => { if (vivo) setCargandoDiseno(false); });
     return () => { vivo = false; };
-  }, [activo]);
-
-  useEffect(() => {
-    let vivo = true;
-    tiendaService.obtener()
-      .then(t => { if (vivo) setTienda(t || null); })
-      .catch(() => { if (vivo) setTienda(null); });
-    return () => { vivo = false; };
-  }, []);
+  }, [activo, reintentoDiseno]);
 
   useEffect(() => {
     if (!activo || !productoId) {
@@ -203,16 +206,17 @@ export default function ProductLandingPreview({
   }, [landing, tienda, dto, producto, productoId, pagoparConectado]);
 
   const preview = useMemo(() => (
-    <div style={{ height: 'min(78vh, 900px)' }}>
+    <div style={{ height: '100%' }}>
       <CodigoPreview
         codigo={previewLienzo.codigo}
         titulo={dto.nombre}
         datos={previewLienzo.datos}
+        typography={landing?.typography?.resolved || tienda?.typography}
         previewDevice={device}
         style={{ width: '100%', height: '100%', border: 0 }}
       />
     </div>
-  ), [device, dto.nombre, previewLienzo]);
+  ), [device, dto.nombre, previewLienzo, landing?.typography?.resolved, tienda?.typography]);
 
   return (
     <section className="product-preview-panel" aria-label="Vista pública del producto">
@@ -222,6 +226,7 @@ export default function ProductLandingPreview({
           <h3>Cómo se verá en la landing</h3>
         </div>
         <div className="product-preview-devices" role="group" aria-label="Resolucion de preview">
+          {onExpand && <button type="button" className="product-preview-expand" onClick={onExpand} aria-label="Ampliar" title="Ampliar vista previa" aria-haspopup="dialog"><Maximize2 size={16} aria-hidden="true" /><span>Ampliar</span></button>}
           {DEVICE_OPTIONS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -230,6 +235,7 @@ export default function ProductLandingPreview({
               onClick={() => onDeviceChange(id)}
               title={label}
               aria-label={label}
+              aria-pressed={device === id}
             >
               <Icon size={15} />
               <span>{label}</span>
@@ -240,7 +246,9 @@ export default function ProductLandingPreview({
 
       <div className={`product-preview-frame ${device}`}>
         <div className="product-preview-surface">
-          {preview}
+          {cargandoDiseno ? <div className="product-preview-loading" role="status"><span className="loader" aria-hidden="true" /><strong>Preparando tu vista previa</strong><p>Cargando el diseño y los colores de tu tienda…</p></div>
+            : errorDiseno ? <div className="product-preview-loading" role="alert"><strong>No pudimos cargar el diseño de tu tienda</strong><p>Reintentá para ver el producto con sus colores y tipografía.</p><button type="button" className="btn-secondary" onClick={() => setReintentoDiseno(n => n + 1)}>Reintentar vista previa</button></div>
+              : activo ? preview : null}
         </div>
       </div>
     </section>

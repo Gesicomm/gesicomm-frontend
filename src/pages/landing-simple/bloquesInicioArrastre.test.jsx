@@ -106,7 +106,7 @@ describe('Bloques del Inicio — arrastrar y soltar', () => {
     } finally { document.elementFromPoint = anterior; }
   });
 
-  it('conserva abierto el panel y sus datos después de guardar el nuevo orden', () => {
+  it('vuelve al listado para reordenar y conserva los ajustes al abrir de nuevo', () => {
     function Demo() {
       const [lista, setLista] = useState(bloques);
       return <EditorBloquesInicio bloques={lista} onAlternar={() => {}} menuPanel={<p>Menú</p>}
@@ -119,12 +119,31 @@ describe('Bloques del Inicio — arrastrar y soltar', () => {
     render(<Demo />);
     fireEvent.click(screen.getByRole('button', { name: 'Zona de confianza', exact: true }));
     fireEvent.change(screen.getByLabelText('Dato de confianza'), { target: { value: 'Dato editado' } });
+    expect(screen.getByRole('region', { name: 'Ajustes de Zona de confianza' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Bloques de Inicio' }));
     const dt = transferencia();
     fireEvent.dragStart(screen.getByLabelText(/Arrastrar Zona de confianza/), { dataTransfer: dt });
     const destino = screen.getByText('Banner principal').closest('[data-bloque-inicio]');
     fireEvent.dragOver(destino, { dataTransfer: dt }); fireEvent.drop(destino, { dataTransfer: dt });
+    expect(Number(screen.getByRole('button', { name: 'Zona de confianza', exact: true }).closest('[data-bloque-inicio]').style.order)).toBe(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Zona de confianza', exact: true }));
     expect(screen.getByLabelText('Dato de confianza')).toHaveValue('Dato editado');
-    expect(Number(screen.getByText('Zona de confianza').closest('[data-bloque-inicio]').style.order)).toBe(2);
+  });
+
+  it('sincroniza la selección del listado y la selección recibida desde el lienzo', () => {
+    const seleccionar = vi.fn();
+    const props = { bloques, onAlternar: vi.fn(), onReordenar: vi.fn(), onSeleccionar: seleccionar,
+      paneles: { confianza: <p>Ajustes de confianza</p>, banner: <p>Ajustes del banner</p> } };
+    const { rerender } = render(<EditorBloquesInicio {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Zona de confianza', exact: true }));
+    expect(seleccionar).toHaveBeenLastCalledWith('confianza');
+    expect(screen.queryByRole('button', { name: 'Banner principal', exact: true })).toBeNull();
+    rerender(<EditorBloquesInicio {...props} bloqueAbierto={{ clave: 'banner', n: 1 }} />);
+    expect(screen.getByRole('region', { name: 'Ajustes de Banner principal' })).toBeVisible();
+    expect(seleccionar).toHaveBeenLastCalledWith('banner');
+    fireEvent.click(screen.getByRole('button', { name: 'Bloques de Inicio' }));
+    expect(seleccionar).toHaveBeenLastCalledWith(null);
+    expect(screen.getByRole('button', { name: 'Zona de confianza', exact: true })).toBeVisible();
   });
 
 });

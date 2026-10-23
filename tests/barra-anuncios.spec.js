@@ -1,0 +1,27 @@
+import {test,expect} from '@playwright/test';import {prepararUsuario} from './fixtures/user-theme-session.js';
+const base=process.env.PLAYWRIGHT_BASE_URL||'http://127.0.0.1:5176';
+for(const width of [375,1366])for(const theme of ['light','dark'])test(`Barra de anuncios ${width} ${theme}`,async({page},info)=>{
+ await page.setViewportSize({width,height:900});await prepararUsuario(page,theme);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ let saved;let landing={id:240,activo:true,template:{kind:'codigo'},items:[{tipo:'producto',referencia_id:101}],content:{venta:{configurado:true,tipo:'catalogo',seleccion:'manual'},codigo:{html:'',css:'',js:''}}};
+ await page.route('**/api/mis-landings-simples/240',async route=>{if(route.request().method()!=='GET'){saved=route.request().postDataJSON();landing={...landing,content:{...landing.content,venta:saved.venta,codigo:saved.codigo||landing.content.codigo,vistas:saved.vistas}};}await route.fulfill({json:landing});});
+ await page.goto(`${base}/landing/240`);await page.getByLabel('Página de la tienda').selectOption('inicio');await page.getByRole('button',{name:'Barra de anuncios',exact:true}).click();
+ const panel=page.getByRole('region',{name:'Ajustes de Barra de anuncios',exact:true});const range=panel.getByRole('slider',{name:'Altura de la barra de anuncios'});
+ await range.focus();await page.keyboard.press('Home');for(let i=0;i<16;i++)await page.keyboard.press('ArrowRight');await expect(range).toHaveValue('64');
+ await panel.getByLabel('Posición de la barra de anuncios',{exact:true}).selectOption('fija');await page.screenshot({path:info.outputPath('editor.png')});
+ const mode=page.getByRole('group',{name:'Modo del editor'});await mode.getByRole('button',{name:'Vista previa',exact:true}).click();if(width===375)await page.getByRole('radio',{name:'Celular',exact:true}).click();
+ let handle=await page.locator('aside[aria-label="Vista previa"] iframe').elementHandle();let frame=await handle.contentFrame();
+ await expect(frame.locator('.trust-bar')).toHaveAttribute('data-anuncios-posicion','fija');await expect(frame.locator('.trust-bar')).toHaveCSS('min-height','64px');
+ await expect(frame.locator('.trust-item strong').first()).toHaveCSS('font-size','16px');
+ const alignment=await frame.locator('.trust-item strong').first().evaluate(el=>{const text=el.getBoundingClientRect(),bar=el.closest('.trust-bar').getBoundingClientRect();return Math.abs((text.top+text.bottom)/2-(bar.top+bar.bottom)/2);});expect(alignment).toBeLessThan(2);
+ await frame.evaluate(()=>{document.documentElement.style.scrollBehavior='auto';window.scrollTo(0,600);});await expect.poll(()=>frame.locator('.trust-bar').evaluate(e=>Math.round(e.getBoundingClientRect().top))).toBe(0);
+ await expect.poll(()=>frame.evaluate(()=>window.scrollY)).toBeGreaterThan(300);
+ const barBottom=await frame.locator('.trust-bar').evaluate(e=>e.getBoundingClientRect().bottom);const headerTop=await frame.locator('.commerce-header').evaluate(e=>e.getBoundingClientRect().top);expect(headerTop).toBeGreaterThanOrEqual(barBottom-1);
+ await page.screenshot({path:info.outputPath('fija-con-scroll.png')});
+ await mode.getByRole('button',{name:'Editar',exact:true}).click();await panel.getByLabel('Posición de la barra de anuncios',{exact:true}).selectOption('fluida');await mode.getByRole('button',{name:'Vista previa',exact:true}).click();
+ handle=await page.locator('aside[aria-label="Vista previa"] iframe').elementHandle();frame=await handle.contentFrame();await expect(frame.locator('.trust-bar')).toHaveAttribute('data-anuncios-posicion','fluida');await frame.evaluate(()=>{document.documentElement.style.scrollBehavior='auto';window.scrollTo(0,600);});await expect.poll(()=>frame.locator('.trust-bar').evaluate(e=>e.getBoundingClientRect().bottom)).toBeLessThan(0);
+ await mode.getByRole('button',{name:'Editar',exact:true}).click();await panel.getByLabel('Posición de la barra de anuncios',{exact:true}).selectOption('fija');await panel.getByLabel('Mostrar este bloque',{exact:true}).uncheck();await mode.getByRole('button',{name:'Vista previa',exact:true}).click();
+ handle=await page.locator('aside[aria-label="Vista previa"] iframe').elementHandle();frame=await handle.contentFrame();await expect(frame.locator('.trust-bar')).toBeHidden();await expect(frame.locator('.commerce-header')).toHaveCSS('top','0px');
+ await mode.getByRole('button',{name:'Editar',exact:true}).click();await panel.getByLabel('Mostrar este bloque',{exact:true}).check();
+ await page.getByRole('button',{name:'Guardar',exact:true}).click();await expect.poll(()=>saved?.venta?.inicio?.barra_anuncios).toEqual({altura:64,posicion:'fija'});
+ await page.reload();await page.getByLabel('Página de la tienda').selectOption('inicio');await page.getByRole('button',{name:'Barra de anuncios',exact:true}).click();await expect(page.getByRole('slider',{name:'Altura de la barra de anuncios'})).toHaveValue('64');await expect(page.getByLabel('Posición de la barra de anuncios',{exact:true})).toHaveValue('fija');expect(errors).toEqual([]);
+});
