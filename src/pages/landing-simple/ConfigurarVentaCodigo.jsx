@@ -5001,23 +5001,19 @@ function EditorAnuncios({ anuncios, variante, onCambiar, onAgregar, onQuitar, co
         </label>
         <p>La altura se mide en el tamaño real de la tienda. Si la preview está reducida, la barra también se ve reducida.</p>
       </fieldset>
-      <p className="text-xs text-fg-muted">La franja que se mueve arriba del todo. Si no agregás ninguno, se muestran unos de ejemplo. Sin elegir ícono, se van ciclando unos genéricos.</p>
+      <p className="text-xs text-fg-muted">Escribí o pegá el emoji que quieras en cada anuncio, también combinaciones. Si lo dejás vacío, se elige uno automáticamente.</p>
       {variante === 'embebido' && (
         <p className="text-xs text-fg-muted">Estilo: <strong>Encabezado embebido</strong> — se cambia en el panel de Encabezado.</p>
       )}
       {(anuncios || []).map((it, idx) => (
-        <div key={idx} className="flex items-center gap-2">
-          <select
-            value={it.icono || ''}
-            onChange={e => onCambiar(idx, { icono: e.target.value })}
-            aria-label="Ícono del anuncio"
-            className="h-9 w-32 shrink-0 rounded-lg border border-border bg-surface-2 px-2 text-sm text-fg outline-none focus:border-primary"
-          >
-            <option value="">Automático</option>
-            {ICONOS_CONFIANZA.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-          </select>
-          <CampoTexto value={it.texto} onChange={v => onCambiar(idx, { texto: v })} placeholder="Envío a todo Paraguay" maxLength={80} />
-          <button type="button" onClick={() => onQuitar(idx)} className="h-9 px-2.5 rounded-lg border border-border text-xs font-medium text-danger hover:bg-danger/[0.06]">Quitar</button>
+        <div key={idx} className="anuncio-editor-row">
+          <label className="anuncio-emoji-field"><span>Emoji</span>
+            <input type="text" value={it.icono === 'badge' ? '✅' : emojiConfianzaInicio(it.icono)}
+              onChange={e => onCambiar(idx, { icono: e.target.value })}
+              aria-label={`Emoji del anuncio ${idx + 1}`} placeholder="🚚" maxLength={40} />
+          </label>
+          <CampoTexto label="Mensaje" value={it.texto} onChange={v => onCambiar(idx, { texto: v })} placeholder="Envío a todo Paraguay" maxLength={80} />
+          <button type="button" aria-label={`Quitar anuncio ${idx + 1}`} onClick={() => onQuitar(idx)} className="anuncio-remove">Quitar</button>
         </div>
       ))}
       {(anuncios || []).length < 8 && (
@@ -5029,12 +5025,6 @@ function EditorAnuncios({ anuncios, variante, onCambiar, onAgregar, onQuitar, co
   );
 }
 
-const ICONOS_CONFIANZA = [
-  ['shield', 'Escudo'], ['card', 'Tarjeta'], ['truck', 'Envío'], ['rotate', 'Cambio'], ['badge', 'Garantía'],
-  ['heart', 'Cuidado'], ['leaf', 'Natural'], ['headphones', 'Soporte'], ['package', 'Paquete'], ['clock', 'Tiempo'],
-  ['gift', 'Regalo'], ['star', 'Destacado'], ['lock', 'Seguridad'], ['whatsapp', 'WhatsApp'], ['mail', 'Email'],
-  ['location', 'Ubicación'], ['cash', 'Efectivo'],
-];
 function EditorConfianzaInicio({ items, onCambiar, estilo, onEstilo }) {
   const slots = Array.from({ length: 3 }, (_, i) => items?.[i] || CONFIANZA_INICIO_DEFAULT[i] || { icono: '', titulo: '', texto: '' });
   return (

@@ -142,3 +142,10 @@
   .ecommerce-page-context select { flex: 1; width: auto; }
   .ecommerce-mode-switch button, .ecommerce-device-switch button { min-height: 44px; padding-inline: 4px; gap: 4px; }
 }
+
+.anuncio-editor-row { display: grid; grid-template-columns: 88px minmax(0,1fr) auto; gap: 12px; align-items: end; margin-bottom: 16px; }
+.anuncio-emoji-field { display: grid; gap: 8px; color: var(--color-fg-muted); font-size: 14px; }
+.anuncio-emoji-field input { box-sizing: border-box; width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-fg); font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', var(--font-sans); }
+.anuncio-remove { min-height: 44px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-danger); cursor: pointer; }
+.anuncio-remove:hover { background: color-mix(in srgb, var(--color-danger) 8%, transparent); }
+@media (max-width: 480px) { .anuncio-editor-row { grid-template-columns: 72px minmax(0,1fr); gap: 8px; } .anuncio-remove { grid-column: 2; justify-self: end; } }

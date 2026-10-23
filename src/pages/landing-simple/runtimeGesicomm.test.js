@@ -870,13 +870,15 @@ describe('runtime del lienzo en blanco — inicio', () => {
             { texto: 'Envío rápido', icono: 'truck' },
             { texto: 'Pago seguro', icono: 'card' },
             { texto: 'Sin ícono elegido' }, // icono vacío/ausente: cae al genérico por posición
+            { texto: 'Atención personalizada', icono: '👩🏽‍💻✨' },
+            { texto: 'Hecho en Paraguay', icono: '🇵🇾' },
           ],
         },
       },
     });
-    const items = [...document.querySelectorAll('.trust-bar .trust-item')].slice(0, 3);
-    expect(items.map(el => el.querySelector('.trust-icon').textContent)).toEqual(['🚚', '💳', '◉']);
-    expect(items.map(el => el.querySelector('strong').textContent)).toEqual(['Envío rápido', 'Pago seguro', 'Sin ícono elegido']);
+    const items = [...document.querySelectorAll('.trust-bar .trust-item')].slice(0, 5);
+    expect(items.map(el => el.querySelector('.trust-icon').textContent)).toEqual(['🚚', '💳', '◉', '👩🏽‍💻✨', '🇵🇾']);
+    expect(items.map(el => el.querySelector('strong').textContent)).toEqual(['Envío rápido', 'Pago seguro', 'Sin ícono elegido', 'Atención personalizada', 'Hecho en Paraguay']);
   });
 
   it('"Nuestra marca" queda oculta sin configurar, y se pinta completa cuando está activa', () => {

@@ -1756,8 +1756,10 @@ export function runtimeGesicomm(plantillas) {
     var items = fuente.map(function (it, i) {
       var esObjeto = it && typeof it === 'object';
       var texto = esObjeto ? (it.texto || '') : (it || '');
-      var claveIcono = esObjeto ? it.icono : '';
-      var icono = (claveIcono && EMOJI_CONFIANZA[claveIcono]) || ICONOS_ANUNCIOS_DEFAULT[i % ICONOS_ANUNCIOS_DEFAULT.length];
+      var claveIcono = esObjeto ? String(it.icono || '').trim() : '';
+      var icono = claveIcono
+        ? (Object.prototype.hasOwnProperty.call(EMOJI_CONFIANZA, claveIcono) ? EMOJI_CONFIANZA[claveIcono] : claveIcono)
+        : ICONOS_ANUNCIOS_DEFAULT[i % ICONOS_ANUNCIOS_DEFAULT.length];
       return { texto: texto, icono: icono };
     });
     // El track se mueve hasta -50% (ver .trust-track). Con solo dos ciclos,
