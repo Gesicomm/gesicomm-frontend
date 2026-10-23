@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Clock, EyeOff, Pencil, Search, Tag, Tags, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Clock, EyeOff, Pencil, Search, Tag, Tags, X } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { precioDeVenta } from './PrecioAnclaItem';
 
@@ -22,6 +22,11 @@ export const MAX_ETIQUETA = 50; // landing_items.etiqueta es STRING(50)
 export const COLECCIONES_SUGERIDAS = ['Ofertas del día', 'Novedades', 'Más vendidos', 'Recomendados', 'Liquidación'];
 export const BADGES_OFERTA = ['Oferta', 'Oferta del día', 'Solo por hoy', 'Liquidación', 'Hot sale'];
 const DESCUENTOS_RAPIDOS = [10, 15, 20, 30, 40, 50];
+// La lista se dibuja de a una página: con miles de productos (Llevalofacil:
+// 3.671) pintar todas las filas juntas eran ~77.000 nodos y la pestaña
+// Categorías tardaba ~2 s en abrir. Buscar, filtrar y "marcar todos" siguen
+// operando sobre la lista completa.
+export const POR_PAGINA_OPCIONES = [10, 20, 50];
 
 const pad = n => String(n).padStart(2, '0');
 const aInputLocal = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -148,6 +153,8 @@ export default function OrganizadorProductos({
   const [filtro, setFiltro] = useState(''); // '' | 'oferta' | 'sin_oferta' | 'col:<nombre>'
   const [marcados, setMarcados] = useState(() => new Set());
   const [modal, setModal] = useState(null); // 'oferta' | 'coleccion' | 'quitar_coleccion'
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(POR_PAGINA_OPCIONES[0]);
 
   const enContadorSet = useMemo(() => new Set(enContador || []), [enContador]);
   const filas = useMemo(() => productos.map((item) => {
@@ -185,6 +192,14 @@ export default function OrganizadorProductos({
       return true;
     });
   }, [filas, busqueda, filtro, categoriaActiva]);
+
+  // Otro filtro o búsqueda: vuelve a la primera página.
+  useEffect(() => { setPagina(1); }, [busqueda, filtro, categoriaActiva, porPagina]);
+  const totalPaginas = Math.max(1, Math.ceil(visibles.length / porPagina));
+  // Si la lista se achica (se despublicó el último de la página), no queda en una página vacía.
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const desde = (paginaActual - 1) * porPagina;
+  const filasPagina = visibles.slice(desde, desde + porPagina);
 
   // Lo marcado que ya no está en la landing (despublicado) se suelta solo.
   useEffect(() => {
@@ -277,6 +292,7 @@ export default function OrganizadorProductos({
           <input
             type="checkbox"
             aria-label={todosVisiblesMarcados ? 'Desmarcar los productos de la lista' : 'Marcar todos los productos de la lista'}
+            title={todosVisiblesMarcados ? 'Desmarcar los productos de la lista' : `Marca los ${visibles.length} productos de la lista, no solo los de esta página`}
             checked={todosVisiblesMarcados}
             ref={el => { if (el) el.indeterminate = !todosVisiblesMarcados && algunVisibleMarcado; }}
             onChange={alternarVisibles}
@@ -292,7 +308,7 @@ export default function OrganizadorProductos({
           <p className="px-4 py-6 text-center text-sm text-fg-muted">No hay productos con este filtro.</p>
         ) : (
           <ul className="max-h-[440px] divide-y divide-border overflow-y-auto">
-            {visibles.map(({ item, contentId, precio, ancla, descuento, etiquetas, contador }) => {
+            {filasPagina.map(({ item, contentId, precio, ancla, descuento, etiquetas, contador }) => {
               const marcado = marcados.has(contentId);
               const img = imagenDe(item);
               const nombre = item.titulo_comercial || item.nombre;
@@ -361,6 +377,45 @@ export default function OrganizadorProductos({
               );
             })}
           </ul>
+        )}
+        {visibles.length > 0 && (
+          <nav aria-label="Páginas de productos" className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-2/60 px-3 py-2">
+            <span className="text-[13px] tabular-nums text-fg-muted">
+              {desde + 1}–{desde + filasPagina.length} de {visibles.length.toLocaleString('es-PY')}
+            </span>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 text-[13px] text-fg-muted">
+                Por página
+                <select
+                  value={porPagina}
+                  onChange={e => setPorPagina(Number(e.target.value))}
+                  aria-label="Productos por página"
+                  className="h-8 rounded-lg border border-border bg-surface px-2 text-[13px] text-fg"
+                >
+                  {POR_PAGINA_OPCIONES.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => setPagina(paginaActual - 1)}
+                disabled={paginaActual <= 1}
+                aria-label="Página anterior"
+                className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-surface text-fg hover:border-border-strong hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <span className="min-w-[4.5rem] text-center text-[13px] tabular-nums text-fg">{paginaActual} / {totalPaginas}</span>
+              <button
+                type="button"
+                onClick={() => setPagina(paginaActual + 1)}
+                disabled={paginaActual >= totalPaginas}
+                aria-label="Página siguiente"
+                className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-surface text-fg hover:border-border-strong hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          </nav>
         )}
       </div>
 
