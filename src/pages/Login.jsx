@@ -171,6 +171,8 @@ export default function Login() {
   const [activeForm, setActiveForm] = useState(esRutaRegistro ? 'register' : 'login');
 
   const [formData, setFormData] = useState({ nombre: '', telefono: '', email: '', password: '', confirmPassword: '' });
+  const [codigoPrueba, setCodigoPrueba] = useState('');
+  const [pruebaRegistro, setPruebaRegistro] = useState(null);
   const [tokenSuscripcion, setTokenSuscripcion] = useState(tokenSuscripcionInicial);
   const [suscripcionRegistro, setSuscripcionRegistro] = useState(null);
   const [validandoSuscripcion, setValidandoSuscripcion] = useState(Boolean(tokenSuscripcionInicial));
@@ -342,8 +344,10 @@ export default function Login() {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         token_suscripcion: tokenSuscripcion || undefined,
+        codigo_prueba: !tokenSuscripcion && codigoPrueba.trim() ? codigoPrueba.trim().toUpperCase() : undefined,
       });
       if (res.requiere_verificacion) {
+        setPruebaRegistro(res.prueba || null);
         setPendingEmail(res.email || formData.email);
         setAvisoCorreoNoCoincide(Boolean(res.token_correo_no_coincide));
         setOtpCode('');
@@ -692,6 +696,10 @@ export default function Login() {
                   }
                 />
 
+                {!tokenSuscripcion && <div className="rounded-lg border border-border bg-surface-2/60 p-4">
+                  <AuthField id="codigo_prueba" label="Código de prueba (opcional)" icon={ShieldCheck} placeholder="Ingresá el código que te compartió Gesicom" value={codigoPrueba} onChange={e => setCodigoPrueba(e.target.value.toUpperCase())} autoComplete="off" maxLength={40} />
+                  <p className="mb-0 mt-2 text-sm text-fg-muted">La duración y el plan los define el administrador al generar tu código. Se activa al registrarte y requiere verificar tu correo.</p>
+                </div>}
                 <div className="flex flex-wrap gap-2">
                   <PasswordRule ok={passwordChecks.length}>8 caracteres</PasswordRule>
                   <PasswordRule ok={passwordChecks.uppercase}>1 mayúscula</PasswordRule>
@@ -712,6 +720,7 @@ export default function Login() {
             )}
 
             {/* ──────────── Verify OTP ──────────── */}
+            {activeForm === 'verify' && pruebaRegistro && <p role="status" className="rounded-lg border border-success/20 bg-success/10 p-4 text-base text-fg">Tu código activó una prueba de {pruebaRegistro.dias} días. Acceso hasta el {new Date(pruebaRegistro.periodo_fin).toLocaleDateString('es-PY')}. Verificá tu correo para entrar.</p>}
             {activeForm === 'verify' && (
               <div className="flex flex-col gap-5">
                 <div className="text-center">

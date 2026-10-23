@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, CreditCard, Loader, ShieldCheck, Store, UserRound, AlertCircle } from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { tiendaService } from '../../services/tiendaService';
-import { PERIODICIDAD } from '../../lib/planesCatalogo';
 import { verificarSesionDetallada } from '../../utils/auth';
 import { formatMoneda } from '../../utils/currency';
 import { trackearEvento, generarEventId } from '../../lib/metaPixel';
@@ -303,7 +302,7 @@ export default function CheckoutPlan() {
             <p>{plan?.resumen}</p>
             <div className="pl-precio">
               <strong>{formatPrecioPlan(plan)}</strong>
-              <span>{PERIODICIDAD}</span>
+              <span>{plan.periodicidad === 'anual' ? 'por año · pago adelantado' : plan.periodicidad === 'unico' ? 'pago único' : 'por mes'}</span>
             </div>
             <ul className="pl-features">
               {(plan?.features || []).map((feature, index) => (

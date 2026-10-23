@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, CreditCard, Loader, ShieldCheck, AlertCircle } from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { leerRefAfiliado } from '../../services/afiliadosService';
-import { PERIODICIDAD } from '../../lib/planesCatalogo';
 import { formatMoneda } from '../../utils/currency';
 import Logo from '../../components/public/Logo';
 import './planes.css';
@@ -43,12 +42,15 @@ export default function PublicCheckoutPlan() {
     documento: '',
   });
   const [errores, setErrores] = useState({});
+  const parametros = new URLSearchParams(location.search);
+  const [ruta, setRuta] = useState(parametros.get('ruta') === 'personal' ? 'personal' : 'fisico');
+  const esPlanRutas = /^(una-ruta|ambas-rutas)-(mensual|anual)$/.test(codigo);
+  const ambasRutas = codigo.startsWith('ambas-rutas-');
 
   useEffect(() => {
     let activo = true;
 
     async function cargar() {
-      if (plan) return; // Si ya vino por state, no cargamos
       setCargando(true);
       setError(null);
       try {
@@ -75,7 +77,7 @@ export default function PublicCheckoutPlan() {
 
     cargar();
     return () => { activo = false; };
-  }, [codigo, plan]);
+  }, [codigo]);
 
   function actualizar(campo, valor) {
     setForm(prev => ({ ...prev, [campo]: valor }));
@@ -98,13 +100,14 @@ export default function PublicCheckoutPlan() {
 
   async function iniciarPago(e) {
     e.preventDefault();
-    if (!plan || !validar()) return;
+    if (pagando || !plan || !validar()) return;
 
     setPagando(true);
     setError(null);
     try {
       const intent = await planesService.crearCheckoutIntent({ 
         plan_codigo: plan.codigo,
+        ...(esPlanRutas ? { ruta: ambasRutas ? 'ambas' : ruta } : {}),
         afiliado_codigo: leerRefAfiliado(),
       });
       
@@ -129,12 +132,12 @@ export default function PublicCheckoutPlan() {
   }
 
   return (
-    <div className="pl-page pl-checkout-page">
+    <div className="pl-page pl-checkout-page pl-public-checkout">
       <header className="flex h-16 items-center justify-between border-b border-border bg-surface px-6 no-imprimir">
         <Link to="/" aria-label="Gesicom, ir al inicio">
           <Logo size={28} />
         </Link>
-        <button type="button" className="pl-volver m-0" onClick={() => navigate('/planes')}>
+        <button type="button" className="pl-volver m-0" onClick={() => navigate(esPlanRutas ? '/#precios' : '/planes')}>
           <ArrowLeft size={14} /> Volver a planes
         </button>
       </header>
@@ -146,10 +149,10 @@ export default function PublicCheckoutPlan() {
           <main className="pl-upgrade-main">
             <span className="pl-hero-eyebrow"><ShieldCheck size={13} /> Checkout seguro</span>
             <div>
-              <h1>Completá tus datos para activar tu tienda</h1>
+              <h1>Pagá el plan que elegiste</h1>
               <p>
                 Usamos estos datos para iniciar la transacción con PagoPar y precargar tu cuenta de Gesicom. 
-                Después del pago te llevaremos al onboarding para configurar tu negocio.
+                Después del pago podrás registrar tu cuenta o continuar con la que ya tenés.
               </p>
             </div>
 
@@ -160,7 +163,9 @@ export default function PublicCheckoutPlan() {
               </div>
             )}
 
+            {parametros.get('moneda_referencia') === 'USD' && <p className="pl-aviso">Los precios en USD de la portada son de referencia. PagoPar cobrará el total en guaraníes que figura en este resumen.</p>}
             <form onSubmit={iniciarPago} className="pl-upgrade-missing mt-8">
+              {esPlanRutas && !ambasRutas && <label className="pl-campo mb-6"><span>Ruta de tu plan</span><select value={ruta} onChange={e => setRuta(e.target.value)} disabled={pagando} className="w-full min-h-12 rounded-lg border border-border bg-surface px-3 text-base text-fg"><option value="fisico">E-commerce de productos físicos</option><option value="personal">Marca personal y servicios</option></select></label>}
               <div className="pl-checkout-grid">
                 <label className="pl-campo">
                   <span>Nombre completo</span>
@@ -215,7 +220,7 @@ export default function PublicCheckoutPlan() {
               </div>
 
               <div className="pl-upgrade-actions mt-8 pt-6 border-t border-border flex gap-3">
-                <button type="button" className="pl-btn" onClick={() => navigate('/planes')} disabled={pagando}>
+                <button type="button" className="pl-btn" onClick={() => navigate(esPlanRutas ? '/#precios' : '/planes')} disabled={pagando}>
                   Cancelar
                 </button>
                 <button type="submit" className="pl-cta primario" disabled={pagando || !plan}>
@@ -235,7 +240,7 @@ export default function PublicCheckoutPlan() {
             <p>{plan?.resumen}</p>
             <div className="pl-precio">
               <strong>{formatPrecioPlan(plan)}</strong>
-              <span>{PERIODICIDAD}</span>
+              <span>{plan?.periodicidad === 'anual' ? 'por año · pago adelantado' : plan?.periodicidad === 'unico' ? 'pago único' : 'por mes'}</span>
             </div>
             <ul className="pl-features">
               {(plan?.features || []).map((feature, index) => (

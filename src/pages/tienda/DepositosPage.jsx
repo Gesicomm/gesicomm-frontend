@@ -272,6 +272,8 @@ export default function DepositosPage() {
             <div className="dep-delivery-copy">
               <Truck size={20} aria-hidden="true" />
               <div>
+                <span className="dep-delivery-label">Modalidad de entrega actual</span>
+                {fulfillmentConfig && <strong className="dep-delivery-mode">{fulfillmentConfig.modalidad === 'PROPIA' ? 'Mis propios envíos' : 'Gesicom-RAHA gestiona la entrega'}</strong>}
                 <span className="dep-delivery-current">{fulfillmentConfig ? (fulfillmentConfig.modalidad === 'PROPIA' ? 'Despachás con tus depósitos y transportistas.' : 'Gesicom-RAHA prepara y entrega tus pedidos.') : 'Consultá o cambiá cómo entregás tus pedidos.'}</span>
               </div>
             </div>

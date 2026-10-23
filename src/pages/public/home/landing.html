@@ -271,7 +271,8 @@
 <button type="button" class="btn primary" data-plan="ambas-rutas">Contratar ambas rutas ↗</button>
 </div>
 </div>
-<p style="text-align:center;font-size:13px;margin-top:24px">La anualidad se paga por adelantado. Si cancelás perdés el precio fundador. No incluye mercadería, publicidad ni mentoría estratégica. Solicitá la contratación del plan elegido: confirmaremos disponibilidad y condiciones antes del pago.</p>
+<p id="home-payment-note" style="text-align:center;font-size:14px;margin-top:18px">Pagás de forma segura con PagoPar. La anualidad se abona por adelantado.</p>
+<p style="text-align:center;font-size:13px;margin-top:24px">La anualidad se paga por adelantado. Si cancelás perdés el precio fundador. No incluye mercadería, publicidad ni mentoría estratégica. Elegí tu plan y continuá al pago seguro.</p>
 </div>
 </section>
 <section class="section alt" id="partners">
@@ -304,20 +305,38 @@
 <div class="gc-top">
 <span class="gc-tag">Conectá con Gesicom</span>
 <h2>Tu próximo paso empieza aquí.</h2>
-<p>Conocé la plataforma o formá parte de nuestra red de proveedores y profesionales.</p>
+<p>Elegí cómo querés empezar. Te acompañamos en el camino que elijas.</p>
 </div>
-<section class="gc-lead-panel" id="solicitar-demo" aria-labelledby="gc-demo-heading">
+<div class="home-next-options">
+<button type="button" class="home-next-card" data-lead="prueba">
+<span class="home-next-icon" aria-hidden="true">✦</span><span class="home-next-kicker">Conocé la plataforma</span>
+<h3>Realizar prueba gratuita</h3><p>Solicitá una prueba gratuita y descubrí cómo gestionar tu negocio con Gesicom.</p><span class="home-next-action">Solicitar prueba <span aria-hidden="true">↗</span></span>
+</button>
+<button type="button" class="home-next-card" data-lead="vendedor">
+<span class="home-next-icon" aria-hidden="true">↗</span><span class="home-next-kicker">Hacé crecer tu negocio</span>
+<h3>Empezar como vendedor</h3><p>Encontrá el plan para vender tus productos, servicios o contenido desde un solo lugar.</p><span class="home-next-action">Quiero empezar <span aria-hidden="true">↗</span></span>
+</button>
+<button type="button" class="home-next-card" data-lead="proveedor">
+<span class="home-next-icon" aria-hidden="true">◇</span><span class="home-next-kicker">Sumate al ecosistema</span>
+<h3>Ser proveedor de servicios</h3><p>Ofrecé tus servicios de logística, publicidad, edición o desarrollo a negocios en Gesicom.</p><span class="home-next-action">Ofrecer mis servicios <span aria-hidden="true">↗</span></span>
+</button>
+</div>
+</div>
+</section>
+<dialog class="home-lead-dialog" aria-labelledby="home-lead-title">
+<div class="home-lead-toolbar"><span id="home-lead-title">Tu próximo paso con Gesicom</span><button type="button" data-close-lead aria-label="Cerrar formulario">✕</button></div>
+<section class="gc-lead-panel" id="home-access-form" hidden aria-labelledby="gc-demo-heading">
 <div class="gc-intro">
 <span class="gc-tag">Gesicom · Acceso</span>
 <h2 id="gc-demo-heading">Descubrí cómo Gesicom puede ayudarte.</h2>
-<p>Solicitá una demostración o postulá a un cupón de prueba de 7 días. Nuestro equipo evaluará tu solicitud.</p>
+<p>Solicitá una demostración o postulá a un código de prueba. Nuestro equipo evaluará tu solicitud.</p>
 <div class="gc-features">
 <div class="gc-feature">
 <i>✓</i> Elegí la ruta que mejor se ajuste a tu negocio.</div>
 <div class="gc-feature">
 <i>✓</i> Conocé las funcionalidades de la plataforma.</div>
 <div class="gc-feature">
-<i>✓</i> Las pruebas gratuitas requieren aprobación y un cupón.</div>
+<i>✓</i> Las pruebas gratuitas requieren aprobación y un código.</div>
 </div>
 </div>
 <div class="gc-form-area">
@@ -358,13 +377,13 @@
 <option value="evaluando">Todavía lo estoy evaluando</option>
 </select>
 </div>
-<div class="gc-field gc-wide">
+<div class="gc-field gc-wide" hidden>
 <label for="gc-d-interes">¿Qué querés solicitar? *</label>
 <select id="gc-d-interes" name="solicitud" required>
 <option value="">Seleccioná una opción</option>
 <option value="demo">Una demostración</option>
 <option value="contratacion">Contratar un plan</option>
-<option value="prueba_7_dias">Cupón de prueba gratuita de 7 días</option>
+<option value="prueba_gratuita">Código de prueba gratuita</option>
 </select>
 </div>
 </div>
@@ -382,9 +401,7 @@
 </form>
 </div>
 </section>
-<div class="gc-gap">
-</div>
-<section class="gc-lead-panel gc-alt" id="registro-proveedores" aria-labelledby="gc-prov-heading">
+<section class="gc-lead-panel gc-alt" id="home-provider-form" hidden aria-labelledby="gc-prov-heading">
 <div class="gc-intro">
 <span class="gc-tag">Red de colaboradores</span>
 <h2 id="gc-prov-heading">Ofrecé tus servicios en el ecosistema Gesicom.</h2>
@@ -464,8 +481,7 @@
 </form>
 </div>
 </section>
-</div>
-</section>
+</dialog>
 <section class="section">
 <div class="wrap faq" id="faq">
 <div class="section-head">
@@ -486,7 +502,7 @@
 </details>
 <details>
 <summary>¿Hay prueba gratis?</summary>
-<p>Podés solicitar un cupón de prueba de siete días. Está sujeto a aprobación y no es una promoción universal.</p>
+<p>Podés solicitar un código de prueba gratuita. El administrador define el plan y la cantidad de días de cada código. Ingresalo al registrarte y verificá tu correo para acceder.</p>
 </details>
 <details>
 <summary>¿Incluye mentoría?</summary>

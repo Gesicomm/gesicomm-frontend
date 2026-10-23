@@ -269,6 +269,7 @@ describe('Depósitos: gestión de couriers', () => {
 
     expect(screen.queryByRole('heading', { name: /Couriers/ })).toBeNull();
     expect(screen.queryByText(/Configuración avanzada de couriers/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Entrega de pedidos: cambiar configuración/ }));
     expect(screen.getByRole('button', { name: /Catálogo de couriers/ })).toBeInTheDocument();
     expect(screen.queryByText(/envíos? en el rango/)).toBeNull();
   });

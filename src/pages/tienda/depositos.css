@@ -16,7 +16,15 @@
 .dep-delivery-icon { display: grid; place-items: center; width: 50px; height: 50px; flex: 0 0 50px; border-radius: 16px; background: var(--bg-primary-soft); color: var(--color-primary-text); }
 .dep-delivery-copy h2, .dep-list-heading h2 { margin: 0 0 0.5rem; font-size: var(--ui-text-section, 1.375rem); font-weight: 700; color: var(--color-fg); }
 .dep-delivery-copy p { margin: 0; color: var(--color-fg-muted); }
-.dep-delivery-current { display: block; color: var(--color-fg-muted); font-size: var(--ui-text-help, 0.875rem); }
+.dep-delivery-label { display: block; margin-bottom: 4px; font-size: var(--ui-text-meta, .8125rem); font-weight: 550; color: var(--color-fg-muted); }
+.dep-delivery-mode { display: block; font-size: var(--ui-text-card, 1.125rem); font-weight: 750; line-height: 1.4; color: var(--color-fg); }
+.dep-delivery-current { display: block; margin-top: 4px; color: var(--color-fg-muted); font-size: var(--ui-text-body, 1rem); line-height: 1.5; }
+@media (max-width: 640px) {
+  .dep-delivery-heading { flex-wrap: wrap; align-items: flex-start; }
+  .dep-delivery-copy { flex-basis: 100%; align-items: flex-start; }
+  .dep-delivery-copy > svg { margin-top: 4px; }
+  .dep-delivery-actions { margin-left: 28px; }
+}
 .dep-delivery-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; }
 .dep-delivery-actions button { display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; padding: 0.65rem 0.85rem; border: 1px solid var(--color-border); border-radius: 12px; cursor: pointer; }
 .dep-delivery-toggle { background: var(--bg-primary-soft); color: var(--color-primary-text); font-weight: 600; }

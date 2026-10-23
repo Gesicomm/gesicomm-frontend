@@ -1316,3 +1316,14 @@
 
 .pl-referencia { margin-top: 1rem !important; font-size: var(--ui-text-help, 0.875rem) !important; color: var(--vit-muted-2) !important; }
 .pl-referencia code { font-family: var(--font-mono); word-break: break-all; }
+
+/* Checkout público: importe visible y campos legibles antes de ir a PagoPar. */
+.pl-public-checkout .pl-upgrade-main h1 { font-size: 32px; line-height: 1.25; font-weight: 700; }
+.pl-public-checkout .pl-upgrade-main p, .pl-public-checkout .pl-upgrade-summary p { font-size: 16px; line-height: 1.6; }
+.pl-public-checkout .pl-upgrade-missing { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 18px; padding: 24px; }
+.pl-public-checkout .pl-campo input, .pl-public-checkout .pl-campo select { font-size: 16px; min-height: 48px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-2); color: var(--color-fg); padding: 10px 12px; }
+.pl-public-checkout .pl-campo > span { font-size: 14px; font-weight: 600; }
+.pl-public-checkout .pl-upgrade-summary { border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-surface); padding: 24px; }
+.pl-public-checkout .pl-upgrade-summary h2 { font-size: 22px; line-height: 1.35; }
+@media (max-width: 1000px) { .pl-public-checkout .pl-upgrade-summary { order: -1; } }
+@media (max-width: 640px) { .pl-public-checkout .pl-upgrade-main h1 { font-size: 28px; } .pl-public-checkout .pl-upgrade-missing, .pl-public-checkout .pl-upgrade-summary { padding: 20px; } }

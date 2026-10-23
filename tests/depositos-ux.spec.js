@@ -7,17 +7,26 @@ for (const width of [375, 1280]) for (const modalidad of ['PROPIA', 'GESICOMM'])
   test(`Depósitos ${modalidad}: recorrido a ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     const errores = [];
+    let modalidadGuardada = modalidad;
+    const guardados = [];
+    const cargasSelector = [];
     page.on('pageerror', error => errores.push(error.message));
     await page.route('**/api/**', route => {
       const path = new URL(route.request().url()).pathname;
       let data = {};
+      if (path.endsWith('/fulfillment/depositos')) cargasSelector.push(path);
+      if (path.endsWith('/mi-tienda/fulfillment') && route.request().method() === 'PUT') {
+        const body = route.request().postDataJSON();
+        guardados.push(body);
+        modalidadGuardada = body.modalidad;
+      }
       if (path.endsWith('/auth/me')) data = { id: 1, nombre: 'QA', rol: 'usuario', tiendaId: 1 };
       else if (path.includes('suscripciones/mi-estado')) data = { tiene_suscripcion_activa: true, suscripcion: { plan: { nombre: 'Pro' } } };
       else if (path.endsWith('/mi-tienda')) data = { id: 1, nombre: 'Tienda de prueba', subdominio: 'prueba' };
       else if (path.endsWith('/tiendas/mias')) data = [{ id: 1, nombre: 'Tienda de prueba' }];
       else if (path.endsWith('/depositos/listado') || path.endsWith('/fulfillment/depositos')) data = { data: [deposito], total: 1, totalPages: 1, filtros: { ciudades: ['Luque'], departamentos: ['Central'] } };
       else if (path.endsWith('/depositos/1/couriers')) data = { couriers: [] };
-      else if (path.endsWith('/mi-tienda/fulfillment')) data = { modalidad, deposito_fulfillment_id: 1, propia: { disponible: true, total_depositos: 1 }, gesicomm: { disponible: true, costo_desde: 30000 } };
+      else if (path.endsWith('/mi-tienda/fulfillment')) data = { modalidad: modalidadGuardada, deposito_fulfillment_id: null, propia: { disponible: true, total_depositos: 1 }, gesicomm: { disponible: true, costo_desde: 30000 } };
       else if (path.includes('geografia')) data = [{ id: 1, nombre: 'Central', ciudades: [{ id: 10, nombre: 'Luque' }] }];
       else if (path.includes('notificacion')) data = [];
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(data) });
@@ -27,6 +36,8 @@ for (const width of [375, 1280]) for (const modalidad of ['PROPIA', 'GESICOMM'])
     const entrega = page.getByRole('button', { name: /Entrega de pedidos/ });
     await expect(entrega).toHaveAttribute('aria-expanded', 'false');
     await expect(page.locator('.dep-delivery')).toContainText(modalidad === 'PROPIA' ? 'Despachás con tus depósitos' : 'Gesicom-RAHA prepara');
+    await expect(page.locator('.dep-delivery-mode')).toHaveText(modalidad === 'PROPIA' ? 'Mis propios envíos' : 'Gesicom-RAHA gestiona la entrega');
+    expect(await page.locator('.dep-delivery-mode').evaluate(el => Number(getComputedStyle(el).fontWeight))).toBeGreaterThanOrEqual(700);
     const aviso = page.getByText('Sin transportista asignado', { exact: true });
     if (modalidad === 'PROPIA') await expect(aviso).toBeVisible();
     else await expect(aviso).toHaveCount(0);
@@ -47,7 +58,19 @@ for (const width of [375, 1280]) for (const modalidad of ['PROPIA', 'GESICOMM'])
     await expect(page.getByLabel('Persona de contacto', { exact: true })).toBeVisible();
     await entrega.click();
     await expect(page.getByRole('heading', { name: 'Quién entrega cuando vendés' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Depósito de referencia para los envíos de tu tienda' })).toHaveCount(0);
+    await expect(page.getByRole('searchbox')).toHaveCount(1);
+    await expect(page.locator('.dep-deposit-card')).toHaveCount(1);
     await comprobarAncho(page, '.dep-page');
+    await page.screenshot({ path: testInfo.outputPath('configuracion-entregas.png'), fullPage: true });
+    const siguiente = modalidad === 'PROPIA' ? 'GESICOMM' : 'PROPIA';
+    const nombreSiguiente = siguiente === 'PROPIA' ? 'Mis propios envíos' : 'Gesicom-RAHA gestiona la entrega';
+    await page.getByRole('button', { name: new RegExp(nombreSiguiente) }).click();
+    await expect(page.locator('.dep-delivery-mode')).toHaveText(modalidad === 'PROPIA' ? 'Mis propios envíos' : 'Gesicom-RAHA gestiona la entrega');
+    await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+    await expect(page.locator('.dep-delivery-mode')).toHaveText(nombreSiguiente);
+    expect(guardados).toEqual([{ modalidad: siguiente, depositoId: null }]);
+    expect(cargasSelector).toEqual([]);
     await entrega.click();
     await page.getByRole('button', { name: 'Administrar', exact: true }).click();
     const detalle = page.getByRole('dialog', { name: 'Administrar Depósito Central' });

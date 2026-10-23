@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Seo, { SCHEMA_ORGANIZACION } from '../../components/public/Seo';
+import { planesService } from '../../services/planesService';
 import { enviarMensajeContacto } from '../../services/publicoService';
 import '@fontsource-variable/manrope';
 import markup from './home/landing.html?raw';
@@ -20,7 +21,6 @@ const RUTAS = {
   },
 };
 const PRECIOS = { PYG: [297000, 397000, 497000, 697000], USD: [47, 67, 77, 97] };
-const PLANES = { 'una-ruta': 'Una ruta', 'ambas-rutas': 'Ambas rutas' };
 
 /** HTML estático revisado, versionado dentro del repositorio. No contiene scripts,
  * handlers inline ni contenido procedente de las solicitudes de visitantes. */
@@ -31,7 +31,8 @@ export default function Landing() {
   useEffect(() => {
     const root = rootRef.current;
     let vigente = true;
-    let billing = 'monthly', currency = 'PYG', ruta = 'fisico', plan = null;
+    let billing = 'monthly', currency = 'PYG', ruta = 'fisico';
+    let catalogo = [];
     const money = valor => currency === 'PYG' ? `₲ ${valor.toLocaleString('es-PY')}` : `US$ ${valor.toLocaleString('en-US')}`;
     const texto = (id, value) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = value; };
     const opcion = (selector, actual) => root.querySelectorAll(selector).forEach(button => {
@@ -39,28 +40,21 @@ export default function Landing() {
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', String(active));
     });
-    const resumenPlan = () => {
-      if (!plan) return '';
-      const index = plan === 'ambas-rutas' ? 1 : 0;
-      return `${PLANES[plan]} · ${billing === 'annual' ? 'Anual' : 'Mensual'} · ${money(PRECIOS[currency][index] * (billing === 'annual' ? 10 : 1))}${plan === 'una-ruta' ? ` · ${RUTAS[ruta].kicker}` : ''}`;
-    };
-    const actualizarPlan = () => {
-      const note = root.querySelector('#gc-demo-form .home-selected-plan');
-      note.hidden = !plan;
-      note.textContent = plan ? `Plan elegido: ${resumenPlan()}` : '';
-    };
     const precios = () => {
       ['one', 'two'].forEach((slug, index) => {
+        const codigo = `${index ? 'ambas-rutas' : 'una-ruta'}-${billing === 'annual' ? 'anual' : 'mensual'}`;
+        const publicado = catalogo.find(p => p.codigo === codigo && p.activo !== false);
         const valor = PRECIOS[currency][index];
-        texto(`price-${slug}`, money(valor * (billing === 'annual' ? 10 : 1)));
+        texto(`price-${slug}`, currency === 'PYG' && publicado ? money(Number(publicado.precio)) : money(valor * (billing === 'annual' ? 10 : 1)));
         texto(`period-${slug}`, billing === 'annual' ? 'por año · pago adelantado' : 'por mes');
         texto(`save-${slug}`, billing === 'annual' ? `Ahorrás ${money(valor * 2)} respecto a 12 mensualidades` : `Precio posterior: ${money(PRECIOS[currency][index + 2])}/mes`);
       });
       opcion('[data-billing]', billing);
       opcion('[data-currency]', currency);
-      actualizarPlan();
+      texto('home-payment-note', currency === 'USD' ? 'Los importes en USD son de referencia. El cobro se realiza en guaraníes; verás el total exacto antes de ir a PagoPar.' : 'Pagás de forma segura con PagoPar. La anualidad se abona por adelantado.');
     };
     precios();
+    planesService.listar().then(data => { if (vigente) { catalogo = Array.isArray(data) ? data : []; precios(); } }).catch(() => {});
     root.querySelector('[data-home-year]').textContent = new Date().getFullYear();
     const telefono = String(import.meta.env.VITE_GESICOM_WHATSAPP || '').replace(/\D/g, '');
     if (/^[1-9]\d{7,14}$/.test(telefono)) {
@@ -78,9 +72,40 @@ export default function Landing() {
       menuButton.setAttribute('aria-label', 'Abrir menú');
       mobileMenu.hidden = true;
     };
+    const leadDialog = root.querySelector('.home-lead-dialog');
+    const abrirFormulario = (tipo) => {
+      const proveedor = tipo === 'proveedor';
+      root.querySelector('#home-provider-form').hidden = !proveedor;
+      root.querySelector('#home-access-form').hidden = proveedor;
+      texto('home-lead-title', proveedor ? 'Ofrecer servicios en Gesicom' : tipo === 'prueba' ? 'Solicitar prueba gratuita' : tipo === 'demo' ? 'Solicitar demostración' : 'Empezar como vendedor');
+      if (!proveedor) {
+        const form = root.querySelector('#gc-demo-form');
+        form.elements.solicitud.value = tipo === 'prueba' ? 'prueba_gratuita' : tipo === 'demo' ? 'demo' : 'contratacion';
+        texto('gc-demo-heading', tipo === 'prueba' ? 'Probá Gesicom para tu negocio.' : tipo === 'demo' ? 'Conocé Gesicom en una demostración.' : 'Empezá a vender con Gesicom.');
+        root.querySelector('#home-access-form .gc-form-title').textContent = tipo === 'prueba' ? 'Solicitar prueba gratuita' : tipo === 'demo' ? 'Solicitar demostración' : 'Empezar como vendedor';
+        root.querySelector('#home-access-form .gc-intro > p').textContent = tipo === 'prueba' ? 'Solicitá un código de prueba. Nuestro equipo evaluará tu solicitud y te indicará el plan y la cantidad de días de acceso.' : tipo === 'demo' ? 'Solicitá una demostración y conocé cómo Gesicom puede ayudarte a gestionar tu negocio.' : 'Contanos sobre tu negocio para acompañarte en la elección del plan y tus primeros pasos.';
+        root.querySelector('#gc-demo-form .gc-note').textContent = tipo === 'prueba' ? 'La prueba requiere aprobación y un código.' : 'Te contactaremos para acompañarte.';
+      }
+      if (!leadDialog.open) leadDialog.showModal();
+      leadDialog.scrollTop = 0;
+      document.body.style.overflow = 'hidden';
+      const form = root.querySelector(proveedor ? '#gc-provider-form' : '#gc-demo-form');
+      form.elements.nombre.focus({ preventScroll: true });
+    };
+    const overflowAnterior = document.body.style.overflow;
+    const alCerrarFormulario = () => { document.body.style.overflow = overflowAnterior; };
+    leadDialog.addEventListener('close', alCerrarFormulario);
+    const desdeHash = () => {
+      if (window.location.hash === '#registro-proveedores') abrirFormulario('proveedor');
+      if (window.location.hash === '#solicitar-demo') abrirFormulario('demo');
+    };
+    window.addEventListener('hashchange', desdeHash);
+    desdeHash();
     const alClick = event => {
       const target = event.target.closest('button, a');
       if (!target || !root.contains(target)) return;
+      if (target.hasAttribute('data-close-lead')) { leadDialog.close(); return; }
+      if (target.dataset.lead) { abrirFormulario(target.dataset.lead, target); return; }
       if (target === menuButton) {
         const abierto = menuButton.getAttribute('aria-expanded') !== 'true';
         menuButton.setAttribute('aria-expanded', String(abierto));
@@ -103,22 +128,23 @@ export default function Landing() {
           div.append(small);
           return div;
         }));
-        actualizarPlan();
-      }
+        }
       if (target.dataset.billing) { billing = target.dataset.billing; precios(); }
       if (target.dataset.currency) { currency = target.dataset.currency; precios(); }
       if (target.dataset.plan) {
-        plan = target.dataset.plan;
-        actualizarPlan();
-        const form = root.querySelector('#gc-demo-form');
-        form.elements.uso.value = plan === 'ambas-rutas' ? 'ambas_rutas' : ruta === 'personal' ? 'marca_personal' : 'ecommerce';
-        form.elements.solicitud.value = 'contratacion';
-        root.querySelector('#solicitar-demo').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
-        form.elements.nombre.focus({ preventScroll: true });
+        const codigo = `${target.dataset.plan}-${billing === 'annual' ? 'anual' : 'mensual'}`;
+        const params = new URLSearchParams({ ruta: target.dataset.plan === 'ambas-rutas' ? 'ambas' : ruta, moneda_referencia: currency });
+        navigate(`/checkout/public/${encodeURIComponent(codigo)}?${params}`);
+        return;
       }
       if (target.matches('a')) {
         cerrarMenu();
         const href = target.getAttribute('href');
+        if (href === '#solicitar-demo' || href === '#registro-proveedores') {
+          event.preventDefault();
+          abrirFormulario(href === '#registro-proveedores' ? 'proveedor' : 'demo', target);
+          return;
+        }
         if (href?.startsWith('/') && !href.startsWith('//') && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
           event.preventDefault();
           navigate(href);
@@ -145,7 +171,7 @@ export default function Landing() {
         `Tipo: ${tipo === 'demo' ? selectedText('solicitud') : 'Postulación de proveedor'}`,
         `Documento: ${data.documento.trim()}`,
         `RUC: ${data.ruc?.trim() || 'No indicado'}`,
-        ...(tipo === 'demo' ? [`Uso: ${selectedText('uso')}`, ...(plan ? [`Plan solicitado: ${resumenPlan()}`] : [])] : [`WhatsApp: ${data.whatsapp.trim()}`, `Especialidad: ${selectedText('categoria')}`, `Descripción: ${data.descripcion?.trim() || 'No indicada'}`]),
+        ...(tipo === 'demo' ? [`Uso: ${selectedText('uso')}`] : [`WhatsApp: ${data.whatsapp.trim()}`, `Especialidad: ${selectedText('categoria')}`, `Descripción: ${data.descripcion?.trim() || 'No indicada'}`]),
       ];
       status.setAttribute('role', 'status');
       status.dataset.error = 'false';
@@ -163,7 +189,6 @@ export default function Landing() {
         if (!vigente) return;
         status.textContent = `Solicitud #${respuesta.mensaje.id} recibida. Nuestro equipo se comunicará con vos.`;
         form.reset();
-        if (tipo === 'demo') { plan = null; actualizarPlan(); }
       } catch (error) {
         if (!vigente) return;
         status.dataset.error = 'true';
@@ -186,6 +211,10 @@ export default function Landing() {
       root.removeEventListener('submit', alEnviar);
       root.removeEventListener('keydown', alTeclado);
       observer?.disconnect();
+      window.removeEventListener('hashchange', desdeHash);
+      leadDialog.removeEventListener('close', alCerrarFormulario);
+      if (leadDialog.open) leadDialog.close();
+      document.body.style.overflow = overflowAnterior;
     };
   }, [navigate]);
 

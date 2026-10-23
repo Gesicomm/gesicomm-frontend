@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { afiliadosService, guardarRefAfiliado, leerRefAfiliado } from '../../services/afiliadosService';
-import { PERIODICIDAD } from '../../lib/planesCatalogo';
 import { verificarSesionDetallada } from '../../utils/auth';
 import { formatMoneda } from '../../utils/currency';
 import './planes.css';
@@ -388,7 +387,7 @@ export default function Planes() {
 
               <div className="pl-precio">
                 <strong>{formatPrecioPlan(plan)}</strong>
-                <span>{PERIODICIDAD}</span>
+                <span>{plan.periodicidad === 'anual' ? 'por año · pago adelantado' : plan.periodicidad === 'unico' ? 'pago único' : 'por mes'}</span>
               </div>
 
               <ul className="pl-features">
