@@ -25,8 +25,8 @@ const REPORTES = [
     { id: 'resumen', label: 'Resumen operativo', icon: LayoutDashboard },
   ] },
   { grupo: 'Ventas', items: [
-    { id: 'ventas', label: 'Vista de pedidos', icon: ShoppingCart },
-    { id: 'productos', label: 'Rendimiento de productos', icon: Package },
+    { id: 'ventas', label: 'Pedidos del período', icon: ShoppingCart },
+    { id: 'productos', label: 'Productos: variantes y devoluciones', icon: Package },
     { id: 'composicion', label: 'Composición (upsells)', icon: List },
     { id: 'afinidad', label: 'Afinidad de productos', icon: Shuffle },
   ] },

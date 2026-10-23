@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Truck, CheckCircle, RotateCcw, DollarSign } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
 
 export function ReporteLogistica({ filters }) {
   const [data, setData] = useState([]);
-  const [kpis, setKpis] = useState({ total_entregados: 0, couriers_activos: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -13,7 +11,6 @@ export function ReporteLogistica({ filters }) {
       try {
         const res = await reportesService.obtenerReporteLogistica(filters);
         setData(res.data || []);
-        if (res.kpis) setKpis(res.kpis);
       } catch (err) {
         console.error('Error fetching logística:', err);
       }
@@ -46,20 +43,9 @@ export function ReporteLogistica({ filters }) {
         </div>
       </div>
 
-      <div className="cic-kpi-grid">
-        <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Pedidos Entregados <CheckCircle size={14}/></div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{kpis.total_entregados}</div>
-          <div className="cic-kpi-sub">Total exitosos en el período</div>
-        </div>
-        <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Couriers Activos <Truck size={14}/></div>
-          <div className="cic-kpi-val">{kpis.couriers_activos}</div>
-          <div className="cic-kpi-sub">Con pedidos asignados en período</div>
-        </div>
-      </div>
-
-      <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
+      {/* Sin tarjeta de "Pedidos entregados": ese número ya está en el
+          Dashboard General y en el Resumen operativo. */}
+      <div className="cic-table-card">
         <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', color: 'var(--color-fg)' }}>Comparativa de Couriers</h3>
         <div className="cic-table-wrapper">
           {loading ? (

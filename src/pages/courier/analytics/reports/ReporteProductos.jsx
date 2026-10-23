@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Package, TrendingUp, Award } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
-import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 
 export default function ReporteProductos({ filters }) {
   const [data, setData] = useState([]);
-  const [kpis, setKpis] = useState({ unidades_vendidas: 0, ventas_netas: 0, producto_estrella: 'Ninguno' });
   const [top5, setTop5] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -35,7 +32,6 @@ export default function ReporteProductos({ filters }) {
       });
       
       setData(response.data || []);
-      setKpis(response.kpis || { unidades_vendidas: 0, ventas_netas: 0, producto_estrella: 'Ninguno' });
       setTop5(response.top5 || null);
       setPagination({
         ...pagination,
@@ -63,68 +59,13 @@ export default function ReporteProductos({ filters }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* KPIs */}
-      <div className="cic-kpis-grid">
-        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
-          <div className="cic-kpi-header">
-            TOTAL UNIDADES
-            <Package size={16} color="var(--color-primary-text)" />
-          </div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)' }}>{kpis.unidades_vendidas}</div>
-          <div className="cic-kpi-sub">Unidades de catálogo entregadas</div>
-        </div>
-
-        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)' }}>
-          <div className="cic-kpi-header">
-            {METRIC_TERMS.ventasNetas}
-            <TrendingUp size={16} color="var(--color-success)" />
-          </div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.ventas_netas)}</div>
-          <div className="cic-kpi-sub">Venta de productos entregados, sin delivery/flete</div>
-        </div>
-
-        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)' }}>
-          <div className="cic-kpi-header">
-            PRODUCTO ESTRELLA
-            <Award size={16} color="var(--color-warning)" />
-          </div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-warning)', fontSize: '1.1rem', wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: '1.2' }}>
-            {kpis.producto_estrella}
-          </div>
-          <div className="cic-kpi-sub">Mayor cantidad de unidades vendidas</div>
-        </div>
-      </div>
-      
-      {/* Gráficos Top 5 */}
-      {top5 && (top5.vendidos?.length > 0 || top5.devoluciones?.length > 0) && (
+      {/* Sin tarjetas de unidades/ventas ni "Top 5 más vendidos": eso ya está
+          en Más Vendidos del Dashboard General, con costo y ganancia. Acá queda
+          lo que no está allá: qué productos se devuelven y el detalle por
+          variante. */}
+      {/* Top 5 con más devoluciones */}
+      {top5?.devoluciones?.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-          
-          {/* Top 5 Más Vendidos */}
-          {top5.vendidos?.length > 0 && (
-            <div className="cic-card" style={{ padding: '1.5rem', background: 'var(--color-canvas)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 1rem 0', color: 'var(--color-fg)' }}>Top 5: Más Vendidos (Unidades)</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {top5.vendidos.map((p, idx) => {
-                  const maxV = top5.vendidos[0].vendidos;
-                  const pct = Math.max(5, (p.vendidos / maxV) * 100);
-                  return (
-                    <div key={p.id}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
-                        <span style={{ fontWeight: 600, color: 'var(--color-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>{idx + 1}. {p.nombre}</span>
-                        <span style={{ color: 'var(--color-primary-text)', fontWeight: 700 }}>{p.vendidos}</span>
-                      </div>
-                      <div style={{ width: '100%', height: '8px', background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', background: 'var(--color-primary)', borderRadius: '4px' }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Top 5 Mayor Tasa Devolución */}
-          {top5.devoluciones?.length > 0 && (
             <div className="cic-card" style={{ padding: '1.5rem', background: 'var(--color-canvas)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 1rem 0', color: 'var(--color-fg)' }}>Top 5: Mayor Tasa de Devolución</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -145,7 +86,6 @@ export default function ReporteProductos({ filters }) {
                 })}
               </div>
             </div>
-          )}
         </div>
       )}
 
@@ -158,19 +98,17 @@ export default function ReporteProductos({ filters }) {
                 <th>Producto / Variante</th>
                 <th style={{ textAlign: 'center' }}>Unidades Vendidas</th>
                 <th style={{ textAlign: 'center' }}>Pedidos Únicos</th>
-                <th style={{ textAlign: 'right' }}>% de {METRIC_TERMS.ventasNetas.toLowerCase()}</th>
                 <th style={{ textAlign: 'right' }}>Precio promedio</th>
-                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>{METRIC_TERMS.ventasNetas}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando reporte de productos...</td>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando reporte de productos...</td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>No se encontraron productos vendidos en este período.</td>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>No se encontraron productos vendidos en este período.</td>
                 </tr>
               ) : (
                 data.flatMap((row) => {
@@ -192,9 +130,7 @@ export default function ReporteProductos({ filters }) {
                       </td>
                       <td style={{ textAlign: 'center' }}>{row.unidades_vendidas}</td>
                       <td style={{ textAlign: 'center' }}>{row.pedidos_unicos}</td>
-                      <td style={{ textAlign: 'right', color: 'var(--color-fg-subtle)' }}>{row.participacion.toFixed(1)}%</td>
                       <td style={{ textAlign: 'right', color: 'var(--color-fg-muted)' }}>{formatMoney(row.precio_promedio)}</td>
-                      <td style={{ textAlign: 'right', color: 'var(--color-success)', fontWeight: 'bold' }}>{formatMoney(row.ventas_netas)}</td>
                     </tr>
                   );
 
@@ -209,9 +145,7 @@ export default function ReporteProductos({ filters }) {
                           </td>
                           <td style={{ textAlign: 'center', fontSize: '0.85rem' }}>{v.unidades_vendidas}</td>
                           <td style={{ textAlign: 'center', fontSize: '0.85rem' }}>{v.pedidos_unicos}</td>
-                          <td style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--color-fg-subtle)' }}>{v.participacion.toFixed(1)}%</td>
                           <td style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>{formatMoney(v.precio_promedio)}</td>
-                          <td style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--color-fg)' }}>{formatMoney(v.ventas_netas)}</td>
                         </tr>
                       );
                     });
