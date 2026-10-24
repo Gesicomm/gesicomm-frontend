@@ -38,31 +38,30 @@ export function ReporteLogistica({ filters }) {
     <div className="cic-report-container animate-fade-in">
       <div className="cic-report-header">
         <div>
-          <h2 className="cic-report-title">Desempeño Logístico por Courier</h2>
-          <p className="cic-report-desc">Análisis de tasa de entrega, costos y volumen operativo por operador logístico.</p>
+          <h2 className="cic-report-title">Couriers</h2>
+          <p className="cic-report-desc">Qué courier entrega mejor y cuánto te cuesta cada entrega.</p>
         </div>
       </div>
 
       {/* Sin tarjeta de "Pedidos entregados": ese número ya está en el
           Dashboard General y en el Resumen operativo. */}
       <div className="cic-table-card">
-        <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', color: 'var(--color-fg)' }}>Comparativa de Couriers</h3>
-        <div className="cic-table-wrapper">
+                <div className="cic-table-wrapper">
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando datos...</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando…</div>
           ) : (
             <table className="cic-table">
               <thead>
                 <tr>
                   <th>Courier</th>
-                  <th>Tasa de Entrega</th>
+                  <th>% entregado</th>
                   <th style={{ textAlign: 'center' }}>Asignados</th>
                   <th style={{ textAlign: 'center', color: 'var(--color-success)' }}>Entregados</th>
                   <th style={{ textAlign: 'center', color: 'var(--color-danger)' }}>Devueltos</th>
-                  <th style={{ textAlign: 'center' }}>En Tránsito</th>
-                  <th style={{ textAlign: 'right' }}>Costo Total</th>
-                  <th style={{ textAlign: 'right' }}>Costo Promedio</th>
-                  <th style={{ textAlign: 'right' }}>Costo por Entrega</th>
+                  <th style={{ textAlign: 'center' }}>En camino</th>
+                  <th style={{ textAlign: 'right' }}>Pagado al courier</th>
+                  <th style={{ textAlign: 'right' }}>Promedio por envío</th>
+                  <th style={{ textAlign: 'right' }}>Costo real por entrega</th>
                 </tr>
               </thead>
               <tbody>
@@ -82,16 +81,16 @@ export function ReporteLogistica({ filters }) {
                   </tr>
                 ))}
                 {data.length === 0 && (
-                  <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>Sin pedidos logísticos en este período.</td></tr>
+                  <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>Ningún pedido salió con courier en este período.</td></tr>
                 )}
               </tbody>
             </table>
           )}
         </div>
         <p style={{ fontSize: '0.72rem', color: 'var(--color-fg-subtle)', marginTop: '0.75rem' }}>
-          * Tasa de entrega calculada sobre pedidos cerrados (entregados + devueltos). Excluye pedidos en tránsito y cancelados.
+          % entregado: de los pedidos que el courier ya cerró (entregados o devueltos), cuántos llegaron. No cuenta los que siguen en camino.
           <br/>
-          * Costo por entrega exitosa = costo logístico total ÷ pedidos entregados (incluye el costo de devoluciones).
+          Costo real por entrega: todo lo que le pagaste, devoluciones incluidas, dividido por los pedidos que sí entregó.
         </p>
       </div>
     </div>

@@ -58,7 +58,13 @@ export default function ReporteProductos({ filters }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      
+      <div className="cic-report-header">
+        <div>
+          <h2 className="cic-report-title">Productos</h2>
+          <p className="cic-report-desc">Cuáles se devuelven más y cómo se reparte la venta entre sus variantes. Ganancia por producto: Dashboard General.</p>
+        </div>
+      </div>
+
       {/* Sin tarjetas de unidades/ventas ni "Top 5 más vendidos": eso ya está
           en Más Vendidos del Dashboard General, con costo y ganancia. Acá queda
           lo que no está allá: qué productos se devuelven y el detalle por
@@ -96,19 +102,19 @@ export default function ReporteProductos({ filters }) {
             <thead>
               <tr>
                 <th>Producto / Variante</th>
-                <th style={{ textAlign: 'center' }}>Unidades Vendidas</th>
-                <th style={{ textAlign: 'center' }}>Pedidos Únicos</th>
+                <th style={{ textAlign: 'center' }}>Unidades</th>
+                <th style={{ textAlign: 'center' }}>Pedidos</th>
                 <th style={{ textAlign: 'right' }}>Precio promedio</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando reporte de productos...</td>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando…</td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>No se encontraron productos vendidos en este período.</td>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>No se entregó ningún producto en este período.</td>
                 </tr>
               ) : (
                 data.flatMap((row) => {

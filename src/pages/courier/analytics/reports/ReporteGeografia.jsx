@@ -36,51 +36,51 @@ export function ReporteGeografia({ filters }) {
     <div className="cic-report-container animate-fade-in">
       <div className="cic-report-header">
         <div>
-          <h2 className="cic-report-title">Análisis por Geografía</h2>
-          <p className="cic-report-desc">Rendimiento de ventas y tasas de fallo por ciudad y departamento.</p>
+          <h2 className="cic-report-title">Ciudades</h2>
+          <p className="cic-report-desc">Dónde vendés más y dónde se te devuelven más pedidos.</p>
         </div>
       </div>
 
       <div className="cic-kpi-grid">
         {/* El total de ventas netas ya está en el Dashboard General. */}
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Ciudades Activas <Map size={14}/></div>
+          <div className="cic-kpi-header">Ciudades con ventas <Map size={14}/></div>
           <div className="cic-kpi-val">{kpis.ciudades_activas}</div>
           <div className="cic-kpi-sub">Con al menos 1 venta entregada</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Ciudad Top <Target size={14}/></div>
+          <div className="cic-kpi-header">La que más compra <Target size={14}/></div>
           <div className="cic-kpi-val" style={{ fontSize: '1.1rem' }}>{kpis.ciudad_top}</div>
-          <div className="cic-kpi-sub">Mayor volumen de ventas</div>
+          <div className="cic-kpi-sub">Por monto vendido</div>
         </div>
       </div>
 
       <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '0.9rem', color: 'var(--color-fg)', margin: 0 }}>Detalle Departamento → Ciudad</h3>
+          <h3 className="cic-card-title" style={{ margin: 0 }}>Por ciudad</h3>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.8125rem', color: 'var(--color-fg-muted)' }}>
             <span>⚪ &lt;10 pedidos cerrados</span>
-            <span>🟢 Fallo &lt;15%</span>
+            <span>🟢 Se cae menos del 15%</span>
             <span>🟡 15–30%</span>
             <span>🔴 &gt;30%</span>
           </div>
         </div>
         <div className="cic-table-wrapper">
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando datos...</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando…</div>
           ) : (
             <table className="cic-table">
               <thead>
                 <tr>
                   <th>Departamento</th>
                   <th>Ciudad</th>
-                  <th style={{ textAlign: 'center' }}>Exitosos</th>
-                  <th style={{ textAlign: 'center' }}>Fallidos</th>
-                  <th style={{ textAlign: 'center' }}>Tasa de Fallo</th>
+                  <th style={{ textAlign: 'center' }}>Entregados</th>
+                  <th style={{ textAlign: 'center' }}>No entregados</th>
+                  <th style={{ textAlign: 'center' }}>% que se cae</th>
                   <th style={{ textAlign: 'right' }}>{METRIC_TERMS.ventasNetas}</th>
                   <th style={{ textAlign: 'right' }}>% de {METRIC_TERMS.ventasNetas.toLowerCase()}</th>
                   <th style={{ textAlign: 'right' }}>{METRIC_TERMS.ticketPromedio}</th>
-                  <th>Riesgo</th>
+                  <th>Riesgo de envío</th>
                 </tr>
               </thead>
               <tbody>
@@ -105,7 +105,7 @@ export function ReporteGeografia({ filters }) {
                   );
                 })}
                 {data.length === 0 && (
-                  <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>Sin pedidos cerrados en este período.</td></tr>
+                  <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>Todavía no hay pedidos entregados ni devueltos en este período.</td></tr>
                 )}
               </tbody>
             </table>

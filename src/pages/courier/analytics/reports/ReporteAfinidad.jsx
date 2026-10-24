@@ -33,42 +33,39 @@ export function ReporteAfinidad({ filters }) {
     <div className="cic-report-container animate-fade-in">
       <div className="cic-report-header">
         <div>
-          <h2 className="cic-report-title">Afinidad de Productos</h2>
+          <h2 className="cic-report-title">Productos que se compran juntos</h2>
           <p className="cic-report-desc">
-            Descubrí qué productos suelen comprarse juntos. Las tasas A→B y B→A indican qué porcentaje
-            de compradores de cada producto también adquirió el otro.
+            Qué productos tus clientes llevan en el mismo pedido. Sirve para armar combos y elegir la oferta
+            del checkout.
           </p>
         </div>
       </div>
 
       <div className="cic-kpi-grid">
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Pares Detectados <Shuffle size={14}/></div>
+          <div className="cic-kpi-header">Combinaciones <Shuffle size={14}/></div>
           <div className="cic-kpi-val">{kpis.pares_detectados}</div>
-          <div className="cic-kpi-sub">Combinaciones únicas encontradas</div>
+          <div className="cic-kpi-sub">Pares de productos que salieron juntos</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Pedidos Analizados <BarChart2 size={14}/></div>
+          <div className="cic-kpi-header">Pedidos revisados <BarChart2 size={14}/></div>
           <div className="cic-kpi-val">{kpis.pedidos_exitosos_analizados}</div>
-          <div className="cic-kpi-sub">Con productos identificables</div>
+          <div className="cic-kpi-sub">Entregados en el período</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Par Más Frecuente <DollarSign size={14}/></div>
+          <div className="cic-kpi-header">La pareja más vendida <DollarSign size={14}/></div>
           <div className="cic-kpi-val" style={{ fontSize: '0.9rem', lineHeight: 1.4 }}>{kpis.par_top}</div>
-          <div className="cic-kpi-sub">Por cantidad de pedidos conjuntos</div>
+          <div className="cic-kpi-sub">Buena candidata para un combo</div>
         </div>
       </div>
 
       <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '0.9rem', color: 'var(--color-fg)', margin: 0 }}>Tabla de Afinidad</h3>
-          <span style={{ fontSize: '0.8125rem', color: 'var(--color-fg-muted)' }}>
-            A→B: % de compradores de A que también compraron B
-          </span>
+          <h3 className="cic-card-title" style={{ margin: 0 }}>Qué se lleva con qué</h3>
         </div>
         <div className="cic-table-wrapper">
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Analizando pedidos...</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando…</div>
           ) : data.length === 0 ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>
               No hay pedidos con 2 o más productos distintos en este período.
@@ -83,12 +80,12 @@ export function ReporteAfinidad({ filters }) {
                 <tr>
                   <th>Producto A</th>
                   <th>Producto B</th>
-                  <th style={{ textAlign: 'center' }}>Pedidos Juntos</th>
-                  <th style={{ textAlign: 'center' }}>Total A</th>
-                  <th style={{ textAlign: 'center' }}>Total B</th>
-                  <th style={{ textAlign: 'center' }}>A → B</th>
-                  <th style={{ textAlign: 'center' }}>B → A</th>
-                  <th style={{ textAlign: 'right' }}>Ventas Combinadas</th>
+                  <th style={{ textAlign: 'center' }}>Pedidos juntos</th>
+                  <th style={{ textAlign: 'center' }}>Pedidos con A</th>
+                  <th style={{ textAlign: 'center' }}>Pedidos con B</th>
+                  <th style={{ textAlign: 'center' }}>Quien compra A, suma B</th>
+                  <th style={{ textAlign: 'center' }}>Quien compra B, suma A</th>
+                  <th style={{ textAlign: 'right' }}>Vendido en esos pedidos</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,7 +109,7 @@ export function ReporteAfinidad({ filters }) {
         </div>
         {data.length > 0 && (
           <p style={{ fontSize: '0.8125rem', color: 'var(--color-fg-subtle)', marginTop: '0.75rem' }}>
-            * Analizamos qué productos se compran juntos en un mismo pedido, sin importar las cantidades (ej. llevar 3 unidades del Producto A y 2 del B cuenta como una sola compra conjunta).
+            Ejemplo: si en «Quien compra A, suma B» dice 30%, de cada 10 pedidos con el producto A, 3 también llevaron el B. No importa cuántas unidades de cada uno.
           </p>
         )}
       </div>

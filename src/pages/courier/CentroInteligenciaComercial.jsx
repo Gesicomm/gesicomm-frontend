@@ -22,26 +22,26 @@ import { ReporteFinanzas } from './analytics/reports/ReporteFinanzas';
 
 const REPORTES = [
   { grupo: 'Resumen', items: [
-    { id: 'resumen', label: 'Resumen operativo', icon: LayoutDashboard },
+    { id: 'resumen', label: 'Resumen', icon: LayoutDashboard },
   ] },
   { grupo: 'Ventas', items: [
     { id: 'ventas', label: 'Pedidos del período', icon: ShoppingCart },
-    { id: 'productos', label: 'Productos: variantes y devoluciones', icon: Package },
-    { id: 'composicion', label: 'Composición (upsells)', icon: List },
-    { id: 'afinidad', label: 'Afinidad de productos', icon: Shuffle },
+    { id: 'productos', label: 'Productos', icon: Package },
+    { id: 'composicion', label: 'Ventas extra (bump y upsell)', icon: List },
+    { id: 'afinidad', label: 'Se compran juntos', icon: Shuffle },
   ] },
   { grupo: 'Clientes', items: [
-    { id: 'clientes', label: 'Clientes: buenos y problemáticos', icon: Users },
+    { id: 'clientes', label: 'Clientes buenos y problemáticos', icon: Users },
   ] },
-  { grupo: 'Operaciones', items: [
-    { id: 'confirmadores', label: 'Desempeño de confirmadores', icon: UserCheck },
-    { id: 'fallos', label: 'Fallos y devoluciones', icon: TrendingUp },
-    { id: 'geografia', label: 'Geografía', icon: MapPin },
-    { id: 'logistica', label: 'Logística y couriers', icon: Truck },
+  { grupo: 'Equipo y entregas', items: [
+    { id: 'confirmadores', label: 'Confirmadores', icon: UserCheck },
+    { id: 'fallos', label: 'Pedidos no entregados', icon: TrendingUp },
+    { id: 'geografia', label: 'Ciudades', icon: MapPin },
+    { id: 'logistica', label: 'Couriers', icon: Truck },
   ] },
-  { grupo: 'Pagos y finanzas', items: [
-    { id: 'metodos_pago', label: 'Métodos de pago', icon: PiggyBank },
-    { id: 'finanzas', label: 'Comisiones, facturación e IVA', icon: DollarSign },
+  { grupo: 'Pagos', items: [
+    { id: 'metodos_pago', label: 'Formas de pago', icon: PiggyBank },
+    { id: 'finanzas', label: 'Comisiones e IVA', icon: DollarSign },
   ] },
 ];
 
@@ -112,23 +112,14 @@ export function CentroInteligenciaComercial() {
       case 'metodos_pago': return <ReporteMetodosPago filters={f} />;
       case 'finanzas': return <ReporteFinanzas filters={f} />;
       case 'resumen':
-      default: return <ReporteResumen filters={f} setConfirmadoresDisponibles={setConfirmadoresDisponibles} />;
+      default: return <ReporteResumen filters={f} setConfirmadoresDisponibles={setConfirmadoresDisponibles} onAbrirReporte={setActiveReport} />;
     }
   };
 
   return (
     <div className="cic-wrapper">
-      <div className="cic-top-bar">
-        <AnalyticsFilters
-          filters={analyticsFilters}
-          setFilters={setAnalyticsFilters}
-          filtrosIniciales={FILTROS_INICIALES}
-          reporteActivo={activeReport}
-          confirmadoresDisponibles={confirmadoresDisponibles}
-        />
-      </div>
-
-      {/* En celular la lista de 12 reportes se vuelve un selector. */}
+      {/* En celular y notebooks el menú de reportes es un selector, y va antes de
+          los filtros: primero se elige qué ver y después de cuándo. */}
       <label className="cic-nav-movil">
         <span>Reporte</span>
         <select className="cic-select" value={activeReport} onChange={e => setActiveReport(e.target.value)}>
@@ -139,6 +130,16 @@ export function CentroInteligenciaComercial() {
           ))}
         </select>
       </label>
+
+      <div className="cic-top-bar">
+        <AnalyticsFilters
+          filters={analyticsFilters}
+          setFilters={setAnalyticsFilters}
+          filtrosIniciales={FILTROS_INICIALES}
+          reporteActivo={activeReport}
+          confirmadoresDisponibles={confirmadoresDisponibles}
+        />
+      </div>
 
       <div className="cic-layout">
         <aside className="cic-sidebar-nav" aria-label="Reportes">

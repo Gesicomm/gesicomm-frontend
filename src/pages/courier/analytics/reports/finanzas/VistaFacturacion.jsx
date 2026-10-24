@@ -2,6 +2,7 @@ import { numeroPedidoVisible } from '../../../pedidoNumero';
 import React, { useState, useEffect } from 'react';
 import { FileText, Calculator, Search } from 'lucide-react';
 import { reportesService } from '../../../../../services/reportesApi';
+import { fechaCorta } from '../../periodo';
 
 export function VistaFacturacion({ filters }) {
   const [data, setData] = useState([]);
@@ -99,13 +100,13 @@ export function VistaFacturacion({ filters }) {
                 <th>RUC</th>
                 <th>Razón Social</th>
                 <th style={{ textAlign: 'right' }}>Monto</th>
-                <th style={{ textAlign: 'right', color: 'var(--color-accent-text)' }}>IVA (10%)</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-accent-text)' }}>IVA</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-4 text-muted">Cargando reporte de facturación...</td>
+                  <td colSpan="8" className="text-center py-4 text-muted">Cargando…</td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
@@ -115,7 +116,7 @@ export function VistaFacturacion({ filters }) {
                 data.map((row) => (
                   <tr key={row.id}>
                     <td>{numeroPedidoVisible(row)}</td>
-                    <td>{row.fecha}</td>
+                    <td>{fechaCorta(row.fecha)}</td>
                     <td>{row.confirmador || 'N/A'}</td>
                     <td>
                       <span className={`badge ${row.estado === 'Entregado' ? 'bg-success' : 'bg-primary'}`}>

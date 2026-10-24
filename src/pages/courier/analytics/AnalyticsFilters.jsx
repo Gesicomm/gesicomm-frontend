@@ -35,6 +35,7 @@ export function AnalyticsFilters({ filters, setFilters, filtrosIniciales, report
   const [productos, setProductos] = useState([]);
   const [metodosPago, setMetodosPago] = useState([]);
   const [showMasFiltros, setShowMasFiltros] = useState(false);
+  const [filtrosMovilAbiertos, setFiltrosMovilAbiertos] = useState(false);
   const [ciudad, setCiudad] = useState(filters.ciudad || '');
 
   useEffect(() => {
@@ -102,7 +103,7 @@ export function AnalyticsFilters({ filters, setFilters, filtrosIniciales, report
   };
 
   return (
-    <div className="cic-filters-container">
+    <div className={`cic-filters-container${filtrosMovilAbiertos ? ' filtros-abiertos' : ''}`}>
       <div className="cic-periodo-head">
         <div className="cic-periodo-actual">
           <CalendarDays size={20} aria-hidden="true" />
@@ -160,6 +161,17 @@ export function AnalyticsFilters({ filters, setFilters, filtrosIniciales, report
           )}
         </div>
       )}
+
+      <button
+        type="button"
+        className="cic-btn-filtros-movil"
+        aria-expanded={filtrosMovilAbiertos}
+        onClick={() => setFiltrosMovilAbiertos(v => !v)}
+      >
+        <SlidersHorizontal size={18} aria-hidden="true" />
+        {filtrosMovilAbiertos ? 'Ocultar filtros' : 'Filtrar por estado, producto y más'}
+        {!filtrosMovilAbiertos && filtrosActivos.length > 0 && <span className="cic-contador">{filtrosActivos.length}</span>}
+      </button>
 
       <div className="cic-filters-grid">
         <label className="cic-filter-item">

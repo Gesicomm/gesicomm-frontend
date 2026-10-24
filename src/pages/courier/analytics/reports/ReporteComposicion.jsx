@@ -34,11 +34,11 @@ export function ReporteComposicion({ filters }) {
   return (
     <div className="cic-report-container">
       {/* Sub-Header */}
-      <div className="cic-card-header" style={{ marginBottom: '1.5rem' }}>
+      <div className="cic-report-header">
         <div>
-          <h2 className="cic-card-title">Composición de Pedidos (Ventas Estratégicas)</h2>
-          <p className="cic-card-subtitle" style={{ marginTop: '0.25rem' }}>
-            Desglose de ventas netas por rol comercial (Base, Order Bump, Upsell).
+          <h2 className="cic-report-title">Ventas extra</h2>
+          <p className="cic-report-desc">
+            Cuánto sumás cuando el cliente agrega algo al pedido: la oferta del checkout (order bump) o la que aparece después de comprar (upsell).
           </p>
         </div>
       </div>
@@ -49,13 +49,13 @@ export function ReporteComposicion({ filters }) {
           <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)' }}>
             {kpis.rendimiento_carrito.toFixed(1)}%
           </div>
-          <div className="cic-kpi-sub">Rendimiento del Carrito (Pedidos con Bump/Upsell)</div>
+          <div className="cic-kpi-sub">De los pedidos llevaron algo extra</div>
         </div>
         <div className="cic-kpi-card">
           <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>
             {formatMoney(kpis.ventas_estrategicas)}
           </div>
-          <div className="cic-kpi-sub">Ventas estratégicas (ventas netas por Bumps/Upsells)</div>
+          <div className="cic-kpi-sub">Vendido gracias a las ofertas extra</div>
         </div>
       </div>
 
@@ -63,9 +63,9 @@ export function ReporteComposicion({ filters }) {
         <table className="cic-table">
           <thead>
             <tr>
-              <th>Rol Comercial</th>
+              <th>Tipo de venta</th>
               <th style={{ textAlign: 'center' }}>Unidades Vendidas</th>
-              <th style={{ textAlign: 'center' }}>Pedidos Únicos</th>
+              <th style={{ textAlign: 'center' }}>Pedidos</th>
               <th style={{ textAlign: 'right' }}>% de {METRIC_TERMS.ventasNetas.toLowerCase()}</th>
               <th style={{ textAlign: 'right' }}>Precio promedio</th>
               <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>{METRIC_TERMS.ventasNetas}</th>
@@ -74,7 +74,7 @@ export function ReporteComposicion({ filters }) {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando reporte...</td>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando…</td>
               </tr>
             ) : data.length === 0 ? (
               <tr>

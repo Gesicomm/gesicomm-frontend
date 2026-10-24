@@ -866,6 +866,7 @@
    selector que en el celular. */
 @media (max-width: 1536px) {
   .cic-nav-movil {
+    margin-bottom: 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
@@ -888,7 +889,6 @@
 @media (min-width: 1025px) and (max-width: 1536px) {
   .cic-nav-movil {
     max-width: 480px;
-    margin-top: 1.5rem;
   }
 }
 
@@ -991,4 +991,299 @@
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* ─── Resumen: "para atender ahora" + "cómo te fue en el período" ───────── */
+.cic-res {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 0.25rem;
+}
+.cic-res-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.cic-res-titulo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  margin: 0;
+}
+.cic-res-bajada {
+  font-size: 1rem;
+  color: var(--color-fg-muted);
+  margin: 0.25rem 0 0;
+}
+.cic-res-subtitulo {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  margin: 0 0 0.5rem;
+}
+
+.cic-res-pendientes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.cic-res-pendiente {
+  --tono: var(--color-fg-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 14px;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  border-left: 4px solid var(--tono);
+}
+.cic-res-pendiente.tono-aviso { --tono: var(--color-warning); }
+.cic-res-pendiente.tono-info { --tono: var(--color-info); }
+.cic-res-pendiente.tono-peligro { --tono: var(--color-danger); }
+.cic-res-pendiente.tono-ok { --tono: color-mix(in srgb, var(--color-fg) 18%, transparent); }
+.cic-res-pendiente-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.cic-res-pendiente-cabeza p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-fg);
+  line-height: 1.3;
+}
+.cic-res-pendiente-cabeza strong {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-right: 0.15rem;
+  vertical-align: -0.1em;
+}
+.cic-res-pendiente-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: var(--tono);
+  background: color-mix(in srgb, var(--tono) 12%, transparent);
+}
+.cic-res-pendiente.tono-ok .cic-res-pendiente-icono { color: var(--color-fg-muted); }
+.cic-res-pendiente-texto {
+  margin: 0;
+  font-size: var(--ui-text-help, 0.875rem);
+  color: var(--color-fg-muted);
+  line-height: 1.45;
+  flex: 1;
+}
+.cic-res-accion {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--tono) 35%, transparent);
+  background: color-mix(in srgb, var(--tono) 10%, transparent);
+  color: var(--color-fg);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.cic-res-accion:hover { background: color-mix(in srgb, var(--tono) 18%, transparent); }
+.cic-res-accion:focus-visible { outline: 2px solid var(--tono); outline-offset: 2px; }
+
+.cic-res-al-dia {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  color: var(--color-success);
+}
+.cic-res-al-dia p { margin: 0; font-size: 1rem; color: var(--color-fg); }
+
+.cic-res-recorrido-card {
+  padding: 1.35rem;
+  border-radius: 16px;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  min-width: 0;
+}
+.cic-res-recorrido {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.cic-res-paso {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.cic-res-paso > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.cic-res-flecha { color: color-mix(in srgb, var(--color-fg) 30%, transparent); flex-shrink: 0; }
+.cic-res-paso-label {
+  font-size: var(--ui-text-help, 0.875rem);
+  font-weight: 600;
+  color: var(--color-fg-muted);
+}
+.cic-res-paso-valor {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--color-fg);
+  line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.cic-res-paso.destacado .cic-res-paso-valor { color: var(--color-success); }
+.cic-res-paso-ayuda {
+  font-size: var(--ui-text-help, 0.875rem);
+  color: var(--color-fg-muted);
+}
+.cic-res-barra {
+  margin-top: 1.1rem;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  overflow: hidden;
+}
+.cic-res-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-success);
+}
+.cic-res-caidas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+  margin-top: 1rem;
+  font-size: var(--ui-text-help, 0.875rem);
+  color: var(--color-fg-muted);
+}
+.cic-res-caidas-label { font-weight: 600; }
+.cic-res-caida {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-danger) 9%, transparent);
+  color: var(--color-fg);
+}
+.cic-res-caida strong { margin-left: 0.2rem; }
+.cic-res-caida.cero {
+  background: color-mix(in srgb, var(--color-fg) 5%, transparent);
+  color: var(--color-fg-muted);
+}
+
+.cic-res-dos-columnas {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.cic-res-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0 0 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
+  color: var(--color-fg-muted);
+}
+.cic-res-leyenda > span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.cic-res-leyenda-color { width: 12px; height: 4px; border-radius: 2px; display: inline-block; }
+.cic-res-avisos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.cic-res-aviso {
+  display: flex;
+  gap: 0.65rem;
+  color: var(--color-warning);
+}
+.cic-res-aviso.tipo-positivo { color: var(--color-success); }
+.cic-res-aviso.tipo-critico { color: var(--color-danger); }
+.cic-res-aviso svg { flex-shrink: 0; margin-top: 0.15rem; }
+.cic-res-aviso strong { display: block; font-size: 1rem; color: var(--color-fg); }
+.cic-res-aviso p {
+  margin: 0.15rem 0 0;
+  font-size: var(--ui-text-help, 0.875rem);
+  line-height: 1.45;
+  color: var(--color-fg-muted);
+}
+.cic-res-sin-avisos { margin: 0; font-size: 1rem; color: var(--color-fg-muted); }
+
+.cic-res-cargando,
+.cic-res-vacio {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--color-fg-muted);
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+.cic-res-vacio p { margin: 0; }
+.cic-res-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+}
+
+@media (max-width: 1100px) {
+  .cic-res-dos-columnas { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .cic-res-pendientes { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .cic-res-recorrido { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 1rem; }
+  .cic-res-paso:nth-child(3) .cic-res-flecha { display: none; }
+  .cic-res-paso-valor { font-size: 1.6rem; }
+  .cic-res-recorrido-card { padding: 1.1rem; }
+}
+
+/* Celular: el período queda a la vista; estado, producto y el resto se
+   abren con un botón para que el reporte aparezca en la primera pantalla. */
+.cic-btn-filtros-movil { display: none; }
+@media (max-width: 640px) {
+  .cic-btn-filtros-movil {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 0.75rem;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+    background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+    color: var(--color-fg);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .cic-filters-container:not(.filtros-abiertos) .cic-filters-grid { display: none; }
 }

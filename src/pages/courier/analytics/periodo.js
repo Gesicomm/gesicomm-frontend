@@ -76,3 +76,10 @@ export function describirRango({ fecha_desde, fecha_hasta }) {
   const texto = fecha_desde === fecha_hasta ? fmt(desde) : `${fmt(desde)} – ${fmt(hasta)}`;
   return { texto, dias };
 }
+
+/** "2026-10-21" → "21/10/2026", como se lee en Paraguay. Si no es una
+ * fecha ISO la devuelve tal cual. */
+export function fechaCorta(ymd) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(ymd || ''));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (ymd || '');
+}

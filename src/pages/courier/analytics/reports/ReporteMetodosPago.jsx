@@ -63,25 +63,25 @@ export function ReporteMetodosPago({ filters }) {
     <div className="cic-report-container animate-fade-in">
       <div className="cic-report-header">
         <div>
-          <h2 className="cic-report-title">Métodos de pago</h2>
-          <p className="cic-report-desc">Análisis de participación en ventas netas y tasas de éxito de cada método.</p>
+          <h2 className="cic-report-title">Formas de pago</h2>
+          <p className="cic-report-desc">Con qué te pagan tus clientes y con cuál se caen más pedidos.</p>
         </div>
       </div>
 
       <div className="cic-kpi-grid">
         {/* El total de ventas netas ya está en el Dashboard General. */}
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header"><span>Pedidos cerrados</span><CheckCircle size={16}/></div>
+          <div className="cic-kpi-header"><span>Terminados</span><CheckCircle size={16}/></div>
           <div className="cic-kpi-val">{kpis.pedidos_cerrados}</div>
           <div className="cic-kpi-sub">Entregados, cancelados o devueltos</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header"><span>Pedidos abiertos</span><AlertCircle size={16}/></div>
+          <div className="cic-kpi-header"><span>En curso</span><AlertCircle size={16}/></div>
           <div className="cic-kpi-val">{kpis.total_abiertos}</div>
-          <div className="cic-kpi-sub">En tránsito o pendientes</div>
+          <div className="cic-kpi-sub">Por confirmar o en camino</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header"><span>Pedidos fallidos</span><XCircle size={16}/></div>
+          <div className="cic-kpi-header"><span>No entregados</span><XCircle size={16}/></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-danger)' }}>{kpis.total_fallidos}</div>
           <div className="cic-kpi-sub">Cancelados, devueltos o perdidos</div>
         </div>
@@ -120,19 +120,19 @@ export function ReporteMetodosPago({ filters }) {
         </div>
         
         <div className="cic-table-card">
-          <h3 className="cic-card-title" style={{ marginBottom: '1rem' }}>Detalle por método</h3>
+          <h3 className="cic-card-title" style={{ marginBottom: '1rem' }}>Por forma de pago</h3>
           <div className="cic-table-wrapper">
             {loading ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando datos...</div>
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando…</div>
             ) : (
               <table className="cic-table">
                 <thead>
                   <tr>
-                    <th>Método de Pago</th>
-                    <th style={{ width: '150px' }}>Tasa de Éxito</th>
-                    <th style={{ textAlign: 'center' }}>Exitosos</th>
-                    <th style={{ textAlign: 'center' }}>Fallidos</th>
-                    <th style={{ textAlign: 'center' }}>Abiertos</th>
+                    <th>Forma de pago</th>
+                    <th style={{ width: '150px' }}>% entregado</th>
+                    <th style={{ textAlign: 'center' }}>Entregados</th>
+                    <th style={{ textAlign: 'center' }}>No entregados</th>
+                    <th style={{ textAlign: 'center' }}>En curso</th>
                     <th style={{ textAlign: 'right' }}>{METRIC_TERMS.ventasNetas}</th>
                     <th style={{ textAlign: 'right' }}>%</th>
                   </tr>

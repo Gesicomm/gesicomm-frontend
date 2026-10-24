@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, Percent, TrendingDown, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { reportesService } from '../../../../../services/reportesApi';
 import { numeroPedidoVisible } from '../../../pedidoNumero';
+import { fechaCorta } from '../../periodo';
 
 export function VistaComisiones({ filters }) {
   const [data, setData] = useState([]);
@@ -66,29 +67,29 @@ export function VistaComisiones({ filters }) {
       <div className="cic-kpis-grid">
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)' }}>
           <div className="cic-kpi-header">
-            TOTAL FACTURADO
+            COBRADO A CLIENTES
             <DollarSign size={16} color="var(--color-success)" />
           </div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_facturado)}</div>
-          <div className="cic-kpi-sub">Pedidos entregados del período</div>
+          <div className="cic-kpi-sub">Pedidos entregados, delivery incluido</div>
         </div>
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-danger) 30%, transparent)' }}>
           <div className="cic-kpi-header">
-            TOTAL COMISIONES
+            SE LLEVARON LAS PASARELAS
             <Percent size={16} color="var(--color-danger)" />
           </div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-danger)' }}>{formatMoney(kpis.total_comisiones)}</div>
-          <div className="cic-kpi-sub">Descuento de pasarelas de pago</div>
+          <div className="cic-kpi-sub">Comisión de tarjetas, POS y pagos online</div>
         </div>
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
           <div className="cic-kpi-header">
-            RECAUDACIÓN NETA
+            TE QUEDA
             <TrendingDown size={16} color="var(--color-primary-text)" />
           </div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)' }}>{formatMoney(kpis.total_neto)}</div>
-          <div className="cic-kpi-sub">Dinero libre de comisiones</div>
+          <div className="cic-kpi-sub">Lo cobrado menos las comisiones</div>
         </div>
       </div>
 
@@ -96,25 +97,25 @@ export function VistaComisiones({ filters }) {
       {distribucionMetodos && Object.keys(distribucionMetodos).length > 0 && (
         <div className="cic-card" style={{ padding: '1.5rem', background: 'var(--color-canvas)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
           <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 1rem 0', color: 'var(--color-fg)' }}>
-            Distribución por Método de Pago
+            Comisión por forma de pago
           </h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
             {Object.entries(distribucionMetodos)
               .sort(([,a], [,b]) => b.monto - a.monto)
               .map(([metodo, stats]) => (
                 <div key={metodo} style={{ padding: '1rem', background: 'color-mix(in srgb, var(--color-fg) 3%, transparent)', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-fg)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-fg)', marginBottom: '0.5rem' }}>
                     {metodo}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>Facturado</span>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--color-fg-muted)' }}>Cobrado</span>
                     <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-fg)' }}>{formatMoney(stats.monto)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>Comisión</span>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--color-fg-muted)' }}>Comisión</span>
                     <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-danger)' }}>{formatMoney(stats.comision)}</span>
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--color-fg-subtle)', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--color-fg-subtle)', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
                     {stats.count} pedido{stats.count !== 1 ? 's' : ''}
                   </div>
                 </div>
@@ -143,31 +144,31 @@ export function VistaComisiones({ filters }) {
           <table className="cic-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Fecha/Hora</th>
+                <th>Pedido</th>
+                <th>Fecha</th>
                 <th>Confirmador</th>
                 <th>Estado</th>
-                <th>Método de Pago</th>
-                <th style={{ textAlign: 'right' }}>Comisión (%)</th>
+                <th>Forma de pago</th>
+                <th style={{ textAlign: 'right' }}>Comisión %</th>
                 <th style={{ textAlign: 'right' }}>Cobrado al cliente</th>
-                <th style={{ textAlign: 'right', color: 'var(--color-danger)' }}>Costo Comisión</th>
-                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Precio Neto</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-danger)' }}>Comisión</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Te queda</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-4 text-muted">Cargando reporte de comisiones...</td>
+                  <td colSpan="9" className="text-center py-4 text-muted">Cargando…</td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-4 text-muted">No se encontraron registros en este período.</td>
+                  <td colSpan="9" className="text-center py-4 text-muted">No hubo pedidos entregados con comisión en este período.</td>
                 </tr>
               ) : (
                 data.map((row) => (
                   <tr key={row.id}>
                     <td style={{ fontWeight: 600 }}>{numeroPedidoVisible(row)}</td>
-                    <td>{row.fecha}<br/><small className="text-muted">{row.hora}</small></td>
+                    <td>{fechaCorta(row.fecha)}<br/><small className="text-muted">{row.hora}</small></td>
                     <td>{row.confirmador || 'N/A'}</td>
                     <td>
                       <span className={`badge ${row.estado === 'Entregado' ? 'bg-success' : 'bg-primary'}`}>

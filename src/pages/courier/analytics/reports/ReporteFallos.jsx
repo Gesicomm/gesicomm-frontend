@@ -35,48 +35,48 @@ export function ReporteFallos({ filters }) {
     <div className="cic-report-container animate-fade-in">
       <div className="cic-report-header">
         <div>
-          <h2 className="cic-report-title">Fallos Operativos y Devoluciones</h2>
-          <p className="cic-report-desc">Análisis de fugas operativas, venta potencial perdida y costos reales asumidos.</p>
+          <h2 className="cic-report-title">Pedidos que no se entregaron</h2>
+          <p className="cic-report-desc">Por qué se cayeron, cuánto dejaste de vender y cuánto te costó igual.</p>
         </div>
       </div>
 
       <div className="cic-kpi-grid">
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Pedidos Fallidos <XOctagon size={14}/></div>
+          <div className="cic-kpi-header">No entregados <XOctagon size={14}/></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-danger)' }}>{kpis.pedidos_fallidos}</div>
-          <div className="cic-kpi-sub">Total de cancelados / devueltos</div>
+          <div className="cic-kpi-sub">Cancelados, rechazados, devueltos o perdidos</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Tasa de Fallo <TrendingDown size={14}/></div>
+          <div className="cic-kpi-header">Cuántos se caen <TrendingDown size={14}/></div>
           <div className="cic-kpi-val">{Number(kpis.tasa_fallo).toFixed(1)}%</div>
-          <div className="cic-kpi-sub">Sobre el total de pedidos cerrados</div>
+          <div className="cic-kpi-sub">De los pedidos que ya terminaron</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Venta Potencial Perdida <ArchiveX size={14}/></div>
+          <div className="cic-kpi-header">Dejaste de vender <ArchiveX size={14}/></div>
           <div className="cic-kpi-val">{formatMoney(kpis.venta_potencial_no_realizada)}</div>
-          <div className="cic-kpi-sub">Ingreso hipotético no realizado</div>
+          <div className="cic-kpi-sub">Lo que hubieras cobrado si se entregaban</div>
         </div>
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Costo Operativo Real <ShieldAlert size={14}/></div>
+          <div className="cic-kpi-header">Te costó igual <ShieldAlert size={14}/></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-warning)' }}>{formatMoney(kpis.costo_operativo_asociado)}</div>
-          <div className="cic-kpi-sub">Gasto logístico / courier asociado</div>
+          <div className="cic-kpi-sub">Envíos que le pagaste al courier</div>
         </div>
       </div>
 
       <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
-        <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', color: 'var(--color-fg)' }}>Desglose por Motivo / Estado</h3>
+        <h3 className="cic-card-title" style={{ marginBottom: '1rem' }}>Por qué no se entregaron</h3>
         <div className="cic-table-wrapper">
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando datos...</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Cargando…</div>
           ) : (
             <table className="cic-table">
               <thead>
                 <tr>
-                  <th>Motivo de Fallo</th>
+                  <th>Motivo</th>
                   <th style={{ textAlign: 'center' }}>Pedidos</th>
-                  <th style={{ textAlign: 'right' }}>% del Total</th>
-                  <th style={{ textAlign: 'right' }}>Venta Potencial Perdida</th>
-                  <th style={{ textAlign: 'right' }}>Costo Logístico Incurrido</th>
+                  <th style={{ textAlign: 'right' }}>% del total</th>
+                  <th style={{ textAlign: 'right' }}>Dejaste de vender</th>
+                  <th style={{ textAlign: 'right' }}>Costo de envío</th>
                 </tr>
               </thead>
               <tbody>
@@ -91,7 +91,7 @@ export function ReporteFallos({ filters }) {
                 ))}
                 {data.length === 0 && (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No hay fallos registrados.</td>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>Todos los pedidos de este período se entregaron o siguen en curso.</td>
                   </tr>
                 )}
               </tbody>

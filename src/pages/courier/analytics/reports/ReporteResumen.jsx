@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  TrendingUp, Package, CheckCircle2, RotateCcw,
+  TrendingUp, CheckCircle2, RotateCcw, ArrowRight, ChevronRight,
   AlertTriangle, Trophy, TrendingDown, Truck
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { getMetricasDashboardPedidos } from '../../../../services/courierApi';
 import '../../CentroInteligenciaComercial.css';
 
@@ -12,7 +13,7 @@ import '../../CentroInteligenciaComercial.css';
 // El hover muestra una línea vertical y un tooltip con los tres valores.
 
 const LINEAS = [
-  { campo: 'pedidos',     label: 'Creados',     color: 'var(--color-info)' },
+  { campo: 'pedidos',     label: 'Entraron',     color: 'var(--color-info)' },
   { campo: 'confirmados', label: 'Confirmados', color: 'var(--color-success)' },
   { campo: 'entregados',  label: 'Entregados',  color: 'var(--color-primary-text)' },
 ];
@@ -78,7 +79,7 @@ function GraficoEvolucion({ serie }) {
 
   if (sinDatos) {
     return (
-      <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-fg-subtle)', fontSize: '0.85rem' }}>
+      <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-fg-subtle)', fontSize: '0.9375rem' }}>
         Sin datos de tendencia para este período.
       </div>
     );
@@ -125,7 +126,7 @@ function GraficoEvolucion({ serie }) {
         {/* Etiquetas de fecha (solo inicio, mitad, fin) */}
         {serie.map((d, i) => indicesLabel.has(i) && (
           <text key={d.fecha} x={xFor(i)} y={ALTO + 18}
-            textAnchor="middle" fontSize={11} fill="color-mix(in srgb, var(--color-fg) 45%, transparent)">
+            textAnchor="middle" fontSize={12} fill="color-mix(in srgb, var(--color-fg) 45%, transparent)">
             {formatFechaCorta(d.fecha)}
           </text>
         ))}
@@ -137,7 +138,7 @@ function GraficoEvolucion({ serie }) {
           position: 'absolute', bottom: PAD_INF + 8, ...tooltipStyle,
           background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
           borderRadius: 8, padding: '0.5rem 0.75rem', pointerEvents: 'none',
-          fontSize: '0.78rem', boxShadow: '0 4px 16px rgba(0,0,0,.25)', minWidth: 120,
+          fontSize: '0.875rem', boxShadow: '0 4px 16px rgba(0,0,0,.25)', minWidth: 120,
         }}>
           <div style={{ fontWeight: 700, marginBottom: '0.35rem', color: 'var(--color-fg)' }}>
             {formatFechaCorta(serie[hover].fecha)}
@@ -179,9 +180,18 @@ function Variacion({ actual, previo }) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
+// El Resumen contesta dos preguntas, en este orden:
+//   1. ¿Qué tengo que atender ahora? → lo que espera algo del comerciante,
+//      con el botón para ir a resolverlo.
+//   2. ¿Cómo me fue en el período? → el recorrido de los pedidos, una sola
+//      vez. Antes había 6 tarjetas y abajo un embudo de 8 cajas que repetía
+//      los mismos números.
+// La plata no va acá: está en el Dashboard General.
+export function ReporteResumen({ filters, setConfirmadoresDisponibles, onAbrirReporte }) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
+  const [error, setError] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     cargarMetricas();
@@ -190,6 +200,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
   const cargarMetricas = async () => {
     try {
       setLoading(true);
+      setError(false);
       // fecha_desde/fecha_hasta ya vienen resueltas desde el contenedor
       // (analytics/periodo.js) para cualquier preset.
       const payload = {
@@ -208,6 +219,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
       }
     } catch (err) {
       console.error('Error cargando métricas analíticas:', err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -215,190 +227,185 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
 
   if (loading && !data) {
     return (
-      <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>
-        <div className="animate-spin" style={{ margin: '0 auto 1rem auto', width: '28px', height: '28px', border: '3px solid var(--color-primary)', borderTopColor: 'transparent', borderRadius: '50%' }} />
-        Calculando métricas...
+      <div className="cic-res-cargando" role="status">
+        <div className="animate-spin cic-res-spinner" />
+        Calculando el resumen…
+      </div>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <div className="cic-res-vacio">
+        <p>No pudimos cargar el resumen.</p>
+        <button type="button" className="cic-btn" onClick={cargarMetricas}>Reintentar</button>
       </div>
     );
   }
 
   if (!data) return null;
 
-  const funnel = data.funnel;
-  const cmp    = data.comparativo || null; // variación vs. período anterior
-  const porConfirmar = funnel.por_estado_actual?.Pendiente || 0;
-  const fallidos = (funnel.devueltos || 0) + (funnel.perdidos || 0);
-  const tasaFallo = funnel.total_creados > 0 ? Math.round((fallidos / funnel.total_creados) * 1000) / 10 : 0;
+  const funnel = data.funnel || {};
+  const cmp = data.comparativo || null;
+  const n = (v) => Number(v) || 0;
+  // Igual que el Dashboard General: "En seguimiento" es el mismo pedido sin
+  // confirmar, solo que alguien ya le escribió.
+  const porConfirmar = n(funnel.por_estado_actual?.Pendiente) + n(funnel.por_estado_actual?.EnSeguimiento);
+  const enCamino = n(funnel.en_transito);
+  const fallidos = n(funnel.devueltos) + n(funnel.perdidos);
+  const creados = n(funnel.total_creados);
+  const pct = (parte) => (creados > 0 ? Math.round((parte / creados) * 100) : 0);
+
+  const pendientes = [
+    {
+      id: 'confirmar', valor: porConfirmar, icon: AlertTriangle, tono: 'aviso',
+      titulo: porConfirmar === 1 ? 'pedido por confirmar' : 'pedidos por confirmar',
+      texto: 'Esperan que los llames o les escribas. Mientras no se confirman, no salen.',
+      accion: 'Ir a confirmar', onClick: () => navigate('/mis-pedidos'),
+    },
+    {
+      id: 'camino', valor: enCamino, icon: Truck, tono: 'info',
+      titulo: enCamino === 1 ? 'pedido en camino' : 'pedidos en camino',
+      texto: 'Ya salieron y el courier todavía no los entregó.',
+      accion: 'Seguir envíos', onClick: () => navigate('/gestion-logistica'),
+    },
+    {
+      id: 'fallidos', valor: fallidos, icon: RotateCcw, tono: 'peligro',
+      titulo: fallidos === 1 ? 'pedido devuelto o perdido' : 'pedidos devueltos o perdidos',
+      texto: 'En el período elegido. Mirá por qué volvieron y cuánto te costaron.',
+      accion: 'Ver por qué', onClick: () => onAbrirReporte?.('fallos'),
+    },
+  ];
+  const hayPendientes = pendientes.some(p => p.valor > 0);
+
+  const pasos = [
+    { id: 'creados', label: 'Entraron', valor: creados, ayuda: 'pedidos nuevos' },
+    { id: 'confirmados', label: 'Confirmados', valor: n(funnel.confirmados), ayuda: `${pct(n(funnel.confirmados))}% de los que entraron` },
+    { id: 'despachados', label: 'Salieron', valor: n(funnel.despachados), ayuda: `${pct(n(funnel.despachados))}% de los que entraron` },
+    { id: 'entregados', label: 'Entregados', valor: n(funnel.entregados), ayuda: `${pct(n(funnel.entregados))}% de los que entraron`, destacado: true },
+  ];
+  const caidas = [
+    { label: 'Cancelados o rechazados', valor: n(funnel.cancelados) },
+    { label: 'Devueltos', valor: n(funnel.devueltos) },
+    { label: 'Perdidos', valor: n(funnel.perdidos) },
+    { label: 'Reprogramados', valor: n(funnel.reprogramados) },
+  ];
 
   return (
-    <div className="cic-wrapper" style={{ marginTop: '1rem' }}>
+    <div className="cic-res">
 
-      {/* ── Zona 1: la operación del período ─────────────────────────────
-          Ventas netas y utilidad ya están en el Dashboard General; acá va lo
-          que necesita quien confirma y despacha: cuánto entra, cuánto falta
-          confirmar, cuánto está en la calle y cuánto se cae. */}
-      <div className="cic-kpis-grid" style={{ marginBottom: '1.5rem' }}>
-        <KpiOperativo titulo="Pedidos creados" valor={funnel.total_creados} sub="En el período elegido" icon={Package} color="var(--color-info)" />
-        <KpiOperativo
-          titulo="Por confirmar"
-          valor={porConfirmar}
-          sub={porConfirmar > 0 ? 'Siguen en Pendiente: es la cola de Gestión Comercial' : 'No queda nada pendiente'}
-          icon={AlertTriangle}
-          color={porConfirmar > 0 ? 'var(--color-warning)' : 'var(--color-success)'}
-        />
-        <KpiOperativo titulo="Confirmados" valor={funnel.confirmados} sub={`${funnel.tasa_confirmacion}% de los creados`} icon={CheckCircle2} color="var(--color-success)" />
-        <KpiOperativo titulo="En camino" valor={funnel.en_transito || 0} sub="Despachados, todavía sin entregar" icon={Truck} color="var(--color-primary-text)" />
-        <KpiOperativo
-          titulo="Entregados"
-          valor={funnel.entregados}
-          extra={<Variacion actual={funnel.entregados} previo={cmp?.pedidos_entregados} />}
-          sub={`${funnel.tasa_entrega}% de los creados`}
-          icon={Trophy}
-          color="var(--color-success)"
-        />
-        <KpiOperativo
-          titulo="Devueltos o perdidos"
-          valor={fallidos}
-          sub={`${tasaFallo}% de los creados`}
-          icon={RotateCcw}
-          color={fallidos > 0 ? 'var(--color-danger)' : 'var(--color-fg-muted)'}
-        />
-      </div>
-
-      {/* ── Zona 2: Embudo (2/3) + Insights (1/3) ───────────────────────── */}
-      <div className="cic-content-grid">
-
-        {/* Embudo comercial */}
-        <div className="cic-funnel-card" style={{ margin: 0 }}>
-          <div className="cic-card-header">
-            <div>
-              <h3 className="cic-card-title">Embudo Comercial</h3>
-              <p className="cic-card-subtitle">Conversión end-to-end del período seleccionado</p>
-            </div>
+      {/* 1. Lo que espera algo del comerciante */}
+      <section className="cic-res-seccion" aria-labelledby="cic-res-atender">
+        <div className="cic-res-encabezado">
+          <h2 id="cic-res-atender" className="cic-res-titulo">Para atender ahora</h2>
+        </div>
+        {hayPendientes ? (
+          <div className="cic-res-pendientes">
+            {pendientes.map(({ id, valor, icon: Icon, tono, titulo, texto, accion, onClick }) => (
+              <article key={id} className={`cic-res-pendiente tono-${valor > 0 ? tono : 'ok'}`}>
+                <div className="cic-res-pendiente-cabeza">
+                  <span className="cic-res-pendiente-icono"><Icon size={20} aria-hidden="true" /></span>
+                  <p><strong>{valor}</strong> {titulo}</p>
+                </div>
+                <p className="cic-res-pendiente-texto">{valor > 0 ? texto : 'Nada pendiente acá.'}</p>
+                {valor > 0 && (
+                  <button type="button" className="cic-res-accion" onClick={onClick}>
+                    {accion} <ArrowRight size={16} aria-hidden="true" />
+                  </button>
+                )}
+              </article>
+            ))}
           </div>
-          <div className="cic-funnel-track">
-            <FunnelStep num={1} label="Creados" valor={funnel.total_creados} tasa={null} color="var(--color-info)" />
-            <FunnelStep num={2} label="Confirmados" valor={funnel.confirmados} tasa={funnel.tasa_confirmacion} color="var(--color-success)" tasaLabel="de creados" />
-            <FunnelStepSalida label="Cancelados / Rechazados" valor={funnel.cancelados} tasa={funnel.tasa_cancelacion} />
-            <FunnelStep num={3} label="Despachados" valor={funnel.despachados} tasa={funnel.tasa_despacho} color="var(--color-primary-text)" tasaLabel="de creados" />
-            <FunnelStep num={4} label="Entregados" valor={funnel.entregados} tasa={funnel.tasa_entrega} color="var(--color-success)" tasaLabel="de creados" highlight />
-            <FunnelStepSalida label="Devueltos" valor={funnel.devueltos} tasa={funnel.tasa_devolucion} colorDanger />
-            <FunnelStepSalida label="Perdidos" valor={funnel.perdidos} tasa={funnel.tasa_perdida} colorWarning />
-            <FunnelStepSalida label="Reprogramados" valor={funnel.reprogramados || 0} tasa={funnel.tasa_reprogramacion || 0} colorWarning />
+        ) : (
+          <div className="cic-res-al-dia">
+            <CheckCircle2 size={22} aria-hidden="true" />
+            <p><strong>Todo al día.</strong> No hay pedidos esperando confirmación ni envíos en la calle.</p>
           </div>
+        )}
+      </section>
+
+      {/* 2. El recorrido del período, una sola vez */}
+      <section className="cic-res-seccion" aria-labelledby="cic-res-periodo">
+        <div className="cic-res-encabezado">
+          <h2 id="cic-res-periodo" className="cic-res-titulo">Cómo te fue en el período</h2>
+          <p className="cic-res-bajada">De todos los pedidos que entraron, cuántos llegaron a entregarse.</p>
         </div>
 
-        {/* Insights */}
-        <div className="cic-side-stack">
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 0.75rem 0', color: 'var(--color-fg)' }}>
-            Insights
-          </h3>
-          {data.insights && data.insights.slice(0, 4).map((ins, i) => (
-            <div key={i} style={{
-              padding: '0.85rem', marginBottom: '0.5rem',
-              background: 'color-mix(in srgb, var(--color-fg) 3%, transparent)',
-              borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)',
-              display: 'flex', gap: '0.75rem',
-            }}>
-              <div style={{
-                flexShrink: 0, marginTop: '0.1rem',
-                color: ins.tipo === 'positivo' ? 'var(--color-success)' : ins.tipo === 'critico' ? 'var(--color-danger)' : 'var(--color-warning)',
-              }}>
-                {ins.tipo === 'positivo' ? <Trophy size={16} /> : ins.tipo === 'critico' ? <AlertTriangle size={16} /> : <TrendingUp size={16} />}
-              </div>
-              <div>
-                <h4 style={{ fontSize: '0.82rem', fontWeight: 700, margin: '0 0 0.2rem 0', color: 'var(--color-fg)' }}>{ins.titulo}</h4>
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-fg-muted)', margin: 0, lineHeight: 1.4 }}>{ins.mensaje}</p>
-              </div>
+        {creados === 0 ? (
+          <div className="cic-res-vacio"><p>No entraron pedidos en este período. Probá con otro rango de fechas.</p></div>
+        ) : (
+          <div className="cic-res-recorrido-card">
+            <ol className="cic-res-recorrido">
+              {pasos.map((p, i) => (
+                <li key={p.id} className={`cic-res-paso${p.destacado ? ' destacado' : ''}`}>
+                  {i > 0 && <ChevronRight size={20} className="cic-res-flecha" aria-hidden="true" />}
+                  <div>
+                    <span className="cic-res-paso-label">{p.label}</span>
+                    <span className="cic-res-paso-valor">
+                      {p.valor}
+                      {p.id === 'entregados' && <Variacion actual={p.valor} previo={cmp?.pedidos_entregados} />}
+                    </span>
+                    <span className="cic-res-paso-ayuda">{p.ayuda}</span>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="cic-res-barra" aria-hidden="true">
+              <span style={{ width: `${pct(n(funnel.entregados))}%` }} />
             </div>
-          ))}
-          {(!data.insights || data.insights.length === 0) && (
-            <div style={{ color: 'var(--color-fg-subtle)', fontSize: '0.82rem', padding: '1rem', border: '1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '8px', textAlign: 'center' }}>
-              Sin alertas detectadas en este período.
+            <div className="cic-res-caidas">
+              <span className="cic-res-caidas-label">Se quedaron en el camino:</span>
+              {caidas.map(c => (
+                <span key={c.label} className={`cic-res-caida${c.valor > 0 ? '' : ' cero'}`}>
+                  {c.label} <strong>{c.valor}</strong>
+                </span>
+              ))}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </section>
 
-      {/* ── Zona 3: Gráfico de evolución temporal ───────────────────────── */}
-      {data.tendencias && data.tendencias.length > 0 && (
-        <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
-          <div className="cic-card-header">
-            <div>
-              <h3 className="cic-card-title"><TrendingUp size={16} style={{ color: 'var(--color-primary-text)', marginRight: 6 }} />Evolución Temporal</h3>
-              <p className="cic-card-subtitle" style={{ marginTop: 2 }}>
-                {LINEAS.map((l, i) => (
-                  <span key={l.campo} style={{ marginRight: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 10, height: 3, borderRadius: 2, background: l.color, display: 'inline-block' }} />
+      {/* 3. Tendencia + avisos */}
+      {creados > 0 && (
+        <div className="cic-res-dos-columnas">
+          {data.tendencias && data.tendencias.length > 0 && (
+            <section className="cic-res-recorrido-card" aria-labelledby="cic-res-dias">
+              <h2 id="cic-res-dias" className="cic-res-subtitulo">Pedidos por día</h2>
+              <p className="cic-res-leyenda">
+                {LINEAS.map(l => (
+                  <span key={l.campo}>
+                    <span className="cic-res-leyenda-color" style={{ background: l.color }} />
                     {l.label}
                   </span>
                 ))}
               </p>
-            </div>
-          </div>
-          <div style={{ padding: '0.5rem 1rem 0.25rem 1rem' }}>
-            <GraficoEvolucion serie={data.tendencias} />
-          </div>
+              <GraficoEvolucion serie={data.tendencias} />
+            </section>
+          )}
+
+          <section className="cic-res-recorrido-card" aria-labelledby="cic-res-avisos">
+            <h2 id="cic-res-avisos" className="cic-res-subtitulo">Para prestar atención</h2>
+            {data.insights && data.insights.length > 0 ? (
+              <ul className="cic-res-avisos">
+                {data.insights.slice(0, 4).map((ins, i) => {
+                  const Icono = ins.tipo === 'positivo' ? Trophy : ins.tipo === 'critico' ? AlertTriangle : TrendingUp;
+                  return (
+                    <li key={i} className={`cic-res-aviso tipo-${ins.tipo || 'neutro'}`}>
+                      <Icono size={18} aria-hidden="true" />
+                      <div>
+                        <strong>{ins.titulo}</strong>
+                        <p>{ins.mensaje}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="cic-res-sin-avisos">Nada fuera de lo normal en este período.</p>
+            )}
+          </section>
         </div>
       )}
-
-    </div>
-  );
-}
-
-function KpiOperativo({ titulo, valor, sub, icon: Icon, color, extra = null }) {
-  return (
-    <div className="cic-kpi-card" style={{ borderTop: `3px solid ${color}` }}>
-      <div className="cic-kpi-header"><span>{titulo}</span><Icon size={16} style={{ color }} /></div>
-      <div className="cic-kpi-val">{valor}{extra}</div>
-      <div className="cic-kpi-sub">{sub}</div>
-    </div>
-  );
-}
-
-// ─── Sub-componentes del funnel ───────────────────────────────────────────────
-
-function FunnelStep({ num, label, valor, tasa, color, tasaLabel = '', highlight = false }) {
-  return (
-    <div className={`cic-funnel-step${highlight ? ' step-delivered' : ''}`} style={{ borderColor: `color-mix(in srgb, ${color} 20%, transparent)` }}>
-      <div className="cic-step-head">
-        <span style={{ color }}>{num}. {label}</span>
-      </div>
-      <div className="cic-step-val" style={{ color }}>
-        {valor}
-      </div>
-      {tasa !== null && (
-        <div className="cic-step-rate-badge" style={{
-          background: `color-mix(in srgb, ${color} 10%, transparent)`,
-          color,
-        }}>
-          {tasa}% {tasaLabel}
-        </div>
-      )}
-      <div className="cic-step-progress-bar">
-        <div className="cic-step-progress-fill" style={{ width: `${Math.min(100, tasa ?? 100)}%`, background: color }} />
-      </div>
-    </div>
-  );
-}
-
-// Pasos de salida del funnel (Cancelados, Devueltos, Perdidos): siempre con
-// apariencia atenuada — son pérdidas, no avances del flujo.
-function FunnelStepSalida({ label, valor, tasa, colorDanger = false, colorWarning = false }) {
-  const color = colorDanger ? 'var(--color-danger)' : colorWarning ? 'var(--color-warning)' : 'var(--color-fg-muted)';
-  return (
-    <div className="cic-funnel-step step-returned" style={{ borderColor: `color-mix(in srgb, ${color} 12%, transparent)`, opacity: 0.8 }}>
-      <div className="cic-step-head">
-        <RotateCcw size={12} style={{ color }} />
-        <span style={{ color, marginLeft: 4 }}>{label}</span>
-      </div>
-      <div className="cic-step-val" style={{ color }}>{valor}</div>
-      <div className="cic-step-rate-badge" style={{ background: `color-mix(in srgb, ${color} 10%, transparent)`, color }}>
-        {tasa}% de creados
-      </div>
-      <div className="cic-step-progress-bar">
-        <div className="cic-step-progress-fill" style={{ width: `${Math.min(100, tasa)}%`, background: color }} />
-      </div>
     </div>
   );
 }

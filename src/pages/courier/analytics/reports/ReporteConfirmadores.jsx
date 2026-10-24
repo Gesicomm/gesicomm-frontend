@@ -88,7 +88,13 @@ export default function ReporteConfirmadores({ filters }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      
+      <div className="cic-report-header">
+        <div>
+          <h2 className="cic-report-title">Confirmadores</h2>
+          <p className="cic-report-desc">Quién de tu equipo confirma pedidos que después sí se entregan.</p>
+        </div>
+      </div>
+
       {/* KPIs */}
       <div className="cic-kpis-grid">
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
@@ -99,20 +105,20 @@ export default function ReporteConfirmadores({ filters }) {
           <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)', fontSize: '1.2rem', wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: '1.2' }}>
             {kpis.top_confirmador}
           </div>
-          <div className="cic-kpi-sub">Mayor cantidad de entregas</div>
+          <div className="cic-kpi-sub">El que más pedidos llevó a entregados</div>
         </div>
 
         {/* El total de ventas netas ya está en el Dashboard General. */}
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)' }}>
           <div className="cic-kpi-header">
-            TASA DE CIERRE PROMEDIO
+            ENTREGADOS DEL EQUIPO
             <Target size={16} color="var(--color-warning)" />
           </div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-warning)' }}>
             {kpis.tasa_cierre_promedio ? kpis.tasa_cierre_promedio.toFixed(1) : 0}%
           </div>
-          <div className="cic-kpi-sub">Efectividad global del equipo</div>
+          <div className="cic-kpi-sub">De todo lo que atendieron, cuánto llegó al cliente</div>
         </div>
       </div>
 
@@ -123,10 +129,10 @@ export default function ReporteConfirmadores({ filters }) {
             <thead>
               <tr>
                 <th onClick={() => handleSort('nombre')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>Nombre del Confirmador <SortIcon columnKey="nombre" /></div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>Confirmador <SortIcon columnKey="nombre" /></div>
                 </th>
                 <th onClick={() => handleSort('procesados')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Total Procesados <SortIcon columnKey="procesados" /></div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Atendidos <SortIcon columnKey="procesados" /></div>
                 </th>
                 <th onClick={() => handleSort('entregados')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center', color: 'var(--color-success)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Entregados <SortIcon columnKey="entregados" /></div>
@@ -135,7 +141,7 @@ export default function ReporteConfirmadores({ filters }) {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Caídos / rechazados <SortIcon columnKey="rechazados" /></div>
                 </th>
                 <th onClick={() => handleSort('efectividad')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center', color: 'var(--color-primary-text)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Efectividad % <SortIcon columnKey="efectividad" /></div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>% entregado <SortIcon columnKey="efectividad" /></div>
                 </th>
                 <th onClick={() => handleSort('ingresos')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', color: 'var(--color-success)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>{METRIC_TERMS.ventasNetas} <SortIcon columnKey="ingresos" /></div>
@@ -148,11 +154,11 @@ export default function ReporteConfirmadores({ filters }) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando reporte de confirmadores...</td>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando…</td>
                 </tr>
               ) : displayData.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>No se encontraron registros en este período.</td>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Nadie confirmó pedidos en este período.</td>
                 </tr>
               ) : (
                 displayData.map((row, idx) => {
