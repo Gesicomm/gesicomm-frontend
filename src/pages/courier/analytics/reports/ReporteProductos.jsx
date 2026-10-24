@@ -67,14 +67,14 @@ export default function ReporteProductos({ filters }) {
       {top5?.devoluciones?.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
             <div className="cic-card" style={{ padding: '1.5rem', background: 'var(--color-canvas)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 1rem 0', color: 'var(--color-fg)' }}>Top 5: Mayor Tasa de Devolución</h4>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 1rem 0', color: 'var(--color-fg)' }}>Productos que más se devuelven</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {top5.devoluciones.map((p, idx) => {
                   const maxV = top5.devoluciones[0].tasa_devolucion;
                   const pct = Math.max(5, (p.tasa_devolucion / maxV) * 100);
                   return (
                     <div key={p.id}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.35rem' }}>
                         <span style={{ fontWeight: 600, color: 'var(--color-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>{idx + 1}. {p.nombre}</span>
                         <span style={{ color: 'var(--color-danger)', fontWeight: 700 }}>{p.tasa_devolucion.toFixed(1)}%</span>
                       </div>
@@ -121,12 +121,15 @@ export default function ReporteProductos({ filters }) {
                     <tr key={row.id} style={{ cursor: hasVariants ? 'pointer' : 'default', background: isExpanded ? 'var(--color-bg-subtle)' : 'transparent' }} onClick={() => hasVariants && toggleRow(row.id)}>
                       <td style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {hasVariants && (
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-fg-subtle)', width: '12px' }}>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--color-fg-subtle)', width: '14px' }}>
                             {isExpanded ? '▼' : '▶'}
                           </span>
                         )}
-                        {!hasVariants && <span style={{ width: '12px' }} />}
-                        {row.nombre} <span style={{ fontSize: '0.7rem', color: 'var(--color-fg-muted)' }}>{row.sku !== '-' ? `(${row.sku})` : ''}</span>
+                        {!hasVariants && <span style={{ width: '14px' }} />}
+                        <span>
+                          {row.nombre}
+                          {row.sku !== '-' && <span style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 400, color: 'var(--color-fg-muted)' }}>SKU {row.sku}</span>}
+                        </span>
                       </td>
                       <td style={{ textAlign: 'center' }}>{row.unidades_vendidas}</td>
                       <td style={{ textAlign: 'center' }}>{row.pedidos_unicos}</td>

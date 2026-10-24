@@ -146,9 +146,9 @@ export function ReporteClientes({ filters }) {
                         <span title="Justificadas / injustificadas">
                           {row.devueltos}
                           {(row.devoluciones_justificadas > 0 || row.devoluciones_injustificadas > 0) && (
-                            <span style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--color-fg-muted)', whiteSpace: 'nowrap' }}>
-                              {row.devoluciones_justificadas} con motivo ·{' '}
-                              <span style={{ color: row.devoluciones_injustificadas > 0 ? 'var(--color-danger)' : undefined }}>
+                            <span style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--color-fg-muted)', whiteSpace: 'nowrap', lineHeight: 1.35 }}>
+                              {row.devoluciones_justificadas} con motivo
+                              <span style={{ display: 'block', color: row.devoluciones_injustificadas > 0 ? 'var(--color-danger)' : undefined }}>
                                 {row.devoluciones_injustificadas} sin motivo
                               </span>
                             </span>

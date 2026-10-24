@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Map, TrendingDown, DollarSign, Target } from 'lucide-react';
+import { Map, TrendingDown, Target } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
 import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 
@@ -42,11 +42,7 @@ export function ReporteGeografia({ filters }) {
       </div>
 
       <div className="cic-kpi-grid">
-        <div className="cic-kpi-card">
-          <div className="cic-kpi-header">{METRIC_TERMS.ventasNetas} globales <DollarSign size={14}/></div>
-          <div className="cic-kpi-val">{formatMoney(kpis.ventas_netas_globales)}</div>
-          <div className="cic-kpi-sub">Total entregados en el período</div>
-        </div>
+        {/* El total de ventas netas ya está en el Dashboard General. */}
         <div className="cic-kpi-card">
           <div className="cic-kpi-header">Ciudades Activas <Map size={14}/></div>
           <div className="cic-kpi-val">{kpis.ciudades_activas}</div>
@@ -62,7 +58,7 @@ export function ReporteGeografia({ filters }) {
       <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '0.9rem', color: 'var(--color-fg)', margin: 0 }}>Detalle Departamento → Ciudad</h3>
-          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.72rem', color: 'var(--color-fg-muted)' }}>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.8125rem', color: 'var(--color-fg-muted)' }}>
             <span>⚪ &lt;10 pedidos cerrados</span>
             <span>🟢 Fallo &lt;15%</span>
             <span>🟡 15–30%</span>

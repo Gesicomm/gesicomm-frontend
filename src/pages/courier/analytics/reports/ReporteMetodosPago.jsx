@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { DollarSign, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { reportesService } from '../../../../services/reportesApi';
 import { METRIC_TERMS } from '../../../../utils/metricGlossary';
@@ -69,11 +69,7 @@ export function ReporteMetodosPago({ filters }) {
       </div>
 
       <div className="cic-kpi-grid">
-        <div className="cic-kpi-card">
-          <div className="cic-kpi-header"><span>{METRIC_TERMS.ventasNetas}</span><DollarSign size={16}/></div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_ventas_netas)}</div>
-          <div className="cic-kpi-sub">Total en todos los métodos</div>
-        </div>
+        {/* El total de ventas netas ya está en el Dashboard General. */}
         <div className="cic-kpi-card">
           <div className="cic-kpi-header"><span>Pedidos cerrados</span><CheckCircle size={16}/></div>
           <div className="cic-kpi-val">{kpis.pedidos_cerrados}</div>

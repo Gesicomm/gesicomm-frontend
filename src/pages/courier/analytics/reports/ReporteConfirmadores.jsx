@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserCheck, DollarSign, Target, ChevronUp, ChevronDown } from 'lucide-react';
+import { UserCheck, Target, ChevronUp, ChevronDown } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
 import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 
@@ -102,14 +102,7 @@ export default function ReporteConfirmadores({ filters }) {
           <div className="cic-kpi-sub">Mayor cantidad de entregas</div>
         </div>
 
-        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)' }}>
-          <div className="cic-kpi-header">
-            {METRIC_TERMS.ventasNetas}
-            <DollarSign size={16} color="var(--color-success)" />
-          </div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_ingresos)}</div>
-          <div className="cic-kpi-sub">Valor de los pedidos entregados</div>
-        </div>
+        {/* El total de ventas netas ya está en el Dashboard General. */}
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)' }}>
           <div className="cic-kpi-header">
@@ -139,7 +132,7 @@ export default function ReporteConfirmadores({ filters }) {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Entregados <SortIcon columnKey="entregados" /></div>
                 </th>
                 <th onClick={() => handleSort('rechazados')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center', color: 'var(--color-danger)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Caídos/Rechazados <SortIcon columnKey="rechazados" /></div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Caídos / rechazados <SortIcon columnKey="rechazados" /></div>
                 </th>
                 <th onClick={() => handleSort('efectividad')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center', color: 'var(--color-primary-text)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Efectividad % <SortIcon columnKey="efectividad" /></div>

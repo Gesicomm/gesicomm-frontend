@@ -23,7 +23,7 @@ function formatFecha(f) {
   return `${d}/${m}/${y}`;
 }
 
-export default function VistaPedidos({ filtros }) {
+export default function VistaPedidos({ filtros, conFiltrosPropios = true }) {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paginacion, setPaginacion] = useState({
@@ -150,76 +150,79 @@ export default function VistaPedidos({ filtros }) {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-[var(--vit-bg)]">
-      {/* TOOLBAR LOCAL */}
-      <div className="p-4 border-b border-[var(--vit-border)] bg-[var(--vit-surface)] flex gap-3 flex-wrap items-end shrink-0">
-        <div className="flex-1 min-w-[200px] relative">
-          <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">
-            Buscar
-          </label>
-          <div className="relative">
-            <Search
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--vit-muted)]"
-              size={14}
-            />
+      {/* TOOLBAR LOCAL — dentro del Dashboard Operativo no va: el período y
+          la búsqueda ya los pone el contenedor y se verían dos veces. */}
+      {conFiltrosPropios && (
+        <div className="p-4 border-b border-[var(--vit-border)] bg-[var(--vit-surface)] flex gap-3 flex-wrap items-end shrink-0">
+          <div className="flex-1 min-w-[200px] relative">
+            <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">
+              Buscar
+            </label>
+            <div className="relative">
+              <Search
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--vit-muted)]"
+                size={14}
+              />
+              <input
+                type="text"
+                placeholder="Cliente, # Pedido o Teléfono..."
+                className="w-full bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md pl-8 pr-3 py-1.5 text-sm text-[var(--vit-text)] placeholder:text-[var(--vit-muted-2)] focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
+                value={localSearch.buscador}
+                onChange={(e) =>
+                  setLocalSearch((prev) => ({
+                    ...prev,
+                    buscador: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">
+              Desde
+            </label>
             <input
-              type="text"
-              placeholder="Cliente, # Pedido o Teléfono..."
-              className="w-full bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md pl-8 pr-3 py-1.5 text-sm text-[var(--vit-text)] placeholder:text-[var(--vit-muted-2)] focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
-              value={localSearch.buscador}
+              type="date"
+              className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-primary/50"
+              value={localSearch.fecha_desde}
               onChange={(e) =>
                 setLocalSearch((prev) => ({
                   ...prev,
-                  buscador: e.target.value,
+                  fecha_desde: e.target.value,
                 }))
               }
             />
           </div>
+          <div>
+            <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">
+              Hasta
+            </label>
+            <input
+              type="date"
+              className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-primary/50"
+              value={localSearch.fecha_hasta}
+              onChange={(e) =>
+                setLocalSearch((prev) => ({
+                  ...prev,
+                  fecha_hasta: e.target.value,
+                }))
+              }
+            />
+          </div>
+          {(localSearch.buscador ||
+            localSearch.fecha_desde ||
+            localSearch.fecha_hasta) && (
+            <button
+              onClick={() =>
+                setLocalSearch({ buscador: "", fecha_desde: "", fecha_hasta: "" })
+              }
+              className="text-xs text-[var(--vit-muted)] hover:text-danger font-medium px-2 py-1.5 transition-colors"
+            >
+              Limpiar
+            </button>
+          )}
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">
-            Desde
-          </label>
-          <input
-            type="date"
-            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-primary/50"
-            value={localSearch.fecha_desde}
-            onChange={(e) =>
-              setLocalSearch((prev) => ({
-                ...prev,
-                fecha_desde: e.target.value,
-              }))
-            }
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">
-            Hasta
-          </label>
-          <input
-            type="date"
-            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-primary/50"
-            value={localSearch.fecha_hasta}
-            onChange={(e) =>
-              setLocalSearch((prev) => ({
-                ...prev,
-                fecha_hasta: e.target.value,
-              }))
-            }
-          />
-        </div>
-        {(localSearch.buscador ||
-          localSearch.fecha_desde ||
-          localSearch.fecha_hasta) && (
-          <button
-            onClick={() =>
-              setLocalSearch({ buscador: "", fecha_desde: "", fecha_hasta: "" })
-            }
-            className="text-xs text-[var(--vit-muted)] hover:text-danger font-medium px-2 py-1.5 transition-colors"
-          >
-            Limpiar
-          </button>
-        )}
-      </div>
+      )}
 
       <div className="flex-1 flex overflow-hidden">
         {/* TABLA PRINCIPAL */}

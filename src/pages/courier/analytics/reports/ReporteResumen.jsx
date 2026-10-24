@@ -167,7 +167,7 @@ function Variacion({ actual, previo }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 2,
-      fontSize: '0.72rem', fontWeight: 700, padding: '1px 6px', borderRadius: 12,
+      fontSize: '0.8125rem', fontWeight: 700, padding: '1px 6px', borderRadius: 12,
       background: sube ? 'color-mix(in srgb, var(--color-success) 12%, transparent)' : 'color-mix(in srgb, var(--color-danger) 12%, transparent)',
       color: sube ? 'var(--color-success)' : 'var(--color-danger)',
       marginLeft: 6,

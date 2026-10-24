@@ -62,7 +62,7 @@ export function ReporteAfinidad({ filters }) {
       <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '0.9rem', color: 'var(--color-fg)', margin: 0 }}>Tabla de Afinidad</h3>
-          <span style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)' }}>
+          <span style={{ fontSize: '0.8125rem', color: 'var(--color-fg-muted)' }}>
             A→B: % de compradores de A que también compraron B
           </span>
         </div>
@@ -111,7 +111,7 @@ export function ReporteAfinidad({ filters }) {
           )}
         </div>
         {data.length > 0 && (
-          <p style={{ fontSize: '0.72rem', color: 'var(--color-fg-subtle)', marginTop: '0.75rem' }}>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--color-fg-subtle)', marginTop: '0.75rem' }}>
             * Analizamos qué productos se compran juntos en un mismo pedido, sin importar las cantidades (ej. llevar 3 unidades del Producto A y 2 del B cuenta como una sola compra conjunta).
           </p>
         )}

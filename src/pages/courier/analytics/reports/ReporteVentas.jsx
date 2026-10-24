@@ -48,18 +48,18 @@ export function ReporteVentas({ filters }) {
           </p>
         </div>
 
-        <form onSubmit={aplicarBusqueda} className="flex flex-wrap items-center gap-2 bg-[color-mix(in_srgb,_var(--color-fg)_2%,_transparent)] p-2 rounded-xl border border-[color-mix(in_srgb,_var(--color-fg)_8%,_transparent)] shadow-sm">
-          <div className="relative">
+        <form onSubmit={aplicarBusqueda} className="flex w-full md:w-auto items-center gap-2 bg-[color-mix(in_srgb,_var(--color-fg)_2%,_transparent)] p-2 rounded-xl border border-[color-mix(in_srgb,_var(--color-fg)_8%,_transparent)] shadow-sm">
+          <div className="relative flex-1 min-w-0">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input
               type="text"
               placeholder="Buscar cliente, tel, #pedido..."
               value={localSearch}
               onChange={e => setLocalSearch(e.target.value)}
-              className="pl-9 pr-3 py-2 bg-canvas border border-[color-mix(in_srgb,_var(--color-fg)_10%,_transparent)] rounded-lg text-sm w-[250px] focus:outline-none focus:border-[var(--color-primary)] text-fg"
+              className="pl-9 pr-3 py-2 bg-canvas border border-[color-mix(in_srgb,_var(--color-fg)_10%,_transparent)] rounded-lg text-base w-full md:w-[280px] min-h-[44px] focus:outline-none focus:border-[var(--color-primary)] text-fg"
             />
           </div>
-          <button type="submit" className="px-4 py-2 bg-primary text-primary-fg font-semibold rounded-lg text-sm hover:bg-primary-hover transition-colors">
+          <button type="submit" className="px-4 min-h-[44px] bg-primary text-primary-fg font-semibold rounded-lg text-base hover:bg-primary-hover transition-colors">
             Buscar
           </button>
         </form>
@@ -88,9 +88,9 @@ export function ReporteVentas({ filters }) {
 
         <div className="flex-1 overflow-auto flex flex-col relative p-4">
           {activeTab === 'pedidos' ? (
-            <VistaPedidos filtros={filtrosVista} />
+            <VistaPedidos filtros={filtrosVista} conFiltrosPropios={false} />
           ) : (
-            <VistaItems filtros={filtrosVista} />
+            <VistaItems filtros={filtrosVista} conFiltrosPropios={false} />
           )}
         </div>
       </div>
