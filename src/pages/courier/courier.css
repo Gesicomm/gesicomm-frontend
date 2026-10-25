@@ -417,7 +417,16 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
+}
+
+/* La columna del cliente cede espacio y la etapa se parte en renglones:
+   con `nowrap` "Proceso de confirmación" era más ancho que la tarjeta de
+   Kanban y se dibujaba encima del nombre del cliente. */
+.order-card-top > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .order-card-client {
@@ -446,7 +455,9 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 0.1rem;
+  flex: 0 1 auto;
   min-width: 5.5rem;
+  max-width: 55%;
 }
 
 .order-stage-stack span {
@@ -465,7 +476,7 @@
   color: var(--color-fg-subtle);
   font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
-  white-space: nowrap;
+  text-align: right;
 }
 
 .order-card-address {

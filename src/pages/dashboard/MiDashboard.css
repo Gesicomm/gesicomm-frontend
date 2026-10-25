@@ -316,19 +316,19 @@
   gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
+/* Es la fuente del dato, no un estado: va neutra. En el color de marca
+   (rojo coral) se leía como un error al lado del importe principal. */
 .md-confirmado-tag {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   font-size: var(--ui-text-help, 0.875rem);
-  font-weight: 700;
-  color: var(--md-confirmado);
-  background: var(--md-confirmado-soft);
-  border: 1px solid color-mix(in srgb, var(--md-confirmado) 28%, transparent);
+  font-weight: 600;
+  color: var(--md-ink-muted);
+  background: var(--md-surface-alt);
+  border: 1px solid var(--md-border);
   padding: 0.25rem 0.65rem;
   border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 .md-pulse {
   width: 6px; height: 6px;
@@ -889,6 +889,13 @@
   font-weight: 700;
   color: var(--md-ink);
   overflow-wrap: anywhere;
+}
+/* Base de la tasa ("4 de 9 confirmados"): sin ella el porcentaje parece
+   contradecir a "Pedidos entregados". */
+.md-rent-contexto {
+  font-size: var(--ui-text-meta, 0.8125rem);
+  font-weight: 500;
+  color: var(--md-ink-muted);
 }
 
 .md-summary-card .md-rentabilidad-grid {

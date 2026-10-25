@@ -327,8 +327,8 @@ test("la columna Seguimiento muestra el mensaje que toca y abre los mensajes del
   const celda = (cliente) => within(screen.getByText(cliente).closest("tr")).getAllByRole("cell")[9];
   expect(celda("Cliente 1")).toHaveTextContent("Confirmación de pedido web");
   expect(celda("Cliente 1")).toHaveTextContent("1/3 · Confirmación");
-  expect(celda("Cliente 1")).toHaveTextContent("Pendiente de envío");
-  expect(within(celda("Cliente 1")).getByText("Pendiente de envío")).toHaveClass("pt-seg__estado--warning");
+  expect(celda("Cliente 1")).toHaveTextContent("Mensaje por enviar");
+  expect(within(celda("Cliente 1")).getByText("Mensaje por enviar")).toHaveClass("pt-seg__estado--warning");
   expect(celda("Cliente 2")).toHaveTextContent("2/3 · Recordatorio");
   expect(celda("Cliente 2")).toHaveTextContent(/Expiró/);
   expect(within(celda("Cliente 2")).getByText(/Expiró/)).toHaveClass("pt-seg__estado--danger", "is-pulsing");
@@ -679,4 +679,22 @@ describe('seguimiento operativo desde las tarjetas móviles', () => {
     fireEvent.click(within(tarjeta).getByRole('button', { name: 'Historial' }));
     expect(onAbrirHistorial).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
   });
+});
+
+test("el total dice si el envío lo absorbe el comercio o ya está incluido, y avisa los pedidos sin productos", async () => {
+  getEnviosPaginados.mockResolvedValue({
+    data: [
+      pedido(31, "Confirmado", { costo_envio: 15000, delivery_a_cargo: "negocio" }),
+      pedido(32, "Confirmado", { costo_envio: 20000, delivery_a_cargo: "cliente" }),
+      pedido(33, "Confirmado", { items: [] }),
+    ],
+    total: 3,
+    totalPages: 1,
+  });
+  await montar({ esperarCliente: "Cliente 31" });
+  const fila = (cliente) => screen.getByText(cliente).closest("tr");
+  expect(within(fila("Cliente 31")).getByText(/Envío Gs\.? 15\.000 a tu cargo/)).toBeInTheDocument();
+  expect(within(fila("Cliente 32")).getByText(/Incluye envío Gs\.? 20\.000/)).toBeInTheDocument();
+  expect(within(fila("Cliente 31")).queryByText(/^\+/)).not.toBeInTheDocument();
+  expect(within(fila("Cliente 33")).getByText("Sin productos cargados")).toBeInTheDocument();
 });

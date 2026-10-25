@@ -1496,3 +1496,27 @@
 .vit-marca--oferta { color: var(--vit-ok); border-color: color-mix(in srgb, var(--vit-ok) 40%, transparent); }
 .vit-marca--contador { color: var(--color-warning); border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); }
 .vit-marca--badge { color: var(--vit-accent-fg); }
+
+/* Aviso de productos publicados sin ganancia: mismo ámbar que el estado
+   "Sin ganancia" de cada tarjeta, para que se lean como la misma cosa. */
+.vit-sin-ganancia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+  border-radius: var(--ui-radius-card, 12px);
+  background: color-mix(in srgb, var(--color-warning) 9%, transparent);
+  color: var(--color-fg);
+}
+.vit-sin-ganancia > svg { flex: none; color: var(--color-warning); }
+.vit-sin-ganancia p {
+  flex: 1 1 18rem;
+  margin: 0;
+  font-size: var(--ui-text-body, 1rem);
+  line-height: 1.5;
+  max-width: 70ch;
+}
+.vit-sin-ganancia .btn-secondary { flex: none; min-height: 44px; }

@@ -1003,6 +1003,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   // costo se cargan siempre, libres. Solo decide a quién se le cobra.
   const deliveryLoPagaNegocio = form.incluye_delivery === true;
   const fleteAlCliente = deliveryLoPagaNegocio ? 0 : (Number(form.costo_envio) || 0);
+  // El resumen mostraba "Delivery" al lado de un total que no lo sumaba (los
+  // pedidos web lo absorbe el comercio) y parecía un error de cuenta.
+  const etiquetaDelivery = deliveryLoPagaNegocio ? 'Delivery a tu cargo (no se cobra)' : 'Delivery (incluido)';
 
   // El método "PagoPar" del catálogo es genérico (una sola fila): con cuál
   // de sus canales habilitados pagó el cliente (transferencia, tarjeta,
@@ -1701,10 +1704,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
             <div className="np-total-row">
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>
                 <span>Subtotal productos: Gs. {(Number(subtotalProductos) || 0).toLocaleString('es-PY')}</span>
-                <span>Delivery: Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</span>
+                <span>{etiquetaDelivery}: Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</span>
               </div>
               <strong className="np-total-amount">
-                Total: Gs. {(Number(precioTotalVendido) || 0).toLocaleString('es-PY')}
+                Total a cobrar: Gs. {(Number(precioTotalVendido) || 0).toLocaleString('es-PY')}
               </strong>
             </div>
           </div>
@@ -2214,11 +2217,11 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
 
             <aside className="np-sticky-summary" aria-label="Resumen del pedido">
               <div className="np-summary-card">
-                <span className="np-kicker">Resumen</span>
+                <span className="np-kicker">Total a cobrar</span>
                 <strong>Gs. {(Number(precioTotalVendido) || 0).toLocaleString('es-PY')}</strong>
                 <div className="np-summary-lines">
                   <div><span>Productos</span><b>Gs. {(Number(subtotalProductos) || 0).toLocaleString('es-PY')}</b></div>
-                  <div><span>Delivery</span><b>Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</b></div>
+                  <div><span>{etiquetaDelivery}</span><b>Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</b></div>
                   <div><span>Ítems</span><b>{itemsParaTarifa.length}</b></div>
                   <div><span>Unidades</span><b>{unidadesSeleccionadas}</b></div>
                 </div>

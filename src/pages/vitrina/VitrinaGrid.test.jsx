@@ -125,6 +125,27 @@ describe('VitrinaGrid Component', () => {
     });
   });
 
+  it('avisa cuántos productos de la tienda se venden sin ganancia y los filtra en el backend', async () => {
+    vitrinaService.catalogoPaginado.mockResolvedValueOnce({
+      items: [{ id: 1, tipo: 'producto', nombre: 'Producto de Prueba', precio_base: 50000, precio_efectivo: 50000 }],
+      categorias: [], proveedores: [], totalPages: 1, total: 1, sin_ganancia_en_tienda: 9,
+    });
+    renderWithRouter(<VitrinaGrid />);
+    expect(await screen.findByText('9 productos publicados en tu tienda se venden al costo o por debajo.')).toBeInTheDocument();
+    vitrinaService.catalogoPaginado.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver cuáles son' }));
+    await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenCalled());
+    expect(vitrinaService.catalogoPaginado.mock.calls.at(-1)[0]).toMatchObject({ filtroMargen: 'sin_ganancia', page: 1 });
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver todos' }));
+    await waitFor(() => expect(vitrinaService.catalogoPaginado.mock.calls.at(-1)[0].filtroMargen).toBe(''));
+  });
+
+  it('no muestra el aviso cuando ningún producto de la tienda está sin ganancia', async () => {
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto de Prueba');
+    expect(screen.queryByRole('button', { name: 'Ver cuáles son' })).not.toBeInTheDocument();
+  });
+
   it('agrupa las teclas de la búsqueda en una petición', async () => {
     renderWithRouter(<VitrinaGrid />);
     await screen.findByText('Producto de Prueba');

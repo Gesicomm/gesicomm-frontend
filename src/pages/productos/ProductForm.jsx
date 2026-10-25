@@ -71,7 +71,7 @@ const TABS = [
   { id: 'stock', label: 'Inventario', desc: 'Stock y variantes', level: 'Recomendado', icon: <Layers size={15} /> },
   { id: 'venta', label: 'Venta', desc: 'Packs, bumps y upsells', level: 'Avanzado', icon: <Tag size={15} /> },
   { id: 'marketing', label: 'Vista del producto', desc: 'Lienzo en blanco, FAQ y preview', level: 'Recomendado', icon: <Eye size={15} /> },
-  { id: 'publicacion', label: 'Publicacion', desc: 'Estado y visibilidad', level: 'Esencial', icon: <Settings size={15} /> },
+  { id: 'publicacion', label: 'Publicación', desc: 'Estado y visibilidad', level: 'Esencial', icon: <Settings size={15} /> },
   // NO re-agregar una pestaña que apunte a /mi-landing/producto:
   // ese editor de embudos legacy fue retirado.
 ];

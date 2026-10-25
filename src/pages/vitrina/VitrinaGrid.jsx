@@ -433,6 +433,10 @@ export default function VitrinaGrid() {
   const location = useLocation();
   const [filtro, setFiltro] = useState(() => location.state?.filtro === 'mios' ? 'mios' : 'todos');
   const esVistaLanding = filtro === 'landing';
+  // Productos publicados en la tienda que se venden al costo o por debajo.
+  // El backend cuenta sobre toda la tienda (no sobre la página) y filtra.
+  const [sinGananciaEnTienda, setSinGananciaEnTienda] = useState(null);
+  const [soloSinGanancia, setSoloSinGanancia] = useState(false);
   const [exportandoMeta, setExportandoMeta] = useState(false);
   const exportacionMetaRef = useRef(null);
   const botonMetaRef = useRef(null);
@@ -513,9 +517,10 @@ export default function VitrinaGrid() {
       tipo: tipoQuery,
       solamenteMios,
       origenCatalogo: filtro === 'producto' || filtro === 'combo' ? 'GESICOMM' : null,
+      filtroMargen: soloSinGanancia ? 'sin_ganancia' : '',
       ...overrides,
     };
-  }, [page, busquedaAplicada, filtroCategoria, filtroProveedor, orden, filtro]);
+  }, [page, busquedaAplicada, filtroCategoria, filtroProveedor, orden, filtro, soloSinGanancia]);
 
   /* Items ya filtrados por el backend */
   const itemsFiltrados = items;
@@ -853,6 +858,7 @@ export default function VitrinaGrid() {
       setProveedoresUnicos(data.proveedores || []);
       setTotalPages(data.totalPages || 1);
       setTotalItems(data.total || 0);
+      if (data.sin_ganancia_en_tienda != null) setSinGananciaEnTienda(Number(data.sin_ganancia_en_tienda) || 0);
     } catch {
       if (vigente()) setError('No se pudo cargar el catálogo.');
     } finally {
@@ -864,7 +870,7 @@ export default function VitrinaGrid() {
   useEffect(() => {
     setPage(1);
     setSeleccionTotalKeys(new Set());
-  }, [busquedaAplicada, filtroCategoria, filtroProveedor, orden, filtro]);
+  }, [busquedaAplicada, filtroCategoria, filtroProveedor, orden, filtro, soloSinGanancia]);
 
   useEffect(() => {
     // Deja que el reset a página 1 se aplique antes de iniciar la petición.
@@ -1226,6 +1232,22 @@ export default function VitrinaGrid() {
           </button>
         )}
       </div>
+
+      {/* Sin esto el comercio publicaba productos al costo sin enterarse: el
+          aviso de cada tarjeta solo se ve página por página. */}
+      {(soloSinGanancia || sinGananciaEnTienda > 0) && (
+        <div className="vit-sin-ganancia" role="status">
+          <AlertCircle size={18} aria-hidden="true" />
+          <p>
+            {soloSinGanancia
+              ? 'Estás viendo solo los productos que se venden sin ganancia. Cargá tu precio de venta en cada uno.'
+              : `${sinGananciaEnTienda} ${sinGananciaEnTienda === 1 ? 'producto publicado en tu tienda se vende' : 'productos publicados en tu tienda se venden'} al costo o por debajo.`}
+          </p>
+          <button type="button" className="btn-secondary" onClick={() => setSoloSinGanancia(v => !v)}>
+            {soloSinGanancia ? <><X size={16} /> Ver todos</> : 'Ver cuáles son'}
+          </button>
+        </div>
+      )}
 
       {/* ── Contenido ── */}
       {cargando ? (

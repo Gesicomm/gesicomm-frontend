@@ -135,14 +135,24 @@ function Variacion({ actual, previo, invertirColor = false }) {
     if (a === 0) return null;
     return <span className="md-var md-var-neutro">sin dato antes</span>;
   }
-  const pct = ((a - p) / Math.abs(p)) * 100;
-  const sube = pct >= 0;
+  const sube = a >= p;
   // `invertirColor` para los renglones donde subir es malo (un costo).
   const bueno = invertirColor ? !sube : sube;
-  const signo = sube ? '+' : '';
+  const signo = sube ? '+' : '−';
+  // Un porcentaje sobre una base negativa ("-459%" de una pérdida) o sobre un
+  // resultado en pérdida no dice nada legible: ahí se muestra la diferencia
+  // en guaraníes, que es lo que el comerciante puede comparar.
+  if (p < 0 || a < 0) {
+    return (
+      <span className={`md-var ${bueno ? 'md-var-bien' : 'md-var-mal'}`}>
+        {signo}{gs(Math.abs(a - p))} vs. período anterior
+      </span>
+    );
+  }
+  const pct = ((a - p) / Math.abs(p)) * 100;
   return (
     <span className={`md-var ${bueno ? 'md-var-bien' : 'md-var-mal'}`}>
-      {signo}{pct.toFixed(1).replace(/\.0$/, '')}% vs. período anterior
+      {signo}{Math.abs(pct).toFixed(1).replace(/\.0$/, '')}% vs. período anterior
     </span>
   );
 }
@@ -1766,7 +1776,7 @@ export default function MiDashboard() {
         <section className="md-hero md-span-8" data-mobile-section="resumen">
           <div className="md-hero-top">
             <span className="md-eyebrow">{METRIC_TERMS.ventasNetas} · {rangoLabel}</span>
-            <span className="md-confirmado-tag"><i className="md-pulse" /> confirmado a mano</span>
+            <span className="md-confirmado-tag">Confirmado a mano</span>
           </div>
           <div className="md-hero-numero">{gs(kpis.facturacion_entregada)}</div>
           <Variacion actual={kpis.facturacion_entregada} previo={comparativo?.facturacion_entregada} />
@@ -1785,7 +1795,7 @@ export default function MiDashboard() {
         >
           <div className="md-rentabilidad-grid">
             <div className="md-rent-item">
-              <span className="md-rent-label">Pedidos <Ayuda texto="Cuántos pedidos llegaron a manos del cliente en este período." /></span>
+              <span className="md-rent-label">{METRIC_TERMS.pedidosEntregados} <Ayuda texto={METRIC_HELP.pedidosEntregados} /></span>
               <span className="md-rent-valor">{funnel.entregados}</span>
             </div>
             <div className="md-rent-item">
@@ -1817,7 +1827,12 @@ export default function MiDashboard() {
             </div>
             <div className="md-rent-item">
               <span className="md-rent-label">{METRIC_TERMS.conversion} <Ayuda texto={METRIC_HELP.conversion} /></span>
-              <span className="md-rent-valor">{funnel.tasa_confirmacion}%</span>
+              <span className="md-rent-valor">{funnel.tasa_confirmacion ?? 0}%</span>
+              {/* Sin el "x de y" la tasa queda al lado de "Pedidos entregados 0"
+                  y parece contradecirla: son dos etapas distintas del embudo. */}
+              {Number(funnel.total_creados) > 0 && (
+                <span className="md-rent-contexto">{funnel.confirmados ?? 0} de {funnel.total_creados} confirmados</span>
+              )}
             </div>
           </div>
         </Bloque>
@@ -1942,7 +1957,18 @@ export default function MiDashboard() {
             equilibrio del que hablar. */}
         {kpis.punto_equilibrio !== undefined && kpis.gastos_fijos_generales > 0 && (
           <div className={`md-equilibrio ${kpis.punto_equilibrio === null ? 'md-equilibrio-alerta' : (kpis.falta_para_equilibrio > 0 ? 'md-equilibrio-falta' : 'md-equilibrio-ok')}`}>
-            {kpis.punto_equilibrio === null ? (
+            {/* Sin ventas entregadas el backend también devuelve `null` (no hay
+                margen del que partir), pero eso no es "vender bajo costo":
+                diagnosticarlo así llevaba a tocar precios sin motivo. */}
+            {kpis.punto_equilibrio === null && !(Number(kpis.facturacion_entregada) > 0) ? (
+              <>
+                <strong>Todavía no hay ventas entregadas en este período</strong>
+                <span>
+                  Tus costos fijos de {gs(costosFijos)} siguen corriendo. El punto de equilibrio
+                  se calcula cuando entreguen los primeros pedidos.
+                </span>
+              </>
+            ) : kpis.punto_equilibrio === null ? (
               <>
                 <strong>No hay punto de equilibrio</strong>
                 <span>

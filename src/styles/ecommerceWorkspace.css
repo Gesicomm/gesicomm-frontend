@@ -72,6 +72,10 @@
 :scope .prod-requirements > summary span { font-weight: 400; margin-left: .5rem; }
 :scope .prod-requirements-row > button { min-height: 44px; }
 :scope .prod-summary-panel { position: static; padding: .5rem 1rem; border-radius: var(--workspace-radius); box-shadow: none; }
+/* productos.css (≤1180 px) manda el resumen a la columna 2. En esta grilla de
+   una sola columna eso creaba una columna implícita, el menú de pasos quedaba
+   con 0–30 px de ancho y se dibujaba encima de los campos de Precio. */
+:scope .prod-workspace > .prod-summary-panel { grid-column: auto; }
 :scope :is(.form-grid-2, .form-grid-3, .form-grid-4) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
 :scope .prod-save-bar { flex-wrap: wrap; gap: .75rem; }
 

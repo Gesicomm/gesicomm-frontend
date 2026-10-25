@@ -603,8 +603,10 @@ function estadoDelSeguimiento(seg) {
     const relativo = tiempoRelativo(seg.toca_en);
     return { texto: relativo ? `Expiró ${relativo}` : "Expiró", tono: "danger", icono: Clock, pulso: true };
   }
-  if (seg.fase_abierta_en) return { texto: "Pendiente de confirmar envío", tono: "warning", icono: Clock };
-  if (seg.cuando === "ahora") return { texto: "Pendiente de envío", tono: "warning", icono: Clock };
+  // "Envío" acá es el del MENSAJE de WhatsApp, pero al lado de un pedido se
+  // leía como el despacho de la mercadería (también en leads sin pedido).
+  if (seg.fase_abierta_en) return { texto: "Confirmá si enviaste el mensaje", tono: "warning", icono: Clock };
+  if (seg.cuando === "ahora") return { texto: "Mensaje por enviar", tono: "warning", icono: Clock };
   if (seg.cuando === "hoy") return { texto: `Pendiente hoy, ${hora}`, tono: "warning", icono: Clock };
   if (seg.cuando === "despues" && seg.toca_en) {
     const fecha = new Date(seg.toca_en).toLocaleDateString("es-PY", { day: "2-digit", month: "2-digit", timeZone: ZONA_HORARIA });
@@ -1814,7 +1816,11 @@ export function PedidosTable({
                 const items = e.items || [];
                 const resumenItems =
                   items.length === 0
-                    ? (String(e.origen || '').toUpperCase().includes('WHATSAPP') ? "Consulta general · Sin productos" : "—")
+                    ? (String(e.origen || '').toUpperCase().includes('WHATSAPP')
+                      ? "Consulta general · Sin productos"
+                      // Un "—" en un pedido a preparar no dice qué empacar ni
+                      // que falta cargarlo: se dice explícito.
+                      : (e.es_lead ? "—" : "Sin productos cargados"))
                     : items.length === 1
                     ? `${items[0].nombre_producto}${items[0].cantidad > 1 ? ` x${items[0].cantidad}` : ""}`
                     : `${items[0].nombre_producto} +${items.length - 1} más`;
@@ -1934,8 +1940,15 @@ export function PedidosTable({
                     <td className="pt-td pt-td-num" data-label="Total">
                       <span>{e.es_lead && items.length === 0 ? '—' : formatGs(e.monto)}</span>
                       {e.es_lead && items.length > 0 && <span className="pt-depto">Valor de interés</span>}
+                      {/* "+Gs" hacía creer que el envío se sumaba al total. Los pedidos
+                          web lo absorbe el comercio ('negocio'); en los manuales sin
+                          tildar ya viene adentro del monto. */}
                       {e.costo_envio > 0 && (
-                        <span className="pt-delivery">+{formatGs(e.costo_envio)}</span>
+                        <span className="pt-delivery">
+                          {e.delivery_a_cargo === 'negocio'
+                            ? `Envío ${formatGs(e.costo_envio)} a tu cargo`
+                            : `Incluye envío ${formatGs(e.costo_envio)}`}
+                        </span>
                       )}
                     </td>
                     {!soloAbastecimiento && (
