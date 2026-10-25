@@ -13,6 +13,9 @@ const Settings = () => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
+    const [portafolios, setPortafolios] = useState(null);
+    const [elegidos, setElegidos] = useState([]);
+    const [guardandoSeleccion, setGuardandoSeleccion] = useState(false);
 
     const [usuario, setUsuario] = useState(null);
     const [perfilModalAbierto, setPerfilModalAbierto] = useState(false);
@@ -41,7 +44,46 @@ const Settings = () => {
         }
 
         loadTiendas();
+        loadPendiente();
     }, []);
+
+    // Con varios portafolios autorizados, el backend deja la conexión en
+    // espera hasta que el usuario elija cuáles conectar.
+    const loadPendiente = async () => {
+        try {
+            const data = await api.get('/api/meta/pendiente');
+            if (data.pendiente) {
+                setPortafolios(data.portafolios || []);
+                setElegidos((data.portafolios || []).filter((p) => !p.conectado).map((p) => p.id));
+            }
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    const toggleElegido = (id) => {
+        setElegidos((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    };
+
+    const confirmarPortafolios = async () => {
+        setGuardandoSeleccion(true);
+        setError(null);
+        try {
+            const data = await api.post('/api/meta/pendiente/confirmar', { business_ids: elegidos });
+            setPortafolios(null);
+            setSuccess(data.conectados === 1 ? 'Tienda conectada exitosamente.' : `${data.conectados} tiendas conectadas exitosamente.`);
+            loadTiendas();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setGuardandoSeleccion(false);
+        }
+    };
+
+    const cancelarPortafolios = async () => {
+        setPortafolios(null);
+        try { await api.post('/api/meta/pendiente/cancelar', {}); } catch { /* la cookie vence sola */ }
+    };
 
     const loadTiendas = async () => {
         setLoadingTiendas(true);
@@ -172,6 +214,45 @@ const Settings = () => {
                         {hayTiendas ? 'Agregar tienda' : 'Conectar tienda'}
                     </button>
                 </div>
+
+                {portafolios && (
+                    <div className="meta-seleccion" role="region" aria-labelledby="meta-seleccion-titulo">
+                        <h4 id="meta-seleccion-titulo">Elegí qué portafolios conectar</h4>
+                        <p>
+                            Autorizaste {portafolios.length} portafolios en Meta. Marcá los que querés ver en Ads &amp; Campañas;
+                            cada uno queda como una tienda.
+                        </p>
+                        <div className="meta-seleccion-lista">
+                            {portafolios.map((p) => (
+                                <label key={p.id} className="meta-seleccion-item">
+                                    <input
+                                        type="checkbox"
+                                        checked={elegidos.includes(p.id)}
+                                        onChange={() => toggleElegido(p.id)}
+                                    />
+                                    <span>
+                                        <strong>{p.nombre}</strong>
+                                        <small>BM ID: {p.id}{p.conectado ? ' · Ya conectada (se renueva el acceso)' : ''}</small>
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                        <div className="meta-seleccion-acciones">
+                            <button type="button" className="meta-seleccion-cancelar" onClick={cancelarPortafolios} disabled={guardandoSeleccion}>
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                className="meta-connect-btn"
+                                onClick={confirmarPortafolios}
+                                disabled={guardandoSeleccion || elegidos.length === 0}
+                            >
+                                {guardandoSeleccion ? <Loader size={16} className="spin" /> : <CheckCircle size={16} />}
+                                Conectar {elegidos.length === 1 ? '1 portafolio' : `${elegidos.length} portafolios`}
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Lista de tiendas */}
                 {loadingTiendas ? (

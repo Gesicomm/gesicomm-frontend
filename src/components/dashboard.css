@@ -211,6 +211,110 @@
     box-shadow: 0 5px 15px rgba(24, 119, 242, 0.4);
 }
 
+.meta-connect-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Selección de portafolios tras autorizar en Meta */
+.meta-seleccion {
+    border: 1px solid color-mix(in srgb, #1877F2 45%, transparent);
+    background: color-mix(in srgb, #1877F2 8%, transparent);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.meta-seleccion h4 {
+    margin: 0 0 0.5rem;
+    font-size: var(--ui-text-card);
+    font-weight: 650;
+}
+
+.meta-seleccion p {
+    margin: 0 0 1rem;
+    font-size: var(--ui-text-body);
+    line-height: 1.55;
+    max-width: 70ch;
+}
+
+.meta-seleccion-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.meta-seleccion-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+    background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+    cursor: pointer;
+}
+
+.meta-seleccion-item input {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: #1877F2;
+}
+
+.meta-seleccion-item span {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.meta-seleccion-item strong {
+    font-size: var(--ui-text-body);
+    font-weight: 600;
+}
+
+.meta-seleccion-item small {
+    font-size: var(--ui-text-help);
+    color: var(--color-fg-muted);
+}
+
+.meta-seleccion-acciones {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.meta-seleccion-acciones .meta-connect-btn {
+    padding: 0.7rem 1.25rem;
+    font-size: var(--ui-text-label);
+    gap: 0.5rem;
+}
+
+.meta-seleccion-cancelar {
+    background: transparent;
+    color: var(--color-fg);
+    border: 1px solid color-mix(in srgb, var(--color-fg) 20%, transparent);
+    border-radius: 8px;
+    padding: 0.7rem 1.25rem;
+    font-size: var(--ui-text-label);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    .meta-seleccion-acciones > * {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
+}
+
 /* Data Grid for Meta Info */
 .data-grid {
     display: grid;
