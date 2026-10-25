@@ -198,7 +198,7 @@ function DesgloseCosto({ producto }) {
   // (ver la leyenda debajo de la tabla).
   const gastosGenerales = [
     { label: 'Gastos de este producto', valor: d.gastos_directos, ayuda: 'cargados en Finanzas y atados a este producto' },
-    { label: 'Publicidad de este producto', valor: d.publicidad_directa, ayuda: 'de una campaña de Meta Ads asignada a este producto en Ads & Campañas' },
+    { label: 'Publicidad de este producto', valor: d.publicidad_directa, ayuda: 'de una campaña de Meta Ads asignada a este producto en Publicidad' },
     { label: 'Gastos fijos', valor: d.fijos, ayuda: 'la parte que le toca de alquiler, sueldos y servicios' },
     { label: 'Gastos variables', valor: d.variables, ayuda: 'la parte que le toca de comisiones y otros gastos variables sin producto asociado' },
   ].filter(r => Number(r.valor) > 0);
@@ -1418,6 +1418,7 @@ export default function MiDashboard() {
   const [productoId, setProductoId] = useState('TODOS');
   const [embudoTab, setEmbudoTab] = useState('formularios');
   const [verTodosProductos, setVerTodosProductos] = useState(false);
+  const [verTodosCouriers, setVerTodosCouriers] = useState(false);
   const [ventas, setVentas] = useState(null);
   const [pixel, setPixel] = useState(null);
   // "No se pudo traer el tráfico" ≠ "hubo 0 visitas". Sin esta distinción, un
@@ -1526,6 +1527,11 @@ export default function MiDashboard() {
   const canalLanding = ventas?.funnel?.canales?.web || canalVacio;
   const pagosOnline = ventas?.pagos_online || { pagos_realizados: 0, monto_pagado: 0 };
   const couriers = ventas?.couriers || [];
+  // Sin pedidos en el período ni saldo pendiente, un courier es una fila de
+  // ceros que tapa a los que sí trabajaron (había 8 "Courier QA" seguidos).
+  const conActividad = c => Number(c.total_asignados) > 0 || Number(c.saldo_rendicion || 0) !== 0;
+  const couriersActivos = couriers.filter(conActividad);
+  const couriersVisibles = verTodosCouriers ? couriers : couriersActivos;
   const tendenciasFinancieras = ventas?.tendencias || [];
 
   // "Más vendidos" se ordena por unidades entregadas — que es lo que el
@@ -1915,7 +1921,7 @@ export default function MiDashboard() {
           </div>
           {gastoMetaAds > 0 && (
             <div className="md-rent-item">
-              <span className="md-rent-label">− Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en Meta Ads en este período. Sale del gasto que cargaste en cada campaña de Ads & Campañas. Si un rango cargado abarca más días que el período que estás viendo, se toma solo la parte proporcional. La publicidad que cargues a mano en Control financiero no entra acá: va en Costos Fijos o Variables, según cómo la hayas clasificado." /></span>
+              <span className="md-rent-label">− Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en Meta Ads en este período. Sale del gasto que cargaste en cada campaña de Publicidad. Si un rango cargado abarca más días que el período que estás viendo, se toma solo la parte proporcional. La publicidad que cargues a mano en Control financiero no entra acá: va en Costos Fijos o Variables, según cómo la hayas clasificado." /></span>
               <span className="md-rent-valor">{gs(gastoMetaAds)}</span>
             </div>
           )}
@@ -2100,7 +2106,12 @@ export default function MiDashboard() {
             </>
           )}
         >
-          <TablaCouriers filas={couriers} />
+          <TablaCouriers filas={couriersVisibles} />
+          {couriersActivos.length < couriers.length && (
+            <button type="button" className="md-btn-ghost md-ver-todos" onClick={() => setVerTodosCouriers(v => !v)}>
+              {verTodosCouriers ? 'Ver solo los que tuvieron actividad' : `Ver todos (${couriers.length})`}
+            </button>
+          )}
         </Bloque>
       </div>
 

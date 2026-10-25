@@ -655,7 +655,6 @@ export default function ConfigurarTienda() {
   const suscripcionActiva = estadoCuenta?.suscripcion || tienda?.suscripcion || null;
   const planActivo = suscripcionActiva?.plan || null;
   const esPlanPago = Boolean(estadoCuenta?.tiene_suscripcion_activa || suscripcionActiva || tienda?.plan === 'pago');
-  const nombrePlanActivo = planActivo?.nombre || (esPlanPago ? 'plan de pago' : null);
 
   const tabActual = TABS.find(t => t.id === (tab === 'speedbox' ? 'raha' : tab)) || TABS[0];
   const tabGuardaAparte = TABS_CON_GUARDADO_PROPIO.includes(tab);
@@ -1214,7 +1213,8 @@ export default function ConfigurarTienda() {
                         <div className="tn-plan-actual">
                           <span className="tn-plan-actual-icono"><Crown size={18} /></span>
                           <div className="tn-plan-actual-texto">
-                            <strong>Estás en el {nombrePlanActivo}</strong>
+                            {/* "Estás en el Miembros Fundadores" no concordaba: el nombre del plan no lleva artículo fijo. */}
+                            <strong>{planActivo?.nombre ? `Tu plan: ${planActivo.nombre}` : 'Estás en un plan de pago'}</strong>
                             <span>Tenés habilitadas todas las funciones de tu plan.</span>
                           </div>
                           <button type="button" className="tn-plan-link" onClick={() => navigate('/planes')}>

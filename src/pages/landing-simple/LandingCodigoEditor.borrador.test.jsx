@@ -111,4 +111,11 @@ describe('Borrador del editor de la tienda', () => {
     expect(await screen.findByRole('button', { name: 'Guardar' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Guardar borrador' })).not.toBeInTheDocument();
   });
+
+  it('avisa cuando un banner activo sigue con el texto de ejemplo', async () => {
+    montar(publicada({ venta: { configurado: true, tipo: 'catalogo', seleccion: 'manual', abrir_en: 'tienda',
+      inicio: { banners: [{ id: 'b1', activo: true, titulo: 'Nueva campaña promocional', subtitulo: 'Mostrá una oferta, colección o beneficio importante.', imagen: '' }] } } }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Banner principal', exact: true }));
+    expect(await screen.findByText(/todavía tiene el texto de ejemplo y no tiene imagen/)).toBeInTheDocument();
+  });
 });

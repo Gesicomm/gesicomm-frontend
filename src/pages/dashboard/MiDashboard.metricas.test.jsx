@@ -64,4 +64,18 @@ describe('MiDashboard: métricas que no se contradicen', () => {
     expect(within(tarjeta).queryByText(/%\s*vs\. período anterior/)).not.toBeInTheDocument();
     expect(within(tarjeta).getByText(/−Gs\s?1\.023\.000 vs\. período anterior/)).toBeInTheDocument();
   });
+
+  it('oculta los couriers sin actividad y deja verlos todos', async () => {
+    const ventas = ventasSinEntregas();
+    ventas.couriers = [
+      { courier_id: 1, nombre: 'Delivery propio', total_asignados: 11, entregados: 0, tasa_entrega: 0, monto_recaudado: 0, costo_fletes: 75000, saldo_rendicion: -75000 },
+      { courier_id: 2, nombre: 'Courier QA 1', total_asignados: 0, entregados: 0, tasa_entrega: 0, monto_recaudado: 0, costo_fletes: 0, saldo_rendicion: 0 },
+      { courier_id: 3, nombre: 'Courier QA 2', total_asignados: 0, entregados: 0, tasa_entrega: 0, monto_recaudado: 0, costo_fletes: 0, saldo_rendicion: 0 },
+    ];
+    await montar(ventas);
+    expect(screen.getAllByText('Delivery propio').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Courier QA 1')).not.toBeInTheDocument();
+    screen.getByRole('button', { name: 'Ver todos (3)' }).click();
+    expect((await screen.findAllByText('Courier QA 1')).length).toBeGreaterThan(0);
+  });
 });

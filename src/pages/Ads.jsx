@@ -80,7 +80,7 @@ export default function Ads() {
   return (
     <div className="ads-page settings-container" style={{ maxWidth: '100%' }}>
       <div className="settings-header flex flex-wrap items-start justify-between gap-3">
-        <div><h1>Publicidad</h1><p>Publicá anuncios en Meta; registrá tus gastos acá.</p></div>
+        <div><h1>Publicidad</h1><p>Organizá tus campañas de Meta y registrá cuánto invertiste en cada una.</p></div>
       </div>
 
       {/* Navegación — con una sola sección no hay entre qué elegir */}

@@ -387,6 +387,14 @@ function crearBannerInicio() {
     posicion_mobile: 'center center',
   };
 }
+// Textos con los que nace un banner nuevo. Si llegan así a la tienda, el
+// cliente ve "Nueva campaña promocional" sin imagen (pasó en producción).
+const TEXTOS_EJEMPLO_BANNER = new Set([
+  'Nueva campaña promocional', 'Mostrá una oferta, colección o beneficio importante.',
+  'Renová tu cocina', 'Productos seleccionados con precios especiales.',
+]);
+const bannerConTextoDeEjemplo = banner => TEXTOS_EJEMPLO_BANNER.has(banner?.titulo) || TEXTOS_EJEMPLO_BANNER.has(banner?.subtitulo);
+
 function crearBannerIntermedio() {
   return {
     ...crearBannerInicio(),
@@ -4562,6 +4570,11 @@ function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCam
               />
             </div>
           </div>
+          {banner.activo !== false && bannerConTextoDeEjemplo(banner) && (
+            <p role="note" className="mt-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm leading-relaxed text-fg">
+              Este banner todavía tiene el texto de ejemplo{banner.imagen ? '' : ' y no tiene imagen'}. Cambialo o desactivalo antes de publicar: tus clientes lo ven tal cual.
+            </p>
+          )}
           {!colapsado && (
             <div className="ecommerce-banner-fields grid grid-cols-1 sm:grid-cols-2 gap-3">
               <CampoTexto label="Etiqueta" value={banner.etiqueta} onChange={v => onCambiar(banner.id, { etiqueta: v })} placeholder="Semana de cocina" maxLength={40} />
