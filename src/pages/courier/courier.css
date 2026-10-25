@@ -3933,16 +3933,16 @@ button.order-alert-chip:focus-visible {
 }
 .pt-table--followup { min-width: 1440px; }
 .pt-col-id { width: 110px; }
-.pt-col-tipo { width: 112px; }
+.pt-col-tipo { width: 152px; }
 .pt-col-date { width: 104px; }
 .pt-col-client { width: 150px; }
 .pt-col-phone { width: 140px; }
 .pt-col-product { width: 240px; }
 .pt-col-metodo-pago { width: 176px; }
-.pt-col-total { width: 116px; }
+.pt-col-total { width: 140px; }
 .pt-col-state { width: 224px; }
 .pt-col-followup { width: 240px; }
-.pt-col-action { width: 232px; }
+.pt-col-action { width: 276px; }
 .pt-th {
   text-align: left;
   padding: 0.75rem 0.9rem;
@@ -3960,7 +3960,7 @@ button.order-alert-chip:focus-visible {
 .pt-th-product { width: auto; }
 .pt-th-courier { width: 90px; }
 .pt-th-state { width: 130px; }
-.pt-th-action { width: 232px; }
+.pt-th-action { width: 276px; }
 
 /* La tabla mide ~1800 px y la Acción (lo que el comercio vino a hacer)
    quedaba fuera de vista. Se fija a la derecha sin cambiar el orden de
@@ -3980,6 +3980,8 @@ button.order-alert-chip:focus-visible {
   .pt-root .pt-row[data-followup-tone] .pt-td-action {
     background: color-mix(in srgb, var(--pt-followup-color) var(--pt-followup-fill), var(--color-surface));
   }
+  /* El historial va al lado de la acción, no debajo. */
+  .pt-td-action .pt-row-actions { flex-wrap: nowrap; }
   .pt-root .pt-row[data-followup-tone]:hover .pt-td-action {
     background: color-mix(in srgb, var(--pt-followup-color) var(--pt-followup-hover-fill), var(--color-surface));
   }
@@ -4040,6 +4042,9 @@ button.order-alert-chip:focus-visible {
 }
 .pt-delivery {
   display: block;
+  /* La celda Total es nowrap: sin esto "Envío Gs. 15.000 a tu cargo" se
+     salía de la columna y se encimaba con el método de pago. */
+  white-space: normal;
   font-size: var(--ui-text-help, 0.875rem);
   color: var(--color-fg-subtle);
   font-weight: 400;
