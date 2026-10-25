@@ -7,7 +7,7 @@ import {
   Eye, EyeOff, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
   ChevronsUpDown, ChevronsDownUp,
   Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, RotateCcw, Trash2, ExternalLink, Save, Settings2, Copy, Sparkles,
-  GripVertical, Lock, Cpu, Terminal,
+  GripVertical, Lock, Cpu, Terminal, FileText,
 } from 'lucide-react';
 import ConectarMcpPanel from './panels/ConectarMcpPanel';
 import { MCP_EDITOR_HABILITADO } from './mcpEditorConfig';
@@ -740,6 +740,11 @@ export default function ConfigurarVentaCodigo({
   onPublicar = null,
   onEliminar = null,
   onAbrirCodigo = null,
+  // Borrador (solo con la tienda publicada): guardar sin publicar, cuándo se
+  // guardó el último y descartarlo para volver a lo publicado.
+  onGuardarBorrador = null,
+  borradorGuardadoAt = null,
+  onDescartarBorrador = null,
 }) {
   const ventaInicial = inicial?.venta || {};
   const limiteProductosManual = Number(landing?.limites?.items_manual) || MAX_PRODUCTOS_MANUAL;
@@ -2287,15 +2292,10 @@ export default function ConfigurarVentaCodigo({
     return null;
   })();
 
-  async function confirmar() {
-    if (subidasPendientes) return;
-    setError('');
-    if (bloqueo) {
-      setError(bloqueo);
-      return;
-    }
+  // Lo que se guarda: igual para publicar y para el borrador.
+  function armarConfirmacion() {
     const idsSeleccion = new Set(candidatosReco.map(i => i.content_id));
-    await onConfirmar({
+    return {
       venta: {
         ...ventaActual,
         // Solo productos de la landing: uno de afuera se vería en la ficha
@@ -2315,7 +2315,25 @@ export default function ConfigurarVentaCodigo({
         ...(urgenciaConfirmar || urgenciaRenovar ? { urgencia: true } : {}),
         ...(pruebaSocialConfirmar ? { prueba_social: true } : {}),
       },
-    });
+    };
+  }
+
+  async function confirmar() {
+    if (subidasPendientes) return;
+    setError('');
+    if (bloqueo) {
+      setError(bloqueo);
+      return;
+    }
+    await onConfirmar(armarConfirmacion());
+  }
+
+  // Un borrador puede quedar a medio armar: no se frena por `bloqueo`, que
+  // se vuelve a revisar al publicar.
+  async function guardarBorrador() {
+    if (subidasPendientes || !onGuardarBorrador) return;
+    setError('');
+    await onGuardarBorrador(armarConfirmacion());
   }
 
   if (!catalogo) {
@@ -2531,8 +2549,19 @@ export default function ConfigurarVentaCodigo({
 
       </div>
         <div hidden={panelesOcultos} className="ecommerce-save-context mr-auto min-w-0 text-sm text-fg-muted" role="note" aria-label="Alcance del guardado">
-          <strong className="text-fg">{landingActiva ? 'Publicado' : 'Sin publicar'}</strong>
-          <span className="block">{landingActiva ? 'Guardar actualiza la tienda publicada.' : 'Guardar conserva los cambios; Publicar habilita el acceso público.'}</span>
+          <strong className="text-fg">{!landingActiva ? 'Sin publicar' : borradorGuardadoAt ? 'Borrador sin publicar' : 'Publicado'}</strong>
+          <span className="block">
+            {!landingActiva
+              ? 'Guardar conserva los cambios; Publicar habilita el acceso público.'
+              : borradorGuardadoAt
+                ? `Guardado ${new Date(borradorGuardadoAt).toLocaleString('es-PY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Asuncion' })}. Tus clientes siguen viendo lo publicado.`
+                : 'Publicar cambios actualiza la tienda; Guardar borrador no.'}
+          </span>
+          {onDescartarBorrador && (
+            <button type="button" className="ecommerce-discard-draft" onClick={onDescartarBorrador} disabled={guardando}>
+              Descartar borrador
+            </button>
+          )}
 
         </div>
         <div hidden={panelesOcultos} className="ecommerce-builder-actions flex items-center gap-1.5">
@@ -2588,6 +2617,17 @@ export default function ConfigurarVentaCodigo({
           {/* Único botón de guardar: guarda la configuración entera (venta,
               productos, precios, código). Antes había otro abajo y este de
               arriba guardaba solo el código, sin los cambios del formulario. */}
+          {onGuardarBorrador && !disenoPendienteIA && (
+            <button
+              type="button"
+              onClick={guardarBorrador}
+              disabled={guardando || subidasPendientes > 0}
+              title="Guardar los cambios sin mostrarlos todavía en la tienda."
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold border border-border text-fg hover:bg-surface-2 disabled:opacity-45 disabled:cursor-not-allowed"
+            >
+              <FileText size={13} aria-hidden="true" /> Guardar borrador
+            </button>
+          )}
           <button
             type="button"
             onClick={confirmar}
@@ -2596,7 +2636,7 @@ export default function ConfigurarVentaCodigo({
             className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold bg-primary text-primary-fg hover:bg-primary-hover disabled:opacity-45 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             {guardando ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {disenoPendienteIA ? 'Generar landing con IA' : 'Guardar'}
+            {disenoPendienteIA ? 'Generar landing con IA' : onGuardarBorrador ? 'Publicar cambios' : 'Guardar'}
           </button>
         </div>
       </div>

@@ -150,6 +150,29 @@ export function vistasCambiadas(codigos, guardadas = {}, propiasBorradas = [], l
   };
 }
 
+/**
+ * Lo publicado + el borrador (mismo payload que manda Guardar) = lo que el
+ * editor tiene que mostrar al volver. El borrador trae solo las vistas que
+ * cambiaron, igual que el guardado; una ficha propia en null es "borrada".
+ */
+export function contentConBorrador(content = {}, datos = {}) {
+  const vistas = content.vistas || {};
+  const cambios = datos.vistas || {};
+  const productos = { ...(vistas.productos || {}), ...(cambios.productos || {}) };
+  Object.keys(productos).forEach(cid => { if (productos[cid] === null) delete productos[cid]; });
+  return {
+    ...content,
+    ...(datos.codigo ? { codigo: datos.codigo } : {}),
+    ...(datos.venta !== undefined ? { venta: datos.venta } : {}),
+    vistas: {
+      ...vistas,
+      ...Object.fromEntries(['catalogo', 'producto', 'categoria', 'checkout'].filter(k => cambios[k]).map(k => [k, cambios[k]])),
+      ...(cambios.legales ? { legales: { ...(vistas.legales || {}), ...cambios.legales } } : {}),
+      productos,
+    },
+  };
+}
+
 /** Items de la landing ({tipo, referencia_id}) → items del catálogo del panel, en el mismo orden. */
 export function resolverSeleccion(items, catalogo) {
   const productos = new Map((catalogo?.productos || []).map(p => [Number(p.id), { ...p, tipo: 'producto' }]));
@@ -277,6 +300,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   // Fichas propias que se volvieron a la general (se mandan como null al guardar).
   const [propiasBorradas, setPropiasBorradas] = useState(() => new Set());
   const [ajustes, setAjustes] = useState({ titulo: '', seo_titulo: '', seo_descripcion: '' });
+  // Fecha del borrador sin publicar (content.borrador), o null.
+  const [borradorAt, setBorradorAt] = useState(null);
+  // Remonta Configurar venta al descartar un borrador: el panel toma
+  // `inicial` una sola vez, al montarse.
+  const [versionPanel, setVersionPanel] = useState(0);
   const [tab, setTab] = useState('html');
   // Escape hatch no destructivo: el comercio puede desbloquear los bloques
   // rígidos de una landing generada por MCP sin resetear el diseño. Ver
@@ -320,8 +348,30 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       precarga.catalogo,
     ]).then(([l, t, cat]) => {
       if (!activo) return;
+      inicializarDesde(l, t, cat);
+    }).catch(() => {
+      if (activo) { setError('No se pudo cargar la landing.'); setCargando(false); }
+    });
+    return () => { activo = false; };
+  }, [id, landingInicial]);
+
+  // Arma el estado del editor a partir de lo publicado y, si hay, del
+  // borrador. `landing` queda siempre como lo PUBLICADO: Guardar compara
+  // contra eso para mandar solo lo que cambió.
+  function inicializarDesde(publicada, t, cat) {
+      const datosBorrador = publicada.content?.borrador?.datos || null;
+      const l = datosBorrador ? {
+        ...publicada,
+        items: datosBorrador.items ?? publicada.items,
+        titulo: datosBorrador.titulo ?? publicada.titulo,
+        seo_titulo: datosBorrador.seo_titulo ?? publicada.seo_titulo,
+        seo_descripcion: datosBorrador.seo_descripcion ?? publicada.seo_descripcion,
+        content: contentConBorrador(publicada.content, datosBorrador),
+      } : publicada;
       const inicial = codigosDesdeContent(l.content, PLANTILLA_PRODUCTO, t || l?.tienda || null);
-      setLanding(l);
+      setLanding(publicada);
+      setBorradorAt(datosBorrador ? publicada.content.borrador.guardado_at || null : null);
+      setPropiasBorradas(new Set(Object.entries(datosBorrador?.vistas?.productos || {}).filter(([, c]) => c === null).map(([cid]) => cid)));
       setContenidoIaAceptado(!!l.contenido_ia_aceptado);
       setTienda(t);
       setCatalogo(cat);
@@ -350,11 +400,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       });
       setCargando(false);
       limpiarItemsPrefill();
-    }).catch(() => {
-      if (activo) { setError('No se pudo cargar la landing.'); setCargando(false); }
-    });
-    return () => { activo = false; };
-  }, [id, landingInicial]);
+  }
 
   useEffect(() => {
     clearTimeout(temporizador.current);
@@ -427,7 +473,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [generacion, setGeneracion] = useState(0);
   const alErrorRuntime = useCallback((mensaje) => setErrorRuntime(mensaje), []);
 
-  async function guardar(extra = {}) {
+  // El mismo payload sirve para publicar (PUT) y para el borrador.
+  function armarPayload(extra = {}) {
     const ventaAGuardar = extra.venta ?? venta;
     // Una selección manual guarda la lista. Una regla guarda solo los
     // ajustes por producto; el backend sigue resolviendo todo el catálogo.
@@ -440,12 +487,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       p.key,
       codigosAGuardar[claveLegal(p.key)] || plantillaLegalPara(p.key, tienda),
     ]));
-    setGuardando(true);
-    setError('');
-    setErroresDetalle([]);
-    setAdvertencias([]);
-    try {
-      const actualizada = await landingSimpleService.actualizar(id, {
+    return {
+      ventaAGuardar,
+      codigosAGuardar,
+      payload: {
         titulo: ajustes.titulo,
         seo_titulo: ajustes.seo_titulo,
         seo_descripcion: ajustes.seo_descripcion,
@@ -460,7 +505,18 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         // guardado normal (editar la fecha) nunca confirma por accidente.
         ...(extra.confirmaciones ? { confirmaciones: extra.confirmaciones } : {}),
         items: seleccionAItems(itemsAGuardar, landing?.items),
-      });
+      },
+    };
+  }
+
+  async function guardar(extra = {}) {
+    const { ventaAGuardar, codigosAGuardar, payload } = armarPayload(extra);
+    setGuardando(true);
+    setError('');
+    setErroresDetalle([]);
+    setAdvertencias([]);
+    try {
+      const actualizada = await landingSimpleService.actualizar(id, { ...payload, limpiar_borrador: true });
       const guardados = codigosDesdeContent(actualizada.content, codigosAGuardar.producto, tienda);
       setPropiasBorradas(new Set());
       setLanding(actualizada);
@@ -469,6 +525,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       setCodigosPreview(guardados);
       setAdvertencias(actualizada.codigo_advertencias || []);
       setAviso('Cambios guardados.');
+      setBorradorAt(null);
       setSinGuardar(false);
       setSidebarVisible(false);
       return true;
@@ -484,7 +541,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     }
   }
 
-  async function confirmarVenta({ venta: nuevaVenta, seleccion: nuevaSeleccion, items: nuevosItems, confirmaciones }) {
+  function prepararVenta(nuevaVenta) {
     // Con el código de arranque intacto, el inicio pasa a ser la página base
     // del formato elegido (la misma que mostró la vista previa). Si ya era la
     // base de OTRO formato, se cambia también, pero preguntando: puede tener
@@ -518,6 +575,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       ...(usarBase ? { inicio: plantillaInicioPara(nuevaVenta.tipo) } : {}),
       ...(usarFichaBase ? { producto: PLANTILLA_PRODUCTO } : {}),
     };
+    return { nuevosCodigos, usarBase, usarFichaBase };
+  }
+
+  async function confirmarVenta({ venta: nuevaVenta, seleccion: nuevaSeleccion, items: nuevosItems, confirmaciones }) {
+    const { nuevosCodigos, usarBase, usarFichaBase } = prepararVenta(nuevaVenta);
     setSeleccion(nuevaSeleccion);
     setVenta(nuevaVenta);
     setCodigos(nuevosCodigos);
@@ -527,6 +589,47 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       setAviso((usarBase || usarFichaBase)
         ? 'Listo: actualizamos la base de inicio/ficha para que el diseño guardado coincida con la vista previa.'
         : 'Diseño guardado.');
+    }
+  }
+
+  // Guarda sin publicar: la tienda sigue mostrando lo último publicado.
+  async function guardarBorradorVenta({ venta: nuevaVenta, seleccion: nuevaSeleccion, items: nuevosItems }) {
+    const { nuevosCodigos } = prepararVenta(nuevaVenta);
+    setSeleccion(nuevaSeleccion);
+    setVenta(nuevaVenta);
+    setCodigos(nuevosCodigos);
+    const { payload } = armarPayload({ venta: nuevaVenta, items: nuevosItems, codigos: nuevosCodigos });
+    setGuardando(true);
+    setError('');
+    setErroresDetalle([]);
+    try {
+      const r = await landingSimpleService.guardarBorrador(id, payload);
+      setBorradorAt(r?.guardado_at || new Date().toISOString());
+      setSinGuardar(false);
+      setAviso('Borrador guardado. Tu tienda publicada no cambió.');
+    } catch (err) {
+      const data = err?.response?.data;
+      setError(data?.message || (err?.response ? `el servidor respondió ${err.response.status}` : 'no hay conexión con el servidor.'));
+      setErroresDetalle(data?.errores || []);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function descartarBorrador() {
+    if (!window.confirm('¿Descartar el borrador? El editor vuelve a lo que está publicado y los cambios sin publicar se pierden.')) return;
+    setGuardando(true);
+    setError('');
+    try {
+      await landingSimpleService.descartarBorrador(id);
+      const publicada = await landingSimpleService.obtener(id);
+      inicializarDesde(publicada, tienda, catalogo);
+      setVersionPanel(v => v + 1);
+      setAviso('Borrador descartado.');
+    } catch (err) {
+      setError(err?.response?.data?.message || 'No se pudo descartar el borrador.');
+    } finally {
+      setGuardando(false);
     }
   }
 
@@ -804,12 +907,18 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     return (
       <div className="relative h-full">
       <ConfigurarVentaCodigo
+        key={versionPanel}
         catalogo={catalogo}
         onRecargarCatalogo={() => vitrinaService.catalogo().then(setCatalogo)}
         inicial={{ venta, seleccion }}
         anclasIniciales={anclasGuardadas}
         guardando={guardando}
         onConfirmar={confirmarVenta}
+        // Borrador solo con la tienda publicada: sin publicar, Guardar ya
+        // no afecta a nadie.
+        onGuardarBorrador={venta?.configurado && landing?.activo ? guardarBorradorVenta : null}
+        borradorGuardadoAt={borradorAt}
+        onDescartarBorrador={borradorAt ? descartarBorrador : null}
         errorGuardado={error ? { mensaje: error, detalles: erroresDetalle } : null}
         onCambiarModo={venta?.configurado ? null : () => cambiarDeModo()}
         tienda={tienda}

@@ -30,6 +30,9 @@
     --color-accent-hover: #a1edff;
     --color-accent-fg: var(--color-brand-ink);
     --color-accent-text: var(--color-brand-ice);
+    /* Foco de teclado: celeste de marca y no coral, que se confundía con el
+       rojo de error (#f87171) en los campos del panel. */
+    --color-focus: var(--color-accent-text);
     --color-selection: var(--color-brand-ice);
     --color-selection-fg: var(--color-brand-ink);
     --color-placeholder: var(--color-brand-slate);

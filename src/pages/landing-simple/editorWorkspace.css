@@ -163,3 +163,21 @@
 .ecommerce-preview-controls > p { margin: 16px 0 0; }
 @container (min-width: 640px) { .ecommerce-preview-tabs { grid-template-columns: repeat(4,minmax(0,1fr)); } }
 @container (max-width: 290px) { .ecommerce-preview-tabs { grid-template-columns: minmax(0,1fr); } }
+
+/* "Descartar borrador": acción secundaria dentro del aviso de alcance del
+   guardado, con texto (no solo un ícono) y área táctil cómoda. */
+.ecommerce-builder-toolbar .ecommerce-discard-draft {
+  margin-top: 0.25rem;
+  min-height: 32px;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-fg);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ecommerce-builder-toolbar .ecommerce-discard-draft:hover { color: var(--color-primary-text); }
+.ecommerce-builder-toolbar .ecommerce-discard-draft:disabled { opacity: 0.55; cursor: not-allowed; }

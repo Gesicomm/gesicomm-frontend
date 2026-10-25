@@ -1392,7 +1392,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
               <div className="np-row">
                 <label>Fecha</label>
                 {modoCompletar ? (
-                  <div className="form-input" style={{ opacity: 0.7 }}>{form.fecha}</div>
+                  <div className="form-input" style={{ opacity: 0.7 }}>{String(form.fecha || "").split("-").reverse().join("/")}</div>
                 ) : (
                   <input
                     type="date"

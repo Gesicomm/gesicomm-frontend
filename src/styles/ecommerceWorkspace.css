@@ -17,7 +17,7 @@
 }
 :scope :is(.btn-primary, .btn-secondary):hover { transform: none; box-shadow: none; }
 :scope :is(button, a, input, select, textarea, summary):focus-visible {
-  outline: 2px solid var(--color-primary-text);
+  outline: 2px solid var(--color-focus, var(--color-primary-text));
   outline-offset: 3px;
 }
 :scope summary { cursor: pointer; padding-block: .6rem; font-weight: 600; }

@@ -39,6 +39,11 @@ export const landingSimpleService = {
     ...payload,
     ...(payload.items !== undefined ? { items: compactarItemsLanding(payload.items) } : {}),
   }).then(r => r.data),
+  // Borrador: el mismo payload de actualizar, guardado sin publicar.
+  guardarBorrador: (id, datos) => API.put(`/mis-landings-simples/${id}/borrador`, {
+    datos: { ...datos, ...(datos.items !== undefined ? { items: compactarItemsLanding(datos.items) } : {}) },
+  }).then(r => r.data),
+  descartarBorrador: (id) => API.delete(`/mis-landings-simples/${id}/borrador`).then(r => r.data),
   eliminar: (id) => API.delete(`/mis-landings-simples/${id}`).then(r => r.data),
   cambiarEstado: (id, activo, opciones = {}) => API.patch(`/mis-landings-simples/${id}/estado`, {
     activo,

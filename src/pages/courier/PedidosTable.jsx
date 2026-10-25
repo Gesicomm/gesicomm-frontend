@@ -318,14 +318,17 @@ function EstadoBadgeDropdown({ estado, etiqueta, onChange, modoAccion = false })
 }
 
 function formatFechaYHora(fecha, hora, createdAt) {
-  let fechaStr = fecha || "—";
+  // dd/mm/aaaa, como el resto del panel (es-PY). Antes la tabla mostraba
+  // ISO (2026-10-19) y el reporte de clientes 19/10/2026.
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fecha || ""));
+  let fechaStr = iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : (fecha || "—");
   let horaStr = hora || "";
 
   if (createdAt) {
     try {
       const d = new Date(createdAt);
       if (!isNaN(d.getTime())) {
-        fechaStr = d.toLocaleDateString("en-CA", { timeZone: "America/Asuncion" });
+        fechaStr = d.toLocaleDateString("es-PY", { timeZone: "America/Asuncion", day: "2-digit", month: "2-digit", year: "numeric" });
         horaStr = d.toLocaleTimeString("es-PY", {
           timeZone: "America/Asuncion",
           hour: "2-digit",
@@ -1848,8 +1851,10 @@ export function PedidosTable({
                 const leadTipoActual = e.lead_tipo_manual || ((e.campana_leads || []).length > 0 ? "campana" : "organico");
                 const tipoPedido = esWhatsapp
                   ? leadTipoActual === "campana"
-                    ? { label: "LC", tono: "whatsapp", title: "Lead Campaña WhatsApp — clic para corregir a Orgánico" }
-                    : { label: "LO", tono: "whatsapp", title: "Lead Orgánico WhatsApp — clic para corregir a Campaña" }
+                    // Texto completo, como en la vista de celular: "LO"/"LC" no
+                    // se entendían sin pasar el mouse.
+                    ? { label: "Lead Campaña", tono: "whatsapp", title: "Lead Campaña WhatsApp — clic para corregir a Orgánico" }
+                    : { label: "Lead Orgánico", tono: "whatsapp", title: "Lead Orgánico WhatsApp — clic para corregir a Campaña" }
                   : String(e.origen || "").toUpperCase() === "LANDING"
                   ? { label: "Pedido Web", tono: "web" }
                   : { label: "Manual", tono: "manual" };

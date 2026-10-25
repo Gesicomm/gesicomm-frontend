@@ -2221,7 +2221,8 @@ button.order-alert-chip:focus-visible {
 }
 
 .form-input:focus {
-  border-color: var(--color-primary);
+  /* El borde coral se leía como error ("Confirmador" recién enfocado). */
+  border-color: var(--color-focus, var(--color-primary));
 }
 
 .close-btn.dark {
@@ -3960,6 +3961,29 @@ button.order-alert-chip:focus-visible {
 .pt-th-courier { width: 90px; }
 .pt-th-state { width: 130px; }
 .pt-th-action { width: 232px; }
+
+/* La tabla mide ~1800 px y la Acción (lo que el comercio vino a hacer)
+   quedaba fuera de vista. Se fija a la derecha sin cambiar el orden de
+   columnas; los fondos son opacos para que el contenido no se trasluzca. */
+@media (min-width: 761px) {
+  .pt-th-action,
+  .pt-td-action {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    box-shadow: inset 1px 0 0 color-mix(in srgb, var(--color-fg) 8%, transparent);
+  }
+  .pt-th-action { background: color-mix(in srgb, var(--color-fg) 3.5%, var(--color-canvas)); }
+  .pt-td-action { background: color-mix(in srgb, var(--color-fg) 1.5%, var(--color-canvas)); }
+  .pt-row:hover .pt-td-action { background: color-mix(in srgb, var(--color-fg) 5.5%, var(--color-canvas)); }
+  /* Filas teñidas por etapa de seguimiento: la celda fija copia el tinte. */
+  .pt-root .pt-row[data-followup-tone] .pt-td-action {
+    background: color-mix(in srgb, var(--pt-followup-color) var(--pt-followup-fill), var(--color-surface));
+  }
+  .pt-root .pt-row[data-followup-tone]:hover .pt-td-action {
+    background: color-mix(in srgb, var(--pt-followup-color) var(--pt-followup-hover-fill), var(--color-surface));
+  }
+}
 
 .pt-row {
   border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 4%, transparent);
