@@ -16,6 +16,7 @@ vi.mock('../../services/deposito.service', () => ({
   depositoService: {
     listarDepositos: vi.fn(),
     crearDeposito: vi.fn(),
+    crearDepositoAvisandoDuplicado: vi.fn(),
     actualizarDeposito: vi.fn(),
     cambiarEstadoDeposito: vi.fn(),
     eliminarDeposito: vi.fn(),
@@ -58,7 +59,7 @@ beforeEach(() => {
   cleanup();
   vi.clearAllMocks();
   depositoService.listarDepositos.mockResolvedValue({ data: [], total: 0 });
-  depositoService.crearDeposito.mockResolvedValue({ id: 50, nombre: 'Depósito Luque' });
+  depositoService.crearDepositoAvisandoDuplicado.mockResolvedValue({ id: 50, nombre: 'Depósito Luque' });
   depositoService.actualizarDeposito.mockResolvedValue({ id: 50 });
   depositoService.guardarCouriersDeposito.mockResolvedValue({});
   courierApi.getCouriers.mockResolvedValue([]);
@@ -126,8 +127,8 @@ describe('Depósitos: alta simple', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Guardar depósito' }));
 
-    await waitFor(() => expect(depositoService.crearDeposito).toHaveBeenCalledTimes(1));
-    expect(depositoService.crearDeposito).toHaveBeenCalledWith(expect.objectContaining({
+    await waitFor(() => expect(depositoService.crearDepositoAvisandoDuplicado).toHaveBeenCalledTimes(1));
+    expect(depositoService.crearDepositoAvisandoDuplicado).toHaveBeenCalledWith(expect.objectContaining({
       nombre: 'Depósito Luque', ciudad: 'Luque', departamento: 'Central', direccion: 'Av. Test 123', tipoUbicacion: 'DEPOSITO',
     }));
     expect(courierApi.createCourier).not.toHaveBeenCalled();

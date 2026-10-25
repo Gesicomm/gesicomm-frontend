@@ -47,7 +47,8 @@ export default function DepositoSelector({ onSelect, depositoSeleccionadoId }) {
   const handleCrearDeposito = async (formValues) => {
     try {
       setLoadingForm(true);
-      const nuevoDeposito = await depositoService.crearDeposito(formValues);
+      const nuevoDeposito = await depositoService.crearDepositoAvisandoDuplicado(formValues);
+      if (!nuevoDeposito) return;
       setOpenCrear(false);
       
       // Volver a página 1 y refrescar

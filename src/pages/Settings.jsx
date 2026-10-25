@@ -124,7 +124,7 @@ const Settings = () => {
         <div className="settings-container">
             <div className="settings-header">
                 <h1>Configuración</h1>
-                <p>Administra las integraciones y preferencias de tu cuenta.</p>
+                <p>Administrá las integraciones y preferencias de tu cuenta.</p>
             </div>
 
             {error && (
@@ -267,7 +267,7 @@ const Settings = () => {
                         <Store size={32} style={{ marginBottom: '0.75rem', opacity: 0.4 }} />
                         <p style={{ margin: '0 0 1rem' }}>No tenés ninguna tienda conectada todavía.</p>
                         <p style={{ margin: 0, fontSize: '0.82rem' }}>
-                            Conectá tu cuenta de Meta Business para visualizar métricas en <strong style={{ color: '#ff007f' }}>Ads & Campañas</strong>.
+                            Conectá tu cuenta de Meta Business para visualizar métricas en <strong style={{ color: 'var(--color-primary-text)' }}>Publicidad</strong>.
                         </p>
                     </div>
                 ) : (

@@ -172,7 +172,9 @@ export default function DepositosPage() {
       setFormLoading(true);
       const guardado = form.id
         ? await depositoService.actualizarDeposito(form.id, form)
-        : await depositoService.crearDeposito(form);
+        : await depositoService.crearDepositoAvisandoDuplicado(form);
+      // Eligió no crear el duplicado: el formulario queda abierto para corregir.
+      if (!guardado) return;
       setFormOpen(false);
       setFormValues(null);
       setDepositoSeleccionado(guardado);

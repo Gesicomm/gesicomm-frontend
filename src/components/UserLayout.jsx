@@ -267,8 +267,13 @@ const UserLayout = ({ children }) => {
               borderRadius: '4px',
               fontWeight: 700,
               boxShadow: "0 0 6px color-mix(in srgb, var(--color-danger) 50%, transparent)"
-            }}>
+            }}
+              // Rojo sin explicación se leía como error del sistema: el número
+              // son seguimientos de WhatsApp que ya tendrían que haber salido.
+              title={`${item.badgeDanger} seguimiento${item.badgeDanger === 1 ? '' : 's'} vencido${item.badgeDanger === 1 ? '' : 's'}`}
+            >
               {item.badgeDanger}
+              <span className="sr-only"> seguimiento{item.badgeDanger === 1 ? '' : 's'} vencido{item.badgeDanger === 1 ? '' : 's'}</span>
             </span>
           )}
         </Link>

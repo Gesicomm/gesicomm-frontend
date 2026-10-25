@@ -56,10 +56,24 @@ export const depositoService = {
     return mapDepositoFromApi(data);
   },
 
-  crearDeposito: async (payload) => {
+  crearDeposito: async (payload, { confirmarDuplicado = false } = {}) => {
     const apiPayload = mapDepositoToApi(payload);
+    if (confirmarDuplicado) apiPayload.confirmar_duplicado = true;
     const { data } = await api.post('/depositos', apiPayload);
     return mapDepositoFromApi(data);
+  },
+
+  // El backend frena un depósito con el mismo nombre y dirección que otro
+  // (409 DEPOSITO_DUPLICADO). Se pregunta y, si el comercio confirma, se crea.
+  // Devuelve null si decidió no crearlo.
+  crearDepositoAvisandoDuplicado: async (payload, confirmar = (msg) => window.confirm(msg)) => {
+    try {
+      return await depositoService.crearDeposito(payload);
+    } catch (err) {
+      if (err?.response?.status !== 409 || err.response.data?.codigo !== 'DEPOSITO_DUPLICADO') throw err;
+      if (!confirmar(`${err.response.data.error} ¿Querés crear otro igual de todos modos?`)) return null;
+      return depositoService.crearDeposito(payload, { confirmarDuplicado: true });
+    }
   },
 
   actualizarDeposito: async (id, payload) => {
