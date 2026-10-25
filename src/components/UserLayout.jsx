@@ -4,7 +4,7 @@ import {
   Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
   Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign, MapPin, PackageCheck,
-  PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus, TrendingUp, Ship, BadgeCheck
+  PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus, TrendingUp, Ship, BadgeCheck, Users
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -47,6 +47,7 @@ const ICONOS_SIDEBAR = {
   Ship,
   Circle,
   TrendingUp,
+  Users,
 };
 
 const UserLayout = ({ children }) => {

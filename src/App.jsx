@@ -59,6 +59,7 @@ const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
 const SeleccionarTienda = lazy(() => import('./pages/onboarding/SeleccionarTienda'));
 const ControlCourier = lazy(() => import('./pages/courier/control-courier').then(m => ({ default: m.ControlCourier })));
 const DashboardOperativo = lazy(() => import('./pages/courier/DashboardOperativo').then(m => ({ default: m.DashboardOperativo })));
+const Clientes = lazy(() => import('./pages/clientes/Clientes'));
 const AbastecimientoAdmin = lazy(() => import('./pages/abastecimiento/AbastecimientoAdmin'));
 const SolicitudAbastecimientoDetalle = lazy(() => import('./pages/abastecimiento/SolicitudAbastecimientoDetalle'));
 const MisAbastecimientos = lazy(() => import('./pages/abastecimiento/MisAbastecimientos'));
@@ -452,6 +453,9 @@ function App() {
         } />
         <Route path="/dashboard-operativo" element={
           <RequireTienda><UserLayout><DashboardOperativo /></UserLayout></RequireTienda>
+        } />
+        <Route path="/clientes" element={
+          <RequireTienda><UserLayout><Clientes /></UserLayout></RequireTienda>
         } />
         <Route path="/pedidos/configuracion" element={
           <RequireTienda><UserLayout><SeguimientoConfig /></UserLayout></RequireTienda>

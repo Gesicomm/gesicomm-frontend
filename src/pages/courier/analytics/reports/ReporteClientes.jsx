@@ -22,7 +22,10 @@ const SEGMENTOS = [
 
 const LIMITE = 25;
 
-export function ReporteClientes({ filters }) {
+// `modo="historial"`: lo usa el módulo Clientes, sin período (toda la
+// historia de la tienda) y con su propio título de página.
+export function ReporteClientes({ filters, modo = 'periodo', onAbrirCliente = null }) {
+  const historial = modo === 'historial';
   const [data, setData] = useState([]);
   const [kpis, setKpis] = useState({});
   const [segmento, setSegmento] = useState('todos');
@@ -57,7 +60,7 @@ export function ReporteClientes({ filters }) {
   const formatDate = (ymd) => (ymd ? String(ymd).slice(0, 10).split('-').reverse().join('/') : '—');
 
   const tarjetas = [
-    { label: 'Clientes con pedido', valor: kpis.clientes_con_pedido ?? 0, sub: 'Hicieron al menos un pedido en el período', icon: User },
+    { label: 'Clientes con pedido', valor: kpis.clientes_con_pedido ?? 0, sub: historial ? 'Hicieron al menos un pedido' : 'Hicieron al menos un pedido en el período', icon: User },
     { label: 'Ya recibieron', valor: kpis.clientes_compradores ?? 0, sub: `${Number(kpis.tasa_conversion_pedido || 0).toFixed(1)}% de los clientes con pedido`, icon: Users },
     { label: 'Recurrentes', valor: kpis.clientes_recurrentes ?? 0, sub: '2 o más pedidos recibidos', icon: Star },
     { label: 'Problemáticos', valor: kpis.clientes_problematicos ?? 0, sub: 'Con devolución injustificada', icon: ShieldAlert, peligro: true },
@@ -65,6 +68,7 @@ export function ReporteClientes({ filters }) {
 
   return (
     <div className="cic-report-container animate-fade-in">
+      {!historial && (
       <div className="cic-report-header">
         <h2 className="cic-report-title">Clientes: buenos y problemáticos</h2>
         <p className="cic-report-desc">
@@ -72,6 +76,7 @@ export function ReporteClientes({ filters }) {
           si devolvió con motivo o sin motivo, y cuánto te compró.
         </p>
       </div>
+      )}
 
       <div className="cic-kpi-grid">
         {tarjetas.map(({ label, valor, sub, icon: Icon, peligro }) => (
@@ -123,7 +128,11 @@ export function ReporteClientes({ filters }) {
                 <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando clientes...</td></tr>
               ) : data.length === 0 ? (
                 <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>
-                  {segmento === 'todos' ? 'No hay clientes con pedidos en este período.' : 'Ningún cliente de este tipo en el período.'}
+                  {filters?.buscador
+                    ? `Ningún cliente coincide con "${filters.buscador}".`
+                    : segmento === 'todos'
+                      ? (historial ? 'Todavía no hay clientes con pedidos.' : 'No hay clientes con pedidos en este período.')
+                      : (historial ? 'Ningún cliente de este tipo.' : 'Ningún cliente de este tipo en el período.')}
                 </td></tr>
               ) : data.map(row => {
                 const c = CALIFICACION[row.calificacion] || CALIFICACION.sin_entregas;
@@ -131,7 +140,13 @@ export function ReporteClientes({ filters }) {
                 return (
                   <tr key={row.cliente_key}>
                     <td style={{ minWidth: 190 }}>
-                      <div style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{row.nombre}</div>
+                      {onAbrirCliente ? (
+                        <button type="button" className="cic-cliente-link" onClick={() => onAbrirCliente(row)} aria-label={`Ver ficha de ${row.nombre}`}>
+                          {row.nombre}
+                        </button>
+                      ) : (
+                        <div style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{row.nombre}</div>
+                      )}
                       <div style={{ fontSize: '0.875rem', color: 'var(--color-fg-muted)', whiteSpace: 'nowrap' }}>{row.telefono}</div>
                     </td>
                     <td>
