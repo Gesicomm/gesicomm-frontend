@@ -193,4 +193,14 @@ describe('Histórico de gasto', () => {
     expect(onCambio).toHaveBeenCalled();
     confirmar.mockRestore();
   });
+
+  it('muestra el costo por pedido asociado y, en borrador, ofrece activar antes que cargar gasto', () => {
+    render(<AdsCampanas campanas={[{ ...CAMPANAS[0], leads: 5 }, CAMPANAS[1]]} cargando={false} tiendas={[]} onCambio={vi.fn()} />);
+    const filas = screen.getAllByRole('row');
+    const activa = filas.find(f => f.textContent.includes('Termo'));
+    expect(within(activa).getByText(/350\.000/)).toBeInTheDocument();
+    expect(within(activa).getByRole('button', { name: /Cargar gasto/ })).toBeInTheDocument();
+    const borrador = filas.find(f => f.textContent.includes('Mate'));
+    expect(within(borrador).getByRole('button', { name: /Marcar activa/ })).toBeInTheDocument();
+  });
 });

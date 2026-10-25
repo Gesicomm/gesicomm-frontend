@@ -65,6 +65,20 @@ function firmaDeValores(valores) {
   return (valores || []).map(v => `${(v.opcion || '').toLowerCase()}:${(v.valor || '').toLowerCase()}`).sort().join('|');
 }
 
+// SKU sugerido: hasta 3 iniciales del nombre (sin tildes) + 4 dígitos.
+// "Juego de sillas de jardín" -> "JSJ-4821".
+export function generarSku(nombre = '', azar = Math.random) {
+  const iniciales = String(nombre)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toUpperCase()
+    .split(/[^A-Z0-9]+/)
+    .filter(p => p && !['DE', 'LA', 'EL', 'LOS', 'LAS', 'Y', 'CON', 'PARA', 'P'].includes(p))
+    .slice(0, 3)
+    .map(p => p[0])
+    .join('') || 'PRD';
+  return `${iniciales}-${String(1000 + Math.floor(azar() * 9000))}`;
+}
+
 const TABS = [
   { id: 'basica', label: 'Identidad', desc: 'Datos base, textos y fotos', level: 'Esencial', icon: <Package size={15} /> },
   { id: 'comercial', label: 'Precio', desc: 'Precio, descuento y margen', level: 'Esencial', icon: <DollarSign size={15} /> },
@@ -2332,15 +2346,27 @@ export default function ProductForm() {
                 misma regla). */}
             <div className="form-group">
               <label htmlFor="prod-sku">SKU {skuObligatorio && <span className="req">*</span>}</label>
-              <input
-                id="prod-sku"
-                aria-invalid={Boolean(errors.sku)}
-                {...register('sku', {
-                  validate: (v) => !skuObligatorio || Boolean(v?.trim()) || 'El SKU es obligatorio.',
-                })}
-                placeholder="CRE-300"
-                autoComplete="off"
-              />
+              {/* El SKU sigue siendo obligatorio (clave del Excel de precios y de
+                  la API), pero no hace falta inventarlo: "Generar" arma uno con
+                  las iniciales del nombre. La unicidad la valida el backend. */}
+              <div className="prod-sku-field">
+                <input
+                  id="prod-sku"
+                  aria-invalid={Boolean(errors.sku)}
+                  {...register('sku', {
+                    validate: (v) => !skuObligatorio || Boolean(v?.trim()) || 'El SKU es obligatorio.',
+                  })}
+                  placeholder="CRE-300"
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setValue('sku', generarSku(nombre), { shouldDirty: true, shouldValidate: true })}
+                >
+                  Generar
+                </button>
+              </div>
               {errors.sku && <span className="field-error">{errors.sku.message}</span>}
             </div>
 

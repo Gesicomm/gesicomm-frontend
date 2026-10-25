@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, KeyRound, Lock, MapPin, Pencil, Plus, Save, Search, ShieldCheck, Trash2, Users } from "lucide-react";
+import { AlertTriangle, Archive, ArchiveRestore, ChevronDown, ChevronLeft, ChevronRight, KeyRound, Lock, MapPin, Pencil, Plus, Save, Search, ShieldCheck, Trash2, Users } from "lucide-react";
 import CurrencyInput from "../../components/CurrencyInput";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { CourierWizard, VehiculoIcon, iniciales, rangoLabel } from "./CourierWizard";
@@ -452,6 +452,19 @@ export function DeliveryPanel({
                         <button type="button" className="btn-icon" onClick={() => abrirEditarCourier(grupo.courier)} title="Editar courier" aria-label={`Editar ${grupo.courier.nombre}`}>
                           <Pencil size={15} />
                         </button>
+                        {/* Archivar en vez de borrar: el courier deja de aparecer al
+                            asignar pedidos y en Rendición, pero su historial queda. */}
+                        {onUpdateCourier && (
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => onUpdateCourier({ ...grupo.courier, activo: grupo.courier.activo === false })}
+                          >
+                            {grupo.courier.activo === false
+                              ? <><ArchiveRestore size={15} /> Reactivar</>
+                              : <><Archive size={15} /> Archivar</>}
+                          </button>
+                        )}
                         <button type="button" className="btn-icon danger" onClick={() => setCourierABorrar(grupo.courier)} title="Eliminar courier" aria-label={`Eliminar ${grupo.courier.nombre}`}>
                           <Trash2 size={15} />
                         </button>

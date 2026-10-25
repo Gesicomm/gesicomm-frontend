@@ -1660,3 +1660,18 @@
 .tn-panel-title-status { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
 .tn-panel-title-status h2 { margin: 0; }
 .tn-panel-head .tn-section-next-step { color: var(--vit-text); margin-top: 0.65rem; }
+
+/* Zona de riesgo del dominio propio: separada de "Visitar tienda". */
+.dp-riesgo {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+.dp-riesgo p {
+  margin: 0 0 0.75rem;
+  font-size: var(--ui-text-help, 0.875rem);
+  line-height: 1.5;
+  color: var(--color-fg-muted);
+}
+.dp-riesgo p strong { display: block; font-size: var(--ui-text-body, 1rem); color: var(--color-fg); }
+.dp-riesgo .dp-btn-peligro { color: var(--color-danger); border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border)); }

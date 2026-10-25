@@ -228,6 +228,12 @@ export const confirmarLiquidacion = async (payload) => {
   return data;
 };
 
+// Qué falta rendir con cada courier, sin elegir fechas.
+export const getSaldosPendientesRendicion = async () => {
+  const { data } = await api.get('/liquidaciones/saldos-pendientes');
+  return data;
+};
+
 export const getLiquidacionesPorCourier = async (courierId) => {
   const { data } = await api.get(`/liquidaciones/courier/${courierId}`);
   return data;

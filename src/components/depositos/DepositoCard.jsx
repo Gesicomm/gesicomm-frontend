@@ -38,7 +38,7 @@ export default function DepositoCard({
             {modoPropio && deposito.activo && !summaryLoading && courierSummary && (couriersAsignados === 0 || pendientes > 0) && (
               <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-semibold text-warning">
                 <AlertTriangle size={11} />
-                {couriersAsignados === 0 ? 'Sin transportista asignado' : 'Falta configurar cobertura'}
+                {couriersAsignados === 0 ? 'Sin courier asignado' : 'Falta configurar cobertura'}
               </span>
             )}
           </span>
@@ -67,9 +67,9 @@ export default function DepositoCard({
         )}
       </div>
 
-      <div className="dep-deposit-meta" aria-label="Transportistas y cobertura" aria-busy={summaryLoading}>
+      <div className="dep-deposit-meta" aria-label="Couriers y cobertura" aria-busy={summaryLoading}>
         {summaryLoading ? <span role="status">Cargando cobertura…</span> : courierSummary ? <>
-          <span className="font-semibold text-fg">{couriersAsignados ? `${courierSummary.enabledCouriers?.[0]?.nombre || 'Transportista asignado'}${couriersAsignados > 1 ? ` + ${couriersAsignados - 1}` : ''}` : 'Sin transportistas'}</span>
+          <span className="font-semibold text-fg">{couriersAsignados ? `${courierSummary.enabledCouriers?.[0]?.nombre || 'Courier asignado'}${couriersAsignados > 1 ? ` + ${couriersAsignados - 1}` : ''}` : 'Sin couriers'}</span>
           <span>{ciudades} {ciudades === 1 ? 'ciudad cubierta' : 'ciudades cubiertas'}{couriersAsignados > 1 ? ' con el principal' : ''}</span>
         </> : <span>Cobertura no disponible</span>}
       </div>

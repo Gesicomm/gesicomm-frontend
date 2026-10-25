@@ -148,6 +148,11 @@ export default function DominioPropio({ tienda, onActualizado }) {
     }
   }
 
+  async function desactivar() {
+    if (!window.confirm('¿Desactivar el dominio? Tu tienda deja de verse en esa dirección hasta que lo reactives. Sigue funcionando por el subdominio de gesicomm.com.')) return;
+    cambiarHabilitacion(false);
+  }
+
   async function eliminar() {
     if (!window.confirm('¿Quitar este dominio propio? Tu tienda va a seguir funcionando por el subdominio de gesicomm.com.')) return;
     try {
@@ -214,10 +219,15 @@ export default function DominioPropio({ tienda, onActualizado }) {
           <a className="land-btn-primary" href={url} target="_blank" rel="noopener noreferrer">
             Visitar tienda <ExternalLink size={14} />
           </a>
-          <button type="button" className="btn-secondary" onClick={() => cambiarHabilitacion(false)}>
-            Desactivar
-          </button>
-          <button type="button" className="btn-secondary" onClick={eliminar}>Quitar dominio</button>
+        </div>
+        {/* Las acciones que sacan la tienda de esta dirección van aparte y
+            piden confirmación: estaban pegadas a "Visitar tienda". */}
+        <div className="dp-riesgo" role="group" aria-labelledby="dp-riesgo-titulo">
+          <p id="dp-riesgo-titulo"><strong>Dejar de usar este dominio</strong> Tus clientes no van a poder entrar por {tienda.dominio_propio}.</p>
+          <div className="dp-actions">
+            <button type="button" className="btn-secondary" onClick={desactivar}>Desactivar</button>
+            <button type="button" className="btn-secondary dp-btn-peligro" onClick={eliminar}>Quitar dominio</button>
+          </div>
         </div>
         {error && <div className="land-alert-error"><AlertCircle size={14} /> {error}</div>}
       </div>

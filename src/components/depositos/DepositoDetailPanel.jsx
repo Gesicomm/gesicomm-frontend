@@ -1,6 +1,58 @@
-import React from 'react';
-import { AlertTriangle, MapPin, PackagePlus, Pencil, Plus, Truck, User, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, MapPin, Package, PackagePlus, Pencil, Plus, Truck, User, X } from 'lucide-react';
+import { inventarioService } from '../../services/inventario.service';
 import DepositoStatusBadge from './DepositoStatusBadge';
+
+const STOCK_VISIBLE = 8;
+
+/**
+ * Qué hay guardado en este depósito. El panel mostraba couriers y cobertura
+ * pero no el stock, que es lo primero que se busca al abrir un depósito.
+ * Filtra el backend (deposito_id en /inventario/stock/listado).
+ */
+function StockDelDeposito({ depositoId }) {
+  const [datos, setDatos] = useState(null);
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    let vigente = true;
+    setDatos(null);
+    setError(false);
+    inventarioService.listarStock({ deposito_id: depositoId, page: 1, limit: STOCK_VISIBLE })
+      .then(r => { if (vigente) setDatos(r); })
+      .catch(() => { if (vigente) setError(true); });
+    return () => { vigente = false; };
+  }, [depositoId]);
+
+  const filas = datos?.data || datos?.filas || datos?.items || [];
+  const total = Number(datos?.total || 0);
+  return (
+    <section className="dep-detail-block" aria-labelledby="dep-stock-titulo">
+      <h3 id="dep-stock-titulo" className="m-0 flex items-center gap-2 text-base font-semibold text-fg"><Package size={16} /> Stock en este depósito</h3>
+      {error ? (
+        <p className="m-0 mt-2 text-sm text-fg-muted">No se pudo cargar el stock.</p>
+      ) : datos === null ? (
+        <p className="m-0 mt-2 text-sm text-fg-muted">Cargando stock…</p>
+      ) : total === 0 ? (
+        <p className="m-0 mt-2 text-sm text-fg-muted">Todavía no hay productos con stock cargado en este depósito.</p>
+      ) : (
+        <>
+          <p className="m-0 mt-1 text-sm text-fg-muted">
+            {datos.kpis?.disponibles ?? 0} unidades disponibles{datos.kpis?.reservadas ? ` · ${datos.kpis.reservadas} reservadas` : ''} · {total} producto{total === 1 ? '' : 's'}
+          </p>
+          <ul className="m-0 mt-3 flex list-none flex-col gap-1.5 p-0">
+            {filas.map(f => (
+              <li key={f.id} className="flex items-baseline justify-between gap-3 border-b border-border py-1.5 text-sm last:border-b-0">
+                <span className="min-w-0 text-fg">{f.Producto?.nombre}{f.ProductoVariante?.nombre ? ` · ${f.ProductoVariante.nombre}` : ''}</span>
+                <span className="shrink-0 font-semibold tabular-nums text-fg">{f.cantidad_disponible}</span>
+              </li>
+            ))}
+          </ul>
+          {total > filas.length && <p className="m-0 mt-2 text-sm text-fg-muted">y {total - filas.length} producto{total - filas.length === 1 ? '' : 's'} más.</p>}
+        </>
+      )}
+    </section>
+  );
+}
 
 function CourierRow({ courier, onConfigure }) {
   const sinCobertura = (courier.ciudades_cubiertas || 0) === 0;
@@ -118,8 +170,8 @@ export default function DepositoDetailPanel({
         <section className="dep-detail-block">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <h3 className="m-0 text-base font-semibold text-fg">Transportistas y cobertura</h3>
-              <p className="m-0 mt-0.5 text-[13px] text-fg-muted">{modoPropio ? 'Elegí quién entrega y las ciudades que atiende.' : 'Opcional: configurá transportistas si también despachás desde aquí.'}</p>
+              <h3 className="m-0 text-base font-semibold text-fg">Couriers y cobertura</h3>
+              <p className="m-0 mt-0.5 text-[13px] text-fg-muted">{modoPropio ? 'Elegí quién entrega y las ciudades que atiende.' : 'Opcional: configurá couriers si también despachás desde aquí.'}</p>
             </div>
             <button
               type="button"
@@ -152,6 +204,8 @@ export default function DepositoDetailPanel({
             </ul>
           )}
         </section>
+        <StockDelDeposito depositoId={deposito.id} />
+
         <section className="dep-detail-block dep-detail-stock">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

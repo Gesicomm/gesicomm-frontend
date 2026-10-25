@@ -2987,6 +2987,7 @@ export default function ConfigurarVentaCodigo({
                     ),
                     banner: (
                       <EditorBannersInicio
+                        onAbrirEncabezado={() => setBloqueInicioAbierto({ clave: '__menu__', n: Date.now() })}
                         banners={inicioComercial.banners}
                         categorias={categoriasInicioDisponibles}
                         variante={normalizarEncabezadoInicio(inicioComercial.encabezado).variante}
@@ -3728,8 +3729,12 @@ export default function ConfigurarVentaCodigo({
               ) : (
               <Bloque
                 titulo="Código avanzado"
-                ayuda="Copiá el prompt maestro para la IA y pegá abajo el código completo de tu página."
+                ayuda="Para diseñar la página con una IA: copiás el prompt maestro y pegás el HTML que te devuelve. Reemplaza el diseño de los bloques."
               >
+                {/* Plegado por defecto: es para quien diseña con IA, y abierto
+                    dejaba "Resetear a plantilla" a mano en el flujo de todos. */}
+                <details className="ecommerce-codigo-avanzado">
+                  <summary>Mostrar prompt maestro y editor de código</summary>
                 <InstruccionesIaPagina
                   codigos={codigos}
                   tipo={tipo}
@@ -3743,6 +3748,7 @@ export default function ConfigurarVentaCodigo({
                   landing={landing}
                   onRecargarLanding={recargarLandingDesdeServidor}
                 />
+                </details>
               </Bloque>
               )}
             </div>
@@ -4500,7 +4506,7 @@ function SelectorEnlaceBanner({ value, onChange, categorias = [] }) {
   );
 }
 
-function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCambiarTamano, dispositivo = 'escritorio', onAgregar, onCambiar, onQuitar, onMover, onSubir }) {
+function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCambiarTamano, dispositivo = 'escritorio', onAgregar, onCambiar, onQuitar, onMover, onSubir, onAbrirEncabezado = null }) {
   const [colapsados, setColapsados] = useState({});
   const esMovil = dispositivo === 'movil';
   function alternar(id) {
@@ -4509,7 +4515,12 @@ function EditorBannersInicio({ banners, categorias = [], variante, tamano, onCam
   return (
     <div className="ecommerce-banner-editor space-y-3">
       {variante === 'embebido' && (
-        <p className="text-xs text-fg-muted">Estilo: <strong>Encabezado embebido</strong> — se cambia en el panel de Encabezado.</p>
+        <p className="text-sm text-fg-muted">
+          Estilo: <strong>Encabezado embebido</strong> — se cambia en el panel de Encabezado.
+          {onAbrirEncabezado && (
+            <> <button type="button" onClick={onAbrirEncabezado} className="font-semibold text-primary-text underline underline-offset-2">Abrir Encabezado</button></>
+          )}
+        </p>
       )}
       {onCambiarTamano && (
       <div className="ecommerce-banner-size">

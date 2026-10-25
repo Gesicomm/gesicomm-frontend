@@ -170,6 +170,24 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
     return Array.from(ciudadesMap.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
   }, [geografia, form.departamento]);
 
+  // "…, Luque" en la dirección con la ciudad Areguá elegida: el pedido sale
+  // de un lado y la cobertura se calcula con el otro. Solo se mira lo que va
+  // después de una coma y tiene que ser exactamente una ciudad del catálogo,
+  // para no avisar por una calle que se llame como una ciudad.
+  const ciudadEnDireccion = useMemo(() => {
+    if (!form.ciudad || !form.direccion || geografia.length === 0) return null;
+    const tramos = String(form.direccion).split(',').slice(1).map(t => normalizarBusqueda(t)).filter(Boolean);
+    if (tramos.length === 0) return null;
+    const elegida = normalizarBusqueda(form.ciudad);
+    for (const depto of geografia) {
+      for (const c of depto.ciudades || []) {
+        const nombre = normalizarBusqueda(c.nombre);
+        if (nombre && nombre !== elegida && tramos.includes(nombre)) return c.nombre;
+      }
+    }
+    return null;
+  }, [form.ciudad, form.direccion, geografia]);
+
   const ciudadExisteEnDepartamento = (ciudad, departamento) => {
     if (!ciudad || !departamento) return true;
     if (geografia.length === 0) return true;
@@ -296,6 +314,11 @@ export default function DepositoCampos({ form, errors = {}, onChange, autoFocus 
           className={claseInput(errors.direccion)}
         />
         {errors.direccion && <p className="mt-1 text-[13px] text-danger">{errors.direccion}</p>}
+        {!errors.direccion && ciudadEnDireccion && (
+          <p role="note" className="mt-1 text-sm text-warning">
+            La dirección dice {ciudadEnDireccion}, pero la ciudad elegida es {form.ciudad}. Revisá cuál es la correcta: la cobertura de envío se calcula con la ciudad.
+          </p>
+        )}
       </div>
 
       <div className="sm:col-span-2">

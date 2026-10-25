@@ -181,3 +181,17 @@
 }
 .ecommerce-builder-toolbar .ecommerce-discard-draft:hover { color: var(--color-primary-text); }
 .ecommerce-builder-toolbar .ecommerce-discard-draft:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* "Código avanzado" plegado: el resumen es un botón de ancho cómodo. */
+.ecommerce-codigo-avanzado > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--ui-radius-control, 8px);
+  font-weight: 600;
+  color: var(--color-fg);
+  cursor: pointer;
+}
+.ecommerce-codigo-avanzado[open] > summary { margin-bottom: 1rem; }

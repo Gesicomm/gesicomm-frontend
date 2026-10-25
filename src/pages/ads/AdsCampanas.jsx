@@ -167,6 +167,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                   <th>Campaña</th>
                   <th className="text-right">Pedidos asociados</th>
                   <th className="text-right">Gastado</th>
+                  <th className="text-right" title="Gasto cargado dividido por los pedidos asociados. Aproximado: el pedido se asocia por producto, no por clic.">Costo por pedido</th>
                   <th>Estado en Gesicom</th>
                   <th className="text-right">Acciones</th>
                 </tr>
@@ -238,19 +239,38 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                           </>
                         ) : <span className="text-fg-subtle">Sin cargar</span>}
                       </td>
+                      <td data-label="Costo por pedido" className="whitespace-nowrap text-right tabular-nums">
+                        {tieneGasto && c.leads > 0
+                          ? <span className="font-semibold text-fg">{formatPYG(Math.round(c.gasto_total / c.leads))}</span>
+                          : <span className="text-fg-subtle" title={tieneGasto ? 'Todavía no hay pedidos asociados' : 'Cargá el gasto para calcularlo'}>—</span>}
+                      </td>
                       <td data-label="Estado en Gesicom">
                         <span className="badge" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
                       </td>
                       <td data-label="Acciones" className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            style={{ padding: '0.3rem 0.6rem', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
-                            onClick={() => setCampanaGasto(c)}
-                          >
-                            <Wallet size={13} style={{ marginRight: '0.3rem' }} /> Cargar gasto
-                          </button>
+                          {/* Una campaña en borrador todavía no gasta: lo que sigue es
+                              activarla. Cargar gasto queda en "Más acciones". */}
+                          {c.estado === 'borrador' ? (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              style={{ padding: '0.3rem 0.6rem', fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                              disabled={operandoId === c.id}
+                              onClick={() => cambiarEstado(c, 'activa')}
+                            >
+                              <Play size={13} style={{ marginRight: '0.3rem' }} /> Marcar activa
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              style={{ padding: '0.3rem 0.6rem', fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                              onClick={() => setCampanaGasto(c)}
+                            >
+                              <Wallet size={13} style={{ marginRight: '0.3rem' }} /> Cargar gasto
+                            </button>
+                          )}
                           <button type="button" className="btn-icon" title="Ver histórico de gasto" onClick={() => setCampanaAbierta(c)}>
                             <History size={15} />
                           </button>
@@ -258,7 +278,12 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                           <button type="button" className="btn-icon" disabled={operandoId === c.id} title="Editar campaña" onClick={() => { setCampanaEditar(c); setModalOpen(true); }}>
                             <Edit2 size={15} /> Editar campaña
                           </button>
-                          {(c.estado === 'borrador' || c.estado === 'pausada') && (
+                          {c.estado === 'borrador' && (
+                            <button type="button" className="btn-icon" title="Cargar gasto" onClick={() => setCampanaGasto(c)}>
+                              <Wallet size={15} /> Cargar gasto
+                            </button>
+                          )}
+                          {c.estado === 'pausada' && (
                             <button type="button" className="btn-icon" disabled={operandoId === c.id} title="Marcar como activa" onClick={() => cambiarEstado(c, 'activa')}>
                               <Play size={15} /> Marcar activa en Gesicom
                             </button>
@@ -288,7 +313,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                   <td className="font-semibold text-fg">Total gastado</td>
                   <td />
                   <td className="whitespace-nowrap text-right font-semibold tabular-nums text-fg">{formatPYG(totalVisible)}</td>
-                  <td colSpan={2} />
+                  <td colSpan={3} />
                 </tr>
               </tfoot>
             </table>

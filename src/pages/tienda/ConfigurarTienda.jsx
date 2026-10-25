@@ -703,7 +703,9 @@ export default function ConfigurarTienda() {
             onClick={() => navigate('/seleccionar-tienda', { state: { desde: '/mi-tienda' } })}
             title="Administrar, inactivar o reactivar tus tiendas"
           >
-            <Store size={14} /> Mis tiendas
+            {/* No es otro selector de tienda (ese está en el menú): abre la
+                administración para crear, inactivar o eliminar tiendas. */}
+            <Store size={14} /> Administrar tiendas
           </button>
         </div>
       </header>

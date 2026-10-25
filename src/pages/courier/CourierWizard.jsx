@@ -229,6 +229,9 @@ export function CourierWizard({
   reglas = [],
   pasoInicial = conDeposito ? "deposito" : "courier",
   esAdmin = false,
+  // Departamento del depósito desde el que se abre: el selector de ciudades
+  // arranca ahí y no en el primero del catálogo (Alto Paraguay).
+  departamentoSugerido = "",
   onClose,
   onGuardar,
 }) {
@@ -308,7 +311,12 @@ export function CourierWizard({
         setCargandoGeo(false);
         const lista = data || [];
         setGeo(lista);
-        setDepartamentoId((prev) => prev ?? lista[0]?.id ?? null);
+        const sugerido = normalizarTexto(departamentoSugerido || draft.deposito?.departamento || "")
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const delDeposito = sugerido
+          ? lista.find(d => normalizarTexto(d.nombre).normalize("NFD").replace(/[\u0300-\u036f]/g, "") === sugerido)
+          : null;
+        setDepartamentoId((prev) => prev ?? delDeposito?.id ?? lista[0]?.id ?? null);
       })
       .catch(() => { if (vigente) setErrorGeo(true); })
       .finally(() => { if (vigente) setCargandoGeo(false); });

@@ -458,10 +458,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   ), [courierIdsDepositoSeleccionado]);
   const couriersParaOrigen = useMemo(() => {
     if (pedidoRaha) return [];
-    if (!depositoSeleccionadoId) return couriers;
+    // Un courier archivado no se ofrece para pedidos nuevos; si ya estaba
+    // asignado a este pedido, se sigue mostrando para no perder el dato.
+    const vigentes = couriers.filter(c => c.activo !== false || String(c.id) === String(form.courier_id));
+    if (!depositoSeleccionadoId) return vigentes;
     if (!courierIdsPermitidos) return [];
-    return couriers.filter(c => courierIdsPermitidos.has(Number(c.id)));
-  }, [couriers, courierIdsPermitidos, depositoSeleccionadoId, pedidoRaha]);
+    return vigentes.filter(c => courierIdsPermitidos.has(Number(c.id)));
+  }, [couriers, courierIdsPermitidos, depositoSeleccionadoId, pedidoRaha, form.courier_id]);
   const deliveryZonasParaOrigen = useMemo(() => {
     if (pedidoRaha) return [];
     if (!depositoSeleccionadoId || !courierIdsPermitidos) return deliveryZonas;
@@ -1108,9 +1111,21 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     });
   };
 
+  // Lleva al primer campo con error: el resumen de errores de arriba empujaba
+  // el modal y el campo quedaba fuera de la vista sin que se supiera dónde.
+  const enfocarPrimerError = () => {
+    requestAnimationFrame(() => {
+      const campo = document.querySelector('.np-wizard-form [aria-invalid="true"], .np-wizard-form .input-error');
+      if (!campo) return;
+      campo.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      campo.focus?.({ preventScroll: true });
+    });
+  };
+
   const validarPaso = (pasoId) => {
     const newErrors = erroresDePaso(pasoId);
     setErroresDelPaso(pasoId, newErrors);
+    if (Object.keys(newErrors).length > 0) enfocarPrimerError();
     return Object.keys(newErrors).length === 0;
   };
 
@@ -1124,6 +1139,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     );
     if (primerPasoConError >= 0) {
       setPasoActivo(primerPasoConError);
+      enfocarPrimerError();
       return false;
     }
     return true;
@@ -1216,6 +1232,15 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     form.direccion.trim() ||
     form.observaciones.trim()
   ));
+
+  // Un pedido de la tienda web viejo puede no tener canal guardado: abría en
+  // "Sin especificar" aunque el sistema sabe que vino de la web. Se completa
+  // con el canal "web" (mismo slug que usa el checkout al crear el pedido).
+  useEffect(() => {
+    if (!modoCompletar || form.canal_venta_id || String(envio?.origen || '').toUpperCase() !== 'LANDING') return;
+    const web = canalesVenta.find(c => String(c.slug || '').toLowerCase() === 'web');
+    if (web) setForm(prev => (prev.canal_venta_id ? prev : { ...prev, canal_venta_id: String(web.id) }));
+  }, [modoCompletar, envio?.origen, canalesVenta, form.canal_venta_id]);
 
   const handleRequestClose = () => {
     if (hayDatosSinGuardar && !window.confirm("Hay datos cargados en este pedido. ¿Querés cerrar y descartarlos?")) {

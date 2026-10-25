@@ -274,7 +274,7 @@ export default function DepositosPage() {
               <div>
                 <span className="dep-delivery-label">Modalidad de entrega actual</span>
                 {fulfillmentConfig && <strong className="dep-delivery-mode">{fulfillmentConfig.modalidad === 'PROPIA' ? 'Mis propios envíos' : 'Gesicom-RAHA gestiona la entrega'}</strong>}
-                <span className="dep-delivery-current">{fulfillmentConfig ? (fulfillmentConfig.modalidad === 'PROPIA' ? 'Despachás con tus depósitos y transportistas.' : 'Gesicom-RAHA prepara y entrega tus pedidos.') : 'Consultá o cambiá cómo entregás tus pedidos.'}</span>
+                <span className="dep-delivery-current">{fulfillmentConfig ? (fulfillmentConfig.modalidad === 'PROPIA' ? 'Despachás con tus depósitos y couriers.' : 'Gesicom-RAHA prepara y entrega tus pedidos.') : 'Consultá o cambiá cómo entregás tus pedidos.'}</span>
               </div>
             </div>
             <div className="dep-delivery-actions">
@@ -441,6 +441,7 @@ export default function DepositosPage() {
         reglas={courierWizard.reglas}
         pasoInicial={courierWizard.courier ? 'ciudades' : 'courier'}
         esAdmin={esAdmin}
+        departamentoSugerido={courierWizard.deposito?.departamento || ''}
         onClose={() => setCourierWizard({ open: false, deposito: null, courier: null, reglas: [] })}
         onGuardar={handleGuardarCourier}
       />

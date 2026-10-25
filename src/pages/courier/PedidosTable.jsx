@@ -1014,9 +1014,21 @@ export function PedidosTable({
     }
   };
 
-  const cargarConteos = useCallback(async (f) => {
+  const cargarConteos = useCallback(async (f, estado) => {
     try {
       const payload = construirPayloadBase(f, { incluirFiltroAbastecimiento: false });
+      // El "Por cobrar / Cobrado" del resumen se calcula sobre la misma
+      // lista de estados que muestra la tabla (los conteos por pestaña no).
+      const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
+      if (!soloAbastecimiento && estado !== TAB_RAHA_LOGISTICA_ID && estado !== TAB_ABASTECIMIENTO_ID) {
+        if (estadosEtapa?.length) {
+          payload.estados_totales = etapaActiva !== "recuperacion" && estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
+            ? estadosDeFiltro(estado)
+            : estadosEtapa;
+        } else if (estado && estado !== TODOS_ESTADOS_ID) {
+          payload.estados_totales = estadosDeFiltro(estado);
+        }
+      }
       if (!soloAbastecimiento && etapaActiva === "logistica") payload.separar_logistica_raha = true;
       if (!soloAbastecimiento && etapaActiva !== "logistica") payload.seguimiento_comercial = true;
       if (!soloAbastecimiento && etapaActiva === "seguimiento_envio") payload.incluir_confirmados_raha = true;
@@ -1034,7 +1046,7 @@ export function PedidosTable({
   // si cargarPedidos se declara primero (bug real que llegó a producción).
   const cargarPedidos = useCallback(async () => {
     cargar(filtros, page, estadoActivo);
-    cargarConteos(filtros);
+    cargarConteos(filtros, estadoActivo);
   }, [cargar, cargarConteos, filtros, page, estadoActivo]);
 
   // Resumen financiero minimalista, solo dentro de la pestaña Entregados —
@@ -1059,7 +1071,7 @@ export function PedidosTable({
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       cargar(filtros, page, estadoActivo);
-      cargarConteos(filtros);
+      cargarConteos(filtros, estadoActivo);
       if (viendoEntregados) {
         cargarResumenEntregados(filtros);
       } else {

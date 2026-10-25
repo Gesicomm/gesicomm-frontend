@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { HandCoins, RefreshCw, CheckCircle2 } from "lucide-react";
 import { formatGs } from "../../lib/courier";
 import { numeroPedidoVisible } from './pedidoNumero';
-import { previsualizarLiquidacion, confirmarLiquidacion, getLiquidacionesPorCourier } from "../../services/courierApi";
+import { previsualizarLiquidacion, confirmarLiquidacion, getLiquidacionesPorCourier, getSaldosPendientesRendicion } from "../../services/courierApi";
 
 function hoy() {
   return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
@@ -29,6 +29,12 @@ export function RendicionTab({ couriers = [] }) {
   const [error, setError] = useState(null);
   const [exito, setExito] = useState(null);
   const [historial, setHistorial] = useState([]);
+  // Lo pendiente con cada courier: la pestaña arranca diciendo a quién se le
+  // debe, en vez de un formulario vacío.
+  const [saldos, setSaldos] = useState(null);
+
+  const cargarSaldos = () => getSaldosPendientesRendicion().then(setSaldos).catch(() => setSaldos([]));
+  useEffect(() => { cargarSaldos(); }, []);
 
   useEffect(() => {
     if (courierId) {
@@ -40,8 +46,11 @@ export function RendicionTab({ couriers = [] }) {
     setExito(null);
   }, [courierId]);
 
-  const previsualizar = async () => {
-    if (!courierId) {
+  const previsualizar = async (opciones = {}) => {
+    const id = opciones.courierId ?? courierId;
+    const desde = opciones.desde ?? fechaDesde;
+    const hasta = opciones.hasta ?? fechaHasta;
+    if (!id) {
       setError("Elegí un courier");
       return;
     }
@@ -50,9 +59,9 @@ export function RendicionTab({ couriers = [] }) {
     setExito(null);
     try {
       const res = await previsualizarLiquidacion({
-        courier_id: courierId,
-        fecha_desde: fechaDesde,
-        fecha_hasta: fechaHasta,
+        courier_id: id,
+        fecha_desde: desde,
+        fecha_hasta: hasta,
         ajuste_manual: Number(ajusteManual) || 0,
       });
       setDesglose(res);
@@ -82,11 +91,23 @@ export function RendicionTab({ couriers = [] }) {
       setDesglose(null);
       setObservacion("");
       getLiquidacionesPorCourier(courierId).then(setHistorial).catch(() => {});
+      cargarSaldos();
     } catch (err) {
       setError(err?.response?.data?.error || "Error al confirmar la liquidación");
     } finally {
       setConfirmando(false);
     }
+  };
+
+  // Precarga courier y fechas (desde el pedido más viejo sin rendir hasta
+  // hoy) y calcula el desglose de una.
+  const rendir = (s) => {
+    const desde = s.desde || fechaDesde;
+    const hasta = hoy();
+    setCourierId(String(s.courier_id));
+    setFechaDesde(desde);
+    setFechaHasta(hasta);
+    previsualizar({ courierId: String(s.courier_id), desde, hasta });
   };
 
   const saldoColor = !desglose ? "var(--color-fg-muted)" : desglose.saldo_final > 0 ? "var(--color-success)" : desglose.saldo_final < 0 ? "var(--color-danger)" : "var(--color-fg-muted)";
@@ -95,8 +116,37 @@ export function RendicionTab({ couriers = [] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", maxWidth: "820px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
         <HandCoins size={20} color="var(--color-accent-text)" />
-        <h2 style={{ margin: 0, color: "var(--color-fg)", fontSize: "1.1rem" }}>Rendición de couriers</h2>
+        <h2 style={{ margin: 0, color: "var(--color-fg)", fontSize: "1.25rem" }}>Rendición de couriers</h2>
       </div>
+      <p className="rend-intro">
+        Rendir es cerrar cuentas con cada courier: la plata que cobró de tus pedidos contra entrega, menos lo que le debés por los envíos.
+      </p>
+
+      <section className="rend-pendientes" aria-labelledby="rend-pendientes-titulo">
+        <h3 id="rend-pendientes-titulo">Pendiente de rendir</h3>
+        {saldos === null ? (
+          <p className="rend-vacio">Calculando saldos…</p>
+        ) : saldos.length === 0 ? (
+          <p className="rend-vacio">No hay pedidos entregados ni perdidos pendientes de rendir.</p>
+        ) : (
+          <ul>
+            {saldos.map((s) => (
+              <li key={s.courier_id}>
+                <div className="rend-pendiente-datos">
+                  <strong>{s.nombre}</strong>
+                  <span>{s.cantidad_pedidos} pedido{s.cantidad_pedidos === 1 ? "" : "s"}{s.desde ? ` desde ${s.desde.split("-").reverse().join("/")}` : ""}</span>
+                  <span className={s.saldo_final > 0 ? "rend-saldo rend-saldo-favor" : s.saldo_final < 0 ? "rend-saldo rend-saldo-debe" : "rend-saldo"}>
+                    {s.saldo_final > 0 ? "Te transfiere " : s.saldo_final < 0 ? "Le pagás " : "Sin saldo "}{formatGs(Math.abs(s.saldo_final))}
+                  </span>
+                </div>
+                <button type="button" className="btn-secondary" onClick={() => rendir(s)} disabled={cargando}>
+                  Rendir
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div style={{ background: "color-mix(in srgb, var(--color-fg) 3%, transparent)", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)", borderRadius: "0.75rem", padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
         <div style={{ display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
@@ -104,7 +154,10 @@ export function RendicionTab({ couriers = [] }) {
             <label>Courier</label>
             <select className="form-input" value={courierId} onChange={(e) => setCourierId(e.target.value)}>
               <option value="">Seleccionar courier...</option>
-              {couriers.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {/* Archivados afuera, salvo que tengan algo pendiente de rendir. */}
+              {couriers
+                .filter((c) => c.activo !== false || (saldos || []).some((s) => String(s.courier_id) === String(c.id)))
+                .map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </div>
           <div className="np-row">
@@ -121,7 +174,7 @@ export function RendicionTab({ couriers = [] }) {
           </div>
         </div>
 
-        <button type="button" className="btn-primary" style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: "0.5rem" }} onClick={previsualizar} disabled={cargando}>
+        <button type="button" className="btn-primary" style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: "0.5rem" }} onClick={() => previsualizar()} disabled={cargando}>
           <RefreshCw size={15} /> {cargando ? "Calculando..." : "Previsualizar"}
         </button>
 

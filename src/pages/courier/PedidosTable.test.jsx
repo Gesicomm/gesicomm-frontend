@@ -698,3 +698,11 @@ test("el total dice si el envío lo absorbe el comercio o ya está incluido, y a
   expect(within(fila("Cliente 31")).queryByText(/^\+/)).not.toBeInTheDocument();
   expect(within(fila("Cliente 33")).getByText("Sin productos cargados")).toBeInTheDocument();
 });
+
+test("el Por cobrar del resumen pide los mismos estados que la tabla", async () => {
+  await montar();
+  irAEtapa("Logística");
+  await waitFor(() => expect(getConteoPorEstado.mock.calls.at(-1)[0].estados_totales).toEqual(["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]));
+  fireEvent.click(screen.getAllByRole("button").find((b) => b.classList.contains("pt-status-chip") && b.textContent.startsWith("Pendiente de preparación")));
+  await waitFor(() => expect(getConteoPorEstado.mock.calls.at(-1)[0].estados_totales).toEqual(["Confirmado"]));
+});

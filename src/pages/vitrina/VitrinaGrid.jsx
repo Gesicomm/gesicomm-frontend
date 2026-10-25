@@ -132,7 +132,9 @@ function PrecioEditable({ item, onGuardar }) {
         </span>
       </div>
 
-      <span className="vit-price-status" role="status">{guardando ? 'Guardando precio…' : ok ? 'Precio guardado' : huboCambio ? 'Cambios sin guardar' : 'Editá y pulsá Guardar cambio'}</span>
+      {/* Sin cambios no se dice nada: la instrucción repetida en cada tarjeta
+          era ruido (y el botón Guardar aparece solo al editar). */}
+      <span className="vit-price-status" role="status">{guardando ? 'Guardando precio…' : ok ? 'Precio guardado' : huboCambio ? 'Cambios sin guardar' : ''}</span>
       {huboCambio && !guardando && (
         <button className="vit-price-save-btn" onClick={guardar} title="Guardar precio">
           Guardar cambio

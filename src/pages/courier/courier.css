@@ -5244,3 +5244,38 @@ td.pt-empty .pt-spinner {
 .pt-tipo-badge--clickable:hover {
   border-color: #1f9e52;
 }
+
+/* ── Rendición: saldos pendientes por courier ── */
+.rend-intro {
+  margin: 0;
+  max-width: 70ch;
+  font-size: var(--ui-text-body, 1rem);
+  line-height: 1.55;
+  color: var(--color-fg-muted);
+}
+.rend-pendientes {
+  padding: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+}
+.rend-pendientes h3 { margin: 0 0 0.75rem; font-size: 1.0625rem; font-weight: 650; color: var(--color-fg); }
+.rend-pendientes ul { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.rend-pendientes li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 6%, transparent);
+}
+.rend-pendientes li:last-child { border-bottom: 0; }
+.rend-pendiente-datos { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem; min-width: 0; }
+.rend-pendiente-datos strong { font-size: var(--ui-text-body, 1rem); color: var(--color-fg); }
+.rend-pendiente-datos span { font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted); }
+.rend-pendiente-datos .rend-saldo { font-weight: 700; color: var(--color-fg); font-variant-numeric: tabular-nums; }
+.rend-pendiente-datos .rend-saldo-favor { color: var(--color-success); }
+.rend-pendiente-datos .rend-saldo-debe { color: var(--color-danger); }
+.rend-pendientes .btn-secondary { min-height: 44px; }
+.rend-vacio { margin: 0; font-size: var(--ui-text-body, 1rem); color: var(--color-fg-muted); }
