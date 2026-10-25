@@ -3,10 +3,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import RahaConexion, { semaforoRaha } from './RahaConexion';
 import { rahaService } from '../../services/rahaService';
-vi.mock('../../services/rahaService', () => ({ rahaService: { obtener: vi.fn(), guardar: vi.fn(), enviar: vi.fn(), subir: vi.fn(), quitar: vi.fn(), documento: vi.fn() } }));
+vi.mock('../../services/rahaService', () => ({ rahaService: { obtener: vi.fn(), guardar: vi.fn(), enviar: vi.fn(), subir: vi.fn(), quitar: vi.fn(), documento: vi.fn(), contrato: vi.fn() } }));
 const base = { id: 1, estado: 'borrador', version: 0, datos: {}, documentos: [], historial: [] };
 beforeEach(() => { cleanup(); vi.clearAllMocks(); rahaService.obtener.mockResolvedValue(structuredClone(base)); });
 describe('Raha application', () => {
+  it('guarda lo que está en pantalla antes de descargar el contrato', async () => {
+    rahaService.guardar.mockResolvedValue({ ...base, version: 1 });
+    rahaService.contrato.mockResolvedValue();
+    render(<RahaConexion />);
+    fireEvent.change(await screen.findByLabelText('Banco'), { target: { value: 'Banco Itaú' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar contrato para firmar' }));
+    await waitFor(() => expect(rahaService.contrato).toHaveBeenCalled());
+    expect(rahaService.guardar.mock.calls[0][0].datos.banco).toBe('Banco Itaú');
+    expect(rahaService.guardar.mock.invocationCallOrder[0]).toBeLessThan(rahaService.contrato.mock.invocationCallOrder[0]);
+  });
+  it('pide el contrato firmado en PDF y lo exige para enviar', async () => {
+    render(<RahaConexion />);
+    fireEvent.change(await screen.findByLabelText('Adjuntar Contrato marco firmado'), { target: { files: [new File(['x'], 'pagina1.jpg', { type: 'image/jpeg' })] } });
+    expect(await screen.findByRole('alert')).toHaveTextContent('un solo PDF');
+    expect(rahaService.subir).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar solicitud' }));
+    expect(await screen.findByText('Descargá el contrato, firmalo y subilo escaneado.')).toBeInTheDocument();
+    expect(rahaService.enviar).not.toHaveBeenCalled();
+  });
   it('prefills known store data and requires consent before submitting', async () => {
     render(<RahaConexion tienda={{ nombre: 'Mi empresa', ruc: '80000000-0' }} />);
     expect(await screen.findByLabelText('Razón social')).toHaveValue('Mi empresa');

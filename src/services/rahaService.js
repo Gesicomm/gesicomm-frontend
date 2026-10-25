@@ -24,6 +24,7 @@ export const rahaService = {
     const config = onProgreso ? { onUploadProgress: event => onProgreso(event.total ? Math.round((event.loaded / event.total) * 100) : null) } : undefined;
     return (await api.post(`${base}/documentos`, form, config)).data;
   },
+  contrato: () => descargar(`${base}/contrato`, 'contrato-marco-raha.docx'),
   quitar: async (id, version) => (await api.delete(`${base}/documentos/${id}`, { data: { version } })).data,
   documento: doc => descargar(`${base}/documentos/${doc.id}`, doc.nombre),
   listar: async params => (await api.get(`${base}/admin`, { params })).data,

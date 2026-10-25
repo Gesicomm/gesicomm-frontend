@@ -56,6 +56,12 @@
 .raha input.raha-input-error:focus, .raha textarea.raha-input-error:focus, .raha select.raha-input-error:focus { outline: 2px solid var(--color-danger) !important; }
 .raha-error-msg { display: inline-flex; align-items: center; gap: 6px; font-size: var(--ui-text-help, 0.875rem); color: var(--color-danger); line-height: 1.35; animation: raha-aparecer .15s ease-out; }
 .raha-error-msg svg { flex-shrink: 0; }
+.raha-doc-contrato { grid-column: 1 / -1; }
+.raha-contrato-pasos { display: grid; gap: 12px; margin-top: 8px; }
+.raha-contrato-pasos ol { list-style: decimal; margin: 0; padding-left: 22px; font-size: var(--ui-text-body, 1rem); line-height: 1.5; }
+.raha-docs .raha-contrato-pasos li { display: list-item; padding: 0; }
+.raha-contrato-pasos li + li { margin-top: 4px; }
+.raha-contrato-pasos .raha-button { justify-self: start; }
 .raha-doc-group-error { border-color: var(--color-danger) !important; background: color-mix(in srgb, var(--color-danger) 5%, transparent); border-radius: 8px; padding: 12px; }
 .raha-error-badge { color: var(--color-danger); font-weight: 600; }
 .raha-alert { display: flex; align-items: flex-start; gap: 10px; margin: 12px 0; padding: 12px; border-radius: 6px; }
