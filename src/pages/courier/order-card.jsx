@@ -114,7 +114,8 @@ export function OrderCard({
         </div>
         <div className="order-stage-stack" title="Etapa actual del pedido">
           <span>{estado.label}</span>
-          <small>{STAGE_LABELS[estado.etapa]}</small>
+          {/* El paso del flujo dice más que la etapa, que ya la nombra la columna. */}
+          <small>{envio?.seguimiento?.fase_nombre || STAGE_LABELS[estado.etapa]}</small>
         </div>
       </div>
 

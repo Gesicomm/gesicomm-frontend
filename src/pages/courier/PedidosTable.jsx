@@ -1257,10 +1257,9 @@ export function PedidosTable({
         { key: "incidencias", label: "Incidencias", tone: "danger" },
       ]
     : soloComercial
-    ? [
-        { key: "pendientes", label: "Pendientes", tone: "warning" },
-        { key: "cancelados", label: "Cancelados", tone: "default" },
-      ]
+    // En Comercial el resumen repetía tal cual las pestañas de estado de abajo
+    // ("Pendientes 26" y "Pendiente 26"): queda una sola fila, la que filtra.
+    ? []
     : [
         { key: "pendientes", label: "Pendientes", tone: "warning" },
         { key: "confirmados", label: "Pendiente de preparación", tone: "info" },
@@ -1327,7 +1326,7 @@ export function PedidosTable({
         </div>
       )}
 
-      {!soloAbastecimiento && (
+      {!soloAbastecimiento && resumenChips.length > 0 && (
         <section className="pt-cycle-summary" aria-label="Resumen del ciclo de pedidos">
           {resumenChips.map((c) => (
             <ResumenItem key={c.key} label={c.label} value={resumenCiclo[c.key].toLocaleString("es-PY")} tone={c.tone} />
@@ -1394,8 +1393,12 @@ export function PedidosTable({
         <div className="pt-kanban-context" role="note">
           <Columns3 size={16} />
           <div>
-            <strong>Kanban por {STAGE_LABELS[etapaActiva]}.</strong>
-            <span>Las columnas operativas no crean estados nuevos: muestran qué necesita cada pedido ahora.</span>
+            <strong>Kanban de {STAGE_LABELS[etapaActiva]}.</strong>
+            <span>
+              {etapaActiva === "comercial"
+                ? "Cada columna es el paso del flujo de WhatsApp en el que está el pedido. Ordenan el trabajo: no cambian su estado."
+                : "Las columnas agrupan los pedidos según lo que necesitan ahora. No cambian su estado."}
+            </span>
           </div>
         </div>
       ) : !soloAbastecimiento && etapaActiva === "seguimiento_envio" ? (

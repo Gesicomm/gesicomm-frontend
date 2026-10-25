@@ -1414,6 +1414,58 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                 <User size={16} /> Datos del Cliente y Registro
               </h3>
 
+              {/* El cliente primero: al cargar un pedido por WhatsApp lo que
+                  se tiene a mano es el nombre y el teléfono; fecha, hora y
+                  confirmador ya vienen completos. */}
+              <div className="np-row">
+                <label>Nombre del cliente <span className="req">*</span></label>
+                <input
+                  type="text"
+                  className={`form-input ${errors.nombre_cliente ? 'input-error' : ''}`}
+                  placeholder="Ej. Juan Pérez"
+                  value={form.nombre_cliente}
+                  autoComplete="name"
+                  aria-invalid={Boolean(errors.nombre_cliente)}
+                  aria-describedby={errors.nombre_cliente ? "np-nombre-error" : undefined}
+                  onChange={e => {
+                    setForm({ ...form, nombre_cliente: e.target.value });
+                    if (errors.nombre_cliente) setErrors({ ...errors, nombre_cliente: null });
+                  }}
+                />
+                {errors.nombre_cliente && <span id="np-nombre-error" className="field-error">{errors.nombre_cliente}</span>}
+              </div>
+
+              <div className="np-row">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                  <label style={{ margin: 0 }}>Teléfono del cliente</label>
+                  {modoCompletar && onAbrirSeguimiento && form.telefono && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); onAbrirSeguimiento(envio); }}
+                      style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-primary-text)', background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', padding: '2px 8px', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
+                    >
+                      <MessageCircle size={12} /> Contactar
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  className={`form-input ${errors.telefono ? 'input-error' : ''}`}
+                  placeholder="0981 123 456"
+                  value={form.telefono}
+                  autoComplete="tel"
+                  aria-invalid={Boolean(errors.telefono)}
+                  aria-describedby={errors.telefono ? "np-telefono-error" : undefined}
+                  onChange={e => {
+                    setForm({ ...form, telefono: e.target.value });
+                    if (errors.telefono) setErrors({ ...errors, telefono: null });
+                  }}
+                />
+                {errors.telefono && <span id="np-telefono-error" className="field-error">{errors.telefono}</span>}
+              </div>
+
+              <p className="np-subsection-label">Registro del pedido</p>
+
               <div className="np-row">
                 <label>Fecha</label>
                 {modoCompletar ? (
@@ -1472,52 +1524,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                 </select>}
               </div>
 
-              <div className="np-row">
-                <label>Nombre del cliente <span className="req">*</span></label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.nombre_cliente ? 'input-error' : ''}`}
-                  placeholder="Ej. Juan Pérez"
-                  value={form.nombre_cliente}
-                  autoComplete="name"
-                  aria-invalid={Boolean(errors.nombre_cliente)}
-                  aria-describedby={errors.nombre_cliente ? "np-nombre-error" : undefined}
-                  onChange={e => {
-                    setForm({ ...form, nombre_cliente: e.target.value });
-                    if (errors.nombre_cliente) setErrors({ ...errors, nombre_cliente: null });
-                  }}
-                />
-                {errors.nombre_cliente && <span id="np-nombre-error" className="field-error">{errors.nombre_cliente}</span>}
-              </div>
-
-              <div className="np-row">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                  <label style={{ margin: 0 }}>Teléfono del cliente</label>
-                  {modoCompletar && onAbrirSeguimiento && form.telefono && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); onAbrirSeguimiento(envio); }}
-                      style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-primary-text)', background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', padding: '2px 8px', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
-                    >
-                      <MessageCircle size={12} /> Contactar
-                    </button>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  className={`form-input ${errors.telefono ? 'input-error' : ''}`}
-                  placeholder="0981 123 456"
-                  value={form.telefono}
-                  autoComplete="tel"
-                  aria-invalid={Boolean(errors.telefono)}
-                  aria-describedby={errors.telefono ? "np-telefono-error" : undefined}
-                  onChange={e => {
-                    setForm({ ...form, telefono: e.target.value });
-                    if (errors.telefono) setErrors({ ...errors, telefono: null });
-                  }}
-                />
-                {errors.telefono && <span id="np-telefono-error" className="field-error">{errors.telefono}</span>}
-              </div>
             </div>
 
             {/* Elegir productos antes de resolver la entrega. */}
@@ -2260,6 +2266,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                   </span>
                 ))}
               </div>
+              {/* Lejos de Guardar y Continuar: estaba al lado de "Guardar
+                  productos" en el pie y se cancelaba un pedido por error. */}
+              {editaProductosExistentes && (
+                <button type="button" className="np-cancelar-pedido" disabled={guardando} onClick={cancelarPedidoPendiente}>
+                  <Trash2 size={15} /> Cancelar este pedido
+                </button>
+              )}
             </aside>
           </div>
 
@@ -2269,9 +2282,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
               <div className="np-footer-edit-actions">
                 <button type="button" className="np-nav-action" disabled={guardando || !itemsEditados} onClick={guardarProductosPendientes}>
                   <Save size={16} /> {guardando ? 'Guardando...' : 'Guardar productos'}
-                </button>
-                <button type="button" className="np-nav-action np-cancel-action" disabled={guardando} onClick={cancelarPedidoPendiente}>
-                  <Trash2 size={16} /> Cancelar pedido
                 </button>
               </div>
             ) : (

@@ -103,8 +103,10 @@ test("la vista Kanban del Tablero tampoco muestra avisos de abastecimiento", asy
   // Regresión: esta vista se caía entera ("Cannot read properties of
   // undefined (reading 'label')") porque algunos carriles llegaban sin rótulo.
   // Comercial ya no tiene a los Confirmados (se mudaron a Logística): el carril
-  // Pendientes se renderiza igual aunque quede vacío con estos datos de prueba.
-  expect(screen.getByRole("region", { name: "Columna Pendientes" })).toBeInTheDocument();
+  // Pendientes se reparte por paso del flujo; las columnas se renderizan igual
+  // aunque queden vacías con estos datos de prueba.
+  expect(screen.getByRole("region", { name: "Columna Paso 1" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Columna Sin mensajes por enviar" })).toBeInTheDocument();
   expect(screen.queryByText(/abastecimiento/i)).not.toBeInTheDocument();
 
   irAEtapa("Logística");
@@ -424,7 +426,29 @@ test("Recuperación reúne Devuelto y Perdido sin subestados, abre sus mensajes 
   fireEvent.click(screen.getByRole("button", { name: /Kanban/ }));
   const columna = await screen.findByRole("region", { name: "Columna Con mensajes por enviar" });
   expect(within(columna).getByText("Cliente 1")).toBeInTheDocument();
-  expect(within(columna).getByText("Recuperación")).toBeInTheDocument();
+  // La tarjeta muestra el paso del flujo; la etapa ya la dice la columna.
+  expect(within(columna).getByText("Contacto tras incidencia")).toBeInTheDocument();
+});
+
+test("el Kanban de Proceso de confirmación reparte los pendientes por paso del flujo", async () => {
+  const seg = (fase_posicion, extra = {}) => ({ seguimiento: { ...SEGUIMIENTO_ENVIO, fase_posicion, fase_nombre: `Fase ${fase_posicion}`, ...extra } });
+  getEnviosPaginados.mockResolvedValue({ data: [
+    pedido(41, "Pendiente", seg(1)),
+    pedido(42, "Pendiente", seg(2)),
+    pedido(43, "Pendiente", seg(4)),
+    pedido(44, "Pendiente", { seguimiento: null }),
+    pedido(45, "Pendiente", seg(2, { terminado: true })),
+  ], total: 5, totalPages: 1 });
+  await montar({ esperarCliente: "Cliente 41" });
+  fireEvent.click(screen.getByRole("button", { name: /Kanban/ }));
+  const col = async (nombre) => within(await screen.findByRole("region", { name: `Columna ${nombre}` }));
+  expect((await col("Paso 1")).getByText("Cliente 41")).toBeInTheDocument();
+  expect((await col("Paso 2")).getByText("Cliente 42")).toBeInTheDocument();
+  expect((await col("Paso 3 o más")).getByText("Cliente 43")).toBeInTheDocument();
+  const sin = await col("Sin mensajes por enviar");
+  expect(sin.getByText("Cliente 44")).toBeInTheDocument();
+  expect(sin.getByText("Cliente 45")).toBeInTheDocument();
+  expect(screen.getByText(/Cada columna es el paso del flujo de WhatsApp/)).toBeInTheDocument();
 });
 
 test.each(["Devuelto", "Perdido"])("Recuperación reúne las incidencias aunque se llegue con el filtro anterior %s", async (estadoAnterior) => {

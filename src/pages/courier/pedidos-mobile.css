@@ -257,7 +257,10 @@
   .pt-root[data-mobile-orders="true"].pt-filters-open .pt-toolbar { display: grid; }
   .pt-root[data-mobile-orders="true"] .pt-toolbar > .pt-filter-toggle,
   .pt-root[data-mobile-orders="true"] .pt-toolbar > .pt-count { display: none; }
-  .pt-stage-tabs { display: none; }
+  /* Una sola forma de elegir bandeja en celular: el desplegable. Con la
+     especificidad de antes, .pt-stage-tabs de courier.css (cargado después)
+     volvía a mostrar las pestañas debajo del desplegable. */
+  .pt-stage-shell .pt-stage-tabs { display: none; }
   .pt-stage-shell .pm-stage-picker {
     display: grid;
     gap: 6px;

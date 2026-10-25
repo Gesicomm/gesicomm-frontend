@@ -109,7 +109,7 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Guardar productos' }));
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getAllByText('Agregá al menos un producto o cancelá el pedido completo.').length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar pedido' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar este pedido' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ id: 385, estado: 'Cancelado' }, true));
     confirm.mockRestore();
   });

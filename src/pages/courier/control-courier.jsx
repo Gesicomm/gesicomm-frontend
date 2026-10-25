@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Plus, Printer, HandCoins, MessageCircle } from "lucide-react";
+import { LayoutGrid, PackageCheck, Plus, Printer, HandCoins, MessageCircle, Settings2 } from "lucide-react";
 import { verificarSesion } from "../../utils/auth";
 import { PedidosTable } from "./PedidosTable";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
@@ -333,15 +333,17 @@ export function ControlCourier({ etapaFija } = {}) {
             </button>
 
             {permiteSeguimiento && ['usuario', 'administrador'].includes(usuarioActual?.rol) && (
-              <Link to="/pedidos/configuracion" className="courier-flow-action courier-secondary-action">
-                <MessageCircle size={22} strokeWidth={2.2} aria-hidden="true" />
+              // Es configuración, no una venta: neutro, como Imprimir. Antes era
+              // un segundo botón verde al lado de "Venta por WhatsApp".
+              <Link to="/pedidos/configuracion" className="btn-secondary courier-secondary-action" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Settings2 size={16} aria-hidden="true" />
                 Flujos de WhatsApp
               </Link>
             )}
 
             <button
               type="button"
-              className="btn-venta-whatsapp courier-secondary-action"
+              className="btn-venta-whatsapp btn-venta-whatsapp--contorno courier-secondary-action"
               onClick={() => { setClienteParaRepetir(null); setOpenVentaWhatsApp(true); }}
             >
               <MessageCircle size={18} />

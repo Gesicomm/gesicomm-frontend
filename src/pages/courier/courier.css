@@ -5279,3 +5279,49 @@ td.pt-empty .pt-spinner {
 .rend-pendiente-datos .rend-saldo-debe { color: var(--color-danger); }
 .rend-pendientes .btn-secondary { min-height: 44px; }
 .rend-vacio { margin: 0; font-size: var(--ui-text-body, 1rem); color: var(--color-fg-muted); }
+
+/* Un solo botón lleno en el encabezado (Nuevo Pedido). Venta por WhatsApp
+   conserva el verde, pero en contorno, para no competir con él. */
+.btn-venta-whatsapp.btn-venta-whatsapp--contorno {
+  background: transparent;
+  color: var(--color-fg);
+  border-color: color-mix(in srgb, var(--whatsapp-light) 70%, var(--color-border));
+  box-shadow: none;
+}
+.btn-venta-whatsapp.btn-venta-whatsapp--contorno svg { color: var(--whatsapp-light); }
+.btn-venta-whatsapp.btn-venta-whatsapp--contorno:hover {
+  background: color-mix(in srgb, var(--whatsapp-light) 12%, transparent);
+  box-shadow: none;
+  transform: none;
+}
+
+/* Subtítulo dentro del paso Cliente del pedido ("Registro del pedido"). */
+.np-subsection-label {
+  margin: 1rem 0 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  font-size: var(--ui-text-help, 0.875rem);
+  font-weight: 600;
+  color: var(--color-fg-muted);
+}
+
+/* "Cancelar este pedido": acción destructiva, aparte y con aspecto de enlace. */
+.np-cancelar-pedido {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0;
+  border: 0;
+  background: none;
+  color: var(--color-danger);
+  font: inherit;
+  font-size: var(--ui-text-help, 0.875rem);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.np-cancelar-pedido:disabled { opacity: 0.55; cursor: not-allowed; }

@@ -176,9 +176,22 @@ const LANES = {
 };
 
 export const KANBAN_CONTEXTS = {
+  // Los pendientes se reparten por el paso del flujo de mensajes en el que
+  // están (seguimiento.fase_posicion): "Pendientes" en una sola columna no
+  // decía qué hacer con cada pedido. Solo agrupan: no cambian el estado.
   comercial: {
     label: "Comercial",
-    lanes: [LANES.pendientes, LANES.cancelados],
+    lanes: [
+      { id: "paso_1", label: "Paso 1", columnBar: "bg-amber-400", operational: true,
+        match: (e) => LANES.pendientes.match(e) && Number(e?.seguimiento?.fase_posicion) === 1 && !e?.seguimiento?.terminado },
+      { id: "paso_2", label: "Paso 2", columnBar: "bg-amber-400", operational: true,
+        match: (e) => LANES.pendientes.match(e) && Number(e?.seguimiento?.fase_posicion) === 2 && !e?.seguimiento?.terminado },
+      { id: "paso_3", label: "Paso 3 o más", columnBar: "bg-amber-400", operational: true,
+        match: (e) => LANES.pendientes.match(e) && Number(e?.seguimiento?.fase_posicion) >= 3 && !e?.seguimiento?.terminado },
+      { id: "sin_mensajes", label: "Sin mensajes por enviar", columnBar: "bg-stone-400", operational: true,
+        match: (e) => LANES.pendientes.match(e) && (!(Number(e?.seguimiento?.fase_posicion) >= 1) || Boolean(e?.seguimiento?.terminado)) },
+      LANES.cancelados,
+    ],
   },
   seguimiento_envio: {
     label: "Seguimiento de envío",
