@@ -196,8 +196,8 @@ const SECCIONES = [
         <Subseccion titulo="4.1 OAuth 2.0 para integraciones">
           <p>
             La conexión con Meta usa OAuth 2.0. Gesicom <strong>nunca recibe ni almacena tu
-            contraseña</strong> de Facebook, y solo solicita los permisos de lectura{' '}
-            <code>ads_read</code> y <code>business_management</code>. El token que entrega Meta
+            contraseña</strong> de Facebook, y solicita <code>ads_read</code> y <code>business_management</code> para consultar
+            portafolios y métricas, y <code>ads_management</code> para pausar o activar campañas que confirmás en Publicidad. El token que entrega Meta
             se guarda cifrado con AES-256-GCM, nunca llega al navegador y, al desconectar, se
             revoca ante Meta y se borra.
           </p>

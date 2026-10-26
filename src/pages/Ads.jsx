@@ -17,10 +17,7 @@ import './ads/publicidad.css';
  * La lista de campañas la tiene este shell y la baja por props.
  */
 
-// Métricas en vivo contra la Graph API de Meta. Para apagarla: Gesicomm
-// todavía no es partner de Meta, así que la app no puede pedir los permisos
-// de Marketing API que esa vista necesita. El código está en
-// ads/AdsEnVivo.jsx — este flag la saca o la devuelve como una sección más.
+// Métricas y control de estado contra la Graph API de Meta.
 const MOSTRAR_EN_VIVO = true;
 
 const SECCIONES = [

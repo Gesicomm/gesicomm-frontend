@@ -169,7 +169,7 @@ const SECCIONES = [
         <Subseccion titulo="4.1 Permisos que solicitamos">
           <p>
             Al conectar Meta desde Configuración, Gesicom te pide autorización mediante OAuth para
-            dos permisos, ambos de <strong>solo lectura</strong>:
+            tres permisos:
           </p>
           <ul>
             <li>
@@ -180,10 +180,13 @@ const SECCIONES = [
             <li>
               <code>ads_read</code>: para leer las campañas de esas cuentas y sus métricas.
             </li>
+            <li>
+              <code>ads_management</code>: para pausar o activar una campaña de la cuenta elegida cuando lo confirmás desde Publicidad.
+            </li>
           </ul>
           <p>
-            Gesicom <strong>no crea, edita, pausa ni elimina</strong> campañas, anuncios ni
-            presupuestos, y no pide permisos para hacerlo. Tampoco accede a tus páginas, a tu
+            Gesicom solo cambia el estado de la campaña que seleccionás y confirmás. No crea ni elimina campañas en Meta,
+            ni cambia anuncios o presupuestos. Tampoco accede a tus páginas, a tu
             perfil personal más allá de tu identificador de usuario, a tus mensajes ni a tus
             contactos.
           </p>

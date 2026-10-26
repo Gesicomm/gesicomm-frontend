@@ -1,17 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Filter, ChevronLeft, ChevronRight, MessageCircle, Globe, Store, ArrowRight, AlertTriangle } from 'lucide-react';
 import Select from 'react-select';
 import { api } from '../../utils/api';
+import { verificarSesion } from '../../utils/auth';
 import { selectStylesDark as selectStyles } from '../../components/reactSelectDarkStyles';
 import { formatPYG, formatPct } from './adsShared';
 
 /**
  * Métricas en vivo contra la Graph API de Meta (no depende de reportes CSV).
  *
- * OCULTA HOY: Gesicomm todavía no es partner de Meta, así que la app no
- * puede pedir los permisos de Marketing API que estos endpoints necesitan.
- * El código queda intacto y se prende con MOSTRAR_EN_VIVO en Ads.jsx
- * cuando el partnership esté aprobado — no hace falta rehacerlo.
+ * Permite consultar métricas y pausar o activar campañas de Meta.
  */
 export default function AdsEnVivo() {
   const [tiendas, setTiendas] = useState([]);
@@ -24,7 +22,7 @@ export default function AdsEnVivo() {
   const [selectedBusiness, setSelectedBusiness] = useState('');
   const [selectedAdAccount, setSelectedAdAccount] = useState('');
   const [selectedCampaign, setSelectedCampaign] = useState('ALL');
-  const [selectedStatus, setSelectedStatus] = useState('ACTIVE');
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
 
@@ -37,6 +35,23 @@ export default function AdsEnVivo() {
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState(null);
   const [noStores, setNoStores] = useState(false);
+  const [canManage, setCanManage] = useState(false);
+  const [campaignToChange, setCampaignToChange] = useState(null);
+  const [changingCampaignId, setChangingCampaignId] = useState(null);
+  const [changeMessage, setChangeMessage] = useState(null);
+  const confirmRef = useRef(null);
+
+  useEffect(() => {
+    if (campaignToChange) confirmRef.current?.focus();
+  }, [campaignToChange]);
+
+  useEffect(() => {
+    let mounted = true;
+    verificarSesion().then((user) => {
+      if (mounted) setCanManage(Boolean(user && (user.rol !== 'colaborador' || user.accesos?.publicidad === 'gestionar')));
+    });
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     const fetchInitial = async () => {
@@ -71,6 +86,8 @@ export default function AdsEnVivo() {
     setSelectedAdAccount('');
     setSelectedCampaign('ALL');
     setCampaigns([]);
+    setCampaignToChange(null);
+    setChangeMessage(null);
     try {
       const res = await api.post('/api/meta/filters', { store_id: storeId });
       setBusinesses(res.businesses || []);
@@ -105,7 +122,7 @@ export default function AdsEnVivo() {
       }
     };
     fetchCampaignOptions();
-  }, [selectedAdAccount]);
+  }, [selectedAdAccount, selectedStore]);
 
   const fetchCampaigns = async (cursor = null) => {
     if (!selectedAdAccount || !selectedStore) return;
@@ -134,6 +151,7 @@ export default function AdsEnVivo() {
 
   useEffect(() => {
     if (selectedAdAccount && !loadingFilters) {
+      setCampaignToChange(null);
       setHistoryCursors([]);
       fetchCampaigns(null);
     }
@@ -152,6 +170,31 @@ export default function AdsEnVivo() {
       const prevCursor = newHistory.pop();
       setHistoryCursors(newHistory);
       fetchCampaigns(prevCursor);
+    }
+  };
+
+  const changeCampaignStatus = async () => {
+    if (!campaignToChange || !selectedStore || !selectedAdAccount) return;
+    const campaign = campaignToChange;
+    const nextStatus = campaign.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    setChangingCampaignId(campaign.id);
+    setChangeMessage(null);
+    try {
+      await api.post('/api/meta/campaign-status', {
+        store_id: selectedStore.id,
+        ad_account_id: selectedAdAccount,
+        campaign_id: campaign.id,
+        status: nextStatus,
+      });
+      setCampaigns(previous => previous
+        .map(item => item.id === campaign.id ? { ...item, status: nextStatus } : item)
+        .filter(item => selectedStatus === 'ALL' || item.status === selectedStatus));
+      setChangeMessage({ type: 'success', text: `La campaña “${campaign.name}” quedó ${nextStatus === 'PAUSED' ? 'pausada' : 'activa'} en Meta.` });
+    } catch (err) {
+      setChangeMessage({ type: 'error', text: err.message || 'No se pudo cambiar la campaña en Meta.' });
+    } finally {
+      setChangingCampaignId(null);
+      setCampaignToChange(null);
     }
   };
 
@@ -275,6 +318,17 @@ export default function AdsEnVivo() {
         </div>
       </div>
 
+      {changeMessage && <p className={`ads-meta-feedback ${changeMessage.type}`} role={changeMessage.type === 'error' ? 'alert' : 'status'}>{changeMessage.text}</p>}
+      {campaignToChange && (
+        <div ref={confirmRef} tabIndex={-1} className="ads-meta-confirm" role="region" aria-labelledby="ads-meta-confirm-title" aria-describedby="ads-meta-confirm-detail">
+          <h3 id="ads-meta-confirm-title">{campaignToChange.status === 'ACTIVE' ? 'Pausar' : 'Activar'} campaña en Meta</h3>
+          <p id="ads-meta-confirm-detail">{campaignToChange.name}. {campaignToChange.status === 'ACTIVE' ? 'La campaña dejará de publicarse.' : 'Meta podrá volver a publicar sus anuncios según la configuración de la campaña.'}</p>
+          <div className="ads-meta-confirm-actions">
+            <button type="button" className="btn-secondary" onClick={() => setCampaignToChange(null)} disabled={Boolean(changingCampaignId)}>Cancelar</button>
+            <button type="button" className="btn-primary" onClick={changeCampaignStatus} disabled={Boolean(changingCampaignId)}>{changingCampaignId ? 'Guardando…' : `Sí, ${campaignToChange.status === 'ACTIVE' ? 'pausar' : 'activar'}`}</button>
+          </div>
+        </div>
+      )}
       <div className="data-table-wrapper">
         <div className="table-scroll-container">
           <table className="escalafy-table">
@@ -327,7 +381,12 @@ export default function AdsEnVivo() {
                         {isWs ? <MessageCircle size={18} color="var(--color-success)" /> : <Globe size={18} color="var(--color-primary-text)" />}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <span style={{ fontWeight: 600, color: 'var(--color-fg)', fontSize: '0.9rem' }}>{camp.name}</span>
-                          <div><span className={`badge ${badgeClass}`}>{camp.status}</span></div>
+                          <div><span className={`badge ${badgeClass}`}>{camp.status === 'ACTIVE' ? 'Activa' : camp.status === 'PAUSED' ? 'Pausada' : 'Archivada'}</span></div>
+                          {canManage && ['ACTIVE', 'PAUSED'].includes(camp.status) && (
+                            <button type="button" className="ads-meta-status-button" onClick={() => { setChangeMessage(null); setCampaignToChange(camp); }} disabled={Boolean(changingCampaignId)}>
+                              {camp.status === 'ACTIVE' ? 'Pausar en Meta' : 'Activar en Meta'}
+                            </button>
+                          )}
                         </div>
                       </td>
                       <td>{camp.start_time ? new Date(camp.start_time).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
@@ -336,7 +395,7 @@ export default function AdsEnVivo() {
                       <td className="text-right tabular-nums">
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                           <span className="cell-highlight">{isWs ? m.conversaciones : m.compras}</span>
-                          <span style={{ fontSize: '10px', color: 'var(--color-fg-muted)' }}>{isWs ? 'Mensajes' : 'Compras'}</span>
+                          <span style={{ fontSize: '13px', color: 'var(--color-fg-muted)' }}>{isWs ? 'Mensajes' : 'Compras'}</span>
                         </div>
                       </td>
                       <td className="text-right tabular-nums">{formatPYG(isWs ? m.costo_por_conversacion : m.costo_por_compra)}</td>

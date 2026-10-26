@@ -350,7 +350,7 @@ const SECCIONES = [
 
         <Subseccion titulo="8.2 Meta y Facebook Ads">
           <p>
-            Gesicom permite al Cliente ingresar su ID de Meta Pixel y token de Conversions API (CAPI) para enviar eventos desde su vitrina, y conectar sus cuentas publicitarias mediante OAuth con los permisos de solo lectura <code>ads_read</code> y <code>business_management</code>, para consultar sus campañas y métricas. Gesicom no crea ni modifica anuncios. El uso de esta integración está sujeto a las Meta Platform Terms, las
+            Gesicom permite al Cliente ingresar su ID de Meta Pixel y token de Conversions API (CAPI) para enviar eventos desde su vitrina, y conectar sus cuentas publicitarias mediante OAuth con los permisos <code>ads_read</code>, <code>business_management</code> y <code>ads_management</code>. Gesicom consulta campañas y métricas y permite pausar o activar una campaña cuando el Cliente confirma la acción en Publicidad. No crea campañas en Meta ni modifica anuncios o presupuestos. El uso de esta integración está sujeto a las Meta Platform Terms, las
             Developer Policies, las Community Standards y las Advertising Policies de Meta. En
             particular:
           </p>

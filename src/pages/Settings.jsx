@@ -193,7 +193,7 @@ const Settings = () => {
 
             <div className="card">
                 {/* Cabecera de la sección */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ 
                             width: '36px', height: '36px', borderRadius: '8px',
@@ -209,15 +209,23 @@ const Settings = () => {
                             </p>
                         </div>
                     </div>
-                    <button
-                        className="meta-connect-btn"
-                        disabled={!puedeGestionar}
-                        onClick={() => handleConnectMeta(hayTiendas ? 'add_store' : 'connect')}
-                        style={{ fontSize: '0.85rem', padding: '0.5rem 1.1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                    >
-                        <Plus size={15} />
-                        {hayTiendas ? 'Agregar tienda' : 'Conectar tienda'}
-                    </button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        {hayTiendas && (
+                            <button type="button" className="meta-connect-btn" disabled={!puedeGestionar} onClick={() => handleConnectMeta('connect')} style={{ fontSize: '14px', padding: '0.5rem 1.1rem' }}>
+                                Renovar permisos de Meta
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            className="meta-connect-btn"
+                            disabled={!puedeGestionar}
+                            onClick={() => handleConnectMeta(hayTiendas ? 'add_store' : 'connect')}
+                            style={{ fontSize: '14px', padding: '0.5rem 1.1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        >
+                            <Plus size={15} />
+                            {hayTiendas ? 'Agregar tienda' : 'Conectar tienda'}
+                        </button>
+                    </div>
                 </div>
 
                 {portafolios && (

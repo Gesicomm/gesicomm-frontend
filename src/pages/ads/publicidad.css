@@ -64,6 +64,15 @@
 .ads-error { padding: 1rem 1.25rem; border: 1px solid var(--color-danger); border-radius: 18px; background: var(--color-surface); color: var(--color-danger); margin-bottom: 1rem; }
 .ads-error p { margin: 0 0 0.7rem; }
 .ads-technical-error { max-width: 100%; overflow-wrap: anywhere; color: var(--color-fg-muted); }
+.ads-meta-status-button { align-self: flex-start; margin-top: 4px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface); color: var(--color-primary-text); padding: 7px 11px; min-height: 40px; font: 600 14px/1.5 var(--font-sans); cursor: pointer; }
+.ads-meta-status-button:hover { background: var(--bg-primary-soft); }
+.ads-meta-status-button:disabled { opacity: 0.6; cursor: wait; }
+.ads-meta-feedback { max-width: 75ch; margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--color-border); border-radius: 12px; font-size: 16px; line-height: 1.5; }
+.ads-meta-feedback.error { color: var(--color-danger); }
+.ads-meta-confirm { max-width: 75ch; margin: 0 0 16px; padding: 18px; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface); }
+.ads-meta-confirm h3 { margin: 0 0 8px; color: var(--color-fg); font-size: 18px; line-height: 1.4; }
+.ads-meta-confirm p { margin: 0 0 16px; color: var(--color-fg); font-size: 16px; line-height: 1.6; overflow-wrap: anywhere; }
+.ads-meta-confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .ads-modal-overlay > div { min-width: 0; border-radius: 24px !important; }
 .ads-wizard { outline: none; overflow: hidden; }
 .ads-wizard-body { min-height: 0 !important; }
