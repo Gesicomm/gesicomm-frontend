@@ -2057,7 +2057,7 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     const preview = construirDocumentoCodigo(PLANTILLA_INICIO, { datos, previewDevice: 'mobile' });
     expect(preview).toContain('<html lang="es" data-gesicomm-preview-device="mobile">');
     expect(preview).toContain('html[data-gesicomm-preview-device="mobile"]');
-    expect(preview).toContain('padding-right: calc(16px + 12px) !important;');
+    expect(preview).toContain('padding-right: calc(4px + 12px) !important;');
   });
 });
 

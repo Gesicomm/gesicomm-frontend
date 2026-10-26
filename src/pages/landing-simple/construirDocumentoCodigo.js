@@ -2921,7 +2921,7 @@ main[data-gesicomm-base="catalogo"] .brand-badge {
    o parezca salirse del recuadro en el editor. */
 @media (max-width: 600px) {
   html[data-gesicomm-preview-device="mobile"] :where(.storefront .page-content, .page-content) {
-    padding-right: calc(16px + 12px) !important;
+    padding-right: calc(4px + 12px) !important;
   }
   html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="catalogo"] > .page-content > .brand-section {
     overflow-x: clip !important;
