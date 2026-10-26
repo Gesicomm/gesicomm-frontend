@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { afterEach, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import EditorCombosInicio from './EditorCombosInicio';
 import { normalizarCombosInicio } from './combosInicio';
 
@@ -44,9 +44,11 @@ it('lista el contenido real, busca por un producto incluido y guarda solo los co
 it('usa la portada incluso con la configuración anterior y controla la información visible', () => {
   render(<Demo inicial={{ imagen_modo: 'componentes' }} />);
   expect(screen.getByText(/Las tarjetas usan la imagen que cargaste/)).toBeTruthy();
-  fireEvent.click(screen.getByLabelText('Mostrar qué incluye'));
-  fireEvent.click(screen.getByLabelText('Mostrar ahorro real'));
-  expect(config()).toMatchObject({ imagen_modo: 'portada', mostrar_incluidos: false, mostrar_ahorro: false });
+  const contenido = screen.getByRole('group', { name: 'Contenido de cada tarjeta' });
+  fireEvent.click(within(contenido).getByRole('checkbox', { name: 'Mostrar qué incluye' }));
+  fireEvent.click(within(contenido).getByRole('checkbox', { name: 'Mostrar ahorro real' }));
+  fireEvent.click(within(contenido).getByRole('checkbox', { name: 'Mostrar descripción de cada combo' }));
+  expect(config()).toMatchObject({ imagen_modo: 'portada', mostrar_incluidos: false, mostrar_ahorro: false, mostrar_descripcion: false });
 });
 
 it('aprovecha los nombres incluidos del catálogo mientras llega la ficha completa', () => {

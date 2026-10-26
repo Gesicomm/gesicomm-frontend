@@ -64,10 +64,22 @@ export default function EditorCombosInicio({ config, combos, onCambiar, onAdmini
         <label className="text-xs text-fg-muted">Máximo de combos<input className={`${campo} mt-1`} type="number" min={1} max={Math.min(48, cfg.columnas * 8)} value={cfg.limite} onChange={e => { const limite = Math.max(1, Math.min(48, cfg.columnas * 8, Math.floor(Number(e.target.value) || 1))); onCambiar({ limite, filas: Math.ceil(limite / cfg.columnas) }); }} /></label>
       </div>
       <p className="text-xs text-fg-muted">En escritorio: hasta {cfg.columnas} tarjetas por fila y {cfg.filas} filas. En celular: una tarjeta por fila para facilitar la lectura.</p>
-      <p className="text-xs text-fg-muted">Las tarjetas usan la imagen que cargaste al crear el combo. Si cargaste varias, se muestra la principal. Solo cuando no tiene foto se muestran imágenes de los productos incluidos. Podés cambiar la portada en Administrar combos.</p>
-      <div className="flex flex-wrap gap-x-4 gap-y-2">
-        {[['mostrar_incluidos', 'Mostrar qué incluye'], ['mostrar_ahorro', 'Mostrar ahorro real'], ['mostrar_descripcion', 'Mostrar descripción de cada combo']].map(([k, nombre]) => <label key={k} className="flex items-center gap-2 text-xs text-fg"><input type="checkbox" checked={cfg[k] !== false} onChange={e => onCambiar({ [k]: e.target.checked })} className="accent-primary" />{nombre}</label>)}
-      </div>
+    </fieldset>
+
+    <fieldset className="space-y-2 rounded-xl border border-border bg-surface-2/40 p-3">
+      <legend className="px-1 text-sm font-semibold text-fg">Contenido de cada tarjeta</legend>
+      <p className="text-sm text-fg-muted">Estos ajustes se aplican a todos los combos de la sección.</p>
+      {[
+        ['mostrar_incluidos', 'Mostrar qué incluye', 'Lista de productos y cantidades incluidos.'],
+        ['mostrar_ahorro', 'Mostrar ahorro real', 'Precio anterior y ahorro calculado para el combo.'],
+        ['mostrar_descripcion', 'Mostrar descripción de cada combo', 'Texto propio de cada combo, cuando está cargado.'],
+      ].map(([k, nombre, ayuda]) => (
+        <label key={k} className="flex min-h-14 cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-surface px-3 py-2.5">
+          <span className="min-w-0"><strong className="block text-sm font-medium text-fg">{nombre}</strong><span className="block text-sm text-fg-muted">{ayuda}</span></span>
+          <input type="checkbox" aria-label={nombre} checked={cfg[k] !== false} onChange={e => onCambiar({ [k]: e.target.checked })} className="h-5 w-5 shrink-0 accent-primary" />
+        </label>
+      ))}
+      <p className="text-sm text-fg-muted">Las tarjetas usan la imagen que cargaste al crear el combo. Si cargaste varias, se muestra la principal. Solo cuando no tiene foto se muestran imágenes de los productos incluidos. Podés cambiar la portada en Administrar combos.</p>
     </fieldset>
 
     <div className="space-y-3">
