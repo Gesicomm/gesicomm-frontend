@@ -4260,7 +4260,7 @@ function VistaPrevia({
               <div className="ecommerce-preview-monitor-base" aria-hidden="true" />
             </div>
           ) : (
-            <div className="ecommerce-preview-phone-compact"><PhonePreviewShell compact>{iframe}</PhonePreviewShell></div>
+            <div className="ecommerce-preview-phone-compact"><PhonePreviewShell>{iframe}</PhonePreviewShell></div>
           )}
           <p className="ecommerce-preview-monitor-caption">{escritorio ? 'Pantalla simulada: 1280 × 720 px' : 'Pantalla simulada: 390 px de ancho'}</p>
         </section>

@@ -275,8 +275,40 @@
 .ecommerce-preview-video-dialog iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; background: #000; }
 @container (min-width: 900px) {
   .ecommerce-preview-workspace.is-phone {
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 460px);
     grid-template-rows: minmax(0, 1fr);
+  }
+  .ecommerce-preview-workspace.is-phone .ecommerce-preview-tutorial {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 460px;
+    height: auto;
+    padding: 18px;
+  }
+  .ecommerce-preview-workspace.is-phone .ecommerce-preview-tutorial-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .ecommerce-preview-workspace.is-phone .ecommerce-preview-tutorial-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 10px;
+    background: var(--color-surface-2);
+    color: var(--color-primary-text);
+  }
+  .ecommerce-preview-workspace.is-phone .ecommerce-preview-tutorial h3 { font-size: var(--ui-text-card, 18px); }
+  .ecommerce-preview-workspace.is-phone .ecommerce-preview-tutorial-slot {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    gap: 8px;
+    font-size: var(--ui-text-help, 14px);
   }
 }
 @media (max-width: 767px) {
