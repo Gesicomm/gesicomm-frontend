@@ -2049,15 +2049,16 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     vacio.dom.window.close();
   });
 
-  it('el preview móvil compensa el scrollbar del iframe sin cambiar la publicación', () => {
+  it('el preview móvil y la página publicada comparten el padding de contenido', () => {
     const publico = construirDocumentoCodigo(PLANTILLA_INICIO, { datos });
     expect(publico).toContain('<html lang="es">');
     expect(publico).not.toContain('<html lang="es" data-gesicomm-preview-device="mobile">');
+    expect(publico).toContain('padding: 0px 16px 30px !important;');
 
     const preview = construirDocumentoCodigo(PLANTILLA_INICIO, { datos, previewDevice: 'mobile' });
     expect(preview).toContain('<html lang="es" data-gesicomm-preview-device="mobile">');
     expect(preview).toContain('html[data-gesicomm-preview-device="mobile"]');
-    expect(preview).toContain('padding-right: calc(4px + 12px) !important;');
+    expect(preview).toContain('padding: 0px 16px 30px !important;');
   });
 });
 

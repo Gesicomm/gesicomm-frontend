@@ -2915,13 +2915,11 @@ main[data-gesicomm-base="catalogo"] .brand-badge {
     padding-inline: 16px !important;
   }
 }
-/* El simulador móvil corre en un iframe de escritorio con scrollbar clásica:
-   ese gutter existe en preview pero no en un teléfono real. La compensación
-   evita que el bloque de imagen de "Nuestra marca" quede debajo de la barra
-   o parezca salirse del recuadro en el editor. */
+/* La vista móvil usa el mismo marco de contenido en el editor y publicada. */
 @media (max-width: 600px) {
-  html[data-gesicomm-preview-device="mobile"] :where(.storefront .page-content, .page-content) {
-    padding-right: calc(4px + 12px) !important;
+  .storefront .page-content,
+  .page-content {
+    padding: 0px 16px 30px !important;
   }
   html[data-gesicomm-preview-device="mobile"] main[data-gesicomm-base="catalogo"] > .page-content > .brand-section {
     overflow-x: clip !important;
