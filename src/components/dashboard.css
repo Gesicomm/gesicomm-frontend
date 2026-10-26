@@ -143,6 +143,61 @@
     gap: 0.25rem;
 }
 
+.module-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--color-fg-muted);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.module-switcher:hover {
+    background: color-mix(in srgb, #10b981 9%, transparent);
+    border-color: color-mix(in srgb, #10b981 22%, transparent);
+    color: var(--color-fg);
+}
+
+.module-switcher:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--bg-sidebar), 0 0 0 4px #10b981;
+}
+
+.module-switcher > svg:first-child {
+    flex: 0 0 auto;
+    color: #10b981;
+}
+
+.module-switcher > span {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.0625rem;
+}
+
+.module-switcher__eyebrow {
+    overflow: hidden;
+    color: var(--color-fg-subtle, var(--color-fg-muted));
+    font-size: 0.625rem;
+    line-height: 1rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.module-switcher__label {
+    color: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1rem;
+}
+
 .logout-btn:hover {
     background-color: rgba(255, 0, 0, 0.1);
     color: var(--color-danger);
@@ -756,4 +811,3 @@
 }
 .btn-icon:hover { background: color-mix(in srgb, var(--color-fg) 10%, transparent); color: var(--color-fg); }
 .btn-icon.danger:hover { background: color-mix(in srgb, var(--color-danger) 15%, transparent); color: var(--color-danger); border-color: color-mix(in srgb, var(--color-danger) 30%, transparent); }
-

@@ -8,6 +8,7 @@ import {
   PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus, TrendingUp, Ship, BadgeCheck, Users
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
+import { MARCA_PERSONAL_URL } from '../lib/marcaPersonal';
 import { getProgresoSidebar } from '../services/educacionApi';
 import { planesService } from '../services/planesService';
 import { notificationsService } from '../services/notifications.service';
@@ -179,6 +180,14 @@ const UserLayout = ({ children }) => {
   const handleLogout = async () => {
     await cerrarSesion();
     window.location.href = '/login';
+  };
+
+  // Marca Personal se sirve como una aplicación independiente. Centralizar la
+  // salida acá evita duplicar la URL en la navegación y conserva esta ruta
+  // como el único punto de cambio entre los dos espacios de trabajo.
+  const irAMarcaPersonal = () => {
+    sessionStorage.setItem('moduloActivo', 'marca_personal');
+    window.location.assign(MARCA_PERSONAL_URL);
   };
 
   // Recarga completa (no navigate): los datos de casi toda la app —
@@ -525,6 +534,21 @@ const UserLayout = ({ children }) => {
         </nav>
 
         <footer className="sidebar-footer" style={{ borderTop: '1px solid var(--color-border)' }}>
+          {usuario?.rol === 'usuario' && (
+            <button
+              type="button"
+              onClick={irAMarcaPersonal}
+              className="module-switcher"
+              title="Cambiar a Marca Personal"
+            >
+              <Megaphone size={14} aria-hidden="true" />
+              <span>
+                <span className="module-switcher__eyebrow">Espacio actual: E-commerce</span>
+                <span className="module-switcher__label">Ir a Marca Personal</span>
+              </span>
+              <ChevronRight size={14} aria-hidden="true" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setPerfilModalAbierto(true)}
