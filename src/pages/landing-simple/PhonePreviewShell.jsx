@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function PhonePreviewShell({ children, className = '' }) {
+export default function PhonePreviewShell({ children, className = '', compact = false }) {
   const ref = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const outerW = 410;
-  const outerH = 864;
-  const scale = size.w && size.h ? Math.min(1, size.w / outerW, size.h / outerH) : 1;
+  // En el editor compacto se ve menos alto de la página y se desplaza dentro
+  // del teléfono. Así el marco puede ser más grande sin crear scroll externo.
+  const outerH = compact ? 744 : 864;
+  const scale = size.w && size.h ? Math.min(compact ? 1.2 : 1, size.w / outerW, size.h / outerH) : 1;
 
   useEffect(() => {
     if (!ref.current) return undefined;
@@ -30,8 +32,8 @@ export default function PhonePreviewShell({ children, className = '' }) {
         style={{ width: outerW * scale, height: outerH * scale }}
       >
         <div
-          className="relative h-[864px] w-[410px] rounded-[48px] bg-[#070a10] p-[10px] shadow-[0_28px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.10)]"
-          style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}
+          className="relative w-[410px] rounded-[48px] bg-[#070a10] p-[10px] shadow-[0_28px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.10)]"
+          style={{ height: outerH, transform: `scale(${scale})`, transformOrigin: 'top left' }}
         >
           <span aria-hidden="true" className="absolute -left-[3px] top-[118px] h-12 w-[3px] rounded-l bg-surface-2/45" />
           <span aria-hidden="true" className="absolute -left-[3px] top-[178px] h-16 w-[3px] rounded-l bg-surface-2/45" />
