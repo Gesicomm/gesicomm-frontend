@@ -179,18 +179,21 @@
   flex: 1;
   min-height: 0;
   min-width: 0;
+  container-type: size;
   overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-content: center;
   align-items: center;
-  gap: 16px;
+  justify-items: center;
+  gap: 20px;
   padding: 20px;
 }
 .ecommerce-preview-monitor-area,
 .ecommerce-preview-tutorial { width: 100%; min-width: 0; margin-inline: auto; }
-.ecommerce-preview-monitor-area { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 0; max-width: 1120px; }
-.ecommerce-preview-monitor { width: min(100%, 1120px, max(0px, calc((100dvh - 310px) * 16 / 9))); }
+.ecommerce-preview-monitor-area { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; max-width: 1120px; }
+.ecommerce-preview-monitor { width: min(100%, 1120px, max(0px, calc((100cqh - 210px) * 16 / 9))); }
 .ecommerce-preview-monitor-bezel {
   padding: 8px;
   border: 1px solid #354258;
@@ -217,6 +220,8 @@
 }
 .ecommerce-preview-monitor-caption { margin: 12px 0 0; color: var(--color-fg-muted); font-size: var(--ui-text-help, 14px); text-align: center; }
 .ecommerce-preview-workspace.is-phone .ecommerce-preview-monitor-area { padding-top: 0; }
+.ecommerce-preview-workspace.is-phone { grid-template-rows: minmax(0, 1fr) auto; }
+.ecommerce-preview-workspace.is-phone .ecommerce-preview-monitor-area { height: 100%; }
 .ecommerce-preview-phone-compact {
   width: 100%;
   height: calc(100% - 32px);
@@ -230,6 +235,7 @@
 .ecommerce-preview-tutorial {
   align-self: center;
   display: grid;
+  box-sizing: border-box;
   grid-template-columns: 120px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
@@ -249,6 +255,7 @@
 .ecommerce-preview-tutorial-slot {
   grid-column: 1; grid-row: 1;
   position: relative; overflow: hidden;
+  box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   width: 120px; height: 72px;
   padding: 6px; border: 1px dashed var(--color-border-strong); border-radius: 8px;
@@ -275,8 +282,9 @@
 .ecommerce-preview-video-dialog iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; background: #000; }
 @container (min-width: 900px) {
   .ecommerce-preview-workspace.is-phone {
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 530px);
+    grid-template-columns: minmax(0, 410px) minmax(340px, 530px);
     grid-template-rows: minmax(0, 1fr);
+    justify-content: center;
   }
   .ecommerce-preview-workspace.is-phone .ecommerce-preview-tutorial {
     display: flex;
