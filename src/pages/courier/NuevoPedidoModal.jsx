@@ -1008,7 +1008,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   const fleteAlCliente = deliveryLoPagaNegocio ? 0 : (Number(form.costo_envio) || 0);
   // El resumen mostraba "Delivery" al lado de un total que no lo sumaba (los
   // pedidos web lo absorbe el comercio) y parecía un error de cuenta.
-  const etiquetaDelivery = deliveryLoPagaNegocio ? 'Delivery a tu cargo (no se cobra)' : 'Delivery (incluido)';
+  const etiquetaDelivery = deliveryLoPagaNegocio ? 'Delivery a tu cargo' : 'Delivery (incluido)';
 
   // El método "PagoPar" del catálogo es genérico (una sola fila): con cuál
   // de sus canales habilitados pagó el cliente (transferencia, tarjeta,

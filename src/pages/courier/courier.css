@@ -366,7 +366,8 @@
   background: color-mix(in srgb, var(--color-fg) 5%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
   text-align: right;
-  font-family: monospace;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
 }
 
 .kanban-cards {
@@ -414,10 +415,12 @@
 }
 
 .order-card-top {
+  /* Estado y paso en su propia fila, arriba: al lado del nombre le dejaban
+     ~120 px y "Martin Victorino Rodriguez Vargas" ocupaba cuatro líneas. */
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
   margin-bottom: 0.5rem;
 }
 
@@ -451,13 +454,12 @@
 }
 
 .order-stage-stack {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.1rem;
-  flex: 0 1 auto;
-  min-width: 5.5rem;
-  max-width: 55%;
+  order: -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  min-width: 0;
 }
 
 .order-stage-stack span {
@@ -476,7 +478,6 @@
   color: var(--color-fg-subtle);
   font-size: var(--ui-text-help, 0.875rem);
   font-weight: 700;
-  text-align: right;
 }
 
 .order-card-address {
@@ -638,7 +639,8 @@ button.order-alert-chip:focus-visible {
   font-weight: 800;
   font-size: 0.95rem;
   color: var(--color-success);
-  font-family: monospace;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
 }
 
 .order-card-courier {
@@ -872,14 +874,17 @@ button.order-alert-chip:focus-visible {
 }
 
 .np-progress-chip.is-ready > span {
-  background: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gesicom-gold) 18%, transparent);
+  /* Listo = verde, como el resumen de la derecha: el coral de marca se leía
+     como "falta" justo al lado de los mismos pasos tildados en verde. */
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 18%, transparent);
 }
 
 .np-progress-strip strong {
   margin-left: auto;
   color: var(--color-fg);
-  font-family: monospace;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
   font-size: 0.95rem;
   white-space: nowrap;
 }
@@ -1325,7 +1330,8 @@ button.order-alert-chip:focus-visible {
   color: var(--color-fg);
   font-size: 1.55rem;
   line-height: 1.1;
-  font-family: monospace;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
 }
 
 .np-summary-lines {
@@ -1345,7 +1351,10 @@ button.order-alert-chip:focus-visible {
 
 .np-summary-lines b {
   color: var(--color-fg);
-  font-family: monospace;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  /* "Gs." y la cifra se partían en dos renglones. */
+  white-space: nowrap;
 }
 
 .np-summary-status {
@@ -1928,7 +1937,8 @@ button.order-alert-chip:focus-visible {
 .np-line-subtotal strong {
   color: var(--color-success);
   font-size: 0.95rem;
-  font-family: monospace;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
 }
 
 .np-total-row {
@@ -2044,7 +2054,8 @@ button.order-alert-chip:focus-visible {
 .np-total-amount {
   font-size: 1.3rem;
   color: var(--color-success);
-  font-family: monospace;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
 }
 
 .np-label-obs {
@@ -3037,7 +3048,8 @@ button.order-alert-chip:focus-visible {
 
 .ab-card-money span:first-child {
   color: var(--color-success);
-  font-family: monospace;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
   font-weight: 850;
 }
 
@@ -3934,7 +3946,7 @@ button.order-alert-chip:focus-visible {
 .pt-table--followup { min-width: 1440px; }
 .pt-col-id { width: 110px; }
 .pt-col-tipo { width: 152px; }
-.pt-col-date { width: 104px; }
+.pt-col-date { width: 116px; }
 .pt-col-client { width: 150px; }
 .pt-col-phone { width: 140px; }
 .pt-col-product { width: 240px; }
@@ -3942,7 +3954,7 @@ button.order-alert-chip:focus-visible {
 .pt-col-total { width: 140px; }
 .pt-col-state { width: 224px; }
 .pt-col-followup { width: 240px; }
-.pt-col-action { width: 276px; }
+.pt-col-action { width: 244px; }
 .pt-th {
   text-align: left;
   padding: 0.75rem 0.9rem;
@@ -3960,18 +3972,21 @@ button.order-alert-chip:focus-visible {
 .pt-th-product { width: auto; }
 .pt-th-courier { width: 90px; }
 .pt-th-state { width: 130px; }
-.pt-th-action { width: 276px; }
+.pt-th-action { width: 244px; }
 
 /* La tabla mide ~1800 px y la Acción (lo que el comercio vino a hacer)
    quedaba fuera de vista. Se fija a la derecha sin cambiar el orden de
    columnas; los fondos son opacos para que el contenido no se trasluzca. */
-@media (min-width: 761px) {
+/* Desde 1280 px: por debajo, la columna fija tapaba casi toda la tabla
+   (el cliente quedaba cortado en su borde) y conviene el scroll normal. */
+@media (min-width: 1280px) {
   .pt-th-action,
   .pt-td-action {
     position: sticky;
     right: 0;
     z-index: 1;
-    box-shadow: inset 1px 0 0 color-mix(in srgb, var(--color-fg) 8%, transparent);
+    box-shadow: inset 1px 0 0 color-mix(in srgb, var(--color-fg) 10%, transparent),
+      -10px 0 12px -10px color-mix(in srgb, #000 70%, transparent);
   }
   .pt-th-action { background: color-mix(in srgb, var(--color-fg) 3.5%, var(--color-canvas)); }
   .pt-td-action { background: color-mix(in srgb, var(--color-fg) 1.5%, var(--color-canvas)); }

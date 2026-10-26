@@ -34,15 +34,21 @@
 }
 .ads-campaigns { border-radius: 22px; }
 .ads-campaigns table { min-width: 0; width: 100%; table-layout: fixed; }
-.ads-campaigns th:first-child { width: 30%; }
-.ads-campaigns th:nth-child(2) { width: 13%; }
-.ads-campaigns th:nth-child(3) { width: 19%; }
-.ads-campaigns th:nth-child(4) { width: 15%; }
-.ads-campaigns th:last-child { width: 23%; }
-.ads-campaigns th { white-space: normal; overflow-wrap: anywhere; }
+/* Seis columnas desde "Costo por pedido": con los anchos de cinco, "Estado
+   en Gesicom" quedaba en 0 px y su etiqueta se dibujaba sobre las acciones. */
+.ads-campaigns th:first-child { width: 22%; }
+.ads-campaigns th:nth-child(2) { width: 12%; }
+.ads-campaigns th:nth-child(3) { width: 14%; }
+.ads-campaigns th:nth-child(4) { width: 12%; }
+.ads-campaigns th:nth-child(5) { width: 16%; }
+.ads-campaigns th:last-child { width: 24%; }
+/* Frase normal y sin partir palabras: en mayúsculas espaciadas y con
+   overflow-wrap:anywhere salía "PEDI / DOS / ASO / CIA / DOS". */
+.ads-campaigns th { white-space: normal; overflow-wrap: normal; word-break: normal; text-transform: none; letter-spacing: 0; }
 .ads-campaigns td:last-child > div { flex-wrap: wrap; }
 .ads-campaigns td:first-child button { overflow-wrap: anywhere; }
-.ads-campaigns td { vertical-align: top; padding: 1.15rem; }
+.ads-campaigns td { vertical-align: top; padding: 1.15rem 0.75rem; }
+.ads-campaigns td:first-child { padding-left: 1.15rem; }
 .ads-campaigns td:first-child { min-width: 13rem !important; }
 .ads-code-hint { color: var(--color-fg-muted); font-size: var(--ui-text-help); line-height: 1.6; }
 .ads-actions { position: relative; white-space: normal; }
@@ -93,7 +99,7 @@
   .ads-campaigns .table-scroll-container { overflow: visible; }
   .ads-campaigns table, .ads-campaigns tbody { display: block; }
   .ads-campaigns thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
-  .ads-campaigns tbody tr { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 0.85rem; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
+  .ads-campaigns tbody tr { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); margin: 0.85rem; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
   .ads-campaigns tbody td:first-child, .ads-campaigns tbody td:last-child { grid-column: 1 / -1; }
   .ads-campaigns tbody td:last-child { grid-row: 2; }
   .ads-campaigns tbody td { display: block; width: auto; min-width: 0 !important; padding: 0.7rem 1rem; text-align: left; border: 0; white-space: normal; }
@@ -108,3 +114,7 @@
   .ads-modal-overlay > div { max-height: 94dvh !important; }
   .ads-dialog-intro { font-size: var(--ui-text-help) !important; padding-top: 0.65rem; }
 }
+
+/* Estado en frase normal (guía tipográfica): en mayúsculas espaciadas
+   "BORRADOR" medía 116 px y a 1100 px se salía de su columna. */
+.ads-campaigns td[data-label="Estado en Gesicom"] .badge { text-transform: none; letter-spacing: 0; white-space: nowrap; }
