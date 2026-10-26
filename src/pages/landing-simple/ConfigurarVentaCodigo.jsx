@@ -43,6 +43,7 @@ import { extraerFragmentoHtml, reemplazarFragmentoHtml, extraerSeccionCss, reemp
 import { armarPromptVista } from './promptsCodigo';
 import { armarPromptSeccionInicio } from './promptsSeccionInicio';
 import { armarPromptFichaProducto, bloquesFichaFaltantes, faltantesFicha } from './promptsFichaProducto';
+import { analizarVideo } from './templates/video';
 
 // El MISMO editor de ofertas de la ficha de producto (precios, componentes,
 // margen, imagen): acá se abre en un panel lateral para crear o editar sin
@@ -4051,6 +4052,13 @@ const TUTORIALES_PREVIEW = {
   producto: 'Vista producto',
   checkout: 'Checkout',
 };
+// Agregar aquí los enlaces de YouTube cuando estén listos los tutoriales.
+const VIDEOS_TUTORIALES_PREVIEW = {
+  inicio: '',
+  categoria: '',
+  producto: '',
+  checkout: '',
+};
 
 /**
  * Tamaño de un elemento, al vuelo (para escalar la vista de escritorio).
@@ -4112,12 +4120,22 @@ function VistaPrevia({
   const productosFicha = productos.filter(p => p.tipo === 'producto' || p.tipo === 'combo');
   const vistaSeleccionada = vista === 'catalogo' ? 'categoria' : vista;
   const [marcoRef, tam] = useTamano();
+  const [tutorialAbierto, setTutorialAbierto] = useState(false);
   const escritorio = dispositivo === 'escritorio';
   const anchoLienzo = compacta ? ANCHO_ESCRITORIO : Math.max(ANCHO_ESCRITORIO, tam.w);
   const escala = escritorio && tam.w
     ? Math.min(1, tam.w / anchoLienzo, compacta ? tam.h / ALTO_ESCRITORIO : 1)
     : 1;
   const tituloTutorial = modo === 'legales' ? 'Páginas legales' : TUTORIALES_PREVIEW[vistaSeleccionada] || 'esta página';
+  const videoTutorial = analizarVideo(modo === 'legales' ? '' : VIDEOS_TUTORIALES_PREVIEW[vistaSeleccionada]);
+
+  useEffect(() => { setTutorialAbierto(false); }, [modo, vistaSeleccionada]);
+  useEffect(() => {
+    if (!tutorialAbierto) return undefined;
+    const cerrarConEscape = e => { if (e.key === 'Escape') setTutorialAbierto(false); };
+    window.addEventListener('keydown', cerrarConEscape);
+    return () => window.removeEventListener('keydown', cerrarConEscape);
+  }, [tutorialAbierto]);
 
   const iframe = datos?.vista === 'producto' && productoFicha?.tipo === 'combo' ? (
     <div style={{ height: '100%', overflowY: 'auto' }}>
@@ -4249,13 +4267,27 @@ function VistaPrevia({
         <section className="ecommerce-preview-tutorial" aria-label={`Tutorial de ${tituloTutorial}`}>
           <div className="ecommerce-preview-tutorial-heading">
             <span className="ecommerce-preview-tutorial-icon"><Film size={20} aria-hidden="true" /></span>
-            <div><h3>Tutorial de {tituloTutorial}</h3><p>Un video para acompañarte en esta sección.</p></div>
+            <h3>Tutorial de {tituloTutorial}</h3>
           </div>
-          <div className="ecommerce-preview-tutorial-slot">
-            <Film size={28} aria-hidden="true" />
-            <span>Espacio para el video explicativo</span>
-          </div>
+          {videoTutorial?.incrustable ? (
+            <button type="button" className="ecommerce-preview-tutorial-slot is-ready" onClick={() => setTutorialAbierto(true)} aria-label={`Ver tutorial de ${tituloTutorial}`}>
+              {videoTutorial.miniatura && <img src={videoTutorial.miniatura} alt="" />}
+              <span className="ecommerce-preview-tutorial-play" aria-hidden="true">▶</span>
+            </button>
+          ) : (
+            <div className="ecommerce-preview-tutorial-slot">
+              <Film size={24} aria-hidden="true" />
+              <span>Video próximamente</span>
+            </div>
+          )}
         </section>
+      </div>}
+
+      {tutorialAbierto && videoTutorial?.incrustable && <div className="ecommerce-preview-video-modal" role="dialog" aria-modal="true" aria-label={`Tutorial de ${tituloTutorial}`} onMouseDown={e => { if (e.target === e.currentTarget) setTutorialAbierto(false); }}>
+        <div className="ecommerce-preview-video-dialog">
+          <div className="ecommerce-preview-video-header"><h2>Tutorial de {tituloTutorial}</h2><button type="button" autoFocus onClick={() => setTutorialAbierto(false)} aria-label="Cerrar tutorial"><X size={20} aria-hidden="true" /></button></div>
+          <iframe src={videoTutorial.embed} title={`Video tutorial de ${tituloTutorial}`} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
+        </div>
       </div>}
 
       {!compacta && <div className={`flex-1 min-h-0 min-w-0 flex justify-center ${soloLienzo ? '' : ampliada ? 'p-4 md:p-6' : 'px-4 pb-4'}`}>

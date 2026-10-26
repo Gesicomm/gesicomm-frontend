@@ -188,7 +188,8 @@
   padding: 20px;
 }
 .ecommerce-preview-monitor-area,
-.ecommerce-preview-tutorial { width: 100%; max-width: 760px; min-width: 0; margin-inline: auto; }
+.ecommerce-preview-tutorial { width: 100%; min-width: 0; margin-inline: auto; }
+.ecommerce-preview-monitor-area { max-width: 1120px; }
 .ecommerce-preview-monitor { width: 100%; }
 .ecommerce-preview-monitor-bezel {
   padding: 8px;
@@ -227,28 +228,47 @@
 }
 .ecommerce-preview-tutorial {
   align-self: start;
-  padding: 20px;
+  max-width: 320px;
+  padding: 12px;
   border: 1px solid var(--color-border);
   border-radius: 16px;
   background: var(--color-surface);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--color-fg) 5%, transparent);
 }
-.ecommerce-preview-tutorial-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.ecommerce-preview-tutorial-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .ecommerce-preview-tutorial-icon {
-  display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px;
-  border-radius: 10px; background: var(--color-surface-2); color: var(--color-primary-text);
+  display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px;
+  border-radius: 8px; background: var(--color-surface-2); color: var(--color-primary-text);
 }
-.ecommerce-preview-tutorial h3 { margin: 0; color: var(--color-fg); font-size: var(--ui-text-card, 18px); line-height: 1.4; font-weight: 650; }
-.ecommerce-preview-tutorial p { margin: 4px 0 0; color: var(--color-fg-muted); font-size: var(--ui-text-help, 14px); line-height: 1.5; }
+.ecommerce-preview-tutorial h3 { margin: 0; color: var(--color-fg); font-size: var(--ui-text-label, 15px); line-height: 1.4; font-weight: 650; }
 .ecommerce-preview-tutorial-slot {
+  position: relative; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-  width: 100%; min-height: 180px; aspect-ratio: 16 / 9;
-  padding: 20px; border: 1px dashed var(--color-border-strong); border-radius: 12px;
+  width: 100%; aspect-ratio: 16 / 9;
+  padding: 12px; border: 1px dashed var(--color-border-strong); border-radius: 12px;
   background: var(--color-surface-2); color: var(--color-fg-muted);
   font-size: var(--ui-text-label, 14px); font-weight: 500; text-align: center;
 }
-@container (min-width: 1100px) {
-  .ecommerce-preview-workspace { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); align-items: start; }
+.ecommerce-preview-tutorial-slot.is-ready { cursor: pointer; border-style: solid; }
+.ecommerce-preview-tutorial-slot.is-ready:hover { border-color: var(--color-primary-text); }
+.ecommerce-preview-tutorial-slot.is-ready:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
+.ecommerce-preview-tutorial-slot > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ecommerce-preview-tutorial-play {
+  position: relative; display: grid; place-items: center; width: 48px; height: 48px;
+  border-radius: 50%; background: rgb(0 0 0 / .72); color: #fff; font-size: 20px;
+}
+.ecommerce-preview-video-modal {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+  padding: 24px; background: rgb(5 12 22 / .78);
+}
+.ecommerce-preview-video-dialog { width: min(100%, 960px); padding: 12px; border-radius: 16px; background: var(--color-surface); box-shadow: 0 30px 80px rgb(0 0 0 / .35); }
+.ecommerce-preview-video-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 4px 4px 12px; }
+.ecommerce-preview-video-header h2 { margin: 0; color: var(--color-fg); font-size: var(--ui-text-section, 22px); }
+.ecommerce-preview-video-header button { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; color: var(--color-fg); }
+.ecommerce-preview-video-header button:hover { background: var(--color-surface-2); }
+.ecommerce-preview-video-dialog iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; background: #000; }
+@media (max-width: 767px) {
+  .ecommerce-preview-video-modal { padding: 12px; }
 }
 @media (max-width: 767px) {
   .ecommerce-preview-workspace { padding: 16px; gap: 20px; }
