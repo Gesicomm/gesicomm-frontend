@@ -2104,7 +2104,7 @@ button.order-alert-chip:focus-visible {
 @media (max-width: 560px) {
   .np-footer-edit-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
     width: 100%;
   }
   .np-footer-edit-actions .np-nav-action { padding: 0.5rem; font-size: var(--ui-text-help, 0.875rem); }
@@ -4749,6 +4749,14 @@ td.pt-empty .pt-spinner {
     height: 100dvh !important;
     max-height: 100dvh !important;
     border-radius: 0 !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Pantalla completa de verdad: sin el margen del overlay el modal medía
+     358 px de ancho en un celular de 390. */
+  .modal-overlay:has(> .np-modal-container) {
+    padding: 0;
   }
 
   .np-header-banner {
@@ -4778,10 +4786,19 @@ td.pt-empty .pt-spinner {
     margin-left: 0;
   }
 
+  /* El formulario ocupa lo que dejan el encabezado y la barra de pasos: con
+     un alto fijo calculado, un título en dos líneas empujaba el pie fuera
+     de la pantalla. */
   .np-form {
-    max-height: calc(100dvh - 7.2rem);
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
     padding: 0.85rem;
     gap: 0.8rem;
+  }
+
+  .np-form > * {
+    flex-shrink: 0;
   }
 
   .np-stepper {

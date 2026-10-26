@@ -146,4 +146,10 @@
   .cli-ficha-acciones { padding: 1rem 1rem 0; }
   .cli-ficha-acciones a { flex: 1 1 100%; justify-content: center; }
   .cli-ficha-pedidos { padding: 0 1rem 1.25rem; }
+  /* Cuatro conteos en dos columnas: apilados ocupaban toda la pantalla
+     antes de llegar a la lista de clientes. */
+  .cli-page .cic-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+  .cli-page .cic-kpi-card { padding: 0.85rem; }
+  .cli-page .cic-kpi-header { gap: 0.4rem; }
+  .cli-page .cic-kpi-header svg { flex-shrink: 0; }
 }

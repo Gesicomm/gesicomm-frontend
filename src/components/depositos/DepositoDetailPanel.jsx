@@ -69,7 +69,7 @@ function CourierRow({ courier, onConfigure }) {
         <button
           type="button"
           onClick={() => onConfigure?.(courier)}
-          className="rounded-md border border-border px-3 py-1.5 text-[13px] font-medium text-fg hover:bg-surface-2"
+          className="shrink-0 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-[13px] font-medium text-fg hover:bg-surface-2"
         >
           Configurar
         </button>

@@ -44,6 +44,7 @@
   }
   .courier-mobile-actions-toggle {
     display: block;
+    align-self: start;
     min-height: 44px;
     padding: 0 10px;
     border: 1px solid var(--color-border);
@@ -130,6 +131,7 @@
     min-height: 44px;
     padding: 6px 9px;
     font-size: var(--ui-text-help, 0.875rem);
+    white-space: nowrap;
   }
   .pt-stage-shell,.pt-status-shell {
     margin-top: 0;

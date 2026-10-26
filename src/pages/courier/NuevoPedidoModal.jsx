@@ -1117,7 +1117,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     requestAnimationFrame(() => {
       const campo = document.querySelector('.np-wizard-form [aria-invalid="true"], .np-wizard-form .input-error');
       if (!campo) return;
-      campo.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      campo.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
       campo.focus?.({ preventScroll: true });
     });
   };

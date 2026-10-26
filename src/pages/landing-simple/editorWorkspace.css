@@ -132,11 +132,19 @@
   .ecommerce-builder-toolbar .ecommerce-page-context { width: auto; flex: 1; order: 0; }
   .ecommerce-builder-toolbar .ecommerce-page-context > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .ecommerce-builder-toolbar .ecommerce-page-context select { width: 100%; }
-  .ecommerce-builder-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
-  .ecommerce-builder-actions > :is(button, a) { min-height: 44px; justify-content: center; text-align: center; }
+  .ecommerce-builder-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; width: 100%; }
+  /* .ecommerce-builder delante: el min-height genérico de los botones del
+     panel vive en un @scope y empata en especificidad, así que ganaba. */
+  .ecommerce-builder .ecommerce-builder-actions > :is(button, a) { min-height: 44px; height: auto; justify-content: center; text-align: center; }
+  /* Publicar es la acción principal: ancho completo, no huérfana a media fila. */
+  .ecommerce-builder-actions > button:last-child { grid-column: 1 / -1; }
+  .ecommerce-builder-actions > .ecommerce-editor-tools { display: flex; }
+  .ecommerce-builder-actions > .ecommerce-editor-tools > summary { flex: 1; }
   .ecommerce-builder-config > div { padding-inline: 16px; }
   .ecommerce-editor-tools > summary { justify-content: center; min-height: 44px; }
-  .ecommerce-editor-tools-menu { left: 0; right: auto; max-width: calc(100vw - 32px); }
+  /* Herramientas queda en la columna derecha: el menú abre hacia la
+     izquierda, si no se salía de la pantalla y el editor lo recortaba. */
+  .ecommerce-editor-tools-menu { left: auto; right: 0; max-width: calc(100vw - 32px); }
   .ecommerce-editor-context { gap: 8px; }
   .ecommerce-page-context { order: 2; width: 100%; }
   .ecommerce-page-context select { flex: 1; width: auto; }
