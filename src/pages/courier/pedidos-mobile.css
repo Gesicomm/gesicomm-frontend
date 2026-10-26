@@ -11,6 +11,8 @@
   font: inherit;
   cursor: pointer;
   text-align: left;
+  /* El número de pedido se lee entero: "LEAD-" / "1072" partía en el guion. */
+  white-space: nowrap;
 }
 .pt-order-reference:focus-visible {
   outline: 2px solid var(--color-primary);
