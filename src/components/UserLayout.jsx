@@ -431,13 +431,9 @@ const UserLayout = ({ children }) => {
                 cursor: cambiandoTienda ? 'wait' : 'pointer', textAlign: 'left',
               }}
             >
-              <span style={{
-                width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: "var(--color-primary-text)", overflow: 'hidden',
-              }}>
-                {tiendaActiva.logo_imagen
-                  ? <img src={tiendaActiva.logo_imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <span className={`user-sidebar-store-icon${tiendaActiva.favicon_imagen || tiendaActiva.logo_imagen ? ' has-image' : ''}`}>
+                {tiendaActiva.favicon_imagen || tiendaActiva.logo_imagen
+                  ? <img src={tiendaActiva.favicon_imagen || tiendaActiva.logo_imagen} alt="" />
                   : <Store size={18} />}
               </span>
               <span style={{
@@ -481,13 +477,9 @@ const UserLayout = ({ children }) => {
                           cursor: 'pointer', textAlign: 'left',
                         }}
                       >
-                        <span style={{
-                          width: '20px', height: '20px', borderRadius: '5px', flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: "var(--color-primary-text)", overflow: 'hidden',
-                        }}>
-                          {t.logo_imagen
-                            ? <img src={t.logo_imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <span className={`user-sidebar-store-icon user-sidebar-store-icon-small${t.favicon_imagen || t.logo_imagen ? ' has-image' : ''}`}>
+                          {t.favicon_imagen || t.logo_imagen
+                            ? <img src={t.favicon_imagen || t.logo_imagen} alt="" />
                             : <Store size={11} />}
                         </span>
                         <span style={{

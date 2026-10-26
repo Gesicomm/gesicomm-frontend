@@ -172,6 +172,85 @@
 @container (min-width: 640px) { .ecommerce-preview-tabs { grid-template-columns: repeat(4,minmax(0,1fr)); } }
 @container (max-width: 290px) { .ecommerce-preview-tabs { grid-template-columns: minmax(0,1fr); } }
 
+/* El editor muestra una pantalla de 1280 × 720 a escala y deja sitio para
+   el tutorial de la sección. La vista ampliada conserva el lienzo completo. */
+.ecommerce-builder aside[aria-label='Vista previa'] { container-type: inline-size; }
+.ecommerce-preview-workspace {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 24px;
+  padding: 20px;
+}
+.ecommerce-preview-monitor-area,
+.ecommerce-preview-tutorial { width: 100%; max-width: 760px; min-width: 0; margin-inline: auto; }
+.ecommerce-preview-monitor { width: 100%; }
+.ecommerce-preview-monitor-bezel {
+  padding: 8px;
+  border: 1px solid #354258;
+  border-radius: 16px;
+  background: #111b2a;
+  box-shadow: 0 18px 38px rgb(0 0 0 / .19), inset 0 1px rgb(255 255 255 / .12);
+}
+.ecommerce-preview-monitor-screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #fff;
+}
+.ecommerce-preview-monitor-neck {
+  width: 13%; height: 16px; margin-inline: auto;
+  background: linear-gradient(90deg, #1b2738, #354258 50%, #1b2738);
+}
+.ecommerce-preview-monitor-base {
+  width: 30%; height: 7px; margin-inline: auto;
+  border-radius: 80% 80% 4px 4px;
+  background: #263448;
+}
+.ecommerce-preview-monitor-caption { margin: 12px 0 0; color: var(--color-fg-muted); font-size: var(--ui-text-help, 14px); text-align: center; }
+.ecommerce-preview-phone-compact { width: 100%; height: 420px; }
+.ecommerce-preview-empty {
+  display: grid; place-items: center; min-height: 220px;
+  padding: 24px; border: 1px dashed var(--color-border-strong);
+  border-radius: 16px; color: var(--color-fg-muted); font-size: var(--ui-text-body, 16px); text-align: center;
+}
+.ecommerce-preview-tutorial {
+  align-self: start;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-fg) 5%, transparent);
+}
+.ecommerce-preview-tutorial-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.ecommerce-preview-tutorial-icon {
+  display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px;
+  border-radius: 10px; background: var(--color-surface-2); color: var(--color-primary-text);
+}
+.ecommerce-preview-tutorial h3 { margin: 0; color: var(--color-fg); font-size: var(--ui-text-card, 18px); line-height: 1.4; font-weight: 650; }
+.ecommerce-preview-tutorial p { margin: 4px 0 0; color: var(--color-fg-muted); font-size: var(--ui-text-help, 14px); line-height: 1.5; }
+.ecommerce-preview-tutorial-slot {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  width: 100%; min-height: 180px; aspect-ratio: 16 / 9;
+  padding: 20px; border: 1px dashed var(--color-border-strong); border-radius: 12px;
+  background: var(--color-surface-2); color: var(--color-fg-muted);
+  font-size: var(--ui-text-label, 14px); font-weight: 500; text-align: center;
+}
+@container (min-width: 1100px) {
+  .ecommerce-preview-workspace { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); align-items: start; }
+}
+@media (max-width: 767px) {
+  .ecommerce-preview-workspace { padding: 16px; gap: 20px; }
+  .ecommerce-preview-tutorial { padding: 16px; }
+}
+
 /* "Descartar borrador": acción secundaria dentro del aviso de alcance del
    guardado, con texto (no solo un ícono) y área táctil cómoda. */
 .ecommerce-builder-toolbar .ecommerce-discard-draft {

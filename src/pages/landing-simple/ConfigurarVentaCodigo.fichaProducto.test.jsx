@@ -197,3 +197,15 @@ describe('Los bloques de la ficha arrancan con los datos del producto', () => {
     ]);
   });
 });
+
+it('mantiene el monitor compacto y cambia el espacio de tutorial con la página', () => {
+  render(<ConfigurarVentaCodigo catalogo={catalogo} inicial={{ seleccion: catalogo.productos }} onConfirmar={vi.fn()} cargarOfertas={vi.fn().mockResolvedValue([])} onVolver={vi.fn()} />);
+  const vistaPrevia = screen.getByRole('complementary', { name: 'Vista previa' });
+  expect(vistaPrevia.querySelector('.ecommerce-preview-monitor-screen')).toBeInTheDocument();
+  expect(within(vistaPrevia).getByRole('heading', { name: 'Tutorial de Inicio' })).toBeInTheDocument();
+
+  for (const [pagina, titulo] of [['categoria', 'Categorías'], ['producto', 'Vista producto'], ['checkout', 'Checkout']]) {
+    fireEvent.change(screen.getByLabelText('Página de la tienda'), { target: { value: pagina } });
+    expect(within(vistaPrevia).getByRole('heading', { name: `Tutorial de ${titulo}` })).toBeInTheDocument();
+  }
+});

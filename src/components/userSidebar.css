@@ -34,6 +34,36 @@
 }
 .user-sidebar-store-trigger[aria-expanded='true'] { position: relative; z-index: 50; }
 
+.user-sidebar-store-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary-text);
+}
+.user-sidebar-store-icon.has-image {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, .12);
+  padding: 3px;
+}
+.user-sidebar-store-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.user-sidebar-store-icon-small {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+  border-radius: 7px;
+}
+.user-sidebar-store-icon-small.has-image { padding: 2px; }
+
 .user-layout-container .sidebar-nav-container {
   min-height: 0;
   padding: .35rem .85rem 1rem;

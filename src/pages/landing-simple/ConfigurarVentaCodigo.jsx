@@ -4044,6 +4044,13 @@ export function InstruccionesIaPagina({ codigos, tipo, tienda, venta, productos,
 // Ancho real de una pantalla de escritorio: la vista previa de escritorio
 // renderiza la landing a este ancho y la achica para que entre.
 const ANCHO_ESCRITORIO = 1280;
+const ALTO_ESCRITORIO = 720;
+const TUTORIALES_PREVIEW = {
+  inicio: 'Inicio',
+  categoria: 'Categorías',
+  producto: 'Vista producto',
+  checkout: 'Checkout',
+};
 
 /**
  * Tamaño de un elemento, al vuelo (para escalar la vista de escritorio).
@@ -4106,8 +4113,11 @@ function VistaPrevia({
   const vistaSeleccionada = vista === 'catalogo' ? 'categoria' : vista;
   const [marcoRef, tam] = useTamano();
   const escritorio = dispositivo === 'escritorio';
-  const anchoLienzo = Math.max(ANCHO_ESCRITORIO, tam.w);
-  const escala = escritorio && tam.w ? Math.min(1, tam.w / anchoLienzo) : 1;
+  const anchoLienzo = compacta ? ANCHO_ESCRITORIO : Math.max(ANCHO_ESCRITORIO, tam.w);
+  const escala = escritorio && tam.w
+    ? Math.min(1, tam.w / anchoLienzo, compacta ? tam.h / ALTO_ESCRITORIO : 1)
+    : 1;
+  const tituloTutorial = modo === 'legales' ? 'Páginas legales' : TUTORIALES_PREVIEW[vistaSeleccionada] || 'esta página';
 
   const iframe = datos?.vista === 'producto' && productoFicha?.tipo === 'combo' ? (
     <div style={{ height: '100%', overflowY: 'auto' }}>
@@ -4213,7 +4223,42 @@ function VistaPrevia({
       </div>
       )}
 
-      <div className={`flex-1 min-h-0 min-w-0 flex justify-center ${soloLienzo ? '' : ampliada ? 'p-4 md:p-6' : 'px-4 pb-4'}`}>
+      {compacta && <div className="ecommerce-preview-workspace">
+        <section className="ecommerce-preview-monitor-area" aria-label={`Vista previa de ${escritorio ? 'escritorio' : 'celular'}`}>
+          {productos.length === 0 && modo !== 'legales' ? (
+            <div className="ecommerce-preview-empty">Elegí productos y los vas a ver acá.</div>
+          ) : escritorio ? (
+            <div className="ecommerce-preview-monitor">
+              <div className="ecommerce-preview-monitor-bezel">
+                <div className="ecommerce-preview-monitor-screen" ref={marcoRef}>
+                  {tam.w > 0 && <div style={{
+                    position: 'absolute', top: 0, left: 0,
+                    width: ANCHO_ESCRITORIO, height: ALTO_ESCRITORIO,
+                    transform: `scale(${escala})`, transformOrigin: 'top left',
+                  }}>{iframe}</div>}
+                </div>
+              </div>
+              <div className="ecommerce-preview-monitor-neck" aria-hidden="true" />
+              <div className="ecommerce-preview-monitor-base" aria-hidden="true" />
+            </div>
+          ) : (
+            <div className="ecommerce-preview-phone-compact"><PhonePreviewShell>{iframe}</PhonePreviewShell></div>
+          )}
+          <p className="ecommerce-preview-monitor-caption">{escritorio ? 'Pantalla simulada: 1280 × 720 px' : 'Pantalla simulada: 390 px de ancho'}</p>
+        </section>
+        <section className="ecommerce-preview-tutorial" aria-label={`Tutorial de ${tituloTutorial}`}>
+          <div className="ecommerce-preview-tutorial-heading">
+            <span className="ecommerce-preview-tutorial-icon"><Film size={20} aria-hidden="true" /></span>
+            <div><h3>Tutorial de {tituloTutorial}</h3><p>Un video para acompañarte en esta sección.</p></div>
+          </div>
+          <div className="ecommerce-preview-tutorial-slot">
+            <Film size={28} aria-hidden="true" />
+            <span>Espacio para el video explicativo</span>
+          </div>
+        </section>
+      </div>}
+
+      {!compacta && <div className={`flex-1 min-h-0 min-w-0 flex justify-center ${soloLienzo ? '' : ampliada ? 'p-4 md:p-6' : 'px-4 pb-4'}`}>
         {productos.length === 0 && modo !== 'legales' ? (
           <div className="w-full max-w-[390px] rounded-[28px] border border-dashed border-border-strong flex items-center justify-center p-8 text-center text-sm text-fg-muted">
             Elegí productos y los vas a ver acá.
@@ -4250,7 +4295,7 @@ function VistaPrevia({
             {iframe}
           </PhonePreviewShell>
         )}
-      </div>
+      </div>}
     </>
   );
 }
