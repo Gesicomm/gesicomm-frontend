@@ -64,6 +64,13 @@
 .ads-error { padding: 1rem 1.25rem; border: 1px solid var(--color-danger); border-radius: 18px; background: var(--color-surface); color: var(--color-danger); margin-bottom: 1rem; }
 .ads-error p { margin: 0 0 0.7rem; }
 .ads-technical-error { max-width: 100%; overflow-wrap: anywhere; color: var(--color-fg-muted); }
+.ads-meta-business-name { display: flex; align-items: center; min-height: 54px; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); color: var(--color-fg); font-size: 16px; line-height: 1.5; font-weight: 600; overflow-wrap: anywhere; }
+.ads-meta-loading, .ads-meta-empty-account { display: flex; align-items: center; gap: 18px; min-height: 160px; padding: 24px; border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-surface); }
+.ads-meta-loading h2, .ads-meta-empty-account h2 { margin: 0 0 6px; color: var(--color-fg); font-size: 20px; line-height: 1.35; }
+.ads-meta-loading p, .ads-meta-empty-account p { margin: 0; max-width: 70ch; color: var(--color-fg-muted); font-size: 16px; line-height: 1.6; }
+.ads-meta-loading-indicator { width: 32px; height: 32px; flex: 0 0 32px; border: 3px solid var(--color-border); border-top-color: var(--color-primary-text); border-radius: 50%; animation: ads-meta-spin 0.8s linear infinite; }
+@keyframes ads-meta-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ads-meta-loading-indicator { animation: none; } }
 .ads-meta-status-button { align-self: flex-start; margin-top: 4px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface); color: var(--color-primary-text); padding: 7px 11px; min-height: 40px; font: 600 14px/1.5 var(--font-sans); cursor: pointer; }
 .ads-meta-status-button:hover { background: var(--bg-primary-soft); }
 .ads-meta-status-button:disabled { opacity: 0.6; cursor: wait; }

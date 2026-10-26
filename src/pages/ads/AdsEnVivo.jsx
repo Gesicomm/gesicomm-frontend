@@ -15,7 +15,6 @@ export default function AdsEnVivo() {
   const [tiendas, setTiendas] = useState([]);
   const [selectedStore, setSelectedStore] = useState(null);
 
-  const [businesses, setBusinesses] = useState([]);
   const [adAccounts, setAdAccounts] = useState([]);
   const [campaignOptions, setCampaignOptions] = useState([]);
 
@@ -68,7 +67,7 @@ export default function AdsEnVivo() {
 
         const firstStore = tiendasData[0];
         setSelectedStore(firstStore);
-        await loadFiltersForStore(firstStore.id);
+        await loadFiltersForStore(firstStore);
       } catch (err) {
         setError(err.message);
         setLoadingFilters(false);
@@ -77,30 +76,24 @@ export default function AdsEnVivo() {
     fetchInitial();
   }, []);
 
-  const loadFiltersForStore = async (storeId) => {
+  const loadFiltersForStore = async (store) => {
     setLoadingFilters(true);
-    setBusinesses([]);
+    setError(null);
     setAdAccounts([]);
     setCampaignOptions([]);
-    setSelectedBusiness('');
+    setSelectedBusiness(String(store.business_id || ''));
     setSelectedAdAccount('');
     setSelectedCampaign('ALL');
     setCampaigns([]);
     setCampaignToChange(null);
     setChangeMessage(null);
     try {
-      const res = await api.post('/api/meta/filters', { store_id: storeId });
-      setBusinesses(res.businesses || []);
-      setAdAccounts(res.ad_accounts || []);
-
-      if (res.businesses?.length > 0) {
-        const firstBusiness = res.businesses[0].id;
-        setSelectedBusiness(firstBusiness);
-        const validAds = res.ad_accounts?.filter(a => a.business && a.business.id === firstBusiness) || [];
-        if (validAds.length > 0) setSelectedAdAccount(validAds[0].id);
-      } else if (res.ad_accounts?.length > 0) {
-        setSelectedAdAccount(res.ad_accounts[0].id);
-      }
+      const res = await api.post('/api/meta/filters', { store_id: store.id });
+      const businessId = String(store.business_id || res.businesses?.[0]?.id || '');
+      const accounts = (res.ad_accounts || []).filter(a => String(a.business?.id) === businessId);
+      setSelectedBusiness(businessId);
+      setAdAccounts(accounts);
+      setSelectedAdAccount(accounts[0]?.id || '');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -144,6 +137,7 @@ export default function AdsEnVivo() {
       setCurrentCursor(cursor);
     } catch (err) {
       console.error(err);
+      setError(err.message || 'No se pudieron cargar las campañas de Meta.');
     } finally {
       setLoadingData(false);
     }
@@ -228,6 +222,18 @@ export default function AdsEnVivo() {
     );
   }
 
+  if (loadingFilters) {
+    return (
+      <div className="ads-meta-loading" role="status" aria-live="polite">
+        <div className="ads-meta-loading-indicator" aria-hidden="true" />
+        <div>
+          <h2>Cargando la cuenta conectada</h2>
+          <p>Estamos consultando las cuentas publicitarias de tu portafolio en Meta.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="filter-bar">
@@ -238,7 +244,7 @@ export default function AdsEnVivo() {
               {tiendas.map(t => (
                 <button
                   key={t.id}
-                  onClick={() => { setSelectedStore(t); loadFiltersForStore(t.id); }}
+                  onClick={() => { setSelectedStore(t); loadFiltersForStore(t); }}
                   className={`rounded-full border px-4 py-1.5 text-xs transition-colors ${
                     selectedStore?.id === t.id
                       ? 'border-primary bg-primary/15 font-semibold text-primary-text'
@@ -254,31 +260,17 @@ export default function AdsEnVivo() {
 
         <div className="filter-group">
           <label>Portafolio (BM)</label>
-          <Select
-            styles={selectStyles}
-            value={businesses.map(b => ({ value: b.id, label: b.name })).find(opt => opt.value === selectedBusiness) || null}
-            onChange={opt => {
-              const newBusiness = opt ? opt.value : '';
-              setSelectedBusiness(newBusiness);
-              const validAds = adAccounts.filter(a => a.business && a.business.id === newBusiness);
-              setSelectedAdAccount(validAds.length > 0 ? validAds[0].id : '');
-              setSelectedCampaign('ALL');
-            }}
-            options={businesses.map(b => ({ value: b.id, label: b.name }))}
-            isDisabled={loadingFilters}
-            placeholder="Buscar portafolio..."
-            isSearchable
-          />
+          <div className="ads-meta-business-name">{selectedStore?.business_name || selectedStore?.nombre || 'Portafolio conectado'}</div>
         </div>
 
         <div className="filter-group">
           <label>Cuenta Publicitaria</label>
           <Select
             styles={selectStyles}
-            value={adAccounts.filter(a => a.business && a.business.id === selectedBusiness).map(a => ({ value: a.id, label: a.name })).find(opt => opt.value === selectedAdAccount) || null}
+            value={adAccounts.map(a => ({ value: a.id, label: a.name })).find(opt => opt.value === selectedAdAccount) || null}
             onChange={opt => { setSelectedAdAccount(opt ? opt.value : ''); setSelectedCampaign('ALL'); }}
-            options={adAccounts.filter(a => a.business && a.business.id === selectedBusiness).map(a => ({ value: a.id, label: a.name }))}
-            isDisabled={loadingFilters}
+            options={adAccounts.map(a => ({ value: a.id, label: a.name }))}
+            isDisabled={adAccounts.length === 0}
             placeholder="Buscar cuenta..."
             isSearchable
           />
@@ -299,7 +291,7 @@ export default function AdsEnVivo() {
 
         <div className="filter-group">
           <label>Estado</label>
-          <select className="filter-input" value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} disabled={loadingFilters}>
+          <select className="filter-input" value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} disabled={!selectedAdAccount}>
             <option value="ALL">Todos los estados</option>
             <option value="ACTIVE">Activas</option>
             <option value="PAUSED">Pausadas</option>
@@ -309,15 +301,21 @@ export default function AdsEnVivo() {
 
         <div className="filter-group">
           <label>Fecha Desde</label>
-          <input type="date" className="filter-input" value={dateStart} onChange={e => setDateStart(e.target.value)} />
+          <input type="date" className="filter-input" value={dateStart} onChange={e => setDateStart(e.target.value)} disabled={!selectedAdAccount} />
         </div>
 
         <div className="filter-group">
           <label>Fecha Hasta</label>
-          <input type="date" className="filter-input" value={dateEnd} onChange={e => setDateEnd(e.target.value)} />
+          <input type="date" className="filter-input" value={dateEnd} onChange={e => setDateEnd(e.target.value)} disabled={!selectedAdAccount} />
         </div>
       </div>
 
+      {!selectedAdAccount ? (
+        <div className="ads-meta-empty-account" role="status">
+          <h2>Este portafolio no tiene cuentas publicitarias disponibles</h2>
+          <p>Revisá en Meta Business que la cuenta publicitaria pertenezca a {selectedStore?.business_name || selectedStore?.nombre || 'este portafolio'} y que tu usuario tenga acceso.</p>
+        </div>
+      ) : <>
       {changeMessage && <p className={`ads-meta-feedback ${changeMessage.type}`} role={changeMessage.type === 'error' ? 'alert' : 'status'}>{changeMessage.text}</p>}
       {campaignToChange && (
         <div ref={confirmRef} tabIndex={-1} className="ads-meta-confirm" role="region" aria-labelledby="ads-meta-confirm-title" aria-describedby="ads-meta-confirm-detail">
@@ -422,6 +420,7 @@ export default function AdsEnVivo() {
           </button>
         </div>
       </div>
+      </>}
     </>
   );
 }

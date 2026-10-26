@@ -20,7 +20,7 @@ describe('Publicidad: gestión de campaña en Meta', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     verificarSesion.mockResolvedValue({ id: 3, rol: 'usuario' });
-    api.get.mockResolvedValue({ tiendas: [{ id: 7, nombre: 'Tienda' }] });
+    api.get.mockResolvedValue({ tiendas: [{ id: 7, nombre: 'Tienda', business_id: '10', business_name: 'BM elegido' }] });
     api.post.mockImplementation(async (path) => {
       if (path === '/api/meta/filters') return {
         businesses: [{ id: '10', name: 'BM' }],
@@ -42,6 +42,36 @@ describe('Publicidad: gestión de campaña en Meta', () => {
       store_id: 7, ad_account_id: 'act_123', campaign_id: '456', status: 'PAUSED',
     }));
     expect(await screen.findByRole('button', { name: 'Activar en Meta' })).toBeTruthy();
+  });
+
+  it('muestra la carga inicial y solo el portafolio conectado', async () => {
+    let finishFilters;
+    api.post.mockImplementation(async (path) => {
+      if (path === '/api/meta/filters') return new Promise(resolve => { finishFilters = resolve; });
+      if (path === '/api/meta/campaign-list') return { campaigns: [] };
+      if (path === '/api/meta/campaigns') return { campaigns: [], paging: null };
+      return {};
+    });
+    render(<AdsEnVivo />);
+    expect(screen.getByText('Cargando la cuenta conectada')).toBeTruthy();
+    expect(screen.queryByText('No hay campañas que coincidan con estos filtros.')).toBeNull();
+    await waitFor(() => expect(finishFilters).toBeTypeOf('function'));
+    finishFilters({ businesses: [{ id: '10', name: 'BM elegido' }, { id: '99', name: 'Otro BM' }], ad_accounts: [
+      { id: 'act_123', name: 'Cuenta correcta', business: { id: '10' } },
+      { id: 'act_999', name: 'Cuenta ajena', business: { id: '99' } },
+    ] });
+    expect(await screen.findByText('BM elegido')).toBeTruthy();
+    expect(screen.queryByText('Otro BM')).toBeNull();
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/api/meta/campaigns', expect.objectContaining({ ad_account_id: 'act_123' })));
+  });
+
+  it('explica cuando el portafolio conectado no tiene cuentas', async () => {
+    api.post.mockImplementation(async (path) => path === '/api/meta/filters'
+      ? { businesses: [{ id: '10', name: 'BM elegido' }], ad_accounts: [] }
+      : {});
+    render(<AdsEnVivo />);
+    expect(await screen.findByText('Este portafolio no tiene cuentas publicitarias disponibles')).toBeTruthy();
+    expect(screen.queryByText('No hay campañas que coincidan con estos filtros.')).toBeNull();
   });
 
   it('cancelar no envía ningún cambio a Meta', async () => {
