@@ -82,5 +82,6 @@ export const api = {
   get: (ruta) => peticion(ruta, { method: 'GET' }),
   post: (ruta, cuerpo) => peticion(ruta, { method: 'POST', body: JSON.stringify(cuerpo) }),
   put: (ruta, cuerpo) => peticion(ruta, { method: 'PUT', body: JSON.stringify(cuerpo) }),
+  patch: (ruta, cuerpo) => peticion(ruta, { method: 'PATCH', body: JSON.stringify(cuerpo) }),
   delete: (ruta) => peticion(ruta, { method: 'DELETE' }),
 };

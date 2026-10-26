@@ -273,7 +273,7 @@ function MarcasLanding({ item, onQuitar }) {
 function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, filtro, seleccionable = true, onQuitarMarca = null }) {
   const esCombo = item.tipo === 'combo';
   const esAdmin = usuarioActual?.rol === 'administrador';
-  const esCreadorDirecto = usuarioActual?.id != null && item.creado_por != null && Number(item.creado_por) === Number(usuarioActual.id);
+  const esCreadorDirecto = usuarioActual?.id != null && item.creado_por != null && Number(item.creado_por) === Number(usuarioActual.propietarioId || usuarioActual.id);
   const mostrarStock = esCreadorDirecto && !esCombo && item.stock != null;
   const badge = getBadgeConfig(item, mostrarStock);
   const sinStock = mostrarStock && item.stock === 0;

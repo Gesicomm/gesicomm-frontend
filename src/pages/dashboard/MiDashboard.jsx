@@ -139,10 +139,11 @@ function Variacion({ actual, previo, invertirColor = false }) {
   // `invertirColor` para los renglones donde subir es malo (un costo).
   const bueno = invertirColor ? !sube : sube;
   const signo = sube ? '+' : '−';
-  // Un porcentaje sobre una base negativa ("-459%" de una pérdida) o sobre un
-  // resultado en pérdida no dice nada legible: ahí se muestra la diferencia
+  // Con una base no positiva o un resultado actual nulo/negativo, mostrar la
+  // diferencia en dinero evita porcentajes alarmantes como -100% sobre Gs 0.
+  // En una pérdida tampoco hay un porcentaje de crecimiento legible: se muestra
   // en guaraníes, que es lo que el comerciante puede comparar.
-  if (p < 0 || a < 0) {
+  if (p < 0 || a <= 0) {
     return (
       <span className={`md-var ${bueno ? 'md-var-bien' : 'md-var-mal'}`}>
         {signo}{gs(Math.abs(a - p))} vs. período anterior
@@ -388,10 +389,10 @@ function GraficoTendencia({ serie, className = '' }) {
     <section className={`md-card md-chart-card ${className}`}>
       <div className="md-chart-head">
         <div>
-          <h3 className="md-card-title">Visitas vs. contactos por día</h3>
+          <h3 className="md-card-title">Visitas vs. clics a WhatsApp por día</h3>
           <div className="md-legend">
             <span className="md-legend-item"><i className="md-dot-visitas" /> Visitas</span>
-            <span className="md-legend-item"><i className="md-dot-contactos" /> Contactos WhatsApp</span>
+            <span className="md-legend-item"><i className="md-dot-contactos" /> Clics a WhatsApp</span>
           </div>
         </div>
         <button type="button" className="md-btn-ghost" onClick={() => setVistaTabla(v => !v)}>
@@ -403,12 +404,12 @@ function GraficoTendencia({ serie, className = '' }) {
       {sinDatos ? (
         <div className="md-empty">
           <BarChart3 size={22} opacity={0.35} />
-          <p>Sin visitas ni contactos registrados en este período.</p>
+          <p>Sin visitas ni clics a WhatsApp registrados en este período.</p>
         </div>
       ) : vistaTabla ? (
         <div className="md-table-wrap">
           <table className="md-table">
-            <thead><tr><th>Fecha</th><th>Visitas</th><th>Contactos</th><th>Valor en carrito</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Visitas</th><th>Clics a WhatsApp</th><th>Valor en carrito</th></tr></thead>
             <tbody>
               {serie.map(d => (
                 <tr key={d.fecha}>
@@ -477,7 +478,7 @@ function GraficoTendencia({ serie, className = '' }) {
             <div className="md-chart-tooltip" style={tooltipStyle}>
               <strong>{formatFechaCorta(serie[hover].fecha)}</strong>
               <span className="md-tt-fila"><i className="md-dot-visitas" /><span className="md-tt-nombre">Visitas</span><span className="md-tt-valor">{serie[hover].visitas}</span></span>
-              <span className="md-tt-fila"><i className="md-dot-contactos" /><span className="md-tt-nombre">Contactos WhatsApp</span><span className="md-tt-valor">{serie[hover].contactos}</span></span>
+              <span className="md-tt-fila"><i className="md-dot-contactos" /><span className="md-tt-nombre">Clics a WhatsApp</span><span className="md-tt-valor">{serie[hover].contactos}</span></span>
               {serie[hover].valor_carritos > 0 && <small>{gs(serie[hover].valor_carritos)} en carritos</small>}
             </div>
           )}
@@ -487,84 +488,47 @@ function GraficoTendencia({ serie, className = '' }) {
   );
 }
 
-/**
- * Cruza dos rankings que hoy viven en fuentes separadas: el interés en la
- * landing (LandingEvento, vía pixel.productos_mas_consultados) y las ventas
- * cargadas a mano (Envio/EnvioItem, vía ventas.ranking_productos). No hay un
- * ID compartido entre ambos — se cruza por nombre normalizado. Funciona en la
- * práctica porque el nombre que llega por el Pixel ya es el nombre canónico
- * del catálogo (ver nombreCanonico() en landingPublica.controller.js), y
- * nombre_producto de un pedido se carga desde el mismo selector de productos.
- * Si alguna vendedora tipeara un nombre distinto a mano, esa fila no cruza y
- * aparece como dos entradas separadas — más seguro que ocultar el dato.
- */
-function useEmbudoPorProducto(ventas, pixel) {
+/** Un lead existe cuando se registra el contacto en Gestión Comercial.
+ * El pixel de la tienda solo conoce clics, así que esta tabla se alimenta
+ * exclusivamente de los registros de WhatsApp por producto del backend. */
+function useEmbudoPorProducto(ventas) {
   return useMemo(() => {
-    const normalizar = (s) => (s || '').trim().toLowerCase();
-    const mapa = new Map();
-
-    (pixel?.productos_mas_consultados || []).forEach(p => {
-      const clave = normalizar(p.nombre);
-      if (!clave) return;
-      mapa.set(clave, { nombre: p.nombre, leads: p.consultas, confirmados: 0, compras: 0 });
-    });
-
-    // Confirmado y comprado NO son lo mismo, y mezclarlos escondía justo el
-    // paso donde se cae la plata: un pedido confirmado que nunca se entrega
-    // no es una venta. Por eso son dos columnas separadas:
-    //   confirmados = el cliente dijo que sí (pedido confirmado)
-    //   compras     = el pedido llegó a sus manos (entregado)
-    (ventas?.ranking_productos || []).forEach(p => {
-      const clave = normalizar(p.nombre);
-      if (!clave) return;
-      // Solo se completan productos que YA están en el mapa, o sea que
-      // tuvieron interés en la landing. Un producto vendido a mano o por
-      // WhatsApp no entra: esta tabla compara el interés del pixel contra la
-      // venta, y sin interés no hay nada que comparar. Peor todavía, aparecía
-      // con "0 leads" y se leía como que la landing no supo venderlo, cuando
-      // en realidad nunca estuvo publicado ahí.
-      const previo = mapa.get(clave);
-      if (previo) {
-        previo.confirmados = p.confirmados;
-        previo.compras = p.entregados;
-      }
-    });
-
-    return [...mapa.values()]
-      .filter(p => p.leads > 0)
-      // La conversión de esta tabla mide el tramo comercial real:
-      // pedidos confirmados -> compras entregadas. Los leads quedan como
-      // contexto de demanda, pero no son el denominador porque una compra
-      // puede venir de una conversación ya abierta o de otro camino.
-      .map(p => ({ ...p, conversion: p.confirmados > 0 ? (p.compras / p.confirmados) * 100 : null }))
+    return (ventas?.ranking_productos || [])
+      .filter(p => Number(p.leads_registrados) > 0)
+      .map(p => ({
+        nombre: p.nombre,
+        leads: p.leads_registrados,
+        confirmados: p.leads_confirmados,
+        compras: p.leads_entregados,
+        conversion: (p.leads_entregados / p.leads_registrados) * 100,
+      }))
       .sort((a, b) => b.leads - a.leads || b.compras - a.compras);
-  }, [ventas, pixel]);
+  }, [ventas]);
 }
 
 function TablaEmbudoProductos({ filas }) {
   if (filas.length === 0) {
     return (
       <p className="md-empty-hint">
-        Todavía nadie consultó productos en tu tienda en este período. Acá aparecen
-        solo los productos que despertaron interés en tus páginas; los que vendés a mano o por
-        WhatsApp se ven en "Más Vendidos".
+        Todavía no se cargaron leads con productos en Gestión Comercial para este período.
+        Los leads sin producto se ven en el embudo de WhatsApp.
       </p>
     );
   }
   return (
     <>
       <TarjetasMetricas filas={filas.map(p => ({ id: p.nombre, nombre: p.nombre, metricas: [
-        ['Leads', p.leads], ['Confirmados', p.confirmados], ['Compras', p.compras], ['Conversión', p.conversion == null ? '—' : pct(p.conversion)],
+        ['Leads registrados', p.leads], ['Confirmados', p.confirmados], ['Entregados', p.compras], ['Lead a entrega', pct(p.conversion)],
       ] }))} />
     <div className="md-table-wrap md-desktop-data">
       <table className="md-table">
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Leads <Ayuda texto="Cuánta gente mostró interés en este producto en tu tienda: cuánta gente llegó a WhatsApp con ese producto." /></th>
-            <th>Confirmados <Ayuda texto="De esos interesados, a cuántos les tomaste el pedido y lo confirmaron. Todavía no es una venta cobrada." /></th>
-            <th>Compras <Ayuda texto="De esos pedidos confirmados, cuántos llegaron a manos del cliente. Esta sí es la venta concretada." /></th>
-            <th>{METRIC_TERMS.conversion} <Ayuda texto="De cada 100 pedidos confirmados de este producto, cuántos terminaron entregados. Es Compras dividido Confirmados." /></th>
+            <th>Leads registrados <Ayuda texto="Contactos cargados en Gestión Comercial con este producto. Un clic a WhatsApp no cuenta como lead." /></th>
+            <th>Confirmados <Ayuda texto="De esos leads, cuántos confirmaron la compra." /></th>
+            <th>Entregados <Ayuda texto="De esos leads, cuántos pedidos llegaron a manos del cliente." /></th>
+            <th>Lead a entrega <Ayuda texto="Pedidos entregados de estos leads, dividido por los leads registrados con este producto." /></th>
           </tr>
         </thead>
         <tbody>
@@ -574,7 +538,7 @@ function TablaEmbudoProductos({ filas }) {
               <td>{p.leads}</td>
               <td>{p.confirmados}</td>
               <td>{p.compras}</td>
-              <td>{p.conversion === null ? '—' : `${p.conversion.toFixed(1).replace(/\.0$/, '')}%`}</td>
+              <td>{pct(p.conversion)}</td>
             </tr>
           ))}
         </tbody>
@@ -1126,7 +1090,7 @@ function TablaCouriers({ filas }) {
   return (
     <>
       <TarjetasMetricas filas={filas.map(c => ({ id: c.courier_id ?? 'sin-asignar', nombre: c.nombre, tag: `${c.tasa_entrega}% efectividad`, metricas: [
-        ['Asignados', c.total_asignados], ['Entregados', c.entregados], ['Cobró', gs(c.monto_recaudado)], ['Fletes', gs(c.costo_fletes)],
+        ['Pedidos', c.total_asignados], ['Entregados', c.entregados], ['Cobró', gs(c.monto_recaudado)], ['Fletes', gs(c.costo_fletes)],
         ['Rendición', gs(Math.abs(c.saldo_rendicion ?? 0)), c.saldo_rendicion < 0 ? 'md-valor-negativo' : ''],
         ['Saldo', c.saldo_rendicion > 0 ? 'Te transfiere' : c.saldo_rendicion < 0 ? 'Le pagás' : 'Sin saldo'],
       ] }))} />
@@ -1135,7 +1099,7 @@ function TablaCouriers({ filas }) {
         <thead>
           <tr>
             <th>Courier</th>
-            <th>Pedidos Asignados <Ayuda texto="Cuántos pedidos se le dieron a este courier para repartir." /></th>
+            <th>Pedidos <Ayuda texto="Pedidos del período de este courier. La fila Sin asignar reúne los que todavía no tienen repartidor." /></th>
             <th>Pedidos Entregados <Ayuda texto="De esos, cuántos entregó efectivamente." /></th>
             <th>Efectividad <Ayuda texto="De cada 100 pedidos que le diste, cuántos entregó. Cuanto más bajo, más problemas de reparto." /></th>
             <th>Cobró <Ayuda texto="La plata total de los pedidos que entregó, incluido el delivery que le cobró al cliente." /></th>
@@ -1550,7 +1514,7 @@ export default function MiDashboard() {
       .slice(0, 5);
   }, [ventas]);
 
-  const embudoProductos = useEmbudoPorProducto(ventas, pixel);
+  const embudoProductos = useEmbudoPorProducto(ventas);
   const productosConsultados = pixel?.productos_mas_consultados || [];
   const maxConsultados = productosConsultados[0]?.consultas || 0;
 
@@ -1562,11 +1526,11 @@ export default function MiDashboard() {
   const visitasPago = pixelFallo ? null : Math.max(visitasPixel, checkoutsIniciados, pagosRealizados);
   const visitasFormulariosCompletadas = !pixelFallo && formulariosWeb > 0 && visitasPixel < formulariosWeb;
   const visitasPagoCompletadas = !pixelFallo && Math.max(checkoutsIniciados, pagosRealizados) > 0 && visitasPixel < Math.max(checkoutsIniciados, pagosRealizados);
-  const contactosWhatsapp = Number(pixel?.contactos_whatsapp || 0);
-  const leadsWeb = Number(pixel?.leads_web || 0);
-  const leadsVenta = Number(pixel?.leads_venta || 0);
+  const clicsWhatsapp = Number(pixel?.contactos_whatsapp || 0);
+  const clicsSinProducto = Number(pixel?.clics_whatsapp_sin_producto ?? pixel?.leads_web ?? 0);
+  const clicsConProducto = Number(pixel?.clics_whatsapp_con_producto ?? pixel?.leads_venta ?? 0);
   const ctrPct = !pixelFallo && visitasFormularios > 0
-    ? ((contactosWhatsapp / visitasFormularios) * 100).toFixed(1).replace(/\.0$/, '')
+    ? ((clicsWhatsapp / visitasFormularios) * 100).toFixed(1).replace(/\.0$/, '')
     : '0';
 
   // Datos de cada embudo — MISMOS cálculos que antes. Lo que cambió es que
@@ -1590,13 +1554,13 @@ export default function MiDashboard() {
         <>
           % conversión del embudo (Visitas a Entregados): <strong>{pixelFallo ? '—' : `${visitasFormularios > 0 ? ((canalLanding.entregados / visitasFormularios) * 100).toFixed(1) : 0}%`}</strong>
           <span className="md-funnel-div" />
-          Contactos a WhatsApp: <strong>{contactosWhatsapp}</strong> ({ctrPct}% de las visitas)
+          Clics a WhatsApp: <strong>{clicsWhatsapp}</strong> ({ctrPct}% de las visitas)
           <span className="md-funnel-div" />
-          Leads Web: <strong>{leadsWeb}</strong>
-          <Ayuda texto="Clic en el ícono de WhatsApp sin estar viendo un producto específico: inicio, categorías, contacto del pie. La persona no dijo qué le interesa." />
+          Clics sin producto: <strong>{clicsSinProducto}</strong>
+          <Ayuda texto="Clic en WhatsApp desde inicio, categorías o contacto. No confirma que la persona haya enviado un mensaje." />
           <span className="md-funnel-div" />
-          Leads Venta: <strong>{leadsVenta}</strong>
-          <Ayuda texto="Clic en 'Consultar' o 'Comprar por WhatsApp' desde la ficha de un producto (o el ícono flotante mientras lo estaba mirando). Ya sabés qué le interesa." />
+          Clics con producto: <strong>{clicsConProducto}</strong>
+          <Ayuda texto="Clic en Consultar o Comprar por WhatsApp desde un producto. Solo cuenta como lead si después lo cargás en Gestión Comercial." />
           <span className="md-funnel-div" />
           Valor total en carritos: <strong>{gs(pixel?.valor_carritos || 0)}</strong>
         </>
@@ -1638,7 +1602,7 @@ export default function MiDashboard() {
           Cancelados: <strong>{canalWhatsapp.organico.cancelados}</strong>
         </>
       ),
-      nota: 'Contactos de origen orgánico, según la clasificación de Gestión Comercial. Pueden estar consultando o tener productos de interés: solo cuentan como pedidos confirmados cuando se confirma la compra.',
+      nota: 'Contactos cargados como leads orgánicos en Gestión Comercial. Un clic en la tienda no los agrega; solo pasan a pedidos confirmados cuando se confirma la compra.',
     },
     lead_campana: {
       pasos: [
@@ -1657,7 +1621,7 @@ export default function MiDashboard() {
           Cancelados: <strong>{canalWhatsapp.campana.cancelados}</strong>
         </>
       ),
-      nota: 'Contactos y pedidos de campañas de WhatsApp, según la clasificación de Gestión Comercial. Una consulta sin compra confirmada sigue siendo un lead, aunque venga de una campaña.',
+      nota: 'Contactos cargados como leads de campaña en Gestión Comercial. Un clic en la tienda no los agrega; el lead sigue sin pedido hasta que se confirme la compra.',
     },
     // Sin "Al carrito": desde la ficha de producto se puede ir derecho a
     // pagar sin pasar por el carrito, y ese camino no dispara AddToCart. El
@@ -1832,7 +1796,7 @@ export default function MiDashboard() {
               <span className="md-rent-valor">{kpis.pct_margen_neto}%</span>
             </div>
             <div className="md-rent-item">
-              <span className="md-rent-label">{METRIC_TERMS.conversion} <Ayuda texto={METRIC_HELP.conversion} /></span>
+              <span className="md-rent-label">Tasa de confirmación <Ayuda texto={METRIC_HELP.conversion} /></span>
               <span className="md-rent-valor">{funnel.tasa_confirmacion ?? 0}%</span>
               {/* Sin el "x de y" la tasa queda al lado de "Pedidos entregados 0"
                   y parece contradecirla: son dos etapas distintas del embudo. */}
@@ -2086,6 +2050,7 @@ export default function MiDashboard() {
         <Bloque
           id="rendimiento-canal"
           mobileSection="marketing"
+          className="md-compact-table"
           titulo={(
             <>
               Rendimiento por canal
@@ -2099,6 +2064,7 @@ export default function MiDashboard() {
         <Bloque
           id="desempeno-couriers"
           mobileSection="pedidos"
+          className="md-compact-table"
           titulo={(
             <>
               <Truck size={15} /> Desempeño Couriers
@@ -2123,8 +2089,8 @@ export default function MiDashboard() {
         titulo={(
           <>
             Leads vs. Confirmados por producto
-            <span className="md-card-title-sub">pixel + confirmado a mano</span>
-            <Ayuda texto="Compara la intención de compra en la tienda (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto. Solo aparecen los productos que tuvieron interés en tus páginas: lo que vendés a mano o por WhatsApp no pasa por acá, se ve en Más Vendidos." />
+            <span className="md-card-title-sub">Gestión Comercial</span>
+            <Ayuda texto="Sigue los leads que cargaste en Gestión Comercial con un producto: cuántos confirmaron y cuántos recibieron el pedido. Los clics en la tienda no crean leads." />
           </>
         )}
       >
@@ -2137,8 +2103,8 @@ export default function MiDashboard() {
       </Bloque>
 
       <div className="md-footer-link md-span-12">
-        <Link to="/mis-pedidos" state={{ tab: "analitica" }} className="md-btn-ghost">
-          Ver Centro de Inteligencia Comercial completo <ArrowRight size={14} />
+        <Link to="/dashboard-operativo" className="md-btn-ghost">
+          Ver el detalle de pedidos en Dashboard Operativo <ArrowRight size={14} />
         </Link>
       </div>
 

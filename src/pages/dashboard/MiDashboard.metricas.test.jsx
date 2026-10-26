@@ -4,6 +4,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import MiDashboard from './MiDashboard';
 import { getMetricasDashboardPedidos } from '../../services/courierApi';
+import { landingService } from '../../services/landingService';
 
 vi.mock('../../services/courierApi', () => ({ getMetricasDashboardPedidos: vi.fn() }));
 vi.mock('../../services/landingService', () => ({
@@ -44,6 +45,7 @@ describe('MiDashboard: métricas que no se contradicen', () => {
   it('rotula los pedidos como entregados y da la base de la tasa de confirmación', async () => {
     await montar(ventasSinEntregas());
     expect(screen.getByText('Pedidos entregados')).toBeInTheDocument();
+    expect(screen.getByText('Tasa de confirmación')).toBeInTheDocument();
     expect(screen.getByText('4 de 9 confirmados')).toBeInTheDocument();
   });
 
@@ -65,6 +67,14 @@ describe('MiDashboard: métricas que no se contradicen', () => {
     expect(within(tarjeta).getByText(/−Gs\s?1\.023\.000 vs\. período anterior/)).toBeInTheDocument();
   });
 
+  it('expresa en guaraníes la caída a ventas cero y enlaza el detalle operativo', async () => {
+    const ventas = ventasSinEntregas();
+    ventas.comparativo.facturacion_entregada = 300000;
+    await montar(ventas);
+    expect(within(document.querySelector('.md-hero')).getByText(/−Gs\s?300\.000 vs\. período anterior/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Ver el detalle de pedidos en Dashboard Operativo/ })).toHaveAttribute('href', '/dashboard-operativo');
+  });
+
   it('oculta los couriers sin actividad y deja verlos todos', async () => {
     const ventas = ventasSinEntregas();
     ventas.couriers = [
@@ -77,5 +87,23 @@ describe('MiDashboard: métricas que no se contradicen', () => {
     expect(screen.queryByText('Courier QA 1')).not.toBeInTheDocument();
     screen.getByRole('button', { name: 'Ver todos (3)' }).click();
     expect((await screen.findAllByText('Courier QA 1')).length).toBeGreaterThan(0);
+  });
+
+  it('un clic a WhatsApp no aparece como lead de producto', async () => {
+    landingService.estadisticasRango.mockResolvedValueOnce({
+      visitas: 10, contactos_whatsapp: 1, clics_whatsapp_con_producto: 1,
+      productos_mas_consultados: [{ nombre: 'Silla', consultas: 1 }],
+    });
+    await montar(ventasSinEntregas());
+    expect(screen.getByText(/Todavía no se cargaron leads con productos/)).toBeInTheDocument();
+    expect(screen.queryByRole('row', { name: /Silla/ })).not.toBeInTheDocument();
+  });
+
+  it('muestra los leads por producto cargados en Gestión Comercial', async () => {
+    const ventas = ventasSinEntregas();
+    ventas.ranking_productos = [{ nombre: 'Silla', leads_registrados: 2, leads_confirmados: 1, leads_entregados: 1 }];
+    await montar(ventas);
+    const celdas = within(screen.getByRole('row', { name: /Silla/ })).getAllByRole('cell');
+    expect(celdas.map(celda => celda.textContent)).toEqual(['Silla', '2', '1', '1', '50%']);
   });
 });

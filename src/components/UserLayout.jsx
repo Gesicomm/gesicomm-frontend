@@ -1,3 +1,4 @@
+import { MODULOS_ACCESO, rutaPermitida, moduloDeRuta } from '../utils/accesos';
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -29,6 +30,7 @@ const OVERFLOW_FIJO = typeof CSS !== 'undefined' && CSS.supports?.('overflow', '
 
 const ICONOS_SIDEBAR = {
   Store,
+  User,
   Grid,
   ShoppingCart,
   Megaphone,
@@ -115,7 +117,10 @@ const UserLayout = ({ children }) => {
     verificarSesion().then((sesion) => {
       if (!activo) return;
       setUsuario(sesion);
-      if (sesion?.rol === 'usuario') {
+      if (sesion?.rol === 'colaborador') {
+        tiendaService.mias().then(lista => { if (activo) { setTiendas(lista); setTiendaActiva(lista.find(t => t.id === sesion.tiendaId)); } }).catch(() => {});
+        setProgresoSidebar({ menusDesbloqueados: [], bloqueos: {}, modulos: MODULOS_ACCESO.filter(m => m.clave !== 'configuracion').map(m => ({ path:m.ruta, label:m.nombre, icono:m.icono, contexto:'ecommerce', seccion:m.seccion })) });
+      } else if (sesion?.rol === 'usuario') {
         planesService.miEstado()
           .then(estado => { if (activo) setEstadoCuenta(estado); })
           .catch(() => { if (activo) setEstadoCuenta(null); });
@@ -132,7 +137,7 @@ const UserLayout = ({ children }) => {
         setEstadoCuenta(null);
       }
     });
-    cargarProgreso();
+    verificarSesion().then(sesion => { if (sesion?.rol !== 'colaborador') cargarProgreso(); });
     return () => { activo = false; };
   }, []);
 
@@ -184,7 +189,7 @@ const UserLayout = ({ children }) => {
     setCambiandoTienda(true);
     try {
       await tiendaService.seleccionar(tienda.id);
-      window.location.href = '/mi-dashboard';
+      window.location.href = usuario?.rol === 'colaborador' ? '/mis-pedidos' : '/mi-dashboard';
     } catch (e) {
       console.error('Error al cambiar de tienda', e);
       setCambiandoTienda(false);
@@ -214,6 +219,7 @@ const UserLayout = ({ children }) => {
   };
 
   const renderLink = (item) => {
+    if (!rutaPermitida(usuario, item.path)) return null;
     const active = isActive(item.path) || (item.prefix && isActivePrefix(item.prefix))
       || (item.path === '/mis-pedidos' && isActive('/pedidos/configuracion'));
     const menuKey = item.menuKey || item.path.replace('/', '');
@@ -300,6 +306,7 @@ const UserLayout = ({ children }) => {
   };
 
   const moduloEsVisible = (item) => {
+    if (!rutaPermitida(usuario, item.path)) return false;
     const rolesPermitidos = item.rolesPermitidos || item.roles_permitidos || [];
     if (Array.isArray(rolesPermitidos) && rolesPermitidos.length > 0 && !rolesPermitidos.includes(usuario?.rol)) {
       return false;
@@ -407,7 +414,7 @@ const UserLayout = ({ children }) => {
           </div>
         </header>
 
-        {usuario?.rol === 'usuario' && tiendaActiva && (
+        {['usuario', 'colaborador'].includes(usuario?.rol) && tiendaActiva && (
           <div className="user-sidebar-store">
             <button
               type="button"
@@ -493,7 +500,7 @@ const UserLayout = ({ children }) => {
                       </button>
                     </li>
                   ))}
-                  <li style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.25rem', paddingTop: '0.25rem' }}>
+                  {usuario?.rol !== 'colaborador' && <li style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.25rem', paddingTop: '0.25rem' }}>
                     <button
                       type="button"
                       onClick={() => { setTiendaMenuAbierto(false); navigate('/onboarding', { state: { nueva: true } }); }}
@@ -506,7 +513,7 @@ const UserLayout = ({ children }) => {
                     >
                       <Plus size={14} /> Crear otra tienda
                     </button>
-                  </li>
+                  </li>}
                 </ul>
               </>
             )}
@@ -622,6 +629,11 @@ const UserLayout = ({ children }) => {
             overflowX: isLandingRoute ? OVERFLOW_FIJO : undefined,
           }}
         >
+          {usuario?.rol === 'colaborador' && usuario.accesos?.[moduloDeRuta(location.pathname)] === 'ver' && (
+            <p role="status" style={{ margin: '16px 24px', padding: '12px 16px', border: '1px solid var(--color-border)', borderRadius: 8, color: 'var(--color-fg-muted)', fontSize: 16 }}>
+              Tenés acceso de solo lectura a esta sección. Las modificaciones requieren permiso del propietario.
+            </p>
+          )}
           {children}
         </main>
       </div>

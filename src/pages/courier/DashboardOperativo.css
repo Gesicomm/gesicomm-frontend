@@ -1,0 +1,14 @@
+.do-volver-general {
+  color: var(--color-primary-text);
+  font-size: var(--ui-text-button, 0.875rem);
+  font-weight: 600;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+.do-volver-general:hover { text-decoration: underline; }
+.do-volver-general:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  border-radius: 2px;
+}

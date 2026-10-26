@@ -293,7 +293,7 @@ export default function Login() {
         email: formData.email,
         password: formData.password,
       });
-      const rutaDestino = res.usuario?.rol === 'solo_pedidos'
+      const rutaDestino = ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
         ? '/mis-pedidos'
         : '/seleccionar-modulo';
       trackearEventoPersonalizado('Login', generarEventId());
@@ -387,7 +387,7 @@ export default function Login() {
       setTimeout(() => {
         const rutaDestino = tokenSuscripcion || res.suscripcion_vinculada
           ? '/onboarding'
-          : res.usuario?.rol === 'solo_pedidos'
+          : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
             ? '/mis-pedidos'
             : '/seleccionar-modulo';
         navigate(rutaDestino);

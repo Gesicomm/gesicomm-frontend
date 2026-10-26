@@ -1,3 +1,4 @@
+import { destinoColaborador, rutaPermitida } from '../utils/accesos';
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import useSesion from '../hooks/useSesion';
@@ -83,6 +84,8 @@ export default function RequireTienda({ children }) {
   if (estado === 'verificando') return <PantallaVerificandoSesion onReintentar={reintentar} />;
   if (estado === 'error') return <PantallaErrorConexion onReintentar={reintentar} />;
   if (estado === 'sin-sesion') return <RedirigirALogin />;
+
+  if (usuario?.rol === 'colaborador' && (!usuario.tiendaId || !rutaPermitida(usuario, location.pathname))) return <Navigate to={destinoColaborador(usuario)} replace />;
 
   if (acceso === 'pendiente') return <PantallaVerificandoSesion onReintentar={reintentar} />;
   if (acceso === 'sin-plan') return <Navigate to="/planes" replace />;

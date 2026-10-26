@@ -218,12 +218,12 @@ export default function EstadisticasPanel({ landingId }) {
         <div className="lb-stat-tile">
           <span className="lb-stat-icon"><MessageCircle size={15} /></span>
           <span className="lb-stat-valor">{datos.conversaciones_whatsapp}</span>
-          <span className="lb-stat-label">Conversaciones WhatsApp</span>
+          <span className="lb-stat-label">Clics a WhatsApp</span>
         </div>
         <div className="lb-stat-tile">
           <span className="lb-stat-icon"><Percent size={15} /></span>
           <span className="lb-stat-valor">{ctrPct}%</span>
-          <span className="lb-stat-label">CTR (contacto / visita)</span>
+          <span className="lb-stat-label">CTR (clic / visita)</span>
         </div>
       </div>
 

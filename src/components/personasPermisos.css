@@ -1,0 +1,70 @@
+.personas-permisos { color: var(--color-fg); margin-block: 24px; }
+.personas-permisos h2 { display:flex; align-items:center; gap:10px; font-size:var(--ui-text-section,1.375rem); margin:0 0 8px; }
+.personas-permisos h3 { font-size:1.125rem; margin:0 0 8px; }
+.personas-permisos p { font-size:1rem; line-height:1.6; margin:8px 0; overflow-wrap:anywhere; }
+.personas-cabecera,.personas-persona { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+.personas-permisos .personas-ayuda { color:var(--color-fg-muted); font-size:.875rem; line-height:1.6; }
+.personas-ayuda svg { display:inline-block; vertical-align:middle; }
+.personas-permisos button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:10px 14px; border:1px solid var(--color-border); border-radius:8px; font-size:.875rem; cursor:pointer; background:var(--color-surface); color:var(--color-fg); }
+.personas-permisos button.meta-connect-btn { background:var(--color-primary); color:var(--color-on-primary,#fff); }
+.personas-permisos button:disabled { opacity:.55; cursor:default; }
+.personas-permisos :focus-visible { outline:2px solid var(--color-primary); outline-offset:3px; }
+.personas-form,.personas-invitacion,.personas-confirmacion { padding:20px; margin-block:20px; border:1px solid var(--color-border); border-radius:12px; background:var(--color-canvas); }
+.personas-campos { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.personas-permisos label { display:flex; flex-direction:column; gap:8px; font-size:1rem; }
+.personas-permisos input,.personas-permisos select { width:100%; min-width:0; min-height:44px; padding:10px 12px; color:var(--color-fg); background:var(--color-surface); border:1px solid var(--color-border); border-radius:8px; font-size:1rem; }
+.personas-permisos fieldset { padding:0; border:0; margin:24px 0 12px; }
+.personas-permisos legend { font-size:1rem; font-weight:600; margin-bottom:10px; }
+.personas-permisos .personas-permiso { display:grid; grid-template-columns:minmax(0,1fr) 180px; align-items:center; gap:16px; padding:12px 0; border-bottom:1px solid var(--color-border); }
+.personas-acciones { display:flex; flex-wrap:wrap; gap:8px; }
+.personas-persona { padding:20px 0; border-top:1px solid var(--color-border); }
+.personas-persona > div:first-child { flex:1; min-width:180px; }
+.personas-estado { font-size:.8125rem; color:var(--color-fg-muted); }
+.personas-error { padding:12px; border:1px solid var(--color-danger); border-radius:8px; }
+.personas-invitacion input { margin:10px 0; }
+.personas-vacio { padding-block:20px; }
+@media(max-width:600px) { .personas-campos { grid-template-columns:1fr; } .personas-permisos .personas-permiso { grid-template-columns:1fr; gap:8px; } .personas-form,.personas-invitacion { padding:14px; } .personas-cabecera > button { width:100%; } }
+
+.personas-grupo { margin: 24px 0 8px; font-size: 14px; font-weight: 650; color: var(--color-fg-muted); }
+
+dialog.personas-modal { margin:auto; padding:0; width:min(1040px,calc(100vw - 48px)); max-width:none; height:min(780px,calc(100dvh - 48px)); max-height:calc(100dvh - 48px); border:1px solid var(--color-border); border-radius:18px; background:var(--color-surface); color:var(--color-fg); box-shadow:0 24px 80px #0005; overflow:hidden; }
+.personas-modal::backdrop { background:rgb(8 16 28 / .62); backdrop-filter:blur(3px); }
+.personas-modal-form { display:flex; flex-direction:column; height:100%; min-height:0; }
+.personas-modal-cabecera { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:22px 24px; border-bottom:1px solid var(--color-border); flex-shrink:0; }
+.personas-modal-cabecera h2 { overflow-wrap:anywhere; }
+.personas-modal-cabecera > button { padding:10px; flex-shrink:0; }
+.personas-modal-cuerpo { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); flex:1; min-height:0; overflow:hidden; }
+.personas-datos { padding:24px; overflow:auto; }
+.personas-modal .personas-campos { grid-template-columns:1fr; }
+.personas-secciones { display:flex; flex-direction:column; min-height:0; min-width:0; border-left:1px solid var(--color-border); background:var(--color-canvas); }
+.personas-buscador { padding:24px 24px 12px; flex-shrink:0; }
+.personas-modal .personas-busqueda { display:flex; flex-direction:row; align-items:center; gap:8px; position:relative; }
+.personas-busqueda > svg { position:absolute; left:12px; pointer-events:none; color:var(--color-fg-muted); }
+.personas-modal .personas-busqueda input { padding-left:40px; }
+.personas-modal fieldset.personas-resultados { margin:0; padding:0 24px 20px; min-width:0; min-height:0; overflow:auto; flex:1; overscroll-behavior:contain; }
+.personas-resultados > div:first-of-type .personas-grupo { margin-top:8px; }
+.personas-modal .personas-permiso { grid-template-columns:minmax(0,1fr) 170px; gap:12px; }
+.personas-modal-pie { padding:16px 24px; border-top:1px solid var(--color-border); background:var(--color-surface); flex-shrink:0; }
+.personas-pie-acciones { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.personas-modal-pie .personas-error { margin-bottom:12px; max-height:100px; overflow:auto; }
+.personas-descartar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.personas-sin-resultados { padding:0 24px 24px; }
+.personas-pestanas { display:none; }
+@media(max-width:700px) {
+  dialog.personas-modal { width:calc(100vw - 16px); height:calc(100dvh - 16px); max-height:calc(100dvh - 16px); border-radius:12px; }
+  .personas-modal-cabecera { padding:16px; }
+  .personas-pestanas { display:flex; gap:8px; padding:10px 16px; border-bottom:1px solid var(--color-border); }
+  .personas-pestanas button { flex:1; }
+  .personas-pestanas button[aria-pressed="true"] { border-color:var(--color-primary); background:color-mix(in srgb,var(--color-primary) 10%,var(--color-surface)); font-weight:650; }
+  .personas-modal-cuerpo { display:flex; overflow:hidden; }
+  .personas-modal-cuerpo[data-pestana="datos"] > .personas-secciones,
+  .personas-modal-cuerpo[data-pestana="permisos"] > .personas-datos { display:none; }
+  .personas-datos { padding:20px 16px; overflow:auto; width:100%; }
+  .personas-secciones { border-left:0; width:100%; }
+  .personas-buscador { padding:20px 16px 8px; }
+  .personas-modal fieldset.personas-resultados { overflow:auto; padding:0 16px 16px; flex:1; }
+  .personas-modal .personas-permiso { grid-template-columns:1fr; gap:8px; }
+  .personas-modal-pie { padding:12px 16px; }
+  .personas-pie-acciones { flex-wrap:wrap; }
+  .personas-pie-acciones > .personas-acciones { margin-left:auto; }
+}

@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPublica from './pages/landing/LandingPublica';
 
+import { AceptarInvitacion, TiendasColaborador, SinAcceso } from './pages/AccesoEquipo';
 import ProtectedRoute from './components/ProtectedRoute';
 import MarcaPersonalRedirect from './components/MarcaPersonalRedirect';
 import AdminRoute from './components/AdminRoute';
@@ -238,6 +239,9 @@ function App() {
           </div>
         }>
         <Routes>
+        <Route path="/acceso-invitacion" element={<AceptarInvitacion />} />
+        <Route path="/acceso-tiendas" element={<ProtectedRoute><TiendasColaborador /></ProtectedRoute>} />
+        <Route path="/sin-acceso" element={<ProtectedRoute><SinAcceso /></ProtectedRoute>} />
         {/* ─────────────────────────────────────────────────────────
             Sitio institucional público (gesicomm.com) — sin guards.
 

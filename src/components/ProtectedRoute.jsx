@@ -1,3 +1,5 @@
+import { Navigate, useLocation } from 'react-router-dom';
+import { destinoColaborador, rutaPermitida } from '../utils/accesos';
 import useSesion from '../hooks/useSesion';
 import {
   PantallaErrorConexion,
@@ -21,11 +23,13 @@ import {
  *   </ProtectedRoute>
  */
 export default function ProtectedRoute({ children }) {
-  const { estado, reintentar } = useSesion();
+  const { estado, usuario, reintentar } = useSesion();
+  const location = useLocation();
 
   if (estado === 'verificando') return <PantallaVerificandoSesion onReintentar={reintentar} />;
   if (estado === 'error') return <PantallaErrorConexion onReintentar={reintentar} />;
   if (estado === 'sin-sesion') return <RedirigirALogin />;
 
+  if (usuario?.rol === 'colaborador' && !rutaPermitida(usuario, location.pathname)) return <Navigate to={destinoColaborador(usuario)} replace />;
   return children;
 }

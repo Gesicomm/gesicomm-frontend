@@ -297,15 +297,7 @@
   border: 1px solid var(--md-border);
   border-radius: 8px;
   padding: clamp(1.2rem, 2.3vw, 2rem);
-  animation: md-rise 0.45s ease both;
   min-height: 100%;
-}
-@keyframes md-rise {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .md-hero { animation: none; }
 }
 
 .md-hero-top {
@@ -572,8 +564,9 @@
   font-size: var(--ui-text-help, 0.875rem);
   color: var(--md-ink-muted);
 }
+.md-funnel-footer > span { line-height: 1.6; }
 .md-funnel-footer strong { color: var(--md-ink); font-weight: 600; }
-.md-funnel-div { width: 4px; height: 4px; background: var(--md-border-strong); border-radius: 50%; }
+.md-funnel-div { display: inline-block; width: 4px; height: 4px; margin: 0 0.6rem; vertical-align: middle; background: var(--md-border-strong); border-radius: 50%; }
 
 @media (max-width: 720px) {
   .md-funnel { flex-direction: column; gap: 0.8rem; padding: 1.2rem; align-items: stretch; }
@@ -582,7 +575,7 @@
   .md-funnel-line { width: 2px; height: 100%; margin: 0 1rem 0 0; }
   .md-funnel-line::after { top: auto; bottom: -2px; right: -3px; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--md-border-strong); }
   .md-funnel-footer { flex-direction: column; gap: 0.4rem; text-align: center; }
-  .md-funnel-div { display: none; }
+  .md-funnel-div { margin: 0 0.4rem; }
 }
 
 .md-funnel-nota { margin-top: 0.6rem; text-align: center; }
@@ -805,6 +798,32 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+/* En notebooks las dos tablas quedan demasiado angostas para leer ROI y
+   rendición. Las tarjetas muestran todas las métricas sin scroll lateral. */
+@media (max-width: 1600px) {
+  .md-compact-table .md-desktop-data { display: none; }
+  .md-compact-table .md-mobile-data {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 0.75rem;
+    margin-top: 0.8rem;
+  }
+  .md-compact-table .md-data-card {
+    min-width: 0;
+    padding: 0.85rem;
+    border: 1px solid var(--md-border);
+    border-radius: 13px;
+    background: var(--md-surface-alt);
+  }
+  .md-compact-table .md-data-card > header { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.5rem; }
+  .md-compact-table .md-data-card > header strong { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: var(--ui-text-body, 1rem); line-height: 1.5; }
+  .md-compact-table .md-data-card > header > span { font-size: var(--ui-text-help, 0.875rem); line-height: 1.5; }
+  .md-compact-table .md-data-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem 0.7rem; margin: 1rem 0 0; }
+  .md-compact-table .md-data-card dl > div { min-width: 0; }
+  .md-compact-table .md-data-card dt { color: var(--md-ink-muted); font-size: var(--ui-text-help, 0.875rem); line-height: 1.5; }
+  .md-compact-table .md-data-card dd { margin: 0.25rem 0 0; font-size: var(--ui-text-help, 0.875rem); font-weight: 650; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 }
 
 .md-empty-hint {

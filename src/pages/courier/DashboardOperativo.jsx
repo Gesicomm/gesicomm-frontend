@@ -1,6 +1,8 @@
 import { TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
 import "./courier.css";
+import "./DashboardOperativo.css";
 
 // Antes era la pestaña "Analítica" de Gestión Comercial / Logística: al
 // mezclar pedidos (ambos tienen su propio estado, comercial y logístico) con
@@ -21,6 +23,7 @@ export function DashboardOperativo() {
               <p className="prod-subtitle">Cómo se mueven tus pedidos: confirmación, entregas, devoluciones y clientes</p>
             </div>
           </div>
+          <Link className="do-volver-general" to="/mi-dashboard">Ver Dashboard General</Link>
         </div>
       </div>
 

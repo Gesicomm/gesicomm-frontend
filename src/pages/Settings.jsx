@@ -4,6 +4,7 @@ import { api } from '../utils/api';
 import { apiOrigin } from '../utils/apiBase';
 import { Plus, Trash2, Store, CheckCircle, XCircle, Loader, User, Phone, Mail, ShieldCheck, KeyRound } from 'lucide-react';
 import { verificarSesion } from '../utils/auth';
+import PersonasPermisos from '../components/PersonasPermisos';
 import PerfilModal from '../components/PerfilModal';
 import PrivacidadDatosCard from '../components/PrivacidadDatosCard';
 
@@ -19,6 +20,7 @@ const Settings = () => {
 
     const [usuario, setUsuario] = useState(null);
     const [perfilModalAbierto, setPerfilModalAbierto] = useState(false);
+    const puedeGestionar = usuario && (usuario.rol !== 'colaborador' || usuario.accesos?.configuracion === 'gestionar');
 
     useEffect(() => {
         verificarSesion().then((u) => { if (u) setUsuario(u); });
@@ -187,6 +189,8 @@ const Settings = () => {
                 </div>
             </div>
 
+            {usuario?.tiendaId && usuario.rol !== 'colaborador' && <PersonasPermisos />}
+
             <div className="card">
                 {/* Cabecera de la sección */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
@@ -207,6 +211,7 @@ const Settings = () => {
                     </div>
                     <button
                         className="meta-connect-btn"
+                        disabled={!puedeGestionar}
                         onClick={() => handleConnectMeta(hayTiendas ? 'add_store' : 'connect')}
                         style={{ fontSize: '0.85rem', padding: '0.5rem 1.1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                     >
@@ -245,7 +250,7 @@ const Settings = () => {
                                 type="button"
                                 className="meta-connect-btn"
                                 onClick={confirmarPortafolios}
-                                disabled={guardandoSeleccion || elegidos.length === 0}
+                                disabled={!puedeGestionar || guardandoSeleccion || elegidos.length === 0}
                             >
                                 {guardandoSeleccion ? <Loader size={16} className="spin" /> : <CheckCircle size={16} />}
                                 Conectar {elegidos.length === 1 ? '1 portafolio' : `${elegidos.length} portafolios`}
@@ -313,7 +318,7 @@ const Settings = () => {
                                     )}
                                     <button
                                         onClick={() => handleDeleteTienda(tienda.id, tienda.nombre || tienda.business_name)}
-                                        disabled={deletingId === tienda.id}
+                                        disabled={!puedeGestionar || deletingId === tienda.id}
                                         title="Desconectar tienda"
                                         style={{
                                             background: 'transparent', border: '1px solid rgba(255,100,100,0.3)',
@@ -333,7 +338,7 @@ const Settings = () => {
 
             {/* Metodo 1 de /data-deletion: la pantalla que un revisor de Meta
                 sigue paso a paso durante la revision de la aplicacion. */}
-            <PrivacidadDatosCard />
+            {usuario?.rol !== 'colaborador' && <PrivacidadDatosCard />}
 
             <PerfilModal
                 isOpen={perfilModalAbierto}
