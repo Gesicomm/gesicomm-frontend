@@ -280,9 +280,11 @@
 .ecommerce-preview-video-header button { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; color: var(--color-fg); }
 .ecommerce-preview-video-header button:hover { background: var(--color-surface-2); }
 .ecommerce-preview-video-dialog iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; background: #000; }
-@container (min-width: 900px) {
+/* Con el panel de edición abierto, un portátil suele dejar unos 800–900 px
+   para la vista previa: el tutorial debe seguir al costado del teléfono. */
+@container (min-width: 760px) {
   .ecommerce-preview-workspace.is-phone {
-    grid-template-columns: minmax(0, 410px) minmax(340px, 530px);
+    grid-template-columns: minmax(0, 410px) minmax(340px, min(530px, 48%));
     grid-template-rows: minmax(0, 1fr);
     justify-content: center;
   }
