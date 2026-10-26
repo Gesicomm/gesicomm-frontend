@@ -4223,7 +4223,7 @@ function VistaPrevia({
       </div>
       )}
 
-      {compacta && <div className="ecommerce-preview-workspace">
+      {compacta && <div className={`ecommerce-preview-workspace${escritorio ? '' : ' is-phone'}`}>
         <section className="ecommerce-preview-monitor-area" aria-label={`Vista previa de ${escritorio ? 'escritorio' : 'celular'}`}>
           {productos.length === 0 && modo !== 'legales' ? (
             <div className="ecommerce-preview-empty">Elegí productos y los vas a ver acá.</div>
