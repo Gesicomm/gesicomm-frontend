@@ -1455,6 +1455,11 @@
 .user-layout-container .settings-container {
   padding: 2rem 2.25rem 4rem;
 }
+/* En el celular, el mismo margen lateral que Gestión Comercial: 36 px por
+   lado le quitaban casi un quinto del ancho a las tarjetas. */
+@media (max-width: 767px) {
+  .user-layout-container .settings-container { padding: 1.25rem 1rem 3rem; }
+}
 
 /* ─── Marcas de la landing (vista "Productos en mi landing") ─────────── */
 .vit-card-marcas {

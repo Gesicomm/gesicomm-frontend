@@ -203,7 +203,19 @@
     display: flex;
     align-items: center;
     gap: 0.8rem;
+    /* Junto a un título en la misma fila, el botón se encogía y partía
+       "Conectar" en dos líneas en el celular. */
+    flex-shrink: 0;
+    white-space: nowrap;
     transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* Cabeceras de Configuración (título + botón, con estilos en línea): en el
+   celular el botón baja a su propia fila en vez de aplastar el título. */
+@media (max-width: 767px) {
+    .card > div:has(> .meta-connect-btn) { flex-wrap: wrap; gap: 0.75rem; }
+    .card > div:has(> .meta-connect-btn) > div:first-child { min-width: 0; }
+    .card > div:has(> .meta-connect-btn) > div:first-child > div:first-child { flex-shrink: 0; }
 }
 
 .meta-connect-btn:hover {

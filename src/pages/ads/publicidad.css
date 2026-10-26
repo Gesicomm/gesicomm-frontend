@@ -99,10 +99,16 @@
   .ads-campaigns .table-scroll-container { overflow: visible; }
   .ads-campaigns table, .ads-campaigns tbody { display: block; }
   .ads-campaigns thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
-  .ads-campaigns tbody tr { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); margin: 0.85rem; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
+  /* Cada campaña ya es una tarjeta: el contenedor de la tabla no suma otro
+     borde ni sangría alrededor. */
+  .ads-campaigns.data-table-wrapper { border: 0; background: none; box-shadow: none; }
+  .ads-campaigns tbody { display: grid; gap: 0.75rem; }
+  .ads-campaigns tbody tr { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); margin: 0; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
   .ads-campaigns tbody td:first-child, .ads-campaigns tbody td:last-child { grid-column: 1 / -1; }
   .ads-campaigns tbody td:last-child { grid-row: 2; }
-  .ads-campaigns tbody td { display: block; width: auto; min-width: 0 !important; padding: 0.7rem 1rem; text-align: left; border: 0; white-space: normal; }
+  /* left !important: la utilidad global .text-right de las celdas numéricas
+     también lleva !important y alineaba rótulo y valor a la derecha. */
+  .ads-campaigns tbody td { display: block; width: auto; min-width: 0 !important; padding: 0.7rem 1rem; text-align: left !important; border: 0; white-space: normal; }
   .ads-campaigns tbody td:not(:first-child)::before { content: attr(data-label); display: block; margin-bottom: 0.3rem; color: var(--color-fg-muted); font-size: var(--ui-text-help); }
   .ads-campaigns tbody td:last-child > div { justify-content: flex-start; flex-wrap: wrap; }
   .ads-campaigns tfoot { display: none; }
