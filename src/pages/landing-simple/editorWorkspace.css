@@ -179,18 +179,18 @@
   flex: 1;
   min-height: 0;
   min-width: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  gap: 24px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
   padding: 20px;
 }
 .ecommerce-preview-monitor-area,
 .ecommerce-preview-tutorial { width: 100%; min-width: 0; margin-inline: auto; }
-.ecommerce-preview-monitor-area { max-width: 1120px; }
-.ecommerce-preview-monitor { width: 100%; }
+.ecommerce-preview-monitor-area { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 0; max-width: 1120px; }
+.ecommerce-preview-monitor { width: min(100%, 1120px, max(0px, calc((100dvh - 310px) * 16 / 9))); }
 .ecommerce-preview-monitor-bezel {
   padding: 8px;
   border: 1px solid #354258;
@@ -216,10 +216,11 @@
   background: #263448;
 }
 .ecommerce-preview-monitor-caption { margin: 12px 0 0; color: var(--color-fg-muted); font-size: var(--ui-text-help, 14px); text-align: center; }
-.ecommerce-preview-workspace.is-phone .ecommerce-preview-monitor-area { padding-top: 40px; }
+.ecommerce-preview-workspace.is-phone .ecommerce-preview-monitor-area { padding-top: 0; }
 .ecommerce-preview-phone-compact {
   width: 100%;
-  height: clamp(580px, calc(100dvh - 190px), 780px);
+  height: calc(100% - 32px);
+  min-height: 0;
 }
 .ecommerce-preview-empty {
   display: grid; place-items: center; min-height: 220px;
@@ -227,27 +228,32 @@
   border-radius: 16px; color: var(--color-fg-muted); font-size: var(--ui-text-body, 16px); text-align: center;
 }
 .ecommerce-preview-tutorial {
-  align-self: start;
-  max-width: 320px;
-  padding: 12px;
+  align-self: center;
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  max-width: 340px;
+  height: 90px;
+  padding: 8px;
   border: 1px solid var(--color-border);
   border-radius: 16px;
   background: var(--color-surface);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--color-fg) 5%, transparent);
 }
-.ecommerce-preview-tutorial-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ecommerce-preview-tutorial-heading { grid-column: 2; grid-row: 1; min-width: 0; }
 .ecommerce-preview-tutorial-icon {
-  display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px;
-  border-radius: 8px; background: var(--color-surface-2); color: var(--color-primary-text);
+  display: none;
 }
 .ecommerce-preview-tutorial h3 { margin: 0; color: var(--color-fg); font-size: var(--ui-text-label, 15px); line-height: 1.4; font-weight: 650; }
 .ecommerce-preview-tutorial-slot {
+  grid-column: 1; grid-row: 1;
   position: relative; overflow: hidden;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-  width: 100%; aspect-ratio: 16 / 9;
-  padding: 12px; border: 1px dashed var(--color-border-strong); border-radius: 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  width: 120px; height: 72px;
+  padding: 6px; border: 1px dashed var(--color-border-strong); border-radius: 8px;
   background: var(--color-surface-2); color: var(--color-fg-muted);
-  font-size: var(--ui-text-label, 14px); font-weight: 500; text-align: center;
+  font-size: var(--ui-text-meta, 13px); font-weight: 500; text-align: center;
 }
 .ecommerce-preview-tutorial-slot.is-ready { cursor: pointer; border-style: solid; }
 .ecommerce-preview-tutorial-slot.is-ready:hover { border-color: var(--color-primary-text); }
@@ -267,14 +273,15 @@
 .ecommerce-preview-video-header button { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; color: var(--color-fg); }
 .ecommerce-preview-video-header button:hover { background: var(--color-surface-2); }
 .ecommerce-preview-video-dialog iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; background: #000; }
-@media (max-width: 767px) {
-  .ecommerce-preview-video-modal { padding: 12px; }
+@container (min-width: 900px) {
+  .ecommerce-preview-workspace.is-phone {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-rows: minmax(0, 1fr);
+  }
 }
 @media (max-width: 767px) {
   .ecommerce-preview-workspace { padding: 16px; gap: 20px; }
-  .ecommerce-preview-workspace.is-phone .ecommerce-preview-monitor-area { padding-top: 20px; }
-  .ecommerce-preview-phone-compact { height: clamp(520px, calc(100dvh - 230px), 700px); }
-  .ecommerce-preview-tutorial { padding: 16px; }
+  .ecommerce-preview-video-modal { padding: 12px; }
 }
 
 /* "Descartar borrador": acción secundaria dentro del aviso de alcance del
