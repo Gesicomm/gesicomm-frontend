@@ -17,6 +17,7 @@ import NotificationBell from './NotificationBell';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
 import PerfilModal from './PerfilModal';
+import TutorialModulo from './TutorialModulo';
 import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
 import '../pages/educacion/EducacionView.css';
@@ -650,6 +651,7 @@ const UserLayout = ({ children }) => {
               Tenés acceso de solo lectura a esta sección. Las modificaciones requieren permiso del propietario.
             </p>
           )}
+          {!isLandingRoute && <TutorialModulo />}
           {children}
         </main>
       </div>

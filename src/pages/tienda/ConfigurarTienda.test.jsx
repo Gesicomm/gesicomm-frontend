@@ -125,6 +125,11 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     planesService.miEstado.mockResolvedValue({ tiene_suscripcion_activa: true, suscripcion: tiendaBase.suscripcion });
   });
 
+  it('muestra el espacio de video de Mi negocio al entrar, aun sin video cargado', async () => {
+    await cargarPantalla();
+    expect(screen.getByRole('region', { name: 'Tutorial de Mi negocio' })).toHaveTextContent('Espacio para el video explicativo');
+  });
+
   it('edita tienda, documento/RUC, URL, contacto y analitica; guarda con el payload correcto', async () => {
     await cargarPantalla();
 

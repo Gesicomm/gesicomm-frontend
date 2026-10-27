@@ -713,6 +713,8 @@ export default function ConfigurarTienda() {
         </div>
       </header>
 
+      <TutorialSeccion nombre="Mi negocio" url={videosTutoriales['modulo.negocio']} destacado />
+
       <section className="tn-store-card" aria-label="Tu negocio en línea">
         <div className="tn-store-avatar">
           {tienda?.logo_imagen

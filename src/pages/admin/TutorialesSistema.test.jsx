@@ -11,6 +11,7 @@ beforeEach(() => {
     { clave: 'ecommerce.inicio', grupo: 'E-commerce', nombre: 'Inicio' },
     { clave: 'ecommerce.checkout', grupo: 'E-commerce', nombre: 'Checkout' },
     { clave: 'mi-negocio.tienda', grupo: 'Mi negocio', nombre: 'Tienda' },
+    { clave: 'modulo.productos', grupo: 'Productos', nombre: 'Introducción' },
   ], videos: {} } });
   API.put.mockImplementation(async (path, body) => ({ data: { clave: decodeURIComponent(path.split('/').pop()), url: body.url } }));
 });
@@ -20,10 +21,15 @@ it('permite al admin asignar un video a Inicio y otro a Mi negocio sin mezclarlo
   fireEvent.change(await screen.findByLabelText('Enlace de YouTube'), { target: { value: 'https://youtu.be/dQw4w9WgXcQ' } });
   fireEvent.click(screen.getByRole('button', { name: 'Guardar video' }));
   await waitFor(() => expect(API.put).toHaveBeenCalledWith('/tutoriales/ecommerce.inicio', { url: 'https://youtu.be/dQw4w9WgXcQ' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Mi negocio' }));
+  fireEvent.change(screen.getByLabelText('Módulo'), { target: { value: 'Mi negocio' } });
   expect(screen.getByRole('heading', { name: 'Tienda' })).toBeInTheDocument();
   expect(screen.getByLabelText('Enlace de YouTube')).toHaveValue('');
   fireEvent.change(screen.getByLabelText('Enlace de YouTube'), { target: { value: 'https://youtu.be/9bZkp7q19f0' } });
   fireEvent.click(screen.getByRole('button', { name: 'Guardar video' }));
   await waitFor(() => expect(API.put).toHaveBeenCalledWith('/tutoriales/mi-negocio.tienda', { url: 'https://youtu.be/9bZkp7q19f0' }));
+  fireEvent.change(screen.getByLabelText('Módulo'), { target: { value: 'Productos' } });
+  expect(screen.getByRole('heading', { name: 'Introducción' })).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Enlace de YouTube'), { target: { value: 'https://youtu.be/3JZ_D3ELwOQ' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar video' }));
+  await waitFor(() => expect(API.put).toHaveBeenCalledWith('/tutoriales/modulo.productos', { url: 'https://youtu.be/3JZ_D3ELwOQ' }));
 });

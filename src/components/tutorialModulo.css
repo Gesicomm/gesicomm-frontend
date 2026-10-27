@@ -1,0 +1,3 @@
+.gc-module-tutorial { width: 100%; box-sizing: border-box; padding: 20px 24px 0; }
+.gc-module-tutorial .tn-tutorial { max-width: 1440px; margin: 0 auto; }
+@media (max-width: 600px) { .gc-module-tutorial { padding: 16px 16px 0; } }

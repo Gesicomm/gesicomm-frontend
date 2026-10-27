@@ -5,10 +5,10 @@
 .admin-tutoriales > header p { margin: 0; color: var(--color-fg-muted); font-size: var(--ui-text-body, 16px); line-height: 1.5; }
 .admin-tutoriales-layout { display: grid; grid-template-columns: minmax(260px, 330px) minmax(0, 1fr); gap: 24px; align-items: start; }
 .admin-tutoriales-nav, .admin-tutoriales-editor { min-width: 0; padding: 20px; border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-surface); }
-.admin-tutoriales-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
-.admin-tutoriales-groups button, .admin-tutoriales-sections button { border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); color: var(--color-fg); cursor: pointer; font: inherit; }
-.admin-tutoriales-groups button { min-height: 44px; padding: 8px; font-size: var(--ui-text-label, 14px); font-weight: 600; }
-.admin-tutoriales-groups button[aria-pressed='true'] { border-color: var(--color-primary-text); background: var(--color-surface-2); }
+.admin-tutoriales-groups { display: grid; gap: 8px; margin-bottom: 16px; }
+.admin-tutoriales-groups label { font-size: var(--ui-text-label, 14px); font-weight: 650; }
+.admin-tutoriales-groups select { width: 100%; min-height: 48px; padding: 10px 12px; border: 1px solid var(--color-border-strong); border-radius: 10px; background: var(--color-surface); color: var(--color-fg); font: inherit; font-size: var(--ui-text-body, 16px); }
+.admin-tutoriales-sections button { border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); color: var(--color-fg); cursor: pointer; font: inherit; }
 .admin-tutoriales-sections { display: grid; gap: 8px; }
 .admin-tutoriales-sections button { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; padding: 10px 12px; text-align: left; font-size: var(--ui-text-label, 14px); }
 .admin-tutoriales-sections button[aria-current='true'] { border-color: var(--color-primary-text); background: var(--color-surface-2); font-weight: 650; }
@@ -34,5 +34,5 @@
 .admin-tutoriales-preview h3 { margin: 0 0 12px; font-size: var(--ui-text-card, 18px); }
 .admin-tutoriales-preview iframe { display: block; width: min(100%, 640px); aspect-ratio: 16 / 9; border: 0; border-radius: 10px; background: #000; }
 .admin-tutoriales-preview a { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; color: var(--color-primary-text); font-size: var(--ui-text-label, 14px); }
-.admin-tutoriales :is(button, input, a):focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
+.admin-tutoriales :is(button, input, select, a):focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
 @media (max-width: 800px) { .admin-tutoriales { padding: 20px 16px; } .admin-tutoriales-layout { grid-template-columns: 1fr; } .admin-tutoriales-nav, .admin-tutoriales-editor { padding: 18px; } }

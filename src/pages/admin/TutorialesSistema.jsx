@@ -52,6 +52,7 @@ export default function TutorialesSistema() {
     } finally { setGuardando(false); }
   };
 
+  const grupos = [...new Set(datos.secciones.map(seccion => seccion.grupo))];
   const secciones = datos.secciones.filter(seccion => seccion.grupo === grupo);
   const actual = datos.secciones.find(seccion => seccion.clave === clave);
   const url = borradores[clave] ?? datos.videos?.[clave] ?? '';
@@ -60,11 +61,12 @@ export default function TutorialesSistema() {
     <header><span className="admin-tutoriales-kicker">Contenido del sistema</span><h1>Tutoriales por sección</h1><p>Elegí un destino y pegá el enlace del video de YouTube. Los usuarios verán el tutorial en esa sección.</p></header>
     {cargando ? <p role="status">Cargando secciones…</p> : <div className="admin-tutoriales-layout">
       <nav aria-label="Secciones de tutoriales" className="admin-tutoriales-nav">
-        <div className="admin-tutoriales-groups" role="group" aria-label="Módulo">
-          {['E-commerce', 'Mi negocio'].map(nombre => <button key={nombre} type="button" aria-pressed={grupo === nombre} onClick={() => {
-            const primera = datos.secciones.find(seccion => seccion.grupo === nombre);
+        <div className="admin-tutoriales-groups">
+          <label htmlFor="admin-tutorial-modulo">Módulo</label>
+          <select id="admin-tutorial-modulo" value={grupo} onChange={event => {
+            const primera = datos.secciones.find(seccion => seccion.grupo === event.target.value);
             if (primera) elegir(primera);
-          }}>{nombre}</button>)}
+          }}>{grupos.map(nombre => <option key={nombre} value={nombre}>{nombre}</option>)}</select>
         </div>
         <div className="admin-tutoriales-sections">{secciones.map(seccion => <button key={seccion.clave} type="button" aria-current={clave === seccion.clave ? 'true' : undefined} onClick={() => elegir(seccion)}>
           <span>{seccion.nombre}</span><span className={datos.videos?.[seccion.clave] ? 'is-ready' : ''}>{datos.videos?.[seccion.clave] ? 'Con video' : 'Pendiente'}</span>
