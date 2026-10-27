@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
 import NotificationBell from './NotificationBell';
+import TutorialDock from './TutorialDock';
 import { notificationsService } from '../services/notifications.service';
 import './dashboard.css';
 
@@ -101,6 +102,7 @@ const DashboardLayout = ({ children }) => {
                         overflowX: isLandingRoute ? OVERFLOW_FIJO : undefined,
                     }}
                 >
+                    {!isLandingRoute && <TutorialDock />}
                     {children}
                 </main>
             </div>

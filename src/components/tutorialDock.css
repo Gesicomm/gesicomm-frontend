@@ -1,0 +1,22 @@
+.gc-tutorial-dock { position: fixed; z-index: 45; right: 0; top: 50%; display: flex; align-items: center; gap: 8px; transform: translateY(-50%); color: var(--color-fg); font-family: var(--font-sans); }
+.gc-tutorial-trigger { display: inline-flex; align-items: center; gap: 5px; min-height: 48px; padding: 10px 13px 10px 9px; border: 1px solid var(--color-border-strong); border-right: 0; border-radius: 12px 0 0 12px; background: var(--color-surface); color: var(--color-fg); box-shadow: 0 4px 18px rgb(0 0 0 / .12); font: inherit; font-size: var(--ui-text-label, 14px); font-weight: 650; cursor: pointer; }
+.gc-tutorial-trigger:hover { color: var(--color-primary-text); }
+.gc-tutorial-popover { width: min(360px, calc(100vw - 110px)); box-sizing: border-box; padding: 14px; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface); box-shadow: 0 16px 46px rgb(0 0 0 / .2); }
+.gc-tutorial-popover-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.gc-tutorial-popover-icon { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border-radius: 10px; background: var(--color-surface-2); color: var(--color-primary-text); }
+.gc-tutorial-popover-head > div { flex: 1; min-width: 0; }
+.gc-tutorial-popover-head > div > span { color: var(--color-fg-muted); font-size: var(--ui-text-meta, 13px); }
+.gc-tutorial-popover h2 { margin: 1px 0 0; color: var(--color-fg); font-size: var(--ui-text-card, 18px); line-height: 1.35; }
+.gc-tutorial-close { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: var(--color-fg-muted); cursor: pointer; }
+.gc-tutorial-close:hover { background: var(--color-surface-2); color: var(--color-fg); }
+.gc-tutorial-play, .gc-tutorial-empty, .gc-tutorial-popover iframe { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; aspect-ratio: 16 / 9; box-sizing: border-box; overflow: hidden; border-radius: 10px; }
+.gc-tutorial-play { border: 0; background: #111c2b; color: white; cursor: pointer; }
+.gc-tutorial-play img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gc-tutorial-play span { position: relative; z-index: 1; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: rgb(0 0 0 / .72); }
+.gc-tutorial-play:hover span { background: var(--color-primary); color: var(--color-primary-fg); }
+.gc-tutorial-popover iframe { display: block; border: 0; background: #000; }
+.gc-tutorial-empty { gap: 5px; border: 1px dashed var(--color-border-strong); background: var(--color-surface-2); color: var(--color-fg-muted); text-align: center; font-size: var(--ui-text-help, 14px); }
+.gc-tutorial-empty small { font-size: var(--ui-text-meta, 13px); }
+.gc-tutorial-popover p { margin: 10px 2px 0; color: var(--color-fg-muted); font-size: var(--ui-text-help, 14px); line-height: 1.5; }
+.gc-tutorial-dock :is(button):focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
+@media (max-width: 600px) { .gc-tutorial-dock { top: auto; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); flex-direction: column; align-items: flex-end; transform: none; } .gc-tutorial-popover { width: min(330px, calc(100vw - 24px)); } .gc-tutorial-trigger { border-right: 1px solid var(--color-border-strong); border-radius: 12px; padding: 10px 13px; } }
