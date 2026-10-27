@@ -1,0 +1,15 @@
+.tn-tutorial { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 0 0 24px; padding: 18px 20px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface-2); }
+.tn-tutorial-info { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.tn-tutorial-icon { display: grid; place-items: center; flex: 0 0 44px; height: 44px; border-radius: 10px; background: var(--color-surface); color: var(--color-primary-text); }
+.tn-tutorial h3 { margin: 0; color: var(--color-fg); font-size: var(--ui-text-card, 18px); line-height: 1.4; }
+.tn-tutorial p { margin: 3px 0 0; color: var(--color-fg-muted); font-size: var(--ui-text-help, 14px); line-height: 1.5; }
+.tn-tutorial > button { flex: 0 0 auto; min-height: 44px; padding: 9px 16px; border: 1px solid var(--color-primary-text); border-radius: 9px; background: var(--color-primary); color: var(--color-primary-fg); font: inherit; font-size: var(--ui-text-label, 14px); font-weight: 650; cursor: pointer; }
+.tn-tutorial > button:focus-visible, .tn-tutorial-dialog-head button:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
+.tn-tutorial-pending { color: var(--color-fg-muted); font-size: var(--ui-text-help, 14px); }
+.tn-tutorial-backdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgb(5 12 22 / .78); }
+.tn-tutorial-dialog { width: min(100%, 960px); padding: 14px; border-radius: 16px; background: var(--color-surface); box-shadow: 0 30px 80px rgb(0 0 0 / .35); }
+.tn-tutorial-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 4px 4px 12px; }
+.tn-tutorial-dialog-head h2 { margin: 0; color: var(--color-fg); font-size: var(--ui-text-section, 22px); }
+.tn-tutorial-dialog-head button { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--color-fg); cursor: pointer; }
+.tn-tutorial-dialog iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; background: #000; }
+@media (max-width: 600px) { .tn-tutorial { align-items: flex-start; flex-direction: column; } .tn-tutorial > button { width: 100%; } }

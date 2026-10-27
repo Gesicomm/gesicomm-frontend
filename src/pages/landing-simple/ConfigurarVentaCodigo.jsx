@@ -44,6 +44,7 @@ import { armarPromptVista } from './promptsCodigo';
 import { armarPromptSeccionInicio } from './promptsSeccionInicio';
 import { armarPromptFichaProducto, bloquesFichaFaltantes, faltantesFicha } from './promptsFichaProducto';
 import { analizarVideo } from './templates/video';
+import useTutorialesSistema from '../../hooks/useTutorialesSistema';
 
 // El MISMO editor de ofertas de la ficha de producto (precios, componentes,
 // margen, imagen): acá se abre en un panel lateral para crear o editar sin
@@ -755,6 +756,7 @@ export default function ConfigurarVentaCodigo({
   borradorGuardadoAt = null,
   onDescartarBorrador = null,
 }) {
+  const videosTutoriales = useTutorialesSistema();
   const ventaInicial = inicial?.venta || {};
   const limiteProductosManual = Number(landing?.limites?.items_manual) || MAX_PRODUCTOS_MANUAL;
   const [subidasPendientes, setSubidasPendientes] = useState(0);
@@ -2502,6 +2504,7 @@ export default function ConfigurarVentaCodigo({
   );
 
   const propsVistaPrevia = {
+    videosTutoriales,
     typography: landing?.typography?.resolved || tienda?.typography,
     modo: modoPreview,
     onModo: setModoPreview,
@@ -4052,13 +4055,6 @@ const TUTORIALES_PREVIEW = {
   producto: 'Vista producto',
   checkout: 'Checkout',
 };
-// Agregar aquí los enlaces de YouTube cuando estén listos los tutoriales.
-const VIDEOS_TUTORIALES_PREVIEW = {
-  inicio: '',
-  categoria: '',
-  producto: '',
-  checkout: '',
-};
 
 /**
  * Tamaño de un elemento, al vuelo (para escalar la vista de escritorio).
@@ -4116,6 +4112,7 @@ function VistaPrevia({
   // Solo la landing, sin la cabecera (paneles ocultos): el dispositivo se
   // elige desde la barra superior y se navega con los links de la página.
   soloLienzo = false, compacta = false,
+  videosTutoriales = {},
 }) {
   const productosFicha = productos.filter(p => p.tipo === 'producto' || p.tipo === 'combo');
   const vistaSeleccionada = vista === 'catalogo' ? 'categoria' : vista;
@@ -4127,7 +4124,8 @@ function VistaPrevia({
     ? Math.min(1, tam.w / anchoLienzo, compacta ? tam.h / ALTO_ESCRITORIO : 1)
     : 1;
   const tituloTutorial = modo === 'legales' ? 'Páginas legales' : TUTORIALES_PREVIEW[vistaSeleccionada] || 'esta página';
-  const videoTutorial = analizarVideo(modo === 'legales' ? '' : VIDEOS_TUTORIALES_PREVIEW[vistaSeleccionada]);
+  const claveTutorial = modo === 'legales' ? 'ecommerce.legales' : `ecommerce.${vistaSeleccionada}`;
+  const videoTutorial = analizarVideo(videosTutoriales[claveTutorial]);
 
   useEffect(() => { setTutorialAbierto(false); }, [modo, vistaSeleccionada]);
   useEffect(() => {
