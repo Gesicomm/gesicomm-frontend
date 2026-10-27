@@ -293,9 +293,11 @@ export default function Login() {
         email: formData.email,
         password: formData.password,
       });
-      const rutaDestino = ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
-        ? '/mis-pedidos'
-        : '/seleccionar-modulo';
+      const rutaDestino = res.usuario?.rol === 'administrador'
+        ? '/dashboard'
+        : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
+          ? '/mis-pedidos'
+          : '/seleccionar-modulo';
       trackearEventoPersonalizado('Login', generarEventId());
       navigate(rutaDestino);
     } catch (err) {
@@ -385,11 +387,13 @@ export default function Login() {
       }
       setSuccess(res.message);
       setTimeout(() => {
-        const rutaDestino = tokenSuscripcion || res.suscripcion_vinculada
-          ? '/onboarding'
-          : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
-            ? '/mis-pedidos'
-            : '/seleccionar-modulo';
+        const rutaDestino = res.usuario?.rol === 'administrador'
+          ? '/dashboard'
+          : tokenSuscripcion || res.suscripcion_vinculada
+            ? '/onboarding'
+            : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
+              ? '/mis-pedidos'
+              : '/seleccionar-modulo';
         navigate(rutaDestino);
       }, 1000);
     } catch (err) {

@@ -217,6 +217,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/admin/tracking-pagos', label: 'Tracking de pagos', icon: <CreditCard />, badge: alertasPagos > 0 ? alertasPagos : null })}
             {renderLink({ path: '/admin/eliminacion-datos', label: 'Eliminaci�n de datos', icon: <ShieldAlert /> })}
             {renderLink({ path: '/admin/solicitudes-web', label: 'Solicitudes de la web', icon: <Users /> })}
+            {renderLink({ path: '/admin/codigos-prueba', label: 'Códigos de acceso', icon: <KeyRound /> })}
           </ul>
 
           {/* Operación: la infraestructura logística de la plataforma.

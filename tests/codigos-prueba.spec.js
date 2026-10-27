@@ -1,6 +1,21 @@
 import { test, expect } from '@playwright/test';
 const origin = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5175';
 
+test('la cuenta administradora entra directamente al panel admin', async ({ page }) => {
+  await page.route('**/api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/auth/login')) return route.fulfill({ json: { usuario: { id: 31, nombre: 'Admin', rol: 'administrador' } } });
+    if (path.endsWith('/auth/me')) return route.fulfill({ json: { id: 31, nombre: 'Admin', rol: 'administrador' } });
+    return route.fulfill({ json: {} });
+  });
+  await page.goto(origin + '/login');
+  await page.getByLabel('Correo electrónico', { exact: true }).fill('admin@gesicom.com');
+  await page.getByLabel('Contraseña', { exact: true }).fill('ClavePrueba123');
+  await page.getByRole('button', { name: 'Entrar al panel' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('link', { name: 'Códigos de acceso' })).toBeVisible();
+});
+
 for (const width of [375, 1280]) test(`Admin genera duración y usuario ingresa código al registrarse a ${width}px`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width, height: 900 });
   const errores = [];
@@ -33,8 +48,10 @@ for (const width of [375, 1280]) test(`Admin genera duración y usuario ingresa 
     }
     return route.fulfill({ json: data });
   });
-  await page.goto(origin + '/admin/solicitudes-web');
-  await page.getByRole('button', { name: 'Códigos de prueba gratuita', exact: true }).click();
+  await page.goto(origin + '/');
+  await expect(page.getByRole('link', { name: 'Activar mi código' })).toHaveAttribute('href', '/registro');
+  await page.goto(origin + '/admin/codigos-prueba');
+  await expect(page.getByRole('heading', { name: 'Códigos de acceso' })).toBeVisible();
   for (const dias of [14, 20]) {
     await page.getByLabel('Plan de la prueba', { exact: true }).selectOption('3');
     await page.getByLabel('Duración en días', { exact: true }).fill(String(dias));

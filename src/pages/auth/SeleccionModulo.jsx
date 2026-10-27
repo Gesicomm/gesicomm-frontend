@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Megaphone, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Megaphone, ArrowRight, ShieldCheck } from 'lucide-react';
 import { verificarSesion } from '../../utils/auth';
 import { MARCA_PERSONAL_URL } from '../../lib/marcaPersonal';
 
@@ -33,6 +33,16 @@ export default function SeleccionModulo() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 w-full max-w-4xl">
+        {usuario?.rol === 'administrador' && <button
+          type="button"
+          onClick={() => navigate('/dashboard')}
+          className="flex-1 bg-canvas border border-border rounded-xl p-8 cursor-pointer transition-all hover:border-primary hover:shadow-lg group flex flex-col items-center text-center"
+        >
+          <span className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary-text group-hover:scale-110 transition-transform"><ShieldCheck size={32} /></span>
+          <span className="text-xl font-bold text-fg mb-3">Administración</span>
+          <span className="text-fg-muted mb-6 text-base">Gestioná Gesicom, las solicitudes y los códigos de acceso.</span>
+          <span className="btn-secondary w-full group-hover:bg-primary group-hover:text-primary-fg transition-colors">Entrar al panel <ArrowRight size={16} className="ml-2 inline" /></span>
+        </button>}
         
         {/* Módulo E-commerce */}
         <div 
