@@ -28,8 +28,6 @@ import { comboAdminService } from '../../services/comboAdminService';
 import { rahaService } from '../../services/rahaService';
 import { speedboxService } from '../../services/speedboxService';
 import { estadosConfiguracion } from './estadoConfiguracion';
-import useTutorialesSistema from '../../hooks/useTutorialesSistema';
-import TutorialTiendaLateral from './TutorialTiendaLateral';
 import '../vitrina/vitrina.css';
 import '../landing/landing.css';
 import './tienda.css';
@@ -192,7 +190,6 @@ function GrupoConfiguracion({ children }) {
 }
 
 export default function ConfigurarTienda() {
-  const videosTutoriales = useTutorialesSistema();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabInicial = searchParams.get('tab');
@@ -782,9 +779,7 @@ export default function ConfigurarTienda() {
             {!estadosSecciones[tabActual.id].completo && <p className="tn-section-next-step">{estadosSecciones[tabActual.id].detalle}</p>}
             <p>{tabActual.desc}</p>
           </div>
-          <div className="tn-content-with-tutorial">
-            <TutorialTiendaLateral nombre={tabActual.label} url={videosTutoriales[`mi-negocio.${tabActual.id}`]} urlGeneral={videosTutoriales['modulo.negocio']} />
-            {tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica onEstadoChange={cargarEstados} tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
+          {tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica onEstadoChange={cargarEstados} tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
             <div className="tn-body">
 
               {ok && mensajeExito && (
@@ -1745,8 +1740,7 @@ export default function ConfigurarTienda() {
                 </button>
               </div>
             </div>}
-            </form>}
-          </div>
+          </form>}
         </div>
       </div>
     </div>
