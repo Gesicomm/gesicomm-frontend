@@ -1261,7 +1261,7 @@
   .tn-embed .combo-cost-tab { min-height: 44px; }
   .tn-embed .combo-cost-field { min-width: 0; }
   .tn-embed .combo-pagopar-methods { grid-template-columns: minmax(0, 1fr); }
-  .tn-shell > .tn-panel > .raha { padding: 0 1rem 1rem; }
+  .tn-shell > .tn-panel > .tn-content-with-tutorial > .raha { padding: 0 1rem 1rem; }
 }
 
 /* En móvil, la configuración se recorre como bloques de ajustes: navegación
@@ -1339,7 +1339,7 @@
   .tn-footer-actions { gap: 0.4rem; justify-content: stretch; }
   .tn-footer-actions .land-btn-primary { flex: 1; min-height: 46px; border-radius: 12px; font-size: var(--ui-text-help, 0.875rem); box-shadow: 0 4px 12px color-mix(in srgb, var(--vit-accent-fg) 16%, transparent); }
   .tn-saved { font-size: var(--ui-text-help, 0.875rem); }
-  .tn-shell > .tn-panel > .raha { padding: 0.25rem 1rem 1rem; background: var(--vit-surface); border: 1px solid var(--vit-border); border-radius: 16px; }
+  .tn-shell > .tn-panel > .tn-content-with-tutorial > .raha { padding: 0.25rem 1rem 1rem; background: var(--vit-surface); border: 1px solid var(--vit-border); border-radius: 16px; }
   .tn-embed .combo-section { background: var(--vit-surface); border-radius: 16px; }
   .tn-embed-metodos-pago .tn-payment-table { display: none; }
   .tn-embed-metodos-pago .tn-payment-cards { display: grid; gap: 0.75rem; padding: 1rem; }

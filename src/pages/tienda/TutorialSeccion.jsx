@@ -3,7 +3,7 @@ import { Film, X } from 'lucide-react';
 import { analizarVideo } from '../landing-simple/templates/video';
 import './tutorialSeccion.css';
 
-export default function TutorialSeccion({ nombre, url, destacado = false }) {
+export default function TutorialSeccion({ nombre, url }) {
   const [abierto, setAbierto] = useState(false);
   const video = analizarVideo(url);
 
@@ -16,7 +16,7 @@ export default function TutorialSeccion({ nombre, url, destacado = false }) {
   }, [abierto]);
 
   return <>
-    <section className={`tn-tutorial${destacado ? ' is-featured' : ''}`} aria-label={`Tutorial de ${nombre}`}>
+    <section className="tn-tutorial" aria-label={`Tutorial de ${nombre}`}>
       <div className="tn-tutorial-info"><span className="tn-tutorial-icon"><Film size={22} aria-hidden="true" /></span><div><h3>Tutorial de {nombre}</h3><p>{video?.incrustable ? 'Mirá el video para conocer esta sección.' : 'Acá vas a encontrar el video explicativo de esta sección.'}</p></div></div>
       {video?.incrustable ? <button className="tn-tutorial-media is-ready" type="button" onClick={() => setAbierto(true)}>
         {video.miniatura && <img src={video.miniatura} alt="" />}

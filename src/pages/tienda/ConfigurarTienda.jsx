@@ -29,7 +29,7 @@ import { rahaService } from '../../services/rahaService';
 import { speedboxService } from '../../services/speedboxService';
 import { estadosConfiguracion } from './estadoConfiguracion';
 import useTutorialesSistema from '../../hooks/useTutorialesSistema';
-import TutorialSeccion from './TutorialSeccion';
+import TutorialTiendaLateral from './TutorialTiendaLateral';
 import '../vitrina/vitrina.css';
 import '../landing/landing.css';
 import './tienda.css';
@@ -713,8 +713,6 @@ export default function ConfigurarTienda() {
         </div>
       </header>
 
-      <TutorialSeccion nombre="Mi negocio" url={videosTutoriales['modulo.negocio']} destacado />
-
       <section className="tn-store-card" aria-label="Tu negocio en línea">
         <div className="tn-store-avatar">
           {tienda?.logo_imagen
@@ -784,9 +782,9 @@ export default function ConfigurarTienda() {
             {!estadosSecciones[tabActual.id].completo && <p className="tn-section-next-step">{estadosSecciones[tabActual.id].detalle}</p>}
             <p>{tabActual.desc}</p>
           </div>
-          <TutorialSeccion nombre={tabActual.label} url={videosTutoriales[`mi-negocio.${tabActual.id}`]} />
-
-          {tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica onEstadoChange={cargarEstados} tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
+          <div className="tn-content-with-tutorial">
+            <TutorialTiendaLateral nombre={tabActual.label} url={videosTutoriales[`mi-negocio.${tabActual.id}`]} urlGeneral={videosTutoriales['modulo.negocio']} />
+            {tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica onEstadoChange={cargarEstados} tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
             <div className="tn-body">
 
               {ok && mensajeExito && (
@@ -1747,7 +1745,8 @@ export default function ConfigurarTienda() {
                 </button>
               </div>
             </div>}
-          </form>}
+            </form>}
+          </div>
         </div>
       </div>
     </div>
