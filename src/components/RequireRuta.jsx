@@ -5,9 +5,10 @@ import { PantallaErrorConexion, PantallaVerificandoSesion, RedirigirALogin } fro
 export default function RequireRuta({ ruta, children }) {
   const sesion = useSesion();
   const acceso = useRutasPlan(sesion.usuario);
+  const reintentar = () => { sesion.reintentar(); acceso.reintentar(); };
   if (sesion.estado === 'sin-sesion') return <RedirigirALogin />;
-  if (sesion.estado === 'error' || acceso.estado === 'error') return <PantallaErrorConexion onReintentar={acceso.reintentar} />;
-  if (sesion.estado !== 'autenticado' || acceso.estado === 'cargando') return <PantallaVerificandoSesion onReintentar={acceso.reintentar} />;
+  if (sesion.estado === 'error' || acceso.estado === 'error') return <PantallaErrorConexion onReintentar={reintentar} />;
+  if (sesion.estado !== 'autenticado' || acceso.estado === 'cargando') return <PantallaVerificandoSesion onReintentar={reintentar} />;
   if (!acceso.rutas[ruta]) return <Navigate to="/seleccionar-modulo" replace />;
   return children;
 }

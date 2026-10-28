@@ -6,10 +6,11 @@ import Planes from '../planes/Planes';
 import RequireRuta from '../../components/RequireRuta';
 import { planesService } from '../../services/planesService';
 const user = vi.hoisted(() => ({ id: 700, nombre: 'Prueba', rol: 'usuario' }));
-vi.mock('../../hooks/useSesion', () => ({ default: () => ({ estado: 'autenticado', usuario: user }) }));
+const sesion = vi.hoisted(() => ({estado:'autenticado',reintentar:vi.fn()}));
+vi.mock('../../hooks/useSesion', () => ({ default: () => ({ ...sesion, usuario: user }) }));
 vi.mock('../../services/planesService', () => ({ planesService: { miEstado: vi.fn(), listar: vi.fn(), checkout: vi.fn(), crearCheckoutIntent: vi.fn() } }));
 vi.mock('../../utils/auth', () => ({ verificarSesionDetallada: vi.fn(async () => ({ estado: 'autenticado', usuario: user })) }));
-beforeEach(() => { vi.clearAllMocks(); user.rol = 'usuario'; sessionStorage.removeItem('moduloActivo'); });
+beforeEach(() => { vi.clearAllMocks(); user.rol = 'usuario'; sesion.estado='autenticado'; sessionStorage.removeItem('moduloActivo'); });
 function DestinoPlanes() { const location = useLocation(); return <p>Planes para {location.state?.rutaRequerida}</p>; }
 afterEach(() => vi.useRealTimers());
 it.each([
@@ -100,4 +101,28 @@ it('si no se puede verificar el plan actual no ofrece un cambio que pierda acces
  render(<MemoryRouter initialEntries={[{pathname:'/planes',state:{rutaRequerida:'personal'}}]}><Routes><Route path="/planes" element={<Planes />} /></Routes></MemoryRouter>);
  expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos verificar tu plan actual');
  expect(screen.queryByRole('button',{name:'Continuar con Solo personal'})).not.toBeInTheDocument();
+});
+
+
+it('conserva formularios sin guardar durante la revalidación al volver a la pestaña', async () => {
+ const cuenta = {rutas:{fisico:true,personal:false},suscripcion:{periodo_fin:null}};
+ let responder;
+ planesService.miEstado.mockResolvedValueOnce(cuenta).mockImplementationOnce(()=>new Promise(resolve=>{responder=resolve;}));
+ render(<MemoryRouter><RequireRuta ruta="fisico"><input aria-label="Cambio sin guardar" defaultValue="Original" /></RequireRuta></MemoryRouter>);
+ const campo = await screen.findByLabelText('Cambio sin guardar');
+ fireEvent.change(campo,{target:{value:'Edición pendiente'}});
+ fireEvent(window,new Event('focus'));
+ expect(screen.getByLabelText('Cambio sin guardar')).toBe(campo);
+ expect(campo).toHaveValue('Edición pendiente');
+ await act(async()=>{responder(cuenta);});
+ expect(screen.getByLabelText('Cambio sin guardar')).toBe(campo);
+ expect(campo).toHaveValue('Edición pendiente');
+});
+
+it('reintentar tras un error de sesión vuelve a verificar la identidad', async () => {
+ sesion.estado='error';
+ planesService.miEstado.mockResolvedValue({rutas:{fisico:true,personal:false}});
+ render(<MemoryRouter><RequireRuta ruta="fisico"><p>Privado</p></RequireRuta></MemoryRouter>);
+ fireEvent.click(screen.getByRole('button',{name:'Reintentar'}));
+ expect(sesion.reintentar).toHaveBeenCalledTimes(1);
 });
