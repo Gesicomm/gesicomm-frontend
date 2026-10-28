@@ -61,6 +61,10 @@ async function peticion(ruta, opciones = {}, { reintentado = false } = {}) {
   }
 
   const data = await leerCuerpo(res);
+  if (res.status === 403 && data?.codigo === 'RUTA_NO_INCLUIDA') {
+    invalidarCacheSesion();
+    window.dispatchEvent(new Event('plan-acceso-actualizado'));
+  }
 
   // Login, cambio de tienda, pago...: lo compartido de /auth/me y mi-estado
   // deja de valer (ver utils/sesion.js).

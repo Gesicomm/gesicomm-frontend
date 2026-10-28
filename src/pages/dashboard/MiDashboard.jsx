@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
@@ -1682,7 +1683,7 @@ export default function MiDashboard() {
     <div className="md-page" data-mobile-view={vistaMovil}>
       <header className="md-header">
         <div>
-          <span className="md-eyebrow">Mi Dashboard</span>
+          <div className="gc-tutorial-title-row"><span className="md-eyebrow">Mi Dashboard</span><TutorialHeaderAction /></div>
           <h1 className="md-h1"><span className="md-title-desktop">Cómo le está yendo a tu tienda</span><span className="md-title-mobile">Tu negocio, de un vistazo</span></h1>
           <p className="md-mobile-intro">Ventas, resultados y pedidos en un solo lugar.</p>
         </div>

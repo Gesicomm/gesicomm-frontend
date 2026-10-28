@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -629,6 +630,7 @@ export default function CostosGastos() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <TutorialHeaderAction />
           <div className="relative">
             <button
               type="button"

@@ -1,84 +1,46 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Megaphone, ArrowRight, ShieldCheck } from 'lucide-react';
-import { verificarSesion } from '../../utils/auth';
+import { useNavigate, Link } from 'react-router-dom';
+import { ShoppingCart, Megaphone, ArrowRight, ShieldCheck, LockKeyhole } from 'lucide-react';
+import useSesion from '../../hooks/useSesion';
+import useRutasPlan from '../../hooks/useRutasPlan';
+import { PantallaErrorConexion, PantallaVerificandoSesion } from '../../components/EstadoSesion';
 import { MARCA_PERSONAL_URL } from '../../lib/marcaPersonal';
 
 export default function SeleccionModulo() {
   const navigate = useNavigate();
-  const [usuario, setUsuario] = useState(null);
-
-  useEffect(() => {
-    verificarSesion().then((sesion) => {
-      setUsuario(sesion);
-    });
-  }, []);
-
-  const seleccionarModulo = (modulo) => {
-    // Guardamos la preferencia en la sesión para que el Sidebar sepa qué menú renderizar
-    sessionStorage.setItem('moduloActivo', modulo);
-    
-    if (modulo === 'ecommerce') {
-      navigate('/mi-dashboard');
-    } else {
-      window.location.assign(MARCA_PERSONAL_URL);
+  const sesion = useSesion();
+  const acceso = useRutasPlan(sesion.usuario);
+  const usuario = sesion.usuario;
+  if (sesion.estado === 'verificando' || acceso.estado === 'cargando') return <PantallaVerificandoSesion onReintentar={acceso.reintentar} />;
+  if (sesion.estado === 'error' || acceso.estado === 'error') return <PantallaErrorConexion onReintentar={acceso.reintentar} />;
+  const seleccionar = ruta => {
+    if (!acceso.rutas[ruta]) {
+      navigate('/planes', { state: { rutaRequerida: ruta } });
+      return;
     }
+    sessionStorage.setItem('moduloActivo', ruta === 'fisico' ? 'ecommerce' : 'marca_personal');
+    if (ruta === 'fisico') navigate('/mi-dashboard');
+    else window.location.assign(MARCA_PERSONAL_URL);
   };
-
-  return (
-    <div className="gc-panel flex min-h-screen flex-col items-center justify-center bg-bg-muted p-4">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-fg mb-2">¡Hola, {usuario?.nombre || 'Usuario'}!</h1>
-        <p className="text-fg-muted">Selecciona el módulo con el que deseas trabajar hoy</p>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-6 w-full max-w-4xl">
-        {usuario?.rol === 'administrador' && <button
-          type="button"
-          onClick={() => navigate('/dashboard')}
-          className="flex-1 bg-canvas border border-border rounded-xl p-8 cursor-pointer transition-all hover:border-primary hover:shadow-lg group flex flex-col items-center text-center"
-        >
-          <span className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary-text group-hover:scale-110 transition-transform"><ShieldCheck size={32} /></span>
-          <span className="text-xl font-bold text-fg mb-3">Administración</span>
-          <span className="text-fg-muted mb-6 text-base">Gestioná Gesicom, las solicitudes y los códigos de acceso.</span>
-          <span className="btn-secondary w-full group-hover:bg-primary group-hover:text-primary-fg transition-colors">Entrar al panel <ArrowRight size={16} className="ml-2 inline" /></span>
-        </button>}
-        
-        {/* Módulo E-commerce */}
-        <div 
-          onClick={() => seleccionarModulo('ecommerce')}
-          className="flex-1 bg-canvas border border-border rounded-xl p-8 cursor-pointer transition-all hover:border-primary hover:shadow-lg group flex flex-col items-center text-center"
-        >
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary-text group-hover:scale-110 transition-transform">
-            <ShoppingCart size={32} />
-          </div>
-          <h2 className="text-xl font-bold text-fg mb-3">Gestión de E-commerce</h2>
-          <p className="text-fg-muted mb-6 text-sm">
-            Administra tu tienda, productos, pedidos, logística, finanzas y reportes de anuncios.
-          </p>
-          <button className="btn-secondary w-full group-hover:bg-primary group-hover:text-primary-fg transition-colors">
-            Entrar a E-commerce <ArrowRight size={16} className="ml-2 inline" />
+  return <main className="gc-panel flex min-h-screen flex-col items-center justify-center bg-canvas p-6 text-fg">
+    <header className="mb-8 text-center"><h1 className="text-3xl font-bold mb-3">¡Hola, {usuario?.nombre || 'Usuario'}!</h1>
+      <p className="text-fg-muted">Elegí el espacio incluido en tu plan con el que querés trabajar.</p></header>
+    <div className="flex flex-col md:flex-row gap-6 w-full max-w-5xl">
+      {usuario?.rol === 'administrador' && <button type="button" onClick={() => navigate('/dashboard')} className="flex-1 rounded-xl border border-border bg-surface p-8 text-left">
+        <ShieldCheck size={32} aria-hidden="true" /><h2 className="my-4">Administración</h2><p>Gestioná Gesicom, las solicitudes y los códigos de acceso.</p><span>Entrar al panel <ArrowRight size={16} className="inline" /></span>
+      </button>}
+      {[{ruta:'fisico',nombre:'Gestión de E-commerce',Icon:ShoppingCart,texto:'Administrá tu tienda, productos, pedidos, logística, finanzas y anuncios.'},
+        {ruta:'personal',nombre:'Marca Personal',Icon:Megaphone,texto:'Gestioná contenido, publicaciones, CRM y automatización de tu marca.'}].map(({ruta,nombre,Icon,texto}) => {
+        const permitido = acceso.rutas[ruta];
+        return <section className="flex-1 rounded-xl border border-border bg-surface p-8" key={ruta}>
+          <Icon size={32} className={permitido ? 'text-primary-text' : 'text-fg-muted'} aria-hidden="true" />
+          <h2 className="my-4">{nombre}</h2>{!permitido && <p className="text-sm text-fg-muted mb-3">No incluido en tu plan actual</p>}<p className="mb-6 text-fg-muted">{texto}</p>
+          <button type="button" onClick={() => seleccionar(ruta)}
+            className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border px-4 py-3 text-base font-semibold ${permitido ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface-2 text-fg hover:border-primary hover:text-primary-text'}`}>
+            {permitido ? <>Entrar a {nombre} <ArrowRight size={16} aria-hidden="true" /></> : <><LockKeyhole size={17} aria-hidden="true" />Ver planes para {nombre}</>}
           </button>
-        </div>
-
-        {/* Módulo Marca Personal (T2E OS) */}
-        <div 
-          onClick={() => seleccionarModulo('marca_personal')}
-          className="flex-1 bg-bg border border-border rounded-xl p-8 cursor-pointer transition-all hover:border-[#10b981] hover:shadow-lg group flex flex-col items-center text-center"
-        >
-          <div className="w-16 h-16 bg-[#10b981]/10 rounded-full flex items-center justify-center mb-6 text-[#10b981] group-hover:scale-110 transition-transform">
-            <Megaphone size={32} />
-          </div>
-          <h2 className="text-xl font-bold text-fg mb-3">Marca Personal</h2>
-          <p className="text-fg-muted mb-6 text-sm">
-            Calendario de contenido, publicaciones, CRM, ManyChat y automatización.
-          </p>
-          <button className="btn-secondary w-full group-hover:bg-[#10b981] group-hover:text-white transition-colors">
-            Entrar a Marca Personal <ArrowRight size={16} className="ml-2 inline" />
-          </button>
-        </div>
-
-      </div>
+        </section>;
+      })}
     </div>
-  );
+    {(!acceso.rutas.fisico || !acceso.rutas.personal) && <p className="mt-6 text-center text-fg-muted">Podés consultar las opciones para ampliar tu acceso. <Link to="/planes" className="text-primary-text underline">Ver planes</Link></p>}
+  </main>;
 }

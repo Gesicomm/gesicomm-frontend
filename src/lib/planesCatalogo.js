@@ -14,6 +14,7 @@ export const PLANES_DEFAULT = [
     id: 'founders',
     codigo: 'founders',
     equivale: 'pago',
+    acceso_rutas: 'ambas',
     moneda: 'USD',
     nombre: 'Miembros Fundadores',
     precio: 47,
@@ -34,6 +35,7 @@ export const PLANES_DEFAULT = [
     id: 'growth',
     codigo: 'growth',
     equivale: 'pago',
+    acceso_rutas: 'ambas',
     moneda: 'USD',
     nombre: 'Growth',
     precio: 97,
@@ -53,6 +55,7 @@ export const PLANES_DEFAULT = [
     id: 'scale',
     codigo: 'scale',
     equivale: 'pago',
+    acceso_rutas: 'ambas',
     moneda: 'USD',
     nombre: 'Scale',
     precio: 197,
@@ -88,7 +91,18 @@ function normalizarPlanGuardado(plan) {
 /** Campos que el editor del admin puede tocar, en el orden en que se muestran. */
 export const CAMPOS_EDITABLES = [
   { campo: 'nombre', label: 'Nombre del plan', tipo: 'texto' },
-  { campo: 'precio', label: 'Precio mensual', tipo: 'numero' },
+  { campo: 'acceso_rutas', label: 'Acceso incluido', tipo: 'select', opciones: [
+    { value: 'elegir', label: 'Una ruta: el cliente elige al contratar' },
+    { value: 'fisico', label: 'Solo gestión de E-commerce' },
+    { value: 'personal', label: 'Solo marca personal' },
+    { value: 'ambas', label: 'E-commerce y marca personal' },
+  ] },
+  { campo: 'precio', label: 'Precio del plan', tipo: 'numero' },
+  { campo: 'periodicidad', label: 'Duración del plan', tipo: 'select', opciones: [
+    { value: 'mensual', label: 'Mensual' },
+    { value: 'anual', label: 'Anual' },
+    { value: 'unico', label: 'Pago único' },
+  ] },
   { campo: 'moneda', label: 'Moneda', tipo: 'select', opciones: [
     { value: 'PYG', label: 'Guaraníes (PYG)' },
     { value: 'USD', label: 'Dólares (USD)' },

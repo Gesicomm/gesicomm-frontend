@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, FilterX, Building2, ArrowLeft, ChevronDown, Truck, Package } from 'lucide-react';
@@ -255,7 +256,8 @@ export default function DepositosPage() {
             Definí desde dónde sale tu mercadería y quién se encarga de entregarla.
           </p>
         </div>
-        <nav aria-label="Acciones de depósitos" className="dep-primary-actions">
+        <nav aria-label="Acciones de depósitos" className="dep-primary-actions gc-tutorial-heading-actions">
+          <TutorialHeaderAction />
           <button
             type="button"
             onClick={handleOpenNuevo}

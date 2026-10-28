@@ -128,3 +128,20 @@
   @media(max-width: 530px) { .home-lead-dialog { width: calc(100% - 20px); max-height: calc(100dvh - 20px); border-radius: 18px; } .home-lead-toolbar { padding: 12px 18px; } .home-lead-dialog .gc-features { display: none; } }
   @media(prefers-reduced-motion: reduce) { .home-next-card { transition: none; } .home-next-card:hover { transform: none; } }
 }
+
+@scope (.gl-landing) {
+  .home-public-plans .pricing { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: stretch; }
+  .home-public-plans .price-card { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+  .home-public-plans .price-card:nth-child(2) { border-color: color-mix(in srgb, var(--gc-white) 13%, transparent); }
+  .home-public-plans .price-card.is-featured { border-color: var(--gc-coral); }
+  .home-public-plans h3 { margin: 12px 0; font-size: 22px; letter-spacing: -.02em; }
+  .home-public-plans .price { margin-top: 12px; }
+  .home-public-plans .plan-list { flex: 1; font-size: 16px; line-height: 1.6; }
+  .home-public-plans .plan-list li { margin: 10px 0; }
+  .home-public-plans .btn { min-height: 44px; font-size: 14px; margin-top: auto; }
+  .home-plan-badge { align-self: flex-start; }
+  .home-plan-period, .home-payment-note { font-size: 14px; }
+  .home-payment-note, .home-plans-status { text-align: center; margin-top: 24px; }
+  .home-public-plans .price-card > p { margin: 10px 0; }
+  .home-public-plans button:disabled { cursor: default; }
+}

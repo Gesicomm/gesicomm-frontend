@@ -43,6 +43,11 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    if (error.response?.status === 403 && error.response?.data?.codigo === 'RUTA_NO_INCLUIDA') {
+      invalidarCacheSesion();
+      window.dispatchEvent(new Event('plan-acceso-actualizado'));
+    }
+
     // Sin config no hay nada que reintentar (error de red antes de salir,
     // request cancelada). Antes esto reventaba al leer originalRequest.url.
     if (!originalRequest?.url) return Promise.reject(error);

@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, BadgeCheck, BriefcaseBusiness, Check, CheckCircle2, FileText, GraduationCap, Globe2, Loader2, Repeat2, X } from 'lucide-react';
 import { partnerService } from '../../services/partnerService';
@@ -69,7 +70,7 @@ export default function PartnerCertificado() {
   if (cargando) return <div className="pc-loading" role="status"><Loader2 size={22} className="pc-spin" />Cargando programa…</div>;
   if (!panel) return <div className="pc-page"><h1>Partner Certificado Gesicom</h1><p role="alert">{error}</p><button className="pc-btn" onClick={cargar}>Reintentar</button></div>;
   return <div className="pc-page"><div className="pc-shell">
-    <header className="pc-nav"><span><BadgeCheck size={20} />Programa Partner Certificado</span><button className="pc-text-btn" onClick={() => setModal(true)}><FileText size={15} />Términos y condiciones</button></header>
+    <header className="pc-nav"><span><BadgeCheck size={20} />Programa Partner Certificado</span><div className="gc-tutorial-heading-actions"><TutorialHeaderAction /><button className="pc-text-btn" onClick={() => setModal(true)}><FileText size={15} />Términos y condiciones</button></div></header>
     <section className="pc-intro">
       <img src="/brand/gesicomm-isotipo.svg" width="64" height="64" alt="Gesicom" className="pc-brand" />
       <span className="pc-eyebrow">Tecnología Gesicom. Tu propio negocio.</span>

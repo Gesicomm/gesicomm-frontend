@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BadgeDollarSign, Wallet, Copy, Check, ArrowUpRight, MousePointer2, Users, UserCheck, CalendarDays, FileText, X, Save, RefreshCw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -110,7 +111,7 @@ export default function MiAfiliado() {
   const actualizar = (key, value) => { setForm(prev => ({ ...prev, [key]: value })); setMensaje(''); };
   return (
     <div className="af-page"><div className="af-shell">
-      <header className="af-heading"><span className="af-heading-icon"><BadgeDollarSign size={24} /></span><div><span className="af-eyebrow">Tu red de recomendaciones</span><h1>Quiero ser afiliado</h1><p>Tu enlace, tus referidos y tus comisiones en un solo lugar.</p></div><button className="af-btn af-terms-btn" onClick={() => setModal(true)}><FileText size={16} />Términos y condiciones</button></header>
+      <header className="af-heading"><span className="af-heading-icon"><BadgeDollarSign size={24} /></span><div><span className="af-eyebrow">Tu red de recomendaciones</span><h1>Quiero ser afiliado</h1><p>Tu enlace, tus referidos y tus comisiones en un solo lugar.</p></div><div className="gc-tutorial-heading-actions af-tutorial-actions"><TutorialHeaderAction /><button className="af-btn af-terms-btn" onClick={() => setModal(true)}><FileText size={16} />Términos y condiciones</button></div></header>
       {mensaje && <p className="af-notice" role="status"><Check size={16} />{mensaje}</p>}
       {error && !modal && <p className="af-error" role="alert">{error}</p>}
       {!requiereAceptacion && <>

@@ -26,6 +26,7 @@ import { afiliadosService, guardarRefAfiliado, leerRefAfiliado } from '../../ser
 import { verificarSesionDetallada } from '../../utils/auth';
 import { formatMoneda } from '../../utils/currency';
 import './planes.css';
+import { accesoDelPlan, NOMBRES_RUTA } from '../../lib/rutasPlan';
 
 const CORREO_FACTURACION = 'contacto@gesicomm.com';
 
@@ -111,6 +112,7 @@ function normalizarPlanes(planes) {
 export default function Planes() {
   const navigate = useNavigate();
   const location = useLocation();
+  const rutaRequerida = ['fisico', 'personal'].includes(location.state?.rutaRequerida) ? location.state.rutaRequerida : null;
   const modoPreviewAdmin = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get('preview') === 'admin';
@@ -161,6 +163,7 @@ export default function Planes() {
           const estado = await planesService.miEstado().catch(() => null);
           if (!activo) return;
           setEstadoCuenta(estado);
+          if (rutaRequerida && !estado) setErrorPago(prev => prev || 'No pudimos verificar tu plan actual. Volvé a intentar para ver las opciones de acceso.');
         } else {
           setUsuario(null);
           setEstadoCuenta(null);
@@ -172,7 +175,7 @@ export default function Planes() {
 
     cargar();
     return () => { activo = false; };
-  }, [location.search, modoPreviewAdmin]);
+  }, [location.search, modoPreviewAdmin, rutaRequerida]);
 
   const yaTienePlanPago = !modoPreviewAdmin && (
     estadoCuenta?.tiene_plan_pago === true ||
@@ -209,12 +212,49 @@ export default function Planes() {
       return;
     }
     if (usuario) {
-      navigate(`/checkout/plan/${encodeURIComponent(plan.codigo)}`, { state: { plan } });
+      navigate(`/checkout/plan/${encodeURIComponent(plan.codigo)}`, { state: { plan, ruta: rutaRequerida } });
       return;
     }
     
     // Flujo para no autenticados: navegar a la página dedicada de checkout público
-    navigate(`/checkout/public/${encodeURIComponent(plan.codigo)}`, { state: { plan } });
+    navigate(`/checkout/public/${encodeURIComponent(plan.codigo)}`, { state: { plan, ruta: rutaRequerida } });
+  }
+
+  if (rutaRequerida) {
+    const rutasActuales = estadoCuenta?.rutas || {};
+    const otraRuta = rutaRequerida === 'personal' ? 'fisico' : 'personal';
+    const conservarOtraRuta = rutasActuales[otraRuta] === true;
+    const opciones = (usuario && !estadoCuenta ? [] : planesOrdenados).filter(plan => {
+      const politica = accesoDelPlan(plan);
+      return politica === 'ambas' || (!conservarOtraRuta && (politica === rutaRequerida || politica === 'elegir'));
+    });
+    return <main className="gc-panel pl-page pl-access-offer">
+      <button type="button" className="pl-volver" onClick={() => navigate('/seleccionar-modulo')}><ArrowLeft size={16} /> Volver a mis espacios</button>
+      <header className="pl-section-head">
+        <span className="pl-section-kicker">Ampliá tu acceso</span>
+        <h1>Obtener {NOMBRES_RUTA[rutaRequerida]}</h1>
+        <p>{conservarOtraRuta
+          ? `Estos planes agregan ${NOMBRES_RUTA[rutaRequerida]} y conservan tu acceso a ${NOMBRES_RUTA[otraRuta]}.`
+          : 'Estos son los planes disponibles para acceder a este espacio.'}</p>
+        <p className="pl-access-price-note">El importe corresponde al plan completo. Consultar precios no modifica tu acceso ni genera un cobro.</p>
+      </header>
+      {errorPago && <div className="pl-aviso pl-aviso-error" role="alert"><AlertCircle size={17} /><span>{errorPago}</span></div>}
+      {cargando ? <p className="pl-cargando" role="status"><Loader size={20} className="spin-icon" /> Cargando planes y precios…</p>
+        : errorPago ? null : !opciones.length ? <p role="status">Por ahora no hay planes publicados para ampliar este acceso. Consultá con Gesicom para conocer las opciones disponibles.</p>
+        : <div className="pl-grid">
+          {opciones.map(plan => <article key={plan.codigo} className={`pl-card ${plan.destacado ? 'destacado' : ''}`}>
+            {plan.etiqueta && <span className="pl-cinta">{plan.etiqueta}</span>}
+            <header className="pl-card-head"><h2>{plan.nombre}</h2></header>
+            <p className="pl-resumen">{plan.resumen}</p>
+            <p className="pl-access-included"><ShieldCheck size={17} aria-hidden="true" /> Acceso: {NOMBRES_RUTA[accesoDelPlan(plan)]}</p>
+            <div className="pl-precio"><strong>{formatPrecioPlan(plan)}</strong><span>{plan.periodicidad === 'anual' ? 'por año · pago adelantado' : plan.periodicidad === 'unico' ? 'pago único' : 'por mes'}</span></div>
+            <ul className="pl-features">{plan.features.map((feature,index) => <li key={index}><Check size={14} aria-hidden="true" /><span>{feature}</span></li>)}</ul>
+            <button type="button" className={`pl-cta ${plan.destacado ? 'primario' : ''}`} onClick={() => seleccionarPlan(plan)}>
+              {yaTienePlanPago ? `Solicitar cambio a ${plan.nombre}` : `Continuar con ${plan.nombre}`} <ArrowRight size={16} aria-hidden="true" />
+            </button>
+          </article>)}
+        </div>}
+    </main>;
   }
 
   return (

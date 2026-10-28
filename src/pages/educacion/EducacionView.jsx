@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useState, useEffect } from 'react';
 import {
   getModulosEducacion,
@@ -293,9 +294,9 @@ export default function EducacionView() {
       {/* 1. HERO HEADER & GLOBAL PROGRESS */}
       <header className="aca-header-card">
         <div className="aca-header-left">
-          <span className="aca-badge-pill">
+          <div className="gc-tutorial-title-row"><span className="aca-badge-pill">
             <GraduationCap size={16} /> Academia Gesicom
-          </span>
+          </span><TutorialHeaderAction /></div>
           <h1 className="aca-title">Ruta de Formación E-commerce</h1>
           <p className="aca-subtitle">
             Aprende paso a paso a dominar cada herramienta del ecosistema y desbloquea nuevas capacidades.

@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutGrid, PackageCheck, Plus, Printer, HandCoins, MessageCircle, Settings2 } from "lucide-react";
@@ -311,7 +312,7 @@ export function ControlCourier({ etapaFija } = {}) {
               <PackageCheck size={22} />
             </div>
             <div>
-              <h1 className="prod-title">{etapaFija === "logistica" ? "Gestión Logística" : "Gestión Comercial"}</h1>
+              <div className="gc-tutorial-title-row"><h1 className="prod-title">{etapaFija === "logistica" ? "Gestión Logística" : "Gestión Comercial"}</h1><TutorialHeaderAction /></div>
               <p className="prod-subtitle">
                 {etapaFija === "logistica" ? "Preparación, despacho y rendición" : "Confirmación y seguimiento de pedidos"}
               </p>

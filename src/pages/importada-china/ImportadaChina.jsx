@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useRef, useState } from 'react';
 import { ArrowRight, CheckCircle2, ClipboardList, ExternalLink, Globe2, Link2, Loader2, Package, Plane, ShieldCheck, Warehouse } from 'lucide-react';
 import { importadaChinaService } from '../../services/importadaChina.service';
@@ -71,7 +72,7 @@ export default function ImportadaChina() {
   return (
     <section className="china-page">
       <div className="china-shell">
-        <header className="china-topline"><span><Globe2 size={19} /> Proveete con Gesicom</span><span className="china-topline-note">Del mundo a Paraguay</span></header>
+        <header className="china-topline"><span><Globe2 size={19} /> Proveete con Gesicom</span><div className="gc-tutorial-heading-actions"><span className="china-topline-note">Del mundo a Paraguay</span><TutorialHeaderAction /></div></header>
         <section className="china-hero" aria-labelledby="china-title">
           <div className="china-heading">
             <p className="china-kicker"><span /> GESICOM | ABASTECIMIENTO INTERNACIONAL</p>

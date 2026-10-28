@@ -2,6 +2,7 @@ import { destinoColaborador, rutaPermitida } from '../utils/accesos';
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import useSesion from '../hooks/useSesion';
+import RequireRuta from './RequireRuta';
 import {
   PantallaErrorConexion,
   PantallaVerificandoSesion,
@@ -92,5 +93,5 @@ export default function RequireTienda({ children }) {
   if (acceso === 'sin-tienda') return <Navigate to="/onboarding" replace />;
   if (acceso === 'sin-tienda-activa') return <Navigate to="/seleccionar-tienda" state={{ desde: location.pathname }} replace />;
 
-  return children;
+  return <RequireRuta ruta="fisico">{children}</RequireRuta>;
 }

@@ -313,7 +313,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
           <Check size={16} />
           <span>
             <strong>Catálogo publicado desde el servidor.</strong>
-            Los planes visibles aparecen en /planes y los ocultos no se ofrecen ni pueden contratarse por checkout directo.
+            Los planes visibles aparecen en la landing y en /planes. Los ocultos no se ofrecen ni pueden contratarse por checkout directo.
           </span>
         </div>
 
@@ -353,7 +353,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
                   onChange={e => cambiarVisibilidad(i, e.target.checked)}
                 />
                 {plan.activo !== false ? <Eye size={14} /> : <EyeOff size={14} />}
-                Visible en /planes
+                Visible en landing y /planes
               </label>
 
               {CAMPOS_EDITABLES.map(({ campo, label, tipo, ayuda }) => (
@@ -367,7 +367,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
                     />
                   ) : tipo === 'select' ? (
                     <select
-                      value={plan[campo] ?? 'PYG'}
+                      value={plan[campo] ?? (campo === 'periodicidad' ? 'mensual' : campo === 'acceso_rutas' ? (String(plan.codigo).startsWith('una-ruta-') ? 'elegir' : 'ambas') : 'PYG')}
                       onChange={e => actualizar(i, campo, e.target.value)}
                     >
                       {(CAMPOS_EDITABLES.find(c => c.campo === campo)?.opciones || []).map(opcion => (

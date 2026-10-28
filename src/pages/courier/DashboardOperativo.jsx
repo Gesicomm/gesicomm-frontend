@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import { TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
@@ -23,7 +24,7 @@ export function DashboardOperativo() {
               <p className="prod-subtitle">Cómo se mueven tus pedidos: confirmación, entregas, devoluciones y clientes</p>
             </div>
           </div>
-          <Link className="do-volver-general" to="/mi-dashboard">Ver Dashboard General</Link>
+          <div className="gc-tutorial-heading-actions"><TutorialHeaderAction /><Link className="do-volver-general" to="/mi-dashboard">Ver Dashboard General</Link></div>
         </div>
       </div>
 

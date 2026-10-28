@@ -121,3 +121,7 @@
   .af-dialog-footer { max-height: 45dvh; overflow-y: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .af-spin { animation: none; } }
+
+.af-heading > .af-tutorial-actions { flex: 0 1 auto; margin-left: auto; }
+.af-tutorial-actions .af-terms-btn { margin-left: 0; }
+@media (max-width: 900px) { .af-heading > .af-tutorial-actions { flex-basis: 100%; margin-left: 0; } }

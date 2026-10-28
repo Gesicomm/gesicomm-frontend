@@ -18,6 +18,7 @@ import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
 import PerfilModal from './PerfilModal';
 import TutorialDock from './TutorialDock';
+import useRutasPlan from '../hooks/useRutasPlan';
 import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
 import '../pages/educacion/EducacionView.css';
@@ -70,6 +71,7 @@ const UserLayout = ({ children }) => {
   const [tiendaMenuAbierto, setTiendaMenuAbierto] = useState(false);
   const [cambiandoTienda, setCambiandoTienda] = useState(false);
   const [perfilModalAbierto, setPerfilModalAbierto] = useState(false);
+  const accesoRutas = useRutasPlan(usuario);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -187,6 +189,10 @@ const UserLayout = ({ children }) => {
   // salida acá evita duplicar la URL en la navegación y conserva esta ruta
   // como el único punto de cambio entre los dos espacios de trabajo.
   const irAMarcaPersonal = () => {
+    if (!accesoRutas.rutas.personal) {
+      navigate('/planes', { state: { rutaRequerida: 'personal' } });
+      return;
+    }
     sessionStorage.setItem('moduloActivo', 'marca_personal');
     window.location.assign(MARCA_PERSONAL_URL);
   };
@@ -532,12 +538,12 @@ const UserLayout = ({ children }) => {
               type="button"
               onClick={irAMarcaPersonal}
               className="module-switcher"
-              title="Cambiar a Marca Personal"
+              title={accesoRutas.rutas.personal ? "Cambiar a Marca Personal" : "Ver planes para obtener Marca Personal"}
             >
               <Megaphone size={14} aria-hidden="true" />
               <span>
                 <span className="module-switcher__eyebrow">Espacio actual: E-commerce</span>
-                <span className="module-switcher__label">Ir a Marca Personal</span>
+                <span className="module-switcher__label">{accesoRutas.rutas.personal ? "Ir a Marca Personal" : "Obtener Marca Personal"}</span>
               </span>
               <ChevronRight size={14} aria-hidden="true" />
             </button>
@@ -651,8 +657,7 @@ const UserLayout = ({ children }) => {
               Tenés acceso de solo lectura a esta sección. Las modificaciones requieren permiso del propietario.
             </p>
           )}
-          {!isLandingRoute && <TutorialDock />}
-          {children}
+          <TutorialDock>{children}</TutorialDock>
         </main>
       </div>
 

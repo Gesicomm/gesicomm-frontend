@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../components/TutorialDock';
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Megaphone, Globe } from 'lucide-react';
@@ -78,6 +79,7 @@ export default function Ads() {
     <div className="ads-page settings-container" style={{ maxWidth: '100%' }}>
       <div className="settings-header flex flex-wrap items-start justify-between gap-3">
         <div><h1>Publicidad</h1><p>Organizá tus campañas de Meta y registrá cuánto invertiste en cada una.</p></div>
+        <TutorialHeaderAction />
       </div>
 
       {/* Navegación — con una sola sección no hay entre qué elegir */}

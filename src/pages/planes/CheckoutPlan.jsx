@@ -7,6 +7,8 @@ import { verificarSesionDetallada } from '../../utils/auth';
 import { formatMoneda } from '../../utils/currency';
 import { trackearEvento, generarEventId } from '../../lib/metaPixel';
 import './planes.css';
+import RutaDelPlan from '../../components/RutaDelPlan';
+import { accesoDelPlan } from '../../lib/rutasPlan';
 
 function formatPrecioPlan(plan) {
   if (!plan) return '';
@@ -41,6 +43,7 @@ export default function CheckoutPlan() {
   const location = useLocation();
   const [plan, setPlan] = useState(() => normalizarPlan(location.state?.plan));
   const [usuario, setUsuario] = useState(null);
+  const [ruta, setRuta] = useState(location.state?.ruta === 'personal' ? 'personal' : 'fisico');
   const [estadoCuenta, setEstadoCuenta] = useState(null);
   const [tienda, setTienda] = useState(null);
   const [form, setForm] = useState({ telefono: '', documento: '' });
@@ -144,7 +147,7 @@ export default function CheckoutPlan() {
     setPagando(true);
     setError(null);
     try {
-      const intent = await planesService.crearCheckoutIntent({ plan_codigo: plan.codigo });
+      const intent = await planesService.crearCheckoutIntent({ plan_codigo: plan.codigo, ruta: accesoDelPlan(plan) === 'elegir' ? ruta : accesoDelPlan(plan) });
       const resultado = await planesService.checkout({
         plan_codigo: plan.codigo,
         email: datos.email,
@@ -190,6 +193,7 @@ export default function CheckoutPlan() {
               </p>
             </div>
 
+            {plan && <RutaDelPlan plan={plan} value={ruta} onChange={setRuta} disabled={pagando} />}
             {error && (
               <div className="pl-aviso pl-aviso-error">
                 <AlertCircle size={17} />

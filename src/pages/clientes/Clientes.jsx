@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Users, Search, X, Phone, MessageCircle, Loader } from 'lucide-react';
 import { ReporteClientes } from '../courier/analytics/reports/ReporteClientes';
@@ -143,7 +144,7 @@ export default function Clientes() {
               <Users size={22} />
             </div>
             <div>
-              <h1 className="prod-title">Clientes</h1>
+              <div className="gc-tutorial-title-row"><h1 className="prod-title">Clientes</h1><TutorialHeaderAction /></div>
               <p className="prod-subtitle">Todos los que te compraron, cómo les fue con sus pedidos y cómo contactarlos.</p>
             </div>
           </div>

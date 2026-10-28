@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -952,6 +953,7 @@ export default function VitrinaGrid() {
         </div>
 
         <div className="vit-header-actions" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
+          {!enOnboarding && <TutorialHeaderAction />}
           <details className="vit-tools"><summary>Herramientas</summary><div className="vit-tools-content">
           {!enOnboarding && (
             <button type="button" className="btn-secondary" onClick={irACambiarPrecios}

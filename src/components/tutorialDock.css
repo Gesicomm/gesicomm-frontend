@@ -1,22 +1,29 @@
-.gc-tutorial-dock { position: fixed; z-index: 45; right: 0; top: 50%; display: flex; align-items: center; gap: 8px; transform: translateY(-50%); color: var(--color-fg); font-family: var(--font-sans); }
-.gc-tutorial-trigger { display: inline-flex; align-items: center; gap: 5px; min-height: 48px; padding: 10px 13px 10px 9px; border: 1px solid var(--color-border-strong); border-right: 0; border-radius: 12px 0 0 12px; background: var(--color-surface); color: var(--color-fg); box-shadow: 0 4px 18px rgb(0 0 0 / .12); font: inherit; font-size: var(--ui-text-label, 14px); font-weight: 650; cursor: pointer; }
-.gc-tutorial-trigger:hover { color: var(--color-primary-text); }
-.gc-tutorial-popover { width: min(360px, calc(100vw - 110px)); box-sizing: border-box; padding: 14px; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface); box-shadow: 0 16px 46px rgb(0 0 0 / .2); }
-.gc-tutorial-popover-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.gc-tutorial-popover-icon { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border-radius: 10px; background: var(--color-surface-2); color: var(--color-primary-text); }
-.gc-tutorial-popover-head > div { flex: 1; min-width: 0; }
-.gc-tutorial-popover-head > div > span { color: var(--color-fg-muted); font-size: var(--ui-text-meta, 13px); }
-.gc-tutorial-popover h2 { margin: 1px 0 0; color: var(--color-fg); font-size: var(--ui-text-card, 18px); line-height: 1.35; }
-.gc-tutorial-close { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: var(--color-fg-muted); cursor: pointer; }
-.gc-tutorial-close:hover { background: var(--color-surface-2); color: var(--color-fg); }
-.gc-tutorial-play, .gc-tutorial-empty, .gc-tutorial-popover iframe { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; aspect-ratio: 16 / 9; box-sizing: border-box; overflow: hidden; border-radius: 10px; }
+.gc-tutorial-header-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; flex-shrink: 0; padding: 8px 12px; border: 1px solid #2563eb; border-radius: 9px; background: #2563eb; color: #fff; box-shadow: 0 3px 10px rgb(37 99 235 / .22); font: 600 14px/1.5 var(--font-sans); cursor: pointer; }
+.gc-tutorial-header-action:hover, .gc-tutorial-header-action[aria-expanded="true"] { color: #fff; background: #1d4ed8; border-color: #1d4ed8; }
+.gc-tutorial-title-row, .gc-tutorial-heading-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.gc-tutorial-title-row { justify-content: space-between; }
+.gc-tutorial-player { position: fixed; z-index: 45; right: 24px; bottom: 24px; width: min(400px, calc(100% - 48px)); max-height: calc(100dvh - 24px); box-sizing: border-box; overflow: auto; border: 1px solid var(--color-border-strong); border-radius: 14px; background: var(--color-surface); color: var(--color-fg); box-shadow: 0 16px 48px rgb(0 0 0 / .22); font-family: var(--font-sans); }
+.gc-tutorial-player.is-minimized { width: min(340px, calc(100% - 48px)); }
+.gc-tutorial-player-head { display: flex; align-items: center; gap: 4px; padding: 6px; }
+.gc-tutorial-player .gc-tutorial-player-head h2 { flex: 1; min-width: 0; margin: 0; font-size: var(--ui-text-card, 18px) !important; line-height: 1.4 !important; font-weight: 650; }
+.gc-tutorial-player-head button { display: grid; place-items: center; flex: 0 0 36px; height: 40px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--color-fg-muted); cursor: pointer; }
+.gc-tutorial-player-head button:hover { background: var(--color-surface-2); color: var(--color-fg); }
+.gc-tutorial-player-head .gc-tutorial-move { flex-basis: 28px; touch-action: none; cursor: grab; }
+.gc-tutorial-player-head .gc-tutorial-move:active { cursor: grabbing; }
+.gc-tutorial-player-content { padding: 0 12px 12px; }
+.gc-tutorial-player-content[hidden] { display: none; }
+.gc-tutorial-play, .gc-tutorial-empty, .gc-tutorial-player iframe { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; aspect-ratio: 16 / 9; box-sizing: border-box; overflow: hidden; border-radius: 8px; }
 .gc-tutorial-play { border: 0; background: #111c2b; color: white; cursor: pointer; }
 .gc-tutorial-play img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.gc-tutorial-play span { position: relative; z-index: 1; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: rgb(0 0 0 / .72); }
-.gc-tutorial-play:hover span { background: var(--color-primary); color: var(--color-primary-fg); }
-.gc-tutorial-popover iframe { display: block; border: 0; background: #000; }
-.gc-tutorial-empty { gap: 5px; border: 1px dashed var(--color-border-strong); background: var(--color-surface-2); color: var(--color-fg-muted); text-align: center; font-size: var(--ui-text-help, 14px); }
-.gc-tutorial-empty small { font-size: var(--ui-text-meta, 13px); }
-.gc-tutorial-popover p { margin: 10px 2px 0; color: var(--color-fg-muted); font-size: var(--ui-text-help, 14px); line-height: 1.5; }
-.gc-tutorial-dock :is(button):focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
-@media (max-width: 600px) { .gc-tutorial-dock { top: auto; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); flex-direction: column; align-items: flex-end; transform: none; } .gc-tutorial-popover { width: min(330px, calc(100vw - 24px)); } .gc-tutorial-trigger { border-right: 1px solid var(--color-border-strong); border-radius: 12px; padding: 10px 13px; } }
+.gc-tutorial-play span { position: relative; z-index: 1; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: #2563eb; color: #fff; }
+.gc-tutorial-play:hover span { background: #1d4ed8; color: #fff; }
+.gc-tutorial-player iframe { display: block; border: 0; background: #000; }
+.gc-tutorial-empty { gap: 6px; padding: 12px; border: 1px dashed var(--color-border-strong); background: var(--color-surface-2); color: var(--color-fg-muted); text-align: center; font-size: 14px; }
+.gc-tutorial-empty small { font-size: 13px; }
+.gc-tutorial-player .gc-tutorial-player-content p { margin: 10px 2px 0; color: var(--color-fg-muted); font-size: 14px; line-height: 1.5; }
+.gc-tutorial-header-action:focus-visible, .gc-tutorial-player button:focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .gc-tutorial-player { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: min(380px, calc(100% - 24px)); }
+  .gc-tutorial-player.is-minimized { width: min(340px, calc(100% - 24px)); }
+  .gc-tutorial-player-head button { flex-basis: 44px; height: 44px; }
+}

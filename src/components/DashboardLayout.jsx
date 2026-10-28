@@ -102,8 +102,7 @@ const DashboardLayout = ({ children }) => {
                         overflowX: isLandingRoute ? OVERFLOW_FIJO : undefined,
                     }}
                 >
-                    {!isLandingRoute && <TutorialDock />}
-                    {children}
+                    <TutorialDock>{children}</TutorialDock>
                 </main>
             </div>
         </div>

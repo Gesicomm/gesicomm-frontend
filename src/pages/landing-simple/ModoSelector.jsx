@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader, LayoutTemplate, Code2, ArrowRight } from 'lucide-react';
@@ -54,7 +55,7 @@ export default function ModoSelector({ onCreada }) {
 
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-fg mb-1">¿Cómo querés crear tu landing?</h1>
+      <div className="gc-tutorial-title-row"><h1 className="text-2xl font-bold text-fg mb-1">¿Cómo querés crear tu landing?</h1><TutorialHeaderAction /></div>
       <p className="text-fg/50 mb-8">Elegí el punto de partida. Después vas a poder editar, publicar y ajustar la venta desde su editor.</p>
 
       {error && <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/40 text-danger text-sm font-medium">{error}</div>}

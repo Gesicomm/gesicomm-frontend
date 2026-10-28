@@ -1327,3 +1327,9 @@
 .pl-public-checkout .pl-upgrade-summary h2 { font-size: 22px; line-height: 1.35; }
 @media (max-width: 1000px) { .pl-public-checkout .pl-upgrade-summary { order: -1; } }
 @media (max-width: 640px) { .pl-public-checkout .pl-upgrade-main h1 { font-size: 28px; } .pl-public-checkout .pl-upgrade-missing, .pl-public-checkout .pl-upgrade-summary { padding: 20px; } }
+
+.pl-access-offer { max-width: 1220px; margin-inline: auto; }
+.pl-access-offer .pl-section-head { text-align: left; margin-block: 24px 32px; }
+.pl-access-offer .pl-access-price-note { font-size: 14px !important; color: var(--color-fg-muted); }
+.pl-access-included { display: flex; align-items: center; gap: 8px; color: var(--color-fg); font-size: 14px; }
+.pl-access-offer .pl-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }

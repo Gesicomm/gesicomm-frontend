@@ -6,6 +6,7 @@ import LandingPublica from './pages/landing/LandingPublica';
 import { AceptarInvitacion, TiendasColaborador, SinAcceso } from './pages/AccesoEquipo';
 import ProtectedRoute from './components/ProtectedRoute';
 import MarcaPersonalRedirect from './components/MarcaPersonalRedirect';
+import RequireRuta from './components/RequireRuta';
 import AdminRoute from './components/AdminRoute';
 import RequireTienda from './components/RequireTienda';
 
@@ -431,11 +432,11 @@ function App() {
 
         {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario' */}
         <Route path="/onboarding" element={
-          <ProtectedRoute><Onboarding /></ProtectedRoute>
+          <ProtectedRoute><RequireRuta ruta="fisico"><Onboarding /></RequireRuta></ProtectedRoute>
         } />
         {/* Varias tiendas y ninguna activa: elegir con cuál trabajar */}
         <Route path="/seleccionar-tienda" element={
-          <ProtectedRoute><SeleccionarTienda /></ProtectedRoute>
+          <ProtectedRoute><RequireRuta ruta="fisico"><SeleccionarTienda /></RequireRuta></ProtectedRoute>
         } />
 
         {/* Rutas protegidas — vitrina, academia y pedidos del rol 'usuario' */}

@@ -6,6 +6,8 @@ import { leerRefAfiliado } from '../../services/afiliadosService';
 import { formatMoneda } from '../../utils/currency';
 import Logo from '../../components/public/Logo';
 import './planes.css';
+import RutaDelPlan from '../../components/RutaDelPlan';
+import { accesoDelPlan } from '../../lib/rutasPlan';
 
 function formatPrecioPlan(plan) {
   if (!plan) return '';
@@ -43,9 +45,9 @@ export default function PublicCheckoutPlan() {
   });
   const [errores, setErrores] = useState({});
   const parametros = new URLSearchParams(location.search);
-  const [ruta, setRuta] = useState(parametros.get('ruta') === 'personal' ? 'personal' : 'fisico');
+  const [ruta, setRuta] = useState((location.state?.ruta || parametros.get('ruta')) === 'personal' ? 'personal' : 'fisico');
   const esPlanRutas = /^(una-ruta|ambas-rutas)-(mensual|anual)$/.test(codigo);
-  const ambasRutas = codigo.startsWith('ambas-rutas-');
+
 
   useEffect(() => {
     let activo = true;
@@ -107,7 +109,7 @@ export default function PublicCheckoutPlan() {
     try {
       const intent = await planesService.crearCheckoutIntent({ 
         plan_codigo: plan.codigo,
-        ...(esPlanRutas ? { ruta: ambasRutas ? 'ambas' : ruta } : {}),
+        ruta: accesoDelPlan(plan) === 'elegir' ? ruta : accesoDelPlan(plan),
         afiliado_codigo: leerRefAfiliado(),
       });
       
@@ -165,7 +167,7 @@ export default function PublicCheckoutPlan() {
 
             {parametros.get('moneda_referencia') === 'USD' && <p className="pl-aviso">Los precios en USD de la portada son de referencia. PagoPar cobrará el total en guaraníes que figura en este resumen.</p>}
             <form onSubmit={iniciarPago} className="pl-upgrade-missing mt-8">
-              {esPlanRutas && !ambasRutas && <label className="pl-campo mb-6"><span>Ruta de tu plan</span><select value={ruta} onChange={e => setRuta(e.target.value)} disabled={pagando} className="w-full min-h-12 rounded-lg border border-border bg-surface px-3 text-base text-fg"><option value="fisico">E-commerce de productos físicos</option><option value="personal">Marca personal y servicios</option></select></label>}
+              <RutaDelPlan plan={plan} value={ruta} onChange={setRuta} disabled={pagando} />
               <div className="pl-checkout-grid">
                 <label className="pl-campo">
                   <span>Nombre completo</span>

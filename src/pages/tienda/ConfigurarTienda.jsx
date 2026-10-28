@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useState, useEffect, useCallback, useRef, useMemo, useId } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -697,16 +698,19 @@ export default function ConfigurarTienda() {
             <h1>Mi tienda</h1>
             <p>Dale tu identidad y prepará tu negocio para vender.</p>
           </div>
-          <button
-            type="button"
-            className="tn-btn-tiendas"
-            onClick={() => navigate('/seleccionar-tienda', { state: { desde: '/mi-tienda' } })}
-            title="Administrar, inactivar o reactivar tus tiendas"
-          >
-            {/* No es otro selector de tienda (ese está en el menú): abre la
-                administración para crear, inactivar o eliminar tiendas. */}
-            <Store size={14} /> Administrar tiendas
-          </button>
+          <div className="gc-tutorial-heading-actions">
+            <TutorialHeaderAction />
+            <button
+              type="button"
+              className="tn-btn-tiendas"
+              onClick={() => navigate('/seleccionar-tienda', { state: { desde: '/mi-tienda' } })}
+              title="Administrar, inactivar o reactivar tus tiendas"
+            >
+              {/* No es otro selector de tienda (ese está en el menú): abre la
+                  administración para crear, inactivar o eliminar tiendas. */}
+              <Store size={14} /> Administrar tiendas
+            </button>
+          </div>
         </div>
       </header>
 

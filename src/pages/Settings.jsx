@@ -1,3 +1,4 @@
+import { TutorialHeaderAction } from '../components/TutorialDock';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../utils/api';
@@ -125,7 +126,7 @@ const Settings = () => {
     return (
         <div className="settings-container">
             <div className="settings-header">
-                <h1>Configuración</h1>
+                <div className="gc-tutorial-title-row"><h1>Configuración</h1><TutorialHeaderAction /></div>
                 <p>Administrá las integraciones y preferencias de tu cuenta.</p>
             </div>
 

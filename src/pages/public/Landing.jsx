@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import Seo, { SCHEMA_ORGANIZACION } from '../../components/public/Seo';
-import { planesService } from '../../services/planesService';
+import PublicPlans from './PublicPlans';
 import { enviarMensajeContacto } from '../../services/publicoService';
 import '@fontsource-variable/manrope';
 import markup from './home/landing.html?raw';
@@ -20,41 +21,26 @@ const RUTAS = {
     pasos: [['Guiones e IA', 'Contenido y creatividad'], ['Producción', 'Calendario y teleprompter'], ['Conversión', 'Embudos, agenda y CRM'], ['Analítica', 'Contenido que genera ventas']],
   },
 };
-const PRECIOS = { PYG: [297000, 397000, 497000, 697000], USD: [47, 67, 77, 97] };
 
 /** HTML estático revisado, versionado dentro del repositorio. No contiene scripts,
  * handlers inline ni contenido procedente de las solicitudes de visitantes. */
 export default function Landing() {
   const rootRef = useRef(null);
   const navigate = useNavigate();
+  const [planesHost, setPlanesHost] = useState(null);
+  const [rutaPlanes, setRutaPlanes] = useState('fisico');
 
   useEffect(() => {
     const root = rootRef.current;
     let vigente = true;
-    let billing = 'monthly', currency = 'PYG', ruta = 'fisico';
-    let catalogo = [];
-    const money = valor => currency === 'PYG' ? `₲ ${valor.toLocaleString('es-PY')}` : `US$ ${valor.toLocaleString('en-US')}`;
+    let ruta = 'fisico';
+    setPlanesHost(root.querySelector('[data-home-plans]'));
     const texto = (id, value) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = value; };
     const opcion = (selector, actual) => root.querySelectorAll(selector).forEach(button => {
-      const active = button.dataset.billing === actual || button.dataset.currency === actual || button.dataset.route === actual;
+      const active = button.dataset.route === actual;
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', String(active));
     });
-    const precios = () => {
-      ['one', 'two'].forEach((slug, index) => {
-        const codigo = `${index ? 'ambas-rutas' : 'una-ruta'}-${billing === 'annual' ? 'anual' : 'mensual'}`;
-        const publicado = catalogo.find(p => p.codigo === codigo && p.activo !== false);
-        const valor = PRECIOS[currency][index];
-        texto(`price-${slug}`, currency === 'PYG' && publicado ? money(Number(publicado.precio)) : money(valor * (billing === 'annual' ? 10 : 1)));
-        texto(`period-${slug}`, billing === 'annual' ? 'por año · pago adelantado' : 'por mes');
-        texto(`save-${slug}`, billing === 'annual' ? `Ahorrás ${money(valor * 2)} respecto a 12 mensualidades` : `Precio posterior: ${money(PRECIOS[currency][index + 2])}/mes`);
-      });
-      opcion('[data-billing]', billing);
-      opcion('[data-currency]', currency);
-      texto('home-payment-note', currency === 'USD' ? 'Los importes en USD son de referencia. El cobro se realiza en guaraníes; verás el total exacto antes de ir a PagoPar.' : 'Pagás de forma segura con PagoPar. La anualidad se abona por adelantado.');
-    };
-    precios();
-    planesService.listar().then(data => { if (vigente) { catalogo = Array.isArray(data) ? data : []; precios(); } }).catch(() => {});
     root.querySelector('[data-home-year]').textContent = new Date().getFullYear();
     const telefono = String(import.meta.env.VITE_GESICOM_WHATSAPP || '').replace(/\D/g, '');
     if (/^[1-9]\d{7,14}$/.test(telefono)) {
@@ -114,6 +100,7 @@ export default function Landing() {
       }
       if (target.dataset.route) {
         ruta = target.dataset.route;
+        setRutaPlanes(ruta);
         const data = RUTAS[ruta];
         opcion('[data-route]', ruta);
         texto('route-kicker', data.kicker);
@@ -129,14 +116,6 @@ export default function Landing() {
           return div;
         }));
         }
-      if (target.dataset.billing) { billing = target.dataset.billing; precios(); }
-      if (target.dataset.currency) { currency = target.dataset.currency; precios(); }
-      if (target.dataset.plan) {
-        const codigo = `${target.dataset.plan}-${billing === 'annual' ? 'anual' : 'mensual'}`;
-        const params = new URLSearchParams({ ruta: target.dataset.plan === 'ambas-rutas' ? 'ambas' : ruta, moneda_referencia: currency });
-        navigate(`/checkout/public/${encodeURIComponent(codigo)}?${params}`);
-        return;
-      }
       if (target.matches('a')) {
         cerrarMenu();
         const href = target.getAttribute('href');
@@ -221,5 +200,6 @@ export default function Landing() {
   return <>
     <Seo titulo="Gesicom | Todo tu negocio digital bajo control" descripcion="Creá, administrá y escalá tu negocio digital desde un solo sistema. E-commerce, marca personal, CRM, marketing y analítica." schema={SCHEMA_ORGANIZACION} />
     <div ref={rootRef} className="gl-landing" dangerouslySetInnerHTML={{ __html: markup }} />
+    {planesHost && createPortal(<PublicPlans ruta={rutaPlanes} />, planesHost)}
   </>;
 }
