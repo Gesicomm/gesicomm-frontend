@@ -51,6 +51,7 @@ const ParametrosAdmin = lazy(() => import('./pages/admin/Parametros'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const RahaSolicitudes = lazy(() => import('./pages/admin/RahaSolicitudes'));
 const SolicitudesWeb = lazy(() => import('./pages/admin/SolicitudesWeb'));
+const SolicitudesProveedores = lazy(() => import('./pages/admin/SolicitudesProveedores'));
 const CodigosPruebaPage = lazy(() => import('./pages/admin/CodigosPruebaPage'));
 const TutorialesSistema = lazy(() => import('./pages/admin/TutorialesSistema'));
 const EliminacionDatosAdmin = lazy(() => import('./pages/admin/EliminacionDatos'));
@@ -518,6 +519,9 @@ function App() {
         } />
         <Route path="/admin/codigos-prueba" element={
           <AdminRoute><DashboardLayout><CodigosPruebaPage /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/admin/solicitudes-proveedores" element={
+          <AdminRoute><DashboardLayout><SolicitudesProveedores /></DashboardLayout></AdminRoute>
         } />
         <Route path="/admin/tutoriales" element={
           <AdminRoute><DashboardLayout><TutorialesSistema /></DashboardLayout></AdminRoute>

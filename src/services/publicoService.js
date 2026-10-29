@@ -60,3 +60,12 @@ export async function enviarMensajeContacto(datos) {
     );
   }
 }
+
+export async function enviarSolicitudProveedor(datos) {
+  try {
+    const { data } = await API.post('/publico/solicitudes-proveedores', datos);
+    return data;
+  } catch (error) {
+    throw new Error(mensajeDeError(error, 'No pudimos registrar tu postulación. Volvé a intentar.'));
+  }
+}

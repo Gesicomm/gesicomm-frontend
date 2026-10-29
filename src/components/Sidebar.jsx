@@ -90,7 +90,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const isActive = (path) => location.pathname === path;
   const isActivePrefix = (prefix) => location.pathname.startsWith(prefix);
 
-  const renderLink = ({ path, label, icon, badge, state }) => {
+  const renderLink = ({ path, label, icon, badge, state, multiline = false }) => {
     const active = isActive(path);
     return (
       <li key={path}>
@@ -99,9 +99,9 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
           state={state}
           onClick={onClose}
           aria-current={active ? 'page' : undefined}
-          className={`${NAV_LINK} ${active ? NAV_LINK_ACTIVE : ''}`}
+          className={`${multiline ? NAV_LINK.replace('h-9', 'min-h-11 py-2') : NAV_LINK} ${active ? NAV_LINK_ACTIVE : ''}`}
         >
-          <span className={ICON_WRAP}>{icon}</span>
+          <span className={`${ICON_WRAP} shrink-0`}>{icon}</span>
           {label}
           {badge ? <span className="ml-auto rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-extrabold text-accent-fg">{badge}</span> : null}
         </Link>
@@ -201,6 +201,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/admin/tracking-pagos', label: 'Tracking de pagos', icon: <CreditCard />, badge: alertasPagos > 0 ? alertasPagos : null })}
             {renderLink({ path: '/admin/eliminacion-datos', label: 'Eliminación de datos', icon: <ShieldAlert /> })}
             {renderLink({ path: '/admin/solicitudes-web', label: 'Solicitudes de la web', icon: <Users /> })}
+            {renderLink({ path: '/admin/solicitudes-proveedores', label: 'Solicitudes de proveedores', icon: <Users />, multiline: true })}
             {renderLink({ path: '/admin/codigos-prueba', label: 'Códigos de acceso', icon: <KeyRound /> })}
             {renderLink({ path: '/admin/tutoriales', label: 'Tutoriales', icon: <GraduationCap /> })}
           </ul>

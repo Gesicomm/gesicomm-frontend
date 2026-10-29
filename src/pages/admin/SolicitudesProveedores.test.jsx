@@ -1,0 +1,52 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import SolicitudesProveedores from './SolicitudesProveedores';
+import API from '../../services/api';
+vi.mock('../../services/api', () => ({ default: { get: vi.fn(), patch: vi.fn() } }));
+const solicitud = { id: 41, nombre: 'Ana Pérez', email: 'ana@example.com', estado: 'pendiente', recibido_en: '2026-10-29T15:00:00Z', datos: { especialidad: 'Envíos y logística', documento: '123456', whatsapp: '+595981123456', descripcion: 'Envíos en Asunción' }, mensaje: 'Mensaje original' };
+const respuesta = (items = [solicitud]) => ({ data: { solicitudes: items, total: items.length, total_paginas: 1, resumen: { pendiente: items.length, aceptada: 0, rechazada: 0 } } });
+beforeEach(() => { vi.resetAllMocks(); API.get.mockResolvedValue(respuesta()); });
+it('muestra la postulación y acepta solamente después de confirmar', async () => {
+  API.patch.mockResolvedValue({ data: { solicitud: { ...solicitud, estado: 'aceptada' } } });
+  render(<SolicitudesProveedores />);
+  expect(await screen.findByText('Ana Pérez')).toBeInTheDocument();
+  expect(screen.getByText('+595981123456')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Aceptar solicitud' }));
+  expect(API.patch).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText('Nota de revisión (opcional)'), { target: { value: 'Cobertura verificada' } });
+  API.get.mockResolvedValue(respuesta([]));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirmar aceptación' }));
+  expect(await screen.findByText(/fue aceptada/)).toBeInTheDocument();
+  expect(API.patch).toHaveBeenCalledWith('/publico/admin/solicitudes-proveedores/41', { estado: 'aceptada', nota: 'Cobertura verificada' });
+  expect(await screen.findByText('No hay solicitudes pendientes')).toBeInTheDocument();
+});
+it('conserva el motivo al fallar y permite reintentar el rechazo', async () => {
+  API.patch.mockRejectedValueOnce(new Error('Sin red')).mockResolvedValueOnce({ data: { solicitud: { ...solicitud, estado: 'rechazada' } } });
+  render(<SolicitudesProveedores />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
+  const nota = screen.getByLabelText('Motivo del rechazo (obligatorio)');
+  fireEvent.change(nota, { target: { value: 'Fuera de cobertura' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Confirmar rechazo' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Tu nota se conserva');
+  expect(nota).toHaveValue('Fuera de cobertura');
+  fireEvent.click(screen.getByRole('button', { name: 'Confirmar rechazo' }));
+  expect(await screen.findByText(/fue rechazada/)).toBeInTheDocument();
+});
+it('muestra conflicto sin inventar una aceptación y permite actualizar', async () => {
+  API.patch.mockRejectedValue({ response: { status: 409, data: { message: 'Otro administrador ya revisó esta solicitud.' } } });
+  render(<SolicitudesProveedores />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Aceptar solicitud' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirmar aceptación' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Otro administrador');
+  expect(screen.queryByText(/fue aceptada/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+  await waitFor(() => expect(API.get).toHaveBeenCalledTimes(2));
+});
+it('cambia el filtro y permite recuperar un error de carga', async () => {
+  API.get.mockRejectedValueOnce(new Error('Sin red')).mockResolvedValue(respuesta([]));
+  render(<SolicitudesProveedores />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
+  expect(await screen.findByText('No hay solicitudes pendientes')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /Aceptadas/ }));
+  await waitFor(() => expect(API.get).toHaveBeenLastCalledWith('/publico/admin/solicitudes-proveedores', { params: { estado: 'aceptada', page: 1, limit: 20 } }));
+});

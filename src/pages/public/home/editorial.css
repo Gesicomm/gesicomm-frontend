@@ -140,7 +140,6 @@ html[data-theme] .gl-landing.home-institutional {
   background: #f4f7f5;
   color: #10231b;
 }
-.gl-landing .home-business-section { padding: 31px 0 34px; }
 .gl-landing .section { padding: 76px 0; }
 .gl-landing .section.alt { background: #eaf0ec; }
 .gl-landing .home-business-section .section-head,
@@ -150,28 +149,70 @@ html[data-theme] .gl-landing.home-institutional {
 .gl-landing .home-business-section .section-head p,
 .gl-landing .section-head p { margin: 0; color: #52645a; font-size: 16px; line-height: 1.55; }
 .gl-landing .eyebrow { color: #087d4b; font-size: 13px; letter-spacing: .14em; }
-.gl-landing .home-business-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.gl-landing .home-business-card { display: grid; grid-template-columns: minmax(0, 1fr) 38%; min-height: 182px; overflow: hidden; border: 1px solid #d8e3dc; border-radius: 15px; background: #fff; color: #11251b; box-shadow: 0 8px 24px rgb(12 44 28 / 5%); transition: transform .2s, box-shadow .2s, border-color .2s; }
-.gl-landing .home-business-card:hover { transform: translateY(-3px); border-color: #a8d8bd; box-shadow: 0 14px 32px rgb(12 44 28 / 10%); }
-.gl-landing .home-business-copy { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; padding: 17px 0 16px 17px; }
-.gl-landing .home-business-icon { display: grid; width: 36px; height: 36px; margin-bottom: 10px; place-items: center; border-radius: 10px; background: #16d477; color: #063f2e; font-size: 20px; font-weight: 800; }
-.gl-landing .home-business-copy strong { margin-bottom: 5px; font-size: 17px; line-height: 1.3; letter-spacing: -.02em; }
-.gl-landing .home-business-copy > span:not(.home-business-icon) { color: #53665b; font-size: 14px; line-height: 1.45; }
-.gl-landing .home-business-copy > b { display: inline-flex; gap: 7px; margin-top: auto; padding-top: 10px; color: #075d38; font-size: 14px; }
-.gl-landing .home-business-art { position: relative; display: grid; min-width: 0; overflow: hidden; place-items: center; background: linear-gradient(145deg, #edf4ef, #dfeae2); }
-.gl-landing .home-business-art > img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply; }
-.gl-landing .home-business-art--services { background: linear-gradient(140deg, #d9efe3, #9dd0b1); }
-.gl-landing .home-art-window { display: grid; width: 82%; gap: 9px; padding: 16px 12px; transform: rotate(-4deg); border: 1px solid rgb(255 255 255 / 80%); border-radius: 12px; background: rgb(255 255 255 / 86%); box-shadow: 0 12px 26px rgb(8 54 31 / 12%); }
-.gl-landing .home-art-window i { width: 34px; height: 5px; border-radius: 9px; background: #15bd6a; }
-.gl-landing .home-art-window i:nth-child(2) { width: 70%; background: #bddccb; }
-.gl-landing .home-art-window i:nth-child(3) { width: 48%; background: #d1e5d8; }
-.gl-landing .home-art-window b { color: #153c29; font-size: 13px; }
-.gl-landing .home-art-window > span { color: #52665a; font-size: 12px; }
-.gl-landing .home-business-art--personal { background: linear-gradient(140deg, #d3eee0, #a8d6ba); }
-.gl-landing .home-creator-card { display: grid; width: 85%; gap: 8px; padding: 12px; transform: rotate(4deg); border: 1px solid rgb(255 255 255 / 80%); border-radius: 12px; background: rgb(255 255 255 / 88%); box-shadow: 0 12px 26px rgb(8 54 31 / 12%); }
-.gl-landing .home-creator-card i { display: grid; width: 33px; height: 33px; place-items: center; border-radius: 50%; background: #0e4730; color: #fff; font-style: normal; font-weight: 700; }
-.gl-landing .home-creator-card b { color: #153c29; font-size: 14px; line-height: 1.25; }
-.gl-landing .home-creator-card > span { color: #52665a; font-size: 12px; }
+/* Tarjetas de negocios: escenas amplias y lectura separada de la imagen. */
+.gl-landing .home-business-section { padding: 88px 0 96px; background: radial-gradient(ellipse at 50% 0, #e4f3e9, transparent 65%), #f4f7f5; }
+.gl-landing .home-business-section > .wrap { max-width: 1280px; padding-inline: 32px; }
+.gl-landing .home-business-section .section-head { max-width: 850px; margin-bottom: 52px; }
+.gl-landing .home-business-eyebrow { display: inline-block; margin-bottom: 18px; color: #087d4b; font-size: var(--ui-text-label, .9375rem); font-weight: 650; }
+.gl-landing .home-business-section h2 { margin-bottom: 18px; }
+.gl-landing .home-business-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+.gl-landing .home-business-card {
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(280px, auto) 1fr;
+  min-width: 0; overflow: hidden; border: 1px solid #d2e2d8; border-radius: 24px;
+  background: #fff; color: #11251b; box-shadow: 0 12px 32px rgb(12 44 28 / 6%);
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+}
+.gl-landing .home-business-card:is(:hover, :focus-visible) { transform: translateY(-7px); border-color: #269862; box-shadow: 0 22px 44px rgb(12 44 28 / 13%); }
+.gl-landing .home-business-card:focus-visible { outline: 3px solid #087d4b; outline-offset: 5px; }
+.gl-landing .home-business-copy { grid-row: 2; display: flex; min-width: 0; flex-direction: column; align-items: flex-start; padding: 28px; }
+.gl-landing .home-business-icon { display: grid; width: 46px; height: 46px; margin-bottom: 20px; place-items: center; border: 1px solid #a7dfbf; border-radius: 14px; background: #e5f8ed; color: #075d38; font-size: 24px; }
+.gl-landing .home-business-copy strong { margin-bottom: 12px; font-size: 24px; font-weight: 700; line-height: 1.3; letter-spacing: -.025em; }
+.gl-landing .home-business-copy > span:not(.home-business-icon) { color: #486052; font-size: var(--ui-text-body, 1rem); line-height: 1.65; }
+.gl-landing .home-business-copy > b { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 26px; color: #075d38; font-size: var(--ui-text-body, 1rem); font-weight: 650; }
+.gl-landing .home-business-copy > b > span { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: #e5f8ed; transition: background .25s, transform .25s; }
+.gl-landing .home-business-card:is(:hover, :focus-visible) .home-business-copy > b > span { background: #14d26a; transform: translateX(3px); }
+.gl-landing .home-business-art { grid-row: 1; position: relative; display: grid; min-width: 0; overflow: hidden; place-items: center; background: radial-gradient(ellipse at 50% 30%, #f1f4e9, #dbe7da); }
+.gl-landing .home-business-art > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transition: transform .5s; }
+.gl-landing .home-business-card:is(:hover, :focus-visible) .home-business-art > img { transform: scale(1.04); }
+.gl-landing .home-art-badge { position: absolute; bottom: 18px; left: 20px; right: 20px; width: fit-content; margin-inline: auto; padding: 9px 14px; border: 1px solid #d2e2d8; border-radius: 999px; background: #fffffff2; color: #16432d; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.gl-landing .home-business-art--services { padding: 24px; background: radial-gradient(circle at 90% 10%, #dff8b8, transparent 65%), #cbe9d8; }
+.gl-landing .home-art-window { display: grid; width: 100%; max-width: 300px; gap: 10px; padding: 16px; transform: rotate(-3deg); border: 1px solid #fff; border-radius: 16px; background: #ffffffed; box-shadow: 0 14px 30px rgb(8 54 31 / 12%); transition: transform .35s; }
+.gl-landing .home-art-kicker { color: #52705f; font-size: 13px; font-weight: 500; line-height: 1.5; }
+.gl-landing .home-art-window > b { color: #153c29; font-size: 18px; line-height: 1.4; }
+.gl-landing .home-art-window > span:last-child { color: #52665a; font-size: 13px; line-height: 1.5; }
+.gl-landing .home-art-week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.gl-landing .home-art-week i { display: grid; place-items: center; height: 30px; border-radius: 8px; background: #eef5f0; color: #42634f; font-size: 13px; font-style: normal; }
+.gl-landing .home-art-week i:nth-child(3) { background: #0e7045; color: #fff; }
+.gl-landing .home-art-appointment { display: flex; gap: 8px; align-items: center; padding: 10px 8px; border-left: 3px solid #159b59; border-radius: 5px; background: #eaf6ee; color: #234b34; font-size: 13px; line-height: 1.5; }
+.gl-landing .home-art-appointment b { font-weight: 600; }
+.gl-landing .home-art-check { margin-left: auto; color: #087d4b; }
+.gl-landing .home-business-art--personal { padding: 24px; background: radial-gradient(circle at 75% 10%, #4b9274, transparent 70%), #12432f; }
+.gl-landing .home-creator-card { display: grid; justify-items: center; width: 100%; max-width: 300px; gap: 10px; padding: 18px; transform: rotate(3deg); border: 1px solid #e9fff1; border-radius: 16px; background: #f5fff7; box-shadow: 0 16px 32px #061e2230; text-align: center; transition: transform .35s; }
+.gl-landing .home-creator-card > i { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 50%; background: #0e4730; color: #fff; font-style: normal; font-weight: 700; font-size: 20px; }
+.gl-landing .home-creator-card > b { color: #153c29; font-size: 20px; line-height: 1.3; letter-spacing: -.02em; }
+.gl-landing .home-art-topics { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.gl-landing .home-art-topics > span { padding: 4px 8px; border-radius: 20px; background: #e4f2e8; color: #365a44; font-size: 13px; line-height: 1.5; }
+.gl-landing .home-business-card:is(:hover, :focus-visible) :is(.home-art-window, .home-creator-card) { transform: rotate(0); }
+
+@media (max-width: 1050px) {
+  .gl-landing .home-business-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .gl-landing .home-business-card { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-rows: auto; }
+  .gl-landing .home-business-copy { grid-column: 1; grid-row: 1; }
+  .gl-landing .home-business-art { grid-column: 2; grid-row: 1; min-height: 280px; }
+}
+@media (max-width: 600px) {
+  .gl-landing .home-business-section { padding: 60px 0; }
+  .gl-landing .home-business-section > .wrap { padding-inline: 20px; }
+  .gl-landing .home-business-section .section-head { margin-bottom: 36px; }
+  .gl-landing .home-business-card { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(280px, auto) 1fr; }
+  .gl-landing .home-business-copy { grid-column: 1; grid-row: 2; padding: 24px; }
+  .gl-landing .home-business-art { grid-column: 1; grid-row: 1; min-height: 0; }
+  .gl-landing .home-business-art--services, .gl-landing .home-business-art--personal { padding: 20px; }
+  .gl-landing .home-art-window { padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gl-landing .home-business-card * { transition: none !important; }
+}
 
 /* Franja de pasos y mascota. */
 .gl-landing #solucion {
@@ -295,9 +336,6 @@ html[data-theme] .gl-landing.home-institutional {
 
 @media (max-width: 1050px) {
   .gl-landing .hero > .wrap { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 25px; }
-  .gl-landing .home-business-grid { gap: 12px; }
-  .gl-landing .home-business-card { grid-template-columns: minmax(0, 1fr) 32%; }
-  .gl-landing .home-business-copy { padding: 14px 0 14px 14px; }
 }
 
 @media (max-width: 760px) {
@@ -307,8 +345,6 @@ html[data-theme] .gl-landing.home-institutional {
   .gl-landing .home-hero-copy h1 { max-width: 620px; font-size: clamp(39px, 8.8vw, 58px); }
   .gl-landing .hero .dashboard { max-width: 680px; margin-inline: auto; }
   .gl-landing .home-phone { display: none; }
-  .gl-landing .home-business-grid { grid-template-columns: 1fr; }
-  .gl-landing .home-business-card { min-height: 160px; grid-template-columns: minmax(0, 1fr) 34%; }
   .gl-landing .section { padding: 58px 0; }
   .gl-landing #solucion .split { grid-template-columns: 1fr; }
   .gl-landing #solucion .process { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -336,10 +372,6 @@ html[data-theme] .gl-landing.home-institutional {
   .gl-landing .hero .home-dashboard-main { padding: 12px; }
   .gl-landing .hero .stat { padding: 9px; }
   .gl-landing .hero .stat strong { font-size: 15px; }
-  .gl-landing .home-business-section { padding: 44px 0; }
-  .gl-landing .home-business-section .section-head { margin-bottom: 22px; }
-  .gl-landing .home-business-card { min-height: 158px; grid-template-columns: minmax(0, 1fr) 31%; }
-  .gl-landing .home-business-copy > span:not(.home-business-icon) { font-size: 14px; }
   .gl-landing #solucion .process { grid-template-columns: 1fr; }
   .gl-landing #solucion .step { min-height: 0; }
   .gl-landing .features { grid-template-columns: 1fr; }

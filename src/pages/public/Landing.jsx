@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Seo, { SCHEMA_ORGANIZACION } from '../../components/public/Seo';
 import PublicPlans from './PublicPlans';
 import GesicomMascot from '../../components/public/GesicomMascot';
-import { enviarMensajeContacto } from '../../services/publicoService';
+import { enviarMensajeContacto, enviarSolicitudProveedor } from '../../services/publicoService';
 import '@fontsource-variable/manrope';
 import markup from './home/landing.html?raw';
 import './home/reference.css';
@@ -164,14 +164,20 @@ export default function Landing() {
       form.dataset.enviando = 'true';
       try {
         if (nombre.length > 150) throw new Error('El nombre y apellido juntos pueden tener hasta 150 caracteres.');
-        const respuesta = await enviarMensajeContacto({
+        const respuesta = tipo === 'proveedor' ? await enviarSolicitudProveedor({
+          nombre: data.nombre.trim(), apellido: data.apellido.trim(), email: data.email.trim(),
+          documento: data.documento.trim(), ruc: data.ruc?.trim() || '', whatsapp: data.whatsapp.trim(),
+          categoria: data.categoria, descripcion: data.descripcion?.trim() || '', sitio_web: '',
+        }) : await enviarMensajeContacto({
           area: 'comercial', nombre, email: data.email.trim(),
           asunto: tipo === 'demo' ? `Gesicom · ${selectedText('solicitud')}` : `Gesicom · Postulación de proveedor · ${selectedText('categoria')}`,
           mensaje: lineas.join('\n'), sitio_web: '',
         });
         if (!respuesta?.mensaje?.id) throw new Error('No pudimos confirmar la recepción. Conservamos tus datos para que puedas reintentar.');
         if (!vigente) return;
-        status.textContent = `Solicitud #${respuesta.mensaje.id} recibida. Nuestro equipo se comunicará con vos.`;
+        status.textContent = tipo === 'proveedor'
+          ? `Postulación #${respuesta.mensaje.id} recibida. El equipo de Gesicom revisará tus datos y se comunicará con vos.`
+          : `Solicitud #${respuesta.mensaje.id} recibida. Nuestro equipo se comunicará con vos.`;
         form.reset();
       } catch (error) {
         if (!vigente) return;
