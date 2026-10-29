@@ -173,7 +173,10 @@ html[data-theme] .gl-landing.home-institutional {
 .gl-landing .home-business-card:is(:hover, :focus-visible) .home-business-copy > b > span { background: #14d26a; transform: translateX(3px); }
 .gl-landing .home-business-art { grid-row: 1; position: relative; display: grid; min-width: 0; overflow: hidden; place-items: center; background: radial-gradient(ellipse at 50% 30%, #f1f4e9, #dbe7da); }
 .gl-landing .home-business-art > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transition: transform .5s; }
+.gl-landing .home-business-art--products { background: radial-gradient(circle at 25% 12%, #f4fff7, transparent 40%), linear-gradient(145deg, #b9e9cd, #76c99d); }
+.gl-landing .home-business-art--products > img { object-fit: cover; object-position: center 58%; mix-blend-mode: normal; transform: scale(1.18); }
 .gl-landing .home-business-card:is(:hover, :focus-visible) .home-business-art > img { transform: scale(1.04); }
+.gl-landing .home-business-card:is(:hover, :focus-visible) .home-business-art--products > img { transform: scale(1.24); }
 .gl-landing .home-art-badge { position: absolute; bottom: 18px; left: 20px; right: 20px; width: fit-content; margin-inline: auto; padding: 9px 14px; border: 1px solid #d2e2d8; border-radius: 999px; background: #fffffff2; color: #16432d; font-size: 13px; font-weight: 600; line-height: 1.5; }
 .gl-landing .home-business-art--services { padding: 24px; background: radial-gradient(circle at 90% 10%, #dff8b8, transparent 65%), #cbe9d8; }
 .gl-landing .home-art-window { display: grid; width: 100%; max-width: 300px; gap: 10px; padding: 16px; transform: rotate(-3deg); border: 1px solid #fff; border-radius: 16px; background: #ffffffed; box-shadow: 0 14px 30px rgb(8 54 31 / 12%); transition: transform .35s; }
