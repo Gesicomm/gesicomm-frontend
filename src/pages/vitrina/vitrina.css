@@ -1506,22 +1506,37 @@
    "Sin ganancia" de cada tarjeta, para que se lean como la misma cosa. */
 .vit-sin-ganancia {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem 1rem;
-  margin: 0 0 1rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
-  border-radius: var(--ui-radius-card, 12px);
-  background: color-mix(in srgb, var(--color-warning) 9%, transparent);
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 22%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-warning) 5%, transparent);
   color: var(--color-fg);
 }
 .vit-sin-ganancia > svg { flex: none; color: var(--color-warning); }
 .vit-sin-ganancia p {
-  flex: 1 1 18rem;
+  flex: 0 1 auto;
   margin: 0;
-  font-size: var(--ui-text-body, 1rem);
-  line-height: 1.5;
-  max-width: 70ch;
+  color: var(--vit-muted);
+  font-size: var(--ui-text-help, 0.875rem);
+  line-height: 1.35;
+  white-space: nowrap;
 }
-.vit-sin-ganancia .btn-secondary { flex: none; min-height: 44px; }
+.vit-sin-ganancia .btn-secondary {
+  flex: none;
+  min-height: 30px;
+  padding: 0.2rem 0.55rem;
+  border-color: color-mix(in srgb, var(--color-warning) 32%, var(--vit-border));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-fg);
+  font-size: var(--ui-text-help, 0.875rem);
+}
+
+@media (max-width: 640px) {
+  .vit-sin-ganancia { max-width: 100%; border-radius: 12px; }
+  .vit-sin-ganancia p { white-space: normal; }
+}

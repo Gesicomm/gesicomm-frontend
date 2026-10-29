@@ -15,16 +15,17 @@
     --color-brand-cloud: var(--color-brand-blanco);
     --color-brand-slate: var(--color-brand-gris);
 
-    /* Oscuro por defecto, también antes de resolver la preferencia. */
-    --color-canvas: var(--color-brand-ink);
-    --color-surface: var(--color-brand-navy);
-    --color-surface-2: color-mix(in srgb, var(--color-brand-slate) 20%, var(--color-brand-ink));
-    --color-surface-3: color-mix(in srgb, var(--color-brand-slate) 32%, var(--color-brand-ink));
-    --color-border: #305247;
-    --color-border-strong: #527366;
-    --color-fg: var(--color-brand-cloud);
-    --color-fg-muted: #b7c6be;
-    --color-fg-subtle: #a1b3a8;
+    /* Base oscura del sistema: grafito neutral con verde solo en las acciones.
+       El bosque queda para la identidad de marca, no como fondo de cada panel. */
+    --color-canvas: #141916;
+    --color-surface: #1b221e;
+    --color-surface-2: #232b26;
+    --color-surface-3: #2d3730;
+    --color-border: #39473e;
+    --color-border-strong: #54645a;
+    --color-fg: #f0f3f0;
+    --color-fg-muted: #b2bdb5;
+    --color-fg-subtle: #99a69d;
 
     --color-primary: var(--color-brand-coral);
     --color-primary-hover: #36c88a;
@@ -98,6 +99,50 @@
 
 :root[data-theme='dark'] {
     color-scheme: dark;
+}
+
+/* Modo oscuro uniforme para todos los módulos del panel de usuario. */
+:root[data-theme='dark'] body:has(.user-layout-container) {
+    --color-canvas: #141916;
+    --color-surface: #1b221e;
+    --color-surface-2: #232b26;
+    --color-surface-3: #2d3730;
+    --color-border: #39473e;
+    --color-border-strong: #54645a;
+    --color-fg: #f0f3f0;
+    --color-fg-muted: #b2bdb5;
+    --color-fg-subtle: #99a69d;
+    --color-primary: #25b978;
+    --color-primary-hover: #38c98b;
+    --color-primary-active: #198e5b;
+    --color-primary-fg: #08120d;
+    --color-primary-text: #57d99e;
+    --color-accent: #25b978;
+    --color-accent-hover: #38c98b;
+    --color-accent-fg: #08120d;
+    --color-accent-text: #57d99e;
+    --color-focus: #57d99e;
+    --color-selection: #25b978;
+    --color-selection-fg: #08120d;
+    --color-placeholder: #64736a;
+    --color-placeholder-fg: #f0f3f0;
+    --color-success: #49d5a0;
+    --color-success-fg: #08120d;
+    --color-warning: #d9ac51;
+    --color-warning-fg: #211a0a;
+    --color-danger: #f17b7d;
+    --color-danger-fg: #210e0e;
+    --color-info: #78b9d4;
+    --color-info-fg: #091319;
+    --color-overlay: rgb(7 12 9 / 68%);
+
+    /* Alias legacy consumido por el sidebar y estilos anteriores. */
+    --bg-sidebar: var(--color-surface);
+    --text-sidebar-foreground: var(--color-fg);
+    --text-muted-foreground: var(--color-fg-muted);
+    --bg-primary: var(--color-primary);
+    --bg-primary-soft: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    --border-border: var(--color-border);
 }
 
 :root[data-theme='dark'] body {

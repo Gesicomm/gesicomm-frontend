@@ -45,6 +45,9 @@
   gap: 1rem;
   margin: 0 auto;
   box-sizing: border-box;
+  /* El panel vive dentro del área que deja libre el sidebar. Los cortes de
+     layout deben medir este ancho disponible, no el viewport completo. */
+  container: md-dashboard / inline-size;
 }
 
 .md-eyebrow {
@@ -94,7 +97,7 @@
 /* ── Header ────────────────────────────────────────────────────────── */
 .md-header {
   display: grid;
-  grid-template-columns: minmax(240px, 0.8fr) minmax(520px, 1.7fr);
+  grid-template-columns: minmax(400px, 1.2fr) minmax(520px, 1.7fr);
   align-items: end;
   gap: 1rem;
   padding: 1rem;
@@ -105,7 +108,8 @@
 .md-h1 {
   font-family: var(--font-display);
   font-weight: 650;
-  font-size: 1.55rem;
+  font-size: 1.875rem;
+  line-height: 1.25;
   letter-spacing: 0;
   margin: 0.15rem 0 0;
   color: var(--md-ink);
@@ -369,8 +373,9 @@
   min-width: 0;
 }
 .md-card-title {
-  font-size: 0.9rem;
+  font-size: 1.0625rem;
   font-weight: 700;
+  line-height: 1.4;
   color: var(--md-ink);
   margin: 0;
   display: flex;
@@ -1136,19 +1141,27 @@
 
 .md-ver-todos { margin-top: 0.9rem; }
 
-@media (max-width: 1280px) {
+@container md-dashboard (max-width: 1220px) {
   .md-header {
     grid-template-columns: 1fr;
     align-items: start;
   }
   .md-filtros { align-items: flex-start; }
   .md-selects { justify-content: flex-start; }
+  .gc-tutorial-title-row { justify-content: space-between; }
   .md-span-4,
   .md-span-8 { grid-column: 1 / -1; }
   .md-summary-card .md-rentabilidad-grid,
   .md-rentabilidad-card .md-rentabilidad-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+  .md-summary-card .md-rent-destacado { order: -1; }
+}
+
+@container md-dashboard (max-width: 920px) {
+  .md-cols-2 { grid-template-columns: 1fr; }
+  .md-summary-card .md-rentabilidad-grid,
+  .md-rentabilidad-card .md-rentabilidad-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
@@ -1334,5 +1347,17 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--md-ink-faint);
+}
+
+/* En oscuro, el valor principal gana jerarquía con la escala y el espacio,
+   sin un halo verde detrás que ensucie el fondo del dashboard. */
+:root[data-theme='dark'] .user-layout-container .md-page {
+  --md-confirmado-soft: var(--md-surface-2);
+}
+:root[data-theme='dark'] .user-layout-container .md-page .md-hero {
+  background: var(--md-surface);
+}
+:root[data-theme='dark'] .user-layout-container .md-page .md-rent-item.md-rent-destacado {
+  border-color: var(--md-border);
 }
 

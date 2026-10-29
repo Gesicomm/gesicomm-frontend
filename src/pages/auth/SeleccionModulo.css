@@ -14,7 +14,7 @@
   font-weight: 700;
   letter-spacing: .04em;
 }
-.module-picker__header h1 { margin: 0 0 12px; font-size: clamp(28px, 3vw, 34px); font-weight: 750; line-height: 1.25; }
+.module-picker__header h1 { margin: 0 0 12px; font-size: clamp(28px, 3vw, 32px); font-weight: 750; line-height: 1.25; }
 .module-picker__header p { margin: 0; color: var(--color-fg-muted); font-size: 16px; line-height: 1.6; }
 .module-picker__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; }
 
@@ -126,6 +126,36 @@
 .module-picker__footer { margin: 26px 0 0; color: var(--color-fg-muted); font-size: 16px; line-height: 1.6; text-align: center; }
 .module-picker__footer a { color: var(--color-primary-text); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .module-picker__footer a:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 4px; }
+
+/* El selector queda fuera de UserLayout; en oscuro usa la misma base grafito
+   del panel para que las tarjetas no se conviertan en bloques verde bosque. */
+:root[data-theme='dark'] .module-picker {
+  --color-canvas: #141916;
+  --color-surface: #1b221e;
+  --color-surface-2: #232b26;
+  --color-surface-3: #2d3730;
+  --color-border: #39473e;
+  --color-border-strong: #54645a;
+  --color-fg: #f0f3f0;
+  --color-fg-muted: #b2bdb5;
+  --color-fg-subtle: #99a69d;
+  --color-primary: #25b978;
+  --color-primary-hover: #38c98b;
+  --color-primary-active: #198e5b;
+  --color-primary-fg: #08120d;
+  --color-primary-text: #57d99e;
+  --color-focus: #57d99e;
+}
+
+:root[data-theme='dark'] .module-card {
+  box-shadow: 0 14px 36px rgb(0 0 0 / 16%);
+}
+:root[data-theme='dark'] .module-card--locked {
+  background: #202822;
+}
+:root[data-theme='dark'] .module-card--locked .module-card__icon {
+  background: #29342d;
+}
 
 @media (max-width: 700px) {
   .module-picker { padding: 40px 20px; }

@@ -949,6 +949,19 @@ export default function VitrinaGrid() {
             <span className="vit-header-stat">
               <Package size={11} /> {totalItems} resultados
             </span>
+            {(soloSinGanancia || sinGananciaEnTienda > 0) && (
+              <div className="vit-sin-ganancia" role="status">
+                <AlertCircle size={15} aria-hidden="true" />
+                <p>
+                  {soloSinGanancia
+                    ? 'Estás viendo solo los productos que se venden sin ganancia. Cargá tu precio de venta en cada uno.'
+                    : `${sinGananciaEnTienda} ${sinGananciaEnTienda === 1 ? 'producto publicado en tu tienda se vende' : 'productos publicados en tu tienda se venden'} al costo o por debajo.`}
+                </p>
+                <button type="button" className="btn-secondary" onClick={() => setSoloSinGanancia(v => !v)}>
+                  {soloSinGanancia ? <><X size={14} /> Ver todos</> : 'Ver cuáles son'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1236,22 +1249,6 @@ export default function VitrinaGrid() {
           </button>
         )}
       </div>
-
-      {/* Sin esto el comercio publicaba productos al costo sin enterarse: el
-          aviso de cada tarjeta solo se ve página por página. */}
-      {(soloSinGanancia || sinGananciaEnTienda > 0) && (
-        <div className="vit-sin-ganancia" role="status">
-          <AlertCircle size={18} aria-hidden="true" />
-          <p>
-            {soloSinGanancia
-              ? 'Estás viendo solo los productos que se venden sin ganancia. Cargá tu precio de venta en cada uno.'
-              : `${sinGananciaEnTienda} ${sinGananciaEnTienda === 1 ? 'producto publicado en tu tienda se vende' : 'productos publicados en tu tienda se venden'} al costo o por debajo.`}
-          </p>
-          <button type="button" className="btn-secondary" onClick={() => setSoloSinGanancia(v => !v)}>
-            {soloSinGanancia ? <><X size={16} /> Ver todos</> : 'Ver cuáles son'}
-          </button>
-        </div>
-      )}
 
       {/* ── Contenido ── */}
       {cargando ? (
