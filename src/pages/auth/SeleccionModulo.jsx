@@ -27,7 +27,7 @@ export default function SeleccionModulo() {
     <header className="module-picker__header">
       <span className="module-picker__eyebrow">Tu espacio de trabajo</span>
       <h1>¡Hola, {usuario?.nombre || 'Usuario'}!</h1>
-      <p>Elegí el espacio incluido en tu plan con el que querés trabajar.</p>
+      <p>Tu negocio, en una misma plataforma. Elegí el espacio de Gesicom que se ajuste a lo que vendés y al acceso de tu plan.</p>
     </header>
     <div className="module-picker__grid">
       {usuario?.rol === 'administrador' && <button type="button" onClick={() => navigate('/dashboard')} className="module-card module-card--admin">
@@ -37,8 +37,8 @@ export default function SeleccionModulo() {
         <span className="module-card__description">Gestioná Gesicom, las solicitudes y los códigos de acceso.</span>
         <span className="module-card__action">Entrar al panel <ArrowRight size={19} aria-hidden="true" /></span>
       </button>}
-      {[{ruta:'fisico',nombre:'Gestión de E-commerce',Icon:ShoppingCart,texto:'Administrá tu tienda, productos, pedidos, logística, finanzas y anuncios.'},
-        {ruta:'personal',nombre:'Marca Personal',Icon:Megaphone,texto:'Gestioná contenido, publicaciones, CRM y automatización de tu marca.'}].map(({ruta,nombre,Icon,texto}) => {
+      {[{ruta:'fisico',nombre:'Gestión de E-commerce',Icon:ShoppingCart,texto:'Para vender productos físicos. Administrá tus tiendas, organizá pedidos y seguí entregas, costos y ganancias.'},
+        {ruta:'personal',nombre:'Marca Personal',Icon:Megaphone,texto:'Para ofrecer servicios o desarrollar tu marca personal. Prepará contenido, organizá tu agenda y acompañá a tus clientes.'}].map(({ruta,nombre,Icon,texto}) => {
         const permitido = acceso.rutas[ruta];
         const accion = permitido ? `Entrar a ${nombre}` : `Ver planes para ${nombre}`;
         return <section className={`module-card ${permitido ? 'module-card--available' : 'module-card--locked'}`} key={ruta}>

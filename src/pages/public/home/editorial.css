@@ -296,6 +296,43 @@ html[data-theme] .gl-landing.home-institutional {
 .gl-landing #video .video { border-color: #d1dfd6; background: linear-gradient(145deg, #e9f1ec, #dfe9e3); color: #173c29; }
 .gl-landing #video .video p { color: #465d4f; }
 .gl-landing #video .play { box-shadow: 0 0 0 12px rgb(20 210 106 / 12%); }
+.gl-landing .home-product-tour { max-width: 1040px; margin: 0 auto; }
+.gl-landing .home-product-tour > .btn,
+.gl-landing .home-plan-conditions > .btn,
+.gl-landing #rutas .route-panel > div > .btn,
+.gl-landing #partners .btn,
+.gl-landing #faq details > .btn { color: #163c2a; border-color: #8aa596; background: #fff; }
+.gl-landing .home-tour-options { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+.gl-landing .home-tour-options .btn { color: #163c2a; border-color: #8aa596; background: #fff; font-size: 16px; }
+.gl-landing .home-tour-options .btn[aria-pressed=true] { color: #fff; background: #0f4933; border-color: #0f4933; }
+.gl-landing .home-product-tour figure { margin: 0 0 24px; border: 1px solid #ccdcd1; border-radius: 20px; overflow: hidden; background: #fff; }
+.gl-landing .home-tour-image { position: relative; display: block; width: 100%; padding: 0; border: 0; background: #f7faf8; cursor: zoom-in; }
+.gl-landing .home-tour-zoom { position: absolute; right: 12px; bottom: 12px; padding: 7px 12px; border: 1px solid #8aa596; border-radius: 8px; background: #fff; color: #163c2a; font-size: 14px; font-weight: 600; }
+.gl-landing .home-tour-image img { display: block; width: 100%; height: auto; aspect-ratio: 8 / 5; object-fit: contain; }
+.gl-landing .home-product-tour figcaption { padding: 24px; border-top: 1px solid #d6e1d9; color: #163c2a; }
+.gl-landing .home-product-tour figcaption strong { display: block; font-size: 20px; }
+.gl-landing .home-product-tour figcaption p { margin: 8px 0; font-size: 16px; }
+.gl-landing .home-product-tour figcaption span { font-size: 14px; color: #52665a; }
+.gl-landing .home-tour-dialog { width: min(1320px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 24px; border: 1px solid #8aa596; border-radius: 20px; background: #fff; color: #13271d; }
+.gl-landing .home-tour-dialog::backdrop { background: rgb(6 25 17 / 75%); }
+.gl-landing .home-tour-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.gl-landing .home-tour-dialog-heading h3 { font-size: 22px; color: #13271d; }
+.gl-landing .home-tour-dialog-heading .btn { color: #13271d; border-color: #8aa596; flex-shrink: 0; }
+.gl-landing .home-tour-dialog > p { font-size: 14px; }
+.gl-landing .home-tour-full { overflow: auto; }
+.gl-landing .home-tour-full img { display: block; width: 1200px; max-width: none; height: auto; }
+.gl-landing .home-plan-billing { text-align: center; font-size: 16px; margin: 24px 0; }
+.gl-landing .home-plan-scope { font-size: 16px; line-height: 1.6; }
+.gl-landing .home-plan-conditions { max-width: 800px; margin: 28px auto 0; padding: 24px; border: 1px solid #ccdcd1; border-radius: 16px; background: #fff; }
+.gl-landing .home-plan-conditions h3 { font-size: 20px; color: #13271d; }
+.gl-landing .home-plan-conditions p { font-size: 16px; }
+.gl-landing #partners.home-partner-section { padding-top: 48px; padding-bottom: 48px; }
+.gl-landing #partners.home-partner-section h2 { font-size: clamp(26px, 3vw, 34px); }
+@media (max-width: 600px) {
+  .gl-landing .home-tour-options { display: grid; grid-template-columns: 1fr; }
+  .gl-landing .home-product-tour figcaption, .gl-landing .home-plan-conditions { padding: 20px; }
+  .gl-landing .home-tour-dialog { padding: 16px; }
+}
 .gl-landing #precios .price-card.is-featured { border-color: #28b773; box-shadow: 0 14px 36px rgb(20 160 90 / 10%); }
 .gl-landing #precios .plan-list { line-height: 1.8; }
 .gl-landing #partners .process { border-color: #d7e2da; background: #fff; }

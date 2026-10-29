@@ -33,8 +33,8 @@ const CORREO_FACTURACION = 'contacto@gesicomm.com';
 const MODULOS_GESICOMM = [
   {
     icono: Store,
-    titulo: 'Tienda y landing listas para vender',
-    texto: 'Creá una vitrina profesional, páginas de producto y checkout sin armar todo desde cero.',
+    titulo: 'Tiendas y páginas de venta',
+    texto: 'Mostrá tus productos o tu propuesta online y facilitá el contacto con tus clientes.',
   },
   {
     icono: ShoppingCart,
@@ -43,8 +43,8 @@ const MODULOS_GESICOMM = [
   },
   {
     icono: LayoutTemplate,
-    titulo: 'Fichas que convierten mejor',
-    texto: 'Plantillas por rubro para mostrar beneficios, combos, ofertas y respuestas a objeciones.',
+    titulo: 'Tu oferta, clara y completa',
+    texto: 'Usá plantillas para presentar beneficios, precios y respuestas a las preguntas de tus clientes.',
   },
   {
     icono: PackageCheck,
@@ -64,15 +64,15 @@ const MODULOS_GESICOMM = [
 ];
 
 const PASOS = [
-  ['Elegís tu plan', 'Seleccionás el nivel que calza con tu operación y pagás con PagoPar.'],
-  ['Configurás tu negocio', 'Después del pago cargás nombre, rubro, datos de entrega y primera ficha.'],
-  ['Empezás a vender', 'Publicás productos, compartís tu tienda y administrás pedidos desde el panel.'],
+  ['Elegís tu plan', 'Compará los espacios y beneficios incluidos y elegí pago mensual o anual.'],
+  ['Preparás tu espacio', 'Creá tu cuenta, verificá tu correo y completá los datos de tu negocio.'],
+  ['Empezás a trabajar', 'Mostrá tu oferta, organizá a tus clientes y seguí tus resultados desde Gesicom.'],
 ];
 
 const FAQS = [
   {
-    pregunta: '¿Gesicomm es solo una página web?',
-    respuesta: 'No. Es una plataforma para vender: landing, catálogo, productos, pedidos, delivery, seguimiento, reportes y herramientas comerciales en el mismo flujo.',
+    pregunta: '¿Para qué negocios sirve Gesicom?',
+    respuesta: 'Para vender productos, ofrecer servicios o desarrollar tu marca personal. Sus herramientas se organizan en dos espacios: Gestión de E-commerce y Marca personal.',
   },
   {
     pregunta: '¿Necesito saber diseño o programación?',
@@ -80,12 +80,14 @@ const FAQS = [
   },
   {
     pregunta: '¿Qué pasa después de pagar?',
-    respuesta: 'Se habilita tu cuenta y te llevamos al onboarding para configurar tu tienda, los datos principales y el primer punto de venta.',
+    respuesta: 'Con el pago confirmado, creá tu cuenta o ingresá con el mismo correo que usaste al pagar. Verificá tu correo para vincular el plan y preparar tu espacio de trabajo.',
   },
   {
     pregunta: '¿Puedo entrar por un link de afiliado?',
-    respuesta: 'Sí. Si el link trae un código de referido, Gesicomm guarda esa referencia y la mantiene durante el checkout.',
+    respuesta: 'Sí. Podés registrarte desde el enlace de una persona que te recomendó Gesicom.',
   },
+  { pregunta: '¿Puedo administrar varias tiendas?', respuesta: 'Sí. Gestión de E-commerce permite administrar varias tiendas desde tu cuenta. El plan indica si incluye este espacio, Marca personal o ambos.' },
+  { pregunta: '¿Hay permanencia mínima o costos adicionales?', respuesta: 'Consultá con el equipo antes de contratar para confirmar estas condiciones. Los beneficios incluidos se detallan en la tarjeta de cada plan.' },
 ];
 
 function formatPrecioPlan(plan) {
@@ -355,8 +357,8 @@ export default function Planes() {
       <section id="que-incluye" className="pl-section">
         <div className="pl-section-head">
           <span className="pl-section-kicker">Qué es Gesicomm</span>
-          <h2>Todo lo que necesitás para pasar de “me escriben al WhatsApp” a una operación vendiendo en serio.</h2>
-          <p>La landing no solo muestra precios: primero hace tangible el producto, responde dudas y reduce el miedo de pagar por una herramienta nueva.</p>
+          <h2>Herramientas para crear, gestionar y hacer crecer tu negocio online.</h2>
+          <p>Organizá productos, servicios o tu marca personal desde Gesicom. Los beneficios y espacios incluidos se detallan en cada plan.</p>
         </div>
         <div className="pl-feature-grid">
           {MODULOS_GESICOMM.map(({ icono: Icono, titulo, texto }) => (
@@ -371,17 +373,17 @@ export default function Planes() {
 
       <section className="pl-proof-band">
         <div>
-          <span className="pl-section-kicker">Por qué convierte mejor</span>
-          <h2>Antes de pedir el pago, la página explica el valor.</h2>
+          <span className="pl-section-kicker">Una misma plataforma</span>
+          <h2>Elegí el espacio que acompaña tu negocio.</h2>
         </div>
         <div className="pl-proof-grid">
           <article>
-            <strong>Sin contexto</strong>
-            <p>El visitante ve precios, no entiende el producto y posterga la decisión.</p>
+            <strong>Gestión de E-commerce</strong>
+            <p>Para vender productos: varias tiendas, catálogo, pedidos, entregas y resultados.</p>
           </article>
           <article>
-            <strong>Con Gesicomm explicado</strong>
-            <p>Ve el resultado, entiende módulos, elimina objeciones y llega a planes con intención.</p>
+            <strong>Marca personal</strong>
+            <p>Para ofrecer servicios o desarrollar tu marca: contenido, agenda y seguimiento de clientes.</p>
           </article>
         </div>
       </section>
@@ -389,7 +391,7 @@ export default function Planes() {
       <section className="pl-section">
         <div className="pl-section-head compact">
           <span className="pl-section-kicker">Cómo empieza</span>
-          <h2>De visitante a tienda activa en tres pasos.</h2>
+          <h2>Tus primeros pasos en Gesicom.</h2>
         </div>
         <div className="pl-steps">
           {PASOS.map(([titulo, texto], index) => (
@@ -405,8 +407,8 @@ export default function Planes() {
       <section id="planes" className="pl-section">
         <div className="pl-section-head compact">
           <span className="pl-section-kicker">Planes</span>
-          <h2>Elegí el plan que acompaña tu nivel de venta.</h2>
-          <p>Todos los planes pagos activan el flujo para configurar tu negocio y empezar a vender con una experiencia guiada.</p>
+          <h2>Elegí el plan que acompaña tu negocio.</h2>
+          <p>Una ruta incluye un espacio a elección; ambas rutas incluyen los dos. El precio mensual cubre un mes y el anual, un año pagado por adelantado.</p>
         </div>
 
       {cargando ? (

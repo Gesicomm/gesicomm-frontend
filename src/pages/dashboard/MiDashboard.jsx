@@ -1819,7 +1819,7 @@ export default function MiDashboard() {
         titulo={(
           <>
             {METRIC_TERMS.rentabilidad}
-            <Ayuda texto="Se arranca con toda la plata que cobraste y se le va restando cada gasto, uno por uno. Lo que sobra abajo de todo es tu ganancia." />
+            <Ayuda texto="Parte de las ventas de productos entregados, sin delivery. Resta los costos de venta y los gastos registrados del período para estimar tu ganancia. No equivale al dinero disponible en caja." />
           </>
         )}
       >

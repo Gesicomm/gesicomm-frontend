@@ -556,10 +556,10 @@ export default function Login() {
               <form onSubmit={handleRegister} noValidate className="login-register-form">
                 <div>
                   <h2 className="m-0 text-2xl font-bold">Crear cuenta</h2>
-                  <p className="mt-2 text-sm leading-6 text-fg-muted">
+                  <p className="mt-2 text-base leading-6 text-fg-muted">
                     {tokenSuscripcion
                       ? `Activá ${suscripcionRegistro?.plan?.nombre || 'tu plan'} y prepará tu espacio.`
-                      : 'Tus datos, tu espacio de trabajo y listo. Después te ayudamos con la tienda.'}
+                      : 'Creá tu cuenta y verificá tu correo. Después elegí el espacio y el plan para tu negocio.'}
                   </p>
                 </div>
                 {validandoSuscripcion && (

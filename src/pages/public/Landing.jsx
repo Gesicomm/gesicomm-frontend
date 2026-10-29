@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import Seo, { SCHEMA_ORGANIZACION } from '../../components/public/Seo';
 import PublicPlans from './PublicPlans';
+import ProductTour from './ProductTour';
 import GesicomMascot from '../../components/public/GesicomMascot';
 import { enviarMensajeContacto, enviarSolicitudProveedor } from '../../services/publicoService';
 import '@fontsource-variable/manrope';
@@ -15,14 +16,14 @@ import './home/lead-dialog.css';
 
 const RUTAS = {
   fisico: {
-    kicker: 'E-commerce', titulo: 'De la proveeduría a la rentabilidad.',
-    descripcion: 'Gestioná productos, tienda online, marketing, pedidos, logística y resultados comerciales desde una sola plataforma.',
-    pasos: [['Proveeduría', 'Productos y abastecimiento'], ['Marketing', 'Campañas y tienda online'], ['Operaciones', 'Pedidos, logística y cobro'], ['Análisis', 'Control de costos y márgenes']],
+    kicker: 'Gestión de E-commerce · Venta de productos', titulo: 'De tu catálogo a cada pedido entregado.',
+    descripcion: 'Creá tus tiendas online, organizá productos y pedidos y seguí tus entregas, costos y ganancias. Todo conectado dentro de Gesicom.',
+    pasos: [['Productos', 'Organizá tu catálogo y abastecimiento'], ['Tu tienda', 'Mostrá tu oferta y atraé clientes'], ['Pedidos', 'Seguí las entregas y los cobros'], ['Resultados', 'Entendé tus costos y ganancias']],
   },
   personal: {
     kicker: 'Marca personal y servicios', titulo: 'Del contenido a tus clientes y resultados.',
-    descripcion: 'Creá guiones con IA, planificá contenidos, montá embudos, captá prospectos, gestioná tus clientes y analizá qué genera resultados. La publicación directa en redes está pendiente de habilitación.',
-    pasos: [['Guiones e IA', 'Contenido y creatividad'], ['Producción', 'Calendario y teleprompter'], ['Conversión', 'Embudos, agenda y CRM'], ['Analítica', 'Contenido que genera ventas']],
+    descripcion: 'Presentá tus servicios o tu marca, prepará contenido y organizá tu agenda y tus clientes. Este espacio forma parte de Gesicom. La publicación directa en redes todavía no está habilitada.',
+    pasos: [['Contenido', 'Prepará ideas y guiones'], ['Organización', 'Planificá qué vas a compartir'], ['Clientes', 'Seguí consultas, citas y oportunidades'], ['Resultados', 'Identificá qué funciona mejor']],
   },
 };
 
@@ -33,6 +34,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [planesHost, setPlanesHost] = useState(null);
   const [mascotHost, setMascotHost] = useState(null);
+  const [tourHost, setTourHost] = useState(null);
   const [rutaPlanes, setRutaPlanes] = useState('fisico');
 
   useEffect(() => {
@@ -41,11 +43,12 @@ export default function Landing() {
     let ruta = 'fisico';
     setPlanesHost(root.querySelector('[data-home-plans]'));
     setMascotHost(root.querySelector('[data-home-mascot]'));
+    setTourHost(root.querySelector('[data-home-tour]'));
     const texto = (id, value) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = value; };
     const opcion = (selector, actual) => root.querySelectorAll(selector).forEach(button => {
       const active = button.dataset.route === actual;
       button.classList.toggle('active', active);
-      button.setAttribute('aria-pressed', String(active));
+      if (button.tagName === 'BUTTON') button.setAttribute('aria-pressed', String(active));
     });
     root.querySelector('[data-home-year]').textContent = new Date().getFullYear();
     const telefono = String(import.meta.env.VITE_GESICOM_WHATSAPP || '').replace(/\D/g, '');
@@ -69,7 +72,7 @@ export default function Landing() {
       const proveedor = tipo === 'proveedor';
       root.querySelector('#home-provider-form').hidden = !proveedor;
       root.querySelector('#home-access-form').hidden = proveedor;
-      texto('home-lead-title', proveedor ? 'Ofrecer servicios en Gesicom' : tipo === 'prueba' ? 'Solicitar prueba gratuita' : tipo === 'demo' ? 'Solicitar demostración' : 'Empezar como vendedor');
+      texto('home-lead-title', proveedor ? 'Ofrecer servicios en Gesicom' : tipo === 'prueba' ? 'Solicitar prueba gratuita' : 'Solicitar asesoramiento');
       if (!proveedor) {
         const form = root.querySelector('#gc-demo-form');
         form.elements.solicitud.value = tipo === 'prueba' ? 'prueba_gratuita' : tipo === 'demo' ? 'demo' : 'contratacion';
@@ -209,9 +212,10 @@ export default function Landing() {
   }, [navigate]);
 
   return <>
-    <Seo titulo="Gesicom | Todo tu negocio digital bajo control" descripcion="Creá, administrá y escalá tu negocio digital desde un solo sistema. E-commerce, marca personal, CRM, marketing y analítica." schema={SCHEMA_ORGANIZACION} />
+    <Seo titulo="Gesicom | Creá y hacé crecer tu negocio online" descripcion="Vendé productos, ofrecé servicios o impulsá tu marca personal. Creá y gestioná tu negocio online desde un solo lugar con Gesicom." schema={SCHEMA_ORGANIZACION} />
     <div ref={rootRef} className="gl-landing home-institutional" dangerouslySetInnerHTML={{ __html: markup }} />
     {planesHost && createPortal(<PublicPlans ruta={rutaPlanes} />, planesHost)}
     {mascotHost && createPortal(<GesicomMascot />, mascotHost)}
+    {tourHost && createPortal(<ProductTour />, tourHost)}
   </>;
 }

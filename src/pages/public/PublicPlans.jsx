@@ -65,7 +65,7 @@ export default function PublicPlans({ ruta = 'fisico' }) {
       <div className="section-head">
         <span className="eyebrow">Planes de Gesicom</span>
         <h2 id="home-plans-title">Elegí el plan que impulsa tu negocio.</h2>
-        <p>Compará las opciones disponibles y elegí la que mejor se ajuste a tu negocio.</p>
+        <p>Una ruta significa un espacio de trabajo: Gestión de E-commerce para productos, o Marca personal para servicios y tu marca. Los planes de ambas rutas incluyen los dos espacios.</p>
       </div>
       {estado === 'cargando' && <p className="home-plans-status" role="status">Cargando planes disponibles…</p>}
       {estado === 'error' && <div className="home-plans-status">
@@ -74,7 +74,7 @@ export default function PublicPlans({ ruta = 'fisico' }) {
       </div>}
       {estado === 'listo' && !planes.length && <div className="home-plans-status">
         <p>Por ahora no hay planes disponibles para contratar.</p>
-        <a className="btn" href="#solicitar-demo">Consultar disponibilidad</a>
+        <a className="btn" href="#solicitar-demo">Solicitar asesoramiento</a>
       </div>}
       {estado === 'listo' && planes.length > 0 && <>
         {monedas.length > 1 && <div className="selectors" role="group" aria-label="Moneda del plan">
@@ -83,6 +83,7 @@ export default function PublicPlans({ ruta = 'fisico' }) {
             {valor === 'PYG' ? 'Guaraníes · PYG' : 'Dólares · USD'}
           </button>)}
         </div>}
+        <p className="home-plan-billing" role="status">{periodo === 'anual' ? 'El precio anual corresponde al año completo y se paga por adelantado.' : periodo === 'mensual' ? 'El precio mensual corresponde a un mes de acceso.' : 'Este plan se abona en un solo pago. Revisá el alcance publicado antes de contratar.'}</p>
         {periodos.length > 1 && <div className="selectors" role="group" aria-label="Duración del plan">
           {periodos.map(valor => <button type="button" key={valor} aria-pressed={periodo === valor}
             className={periodo === valor ? 'active' : ''} onClick={() => setPeriodoElegido(valor)}>{PERIODOS[valor]}</button>)}
@@ -92,6 +93,7 @@ export default function PublicPlans({ ruta = 'fisico' }) {
             {plan.etiqueta && <span className="eyebrow home-plan-badge">{plan.etiqueta}</span>}
             <h3>{plan.nombre}</h3>
             <p className="home-plan-period">Acceso: {NOMBRES_RUTA[accesoDelPlan(plan)]}</p>
+            <p className="home-plan-scope">{accesoDelPlan(plan) === 'elegir' ? '1 espacio a elección' : accesoDelPlan(plan) === 'ambas' ? '2 espacios incluidos' : '1 espacio incluido'}{accesoDelPlan(plan) !== 'personal' && ' · Varias tiendas en Gestión de E-commerce'}</p>
             {plan.resumen && <p>{plan.resumen}</p>}
             <div className="price">{moneda === 'USD' ? 'US$' : '₲'} {Number(plan.precio).toLocaleString(moneda === 'USD' ? 'en-US' : 'es-PY')}</div>
             <p className="home-plan-period">{DETALLE_PERIODO[plan.periodicidad || 'mensual']}</p>
@@ -102,6 +104,7 @@ export default function PublicPlans({ ruta = 'fisico' }) {
           </article>)}
         </div>
         <p className="home-payment-note">El checkout confirma el plan y el importe vigente antes de continuar al pago seguro.</p>
+        <div className="home-plan-conditions"><h3>Antes de contratar</h3><p>Los beneficios incluidos se detallan en cada tarjeta. Consultá con el equipo la permanencia mínima y los posibles servicios con costo adicional.</p><a className="btn" href="#solicitar-demo">Solicitar asesoramiento</a></div>
       </>}
     </div>
   </section>;

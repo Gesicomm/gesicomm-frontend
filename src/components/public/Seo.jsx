@@ -129,7 +129,7 @@ export const SCHEMA_ORGANIZACION = {
   url: SITIO,
   logo: `${SITIO}/icons/icon-512.png`,
   description:
-    'Sistema para crear, organizar y gestionar un negocio e-commerce desde un solo lugar: tienda online, productos, pedidos, clientes, inventario, envíos y métricas.',
+    'Plataforma de comercio electrónico para crear, gestionar y hacer crecer negocios online: venta de productos, servicios y marca personal desde un solo lugar.',
   email: 'contacto@gesicomm.com',
   contactPoint: {
     '@type': 'ContactPoint',
