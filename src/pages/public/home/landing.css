@@ -141,10 +141,6 @@
   .home-lead-toolbar { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 24px; border-bottom: 1px solid var(--gc-border); background: var(--gc-surface); font-size: 16px; font-weight: 700; }
   .home-lead-toolbar button { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border: 1px solid var(--gc-border); border-radius: 12px; background: var(--gc-surface2); color: var(--gc-white); font: inherit; cursor: pointer; }
   .home-lead-dialog .gc-lead-panel { border: 0; border-radius: 0; box-shadow: none; }
-  .home-lead-dialog .gc-intro h2 { font-size: 30px; }
-  .home-lead-dialog .gc-intro p { font-size: 16px; line-height: 1.6; }
-  .home-lead-dialog .gc-feature, .home-lead-dialog .gc-note { font-size: 14px; }
-  .home-lead-dialog .gc-button { min-height: 48px; font-size: 15px; }
   @media(max-width: 800px) { .home-next-options { grid-template-columns: 1fr; } .home-next-card { padding: 24px; } .home-next-icon { margin-bottom: 18px; } }
   @media(max-width: 800px) { .home-trial-code-entry { flex-direction: column; align-items: stretch; padding: 22px; } .home-trial-code-entry a { width: 100%; } }
   @media(max-width: 530px) { .home-lead-dialog { width: calc(100% - 20px); max-height: calc(100dvh - 20px); border-radius: 18px; } .home-lead-toolbar { padding: 12px 18px; } .home-lead-dialog .gc-features { display: none; } }

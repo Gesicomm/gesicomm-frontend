@@ -8,70 +8,28 @@ const STORAGE_KEY = 'gesicomm.planes.catalogo.v1';
 
 export const PERIODICIDAD = 'por mes';
 
-/** Placeholders — reemplazar por los planes reales. */
+/** Los cuatro planes comerciales. El servidor conserva los precios publicados. */
 export const PLANES_DEFAULT = [
-  {
-    id: 'founders',
-    codigo: 'founders',
-    equivale: 'pago',
-    acceso_rutas: 'ambas',
-    moneda: 'USD',
-    nombre: 'Miembros Fundadores',
-    precio: 47,
-    resumen: 'Oferta limitada para los primeros 300 clientes pagos en Paraguay, con precio fundador protegido mientras la suscripción permanezca activa.',
-    destacado: true,
-    activo: true,
-    etiqueta: '300 cupos',
-    cta: 'Ser Fundador',
-    features: [
-      'Precio Fundador protegido de USD 47/mes',
-      'Acceso al ecosistema Gesicom y mejoras del nivel Fundador',
-      'Onboarding, Academia, Biblioteca Operativa y comunidad privada',
-      'Programa de Afiliados con 40% recurrente sobre suscripciones elegibles',
-      '50% OFF para Gesicom Certified Partner',
-    ],
-  },
-  {
-    id: 'growth',
-    codigo: 'growth',
-    equivale: 'pago',
-    acceso_rutas: 'ambas',
-    moneda: 'USD',
-    nombre: 'Growth',
-    precio: 97,
-    resumen: 'Para tiendas que quieren más landings, más medición y una operación comercial más completa.',
-    destacado: false,
-    activo: false,
-    etiqueta: 'Más elegido',
-    cta: 'Activar Growth',
-    features: [
-      'Todo lo del plan Fundador',
-      'Landings y embudos adicionales',
-      'Configuración avanzada de productos',
-      'Analítica comercial y píxeles',
-    ],
-  },
-  {
-    id: 'scale',
-    codigo: 'scale',
-    equivale: 'pago',
-    acceso_rutas: 'ambas',
-    moneda: 'USD',
-    nombre: 'Scale',
-    precio: 197,
-    resumen: 'Para operaciones con catálogo grande, equipo y automatización comercial.',
-    destacado: false,
-    activo: false,
-    etiqueta: '',
-    cta: 'Activar Scale',
-    features: [
-      'Todo lo del plan Growth',
-      'Productos y pedidos sin límite operativo',
-      'Automatizaciones y canales de venta',
-      'Soporte prioritario',
-    ],
-  },
-];
+  ['una-ruta-mensual','Una ruta mensual','elegir','mensual',297000],
+  ['una-ruta-anual','Una ruta anual','elegir','anual',2970000],
+  ['ambas-rutas-mensual','Ambas rutas mensual','ambas','mensual',397000],
+  ['ambas-rutas-anual','Ambas rutas anual','ambas','anual',3970000],
+].map(([codigo,nombre,acceso_rutas,periodicidad,precio],index)=>({
+  id:codigo,codigo,nombre,acceso_rutas,periodicidad,precio,moneda:'PYG',equivale:'pago',
+  resumen:acceso_rutas==='elegir'?'Elegí Gestión de E-commerce o Marca personal.':'Gestión de E-commerce y Marca personal en una misma cuenta.',
+  features:[acceso_rutas==='elegir'?'Una ruta a elección':'Las dos rutas incluidas','Tutoriales por sección','Soporte técnico por WhatsApp en horario laboral'],
+  etiqueta:'',cta:'Contratar plan',destacado:codigo==='ambas-rutas-mensual',activo:true,orden:index+1,
+}));
+
+export function normalizarCatalogoPlanes(catalogo) {
+  const planes=Array.isArray(catalogo)?catalogo:[];
+  return PLANES_DEFAULT.map(base=>{
+    const guardado=planes.find(plan=>(plan.codigo||plan.id)===base.codigo);
+    return {...base,...guardado,id:base.codigo,codigo:base.codigo,nombre:base.nombre,
+      acceso_rutas:base.acceso_rutas,periodicidad:base.periodicidad,equivale:'pago',
+      features:Array.isArray(guardado?.features)?[...guardado.features]:[...base.features]};
+  });
+}
 
 const ACTIVO_DEFAULT_POR_CODIGO = PLANES_DEFAULT.reduce((acc, plan) => ({
   ...acc,
@@ -90,19 +48,7 @@ function normalizarPlanGuardado(plan) {
 
 /** Campos que el editor del admin puede tocar, en el orden en que se muestran. */
 export const CAMPOS_EDITABLES = [
-  { campo: 'nombre', label: 'Nombre del plan', tipo: 'texto' },
-  { campo: 'acceso_rutas', label: 'Acceso incluido', tipo: 'select', opciones: [
-    { value: 'elegir', label: 'Una ruta: el cliente elige al contratar' },
-    { value: 'fisico', label: 'Solo gestión de E-commerce' },
-    { value: 'personal', label: 'Solo marca personal' },
-    { value: 'ambas', label: 'E-commerce y marca personal' },
-  ] },
   { campo: 'precio', label: 'Precio del plan', tipo: 'numero' },
-  { campo: 'periodicidad', label: 'Duración del plan', tipo: 'select', opciones: [
-    { value: 'mensual', label: 'Mensual' },
-    { value: 'anual', label: 'Anual' },
-    { value: 'unico', label: 'Pago único' },
-  ] },
   { campo: 'moneda', label: 'Moneda', tipo: 'select', opciones: [
     { value: 'PYG', label: 'Guaraníes (PYG)' },
     { value: 'USD', label: 'Dólares (USD)' },
@@ -127,15 +73,15 @@ function esPlanValido(p) {
 export function cargarPlanes() {
   try {
     const crudo = localStorage.getItem(STORAGE_KEY);
-    if (!crudo) return PLANES_DEFAULT;
+    if (!crudo) return normalizarCatalogoPlanes([]);
     const parseado = JSON.parse(crudo);
     if (!Array.isArray(parseado) || !parseado.length || !parseado.every(esPlanValido)) {
-      return PLANES_DEFAULT;
+      return normalizarCatalogoPlanes([]);
     }
-    return parseado.map(normalizarPlanGuardado);
+    return normalizarCatalogoPlanes(parseado.map(normalizarPlanGuardado));
   } catch {
     // localStorage puede fallar entero (modo privado, cookies bloqueadas).
-    return PLANES_DEFAULT;
+    return normalizarCatalogoPlanes([]);
   }
 }
 
@@ -156,7 +102,7 @@ export function restablecerPlanes() {
   } catch {
     // nada que hacer: igual se devuelve el default
   }
-  return PLANES_DEFAULT;
+  return normalizarCatalogoPlanes([]);
 }
 
 /** ¿Hay una versión editada por el admin pisando el catálogo por defecto? */

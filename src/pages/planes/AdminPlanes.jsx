@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Save, Check, Plus, X, RotateCcw, AlertTriangle, Eye, EyeOff, BadgePercent, ListChecks, Settings2, Copy, Trash2, RefreshCw } from 'lucide-react';
 import {
   cargarPlanes, guardarPlanes, restablecerPlanes, limpiarPlanesLocales,
-  CAMPOS_EDITABLES,
+  CAMPOS_EDITABLES, normalizarCatalogoPlanes,
 } from '../../lib/planesCatalogo';
 import { cargarAfiliadosLocal, guardarAfiliadosLocal, normalizarConfigAfiliados } from '../../lib/afiliadosPrograma';
 import { afiliadosService } from '../../services/afiliadosService';
 import { planesService } from '../../services/planesService';
 import './planes.css';
+import './adminPlanes.css';
 
 /** Editor del catálogo comercial que se publica en /planes. */
 export default function AdminPlanes() {
@@ -19,6 +20,7 @@ export default function AdminPlanes() {
   const [guardado, setGuardado] = useState(false);
   const [errorGuardado, setErrorGuardado] = useState(false);
   const [cargandoPlanes, setCargandoPlanes] = useState(false);
+  const [catalogoCargado, setCatalogoCargado] = useState(false);
   const [guardandoPlanes, setGuardandoPlanes] = useState(false);
   const [guardandoAfiliados, setGuardandoAfiliados] = useState(false);
   const [afiliadosGuardados, setAfiliadosGuardados] = useState(false);
@@ -48,7 +50,8 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
     planesService.planesAdmin()
       .then((catalogo) => {
         if (!activo) return;
-        setPlanes(Array.isArray(catalogo) && catalogo.length ? catalogo : cargarPlanes());
+        setPlanes(normalizarCatalogoPlanes(catalogo));
+        setCatalogoCargado(true);
         setErrorGuardado(false);
       })
       .catch(() => {
@@ -144,7 +147,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
     setErrorGuardado(false);
     try {
       const guardados = await planesService.guardarPlanesAdmin(limpios);
-      setPlanes(Array.isArray(guardados) && guardados.length ? guardados : limpios);
+      setPlanes(normalizarCatalogoPlanes(guardados || limpios));
       limpiarPlanesLocales();
       setGuardado(true);
       setTimeout(() => setGuardado(false), 3500);
@@ -169,30 +172,12 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
     setGuardandoPlanes(true);
     try {
       const guardados = await planesService.guardarPlanesAdmin(base);
-      setPlanes(Array.isArray(guardados) && guardados.length ? guardados : base);
+      setPlanes(normalizarCatalogoPlanes(guardados || base));
       limpiarPlanesLocales();
       setGuardado(true);
       setTimeout(() => setGuardado(false), 3500);
     } catch (err) {
       setErrorGuardado(err.response?.data?.message || err.message || 'No se pudo restablecer el catálogo en el servidor.');
-    } finally {
-      setGuardandoPlanes(false);
-    }
-  }
-
-  async function eliminarPlan(plan) {
-    const nombre = plan.nombre || plan.codigo || plan.id || 'este plan';
-    if (!window.confirm(`¿Borrar ${nombre}? Si ya tiene suscripciones, el sistema te va a pedir ocultarlo para conservar el historial.`)) return;
-    setGuardandoPlanes(true);
-    setErrorGuardado(false);
-    try {
-      const guardados = await planesService.eliminarPlanAdmin(plan.codigo || plan.id);
-      setPlanes(prev => (Array.isArray(guardados) ? guardados : prev.filter(p => p.id !== plan.id)));
-      limpiarPlanesLocales();
-      setGuardado(true);
-      setTimeout(() => setGuardado(false), 3500);
-    } catch (err) {
-      setErrorGuardado(err.response?.data?.message || err.message || 'No se pudo borrar el plan.');
     } finally {
       setGuardandoPlanes(false);
     }
@@ -307,126 +292,27 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
   }
 
   function renderEditorPlanes() {
-    return (
-      <>
-        <div className="pl-aviso pl-aviso-ok">
-          <Check size={16} />
-          <span>
-            <strong>Catálogo publicado desde el servidor.</strong>
-            Los planes visibles aparecen en la landing y en /planes. Los ocultos no se ofrecen ni pueden contratarse por checkout directo.
-          </span>
-        </div>
-
-        {errorGuardado && (
-          <div className="pl-aviso" style={{ borderColor: "color-mix(in srgb, var(--color-danger) 30%, transparent)", background: "color-mix(in srgb, var(--color-danger) 8%, transparent)", color: "var(--color-danger)" }}>
-            <AlertTriangle size={16} />
-            <span>{errorGuardado}</span>
-          </div>
-        )}
-
-        {cargandoPlanes ? (
-          <div className="pl-cargando"><RefreshCw size={18} className="spin-icon" /><span>Cargando catálogo...</span></div>
-        ) : (
-        <div className="pl-editor-grid">
-          {planes.map((plan, i) => (
-            <section key={plan.id} className="pl-editor-card">
-              <div className="pl-editor-card-head">
-                <div>
-                  <h3>{plan.nombre || 'Sin nombre'}</h3>
-                  <span className="pl-editor-id">id: {plan.id} · plan real: {plan.equivale}</span>
-                </div>
-                <button
-                  type="button"
-                  className="pl-btn-icono pl-btn-danger"
-                  onClick={() => eliminarPlan(plan)}
-                  disabled={guardandoPlanes}
-                  title="Borrar plan"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-
-              <label className="pl-campo pl-check pl-check-visibilidad">
-                <input
-                  type="checkbox"
-                  checked={plan.activo !== false}
-                  onChange={e => cambiarVisibilidad(i, e.target.checked)}
-                />
-                {plan.activo !== false ? <Eye size={14} /> : <EyeOff size={14} />}
-                Visible en landing y /planes
-              </label>
-
-              {CAMPOS_EDITABLES.map(({ campo, label, tipo, ayuda }) => (
-                <label key={campo} className="pl-campo">
-                  <span>{label} {ayuda && <em>— {ayuda}</em>}</span>
-                  {tipo === 'area' ? (
-                    <textarea
-                      value={plan[campo] ?? ''}
-                      onChange={e => actualizar(i, campo, e.target.value)}
-                      rows={2}
-                    />
-                  ) : tipo === 'select' ? (
-                    <select
-                      value={plan[campo] ?? (campo === 'periodicidad' ? 'mensual' : campo === 'acceso_rutas' ? (String(plan.codigo).startsWith('una-ruta-') ? 'elegir' : 'ambas') : 'PYG')}
-                      onChange={e => actualizar(i, campo, e.target.value)}
-                    >
-                      {(CAMPOS_EDITABLES.find(c => c.campo === campo)?.opciones || []).map(opcion => (
-                        <option key={opcion.value} value={opcion.value}>{opcion.label}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={tipo === 'numero' ? 'number' : 'text'}
-                      min={tipo === 'numero' ? 0 : undefined}
-                      step={tipo === 'numero' ? 1000 : undefined}
-                      value={plan[campo] ?? ''}
-                      onChange={e => actualizar(i, campo, e.target.value)}
-                    />
-                  )}
-                </label>
-              ))}
-
-              <div className="pl-campo">
-                <span>Qué incluye</span>
-                <div className="pl-features-editor">
-                  {plan.features.map((f, j) => (
-                    <div key={j} className="pl-feature-row">
-                      <input
-                        value={f}
-                        onChange={e => actualizarFeature(i, j, e.target.value)}
-                        placeholder="Ej: Dominio propio con certificado"
-                      />
-                      <button
-                        type="button"
-                        className="pl-btn-icono"
-                        onClick={() => quitarFeature(i, j)}
-                        title="Quitar esta línea"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" className="pl-btn-texto" onClick={() => agregarFeature(i)}>
-                    <Plus size={13} /> Agregar línea
-                  </button>
-                </div>
-              </div>
-
-              <label className="pl-campo pl-check">
-                <input
-                  type="checkbox"
-                  checked={!!plan.destacado}
-                  disabled={plan.activo === false}
-                  onChange={e => marcarDestacado(i, e.target.checked)}
-                />
-                Destacar este plan (solo uno a la vez)
-              </label>
-            </section>
-          ))}
-        </div>
-        )}
-      </>
-    );
+    return <>
+      <div className="pl-catalog-intro"><div><h2>Cuatro planes, dos formas de trabajar</h2><p>Una ruta permite elegir E-commerce o Marca personal. Ambas rutas incluye los dos espacios.</p></div><span className="pl-catalog-count">4 planes</span></div>
+      <p className="pl-catalog-legacy-note">Las cuentas migradas desde planes anteriores conservan ambas rutas sin vencimiento. Ese acceso no se vende como un plan adicional.</p>
+      {errorGuardado && <div className="pl-aviso pl-aviso-error" role="alert"><AlertTriangle size={18}/><span>{errorGuardado}</span></div>}
+      {cargandoPlanes ? <p className="pl-cargando" role="status"><RefreshCw size={18} className="spin-icon"/> Cargando catálogo…</p> :
+      <div className="pl-catalog-grid">{planes.map((plan,i)=><section key={plan.codigo} className="pl-catalog-card" aria-labelledby={`plan-title-${plan.codigo}`}>
+        <header className="pl-catalog-card-heading"><div><span className="pl-catalog-family">{plan.acceso_rutas==='elegir'?'1 ruta a elección':'2 rutas incluidas'}</span><h3 id={`plan-title-${plan.codigo}`}>{plan.nombre}</h3></div><span className="pl-catalog-period">{plan.periodicidad==='anual'?'Anual':'Mensual'}</span></header>
+        <div className="pl-catalog-price"><strong>{plan.moneda==='USD'?'US$':'₲'} {Number(plan.precio||0).toLocaleString(plan.moneda==='USD'?'en-US':'es-PY')}</strong><span>{plan.periodicidad==='anual'?'por año · pago adelantado':'por mes'}</span></div>
+        <p className="pl-catalog-scope">{plan.acceso_rutas==='elegir'?'E-commerce o Marca personal: el cliente elige una al contratar.':'E-commerce y Marca personal con acceso a los dos espacios.'}</p>
+        <fieldset className="pl-catalog-fields" disabled={guardandoPlanes || !catalogoCargado}><legend>Precio y publicación</legend>
+          <div className="pl-catalog-price-fields"><label className="pl-campo"><span>Precio del plan</span><input type="number" min="1" step="1" required value={plan.precio} onChange={e=>actualizar(i,'precio',e.target.value)}/></label>
+          <label className="pl-campo"><span>Moneda</span><select value={plan.moneda||'PYG'} onChange={e=>actualizar(i,'moneda',e.target.value)}><option value="PYG">Guaraníes (PYG)</option><option value="USD">Dólares (USD)</option></select></label></div>
+          <label className="pl-catalog-check"><input type="checkbox" checked={plan.activo!==false} onChange={e=>cambiarVisibilidad(i,e.target.checked)}/>{plan.activo!==false?<Eye size={17} aria-hidden="true"/>:<EyeOff size={17} aria-hidden="true"/>}<span>Visible en landing y /planes</span></label>
+          <label className="pl-catalog-check"><input type="checkbox" checked={!!plan.destacado} disabled={plan.activo===false} onChange={e=>marcarDestacado(i,e.target.checked)}/><span>Destacar este plan</span></label>
+        </fieldset>
+        <details className="pl-catalog-details"><summary>Textos y beneficios del plan</summary><div>
+          {CAMPOS_EDITABLES.filter(c=>!['precio','moneda'].includes(c.campo)).map(({campo,label,tipo,ayuda})=><label key={campo} className="pl-campo"><span>{label}</span>{tipo==='area'?<textarea rows={3} value={plan[campo]||''} onChange={e=>actualizar(i,campo,e.target.value)}/>:<input value={plan[campo]||''} onChange={e=>actualizar(i,campo,e.target.value)}/>} {ayuda&&<small>{ayuda}</small>}</label>)}
+          <div className="pl-campo"><span>Qué incluye</span><div className="pl-features-editor">{plan.features.map((f,j)=><div key={j} className="pl-feature-row"><input value={f} aria-label={`Beneficio ${j+1} de ${plan.nombre}`} onChange={e=>actualizarFeature(i,j,e.target.value)}/><button type="button" className="pl-btn-icono" aria-label={`Quitar beneficio ${j+1} de ${plan.nombre}`} onClick={()=>quitarFeature(i,j)}><X size={16}/></button></div>)}<button type="button" className="pl-btn-texto" onClick={()=>agregarFeature(i)}><Plus size={16}/> Agregar beneficio</button></div></div>
+        </div></details>
+      </section>)}</div>}
+    </>;
   }
 
   function renderListaEditable(campo, titulo, placeholder) {
@@ -662,13 +548,12 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
   }
 
   return (
-    <div className="pl-page">
+    <div className="pl-page pl-admin-page">
       <header className="pl-admin-head">
         <div>
           <h1>Planes</h1>
           <p>
-            Definí qué ve un comercio en la pantalla de planes: nombre, precio, resumen,
-            features y cuál es el plan destacado.
+            Administrá el precio y la publicación de los cuatro planes de Gesicom.
           </p>
         </div>
         <div className="pl-admin-acciones">
@@ -683,7 +568,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
           {tabActiva === 'planes' && guardado && <span className="pl-guardado"><Check size={14} /> Guardado</span>}
           {tabActiva === 'afiliados' && afiliadosGuardados && <span className="pl-guardado"><Check size={14} /> Guardado</span>}
           {tabActiva === 'planes' ? (
-            <button type="button" className="pl-btn primario" onClick={handleGuardar} disabled={guardandoPlanes || cargandoPlanes}>
+            <button type="button" className="pl-btn primario" onClick={handleGuardar} disabled={guardandoPlanes || cargandoPlanes || !catalogoCargado}>
               {guardandoPlanes ? <RefreshCw size={14} className="spin-icon" /> : <Save size={14} />} {guardandoPlanes ? 'Guardando...' : 'Guardar planes'}
             </button>
           ) : (

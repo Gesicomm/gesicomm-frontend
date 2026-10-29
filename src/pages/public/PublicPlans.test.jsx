@@ -11,7 +11,10 @@ const base = { codigo: 'plan-nuevo-admin', acceso_rutas: 'elegir', nombre: 'Plan
 const precio = plan => within(screen.getByRole('heading', { name: plan.nombre }).closest('article'));
 function Destino() { const location = useLocation(); return <p>Checkout: {location.pathname}{location.search}</p>; }
 function montar() { return render(<MemoryRouter><Routes><Route path="/" element={<PublicPlans />} /><Route path="/checkout/public/:codigo" element={<Destino />} /></Routes></MemoryRouter>); }
-beforeEach(() => { vi.clearAllMocks(); planesService.listar.mockResolvedValue([base]); });
+beforeEach(() => {
+  vi.clearAllMocks(); planesService.listar.mockResolvedValue([base]);
+  window.matchMedia = vi.fn(query=>({matches:false,media:query,addEventListener:vi.fn(),removeEventListener:vi.fn()}));
+});
 
 it('publica el nombre, importe, beneficios, etiqueta y CTA de un código arbitrario del admin', async () => {
   montar();

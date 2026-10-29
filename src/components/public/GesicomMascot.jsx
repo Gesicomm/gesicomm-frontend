@@ -4,9 +4,9 @@ import './GesicomMascot.css';
 
 const POSES = ['pensando', 'analizando', 'confirmando', 'alerta'];
 const DEMO = [
-  { label: 'Anotá', pose: 'pensando', title: 'Toda gran idea empieza con un trazo.', note: 'Mi próxima gran idea', detail: 'Un lugar para empezar a darle forma a tu negocio.' },
-  { label: 'Organizá', pose: 'analizando', title: 'Cada cosa en su lugar.', note: 'Productos, pedidos y clientes', detail: 'Conectá lo que vendés con todo lo que pasa después.' },
-  { label: 'Avanzá', pose: 'confirmando', title: 'Un paso más cerca de lo que querés.', note: 'Tu negocio, en marcha', detail: 'Más claridad para decidir. Más espacio para crecer.' },
+  { label: 'Anotá', pose: 'pensando', title: 'Dale forma a tu idea.', note: 'Mi próxima gran idea', detail: 'Anotá tus ideas y definí qué querés ofrecer.' },
+  { label: 'Organizá', pose: 'analizando', title: 'Cada cosa en su lugar.', note: 'Productos, pedidos y clientes', detail: 'Organizá tus productos y seguí cada pedido de tus clientes.' },
+  { label: 'Avanzá', pose: 'confirmando', title: 'Elegí tu próximo paso.', note: 'Tu negocio, en marcha', detail: 'Revisá tus resultados y decidí cómo hacer crecer tu negocio.' },
 ];
 
 /** Only receives presentation state, never credentials or field values. */

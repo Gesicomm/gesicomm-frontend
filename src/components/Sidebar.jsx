@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
+  LayoutDashboard, Package, Users, User,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, MapPin, PackageCheck, Network, ShieldAlert
+  GraduationCap, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, ShieldAlert
 } from 'lucide-react';
 import Logo from './public/Logo';
 import { cerrarSesion, verificarSesion } from '../utils/auth';
 import PerfilModal from './PerfilModal';
 import ThemeToggle from './public/ThemeToggle';
 import { authTrackingService } from '../services/authTrackingService';
-import { getConteoPorAbastecimiento } from '../services/courierApi';
-import { solicitudAbastecimientoService } from '../services/solicitudAbastecimiento.service';
 
 const NAV_LINK = 'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg';
 const NAV_LINK_ACTIVE = 'relative bg-selection text-selection-fg hover:bg-selection hover:text-selection-fg before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-0.5 before:rounded-full before:bg-selection-fg';
@@ -67,8 +65,6 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   );
   const [alertasAccesos, setAlertasAccesos] = useState(0);
   const [alertasPagos, setAlertasPagos] = useState(0);
-  const [pagosAbastecimientoAValidar, setPagosAbastecimientoAValidar] = useState(0);
-  const [solicitudesAValidar, setSolicitudesAValidar] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
@@ -84,18 +80,6 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
       })
       .catch(() => {});
     cargarAlertas();
-    // Cuántos comprobantes de abastecimiento esperan validación. Sale de una
-    // consulta a la base, no de una notificación: aunque se pierda un aviso,
-    // este número siempre refleja lo que falta hacer.
-    getConteoPorAbastecimiento({})
-      .then((conteos) => { if (!cancelado) setPagosAbastecimientoAValidar(Number(conteos?.pago_enviado) || 0); })
-      .catch(() => {});
-    // Mismo criterio: cuenta real de solicitudes de comercios (Camino 3) con
-    // comprobante subido y esperando validacion — comparte el badge del link
-    // "Abastecimiento", que ya agrupa las dos pestanas (por venta y de comercios).
-    solicitudAbastecimientoService.listar({ estado: 'pago_enviado' })
-      .then((rows) => { if (!cancelado) setSolicitudesAValidar(Array.isArray(rows) ? rows.length : 0); })
-      .catch(() => {});
     window.addEventListener('auth-tracking:updated', cargarAlertas);
     return () => {
       cancelado = true;
@@ -215,58 +199,12 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/admin/planes', label: 'Planes', icon: <BadgeDollarSign /> })}
             {renderLink({ path: '/admin/tracking-onboarding', label: 'Onboarding y login', icon: <ShieldCheck />, badge: alertasAccesos > 0 ? alertasAccesos : null })}
             {renderLink({ path: '/admin/tracking-pagos', label: 'Tracking de pagos', icon: <CreditCard />, badge: alertasPagos > 0 ? alertasPagos : null })}
-            {renderLink({ path: '/admin/eliminacion-datos', label: 'Eliminaci�n de datos', icon: <ShieldAlert /> })}
+            {renderLink({ path: '/admin/eliminacion-datos', label: 'Eliminación de datos', icon: <ShieldAlert /> })}
             {renderLink({ path: '/admin/solicitudes-web', label: 'Solicitudes de la web', icon: <Users /> })}
             {renderLink({ path: '/admin/codigos-prueba', label: 'Códigos de acceso', icon: <KeyRound /> })}
             {renderLink({ path: '/admin/tutoriales', label: 'Tutoriales', icon: <GraduationCap /> })}
           </ul>
 
-          {/* Operación: la infraestructura logística de la plataforma.
-              Abastecimiento es cómo entra el stock; Fulfillment es la red con
-              la que Gesicomm entrega, y sus operadores son proveedores
-              logísticos, no couriers de nadie. */}
-          <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
-            Operación
-          </div>
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {renderLink({
-              path: '/abastecimiento',
-              label: 'Abastecimiento',
-              icon: <PackageCheck />,
-              badge: (pagosAbastecimientoAValidar + solicitudesAValidar) > 0 ? (pagosAbastecimientoAValidar + solicitudesAValidar) : null,
-            })}
-            {renderLink({ path: '/fulfillment', label: 'Fulfillment', icon: <Network /> })}
-            {renderLink({ path: '/fulfillment/ingresos', label: 'Ingresos a Fulfillment', icon: <PackageCheck /> })}
-            {renderLink({ path: '/fulfillment/pedidos-a-preparar', label: 'Pedidos a preparar', icon: <Package /> })}
-            {renderLink({ path: '/fulfillment/proveedores', label: 'Proveedores logísticos', icon: <Truck /> })}
-          </ul>
-
-          {/* Mi comercio: un administrador puede además vender, y estas son
-              SUS herramientas como comercio, no las de la red. Van aparte
-              porque confundirlas fue lo que llevó a administrar la red desde
-              el panel de couriers. */}
-          <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
-            Mi comercio
-          </div>
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin /> })}
-            {renderLink({ path: '/inventario', label: 'Inventario y envíos', icon: <PackageCheck /> })}
-          </ul>
-
-          <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
-            Finanzas
-          </div>
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {renderLink({ path: '/finanzas/costos-gastos', label: 'Costos y Gastos', icon: <Receipt /> })}
-            {renderLink({ path: '/finanzas/proveedores', label: 'Proveedores', icon: <Truck /> })}
-          </ul>
-
-          <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
-            Meta
-          </div>
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {renderLink({ path: '/ads', label: 'Ads & Campañas', icon: <Megaphone /> })}
-          </ul>
         </nav>
 
         <footer className="flex-shrink-0 border-t border-border p-2">

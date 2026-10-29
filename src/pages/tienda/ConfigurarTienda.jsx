@@ -1220,7 +1220,7 @@ export default function ConfigurarTienda() {
                           <div className="tn-plan-actual-texto">
                             {/* "Estás en el Miembros Fundadores" no concordaba: el nombre del plan no lleva artículo fijo. */}
                             <strong>{planActivo?.nombre ? `Tu plan: ${planActivo.nombre}` : 'Estás en un plan de pago'}</strong>
-                            <span>Tenés habilitadas todas las funciones de tu plan.</span>
+                            <span>{suscripcionActiva?.acceso_permanente ? 'Ambas rutas incluidas para siempre, sin vencimiento ni renovaciones.' : 'Tenés habilitadas todas las funciones de tu plan.'}</span>
                           </div>
                           <button type="button" className="tn-plan-link" onClick={() => navigate('/planes')}>
                             Ver planes <ArrowRight size={14} />

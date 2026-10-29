@@ -179,32 +179,39 @@ html[data-theme] .gl-landing.home-institutional {
   background: linear-gradient(125deg, #0a1710, #10251a 60%, #09150e);
   color: #f5f8f6;
 }
-.gl-landing #solucion .split { grid-template-columns: minmax(205px, .8fr) minmax(320px, 1.35fr) minmax(215px, .8fr); gap: 26px; }
+.gl-landing #solucion .split { grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); gap: 28px 40px; align-items: start; }
+.gl-landing #solucion .split > .reveal { grid-column: 1; }
 .gl-landing #solucion h2 { margin: 10px 0 13px; color: #f5f8f6; font-size: clamp(25px, 3vw, 36px); letter-spacing: -.04em; }
-.gl-landing #solucion .split > .reveal > p { color: #c1cec5; font-size: 15px; line-height: 1.55; }
+.gl-landing #solucion .split > .reveal > p { max-width: 60ch; color: #c1cec5; font-size: var(--ui-text-body, 1rem); line-height: 1.6; }
 .gl-landing #solucion .split > .reveal > .btn { margin-top: 10px; }
 .gl-landing #solucion .eyebrow { color: #5fe49b; }
 .gl-landing #solucion .process { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0; border: 0; background: transparent; }
 .gl-landing #solucion .process > .eyebrow { grid-column: 1 / -1; margin-bottom: 3px; }
 .gl-landing #solucion .step { min-height: 116px; margin: 0; padding: 14px; border-color: #2b4937; background: rgb(255 255 255 / 3%); }
 .gl-landing #solucion .step b { color: #f4f8f5; font-size: 15px; }
-.gl-landing #solucion .step span { margin-top: 7px; color: #bdcbc1; font-size: 13px; line-height: 1.4; }
-.gl-landing .home-process-mascot { min-width: 0; align-self: center; }
-.gl-landing .home-mascot-invitation { margin: 0 0 8px; color: #d8e7dc; font-size: 15px; font-weight: 650; line-height: 1.4; }
+.gl-landing #solucion .step span { margin-top: 7px; color: #bdcbc1; font-size: var(--ui-text-help, .875rem); line-height: 1.6; }
+.gl-landing .home-process-mascot { min-width: 0; grid-column: 2; grid-row: 1 / span 2; }
+.gl-landing .home-process-mascot .home-mascot-host { width: 100%; min-height: 0; max-width: none; }
+.gl-landing .home-mascot-invitation { margin: 0 0 16px; padding: 0; border: 0; color: #d8e7dc; font-size: var(--ui-text-body, 1rem); font-weight: 650; line-height: 1.5; }
 .gl-landing .home-mascot-invitation > span { color: #1bd979; }
 .gl-landing .home-process-mascot .gc-mascot { border-color: #d5e4da; border-radius: 16px; box-shadow: 0 18px 40px rgb(0 0 0 / 20%); }
-.gl-landing .home-process-mascot .gc-mascot-toolbar { padding: 8px 12px; }
-.gl-landing .home-process-mascot .gc-mascot-scene { height: 200px; }
-.gl-landing .home-process-mascot .gc-mascot-character { inset: 0 5% 48px 14%; }
-.gl-landing .home-process-mascot .gc-mascot-paper { padding: 9px 12px 8px; }
-.gl-landing .home-process-mascot .gc-mascot-paper-label { font-size: 11px; }
-.gl-landing .home-process-mascot .gc-mascot-paper strong { font-size: 14px; }
-.gl-landing .home-process-mascot .gc-mascot-ink { height: 15px; }
-.gl-landing .home-process-mascot .gc-mascot-paper-check { font-size: 11px; }
-.gl-landing .home-process-mascot .gc-mascot-caption { min-height: 0; padding: 10px 12px 12px; }
-.gl-landing .home-process-mascot .gc-mascot-caption p { font-size: 14px; }
-.gl-landing .home-process-mascot .gc-mascot-caption > span { margin-top: 3px; font-size: 12px; }
-.gl-landing .home-process-mascot .gc-mascot-steps li { min-height: 40px; font-size: 12px; }
+.gl-landing .home-process-mascot .gc-mascot-toolbar { padding: 12px 20px; }
+.gl-landing .home-process-mascot .gc-mascot-toolbar > span { font-size: var(--ui-text-help, .875rem); }
+.gl-landing .home-process-mascot .gc-mascot-toolbar button { flex-shrink: 0; }
+/* Imagen y mensaje ocupan filas propias: ninguna pose puede tapar el texto. */
+.gl-landing .home-process-mascot .gc-mascot-scene { display: grid; gap: 16px; height: auto; padding: 16px 20px 0; }
+.gl-landing .home-process-mascot .gc-mascot-orbit { top: 24px; height: 160px; }
+.gl-landing .home-process-mascot .gc-mascot-character { position: relative; inset: auto; width: 100%; height: 190px; }
+.gl-landing .home-process-mascot .gc-mascot-paper { position: relative; inset: auto; width: 100%; padding: 16px; transform: none; }
+.gl-landing .home-process-mascot .gc-mascot-paper-label { font-size: var(--ui-text-help, .875rem); }
+.gl-landing .home-process-mascot .gc-mascot-paper strong { font-size: var(--ui-text-card, 1.125rem); animation: none; }
+.gl-landing .home-process-mascot .gc-mascot-ink { height: 22px; }
+.gl-landing .home-process-mascot .gc-mascot-paper-check { font-size: var(--ui-text-help, .875rem); line-height: 1.6; }
+.gl-landing .home-process-mascot .gc-mascot-paper-check svg { flex-shrink: 0; }
+.gl-landing .home-process-mascot .gc-mascot-caption { min-height: 160px; padding: 20px; }
+.gl-landing .home-process-mascot .gc-mascot-caption p { font-size: var(--ui-text-card, 1.125rem); }
+.gl-landing .home-process-mascot .gc-mascot-caption > span { margin-top: 8px; font-size: var(--ui-text-body, 1rem); line-height: 1.6; }
+.gl-landing .home-process-mascot .gc-mascot-steps li { min-height: 48px; font-size: var(--ui-text-help, .875rem); }
 
 /* Los módulos centrales usan luz neutra y verde solo para estados y acciones. */
 .gl-landing #funcionalidades,
@@ -288,9 +295,6 @@ html[data-theme] .gl-landing.home-institutional {
 
 @media (max-width: 1050px) {
   .gl-landing .hero > .wrap { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 25px; }
-  .gl-landing .home-process-band .split,
-  .gl-landing #solucion .split { grid-template-columns: minmax(190px, .8fr) minmax(300px, 1.3fr); }
-  .gl-landing .home-process-mascot { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr minmax(220px, 310px); align-items: center; gap: 18px; }
   .gl-landing .home-business-grid { gap: 12px; }
   .gl-landing .home-business-card { grid-template-columns: minmax(0, 1fr) 32%; }
   .gl-landing .home-business-copy { padding: 14px 0 14px 14px; }
@@ -308,7 +312,7 @@ html[data-theme] .gl-landing.home-institutional {
   .gl-landing .section { padding: 58px 0; }
   .gl-landing #solucion .split { grid-template-columns: 1fr; }
   .gl-landing #solucion .process { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .gl-landing .home-process-mascot { grid-column: auto; grid-template-columns: minmax(0, 1fr) minmax(190px, 270px); }
+  .gl-landing .home-process-mascot { grid-column: 1; grid-row: auto; width: 100%; max-width: 440px; justify-self: center; }
   .gl-landing .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gl-landing .gc-leads { padding: 58px 16px; }
 }
@@ -338,10 +342,6 @@ html[data-theme] .gl-landing.home-institutional {
   .gl-landing .home-business-copy > span:not(.home-business-icon) { font-size: 14px; }
   .gl-landing #solucion .process { grid-template-columns: 1fr; }
   .gl-landing #solucion .step { min-height: 0; }
-  .gl-landing .home-process-mascot { grid-template-columns: minmax(0, 1fr) 150px; gap: 10px; }
-  .gl-landing .home-process-mascot .gc-mascot-scene { height: 135px; }
-  .gl-landing .home-process-mascot .gc-mascot-caption,
-  .gl-landing .home-process-mascot .gc-mascot-steps { display: none; }
   .gl-landing .features { grid-template-columns: 1fr; }
   .gl-landing .feature { min-height: 0; }
   .gl-landing .home-final-cta .wrap { text-align: left; }

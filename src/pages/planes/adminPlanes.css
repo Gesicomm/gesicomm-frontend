@@ -1,0 +1,35 @@
+.pl-admin-page { --vit-bg:var(--color-canvas); --vit-surface:var(--color-surface); --vit-text:var(--color-fg); --vit-muted:var(--color-fg-muted); --vit-muted-2:var(--color-fg-muted); --vit-border:var(--color-border); --vit-accent:var(--color-primary-text); --vit-accent-soft:var(--bg-primary-soft); width:100%; max-width:1400px; padding:12px 0 32px; }
+.pl-admin-page * { box-sizing:border-box; }
+.pl-admin-page .pl-admin-head h1 { font-size:32px; letter-spacing:normal; }
+.pl-admin-page .pl-admin-head p { font-size:16px; }
+.pl-catalog-intro { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+.pl-catalog-intro h2 { margin:0 0 8px; font-size:22px; font-weight:700; line-height:1.35; }
+.pl-catalog-intro p, .pl-catalog-scope { color:var(--color-fg-muted); font-size:16px; line-height:1.6; margin:0; }
+.pl-catalog-count, .pl-catalog-period { display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--color-border); border-radius:999px; padding:6px 12px; font-size:14px; font-weight:600; white-space:nowrap; }
+.pl-catalog-legacy-note { border-left:3px solid var(--color-primary); border-radius:0 10px 10px 0; padding:14px 18px; background:var(--bg-primary-soft); color:var(--color-fg); font-size:16px; line-height:1.6; margin:0; }
+.pl-catalog-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; align-items:start; }
+.pl-catalog-card { min-width:0; border:1px solid var(--color-border-strong); background:var(--color-surface); border-radius:18px; overflow:hidden; box-shadow:0 4px 16px rgb(0 0 0 / .03); }
+.pl-catalog-card-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:24px; background:var(--color-surface-2); border-bottom:1px solid var(--color-border); }
+.pl-catalog-family { display:block; font-size:14px; font-weight:600; color:var(--color-primary-text); margin-bottom:6px; }
+.pl-catalog-card h3 { color:var(--color-fg); font-size:22px; font-weight:700; line-height:1.35; margin:0; }
+.pl-catalog-price { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 12px; padding:24px 24px 12px; }
+.pl-catalog-price strong { font-size:30px; font-weight:750; line-height:1.25; font-variant-numeric:tabular-nums; }
+.pl-catalog-price > span { color:var(--color-fg-muted); font-size:14px; }
+.pl-catalog-scope { padding:0 24px; }
+.pl-catalog-fields { border:0; border-top:1px solid var(--color-border); padding:20px 24px; margin:22px 0 0; min-width:0; display:grid; gap:16px; }
+.pl-catalog-fields legend { font-size:14px; font-weight:650; padding:0 8px 0 0; }
+.pl-catalog-price-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.pl-catalog-card .pl-campo { min-width:0; gap:8px; }
+.pl-catalog-card .pl-campo :is(input,select,textarea) { min-width:0; width:100%; min-height:46px; font-size:16px; background:var(--color-canvas); color:var(--color-fg); border:1px solid var(--color-border-strong); border-radius:10px; padding:10px 12px; }
+.pl-catalog-card small { font-size:14px; color:var(--color-fg-muted); line-height:1.5; }
+.pl-catalog-check { display:flex; align-items:center; gap:10px; color:var(--color-fg); font-size:14px; min-height:32px; cursor:pointer; }
+.pl-catalog-check input { width:18px; height:18px; flex-shrink:0; accent-color:var(--color-primary); }
+.pl-catalog-check svg { flex-shrink:0; }
+.pl-catalog-details { border-top:1px solid var(--color-border); }
+.pl-catalog-details summary { padding:18px 24px; cursor:pointer; color:var(--color-primary-text); font-size:16px; font-weight:600; }
+.pl-catalog-details > div { display:grid; gap:20px; padding:0 24px 24px; }
+.pl-catalog-card .pl-feature-row { align-items:center; }
+.pl-catalog-card .pl-btn-icono { min-width:40px; min-height:44px; }
+.pl-admin-page :is(input,select,textarea,button,summary):focus-visible { outline:3px solid var(--color-primary-text); outline-offset:3px; }
+@media(max-width:1100px) { .pl-catalog-grid { grid-template-columns:1fr; } }
+@media(max-width:600px) { .pl-admin-page .pl-admin-head h1 { font-size:28px; } .pl-catalog-intro { align-items:flex-start; } .pl-catalog-card-heading { padding:20px 16px; flex-wrap:wrap; } .pl-catalog-price { padding:20px 16px 12px; } .pl-catalog-scope { padding:0 16px; } .pl-catalog-fields { padding:20px 16px; } .pl-catalog-price-fields { grid-template-columns:1fr; } .pl-catalog-details summary { padding:18px 16px; } .pl-catalog-details > div { padding:0 16px 20px; } }

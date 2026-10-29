@@ -266,6 +266,7 @@ export default function Planes() {
       <header className="pl-landing-hero">
         <div className="pl-landing-copy">
           <span className="pl-hero-eyebrow"><Sparkles size={13} /> Gesicomm para vender online</span>
+          {estadoCuenta?.suscripcion?.acceso_permanente && <p className="pl-aviso pl-aviso-ok">Tu cuenta conserva E-commerce y Marca personal para siempre, sin vencimiento ni renovaciones.</p>}
           {yaTienePlan ? (
             <>
               <h1>Tu plan está activo y tu operación puede seguir creciendo</h1>

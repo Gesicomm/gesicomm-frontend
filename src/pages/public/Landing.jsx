@@ -11,6 +11,7 @@ import './home/reference.css';
 import './home/landing.css';
 import './home/light.css';
 import './home/editorial.css';
+import './home/lead-dialog.css';
 
 const RUTAS = {
   fisico: {
@@ -73,7 +74,6 @@ export default function Landing() {
         const form = root.querySelector('#gc-demo-form');
         form.elements.solicitud.value = tipo === 'prueba' ? 'prueba_gratuita' : tipo === 'demo' ? 'demo' : 'contratacion';
         texto('gc-demo-heading', tipo === 'prueba' ? 'Probá Gesicom para tu negocio.' : tipo === 'demo' ? 'Conocé Gesicom en una demostración.' : 'Empezá a vender con Gesicom.');
-        root.querySelector('#home-access-form .gc-form-title').textContent = tipo === 'prueba' ? 'Solicitar prueba gratuita' : tipo === 'demo' ? 'Solicitar demostración' : 'Empezar como vendedor';
         root.querySelector('#home-access-form .gc-intro > p').textContent = tipo === 'prueba' ? 'Solicitá un código de prueba. Nuestro equipo evaluará tu solicitud y te indicará el plan y la cantidad de días de acceso.' : tipo === 'demo' ? 'Solicitá una demostración y conocé cómo Gesicom puede ayudarte a gestionar tu negocio.' : 'Contanos sobre tu negocio para acompañarte en la elección del plan y tus primeros pasos.';
         root.querySelector('#gc-demo-form .gc-note').textContent = tipo === 'prueba' ? 'La prueba requiere aprobación y un código.' : 'Te contactaremos para acompañarte.';
       }

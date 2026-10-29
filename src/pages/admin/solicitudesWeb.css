@@ -42,4 +42,5 @@
 .trial-code-list article > div { min-width: 0; }
 .trial-code-list p { margin: 6px 0 0; font-size: 14px; }
 .trial-code-list code { font-size: 16px; }
+.trial-code-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 @media (max-width: 640px) { .trial-codes { padding: 18px; } .trial-code-form { grid-template-columns: 1fr; } .trial-code-form > button { width: 100%; } .trial-code-list article { flex-direction: column; } }

@@ -1,0 +1,111 @@
+/* Paleta local: la portada editorial combina secciones claras y oscuras.
+   El diálogo conserva superficies y texto compatibles en ambos temas. */
+.home-institutional .home-lead-dialog {
+  --gc-bg: #ffffff;
+  --gc-surface: #ffffff;
+  --gc-surface2: #f3f8f5;
+  --gc-white: #183c2b;
+  --gc-muted: #52665a;
+  --gc-border: #d7e3db;
+  --gc-border-strong: #84998c;
+  --gc-cyan: #087b43;
+  --gc-coral: #14d26a;
+  --gc-shadow: #06110b;
+  width: min(720px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  border: 1px solid var(--gc-border);
+  border-radius: 20px;
+  background: var(--gc-surface);
+  color: var(--gc-white);
+  color-scheme: light;
+  font-family: var(--font-sans);
+  font-size: var(--ui-text-body, 1rem);
+  line-height: 1.5;
+  box-shadow: 0 24px 80px #06110b40;
+}
+
+.home-institutional .home-lead-dialog::backdrop {
+  background: rgb(6 17 11 / 58%);
+  backdrop-filter: blur(4px);
+}
+
+@scope (.home-institutional .home-lead-dialog) {
+  .home-lead-toolbar {
+    padding: 14px 28px;
+    background: var(--gc-surface);
+    color: var(--gc-white);
+  }
+  .home-lead-toolbar button {
+    border-color: var(--gc-border);
+    background: var(--gc-surface2);
+    color: var(--gc-white);
+  }
+  .home-lead-toolbar button:hover { background: #e4eee7; }
+  .gc-lead-panel { grid-template-columns: minmax(0, 1fr); background: var(--gc-surface); }
+  .gc-intro, .gc-alt .gc-intro {
+    padding: 24px 32px;
+    border-right: 0;
+    border-bottom: 1px solid var(--gc-border);
+    background: var(--gc-surface2);
+  }
+  .gc-intro h2 {
+    margin: 0 0 12px;
+    color: var(--gc-white);
+    font-size: 28px;
+    line-height: 1.25;
+    letter-spacing: -.035em;
+  }
+  .gc-intro p { color: var(--gc-muted); font-size: var(--ui-text-body, 1rem); line-height: 1.6; }
+  .gc-tag { margin-bottom: 16px; text-transform: none; letter-spacing: 0; }
+  .gc-features { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+  .gc-feature { font-size: var(--ui-text-help, .875rem); }
+  .gc-form-area { padding: 24px 32px 28px; background: var(--gc-surface); }
+  .gc-form-title {
+    color: var(--gc-white);
+    font-size: var(--ui-text-section, 1.375rem);
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: -.02em;
+  }
+  .gc-form-help { margin: 6px 0 22px; color: var(--gc-muted); font-size: var(--ui-text-help, .875rem); line-height: 1.6; }
+  .gc-grid { gap: 18px 20px; }
+  .gc-field label { color: var(--gc-white); font-size: var(--ui-text-label, .9375rem); font-weight: 600; }
+  .gc-optional { color: var(--gc-muted); }
+  .gc-field input, .gc-field select, .gc-field textarea {
+    min-height: 48px;
+    padding: 11px 13px;
+    border-color: var(--gc-border-strong);
+    background: var(--gc-surface);
+    color: var(--gc-white);
+    font-size: var(--ui-text-body, 1rem);
+    line-height: 1.5;
+  }
+  .gc-field input::placeholder, .gc-field textarea::placeholder { color: #64756b; opacity: 1; }
+  :is(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--gc-cyan); outline-offset: 3px; }
+  .gc-field :is(input, select, textarea):focus { border-color: var(--gc-cyan); box-shadow: none; }
+  .home-form-privacy { margin-top: 20px; color: var(--gc-muted); font-size: var(--ui-text-help, .875rem); line-height: 1.6; }
+  .home-form-privacy a { color: var(--gc-cyan); }
+  .gc-submit { margin-top: 20px; gap: 12px; }
+  .gc-button {
+    min-height: 48px;
+    padding: 12px 20px;
+    background: var(--gc-coral);
+    color: #063f2e;
+    font-size: var(--ui-text-body, 1rem);
+    font-weight: 700;
+  }
+  .gc-button:hover { background: #0fbe5e; transform: none; filter: none; }
+  .gc-note { color: var(--gc-muted); font-size: var(--ui-text-help, .875rem); }
+  .gc-status { min-height: 0; color: var(--gc-cyan); line-height: 1.6; }
+  .gc-status:empty { display: none; }
+  .gc-status[data-error='true'] { color: #b42318; }
+
+  @media (max-width: 600px) {
+    .home-lead-toolbar { padding: 12px 20px; }
+    .gc-intro, .gc-form-area { padding: 24px 20px; }
+    .gc-grid { grid-template-columns: minmax(0, 1fr); }
+    .gc-features { display: none; }
+    .gc-submit { align-items: stretch; flex-direction: column; }
+    .gc-button { width: 100%; }
+  }
+}
