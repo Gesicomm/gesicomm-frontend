@@ -1,0 +1,140 @@
+.module-picker {
+  display: grid;
+  place-items: center;
+  padding: clamp(32px, 6vw, 80px) 24px;
+}
+
+.module-picker__content { width: min(100%, 1040px); }
+.module-picker__header { margin-bottom: 32px; text-align: center; }
+.module-picker__eyebrow {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: var(--color-primary-text);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.module-picker__header h1 { margin: 0 0 12px; font-size: clamp(28px, 3vw, 34px); font-weight: 750; line-height: 1.25; }
+.module-picker__header p { margin: 0; color: var(--color-fg-muted); font-size: 16px; line-height: 1.6; }
+.module-picker__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; }
+
+.module-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-width: 0;
+  min-height: 330px;
+  flex-direction: column;
+  align-items: flex-start;
+  overflow: hidden;
+  padding: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+  color: var(--color-fg);
+  text-align: left;
+  box-shadow: 0 14px 36px rgb(0 0 0 / 10%);
+  transition: transform .24s cubic-bezier(.2,.8,.2,1), border-color .24s ease, box-shadow .24s ease, background-color .24s ease;
+}
+.module-card::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 58%);
+  content: '';
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.module-card::after {
+  position: absolute;
+  top: 0;
+  right: 30px;
+  left: 30px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--color-primary);
+  content: '';
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .26s cubic-bezier(.2,.8,.2,1);
+}
+.module-card:hover,
+.module-card:focus-within,
+.module-card--admin:focus-visible {
+  transform: translateY(-6px);
+  border-color: var(--color-primary);
+  box-shadow: 0 22px 52px rgb(0 0 0 / 22%);
+}
+.module-card:hover::before,
+.module-card:focus-within::before,
+.module-card--admin:focus-visible::before { opacity: 1; }
+.module-card:hover::after,
+.module-card:focus-within::after,
+.module-card--admin:focus-visible::after { transform: scaleX(1); }
+.module-card:active { transform: translateY(-2px) scale(.995); }
+.module-card:has(.module-card__hit:focus-visible),
+.module-card--admin:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 4px; }
+
+.module-card__icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  margin-bottom: 22px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  color: var(--color-primary-text);
+  transition: transform .24s ease, background-color .24s ease;
+}
+.module-card:hover .module-card__icon,
+.module-card:focus-within .module-card__icon { transform: translateY(-2px) rotate(-4deg); background: color-mix(in srgb, var(--color-primary) 20%, var(--color-surface)); }
+.module-card__status { margin-bottom: 8px; color: var(--color-primary-text); font-size: 13px; font-weight: 700; line-height: 1.5; }
+.module-card__title { display: block; margin: 0 0 10px; font-size: 22px; font-weight: 700; line-height: 1.35; }
+.module-card__description { display: block; margin: 0 0 26px; color: var(--color-fg-muted); font-size: 16px; line-height: 1.6; }
+.module-card__notice { margin: 0 0 8px; color: var(--color-fg-muted); font-size: 14px; line-height: 1.5; }
+.module-card__action {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: auto;
+  padding: 12px 16px;
+  border: 1px solid var(--color-primary);
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  transition: background-color .2s ease, box-shadow .2s ease;
+}
+.module-card:hover .module-card__action,
+.module-card:focus-within .module-card__action { background: var(--color-primary-hover); box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 27%, transparent); }
+.module-card__arrow { flex: 0 0 auto; transition: transform .2s ease; }
+.module-card:hover .module-card__arrow,
+.module-card:focus-within .module-card__arrow { transform: translateX(5px); }
+.module-card--locked .module-card__action { border-color: var(--color-border-strong); background: var(--color-surface-2); color: var(--color-fg); }
+.module-card--locked:hover .module-card__action,
+.module-card--locked:focus-within .module-card__action { border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)); color: var(--color-fg); }
+.module-card__hit { position: absolute; z-index: 2; inset: 0; width: 100%; cursor: pointer; border: 0; background: transparent; }
+.module-card__hit:focus { outline: none; }
+.module-card--admin { cursor: pointer; font: inherit; }
+.module-picker__footer { margin: 26px 0 0; color: var(--color-fg-muted); font-size: 16px; line-height: 1.6; text-align: center; }
+.module-picker__footer a { color: var(--color-primary-text); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.module-picker__footer a:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 4px; }
+
+@media (max-width: 700px) {
+  .module-picker { padding: 40px 20px; }
+  .module-picker__header { margin-bottom: 28px; }
+  .module-picker__grid { gap: 18px; }
+  .module-card { min-height: 0; padding: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .module-card, .module-card::before, .module-card::after, .module-card__icon, .module-card__action, .module-card__arrow { transition: none; }
+  .module-card:hover, .module-card:focus-within, .module-card:active { transform: none; }
+  .module-card:hover .module-card__icon, .module-card:focus-within .module-card__icon, .module-card:hover .module-card__arrow, .module-card:focus-within .module-card__arrow { transform: none; }
+}

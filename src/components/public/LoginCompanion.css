@@ -1,0 +1,98 @@
+.login-companion {
+  position: relative;
+  z-index: 0;
+  display: grid;
+  grid-template-columns: minmax(190px, .95fr) minmax(180px, 1fr);
+  align-items: end;
+  gap: 14px;
+  width: 100%;
+  max-width: 510px;
+  min-height: 300px;
+  margin-top: 30px;
+  font-family: var(--font-sans);
+}
+.login-companion-art { position: relative; display: grid; place-items: end center; min-width: 0; min-height: 300px; isolation: isolate; }
+.login-companion-art::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  left: 8%;
+  right: 2%;
+  bottom: 7%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 13%, transparent), transparent 68%);
+}
+.login-companion-orbit { position: absolute; z-index: -1; border: 1px solid color-mix(in srgb, var(--color-primary-text) 12%, transparent); border-radius: 50%; pointer-events: none; }
+.login-companion-orbit--outer { inset: 12% 1% 5%; transform: rotate(-18deg); }
+.login-companion-orbit--inner { inset: 24% 12% 14%; transform: rotate(22deg); }
+.login-companion-avatar { display: block; width: min(100%, 236px); height: 286px; object-fit: contain; filter: drop-shadow(0 18px 22px #063f2e20); transform-origin: 52% 78%; }
+.login-companion[data-pose='pensando'] .login-companion-avatar { animation: login-companion-think 4.2s ease-in-out infinite; }
+.login-companion[data-pose='analizando'] .login-companion-avatar { animation: login-companion-analyze 4.2s ease-in-out infinite; }
+.login-companion[data-pose='confirmando'] .login-companion-avatar { animation: login-companion-confirm 4.2s ease-in-out infinite; }
+.login-companion[data-state='error'] .login-companion-avatar { animation: login-companion-notice .5s ease both; }
+.login-companion[data-state='busy'] .login-companion-avatar { animation: login-companion-analyze 1.8s ease-in-out infinite; }
+.login-companion[data-state='success'] .login-companion-avatar { animation: login-companion-confirm .8s ease-in-out 2; }
+.login-companion-spark { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary); box-shadow: 0 0 20px color-mix(in srgb, var(--color-primary) 70%, transparent); }
+.login-companion-spark--one { top: 17%; right: 13%; animation: login-companion-spark 3.4s ease-in-out infinite; }
+.login-companion-spark--two { top: 28%; left: 11%; width: 5px; height: 5px; animation: login-companion-spark 3.4s 1.2s ease-in-out infinite; }
+.login-companion-bubble {
+  position: relative;
+  align-self: center;
+  margin-bottom: 8px;
+  padding: 15px 16px 17px;
+  border: 1px solid var(--color-border);
+  border-radius: 17px 17px 17px 5px;
+  background: var(--login-bubble, var(--color-surface));
+  color: var(--color-fg);
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--color-brand-bosque) 7%, transparent);
+}
+.login-companion-bubble::before { content: ''; position: absolute; left: -6px; bottom: 27px; width: 10px; height: 10px; transform: rotate(45deg); border-bottom: 1px solid var(--color-border); border-left: 1px solid var(--color-border); background: var(--login-bubble, var(--color-surface)); }
+.login-companion-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.login-companion-top > span { display: inline-flex; align-items: center; gap: 7px; color: var(--color-fg-muted); font-size: 13px; font-weight: 550; }
+.login-companion-top > span i { width: 7px; height: 7px; border-radius: 50%; background: var(--color-primary); }
+.login-companion-top button { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--color-fg-muted); cursor: pointer; }
+.login-companion-top button:hover { background: var(--color-surface-2); color: var(--color-fg); }
+.login-companion-words { animation: login-companion-speak .34s ease both; }
+.login-companion-words strong { display: block; font-size: 16px; font-weight: 700; line-height: 1.45; }
+.login-companion .login-companion-words p { margin: 6px 0 0; color: var(--color-fg-muted); font-size: 15px; line-height: 1.55; }
+.login-companion.is-paused *, .login-companion.is-paused *::before { animation-play-state: paused !important; }
+.login-companion button:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }
+
+@keyframes login-companion-think { 0%, 100% { transform: translateY(0) rotate(-2deg); } 48% { transform: translateY(-7px) rotate(1deg); } }
+@keyframes login-companion-analyze { 0%, 100% { transform: translateY(-1px) rotate(2deg); } 52% { transform: translateY(-9px) rotate(-1deg); } }
+@keyframes login-companion-confirm { 0%, 100% { transform: translateY(0) rotate(-1deg) scale(1); } 50% { transform: translateY(-12px) rotate(3deg) scale(1.025); } }
+@keyframes login-companion-spark { 0%, 100% { opacity: .42; transform: scale(.75); } 50% { opacity: 1; transform: scale(1.15); } }
+@keyframes login-companion-speak { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes login-companion-notice { 25%, 75% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+
+@media (max-width: 1100px) and (min-width: 761px) {
+  .login-companion { grid-template-columns: minmax(130px, .8fr) minmax(175px, 1fr); gap: 10px; min-height: 230px; margin-top: 24px; }
+  .login-companion-art { min-height: 230px; }
+  .login-companion-avatar { width: 160px; height: 222px; }
+  .login-companion-bubble { padding: 13px; }
+  .login-companion .login-companion-words p { font-size: 14px; }
+}
+
+@media (max-width: 760px) {
+  .login-companion { grid-template-columns: 104px minmax(0, 1fr); gap: 12px; min-height: 148px; max-width: 100%; margin-top: 16px; }
+  .login-companion-art { min-height: 148px; }
+  .login-companion-avatar { width: 108px; height: 148px; }
+  .login-companion-orbit--outer { inset: 10% 0 2%; }
+  .login-companion-orbit--inner { inset: 24% 12% 11%; }
+  .login-companion-bubble { margin-bottom: 2px; padding: 11px 13px 13px; box-shadow: 0 8px 20px color-mix(in srgb, var(--color-brand-bosque) 6%, transparent); }
+  .login-companion .login-companion-words p { font-size: 14px; }
+}
+
+@media (max-width: 380px) {
+  .login-companion { grid-template-columns: 70px minmax(0, 1fr); gap: 7px; min-height: 108px; }
+  .login-companion-art { min-height: 108px; }
+  .login-companion-avatar { width: 74px; height: 108px; }
+  .login-companion-bubble { padding-inline: 10px; }
+  .login-companion .login-companion-words p { font-size: 14px; }
+  .login-companion-words strong { font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-companion, .login-companion *, .login-companion *::before { animation: none !important; transition: none !important; }
+}

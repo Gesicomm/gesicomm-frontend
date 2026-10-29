@@ -45,6 +45,14 @@ async function main() {
   const favicon = join(publico, 'favicon.svg');
   const og = join(marca, 'gesicomm-og.svg');
 
+  console.log('Logos para comunicación:');
+  await png(join(marca, 'gesicomm-horizontal.svg'), join(marca, 'gesicomm-horizontal.png'), 1110, 330);
+  await png(join(marca, 'gesicomm-horizontal-oscuro.svg'), join(marca, 'gesicomm-horizontal-oscuro.png'), 1110, 330);
+  await png(join(marca, 'gesicomm-compacta.svg'), join(marca, 'gesicomm-compacta.png'), 1110, 264);
+  await png(join(marca, 'gesicomm-compacta-oscuro.svg'), join(marca, 'gesicomm-compacta-oscuro.png'), 1110, 264);
+  await png(join(marca, 'gesicomm-isotipo.svg'), join(marca, 'gesicomm-isotipo.png'), 300);
+  await png(join(marca, 'gesicomm-isotipo-oscuro.svg'), join(marca, 'gesicomm-isotipo-oscuro.png'), 300);
+
   console.log('App icons (fondo sólido, sin texto — requisito de Meta):');
   for (const tam of TAMANOS_ICONO) {
     await png(cuadrado, join(publico, 'icons', `icon-${tam}.png`), tam);

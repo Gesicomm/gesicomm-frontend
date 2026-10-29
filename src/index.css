@@ -1,37 +1,41 @@
 @import "tailwindcss";
 
-/* Paleta Gesicomm: referencia Ink / Deep Navy / Signal Coral / Electric Ice.
-   Los colores de texto se separan de los fondos para mantener contraste AA. */
+/* Identidad Gesicom 2026: Negro, Bosque, Acento, Blanco y Gris. */
 @theme {
-    --color-brand-ink: #08111f;
-    --color-brand-navy: #0d1b2a;
-    --color-brand-coral: #ff5c45;
-    --color-brand-ice: #76e4ff;
-    --color-brand-cloud: #f7fafc;
-    --color-brand-slate: #64748b;
+    --color-brand-negro: #0b0f0e;
+    --color-brand-bosque: #0f3d2e;
+    --color-brand-acento: #22b573;
+    --color-brand-blanco: #fafcfb;
+    --color-brand-gris: #85938d;
+    /* Alias temporales para utilidades existentes del panel. */
+    --color-brand-ink: var(--color-brand-negro);
+    --color-brand-navy: var(--color-brand-bosque);
+    --color-brand-coral: var(--color-brand-acento);
+    --color-brand-ice: var(--color-brand-acento);
+    --color-brand-cloud: var(--color-brand-blanco);
+    --color-brand-slate: var(--color-brand-gris);
 
     /* Oscuro por defecto, también antes de resolver la preferencia. */
     --color-canvas: var(--color-brand-ink);
     --color-surface: var(--color-brand-navy);
     --color-surface-2: color-mix(in srgb, var(--color-brand-slate) 20%, var(--color-brand-ink));
     --color-surface-3: color-mix(in srgb, var(--color-brand-slate) 32%, var(--color-brand-ink));
-    --color-border: #2b4055;
-    --color-border-strong: #405870;
+    --color-border: #305247;
+    --color-border-strong: #527366;
     --color-fg: var(--color-brand-cloud);
-    --color-fg-muted: #adbdce;
-    --color-fg-subtle: #94a7bc;
+    --color-fg-muted: #b7c6be;
+    --color-fg-subtle: #a1b3a8;
 
     --color-primary: var(--color-brand-coral);
-    --color-primary-hover: #ff7966;
-    --color-primary-active: #f4513b;
+    --color-primary-hover: #36c88a;
+    --color-primary-active: #179c60;
     --color-primary-fg: var(--color-brand-ink);
-    --color-primary-text: #ff8b7b;
+    --color-primary-text: #53d99b;
     --color-accent: var(--color-brand-ice);
-    --color-accent-hover: #a1edff;
+    --color-accent-hover: #36c88a;
     --color-accent-fg: var(--color-brand-ink);
     --color-accent-text: var(--color-brand-ice);
-    /* Foco de teclado: celeste de marca y no coral, que se confundía con el
-       rojo de error (#f87171) en los campos del panel. */
+    /* Foco visible con el verde de marca. */
     --color-focus: var(--color-accent-text);
     --color-selection: var(--color-brand-ice);
     --color-selection-fg: var(--color-brand-ink);
@@ -44,9 +48,9 @@
     --color-warning-fg: var(--color-brand-ink);
     --color-danger: #f87171;
     --color-danger-fg: var(--color-brand-ink);
-    --color-info: var(--color-brand-ice);
+    --color-info: #6bbdea;
     --color-info-fg: var(--color-brand-ink);
-    --color-overlay: rgb(8 17 31 / 65%);
+    --color-overlay: rgb(11 15 14 / 65%);
 
     /* Aproximación geométrica a la referencia; familia variable autoalojada.
        La imagen del manual no identifica el nombre de la fuente. */
@@ -73,21 +77,21 @@
     --color-surface: #ffffff;
     --color-surface-2: color-mix(in srgb, var(--color-brand-slate) 10%, var(--color-brand-cloud));
     --color-surface-3: color-mix(in srgb, var(--color-brand-slate) 18%, var(--color-brand-cloud));
-    --color-border: #d5dfe8;
-    --color-border-strong: #a8b9c9;
+    --color-border: #d5e2da;
+    --color-border-strong: #9db6a7;
     --color-fg: var(--color-brand-ink);
-    --color-fg-muted: #4c6076;
-    --color-fg-subtle: #53647b;
+    --color-fg-muted: #435b4d;
+    --color-fg-subtle: #526858;
 
-    --color-primary-text: #b52e20;
-    --color-accent-text: #006179;
+    --color-primary-text: #087d4b;
+    --color-accent-text: #087d4b;
     --color-success: #047857;
     --color-success-fg: #ffffff;
     --color-warning: #946000;
     --color-warning-fg: #ffffff;
     --color-danger: #b91c1c;
     --color-danger-fg: #ffffff;
-    --color-info: #006179;
+    --color-info: #176a99;
     --color-info-fg: #ffffff;
     color-scheme: light;
 }

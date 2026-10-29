@@ -7,7 +7,7 @@ import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS, adaptarLogosGesicom } f
  * Footer legal de las landings y funnels públicos.
  *
  * El footer hereda el tema del comercio; la firma de Gesicom conserva
- * Signal Coral y su símbolo propio.
+ * verde de marca y su símbolo propio.
  *
  * Sobre las opacidades: antes eran 0,4 para el texto y 0,6 para los enlaces,
  * y encima se multiplicaban por clases Tailwind (`opacity-80`, `opacity-75`),
@@ -15,7 +15,7 @@ import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS, adaptarLogosGesicom } f
  * eso todavía se leía; sobre el fondo oscuro de Tech (#0B1220) daba 2,4:1
  * contra un mínimo AA de 4,5:1 — el footer directamente desaparecía. Ahora
  * las opacidades del texto del comercio no se apilan. La firma de marca
- * usa Coral sólido, independiente del tema.
+ * usa verde sólido, independiente del tema.
  */
 
 // Opacidades del texto del comercio; la marca tiene su propio color sólido.
@@ -26,7 +26,7 @@ const ALPHA_FIRMA  = 0.90;
 export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isPreview = false, style }) {
   const colorTexto = tema?.texto || '#000000';
   const fondo = tema?.fondo || '#ffffff';
-  const colorLogo = contraste('#08111f', fondo) >= contraste('#f7fafc', fondo) ? '#08111f' : '#f7fafc';
+  const colorLogo = contraste('#0b0f0e', fondo) >= contraste('#fafcfb', fondo) ? '#0b0f0e' : '#fafcfb';
   const footerRef = useRef(null);
   useLayoutEffect(() => adaptarLogosGesicom(footerRef.current), [tema, style]);
   // El footer no pinta fondo propio: hereda el del template.

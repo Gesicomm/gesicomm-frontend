@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  AlertCircle, ArrowLeft, ArrowRight, BarChart3, Check, CheckCircle2,
-  Eye, EyeOff, Lock, Mail, Phone, RotateCcw, ShieldCheck, ShoppingBag, Store, User
+  AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Circle, X,
+  Eye, EyeOff, Lock, Mail, Phone, RotateCcw, ShieldCheck, User
 } from 'lucide-react';
 import { api } from '../utils/api';
 import Logo from '../components/public/Logo';
+import LoginCompanion from '../components/public/LoginCompanion';
+import ThemeToggle from '../components/public/ThemeToggle';
 import './login.css';
 import { AvisoSesionExpirada } from '../components/EstadoSesion';
 import { AVISO_SESION_EXPIRADA, tomarAvisoSesion } from '../utils/sesion';
@@ -45,39 +47,12 @@ function AuthField({ id, label, icon: Icon, type = 'text', rightSlot, className 
   );
 }
 
-function PasswordRule({ ok, children }) {
+function PasswordRule({ ok, invalid = false, children }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-semibold ${
-      ok
-        ? 'border-success/25 bg-success/10 text-success'
-        : 'border-border bg-surface-2 text-fg-muted'
+    <span className={`login-password-rule inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm font-semibold ${
+      ok ? 'is-valid' : invalid ? 'is-invalid' : 'is-pending'
     }`}>
-      <Check size={12} />
-      {children}
-    </span>
-  );
-}
-
-function SegmentOption({ active, onSelect, children }) {
-  const handleKeyDown = (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    e.preventDefault();
-    onSelect();
-  };
-
-  return (
-    <span
-      role="button"
-      tabIndex={0}
-      aria-pressed={active}
-      onClick={onSelect}
-      onKeyDown={handleKeyDown}
-      className={`rounded-md px-3 py-2.5 text-center text-sm font-bold transition-all ${
-        active
-          ? "bg-primary text-primary-fg shadow-sm"
-          : 'text-fg-muted hover:bg-surface-2 hover:text-fg'
-      }`}
-    >
+      {ok ? <Check size={14} aria-hidden="true" /> : invalid ? <X size={14} aria-hidden="true" /> : <Circle size={9} aria-hidden="true" />}
       {children}
     </span>
   );
@@ -190,6 +165,10 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeForm]);
 
   // Aviso de sesión vencida: lo deja anotado el guard que expulsó al usuario
   // (ver components/EstadoSesion.jsx). Se consume una sola vez, así no vuelve
@@ -471,6 +450,9 @@ export default function Login() {
 
   return (
     <div className="gc-panel login-page text-fg">
+      <header className="login-header">
+      <Link to="/" className="login-header-brand" aria-label="Gesicom, ir al inicio"><Logo size={38} /></Link>
+      <div className="login-header-actions"><ThemeToggle />
       <Link
         to="/"
         className="login-back"
@@ -478,41 +460,24 @@ export default function Login() {
         <ArrowLeft size={18} />
         Volver
       </Link>
+      </div>
+      </header>
 
       <main className="login-shell">
         <section className="login-story" aria-labelledby="login-story-title">
-          <Link to="/" className="login-story-brand" aria-label="Gesicom, ir al inicio"><Logo size={38} /></Link>
           <div className="login-story-copy">
-            <span className="login-eyebrow"><span /> Ecommerce operativo</span>
-            <h1 id="login-story-title">Tu próximo gran paso.<br /><em>Todo conectado.</em></h1>
-            <p>Tu tienda, tus pedidos y tus decisiones. Un solo espacio para hacer crecer tu negocio.</p>
+            <span className="login-eyebrow"><span /> Plataforma de gestión</span>
+            <h1 id="login-story-title">Tu negocio,<em>bajo control.</em></h1>
+            <p>Gestioná ventas, pedidos, productos y clientes desde un solo lugar.</p>
+            <p className="login-story-products">Ventas <i /> Pedidos <i /> Productos <i /> Clientes</p>
           </div>
-          <div className="login-network" aria-label="Catálogo, pedidos y métricas conectados en Gesicom">
-            <div className="login-orbit login-orbit-outer" aria-hidden="true" />
-            <div className="login-orbit login-orbit-inner" aria-hidden="true" />
-            <svg className="login-network-lines" viewBox="0 0 520 280" fill="none" aria-hidden="true">
-              <path d="M260 140 L105 65 M260 140 L415 75 M260 140 L300 240" stroke="currentColor" strokeDasharray="4 6" />
-            </svg>
-            <div className="login-network-hub" aria-hidden="true"><Logo size={54} conTexto={false} /></div>
-            <div className="login-network-node login-node-catalog"><Store size={20} /><div><strong>Tu catálogo</strong><span>Listo para compartir</span></div><CheckCircle2 size={16} /></div>
-            <div className="login-network-node login-node-orders"><ShoppingBag size={20} /><div><strong>Tus pedidos</strong><span>Todo en orden</span></div><CheckCircle2 size={16} /></div>
-            <div className="login-network-node login-node-metrics"><BarChart3 size={20} /><div><strong>Tus métricas</strong><span>Decisiones más claras</span></div></div>
-          </div>
-          <div className="login-story-footer"><span className="login-status-dot" /> Menos vueltas. Más espacio para crecer.</div>
+          <LoginCompanion form={activeForm} busy={loading || validandoSuscripcion} error={error} success={success} />
+          <div className="login-story-footer"><ShieldCheck size={18} /> Seguro, claro y siempre en marcha.</div>
         </section>
 
         <section className="login-form-panel" aria-label="Acceso a tu cuenta">
-          <div className="login-form-card">
-            <Link to="/" className="login-mobile-brand"><Logo size={34} /></Link>
+          <div className={`login-form-card${activeForm === 'register' ? ' login-form-card--register' : ''}`}>
             <div className="login-form-eyebrow"><Lock size={14} aria-hidden="true" /> Tu espacio de trabajo</div>
-            <div className="login-segments" aria-label="Opciones de acceso">
-              <SegmentOption active={activeForm === 'login'} onSelect={() => switchForm('login')}>
-                Ingresar
-              </SegmentOption>
-              <SegmentOption active={activeForm === 'register'} onSelect={() => switchForm('register')}>
-                Crear cuenta
-              </SegmentOption>
-            </div>
 
             {sesionExpirada && !error && activeForm === 'login' && <AvisoSesionExpirada />}
 
@@ -527,7 +492,7 @@ export default function Login() {
             )}
 
             {success && (
-              <div className="mb-6 flex items-start gap-3 rounded-lg border border-success/20 bg-success/10 p-3.5 text-sm leading-snug text-success">
+              <div data-login-success className="mb-6 flex items-start gap-3 rounded-lg border border-success/20 bg-success/10 p-3.5 text-sm leading-snug text-success">
                 <CheckCircle2 size={18} className="mt-0.5 flex-shrink-0" />
                 <div>
                   <strong className="font-semibold">Listo</strong>
@@ -540,8 +505,8 @@ export default function Login() {
             {activeForm === 'login' && (
               <form onSubmit={handleLogin} noValidate className="flex flex-col gap-4">
                 <div>
-                  <h2 className="m-0 text-2xl font-bold">Iniciar sesión</h2>
-                  <p className="mt-2 text-sm leading-6 text-fg-muted">Ingresá con tu correo y contraseña para volver a tu panel de ventas.</p>
+                  <h2 className="m-0 text-2xl font-bold">Bienvenido de nuevo</h2>
+                  <p className="mt-2 text-base leading-6 text-fg-muted">Ingresá para continuar con tu negocio.</p>
                 </div>
                 <AuthField
                   id="email"
@@ -571,48 +536,49 @@ export default function Login() {
                     />
                   }
                 />
+                <button type="button" onClick={() => switchForm('forgot')} className={`${LINK_CLASS} login-forgot-link bg-transparent border-none`}>
+                  ¿Olvidaste tu contraseña?
+                </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="group mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-fg shadow-[0_14px_34px_rgba(61,95,163,0.28)] transition-all hover:-translate-y-0.5 hover:bg-primary-hover disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
+                  className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-fg shadow-[0_14px_34px_rgba(61,95,163,0.28)] transition-all hover:-translate-y-0.5 hover:bg-primary-hover disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
                 >
-                  {loading ? 'Ingresando...' : 'Entrar al panel'}
+                  {loading ? 'Ingresando...' : 'Iniciar sesión'}
                   {!loading && <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />}
                 </button>
-                <div className="mt-1 flex flex-col gap-2 text-center text-sm text-fg-muted">
-                  <button type="button" onClick={() => switchForm('forgot')} className={`${LINK_CLASS} bg-transparent border-none`}>¿Olvidaste tu contraseña?</button>
-                  <p className="m-0">¿Todavía no tenés cuenta? <button type="button" onClick={() => switchForm('register')} className={`${LINK_CLASS} bg-transparent border-none`}>Creá una gratis</button></p>
-                </div>
+                <p className="login-form-switch m-0 text-center text-sm text-fg-muted">¿Primera vez en Gesicom? <button type="button" onClick={() => switchForm('register')} className={`${LINK_CLASS} bg-transparent border-none`}>Crear cuenta</button></p>
               </form>
             )}
 
             {/* ──────────── Register ──────────── */}
             {activeForm === 'register' && (
-              <form onSubmit={handleRegister} noValidate className="flex flex-col gap-4">
+              <form onSubmit={handleRegister} noValidate className="login-register-form">
                 <div>
                   <h2 className="m-0 text-2xl font-bold">Crear cuenta</h2>
                   <p className="mt-2 text-sm leading-6 text-fg-muted">
                     {tokenSuscripcion
-                      ? `Registrá tu cuenta para activar ${suscripcionRegistro?.plan?.nombre || 'tu plan'} y continuar al onboarding.`
-                      : 'Creá tu cuenta con tu correo electrónico. Después vas a preparar tu tienda paso a paso.'}
+                      ? `Activá ${suscripcionRegistro?.plan?.nombre || 'tu plan'} y prepará tu espacio.`
+                      : 'Tus datos, tu espacio de trabajo y listo. Después te ayudamos con la tienda.'}
                   </p>
                 </div>
                 {validandoSuscripcion && (
-                  <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg-muted">
+                  <div className="login-register-notice flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg-muted">
                     <RotateCcw size={14} className="animate-spin" />
                     Validando tu pago...
                   </div>
                 )}
                 {tokenSuscripcion && suscripcionRegistro?.documento && (
-                  <div className="rounded-lg border border-success/20 bg-success/10 px-3.5 py-3 text-sm leading-6 text-success">
-                    Cédula cargada desde el pago. También precargamos tu teléfono de contacto para que puedas revisarlo antes de crear la cuenta.
+                  <div className="login-register-notice rounded-lg border border-success/20 bg-success/10 px-3.5 py-3 text-sm leading-6 text-success">
+                    Precargamos tus datos del pago. Revisalos antes de continuar.
                   </div>
                 )}
                 {!tokenSuscripcion && (
-                  <div className="rounded-lg border border-primary/20 bg-primary/10 px-3.5 py-3 text-sm leading-6 text-fg-muted">
-                    Si ya pagaste y perdiste la pantalla de confirmación, creá la cuenta con el mismo correo que usaste al pagar. Al verificarlo, vamos a vincular tu plan automáticamente.
+                  <div className="login-register-notice rounded-lg border border-primary/20 bg-primary/10 px-3.5 py-3 text-sm leading-6 text-fg-muted">
+                    ¿Ya tenés un plan? Registrate con el mismo correo del pago y lo vinculamos al verificar tu cuenta.
                   </div>
                 )}
+                <div className="login-register-fields">
                 <AuthField
                   id="nombre"
                   label="Nombre completo"
@@ -621,7 +587,6 @@ export default function Login() {
                   value={formData.nombre}
                   onChange={handleInputChange}
                   autoComplete="name"
-                  autoFocus
                 />
                 <AuthField
                   id="telefono"
@@ -649,7 +614,7 @@ export default function Login() {
                   label="Contraseña"
                   icon={Lock}
                   type={mostrarPassword ? 'text' : 'password'}
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder="Ingresala"
                   value={formData.password}
                   onChange={handleInputChange}
                   autoComplete="new-password"
@@ -666,7 +631,7 @@ export default function Login() {
                   label="Repetir contraseña"
                   icon={ShieldCheck}
                   type={mostrarConfirmPassword ? 'text' : 'password'}
-                  placeholder="Volvé a escribirla"
+                  placeholder="Repetila"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   autoComplete="new-password"
@@ -678,16 +643,27 @@ export default function Login() {
                     />
                   }
                 />
+                </div>
 
-                {!tokenSuscripcion && <div className="rounded-lg border border-border bg-surface-2/60 p-4">
-                  <AuthField id="codigo_prueba" label="Código de prueba (opcional)" icon={ShieldCheck} placeholder="Ingresá el código que te compartió Gesicom" value={codigoPrueba} onChange={e => setCodigoPrueba(e.target.value.toUpperCase())} autoComplete="off" maxLength={40} />
-                  <p className="mb-0 mt-2 text-sm text-fg-muted">La duración y el plan los define el administrador al generar tu código. Se activa al registrarte y requiere verificar tu correo.</p>
-                </div>}
-                <div className="flex flex-wrap gap-2">
-                  <PasswordRule ok={passwordChecks.length}>8 caracteres</PasswordRule>
-                  <PasswordRule ok={passwordChecks.uppercase}>1 mayúscula</PasswordRule>
-                  <PasswordRule ok={passwordChecks.number}>1 número</PasswordRule>
-                  <PasswordRule ok={passwordChecks.match}>Coinciden</PasswordRule>
+                {!tokenSuscripcion && <details className="login-register-trial">
+                  <summary>
+                    <span className="login-register-trial-icon"><ShieldCheck size={18} aria-hidden="true" /></span>
+                    <span className="login-register-trial-copy">
+                      <strong>¿Tenés un código de prueba?</strong>
+                      <small>Ingresalo para activar tu acceso</small>
+                    </span>
+                    <span className="login-register-trial-toggle" aria-hidden="true" />
+                  </summary>
+                  <div className="login-register-trial-content">
+                    <AuthField id="codigo_prueba" label="Código de prueba" icon={ShieldCheck} placeholder="Ingresá tu código" value={codigoPrueba} onChange={e => setCodigoPrueba(e.target.value.toUpperCase())} autoComplete="off" maxLength={40} />
+                    <p>Se activa al crear la cuenta y verificar tu correo.</p>
+                  </div>
+                </details>}
+                <div className="login-register-rules flex flex-wrap gap-2">
+                  <PasswordRule ok={passwordChecks.length} invalid={Boolean(formData.password) && !passwordChecks.length}>8 caracteres+</PasswordRule>
+                  <PasswordRule ok={passwordChecks.uppercase} invalid={Boolean(formData.password) && !passwordChecks.uppercase}>Una mayúscula</PasswordRule>
+                  <PasswordRule ok={passwordChecks.number} invalid={Boolean(formData.password) && !passwordChecks.number}>Un número</PasswordRule>
+                  <PasswordRule ok={passwordChecks.match} invalid={Boolean(formData.confirmPassword) && !passwordChecks.match}>Coinciden</PasswordRule>
                 </div>
 
                 <button

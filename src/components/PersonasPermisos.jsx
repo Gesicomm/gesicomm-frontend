@@ -55,11 +55,12 @@ export default function PersonasPermisos() {
     e.preventDefault(); setOcupado(true); setError(''); setMensaje('');
     try {
       if (!form.id && form.password !== form.confirmacion) throw new Error('Las contraseñas no coinciden.');
+      let alta = null;
       if (form.id) await api.patch(`/api/personas/${form.id}`, { permisos: form.permisos, ...(form.estado === 'revocado' ? { estado: 'activo' } : {}) });
       else {
-        await api.post('/api/personas', { nombre: form.nombre, email: form.email, password: form.password, permisos: form.permisos });
+        alta = await api.post('/api/personas', { nombre: form.nombre, email: form.email, password: form.password, permisos: form.permisos });
       }
-      setMensaje(form.id ? 'Acceso actualizado. Se aplica en la próxima acción de la persona.' : 'Cuenta creada. Ya puede ingresar con el correo y la contraseña que definiste.');
+      setMensaje(form.id ? 'Acceso actualizado. Se aplica en la próxima acción de la persona.' : alta?.message || 'Cuenta creada. Ya puede ingresar con el correo y la contraseña que definiste.');
       setForm(null); await cargar();
     } catch (e) { setError(e.message); } finally { setOcupado(false); }
   }
@@ -116,7 +117,7 @@ export default function PersonasPermisos() {
           <label>Confirmar contraseña<input type={mostrarPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} maxLength={72} value={form.confirmacion} disabled={ocupado} onChange={e => setForm({ ...form, confirmacion: e.target.value })} /></label>
         </div>
         <button type="button" aria-pressed={mostrarPassword} style={{ marginTop: 12 }} onClick={() => setMostrarPassword(v => !v)}>{mostrarPassword ? <EyeOff size={16} /> : <Eye size={16} />}{mostrarPassword ? 'Ocultar contraseñas' : 'Mostrar contraseñas'}</button>
-        <p className="personas-ayuda">Al menos 8 caracteres, una mayúscula y un número. Compartí los datos de acceso con la persona.</p>
+        <p className="personas-ayuda">Al menos 8 caracteres, una mayúscula y un número. Le enviaremos por correo su usuario, esta contraseña y el enlace para iniciar sesión.</p>
       </>}
       <p className="personas-ayuda">Solo ver permite consultar. Ver y gestionar permite realizar cambios. Podés combinar secciones y ajustar los permisos después.</p>
       </section>

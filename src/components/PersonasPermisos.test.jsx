@@ -55,6 +55,18 @@ it('crea la cuenta con contraseña definida por el propietario y acceso exclusiv
  expect(await screen.findByText(/Cuenta creada. Ya puede ingresar/)).toBeTruthy();
  expect(screen.queryByLabelText('Contraseña inicial')).toBeNull();
 });
+it('muestra el aviso del backend sobre el correo enviado',async()=>{
+ api.post.mockResolvedValue({id:3,emailEnviado:true,message:'Cuenta creada. Le enviamos a ana@example.com el enlace para iniciar sesión.'});
+ render(<PersonasPermisos/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Agregar persona'}));
+ fireEvent.change(screen.getByLabelText('Nombre'),{target:{value:'Ana'}});
+ fireEvent.change(screen.getByLabelText('Correo electrónico'),{target:{value:'ana@example.com'}});
+ fireEvent.change(screen.getByLabelText('Contraseña inicial'),{target:{value:'ClaveSegura123'}});
+ fireEvent.change(screen.getByLabelText('Confirmar contraseña'),{target:{value:'ClaveSegura123'}});
+ fireEvent.change(screen.getByLabelText('Acceso a Gestión Comercial'),{target:{value:'ver'}});
+ fireEvent.click(screen.getByRole('button',{name:'Crear persona'}));
+ expect(await screen.findByText(/Le enviamos a ana@example.com el enlace/)).toBeTruthy();
+});
 it('no crea la cuenta si las contraseñas no coinciden',async()=>{
  render(<PersonasPermisos/>);
  fireEvent.click(await screen.findByRole('button',{name:'Agregar persona'}));

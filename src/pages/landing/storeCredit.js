@@ -1,12 +1,12 @@
 // Firma propia de Gesicom: no toma el acento configurable del comercio.
-export const CREDITO_GESICOM_CONTENIDO = `<span>Gesicom</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M48.27 24.31 A18.9 18.9 0 1 0 49.49 35.93 L37 35.93" fill="none" stroke="currentColor" stroke-width="8.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="49" cy="48.5" r="6.5" fill="#ff5c45"/></svg>`;
+export const CREDITO_GESICOM_CONTENIDO = `<span>Gesicom</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M62 17 A35 35 0 1 0 81 48" fill="none" stroke="currentColor" stroke-width="13"/><path d="M26 52 L42 68 L77 31" fill="none" stroke="#22b573" stroke-width="13" stroke-linecap="square" stroke-linejoin="miter"/><circle cx="83" cy="18" r="8" fill="#22b573"/></svg>`;
 
 export const CREDITO_GESICOM_HTML = `<a data-gesicomm-credit href="https://gesicomm.com" target="_blank" rel="noopener noreferrer">${CREDITO_GESICOM_CONTENIDO}</a>`;
 
 export const CREDITO_GESICOM_CSS = `
-a[data-gesicomm-credit] { display: inline-flex !important; align-items: center !important; gap: 6px !important; vertical-align: middle; white-space: nowrap; color: #ff5c45 !important; font-weight: 900 !important; opacity: 1 !important; text-decoration: none; }
+a[data-gesicomm-credit] { display: inline-flex !important; align-items: center !important; gap: 6px !important; vertical-align: middle; white-space: nowrap; color: var(--gesicom-credit-accent, #087d4b) !important; font-weight: 900 !important; opacity: 1 !important; text-decoration: none; }
 a[data-gesicomm-credit] > span { color: inherit !important; font: inherit !important; }
-a[data-gesicomm-credit] > svg { display: block !important; width: 24px !important; height: 24px !important; flex: 0 0 24px !important; color: var(--gesicom-credit-logo, #08111f) !important; }
+a[data-gesicomm-credit] > svg { display: block !important; width: 24px !important; height: 24px !important; flex: 0 0 24px !important; color: var(--gesicom-credit-logo, #0b0f0e) !important; }
 a[data-gesicomm-credit]:hover { text-decoration: underline; text-underline-offset: 3px; }
 a[data-gesicomm-credit]:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 3px; }
 `;
@@ -49,8 +49,10 @@ export function adaptarLogosGesicom(root) {
         bg = bg.map(function (channel, i) { return front[i] * front[3] + channel * (1 - front[3]); });
       });
       var lum = luminance(bg);
-      var color = contrast(luminance([247, 250, 252]), lum) > contrast(luminance([8, 17, 31]), lum) ? '#f7fafc' : '#08111f';
+      var color = contrast(luminance([250, 252, 251]), lum) > contrast(luminance([11, 15, 14]), lum) ? '#fafcfb' : '#0b0f0e';
       if (link.style.getPropertyValue('--gesicom-credit-logo') !== color) link.style.setProperty('--gesicom-credit-logo', color);
+      var accent = color === '#fafcfb' ? '#53d99b' : '#087d4b';
+      if (link.style.getPropertyValue('--gesicom-credit-accent') !== accent) link.style.setProperty('--gesicom-credit-accent', accent);
     });
   }
   var frame = 0;

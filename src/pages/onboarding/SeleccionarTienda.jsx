@@ -24,6 +24,7 @@ export default function SeleccionarTienda() {
   const [borrando, setBorrando] = useState(null);
   const [nombreConfirmacion, setNombreConfirmacion] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [opcionesAbiertas, setOpcionesAbiertas] = useState(null);
   const ocupado = seleccionando !== null || guardando;
   const confirmacionAbierta = confirmando !== null || borrando !== null;
 
@@ -35,7 +36,26 @@ export default function SeleccionarTienda() {
     return () => { activo = false; };
   }, []);
 
+  useEffect(() => {
+    if (opcionesAbiertas === null) return undefined;
+    const cerrarAlHacerClickFuera = (event) => {
+      if (!(event.target instanceof Element) || !event.target.closest('.st-opciones-tienda')) {
+        setOpcionesAbiertas(null);
+      }
+    };
+    const cerrarConEscape = (event) => {
+      if (event.key === 'Escape') setOpcionesAbiertas(null);
+    };
+    document.addEventListener('pointerdown', cerrarAlHacerClickFuera);
+    document.addEventListener('keydown', cerrarConEscape);
+    return () => {
+      document.removeEventListener('pointerdown', cerrarAlHacerClickFuera);
+      document.removeEventListener('keydown', cerrarConEscape);
+    };
+  }, [opcionesAbiertas]);
+
   async function elegir(tienda) {
+    setOpcionesAbiertas(null);
     setError(null);
     setSeleccionando(tienda.id);
     try {
@@ -48,6 +68,7 @@ export default function SeleccionarTienda() {
   }
 
   async function cambiarEstado(tienda) {
+    setOpcionesAbiertas(null);
     setError(null);
     setMensaje('');
     setGuardando(true);
@@ -64,6 +85,7 @@ export default function SeleccionarTienda() {
   }
 
   async function eliminar(tienda) {
+    setOpcionesAbiertas(null);
     setError(null);
     setMensaje('');
     setGuardando(true);
@@ -122,8 +144,17 @@ export default function SeleccionarTienda() {
                   <span className={`st-estado ${tienda.activo === false ? 'st-inactiva' : ''}`}>
                     <span className="st-estado-punto" />{tienda.activo === false ? 'Inactiva' : 'Activa'}
                   </span>
-                  <details className="st-opciones-tienda"><summary aria-label={`Opciones de ${tienda.nombre}`}>Opciones</summary>
-                  <div className="st-pie-acciones">
+                  <div className="st-opciones-tienda">
+                    <button
+                      type="button"
+                      className="st-opciones-trigger"
+                      aria-label={`Opciones de ${tienda.nombre}`}
+                      aria-expanded={opcionesAbiertas === tienda.id}
+                      aria-controls={`st-opciones-${tienda.id}`}
+                      disabled={ocupado || confirmacionAbierta}
+                      onClick={() => setOpcionesAbiertas(actual => actual === tienda.id ? null : tienda.id)}
+                    >Opciones</button>
+                    {opcionesAbiertas === tienda.id && <div id={`st-opciones-${tienda.id}`} className="st-pie-acciones" role="group" aria-label={`Acciones de ${tienda.nombre}`}>
                   <button type="button" className="st-cambiar-estado"
                     aria-label={`${tienda.activo === false ? 'Reactivar' : 'Inactivar'} ${tienda.nombre}`}
                     disabled={ocupado || confirmacionAbierta}
@@ -142,8 +173,8 @@ export default function SeleccionarTienda() {
                     onClick={() => { setError(null); setMensaje(''); setNombreConfirmacion(''); setBorrando(tienda.id); }}>
                     <Trash2 size={14} /> Eliminar
                   </button>
+                    </div>}
                   </div>
-                  </details>
                 </div>
                 {borrando === tienda.id && (
                   <form className="st-confirmacion" onSubmit={event => { event.preventDefault(); if (nombreConfirmacion === tienda.nombre && !guardando) eliminar(tienda); }}>

@@ -7,7 +7,7 @@ import '../../pages/public/home/landing.css';
 const enlaces = [['Plataforma', 'solucion'], ['Soluciones', 'rutas'], ['Precios', 'precios'], ['Demo', 'solicitar-demo'], ['Proveedores', 'registro-proveedores']];
 const legales = [['Política de Privacidad', '/privacy'], ['Términos y Condiciones', '/terms'], ['Política de Cookies', '/cookies'], ['Eliminación de Datos', '/data-deletion']];
 const confianza = [['Seguridad de la Información', '/security'], ['Cumplimiento Legal', '/compliance'], ['Contacto', '/contact']];
-const Marca = () => <img className="home-brand" src="/brand/gesicomm-horizontal-oscuro.svg" width="150" height="48" alt="Gesicom" />;
+const Marca = () => <img className="home-brand" src="/brand/gesicomm-compacta-oscuro.svg" width="150" height="48" alt="Gesicom" />;
 
 /** Páginas legales y contacto: mismo lenguaje visual que la portada de referencia. */
 export default function MarketingChrome({ children }) {

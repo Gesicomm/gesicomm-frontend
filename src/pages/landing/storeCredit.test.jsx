@@ -16,7 +16,7 @@ describe('firma compartida de las tiendas', () => {
     const stopSecond = actualizarCreditosGesicom(CREDITO_GESICOM_CONTENIDO);
     const firma = document.querySelector('[data-gesicomm-credit]');
     expect(firma.querySelectorAll('svg')).toHaveLength(1);
-    expect(firma.querySelector('circle').getAttribute('fill')).toBe('#ff5c45');
+    expect(firma.querySelector('circle').getAttribute('fill')).toBe('#22b573');
     expect(firma.textContent).toBe('Gesicom');
     expect(firma.rel).toBe('noopener noreferrer');
     expect(document.querySelector('.footer-bottom').textContent).toContain('Llevalofacil · Tecnología de Gesicom');
@@ -40,18 +40,18 @@ describe('firma compartida de las tiendas', () => {
     const firma = container.querySelector('[data-gesicomm-credit]');
     expect(firma.textContent).toBe('Gesicom');
     expect(firma.querySelector('svg')).not.toBeNull();
-    expect(firma.style.getPropertyValue('--gesicom-credit-logo')).toBe(fondo === '#000000' ? '#f7fafc' : '#08111f');
-    expect(firma.querySelector('circle').getAttribute('fill')).toBe('#ff5c45');
+    expect(firma.style.getPropertyValue('--gesicom-credit-logo')).toBe(fondo === '#000000' ? '#fafcfb' : '#0b0f0e');
+    expect(firma.querySelector('circle').getAttribute('fill')).toBe('#22b573');
     expect(container.textContent).toContain('Llevalofacil');
-    expect(container.querySelector('style').textContent).toContain('#ff5c45');
+    expect(container.querySelector('style').textContent).toContain('--gesicom-credit-accent');
   });
 
   it('usa el fondo real incluso si el texto y el tema declarado dicen lo contrario', () => {
     document.body.innerHTML = '<div style="background:#000;color:#000"><footer style="background:rgba(255,255,255,.1)"><a data-gesicomm-credit>Gesicom</a></footer></div>';
     const stop = adaptarLogosGesicom(document);
-    expect(document.querySelector('a').style.getPropertyValue('--gesicom-credit-logo')).toBe('#f7fafc');
+    expect(document.querySelector('a').style.getPropertyValue('--gesicom-credit-logo')).toBe('#fafcfb');
     stop();
     const { container } = render(<MemoryRouter><StoreFooterLegal nombreComercio="Tienda" tema={{ fondo: '#ffffff', texto: '#000000' }} style={{ backgroundColor: '#000000' }} /></MemoryRouter>);
-    expect(container.querySelector('[data-gesicomm-credit]').style.getPropertyValue('--gesicom-credit-logo')).toBe('#f7fafc');
+    expect(container.querySelector('[data-gesicomm-credit]').style.getPropertyValue('--gesicom-credit-logo')).toBe('#fafcfb');
   });
 });

@@ -3,11 +3,14 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import Seo, { SCHEMA_ORGANIZACION } from '../../components/public/Seo';
 import PublicPlans from './PublicPlans';
+import GesicomMascot from '../../components/public/GesicomMascot';
+import ThemeToggle from '../../components/public/ThemeToggle';
 import { enviarMensajeContacto } from '../../services/publicoService';
 import '@fontsource-variable/manrope';
 import markup from './home/landing.html?raw';
 import './home/reference.css';
 import './home/landing.css';
+import './home/light.css';
 
 const RUTAS = {
   fisico: {
@@ -28,6 +31,8 @@ export default function Landing() {
   const rootRef = useRef(null);
   const navigate = useNavigate();
   const [planesHost, setPlanesHost] = useState(null);
+  const [mascotHost, setMascotHost] = useState(null);
+  const [themeHost, setThemeHost] = useState(null);
   const [rutaPlanes, setRutaPlanes] = useState('fisico');
 
   useEffect(() => {
@@ -35,6 +40,8 @@ export default function Landing() {
     let vigente = true;
     let ruta = 'fisico';
     setPlanesHost(root.querySelector('[data-home-plans]'));
+    setMascotHost(root.querySelector('[data-home-mascot]'));
+    setThemeHost(root.querySelector('[data-home-theme]'));
     const texto = (id, value) => { const el = root.querySelector(`#${id}`); if (el) el.textContent = value; };
     const opcion = (selector, actual) => root.querySelectorAll(selector).forEach(button => {
       const active = button.dataset.route === actual;
@@ -199,7 +206,9 @@ export default function Landing() {
 
   return <>
     <Seo titulo="Gesicom | Todo tu negocio digital bajo control" descripcion="Creá, administrá y escalá tu negocio digital desde un solo sistema. E-commerce, marca personal, CRM, marketing y analítica." schema={SCHEMA_ORGANIZACION} />
-    <div ref={rootRef} className="gl-landing" dangerouslySetInnerHTML={{ __html: markup }} />
+    <div ref={rootRef} className="gl-landing home-institutional" dangerouslySetInnerHTML={{ __html: markup }} />
     {planesHost && createPortal(<PublicPlans ruta={rutaPlanes} />, planesHost)}
+    {mascotHost && createPortal(<GesicomMascot />, mascotHost)}
+    {themeHost && createPortal(<ThemeToggle className="home-theme-toggle" />, themeHost)}
   </>;
 }

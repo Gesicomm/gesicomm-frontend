@@ -17,7 +17,6 @@
 .st-lista { display: flex; flex-direction: column; gap: 12px; }
 .st-tienda { position: relative; min-width: 0; overflow: visible; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
 /* El menú sale de la tarjeta y debe quedar sobre la siguiente tienda. */
-.st-tienda:has(.st-opciones-tienda[open]) { z-index: 1; }
 .st-tienda > .st-item { border-radius: 11px 11px 0 0; }
 .st-tienda > .st-pie { border-radius: 0 0 11px 11px; }
 .st-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 84px; padding: 16px; border: 0; background: transparent; color: var(--color-fg); text-align: left; cursor: pointer; transition: background 150ms ease; }
@@ -58,11 +57,13 @@
   .st-item { padding: 14px 12px; gap: 10px; }
 }
 .st-opciones-tienda { position: relative; }
-.st-opciones-tienda > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; padding: .5rem .75rem; color: var(--color-fg-muted); border-radius: 8px; }
-.st-opciones-tienda > summary:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 2px; }
-.st-opciones-tienda[open] .st-pie-acciones { position: absolute; right: 0; top: 100%; z-index: 10; display: flex; flex-direction: column; align-items: stretch; min-width: 180px; padding: .5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; box-shadow: 0 8px 24px color-mix(in srgb, var(--color-fg) 12%, transparent); }
+.st-opciones-tienda { display: flex; margin-left: auto; }
+.st-opciones-trigger { cursor: pointer; min-height: 44px; display: flex; align-items: center; padding: .5rem .75rem; border: 0; background: transparent; color: var(--color-fg-muted); border-radius: 8px; font: inherit; }
+.st-opciones-trigger:hover:not(:disabled), .st-opciones-trigger[aria-expanded="true"] { color: var(--color-fg); background: var(--color-surface-2); }
+.st-opciones-trigger:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 2px; }
+.st-opciones-tienda .st-pie-acciones { position: absolute; right: 0; top: 100%; z-index: 10; display: flex; flex-direction: column; align-items: stretch; min-width: 180px; padding: .5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; box-shadow: 0 8px 24px color-mix(in srgb, var(--color-fg) 12%, transparent); }
 
 /* Con "Opciones" abierto, la tarjeta deja ver el menú: con overflow hidden
    (para los bordes redondeados) Inactivar/Eliminar quedaban recortados y
    solo asomaba un borde. Sube sobre la tarjeta de abajo. */
-.st-tienda:has(.st-opciones-tienda[open]) { overflow: visible; position: relative; z-index: 5; }
+.st-tienda:has(.st-opciones-trigger[aria-expanded="true"]) { overflow: visible; position: relative; z-index: 5; }
