@@ -276,6 +276,8 @@ export default function Login() {
         ? '/dashboard'
         : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
           ? '/mis-pedidos'
+          : res.usuario?.tipo_ingreso_inicial == null
+            ? '/primer-ingreso'
           : '/seleccionar-modulo';
       trackearEventoPersonalizado('Login', generarEventId());
       navigate(rutaDestino);
@@ -366,14 +368,17 @@ export default function Login() {
       }
       setSuccess(res.message);
       setTimeout(() => {
+        const destinoCuenta = tokenSuscripcion || res.suscripcion_vinculada
+          ? '/onboarding'
+          : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
+            ? '/mis-pedidos'
+            : '/seleccionar-modulo';
         const rutaDestino = res.usuario?.rol === 'administrador'
           ? '/dashboard'
-          : tokenSuscripcion || res.suscripcion_vinculada
-            ? '/onboarding'
-            : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
-              ? '/mis-pedidos'
-              : '/seleccionar-modulo';
-        navigate(rutaDestino);
+          : res.usuario?.tipo_ingreso_inicial == null
+            ? '/primer-ingreso'
+            : destinoCuenta;
+        navigate(rutaDestino, rutaDestino === '/primer-ingreso' ? { state: { destino: destinoCuenta } } : undefined);
       }, 1000);
     } catch (err) {
       if (err.response?.data?.codigo_expirado) {

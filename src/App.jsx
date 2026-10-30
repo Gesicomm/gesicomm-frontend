@@ -60,6 +60,7 @@ const MiAfiliado = lazy(() => import('./pages/afiliados/MiAfiliado'));
 const PartnerCertificado = lazy(() => import('./pages/partner/PartnerCertificado'));
 const AuthTracking = lazy(() => import('./pages/admin/AuthTracking'));
 const SeleccionModulo = lazy(() => import('./pages/auth/SeleccionModulo'));
+const PrimerIngreso = lazy(() => import('./pages/auth/PrimerIngreso'));
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
 const SeleccionarTienda = lazy(() => import('./pages/onboarding/SeleccionarTienda'));
 const ControlCourier = lazy(() => import('./pages/courier/control-courier').then(m => ({ default: m.ControlCourier })));
@@ -429,6 +430,9 @@ function App() {
         {/* Pantalla de Selección de Módulo */}
         <Route path="/seleccionar-modulo" element={
           <ProtectedRoute><SeleccionModulo /></ProtectedRoute>
+        } />
+        <Route path="/primer-ingreso" element={
+          <ProtectedRoute><PrimerIngreso /></ProtectedRoute>
         } />
 
         {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario' */}
