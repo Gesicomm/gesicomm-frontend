@@ -794,7 +794,7 @@ export function runtimeGesicomm(plantillas) {
       case 'beneficios_subtitulo': valor = item.beneficios_subtitulo || ''; break;
       case 'urgencia_kicker': valor = item.urgencia_kicker || 'Oferta por tiempo limitado'; break;
       case 'urgencia_titulo': valor = item.urgencia_titulo || 'Reservá esta condición antes de que termine.'; break;
-      case 'urgencia_texto': valor = item.urgencia_texto || 'La fecha real se configura en Gesicomm; el contador se actualiza solo.'; break;
+      case 'urgencia_texto': valor = item.urgencia_texto || 'Aprovechá antes de que vuelva a su precio normal.'; break;
       case 'urgencia_horas': valor = item.urgencia_horas || '1'; break;
       case 'urgencia_minutos': valor = item.urgencia_minutos || '59'; break;
       case 'urgencia_segundos': valor = item.urgencia_segundos || '58'; break;
@@ -2806,16 +2806,27 @@ export function runtimeGesicomm(plantillas) {
     }
   }
 
+  // El bloque de "Oferta por tiempo limitado" y sus partes. Van juntos: sin
+  // oferta real no hay encabezado, ni título, ni texto, ni contador.
+  var BLOQUES_OFERTA = { oferta: 1, oferta_encabezado: 1, oferta_nombre: 1, oferta_texto: 1, oferta_duracion: 1, urgencia: 1 };
+
   function aplicarVisibilidadFicha() {
     if (!productoActual) return;
     var bloques = productoActual.ficha_bloques || {};
+    // Sin oferta configurada no hay nada que anunciar. El bloque trae textos
+    // de ejemplo y un contador generado para que el comercio lo vea y lo
+    // edite en el panel; en la tienda publicada eso es una instrucción
+    // interna ("La fecha real se configura en Gesicomm") y un reloj
+    // inventado corriendo frente al comprador. En el editor se sigue
+    // mostrando: si no, no habría cómo darle estilo ni configurarlo.
+    var sinOferta = !bloquesEditor() && !productoAplicaUrgencia(productoActual, datos.venta && datos.venta.urgencia);
     var els = document.querySelectorAll('[data-gesicomm-ficha-bloque]');
     for (var i = 0; i < els.length; i++) {
       var clave = els[i].getAttribute('data-gesicomm-ficha-bloque');
       // Atributo y no style.display: el display lo manejan también las
       // listas vacías y data-gesicomm-si; pisarlo con '' re-mostraba los
       // logos de pago apagados o la lista de métodos vacía.
-      els[i].toggleAttribute('data-gesicomm-ficha-oculto', bloques[clave] === false);
+      els[i].toggleAttribute('data-gesicomm-ficha-oculto', bloques[clave] === false || (sinOferta && !!BLOQUES_OFERTA[clave]));
     }
   }
 

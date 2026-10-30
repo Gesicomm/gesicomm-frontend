@@ -117,7 +117,7 @@ const DEFAULTS_PRESENTACION = {
   agregar_carrito_texto: 'Agregar al carrito',
   urgencia_kicker: 'Oferta por tiempo limitado',
   urgencia_titulo: 'Reservá esta condición antes de que termine.',
-  urgencia_texto: 'La fecha real se configura en Gesicomm; el contador se actualiza solo.',
+  urgencia_texto: 'Aprovechá antes de que vuelva a su precio normal.',
   urgencia_horas: 1,
   urgencia_minutos: 59,
   urgencia_segundos: 58,

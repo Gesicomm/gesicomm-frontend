@@ -1333,6 +1333,54 @@ describe('runtime del lienzo en blanco — ficha de producto', () => {
     dom.window.close();
   });
 
+  // El bloque "Oferta por tiempo limitado" trae textos de ejemplo y un
+  // contador generado para que el comercio lo vea y lo edite en el panel.
+  // En la tienda publicada, sin una oferta de verdad, eso es una
+  // instrucción interna y un reloj inventado frente al comprador.
+  describe('oferta por tiempo limitado', () => {
+    const producto = { tipo: 'producto', id: 901, referencia_id: 901, slug: 'producto-901', content_id: 'producto-901',
+      nombre: 'Producto 901', precio: 10000, precio_efectivo: 10000 };
+    const bloqueOferta = document => document.querySelector('[data-gesicomm-ficha-bloque="oferta"]');
+    const oculto = (dom, el) => !el || el.hasAttribute('data-gesicomm-ficha-oculto') || dom.window.getComputedStyle(el).display === 'none';
+
+    it('sin oferta configurada no se dibuja en la tienda publicada', () => {
+      const runtime = datosRuntimePublico({ content: { venta: {} }, catalogo_items: [] }, 'tienda', producto, { vista: 'producto' });
+      const { document, dom } = montar(PLANTILLA_PRODUCTO, runtime);
+      expect(oculto(dom, bloqueOferta(document))).toBe(true);
+      // El texto de respaldo sigue en el HTML (se oculta por CSS, no se
+      // borra), pero queda dentro del bloque oculto: nadie lo ve.
+      const textoRespaldo = document.querySelector('[data-gesicomm-ficha-bloque="oferta_texto"]');
+      expect(textoRespaldo.closest('[data-gesicomm-ficha-oculto]')).not.toBeNull();
+      expect(oculto(dom, document.querySelector('[data-gesicomm-ficha-bloque="oferta_duracion"]'))).toBe(true);
+      dom.window.close();
+    });
+
+    it('con una oferta vigente sí se dibuja', () => {
+      const fin = new Date(Date.now() + 3600 * 1000).toISOString();
+      const venta = { urgencia: { activo: true, fin_at: fin } };
+      const runtime = datosRuntimePublico({ content: { venta }, catalogo_items: [] }, 'tienda', producto, { vista: 'producto' });
+      const { document, dom } = montar(PLANTILLA_PRODUCTO, runtime);
+      expect(oculto(dom, bloqueOferta(document))).toBe(false);
+      dom.window.close();
+    });
+
+    it('una oferta de otro producto no lo dibuja en este', () => {
+      const fin = new Date(Date.now() + 3600 * 1000).toISOString();
+      const venta = { urgencia: { activo: true, fin_at: fin, productos: ['producto-777'] } };
+      const runtime = datosRuntimePublico({ content: { venta }, catalogo_items: [] }, 'tienda', producto, { vista: 'producto' });
+      const { document, dom } = montar(PLANTILLA_PRODUCTO, runtime);
+      expect(oculto(dom, bloqueOferta(document))).toBe(true);
+      dom.window.close();
+    });
+
+    it('en el editor se sigue viendo, para poder configurarlo', () => {
+      const runtime = datosRuntimePreview({ productos: [producto], venta: {}, vista: 'producto', productoId: 'producto-901' });
+      const { document, dom } = montar(PLANTILLA_PRODUCTO, { ...runtime, editor_bloques: { oferta: '6 · Oferta por tiempo limitado' } });
+      expect(oculto(dom, bloqueOferta(document))).toBe(false);
+      dom.window.close();
+    });
+  });
+
   const datos = { vista: 'producto', tienda: {}, productos: [airFryer, remera], producto: remera, recomendados: [airFryer] };
 
   it('pinta variantes, ofertas y recomendados del producto', () => {

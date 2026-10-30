@@ -13,7 +13,7 @@ export default function OfertaTiempoLimitado({ datos = {}, partes = {}, plantill
     const timer = setInterval(() => setRestante(Math.max(0, Math.floor((fin - Date.now()) / 1000))), 1000);
     return () => clearInterval(timer);
   }, [total, plantilla, documento]);
-  const inicial = { urgencia_kicker: 'Oferta por tiempo limitado', urgencia_titulo: 'Reservá esta condición antes de que termine.', urgencia_texto: 'La fecha real se configura en Gesicomm; el contador se actualiza solo.' };
+  const inicial = { urgencia_kicker: 'Oferta por tiempo limitado', urgencia_titulo: 'Reservá esta condición antes de que termine.', urgencia_texto: 'Aprovechá antes de que vuelva a su precio normal.' };
   const texto = clave => String(datos[clave] ?? (plantilla ? inicial[clave] : '')).trim();
   const valores = [Math.floor(restante / 3600), Math.floor((restante % 3600) / 60), restante % 60];
   return <div className="limited-offer pdp-limited-offer pdp-offer-card" data-gesicomm-ficha-bloque="oferta">
