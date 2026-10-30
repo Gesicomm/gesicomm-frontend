@@ -4,6 +4,12 @@
 .raha h3 { font-size: 16px; margin: 0 0 16px; }
 .raha-section { border-bottom: 1px solid var(--vit-border, var(--color-border)); padding: 24px 0; }
 .raha-section:last-child { border-bottom: 0; }
+.raha-datos-enviados { margin-top: 20px; font-size: 16px; line-height: 1.55; }
+.raha-datos-enviados summary { cursor: pointer; font-weight: 650; }
+.raha-datos-enviados dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 16px 0 0; }
+.raha-datos-enviados dt { color: var(--color-fg-muted); font-size: 14px; }
+.raha-datos-enviados dd { margin: 3px 0 0; overflow-wrap: anywhere; }
+@media (max-width: 650px) { .raha-datos-enviados dl { grid-template-columns: 1fr; } }
 .raha-status, .raha-actions, .raha-doc-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .raha-status { padding: 16px 0; }
 .raha-status > div { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex: 1; }

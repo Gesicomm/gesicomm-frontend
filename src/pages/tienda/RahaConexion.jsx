@@ -192,6 +192,8 @@ export default function RahaConexion({ tienda, onSolicitudChange }) {
   }
 
   const editable = ['borrador', 'observada'].includes(solicitud?.estado);
+  const tipoCuentaPendiente = solicitud?.estado === 'aprobada' && !solicitud.datos?.tipo_cuenta;
+  const contratoFirmado = solicitud?.documentos?.find(doc => doc.tipo === 'contrato');
   // Ya enviada, Raha puede pedir otra copia de un documento sin devolver la solicitud.
   const reemplazable = editable || ['en_revision', 'enviada_raha', 'aprobada'].includes(solicitud?.estado);
 
@@ -223,9 +225,14 @@ export default function RahaConexion({ tienda, onSolicitudChange }) {
 
   // Si todavía se puede editar, guarda lo que está en pantalla para que el contrato salga con esos datos.
   function descargarContrato() {
+    if (tipoCuentaPendiente && !datos.tipo_cuenta?.trim()) {
+      setError('Elegí el tipo de cuenta antes de descargar el contrato.');
+      return;
+    }
     action(async () => {
       let row;
       if (editable) row = await rahaService.guardar({ datos, version: solicitud.version });
+      else if (tipoCuentaPendiente) row = await rahaService.completarTipoCuenta({ tipo_cuenta: datos.tipo_cuenta, version: solicitud.version });
       if (row?.id) setSolicitud(row);
       await rahaService.contrato();
       return row;
@@ -308,12 +315,21 @@ export default function RahaConexion({ tienda, onSolicitudChange }) {
     {solicitud && <RahaSemaforo estado={solicitud.estado} />}
     {error && <div role="alert" className="raha-alert raha-error"><AlertCircle size={18} /><span>{error}</span></div>}
     {mensaje && <div role="status" className="raha-alert raha-success"><CheckCircle2 size={18} /><span>{mensaje}</span></div>}
-    {!solicitud ? <button type="button" className="raha-button" onClick={cargar}><RefreshCw size={15} /> Reintentar</button> : <>
+    {!solicitud ? <button type="button" className="raha-button" onClick={cargar}><RefreshCw size={15} /> Reintentar</button> : contratoFirmado && !editable ? <>
+      <section className="raha-section">
+        <h3>Contrato firmado</h3>
+        <p className="raha-muted">Tu contrato firmado está disponible para descargar. Conservá una copia.</p>
+        <button type="button" className="raha-button" disabled={busy} onClick={() => action(() => rahaService.documento(contratoFirmado))}><Download size={16} /> Descargar contrato firmado</button>
+        <details className="raha-datos-enviados"><summary>Ver datos enviados</summary><dl>{GRUPOS_RAHA.flatMap(group => group.campos).map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{datos[key] || 'No indicado'}</dd></div>)}</dl></details>
+      </section>
+      <RahaDocumentos documentos={solicitud.documentos} editable={false} reemplazable={reemplazable} busy={busy} subidas={subidas} docErrores={docErrores} onUpload={subir} onDownload={doc => action(() => rahaService.documento(doc))} />
+      <RahaHistorial solicitud={solicitud} />
+    </> : <>
       <form noValidate onSubmit={handleEnviar}>
         {GRUPOS_RAHA.map(group => <section className="raha-section" key={group.titulo}><h3>{group.titulo}</h3><div className="raha-fields">
           {group.campos.map(([key, label, type = 'text', placeholder = '', opciones = []]) => <label key={key} htmlFor={`raha-${key}`} className={`raha-field ${type === 'textarea' ? 'raha-wide' : ''}`}>
             <span>{label} <span className="raha-req" aria-hidden="true">*</span></span>
-            {type === 'select' ? <select id={`raha-${key}`} aria-label={label} className={errores[key] ? 'raha-input-error' : ''} value={datos[key] || opciones[0][0]} disabled={!editable || busy} onChange={event => handleChange(key, event.target.value)} onBlur={() => handleBlur(key)}>{opciones.map(([valor, texto]) => <option key={valor} value={valor} disabled={!valor}>{texto}</option>)}</select>
+            {type === 'select' ? <select id={`raha-${key}`} aria-label={label} className={errores[key] ? 'raha-input-error' : ''} value={datos[key] || opciones[0][0]} disabled={(!editable && !(key === 'tipo_cuenta' && tipoCuentaPendiente)) || busy} onChange={event => handleChange(key, event.target.value)} onBlur={() => handleBlur(key)}>{opciones.map(([valor, texto]) => <option key={valor} value={valor} disabled={!valor}>{texto}</option>)}</select>
               : type === 'textarea' ? <textarea id={`raha-${key}`} aria-label={label} className={errores[key] ? 'raha-input-error' : ''} placeholder={placeholder} value={datos[key] || ''} rows={3} maxLength={LIMITES[key]} disabled={!editable || busy} onChange={event => handleChange(key, event.target.value)} onBlur={() => handleBlur(key)} />
                 : <input id={`raha-${key}`} aria-label={label} className={errores[key] ? 'raha-input-error' : ''} placeholder={placeholder} type={type === 'number' ? 'number' : type === 'tel' ? 'tel' : 'text'} value={datos[key] || ''} maxLength={LIMITES[key]} {...(type === 'number' ? { min: 1, max: 1000000000, step: 1 } : {})} disabled={!editable || busy} autoComplete="off" onChange={event => handleChange(key, event.target.value)} onBlur={() => handleBlur(key)} />}
             {errores[key] && <span className="raha-error-msg" role="alert"><AlertCircle size={13} /> {errores[key]}</span>}

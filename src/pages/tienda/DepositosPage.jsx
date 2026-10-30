@@ -31,6 +31,12 @@ const resumenCouriers = (data) => {
   };
 };
 
+/** ¿Dos juegos de filtros piden exactamente lo mismo? */
+const mismosFiltros = (uno = {}, otro = {}) => {
+  const claves = Object.keys(uno);
+  return claves.length === Object.keys(otro).length && claves.every((c) => uno[c] === otro[c]);
+};
+
 export default function DepositosPage() {
   const navigate = useNavigate();
   const { usuario } = useSesion();
@@ -118,7 +124,11 @@ export default function DepositosPage() {
   }, [page, filtros]);
 
   const handleFiltrosChange = (nuevosFiltros) => {
-    setFiltros(nuevosFiltros);
+    // DepositoFilters avisa sus filtros al montarse, vacíos. Si se guardaba ese
+    // objeto nuevo tal cual, el efecto de arriba volvía a correr y la pantalla
+    // pedía /depositos/listado DOS veces al abrirse. Conservando el estado
+    // anterior cuando los filtros no cambiaron, React no vuelve a dispararlo.
+    setFiltros((previos) => (mismosFiltros(previos, nuevosFiltros) ? previos : nuevosFiltros));
     setPage(1); // Reset a primera página al filtrar
   };
 

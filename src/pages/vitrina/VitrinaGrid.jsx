@@ -309,6 +309,23 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
           }
         />
 
+        {/* De qué proveedor es. Los productos que carga un proveedor por su
+            API traen su logo: alcanza con mirar la tarjeta para saber de
+            dónde viene cada uno. Sin logo cargado, queda el nombre solo. */}
+        {item.proveedor && (
+          <span className="vit-card-proveedor" title={`Proveedor: ${item.proveedor}`}>
+            {item.proveedor_logo && (
+              <img
+                src={item.proveedor_logo}
+                alt=""
+                loading="lazy"
+                onError={e => { e.currentTarget.style.display = 'none'; }}
+              />
+            )}
+            <span>{item.proveedor}</span>
+          </span>
+        )}
+
         {/* Checkbox de selección */}
         {seleccionable && (
           <button

@@ -399,9 +399,16 @@
 </div>
 <div class="gc-form-area">
 <h3 class="gc-form-title">Registrarse como proveedor</h3>
-<p class="gc-form-help">Mostrá tu servicio con una foto, un título claro y una descripción. Nuestro equipo revisará tu postulación antes de publicarla.</p>
+<p class="gc-form-help">Contanos qué servicios querés ofrecer. Nuestro equipo revisará tu postulación; después podrás crear y editar cada servicio.</p>
 <form id="gc-provider-form" data-kind="proveedor" autocomplete="on" enctype="multipart/form-data">
 <div class="gc-grid">
+<div class="gc-field gc-wide">
+<label for="gc-p-tipo-postulante">¿Te postulás como persona o empresa? *</label>
+<select id="gc-p-tipo-postulante" name="tipo_postulante" required>
+<option value="persona">Persona</option>
+<option value="empresa">Empresa</option>
+</select>
+</div>
 <div class="gc-field">
 <label for="gc-p-nombre">Nombre *</label>
 <input id="gc-p-nombre" name="nombre" autocomplete="given-name" maxlength="70" required placeholder="Tu nombre">
@@ -422,10 +429,18 @@
 <label for="gc-p-whatsapp">WhatsApp *</label>
 <input id="gc-p-whatsapp" name="whatsapp" type="tel" autocomplete="tel" maxlength="30" required placeholder="+595 9... ">
 </div>
-<div class="gc-field">
-<label for="gc-p-ruc">RUC <span class="gc-optional">(opcional)</span>
+<div class="gc-field gc-p-empresa" hidden>
+<label for="gc-p-ruc">RUC de la empresa *
 </label>
-<input id="gc-p-ruc" name="ruc" maxlength="30" placeholder="Si tenés">
+<input id="gc-p-ruc" name="ruc" maxlength="30" placeholder="RUC" disabled>
+</div>
+<div class="gc-field gc-p-empresa" hidden>
+<label for="gc-p-razon">Razón social *</label>
+<input id="gc-p-razon" name="razon_social" maxlength="150" disabled>
+</div>
+<div class="gc-field gc-p-empresa" hidden>
+<label for="gc-p-direccion">Dirección de la empresa *</label>
+<input id="gc-p-direccion" name="direccion_empresa" maxlength="250" disabled>
 </div>
 <div class="gc-field gc-wide">
 <label for="gc-p-tipo">¿Qué tipo de proveedor sos? *</label>
@@ -443,19 +458,27 @@
 <label for="gc-p-foto">Foto para tu perfil *</label>
 <input id="gc-p-foto" name="foto" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="gc-p-foto-help">
 <small id="gc-p-foto-help">Una foto clara tuya o de tu equipo. JPG, PNG o WebP, hasta 5 MB.</small>
-<label for="gc-p-cedula-frente">Frente de tu cédula *</label>
-<input id="gc-p-cedula-frente" name="cedula_frente" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="gc-p-cedula-help">
-<label for="gc-p-cedula-dorso">Dorso de tu cédula *</label>
-<input id="gc-p-cedula-dorso" name="cedula_dorso" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="gc-p-cedula-help">
-<small id="gc-p-cedula-help">Ambas fotos son solo para revisión privada. Imágenes legibles de al menos 500 × 300 px, hasta 8 MB cada una.</small>
 </div>
 <div class="gc-field gc-wide">
-<label for="gc-p-oferta">¿Qué servicio ofrecés? *</label>
-<input id="gc-p-oferta" name="oferta" maxlength="90" minlength="5" required placeholder="Ej.: Edición de videos para marcas y tiendas">
+<label for="gc-p-cedula-pdf">Cédula: frente y dorso en un solo PDF *</label>
+<input id="gc-p-cedula-pdf" name="cedula_pdf" type="file" accept="application/pdf,.pdf" required aria-describedby="gc-p-cedula-help">
+<small id="gc-p-cedula-help">Incluí ambas caras legibles en un único PDF de hasta 8 MB. Solo para revisión privada.</small>
+</div>
+<div class="gc-field gc-wide gc-p-persona">
+<label for="gc-p-vida">Certificado de vida y residencia (PDF) *</label>
+<input id="gc-p-vida" name="vida_residencia" type="file" accept="application/pdf,.pdf" required>
+</div>
+<div class="gc-field gc-wide gc-p-persona">
+<label for="gc-p-antecedente">Antecedente policial (PDF) *</label>
+<input id="gc-p-antecedente" name="antecedente_policial" type="file" accept="application/pdf,.pdf" required>
+</div>
+<div class="gc-field gc-wide gc-p-empresa" hidden>
+<label for="gc-p-constancia">Constancia de RUC (PDF) *</label>
+<input id="gc-p-constancia" name="constancia_ruc" type="file" accept="application/pdf,.pdf" disabled>
 </div>
 <div class="gc-field gc-wide">
-<label for="gc-p-detalle">Describí tu servicio *</label>
-<textarea id="gc-p-detalle" name="descripcion" minlength="30" maxlength="500" rows="4" required placeholder="Contá qué hacés, para quién y en qué zonas trabajás. Mínimo 30 caracteres.">
+<label for="gc-p-detalle">Descripción de los servicios que vas a ofrecer *</label>
+<textarea id="gc-p-detalle" name="descripcion" minlength="30" maxlength="1000" rows="5" required placeholder="Contá qué hacés, para quién y cómo trabajás. Mínimo 30 caracteres.">
 </textarea>
 </div>
 </div>
@@ -463,7 +486,7 @@
 <label for="gc-p-web">Sitio web</label>
 <input id="gc-p-web" name="sitio_web" tabindex="-1" autocomplete="off">
 </div>
-<p class="home-form-privacy">Si aprobamos tu solicitud, publicaremos tu nombre, foto, servicio, descripción y un botón de contacto por WhatsApp en Buscar proveedores. Tu número de cédula, las fotos del frente y dorso, RUC, correo y contrato quedan solo para la revisión. Al enviar, aceptás el tratamiento de tus datos según nuestra <a href="/privacy">Política de Privacidad</a>.</p>
+<p class="home-form-privacy">Si aprobamos tu solicitud, podrás crear y publicar tus servicios. Tu cédula, los certificados, RUC, correo y contrato quedan solo para la revisión. Al enviar, aceptás el tratamiento de tus datos según nuestra <a href="/privacy">Política de Privacidad</a>.</p>
 <div class="gc-submit">
 <button type="submit" class="gc-button">Enviar postulación ↗</button>
 <span class="gc-note">Te contactaremos si hay una oportunidad adecuada.</span>

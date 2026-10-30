@@ -17,6 +17,7 @@ async function descargar(url, nombre) {
 export const rahaService = {
   obtener: async () => (await api.get(base)).data,
   guardar: async payload => (await api.put(base, payload)).data,
+  completarTipoCuenta: async payload => (await api.patch(`${base}/tipo-cuenta`, payload)).data,
   enviar: async payload => (await api.post(`${base}/enviar`, payload)).data,
   subir: async (archivo, tipo, version, onProgreso) => {
     const form = new FormData(); form.append('archivo', archivo); form.append('tipo', tipo); form.append('version', version);

@@ -6,6 +6,7 @@ import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
 import NotificationBell from './NotificationBell';
 import TutorialDock from './TutorialDock';
+import ContenidoPanel from './ContenidoPanel';
 import { notificationsService } from '../services/notifications.service';
 import './dashboard.css';
 
@@ -102,7 +103,7 @@ const DashboardLayout = ({ children }) => {
                         overflowX: isLandingRoute ? OVERFLOW_FIJO : undefined,
                     }}
                 >
-                    <TutorialDock>{children}</TutorialDock>
+                    <TutorialDock><ContenidoPanel>{children}</ContenidoPanel></TutorialDock>
                 </main>
             </div>
         </div>

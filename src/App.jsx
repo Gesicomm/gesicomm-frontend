@@ -8,7 +8,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import MarcaPersonalRedirect from './components/MarcaPersonalRedirect';
 import RequireRuta from './components/RequireRuta';
 import AdminRoute from './components/AdminRoute';
-import RequireTienda from './components/RequireTienda';
+// Envoltorio único de las secciones del panel del comercio (guard + layout).
+// Es el MISMO componente en todas, para que el cascarón no se desmonte al
+// cambiar de sección — ver components/PanelComercio.jsx.
+import PanelComercio from './components/PanelComercio';
 
 // Los layouts del panel y la ruta de prueba del renderer no los usa ningún
 // visitante de una tienda: diferidos para sacarlos del bundle de entrada.
@@ -306,13 +309,13 @@ function App() {
 
         {/* Productos */}
         <Route path="/products" element={
-          <RequireTienda><DynamicLayout><ProductList /></DynamicLayout></RequireTienda>
+          <PanelComercio><ProductList /></PanelComercio>
         } />
         <Route path="/products/nuevo" element={
-          <RequireTienda><DynamicLayout><ProductForm /></DynamicLayout></RequireTienda>
+          <PanelComercio><ProductForm /></PanelComercio>
         } />
         <Route path="/products/:id/editar" element={
-          <RequireTienda><DynamicLayout><ProductForm /></DynamicLayout></RequireTienda>
+          <PanelComercio><ProductForm /></PanelComercio>
         } />
 
         {/* Catálogo */}
@@ -322,23 +325,23 @@ function App() {
 
         {/* Otras secciones */}
         <Route path="/orders" element={
-          <RequireTienda><DynamicLayout><ControlCourier /></DynamicLayout></RequireTienda>
+          <PanelComercio><ControlCourier /></PanelComercio>
         } />
         {/* Abastecimiento: sección propia, no una pestaña dentro de Pedidos. */}
         <Route path="/abastecimiento/solicitudes/:id" element={
           <AdminRoute><DashboardLayout><SolicitudAbastecimientoDetalle /></DashboardLayout></AdminRoute>
         } />
         <Route path="/mis-abastecimientos" element={
-          <RequireTienda><DynamicLayout><MisAbastecimientos /></DynamicLayout></RequireTienda>
+          <PanelComercio><MisAbastecimientos /></PanelComercio>
         } />
         <Route path="/mis-envios-raha" element={
-          <RequireTienda><DynamicLayout><MisEnviosRaha /></DynamicLayout></RequireTienda>
+          <PanelComercio><MisEnviosRaha /></PanelComercio>
         } />
         <Route path="/mis-abastecimientos/:id" element={
-          <RequireTienda><DynamicLayout><SolicitudAbastecimientoDetalle /></DynamicLayout></RequireTienda>
+          <PanelComercio><SolicitudAbastecimientoDetalle /></PanelComercio>
         } />
         <Route path="/importada-de-china" element={
-          <RequireTienda><DynamicLayout><ImportadaChina /></DynamicLayout></RequireTienda>
+          <PanelComercio><ImportadaChina /></PanelComercio>
         } />
         <Route path="/abastecimiento" element={
           <AdminRoute><DashboardLayout><AbastecimientoAdmin /></DashboardLayout></AdminRoute>
@@ -410,19 +413,19 @@ function App() {
 
         {/* Combos */}
         <Route path="/combos" element={
-          <RequireTienda><DynamicLayout><ComboList /></DynamicLayout></RequireTienda>
+          <PanelComercio><ComboList /></PanelComercio>
         } />
         <Route path="/combos/nuevo" element={
-          <RequireTienda><DynamicLayout><ComboEditor /></DynamicLayout></RequireTienda>
+          <PanelComercio><ComboEditor /></PanelComercio>
         } />
         <Route path="/combos/:id/editar" element={
-          <RequireTienda><DynamicLayout><ComboEditor /></DynamicLayout></RequireTienda>
+          <PanelComercio><ComboEditor /></PanelComercio>
         } />
 
 
         {/* Finanzas */}
         <Route path="/finanzas/costos-gastos" element={
-          <RequireTienda><DynamicLayout><CostosGastos /></DynamicLayout></RequireTienda>
+          <PanelComercio><CostosGastos /></PanelComercio>
         } />
         <Route path="/finanzas/proveedores" element={
           <AdminRoute><DynamicLayout><ProveedoresView /></DynamicLayout></AdminRoute>
@@ -453,52 +456,52 @@ function App() {
 
         {/* Rutas protegidas — vitrina, academia y pedidos del rol 'usuario' */}
         <Route path="/academia" element={
-          <RequireTienda><UserLayout><EducacionView /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><EducacionView /></PanelComercio>
         } />
         <Route path="/mi-dashboard" element={
-          <RequireTienda><UserLayout><MiDashboard /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><MiDashboard /></PanelComercio>
         } />
         <Route path="/mi-tienda/buscar-servicios" element={
-          <RequireTienda><UserLayout><BuscarServicios /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><BuscarServicios /></PanelComercio>
         } />
         <Route path="/mi-catalogo" element={
-          <RequireTienda><UserLayout><VitrinaGrid /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><VitrinaGrid /></PanelComercio>
         } />
         <Route path="/mi-catalogo/precios" element={
-          <RequireTienda><UserLayout><CambiarPrecios /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><CambiarPrecios /></PanelComercio>
         } />
         <Route path="/mis-pedidos" element={
-          <RequireTienda><UserLayout><ControlCourier etapaFija="comercial" /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><ControlCourier etapaFija="comercial" /></PanelComercio>
         } />
         <Route path="/gestion-logistica" element={
-          <RequireTienda><UserLayout><ControlCourier etapaFija="logistica" /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><ControlCourier etapaFija="logistica" /></PanelComercio>
         } />
         <Route path="/dashboard-operativo" element={
-          <RequireTienda><UserLayout><DashboardOperativo /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><DashboardOperativo /></PanelComercio>
         } />
         <Route path="/clientes" element={
-          <RequireTienda><UserLayout><Clientes /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><Clientes /></PanelComercio>
         } />
         <Route path="/pedidos/configuracion" element={
-          <RequireTienda><UserLayout><SeguimientoConfig /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><SeguimientoConfig /></PanelComercio>
         } />
         <Route path="/mi-tienda" element={
-          <RequireTienda><DynamicLayout><ConfigurarTienda /></DynamicLayout></RequireTienda>
+          <PanelComercio><ConfigurarTienda /></PanelComercio>
         } />
         <Route path="/mi-tienda/depositos" element={
-          <RequireTienda><DynamicLayout><DepositosPage /></DynamicLayout></RequireTienda>
+          <PanelComercio><DepositosPage /></PanelComercio>
         } />
         <Route path="/mi-tienda/couriers" element={
-          <RequireTienda><DynamicLayout><CouriersCatalogPage /></DynamicLayout></RequireTienda>
+          <PanelComercio><CouriersCatalogPage /></PanelComercio>
         } />
         <Route path="/inventario" element={
-          <RequireTienda><DynamicLayout><InventarioPage /></DynamicLayout></RequireTienda>
+          <PanelComercio><InventarioPage /></PanelComercio>
         } />
         <Route path="/inventario/nuevo" element={
-          <RequireTienda><DynamicLayout><NuevoIngresoPage /></DynamicLayout></RequireTienda>
+          <PanelComercio><NuevoIngresoPage /></PanelComercio>
         } />
         <Route path="/inventario/:id" element={
-          <RequireTienda><DynamicLayout><IngresoDetalle /></DynamicLayout></RequireTienda>
+          <PanelComercio><IngresoDetalle /></PanelComercio>
         } />
         {/* Planes: /planes es la pantalla que ve el comercio (catálogo de
             lib/planesCatalogo.js); /admin/planes es donde el admin edita ese
@@ -548,10 +551,10 @@ function App() {
             las 3 y aterriza en Inicio; LandingEditor tiene sus propios tabs
             para saltar entre ellas. */}
         <Route path="/mi-landing" element={
-          <RequireTienda><UserLayout><MiLandingEntry /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><MiLandingEntry /></PanelComercio>
         } />
         <Route path="/mi-landing/:id" element={
-          <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><LandingEditor /></PanelComercio>
         } />
         {/* Landing de la tienda — ver pages/landing-simple/. Sistema
             paralelo al de arriba, con dos modos que arrancan en
@@ -559,22 +562,22 @@ function App() {
             el comercio solo edita contenido) o lienzo en blanco (escribe
             el HTML/CSS/JS a mano). EditorSegunModo elige el editor. */}
         <Route path="/landing" element={
-          <RequireTienda><DynamicLayout><LandingSimpleEntry /></DynamicLayout></RequireTienda>
+          <PanelComercio><LandingSimpleEntry /></PanelComercio>
         } />
         <Route path="/landing/:id" element={
-          <RequireTienda><DynamicLayout><EditorSegunModo /></DynamicLayout></RequireTienda>
+          <PanelComercio><EditorSegunModo /></PanelComercio>
         } />
         <Route path="/mis-anuncios" element={
-          <RequireTienda><UserLayout><Ads /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><Ads /></PanelComercio>
         } />
         <Route path="/afiliados" element={
-          <RequireTienda><UserLayout><MiAfiliado /></UserLayout></RequireTienda>
+          <ProtectedRoute><UserLayout><MiAfiliado /></UserLayout></ProtectedRoute>
         } />
         <Route path="/partner-certificado" element={
-          <RequireTienda><UserLayout><PartnerCertificado /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><PartnerCertificado /></PanelComercio>
         } />
         <Route path="/configuracion" element={
-          <RequireTienda><UserLayout><Settings /></UserLayout></RequireTienda>
+          <PanelComercio soloUsuario><Settings /></PanelComercio>
         } />
 
         {/* /l y /l/:slug: compatibilidad hacia atrás — desde la IP dedicada,

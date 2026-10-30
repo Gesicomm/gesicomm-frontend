@@ -1,5 +1,5 @@
 import { destinoColaborador, rutaPermitida } from '../utils/accesos';
-import { useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import useSesion from '../hooks/useSesion';
 import RequireRuta from './RequireRuta';
@@ -12,6 +12,15 @@ import { tiendaService } from '../services/tiendaService';
 import { planesService } from '../services/planesService';
 import { huboSesion } from '../utils/sesion';
 import { verificarSesionDetallada } from '../utils/auth';
+
+/**
+ * Usuario ya verificado, para lo que se monta DEBAJO de este guard.
+ *
+ * Sin esto, el layout volvía a llamar a /auth/me para saber el rol y mostraba
+ * la pantalla completa de "verificando" mientras tanto, aunque el guard de
+ * arriba acabara de confirmar la sesión.
+ */
+export const SesionDelPanel = createContext(null);
 
 /**
  * Igual que ProtectedRoute, pero además exige que el usuario (rol
@@ -93,5 +102,9 @@ export default function RequireTienda({ children }) {
   if (acceso === 'sin-tienda') return <Navigate to="/onboarding" replace />;
   if (acceso === 'sin-tienda-activa') return <Navigate to="/seleccionar-tienda" state={{ desde: location.pathname }} replace />;
 
-  return <RequireRuta ruta="fisico">{children}</RequireRuta>;
+  return (
+    <RequireRuta ruta="fisico">
+      <SesionDelPanel.Provider value={usuario}>{children}</SesionDelPanel.Provider>
+    </RequireRuta>
+  );
 }

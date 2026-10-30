@@ -18,6 +18,8 @@ import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
 import PerfilModal from './PerfilModal';
 import TutorialDock from './TutorialDock';
+import ContenidoPanel from './ContenidoPanel';
+import precargarSeccion from '../utils/precargaSeccion';
 import useRutasPlan from '../hooks/useRutasPlan';
 import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
@@ -249,6 +251,11 @@ const UserLayout = ({ children }) => {
           to={bloqueo ? '#' : item.path}
           aria-current={active ? 'page' : undefined}
           onClick={(e) => handleItemClick(e, item, bloqueo)}
+          // El JavaScript de la sección empieza a bajar al apuntar el enlace,
+          // no al soltar el clic: para cuando hace clic ya está en memoria.
+          onMouseEnter={() => { if (!bloqueo) precargarSeccion(item.path); }}
+          onFocus={() => { if (!bloqueo) precargarSeccion(item.path); }}
+          onTouchStart={() => { if (!bloqueo) precargarSeccion(item.path); }}
           className={`sidebar-link ${active ? 'active' : ''} ${bloqueo ? 'locked-link' : ''}`}
           style={bloqueo ? { opacity: 0.65 } : {}}
         >
@@ -330,7 +337,9 @@ const UserLayout = ({ children }) => {
     }
 
     const requierePlan = item.requierePlan || item.requiere_plan;
-    if (requierePlan && requierePlan !== codigoPlan) {
+    // Afiliados está disponible en todos los planes, incluso si el catálogo
+    // recibido todavía conserva la antigua restricción a Fundador.
+    if (item.path !== '/afiliados' && requierePlan && requierePlan !== codigoPlan) {
       return false;
     }
 
@@ -658,7 +667,7 @@ const UserLayout = ({ children }) => {
               Tenés acceso de solo lectura a esta sección. Las modificaciones requieren permiso del propietario.
             </p>
           )}
-          <TutorialDock>{children}</TutorialDock>
+          <TutorialDock><ContenidoPanel>{children}</ContenidoPanel></TutorialDock>
         </main>
       </div>
 

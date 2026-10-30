@@ -761,6 +761,49 @@
   white-space: nowrap;
 }
 
+/* Proveedor del producto, abajo a la izquierda de la foto. Es una marca de
+   origen, no una acción: pesa menos que el badge de tipo y nunca tapa la
+   imagen entera (el nombre se recorta). */
+.vit-card-proveedor {
+  position: absolute;
+  bottom: 0.65rem;
+  left: 0.65rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: calc(100% - 1.3rem);
+  padding: 0.22rem 0.55rem 0.22rem 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary, var(--color-text));
+  font-size: var(--ui-text-help, 0.875rem);
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.vit-card-proveedor img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.vit-card-proveedor > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sin logo el chip no necesita el hueco de la izquierda. */
+.vit-card-proveedor:not(:has(img)) {
+  padding-left: 0.55rem;
+}
+
 .vit-card-badge.producto,
 .vit-card-badge.combo {
   background: var(--color-accent);

@@ -68,6 +68,19 @@ export default function Landing() {
       mobileMenu.hidden = true;
     };
     const leadDialog = root.querySelector('.home-lead-dialog');
+      const formularioProveedor = root.querySelector('#gc-provider-form');
+      const actualizarTipoProveedor = () => {
+        const empresa = formularioProveedor.elements.tipo_postulante.value === 'empresa';
+        formularioProveedor.querySelector('label[for="gc-p-nombre"]').textContent = empresa ? 'Nombre del representante *' : 'Nombre *';
+        formularioProveedor.querySelector('label[for="gc-p-apellido"]').textContent = empresa ? 'Apellido del representante *' : 'Apellido *';
+        formularioProveedor.querySelectorAll('.gc-p-persona, .gc-p-empresa').forEach(bloque => {
+          const visible = bloque.classList.contains(empresa ? 'gc-p-empresa' : 'gc-p-persona');
+          bloque.hidden = !visible;
+          bloque.querySelectorAll('input').forEach(input => { input.disabled = !visible; input.required = visible; });
+        });
+      };
+      formularioProveedor.elements.tipo_postulante.addEventListener('change', actualizarTipoProveedor);
+      actualizarTipoProveedor();
     const abrirFormulario = (tipo) => {
       const proveedor = tipo === 'proveedor';
       root.querySelector('#home-provider-form').hidden = !proveedor;
@@ -178,6 +191,7 @@ export default function Landing() {
           ? `Postulación #${respuesta.mensaje.id} recibida. El equipo de Gesicom revisará tus datos y se comunicará con vos.`
           : `Solicitud #${respuesta.mensaje.id} recibida. Nuestro equipo se comunicará con vos.`;
         form.reset();
+          if (tipo === 'proveedor') actualizarTipoProveedor();
       } catch (error) {
         if (!vigente) return;
         status.dataset.error = 'true';
