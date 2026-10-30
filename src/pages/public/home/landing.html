@@ -399,8 +399,8 @@
 </div>
 <div class="gc-form-area">
 <h3 class="gc-form-title">Registrarse como proveedor</h3>
-<p class="gc-form-help">Contanos qué ofrecés para que podamos contactarte.</p>
-<form id="gc-provider-form" data-kind="proveedor" autocomplete="on">
+<p class="gc-form-help">Mostrá tu servicio con una foto, un título claro y una descripción. Nuestro equipo revisará tu postulación antes de publicarla.</p>
+<form id="gc-provider-form" data-kind="proveedor" autocomplete="on" enctype="multipart/form-data">
 <div class="gc-grid">
 <div class="gc-field">
 <label for="gc-p-nombre">Nombre *</label>
@@ -440,9 +440,17 @@
 </select>
 </div>
 <div class="gc-field gc-wide">
-<label for="gc-p-detalle">Contanos brevemente qué ofrecés <span class="gc-optional">(opcional)</span>
-</label>
-<textarea id="gc-p-detalle" name="descripcion" maxlength="500" rows="3" placeholder="Ej.: hago envíos en Asunción y Central, o edito Reels para marcas personales...">
+<label for="gc-p-foto">Foto para tu perfil *</label>
+<input id="gc-p-foto" name="foto" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="gc-p-foto-help">
+<small id="gc-p-foto-help">Una foto clara tuya o de tu equipo. JPG, PNG o WebP, hasta 5 MB.</small>
+</div>
+<div class="gc-field gc-wide">
+<label for="gc-p-oferta">¿Qué servicio ofrecés? *</label>
+<input id="gc-p-oferta" name="oferta" maxlength="90" minlength="5" required placeholder="Ej.: Edición de videos para marcas y tiendas">
+</div>
+<div class="gc-field gc-wide">
+<label for="gc-p-detalle">Describí tu servicio *</label>
+<textarea id="gc-p-detalle" name="descripcion" minlength="30" maxlength="500" rows="4" required placeholder="Contá qué hacés, para quién y en qué zonas trabajás. Mínimo 30 caracteres.">
 </textarea>
 </div>
 </div>
@@ -450,7 +458,7 @@
 <label for="gc-p-web">Sitio web</label>
 <input id="gc-p-web" name="website" tabindex="-1" autocomplete="off">
 </div>
-<p class="home-form-privacy">Al enviar, aceptás el tratamiento de tus datos según nuestra <a href="/privacy">Política de Privacidad</a>.</p>
+<p class="home-form-privacy">Si aprobamos tu solicitud, publicaremos tu nombre, foto, servicio, descripción y un botón de contacto por WhatsApp en Buscar servicios. Tu documento, RUC y correo quedan solo para la revisión. Al enviar, aceptás el tratamiento de tus datos según nuestra <a href="/privacy">Política de Privacidad</a>.</p>
 <div class="gc-submit">
 <button type="submit" class="gc-button">Enviar postulación ↗</button>
 <span class="gc-note">Te contactaremos si hay una oportunidad adecuada.</span>

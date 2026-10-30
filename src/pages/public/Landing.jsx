@@ -167,11 +167,7 @@ export default function Landing() {
       form.dataset.enviando = 'true';
       try {
         if (nombre.length > 150) throw new Error('El nombre y apellido juntos pueden tener hasta 150 caracteres.');
-        const respuesta = tipo === 'proveedor' ? await enviarSolicitudProveedor({
-          nombre: data.nombre.trim(), apellido: data.apellido.trim(), email: data.email.trim(),
-          documento: data.documento.trim(), ruc: data.ruc?.trim() || '', whatsapp: data.whatsapp.trim(),
-          categoria: data.categoria, descripcion: data.descripcion?.trim() || '', sitio_web: '',
-        }) : await enviarMensajeContacto({
+        const respuesta = tipo === 'proveedor' ? await enviarSolicitudProveedor(new FormData(form)) : await enviarMensajeContacto({
           area: 'comercial', nombre, email: data.email.trim(),
           asunto: tipo === 'demo' ? `Gesicom · ${selectedText('solicitud')}` : `Gesicom · Postulación de proveedor · ${selectedText('categoria')}`,
           mensaje: lineas.join('\n'), sitio_web: '',

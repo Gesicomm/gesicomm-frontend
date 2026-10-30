@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import SolicitudesProveedores from './SolicitudesProveedores';
 import API from '../../services/api';
 vi.mock('../../services/api', () => ({ default: { get: vi.fn(), patch: vi.fn() } }));
-const solicitud = { id: 41, nombre: 'Ana Pérez', email: 'ana@example.com', estado: 'pendiente', recibido_en: '2026-10-29T15:00:00Z', datos: { especialidad: 'Envíos y logística', documento: '123456', whatsapp: '+595981123456', descripcion: 'Envíos en Asunción' }, mensaje: 'Mensaje original' };
+const solicitud = { id: 41, nombre: 'Ana Pérez', email: 'ana@example.com', estado: 'pendiente', recibido_en: '2026-10-29T15:00:00Z', datos: { especialidad: 'Envíos y logística', documento: '123456', whatsapp: '+595981123456', oferta: 'Envíos para tiendas', descripcion: 'Envíos en Asunción', foto_url: 'https://images.example/ana.webp' }, mensaje: 'Mensaje original' };
 const respuesta = (items = [solicitud]) => ({ data: { solicitudes: items, total: items.length, total_paginas: 1, resumen: { pendiente: items.length, aceptada: 0, rechazada: 0 } } });
 beforeEach(() => { vi.resetAllMocks(); API.get.mockResolvedValue(respuesta()); });
 it('muestra la postulación y acepta solamente después de confirmar', async () => {

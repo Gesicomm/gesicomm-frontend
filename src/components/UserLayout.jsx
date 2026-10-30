@@ -5,7 +5,7 @@ import {
   Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
   Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign, MapPin, PackageCheck,
-  PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus, TrendingUp, Ship, BadgeCheck, Users
+  PackageSearch, Circle, ChevronDown, ChevronRight, Check, Plus, TrendingUp, Ship, BadgeCheck, Users, Search
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { MARCA_PERSONAL_URL } from '../lib/marcaPersonal';
@@ -53,6 +53,7 @@ const ICONOS_SIDEBAR = {
   Circle,
   TrendingUp,
   Users,
+  Search,
 };
 
 const UserLayout = ({ children }) => {

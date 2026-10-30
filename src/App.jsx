@@ -15,6 +15,7 @@ import RequireTienda from './components/RequireTienda';
 const TestRenderer = lazy(() => import('./pages/landing-v2/TestRenderer'));
 const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
 const UserLayout = lazy(() => import('./components/UserLayout'));
+const BuscarServicios = lazy(() => import('./pages/servicios/BuscarServicios'));
 const DynamicLayout = lazy(() => import('./components/DynamicLayout'));
 
 // Panel de administracion / dashboard del comercio: ningun visitante publico
@@ -247,6 +248,7 @@ function App() {
         <Route path="/acceso-invitacion" element={<AceptarInvitacion />} />
         <Route path="/acceso-tiendas" element={<ProtectedRoute><TiendasColaborador /></ProtectedRoute>} />
         <Route path="/sin-acceso" element={<ProtectedRoute><SinAcceso /></ProtectedRoute>} />
+        <Route path="/buscar-servicios" element={<BuscarServicios independiente />} />
         {/* ─────────────────────────────────────────────────────────
             Sitio institucional público (gesicomm.com) — sin guards.
 
@@ -450,6 +452,9 @@ function App() {
         } />
         <Route path="/mi-dashboard" element={
           <RequireTienda><UserLayout><MiDashboard /></UserLayout></RequireTienda>
+        } />
+        <Route path="/mi-tienda/buscar-servicios" element={
+          <RequireTienda><UserLayout><BuscarServicios /></UserLayout></RequireTienda>
         } />
         <Route path="/mi-catalogo" element={
           <RequireTienda><UserLayout><VitrinaGrid /></UserLayout></RequireTienda>

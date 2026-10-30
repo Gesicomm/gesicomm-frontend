@@ -78,7 +78,7 @@ export default function SolicitudesProveedores() {
         <span>{label}</span><strong>{cargando || error ? '—' : resultado.resumen[key] ?? 0}</strong>
       </button>)}
     </nav>
-    <p className="provider-review-help">Aceptar registra la aprobación de la postulación. No crea una cuenta, no otorga certificación ni envía un aviso automático al solicitante.</p>
+    <p className="provider-review-help">Al aceptar un perfil completo, se publica en Buscar servicios con su foto, descripción y WhatsApp. La aceptación no crea una cuenta, no otorga certificación ni envía un aviso automático.</p>
     {aviso && <p className="provider-notice" role="status" tabIndex={-1} ref={avisoRef}>{aviso}</p>}
     {cargando ? <p role="status">Cargando postulaciones…</p> : error ? <div role="alert"><p>{error}</p><button type="button" onClick={() => setRevision(r => r + 1)}>Reintentar</button></div> : !resultado.solicitudes.length ?
       <div className="web-requests-empty"><Inbox size={32} /><h2>No hay solicitudes {ESTADOS[estado].toLowerCase()}</h2><p>Las postulaciones enviadas desde “Ofrecer mis servicios” llegan a esta bandeja para su revisión.</p></div> : <>
@@ -86,6 +86,8 @@ export default function SolicitudesProveedores() {
           <div className="web-request-top"><span className="provider-status" data-state={s.estado}>{ETIQUETAS[s.estado]} · #{s.id}</span><time dateTime={s.recibido_en}>{fecha(s.recibido_en)}</time></div>
           <h2 id={`provider-${s.id}`}>{s.nombre}</h2>
           <p className="provider-specialty">{s.datos.especialidad || 'Especialidad no indicada'}</p>
+          {s.datos.foto_url && <img className="provider-review-photo" src={s.datos.foto_url} alt={`Foto de ${s.nombre}`} />}
+          {s.datos.oferta && <p className="provider-offer"><strong>Servicio:</strong> {s.datos.oferta}</p>}
           <dl className="provider-data">
             <div><dt>Correo electrónico</dt><dd><a href={`mailto:${s.email}`}>{s.email}</a></dd></div>
             <div><dt>WhatsApp</dt><dd>{s.datos.whatsapp || 'No indicado'}</dd></div>
@@ -94,6 +96,7 @@ export default function SolicitudesProveedores() {
           </dl>
           {s.datos.descripcion && <div className="provider-description"><h3>Qué ofrece</h3><p>{s.datos.descripcion}</p></div>}
           <details><summary>Ver mensaje original</summary><div className="web-request-message">{s.mensaje}</div></details>
+          {s.estado === 'pendiente' && (!s.datos.foto_url || !s.datos.oferta || !s.datos.descripcion) && <p className="provider-incomplete" role="note">Faltan foto, servicio o descripción. Pedí esos datos antes de aprobar y publicar este perfil.</p>}
           {s.estado === 'pendiente' ? decision?.id === s.id ? <form className="provider-decision" onSubmit={guardar} aria-label={`Revisar solicitud de ${s.nombre}`}>
             <h3>{decision.estado === 'aceptada' ? 'Aceptar' : 'Rechazar'} la solicitud de {s.nombre}</h3>
             <label htmlFor={`nota-${s.id}`}>{decision.estado === 'rechazada' ? 'Motivo del rechazo (obligatorio)' : 'Nota de revisión (opcional)'}</label>
@@ -101,7 +104,7 @@ export default function SolicitudesProveedores() {
             <p id={`nota-ayuda-${s.id}`}>La nota es interna y queda guardada junto con la decisión.</p>
             {errorRevision && <p role="alert" className="provider-error">{errorRevision}</p>}
             <div className="provider-actions"><button type="submit" disabled={guardando} className={decision.estado === 'aceptada' ? 'provider-accept' : 'provider-reject'}>{guardando ? 'Guardando…' : decision.estado === 'aceptada' ? 'Confirmar aceptación' : 'Confirmar rechazo'}</button><button type="button" onClick={cancelar} disabled={guardando}>Cancelar</button></div>
-          </form> : <div className="provider-actions"><button id={`aceptar-${s.id}`} type="button" className="provider-accept" disabled={guardando} onClick={e => empezar(s, 'aceptada', e.currentTarget)}><Check size={18} /> Aceptar solicitud</button><button id={`rechazar-${s.id}`} type="button" className="provider-reject" disabled={guardando} onClick={e => empezar(s, 'rechazada', e.currentTarget)}><X size={18} /> Rechazar</button></div> :
+          </form> : <div className="provider-actions"><button id={`aceptar-${s.id}`} type="button" className="provider-accept" disabled={guardando || !s.datos.foto_url || !s.datos.oferta || !s.datos.descripcion} onClick={e => empezar(s, 'aceptada', e.currentTarget)}><Check size={18} /> Aceptar solicitud</button><button id={`rechazar-${s.id}`} type="button" className="provider-reject" disabled={guardando} onClick={e => empezar(s, 'rechazada', e.currentTarget)}><X size={18} /> Rechazar</button></div> :
             <div className="provider-reviewed"><p><strong>{ETIQUETAS[s.estado]}</strong> el {fecha(s.revisado_en)}{s.revisado_por ? ` · Administrador #${s.revisado_por}` : ''}</p>{s.nota_revision && <p className="provider-note">{s.nota_revision}</p>}</div>}
         </article>)}</div>
         <nav className="web-requests-pagination" aria-label="Páginas de postulaciones"><button type="button" disabled={page <= 1 || guardando} onClick={() => { setPage(p => p - 1); setDecision(null); }}>Anterior</button><span>Página {page} de {Math.max(1, resultado.total_paginas)}</span><button type="button" disabled={page >= resultado.total_paginas || guardando} onClick={() => { setPage(p => p + 1); setDecision(null); }}>Siguiente</button></nav>
