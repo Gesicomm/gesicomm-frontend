@@ -147,7 +147,7 @@ export default function Landing() {
       event.preventDefault();
       if (form.dataset.enviando === 'true' || !form.reportValidity()) return;
       const data = Object.fromEntries(new FormData(form));
-      if (data.website) return;
+      if (data.website || data.sitio_web) return;
       const status = form.querySelector('.gc-status');
       const button = form.querySelector('[type="submit"]');
       const tipo = form.dataset.kind;

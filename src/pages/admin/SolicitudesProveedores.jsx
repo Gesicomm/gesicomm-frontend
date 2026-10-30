@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, Inbox, RefreshCw, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import API from '../../services/api';
+import DocumentosProveedorAdmin from './DocumentosProveedorAdmin';
 import './solicitudesWeb.css';
 import './solicitudesProveedores.css';
 
@@ -95,9 +96,10 @@ export default function SolicitudesProveedores() {
             <div><dt>Cédula / documento</dt><dd>{s.datos.documento || 'No indicado'}</dd></div>
             <div><dt>RUC</dt><dd>{s.datos.ruc || 'No indicado'}</dd></div>
           </dl>
+          <DocumentosProveedorAdmin solicitud={s} onActualizar={() => setRevision(r => r + 1)} />
           {s.datos.descripcion && <div className="provider-description"><h3>Qué ofrece</h3><p>{s.datos.descripcion}</p></div>}
           <details><summary>Ver mensaje original</summary><div className="web-request-message">{s.mensaje}</div></details>
-          {s.estado === 'pendiente' && (!s.datos.foto_url || !s.datos.oferta || !s.datos.descripcion) && <p className="provider-incomplete" role="note">Faltan foto, servicio o descripción. Pedí esos datos antes de aprobar y publicar este perfil.</p>}
+          {s.estado === 'pendiente' && (!s.datos.foto_url || !s.datos.oferta || !s.datos.descripcion || !s.documentos?.cedula_cargada) && <p className="provider-incomplete" role="note">Faltan foto de perfil, foto de cédula, servicio o descripción. Pedí esos datos antes de aprobar y publicar este perfil.</p>}
           {s.estado === 'pendiente' ? decision?.id === s.id ? <form className="provider-decision" onSubmit={guardar} aria-label={`Revisar solicitud de ${s.nombre}`}>
             <h3>{decision.estado === 'aceptada' ? 'Aceptar' : 'Rechazar'} la solicitud de {s.nombre}</h3>
             <label htmlFor={`nota-${s.id}`}>{decision.estado === 'rechazada' ? 'Motivo del rechazo (obligatorio)' : 'Nota de revisión (opcional)'}</label>
@@ -105,7 +107,7 @@ export default function SolicitudesProveedores() {
             <p id={`nota-ayuda-${s.id}`}>La nota es interna y queda guardada junto con la decisión.</p>
             {errorRevision && <p role="alert" className="provider-error">{errorRevision}</p>}
             <div className="provider-actions"><button type="submit" disabled={guardando} className={decision.estado === 'aceptada' ? 'provider-accept' : 'provider-reject'}>{guardando ? 'Guardando…' : decision.estado === 'aceptada' ? 'Confirmar aceptación' : 'Confirmar rechazo'}</button><button type="button" onClick={cancelar} disabled={guardando}>Cancelar</button></div>
-          </form> : <div className="provider-actions"><button id={`aceptar-${s.id}`} type="button" className="provider-accept" disabled={guardando || !s.datos.foto_url || !s.datos.oferta || !s.datos.descripcion} onClick={e => empezar(s, 'aceptada', e.currentTarget)}><Check size={18} /> Aceptar solicitud</button><button id={`rechazar-${s.id}`} type="button" className="provider-reject" disabled={guardando} onClick={e => empezar(s, 'rechazada', e.currentTarget)}><X size={18} /> Rechazar</button></div> :
+          </form> : <div className="provider-actions"><button id={`aceptar-${s.id}`} type="button" className="provider-accept" disabled={guardando || !s.datos.foto_url || !s.datos.oferta || !s.datos.descripcion || !s.documentos?.cedula_cargada} onClick={e => empezar(s, 'aceptada', e.currentTarget)}><Check size={18} /> Aceptar solicitud</button><button id={`rechazar-${s.id}`} type="button" className="provider-reject" disabled={guardando} onClick={e => empezar(s, 'rechazada', e.currentTarget)}><X size={18} /> Rechazar</button></div> :
             <div className="provider-reviewed"><p><strong>{ETIQUETAS[s.estado]}</strong> el {fecha(s.revisado_en)}{s.revisado_por ? ` · Administrador #${s.revisado_por}` : ''}</p>{s.nota_revision && <p className="provider-note">{s.nota_revision}</p>}</div>}
         </article>)}</div>
         <nav className="web-requests-pagination" aria-label="Páginas de postulaciones"><button type="button" disabled={page <= 1 || guardando} onClick={() => { setPage(p => p - 1); setDecision(null); }}>Anterior</button><span>Página {page} de {Math.max(1, resultado.total_paginas)}</span><button type="button" disabled={page >= resultado.total_paginas || guardando} onClick={() => { setPage(p => p + 1); setDecision(null); }}>Siguiente</button></nav>

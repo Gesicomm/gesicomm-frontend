@@ -1,14 +1,16 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import SolicitudesProveedores from './SolicitudesProveedores';
 import API from '../../services/api';
-vi.mock('../../services/api', () => ({ default: { get: vi.fn(), patch: vi.fn() } }));
-const solicitud = { id: 41, nombre: 'Ana Pérez', email: 'ana@example.com', estado: 'pendiente', recibido_en: '2026-10-29T15:00:00Z', datos: { especialidad: 'Envíos y logística', documento: '123456', whatsapp: '+595981123456', oferta: 'Envíos para tiendas', descripcion: 'Envíos en Asunción', foto_url: 'https://images.example/ana.webp' }, mensaje: 'Mensaje original' };
+vi.mock('../../services/api', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
+const renderPage = () => render(<MemoryRouter><SolicitudesProveedores /></MemoryRouter>);
+const solicitud = { id: 41, nombre: 'Ana Pérez', email: 'ana@example.com', estado: 'pendiente', recibido_en: '2026-10-29T15:00:00Z', datos: { especialidad: 'Envíos y logística', documento: '123456', whatsapp: '+595981123456', oferta: 'Envíos para tiendas', descripcion: 'Envíos en Asunción', foto_url: 'https://images.example/ana.webp' }, mensaje: 'Mensaje original', documentos: { cedula_cargada: true, contrato_disponible: false, contrato_firmado: false, contrato_estado: 'sin_contrato' } };
 const respuesta = (items = [solicitud]) => ({ data: { solicitudes: items, total: items.length, total_paginas: 1, resumen: { pendiente: items.length, aceptada: 0, rechazada: 0 } } });
 beforeEach(() => { vi.resetAllMocks(); API.get.mockResolvedValue(respuesta()); });
 it('muestra la postulación y acepta solamente después de confirmar', async () => {
   API.patch.mockResolvedValue({ data: { solicitud: { ...solicitud, estado: 'aceptada' } } });
-  render(<SolicitudesProveedores />);
+  renderPage();
   expect(await screen.findByText('Ana Pérez')).toBeInTheDocument();
   expect(screen.getByText('+595981123456')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Aceptar solicitud' }));
@@ -22,7 +24,7 @@ it('muestra la postulación y acepta solamente después de confirmar', async () 
 });
 it('conserva el motivo al fallar y permite reintentar el rechazo', async () => {
   API.patch.mockRejectedValueOnce(new Error('Sin red')).mockResolvedValueOnce({ data: { solicitud: { ...solicitud, estado: 'rechazada' } } });
-  render(<SolicitudesProveedores />);
+  renderPage();
   fireEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
   const nota = screen.getByLabelText('Motivo del rechazo (obligatorio)');
   fireEvent.change(nota, { target: { value: 'Fuera de cobertura' } });
@@ -34,7 +36,7 @@ it('conserva el motivo al fallar y permite reintentar el rechazo', async () => {
 });
 it('muestra conflicto sin inventar una aceptación y permite actualizar', async () => {
   API.patch.mockRejectedValue({ response: { status: 409, data: { message: 'Otro administrador ya revisó esta solicitud.' } } });
-  render(<SolicitudesProveedores />);
+  renderPage();
   fireEvent.click(await screen.findByRole('button', { name: 'Aceptar solicitud' }));
   fireEvent.click(screen.getByRole('button', { name: 'Confirmar aceptación' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Otro administrador');
@@ -44,9 +46,19 @@ it('muestra conflicto sin inventar una aceptación y permite actualizar', async 
 });
 it('cambia el filtro y permite recuperar un error de carga', async () => {
   API.get.mockRejectedValueOnce(new Error('Sin red')).mockResolvedValue(respuesta([]));
-  render(<SolicitudesProveedores />);
+  renderPage();
   fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
   expect(await screen.findByText('No hay solicitudes pendientes')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /Aceptadas/ }));
   await waitFor(() => expect(API.get).toHaveBeenLastCalledWith('/publico/admin/solicitudes-proveedores', { params: { estado: 'aceptada', page: 1, limit: 20 } }));
+});
+it('muestra el contrato firmado y permite pedir una corrección', async () => {
+  API.get.mockResolvedValue(respuesta([{ ...solicitud, estado: 'aceptada', documentos: { cedula_cargada: true, contrato_disponible: true, contrato_firmado: true, contrato_estado: 'pendiente_revision' } }]));
+  API.patch.mockResolvedValue({ data: { documentos: { contrato_estado: 'correccion' } } });
+  renderPage();
+  fireEvent.click(screen.getByRole('button', { name: /Aceptadas/ }));
+  expect(await screen.findByText('Pendiente de revisión')).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Nota para pedir una corrección'), { target: { value: 'Falta la firma en la última página.' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Pedir corrección' }));
+  await waitFor(() => expect(API.patch).toHaveBeenCalledWith('/publico/admin/solicitudes-proveedores/41/contrato', { estado: 'correccion', nota: 'Falta la firma en la última página.' }));
 });
