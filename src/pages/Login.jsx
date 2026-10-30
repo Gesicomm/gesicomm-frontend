@@ -278,9 +278,9 @@ export default function Login() {
           ? '/mis-pedidos'
           : res.usuario?.tipo_ingreso_inicial == null
             ? '/primer-ingreso'
-          : '/seleccionar-modulo';
+          : res.usuario?.tipo_ingreso_inicial === 'proveedor' ? '/proveedor' : '/seleccionar-modulo';
       trackearEventoPersonalizado('Login', generarEventId());
-      navigate(rutaDestino);
+      navigate(location.state?.from === '/proveedor' && res.usuario?.rol !== 'administrador' ? '/proveedor' : rutaDestino);
     } catch (err) {
       // Si el backend indica que necesita verificar el correo, llevar a la pantalla OTP
       if (err.response?.data?.requiere_verificacion) {
@@ -377,8 +377,9 @@ export default function Login() {
           ? '/dashboard'
           : res.usuario?.tipo_ingreso_inicial == null
             ? '/primer-ingreso'
-            : destinoCuenta;
-        navigate(rutaDestino, rutaDestino === '/primer-ingreso' ? { state: { destino: destinoCuenta } } : undefined);
+            : res.usuario?.tipo_ingreso_inicial === 'proveedor' ? '/proveedor' : destinoCuenta;
+        navigate(rutaDestino === '/primer-ingreso' ? rutaDestino : location.state?.from === '/proveedor' && res.usuario?.rol !== 'administrador' ? '/proveedor' : rutaDestino,
+          rutaDestino === '/primer-ingreso' ? { state: { destino: destinoCuenta } } : undefined);
       }, 1000);
     } catch (err) {
       if (err.response?.data?.codigo_expirado) {

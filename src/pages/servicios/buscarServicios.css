@@ -37,9 +37,14 @@
 .gc-services-select option { color: var(--svc-ink); background: var(--svc-surface); }
 :root[data-theme='dark'] .gc-services-select option { color: #f0f3f0; background: #1b221e; }
 .gc-services-resultline { margin: 28px 0 18px; min-height: 22px; font-size: 14px; font-weight: 650; color: var(--svc-muted); }
+.gc-services-join { display: inline-flex; align-items: center; gap: 9px; margin-top: 19px; padding: 12px 17px; border-radius: 12px; background: var(--color-primary); color: #082516; text-decoration: none; font-size: 15px; font-weight: 750; transition: transform .2s, box-shadow .2s; }
+.gc-services-join:hover { transform: translateY(-2px); box-shadow: 0 9px 22px #06b86933; }
+.gc-services-join:focus-visible,.gc-service-contact:focus-visible { outline: 3px solid var(--color-primary-text); outline-offset: 3px; }
 .gc-services-resultline strong { display: inline-block; padding: 5px 9px; margin-right: 3px; border-radius: 7px; background: color-mix(in srgb, var(--color-primary) 17%, var(--svc-surface)); color: var(--color-primary-text); }
 .gc-services-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
-.gc-service-card { min-width: 0; overflow: hidden; border: 1px solid var(--svc-line); border-radius: 22px; background: var(--svc-surface); box-shadow: 0 9px 30px #0b24100d; transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease; animation: svc-rise .45s ease both; animation-delay: calc(var(--card-index) * 55ms); }
+.gc-service-card { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--svc-line); border-radius: 22px; background: var(--svc-surface); box-shadow: 0 9px 30px #0b24100d; transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease; animation: svc-rise .45s ease both; animation-delay: calc(var(--card-index) * 55ms); }
+.gc-service-contact::after { content: ''; position: absolute; inset: 0; }
+.gc-service-card:focus-within { outline: 3px solid var(--color-primary-text); outline-offset: 3px; }
 .gc-service-card:hover { transform: translateY(-6px); border-color: var(--color-primary-text); box-shadow: 0 24px 44px #061f1721; }
 .gc-service-photo { position: relative; aspect-ratio: 1.48; overflow: hidden; background: var(--svc-soft); }
 .gc-service-photo img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }.gc-service-card:hover img { transform: scale(1.045); }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { AlertTriangle, RotateCcw, WifiOff } from 'lucide-react';
 import { registrarSesionPerdida } from '../utils/sesion';
 
@@ -97,11 +97,12 @@ export function PantallaErrorConexion({ onReintentar }) {
  * haber iniciado sesión no hay nada que avisarle).
  */
 export function RedirigirALogin() {
+  const location = useLocation();
   const [avisado] = useState(() => registrarSesionPerdida());
 
   // El aviso lo pinta la pantalla de login leyendo sessionStorage; acá solo
   // dejamos el rastro en el render para las herramientas de test.
-  return <Navigate to="/login" replace state={avisado ? { sesionExpirada: true } : undefined} />;
+  return <Navigate to="/login" replace state={{ ...(avisado ? { sesionExpirada: true } : {}), ...(location.pathname === '/proveedor' ? { from: '/proveedor' } : {}) }} />;
 }
 
 /** Aviso reutilizable de sesión vencida (lo usa la pantalla de login). */

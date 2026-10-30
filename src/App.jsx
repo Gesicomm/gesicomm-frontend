@@ -16,6 +16,8 @@ const TestRenderer = lazy(() => import('./pages/landing-v2/TestRenderer'));
 const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
 const UserLayout = lazy(() => import('./components/UserLayout'));
 const BuscarServicios = lazy(() => import('./pages/servicios/BuscarServicios'));
+const ServicioDetalle = lazy(() => import('./pages/servicios/ServicioDetalle'));
+const ProveedorPanel = lazy(() => import('./pages/proveedor/ProveedorPanel'));
 const DynamicLayout = lazy(() => import('./components/DynamicLayout'));
 
 // Panel de administracion / dashboard del comercio: ningun visitante publico
@@ -249,6 +251,9 @@ function App() {
         <Route path="/acceso-tiendas" element={<ProtectedRoute><TiendasColaborador /></ProtectedRoute>} />
         <Route path="/sin-acceso" element={<ProtectedRoute><SinAcceso /></ProtectedRoute>} />
         <Route path="/buscar-servicios" element={<BuscarServicios independiente />} />
+        <Route path="/buscar-servicios/:id" element={<ServicioDetalle />} />
+        <Route path="/proveedor" element={<ProtectedRoute><ProveedorPanel /></ProtectedRoute>} />
+        <Route path="/admin/vista-proveedor" element={<AdminRoute><ProveedorPanel demo /></AdminRoute>} />
         {/* ─────────────────────────────────────────────────────────
             Sitio institucional público (gesicomm.com) — sin guards.
 

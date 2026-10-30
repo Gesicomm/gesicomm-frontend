@@ -29,5 +29,5 @@ it('reemplaza los ejemplos por perfiles aprobados cuando hay datos reales', asyn
   expect(await screen.findByText('Entregas en Central')).toBeInTheDocument();
   expect(screen.queryByText('Vista de ejemplo')).not.toBeInTheDocument();
   expect(screen.queryByText('Videos que cuentan tu historia')).not.toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Contactar por WhatsApp a María López' })).toHaveAttribute('href', expect.stringContaining('wa.me/595981234567'));
+  expect(screen.getByRole('link', { name: 'Más información sobre Entregas en Central' })).toHaveAttribute('href', '/buscar-servicios/7');
 });

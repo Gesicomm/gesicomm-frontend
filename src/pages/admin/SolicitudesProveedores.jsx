@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Inbox, RefreshCw, X } from 'lucide-react';
+import { ArrowRight, Check, Inbox, RefreshCw, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import API from '../../services/api';
 import './solicitudesWeb.css';
 import './solicitudesProveedores.css';
@@ -71,14 +72,14 @@ export default function SolicitudesProveedores() {
   return <main className="web-requests provider-requests">
     <header className="web-requests-heading">
       <div><span className="provider-eyebrow">Red de colaboradores</span><h1>Solicitudes de proveedores</h1><p>Revisá quién quiere ofrecer sus servicios en Gesicom y registrá tu decisión.</p></div>
-      <button type="button" disabled={cargando || guardando} onClick={() => { setDecision(null); setRevision(r => r + 1); }}><RefreshCw size={18} /> Actualizar</button>
+      <div className="provider-header-actions"><Link to="/admin/vista-proveedor">Ver vista del proveedor <ArrowRight size={17} /></Link><button type="button" disabled={cargando || guardando} onClick={() => { setDecision(null); setRevision(r => r + 1); }}><RefreshCw size={18} /> Actualizar</button></div>
     </header>
     <nav className="provider-status-filters" aria-label="Estado de las postulaciones">
       {Object.entries(ESTADOS).map(([key, label]) => <button type="button" key={key} aria-pressed={estado === key} disabled={guardando} onClick={() => { setEstado(key); setPage(1); setDecision(null); setAviso(''); }}>
         <span>{label}</span><strong>{cargando || error ? '—' : resultado.resumen[key] ?? 0}</strong>
       </button>)}
     </nav>
-    <p className="provider-review-help">Al aceptar un perfil completo, se publica en Buscar servicios con su foto, descripción y WhatsApp. La aceptación no crea una cuenta, no otorga certificación ni envía un aviso automático.</p>
+    <p className="provider-review-help">Al aceptar un perfil completo, se publica en Buscar proveedores con su foto, descripción y WhatsApp. Si la persona crea una cuenta con el mismo correo, puede editar sus servicios desde su espacio de proveedor. La aceptación no otorga certificación ni envía un aviso automático.</p>
     {aviso && <p className="provider-notice" role="status" tabIndex={-1} ref={avisoRef}>{aviso}</p>}
     {cargando ? <p role="status">Cargando postulaciones…</p> : error ? <div role="alert"><p>{error}</p><button type="button" onClick={() => setRevision(r => r + 1)}>Reintentar</button></div> : !resultado.solicitudes.length ?
       <div className="web-requests-empty"><Inbox size={32} /><h2>No hay solicitudes {ESTADOS[estado].toLowerCase()}</h2><p>Las postulaciones enviadas desde “Ofrecer mis servicios” llegan a esta bandeja para su revisión.</p></div> : <>

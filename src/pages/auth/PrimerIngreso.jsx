@@ -23,7 +23,7 @@ export default function PrimerIngreso() {
     try {
       await API.post('/auth/primer-ingreso', { tipo });
       if (tipo === 'proveedor') {
-        navigate('/#registro-proveedores', { replace: true });
+        navigate('/proveedor', { replace: true });
         return;
       }
       navigate(location.state?.destino || '/seleccionar-modulo', { replace: true });
