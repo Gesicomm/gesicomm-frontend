@@ -73,6 +73,7 @@ export default function Landing() {
         const empresa = formularioProveedor.elements.tipo_postulante.value === 'empresa';
         formularioProveedor.querySelector('label[for="gc-p-nombre"]').textContent = empresa ? 'Nombre del representante *' : 'Nombre *';
         formularioProveedor.querySelector('label[for="gc-p-apellido"]').textContent = empresa ? 'Apellido del representante *' : 'Apellido *';
+        formularioProveedor.querySelector('label[for="gc-p-documento"]').textContent = empresa ? 'Documento del representante (opcional)' : 'Cédula / documento *';
         formularioProveedor.querySelectorAll('.gc-p-persona, .gc-p-empresa').forEach(bloque => {
           const visible = bloque.classList.contains(empresa ? 'gc-p-empresa' : 'gc-p-persona');
           bloque.hidden = !visible;

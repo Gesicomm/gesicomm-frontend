@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Search, SlidersHorizontal, Sparkles, Users, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import API from '../../services/api';
 import { SERVICIOS_EJEMPLO } from './serviciosEjemplos';
 import './buscarServicios.css';
@@ -16,6 +16,9 @@ const CATEGORIAS = [
 ];
 
 export default function BuscarServicios({ independiente = false }) {
+  const location = useLocation();
+  const rutaDeSistema = typeof location.state?.volverA === 'string' && location.state.volverA.startsWith('/') && !location.state.volverA.startsWith('//') && location.state.volverA !== '/buscar-servicios'
+    ? location.state.volverA : location.pathname !== '/buscar-servicios' ? location.pathname : '';
   const [texto, setTexto] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState('');
@@ -48,7 +51,7 @@ export default function BuscarServicios({ independiente = false }) {
   ) : resultado?.servicios || [];
 
   return <div className={`gc-services ${independiente ? 'gc-services-standalone' : ''}`}>
-    {independiente && <header className="gc-services-sitehead"><Link to="/" className="gc-services-brand"><span className="gc-services-brandmark">G</span> Gesicom</Link><Link to="/" className="gc-services-back">Volver al inicio <ArrowRight size={16} /></Link></header>}
+    {independiente && <header className="gc-services-sitehead"><Link to="/" className="gc-services-brand"><span className="gc-services-brandmark">G</span> Gesicom</Link><Link to={rutaDeSistema || '/'} className="gc-services-back">{rutaDeSistema ? 'Volver a mi sistema' : 'Volver al inicio'} <ArrowRight size={16} /></Link></header>}
     <section className="gc-services-hero" aria-labelledby="gc-services-title">
       <div className="gc-services-hero-copy"><span className="gc-services-eyebrow"><Sparkles size={16} /> Red de colaboradores Gesicom</span>
         <h1 id="gc-services-title">Encontrá el talento que <em>hace avanzar</em> tu negocio.</h1>
@@ -59,7 +62,7 @@ export default function BuscarServicios({ independiente = false }) {
     </section>
 
     <section className="gc-services-content" aria-label="Directorio de proveedores">
-      <div className="gc-services-toolbar"><div><span className="gc-services-section-kicker">Explorá la red</span><h2>Buscar proveedores</h2><p>Filtrá por especialidad o buscá lo que necesitás.</p><Link className="gc-services-join" to="/proveedor">Quiero ser proveedor <ArrowRight size={18} /></Link></div>
+      <div className="gc-services-toolbar"><div><span className="gc-services-section-kicker">Explorá la red</span><h2>Buscar proveedores</h2><p>Filtrá por especialidad o buscá lo que necesitás.</p><Link className="gc-services-join" to="/proveedor" state={{ volverA: location.pathname }}>Quiero ser proveedor <ArrowRight size={18} /></Link></div>
         <div className="gc-services-controls"><label className="gc-services-search"><Search size={20} aria-hidden="true" /><span className="sr-only">Buscar por nombre o servicio</span><input type="search" placeholder="Ej.: fotografía, envíos, videos…" value={texto} onChange={e => setTexto(e.target.value)} /></label>
           <label className="gc-services-select"><SlidersHorizontal size={19} aria-hidden="true" /><span className="sr-only">Filtrar por tipo de proveedor</span><select value={categoria} onChange={e => { setCategoria(e.target.value); setPagina(1); }}>{CATEGORIAS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>
       </div>
@@ -69,7 +72,7 @@ export default function BuscarServicios({ independiente = false }) {
           return <article className="gc-service-card" key={servicio.id} style={{ '--card-index': index }}>
             <div className="gc-service-photo"><img src={servicio.foto_url} alt={servicio.ejemplo ? `Ilustración de ${servicio.nombre}` : `Foto de ${servicio.nombre}`} loading="lazy" /><span className="gc-service-verified">{servicio.ejemplo ? 'Ejemplo' : 'Perfil revisado'}</span></div>
             <div className="gc-service-info"><span className="gc-service-category">{servicio.especialidad}</span><h3>{servicio.oferta}</h3><p className="gc-service-person">{servicio.nombre}</p><p className="gc-service-description">{servicio.descripcion}</p>
-              <Link className="gc-service-contact" to={`/buscar-servicios/${servicio.id}`} aria-label={`Más información sobre ${servicio.oferta}`}>Más información <ArrowRight size={18} /></Link></div>
+              <Link className="gc-service-contact" to={`/buscar-servicios/${servicio.id}`} state={{ volverA: rutaDeSistema }} aria-label={`Más información sobre ${servicio.oferta}`}>Más información <ArrowRight size={18} /></Link></div>
           </article>;
         })}</div>
         {!modoEjemplo && resultado.total_paginas > 1 && <nav className="gc-services-pages" aria-label="Páginas de servicios"><button type="button" disabled={pagina <= 1} onClick={() => setPagina(n => n - 1)}>Anterior</button><span>Página {pagina} de {resultado.total_paginas}</span><button type="button" disabled={pagina >= resultado.total_paginas} onClick={() => setPagina(n => n + 1)}>Siguiente</button></nav>}

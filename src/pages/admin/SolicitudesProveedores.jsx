@@ -94,7 +94,7 @@ export default function SolicitudesProveedores() {
           <dl className="provider-data">
             <div><dt>Correo electrónico</dt><dd><a href={`mailto:${s.email}`}>{s.email}</a></dd></div>
             <div><dt>WhatsApp</dt><dd>{s.datos.whatsapp || 'No indicado'}</dd></div>
-            <div><dt>Cédula / documento</dt><dd>{s.datos.documento || 'No indicado'}</dd></div>
+            {s.datos.tipo_postulante !== 'empresa' && <div><dt>Cédula / documento</dt><dd>{s.datos.documento || 'No indicado'}</dd></div>}
             <div><dt>RUC</dt><dd>{s.datos.ruc || 'No indicado'}</dd></div>
             {s.datos.tipo_postulante === 'empresa' && <><div><dt>Razón social</dt><dd>{s.datos.razon_social || 'No indicada'}</dd></div><div><dt>Dirección de la empresa</dt><dd>{s.datos.direccion_empresa || 'No indicada'}</dd></div></>}
           </dl>

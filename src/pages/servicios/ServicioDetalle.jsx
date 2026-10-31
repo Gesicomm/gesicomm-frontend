@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, ExternalLink, Play } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import API from '../../services/api';
 import { PORTAFOLIO_EJEMPLO, SERVICIOS_EJEMPLO } from './serviciosEjemplos';
 import './servicioDetalle.css';
@@ -29,6 +29,9 @@ function ejemploDetalle(item) {
 
 export default function ServicioDetalle() {
   const { id } = useParams();
+  const location = useLocation();
+  const volverA = typeof location.state?.volverA === 'string' && location.state.volverA.startsWith('/') && !location.state.volverA.startsWith('//') && location.state.volverA !== '/buscar-servicios'
+    ? location.state.volverA : '';
   const [servicio, setServicio] = useState(() => {
     const muestra = SERVICIOS_EJEMPLO.find(item => item.id === id);
     return muestra ? ejemploDetalle(muestra) : null;
@@ -50,8 +53,8 @@ export default function ServicioDetalle() {
   const numero = String(servicio?.whatsapp || '').replace(/\D/g, '');
   const contacto = numero ? `https://wa.me/${numero}?text=${encodeURIComponent(`Hola, vi tu servicio ${servicio.oferta || servicio.titulo} en Gesicom y me gustaría saber más.`)}` : '';
   return <main className="gc-service-detail gc-panel">
-    <nav className="gc-service-detail__nav"><Link to="/buscar-servicios"><ArrowLeft size={18} /> Buscar proveedores</Link><Link to="/" className="gc-service-detail__brand">Gesicom</Link></nav>
-    {cargando ? <p role="status">Cargando servicio…</p> : error ? <section className="gc-service-detail__empty"><h1>Servicio no disponible</h1><p>{error}</p><Link to="/buscar-servicios">Ver otros proveedores <ArrowRight size={18} /></Link></section> : servicio && <>
+    <nav className="gc-service-detail__nav"><Link to="/buscar-servicios" state={{ volverA }}><ArrowLeft size={18} /> Buscar proveedores</Link><Link to="/" className="gc-service-detail__brand">Gesicom</Link></nav>
+    {cargando ? <p role="status">Cargando servicio…</p> : error ? <section className="gc-service-detail__empty"><h1>Servicio no disponible</h1><p>{error}</p><Link to="/buscar-servicios" state={{ volverA }}>Ver otros proveedores <ArrowRight size={18} /></Link></section> : servicio && <>
       <section className="gc-service-detail__hero">
         <div className="gc-service-detail__intro"><span className="gc-service-detail__tag">{servicio.ejemplo ? 'Vista de ejemplo' : 'Proveedor revisado'} · {servicio.especialidad}</span><h1>{servicio.oferta || servicio.titulo}</h1><p>{servicio.descripcion || servicio.resumen}</p><div className="gc-service-detail__person"><img src={servicio.foto_url} alt={`Foto de ${servicio.nombre}`} /><div><strong>{servicio.nombre}</strong><span>{servicio.especialidad}</span></div></div>{contacto ? <a className="gc-service-detail__cta" href={contacto} target="_blank" rel="noopener noreferrer">Contactar por WhatsApp <ExternalLink size={18} /></a> : <span className="gc-service-detail__sample">El contacto aparece en los perfiles reales aprobados</span>}</div>
         <div className="gc-service-detail__cover"><img src={servicio.imagenes?.[0]?.url || servicio.foto_url} alt={servicio.imagenes?.[0]?.alt || `Presentación de ${servicio.nombre}`} /></div>
