@@ -13,6 +13,7 @@ import { getProgresoSidebar } from '../services/educacionApi';
 import { planesService } from '../services/planesService';
 import { notificationsService } from '../services/notifications.service';
 import { tiendaService } from '../services/tiendaService';
+import API from '../services/api';
 import NotificationBell from './NotificationBell';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
@@ -61,6 +62,7 @@ const ICONOS_SIDEBAR = {
 const UserLayout = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
   const [estadoCuenta, setEstadoCuenta] = useState(null);
+  const [proveedorAprobado, setProveedorAprobado] = useState(false);
   const [progresoSidebar, setProgresoSidebar] = useState({
     menusDesbloqueados: [],
     bloqueos: {},
@@ -128,6 +130,9 @@ const UserLayout = ({ children }) => {
         tiendaService.mias().then(lista => { if (activo) { setTiendas(lista); setTiendaActiva(lista.find(t => t.id === sesion.tiendaId)); } }).catch(() => {});
         setProgresoSidebar({ menusDesbloqueados: [], bloqueos: {}, modulos: MODULOS_ACCESO.filter(m => m.clave !== 'configuracion').map(m => ({ path:m.ruta, label:m.nombre, icono:m.icono, contexto:'ecommerce', seccion:m.seccion })) });
       } else if (sesion?.rol === 'usuario') {
+        API.get('/proveedor/estado').then(({ data }) => {
+          if (activo) setProveedorAprobado(Boolean(data.rol_proveedor && data.postulacion?.estado === 'aceptada'));
+        }).catch(() => { if (activo) setProveedorAprobado(false); });
         planesService.miEstado()
           .then(estado => { if (activo) setEstadoCuenta(estado); })
           .catch(() => { if (activo) setEstadoCuenta(null); });
@@ -355,6 +360,7 @@ const UserLayout = ({ children }) => {
       // Filtrar también el catálogo del servidor conserva la ubicación
       // cuando una cuenta aún recibe el módulo anterior en el sidebar.
       .filter((item) => (item.menuKey || item.menu_key) !== 'pedidos-configuracion' && item.path !== '/pedidos/configuracion')
+      .filter((item) => (item.menuKey || item.menu_key) !== 'mis_servicios_proveedor' || proveedorAprobado)
       .filter(moduloEsVisible)
       .reduce((acc, item) => {
         const seccion = usuario?.rol === 'solo_pedidos' && item.menuKey === 'mis-pedidos'
