@@ -10,7 +10,9 @@ import LoginCompanion from '../components/public/LoginCompanion';
 import ThemeToggle from '../components/public/ThemeToggle';
 import './login.css';
 import { AvisoSesionExpirada } from '../components/EstadoSesion';
-import { AVISO_SESION_EXPIRADA, tomarAvisoSesion } from '../utils/sesion';
+import { AVISO_SESION_EXPIRADA, sembrarEnSesion, tomarAvisoSesion } from '../utils/sesion';
+import { sembrarSesionDelLogin } from '../utils/auth';
+import { planesService } from '../services/planesService';
 import { trackearEvento, trackearEventoPersonalizado, generarEventId } from '../lib/metaPixel';
 
 const INPUT_CLASS = 'h-12 w-full rounded-lg border border-border bg-surface-2/80 px-11 pr-12 text-sm text-fg outline-none transition-all placeholder:text-fg-subtle hover:border-border-strong focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-70';
@@ -272,6 +274,18 @@ export default function Login() {
         email: formData.email,
         password: formData.password,
       });
+      // La respuesta del login ya trae quién sos y cuáles son tus tiendas:
+      // se guardan acá para que la pantalla siguiente no vuelva a pedir
+      // /auth/me ni /tiendas/mias. Eran dos viajes al servidor, en fila,
+      // por datos que ya estaban en esta misma respuesta.
+      if (sembrarSesionDelLogin(res.usuario) && Array.isArray(res.tiendas)) {
+        sembrarEnSesion('tiendas/mias', res.tiendas);
+      }
+      // El plan lo necesita la pantalla siguiente para saber a qué módulos
+      // entra. Arranca acá y no cuando esa pantalla monta, que es recién
+      // después de bajar su chunk: así viaja mientras baja. Solo el rol
+      // 'usuario' lo consulta (ver useRutasPlan).
+      if (res.usuario?.rol === 'usuario') planesService.miEstado().catch(() => {});
       const rutaDestino = res.usuario?.rol === 'administrador'
         ? '/dashboard'
         : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)

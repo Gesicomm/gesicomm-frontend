@@ -195,7 +195,10 @@
 .login-form-card--register input:not([inputmode='numeric']) { height: 48px; }
 .login-form-card--register .login-register-fields input { padding-left: 40px; padding-right: 40px; }
 .login-form-card--register .login-password-toggle { width: 40px; height: 40px; }
-.login-register-notice { padding: 10px 12px !important; border: 0 !important; border-left: 3px solid var(--color-primary) !important; border-radius: 0 8px 8px 0 !important; background: var(--login-note) !important; color: var(--color-fg-muted) !important; font-size: 14px !important; line-height: 1.5 !important; }
+/* Aviso dentro del formulario de registro. El acento va en el borde completo
+   y en el fondo, no en una barra lateral: así acompaña a .login-register-trial,
+   que es la otra caja de la misma columna. */
+.login-register-notice { padding: 10px 12px !important; border: 1px solid color-mix(in srgb, var(--color-primary) 26%, var(--color-border)) !important; border-radius: 10px !important; background: var(--login-note) !important; color: var(--color-fg-muted) !important; font-size: 14px !important; line-height: 1.5 !important; }
 .login-register-trial { border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface-2); transition: border-color .2s ease, background-color .2s ease; }
 .login-register-trial:hover { border-color: color-mix(in srgb, var(--color-primary-text) 34%, var(--color-border)); }
 .login-register-trial summary { min-height: 54px; display: grid; grid-template-columns: 34px minmax(0, 1fr) 30px; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 11px; color: var(--color-fg); cursor: pointer; list-style: none; }

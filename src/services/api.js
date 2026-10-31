@@ -33,11 +33,26 @@ export function getMediaUrl(url) {
 // reintentar. Si la renovación falla, la sesión está realmente vencida: se
 // va al login con el aviso, nunca se deja al usuario mirando un spinner.
 // ─────────────────────────────────────────────────────────────────────────
+// Consultas que viajan como POST solo porque sus filtros no entran en una
+// URL: listados, buscadores y analítica. No escriben nada, así que no tienen
+// por qué tirar la sesión compartida — cuando lo hacían, abrir el dashboard
+// o el catálogo obligaba a volver a preguntar /auth/me y mi-estado al pedo.
+// Esta lista es a propósito corta y explícita: ante la duda, no se agrega.
+const LECTURAS_POR_POST = [
+  /\/envios\/(?:metricas-dashboard|conteo-por-estado|conteo-por-abastecimiento)$/,
+  /\/mis-landings\/[^/]+\/estadisticas-rango$/,
+  /\/vitrina\/(?:catalogo-paginado|precios\/buscar)$/,
+  /\/depositos\/listado$/,
+  /\/mi-tienda\/fulfillment\/depositos$/,
+];
+const esLecturaPorPost = (url) => !!url && LECTURAS_POR_POST.some((r) => r.test(String(url).split('?')[0]));
+
 API.interceptors.response.use(
   (response) => {
     // Una escritura puede cambiar lo que dicen /auth/me o mi-estado (tienda
     // activa, plan): la respuesta compartida deja de valer. Ver utils/sesion.js.
-    if (response.config?.method && response.config.method.toLowerCase() !== 'get') invalidarCacheSesion();
+    const metodo = (response.config?.method || 'get').toLowerCase();
+    if (metodo !== 'get' && !esLecturaPorPost(response.config?.url)) invalidarCacheSesion();
     return response;
   },
   async (error) => {

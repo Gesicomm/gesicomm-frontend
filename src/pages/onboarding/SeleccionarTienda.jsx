@@ -60,6 +60,11 @@ export default function SeleccionarTienda() {
     setSeleccionando(tienda.id);
     try {
       await tiendaService.seleccionar(tienda.id);
+      // Las dos consultas del dashboard arrancan acá, mientras baja su
+      // chunk y se arma el panel, en vez de esperar a que todo eso termine.
+      if (destino === '/mi-dashboard') {
+        import('../dashboard/precargaDashboard').then(m => m.precargarDashboard()).catch(() => {});
+      }
       navigate(destino, { replace: true });
     } catch {
       setError('No pudimos activar esa tienda. Probá de nuevo.');

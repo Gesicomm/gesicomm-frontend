@@ -21,7 +21,24 @@ import {
   olvidarSesion,
   registrarSesionPerdida,
   renovarSesion,
+  sembrarEnSesion,
 } from './sesion';
+
+/**
+ * Da por verificada la sesión con el usuario que acaba de devolver el login,
+ * en vez de preguntárselo al servidor de nuevo.
+ *
+ * Solo acepta un usuario con la MISMA forma que GET /auth/me: `rutas` es el
+ * campo que ese endpoint calcula y el login viejo no mandaba, así que sirve
+ * de marca. Contra un backend que todavía no lo manda, esto no hace nada y
+ * la pantalla siguiente pregunta como siempre.
+ */
+export function sembrarSesionDelLogin(usuario) {
+  if (!usuario?.id || usuario.rutas === undefined) return false;
+  marcarSesionActiva();
+  sembrarEnSesion('auth/me', { estado: 'autenticado', usuario });
+  return true;
+}
 
 /**
  * Consulta la sesión al backend y devuelve un estado explícito.

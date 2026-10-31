@@ -1,4 +1,5 @@
 import API from './api';
+import { compartirPorSesion } from '../utils/sesion';
 
 export const tiendaService = {
   obtener: () => API.get('/mi-tienda').then(r => r.data),
@@ -47,7 +48,13 @@ export const tiendaService = {
   consultarWhois: (domain) => API.post('/mi-tienda/dominio/whois', { domain }).then(r => r.data),
 
   // Varias tiendas por cuenta: listado + cambio de tienda activa.
-  mias: () => API.get('/tiendas/mias').then(r => r.data),
+  //
+  // El guard, el selector de tiendas y el sidebar piden esta lista casi al
+  // mismo tiempo al entrar: una sola petición para todos, igual que
+  // planesService.miEstado. El login la siembra con su propia respuesta, y
+  // crear, borrar o activar una tienda son escrituras, que invalidan la
+  // caché compartida — nunca se queda una lista vieja en pantalla.
+  mias: () => compartirPorSesion('tiendas/mias', () => API.get('/tiendas/mias').then(r => r.data)),
   cambiarEstado: (tiendaId, activo) => API.patch(`/tiendas/${tiendaId}/estado`, { activo }).then(r => r.data),
   eliminar: (tiendaId, nombre) => API.delete(`/tiendas/${tiendaId}`, { data: { nombre } }).then(r => r.data),
   seleccionar: (tiendaId) => API.post('/auth/seleccionar-tienda', { tienda_id: tiendaId }).then(r => r.data),

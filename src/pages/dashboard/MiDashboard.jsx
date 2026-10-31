@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { getMetricasDashboardPedidos } from '../../services/courierApi';
+import { tomarPrecargaDashboard } from './precargaDashboard';
 import { METRIC_HELP, METRIC_TERMS } from '../../utils/metricGlossary';
 import { STATUS as ESTADO_PEDIDO } from '../../lib/courier';
 import './MiDashboard.css';
@@ -1401,7 +1402,10 @@ export default function MiDashboard() {
       producto_id: productoId !== 'TODOS' ? productoId : undefined,
     };
     try {
-      const [ventasRes, pixelRes] = await Promise.all([
+      // Al venir del selector de tiendas estas dos consultas ya salieron,
+      // mientras bajaba el chunk de esta pantalla (ver precargaDashboard).
+      const precargado = tomarPrecargaDashboard(filtros);
+      const [ventasRes, pixelRes] = precargado ? await Promise.all([precargado.ventas, precargado.pixel]) : await Promise.all([
         getMetricasDashboardPedidos(filtros),
         // 'todas' suma el tráfico de todas las páginas de la tienda. Va con
         // catch propio para que un problema del pixel no deje sin ventas al

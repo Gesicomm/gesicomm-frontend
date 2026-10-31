@@ -96,6 +96,18 @@ export function compartirPorSesion(clave, pedir, esReusable = () => true) {
   return entrada.promesa;
 }
 
+/**
+ * Guarda un valor que YA tenemos como si lo hubiera traído `compartirPorSesion`.
+ *
+ * Lo usa el login: su respuesta ya trae el usuario y las tiendas, así que no
+ * hace falta volver a preguntárselo al servidor en la pantalla siguiente.
+ * Vale lo mismo que cualquier otra entrada — vida corta, solo en memoria, y
+ * se descarta con la próxima escritura.
+ */
+export function sembrarEnSesion(clave, valor) {
+  cacheSesion.set(clave, { enCurso: false, desde: Date.now(), valor, promesa: Promise.resolve(valor) });
+}
+
 /** Valor ya resuelto y vigente de `clave` (sin esperar), o undefined. */
 export function valorCompartidoVigente(clave) {
   const e = cacheSesion.get(clave);

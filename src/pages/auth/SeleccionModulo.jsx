@@ -1,13 +1,24 @@
+import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShoppingCart, Megaphone, ArrowRight, ShieldCheck, LockKeyhole } from 'lucide-react';
 import useSesion from '../../hooks/useSesion';
 import useRutasPlan from '../../hooks/useRutasPlan';
 import { PantallaErrorConexion, PantallaVerificandoSesion } from '../../components/EstadoSesion';
 import { MARCA_PERSONAL_URL } from '../../lib/marcaPersonal';
+import { planesService } from '../../services/planesService';
+import { huboSesion } from '../../utils/sesion';
 import './SeleccionModulo.css';
 
 export default function SeleccionModulo() {
   const navigate = useNavigate();
+  // El plan no depende de la respuesta de /auth/me (los dos salen de la
+  // cookie), pero useRutasPlan lo pide recién cuando ya hay usuario: dos
+  // viajes en fila. Arranca acá, a la par — igual que en RequireTienda.
+  // Solo si esta pestaña ya tuvo sesión: sin eso, un 401 mandaría al login
+  // con el aviso de "sesión vencida" a quien nunca entró.
+  useEffect(() => {
+    if (huboSesion()) planesService.miEstado().catch(() => {});
+  }, []);
   const sesion = useSesion();
   const acceso = useRutasPlan(sesion.usuario);
   const usuario = sesion.usuario;
@@ -19,8 +30,15 @@ export default function SeleccionModulo() {
       return;
     }
     sessionStorage.setItem('moduloActivo', ruta === 'fisico' ? 'ecommerce' : 'marca_personal');
-    if (ruta === 'fisico') navigate('/mi-dashboard');
-    else window.location.assign(MARCA_PERSONAL_URL);
+    if (ruta === 'fisico') {
+      // Con una tienda ya activa se va derecho al dashboard: sus consultas
+      // arrancan acá, no después de bajar su chunk. Sin tienda activa el
+      // guard manda primero al selector, y la precarga la dispara ese.
+      if (usuario?.tiendaId) {
+        import('../dashboard/precargaDashboard').then(m => m.precargarDashboard()).catch(() => {});
+      }
+      navigate('/mi-dashboard');
+    } else window.location.assign(MARCA_PERSONAL_URL);
   };
   return <main className="gc-panel module-picker min-h-screen bg-canvas text-fg">
     <div className="module-picker__content">
