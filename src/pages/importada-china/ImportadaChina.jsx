@@ -72,11 +72,11 @@ export default function ImportadaChina() {
   return (
     <section className="china-page">
       <div className="china-shell">
-        <header className="china-topline"><span><Globe2 size={19} /> Proveete con Gesicom</span><div className="gc-tutorial-heading-actions"><span className="china-topline-note">Del mundo a Paraguay</span><TutorialHeaderAction /></div></header>
+        <header className="china-topline"><span><Globe2 size={19} /> Importa con Gesicom</span><div className="gc-tutorial-heading-actions"><span className="china-topline-note">Del mundo a Paraguay</span><TutorialHeaderAction /></div></header>
         <section className="china-hero" aria-labelledby="china-title">
           <div className="china-heading">
             <p className="china-kicker"><span /> GESICOM | ABASTECIMIENTO INTERNACIONAL</p>
-            <h1 id="china-title">Proveete con Gesicom.<br /><em>Del mundo a tu negocio.</em></h1>
+            <h1 id="china-title">Importa con Gesicom.<br /><em>Del mundo a tu negocio.</em></h1>
             <p className="china-subtitle">Abastecé tu negocio desde Brasil, China, Estados Unidos o el país que elijas. Te ayudamos a coordinar la compra y la logística hasta Paraguay.</p>
             <p className="china-intro">Encontrar proveedores confiables, negociar, coordinar compras internacionales y traer mercadería a Paraguay puede ser complicado.</p>
             <p className="china-intro">Con Gesicom, coordinás tu abastecimiento internacional con transporte terrestre, aéreo o marítimo según el origen y el producto, sin que agreguemos un margen comercial sobre el precio de la mercadería.</p>

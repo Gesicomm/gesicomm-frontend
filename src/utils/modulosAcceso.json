@@ -89,11 +89,19 @@
   },
   {
     "clave": "importacion",
-    "nombre": "Proveete con Gesicom",
+    "nombre": "Importa con Gesicom",
     "ruta": "/importada-de-china",
     "icono": "Ship",
     "seccion": "IMPORTACIÓN",
     "gestionable": true
+  },
+  {
+    "clave": "buscar_proveedores",
+    "nombre": "Buscar proveedores de Gesicom",
+    "ruta": "/mi-tienda/buscar-servicios",
+    "icono": "Search",
+    "seccion": "PROVEEDURÍA",
+    "gestionable": false
   },
   {
     "clave": "afiliados",

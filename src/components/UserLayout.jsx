@@ -317,7 +317,7 @@ const UserLayout = ({ children }) => {
       ? vencidosCount
       : null;
     const menuKey = item.menuKey || item.menu_key;
-    const label = item.path === '/importada-de-china' ? 'Proveete con Gesicom' : (item.label || item.etiqueta);
+    const label = item.path === '/importada-de-china' ? 'Importa con Gesicom' : (item.label || item.etiqueta);
 
     return {
       ...item,
