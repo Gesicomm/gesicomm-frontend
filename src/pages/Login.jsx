@@ -13,6 +13,7 @@ import { AvisoSesionExpirada } from '../components/EstadoSesion';
 import { AVISO_SESION_EXPIRADA, sembrarEnSesion, tomarAvisoSesion } from '../utils/sesion';
 import { sembrarSesionDelLogin } from '../utils/auth';
 import { planesService } from '../services/planesService';
+import precargarSeccion from '../utils/precargaSeccion';
 import { trackearEvento, trackearEventoPersonalizado, generarEventId } from '../lib/metaPixel';
 
 const INPUT_CLASS = 'h-12 w-full rounded-lg border border-border bg-surface-2/80 px-11 pr-12 text-sm text-fg outline-none transition-all placeholder:text-fg-subtle hover:border-border-strong focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-70';
@@ -285,7 +286,25 @@ export default function Login() {
       // entra. Arranca acá y no cuando esa pantalla monta, que es recién
       // después de bajar su chunk: así viaja mientras baja. Solo el rol
       // 'usuario' lo consulta (ver useRutasPlan).
-      if (res.usuario?.rol === 'usuario') planesService.miEstado().catch(() => {});
+      if (res.usuario?.rol === 'usuario') {
+        planesService.miEstado().catch(() => {});
+        // El camino de un comercio al entrar es siempre el mismo: elegir
+        // espacio y caer en el panel. Su JavaScript se baja mientras la
+        // persona mira el selector, en vez de recién cuando llega.
+        //
+        // En tiempo ocioso a propósito: lanzado de una, se pelea por el
+        // ancho de banda con el chunk de la pantalla que el router está
+        // pidiendo JUSTO AHORA, y el selector tardaba el triple en aparecer.
+        const precargarPanel = () => {
+          import('../components/LayoutDelPanel').catch(() => {});
+          precargarSeccion('/mi-dashboard');
+        };
+        if (typeof window.requestIdleCallback === 'function') {
+          window.requestIdleCallback(precargarPanel, { timeout: 3000 });
+        } else {
+          setTimeout(precargarPanel, 800);
+        }
+      }
       const rutaDestino = res.usuario?.rol === 'administrador'
         ? '/dashboard'
         : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)

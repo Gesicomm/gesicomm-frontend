@@ -1,5 +1,6 @@
 import API from './api';
 import { compartirPorSesion } from '../utils/sesion';
+import { sembrarSesionDelLogin } from '../utils/auth';
 
 export const tiendaService = {
   obtener: () => API.get('/mi-tienda').then(r => r.data),
@@ -57,5 +58,10 @@ export const tiendaService = {
   mias: () => compartirPorSesion('tiendas/mias', () => API.get('/tiendas/mias').then(r => r.data)),
   cambiarEstado: (tiendaId, activo) => API.patch(`/tiendas/${tiendaId}/estado`, { activo }).then(r => r.data),
   eliminar: (tiendaId, nombre) => API.delete(`/tiendas/${tiendaId}`, { data: { nombre } }).then(r => r.data),
-  seleccionar: (tiendaId) => API.post('/auth/seleccionar-tienda', { tienda_id: tiendaId }).then(r => r.data),
+  // Al elegir tienda cambia quién sos para el backend (el token lleva la
+  // tienda activa), así que la respuesta trae el usuario ya actualizado y se
+  // siembra acá: si no, la pantalla siguiente preguntaba /auth/me y recién
+  // después podía pedir sus datos. Un viaje entero, justo en el medio.
+  seleccionar: (tiendaId) => API.post('/auth/seleccionar-tienda', { tienda_id: tiendaId })
+    .then(r => { sembrarSesionDelLogin(r.data?.usuario); return r.data; }),
 };
