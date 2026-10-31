@@ -255,7 +255,7 @@ function App() {
         <Route path="/sin-acceso" element={<ProtectedRoute><SinAcceso /></ProtectedRoute>} />
         <Route path="/buscar-servicios" element={<BuscarServicios independiente />} />
         <Route path="/buscar-servicios/:id" element={<ServicioDetalle />} />
-        <Route path="/proveedor" element={<ProtectedRoute><ProveedorPanel /></ProtectedRoute>} />
+        <Route path="/proveedor" element={<PanelComercio soloUsuario><ProveedorPanel /></PanelComercio>} />
         <Route path="/admin/vista-proveedor" element={<AdminRoute><ProveedorPanel demo /></AdminRoute>} />
         {/* ─────────────────────────────────────────────────────────
             Sitio institucional público (gesicomm.com) — sin guards.

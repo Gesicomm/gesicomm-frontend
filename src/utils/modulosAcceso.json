@@ -104,6 +104,14 @@
     "gestionable": false
   },
   {
+    "clave": "mis_servicios_proveedor",
+    "nombre": "Mis servicios",
+    "ruta": "/proveedor",
+    "icono": "Users",
+    "seccion": "PROVEEDURÍA",
+    "gestionable": false
+  },
+  {
     "clave": "afiliados",
     "nombre": "Quiero ser afiliado",
     "ruta": "/afiliados",
