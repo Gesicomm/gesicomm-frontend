@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { getMetricasDashboardPedidos } from '../../services/courierApi';
+import { usePreferenciaDashboard } from '../../utils/preferenciasDashboard';
 import { tomarPrecargaDashboard } from './precargaDashboard';
 import { METRIC_HELP, METRIC_TERMS } from '../../utils/metricGlossary';
 import { STATUS as ESTADO_PEDIDO } from '../../lib/courier';
@@ -1371,7 +1372,15 @@ function FlujoPedidos({ porEstado }) {
 }
 
 export default function MiDashboard() {
-  const [periodo, setPeriodo] = useState('este_mes');
+  const [preferencia, setPreferencia, preferenciaLista] = usePreferenciaDashboard('general', () => ({
+    periodo: 'este_mes', mes: new Date().getMonth() + 1, anio: new Date().getFullYear(), producto_id: 'TODOS',
+  }));
+  const { periodo, mes, anio } = preferencia;
+  const productoId = preferencia.producto_id ?? 'TODOS';
+  const setPeriodo = periodo => setPreferencia(p => ({ ...p, periodo }));
+  const setMes = mes => setPreferencia(p => ({ ...p, mes }));
+  const setAnio = anio => setPreferencia(p => ({ ...p, anio }));
+  const setProductoId = producto_id => setPreferencia(p => ({ ...p, producto_id }));
   const [vistaMovil, setVistaMovil] = useState('resumen');
   const [filtrosMoviles, setFiltrosMoviles] = useState(false);
   const contenidoMovilRef = useRef(null);
@@ -1379,9 +1388,6 @@ export default function MiDashboard() {
     setVistaMovil(vista);
     requestAnimationFrame(() => contenidoMovilRef.current?.scrollIntoView({ block: 'start' }));
   }
-  const [mes, setMes] = useState(new Date().getMonth() + 1);
-  const [anio, setAnio] = useState(new Date().getFullYear());
-  const [productoId, setProductoId] = useState('TODOS');
   const [embudoTab, setEmbudoTab] = useState('formularios');
   const [verTodosProductos, setVerTodosProductos] = useState(false);
   const [verTodosCouriers, setVerTodosCouriers] = useState(false);
@@ -1426,8 +1432,8 @@ export default function MiDashboard() {
   }, [periodo, mes, anio, productoId]);
 
   useEffect(() => {
-    cargar();
-  }, [cargar]);
+    if (preferenciaLista) cargar();
+  }, [cargar, preferenciaLista]);
 
   // Años y productos disponibles son 100% dinámicos: el backend los calcula
   // sobre la actividad real del inquilino (ver anios_disponibles /

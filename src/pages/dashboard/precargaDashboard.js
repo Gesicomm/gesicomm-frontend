@@ -1,3 +1,4 @@
+import { leerPreferenciaDashboard } from '../../utils/preferenciasDashboard';
 import { getMetricasDashboardPedidos } from '../../services/courierApi';
 import { landingService } from '../../services/landingService';
 
@@ -19,7 +20,17 @@ let precarga = null;
 
 /** Los mismos filtros con los que MiDashboard se dibuja al abrirse. */
 export function filtrosInicialesDashboard() {
-  return { periodo: 'este_mes', mes: undefined, anio: new Date().getFullYear(), producto_id: undefined };
+  const guardado = leerPreferenciaDashboard('general');
+  const periodos = ['hoy', 'ayer', '7d', '30d', 'este_mes', 'mes_anterior', 'este_anio', 'personalizado_mes'];
+  const periodo = periodos.includes(guardado.periodo) ? guardado.periodo : 'este_mes';
+  const mes = Number(guardado.mes);
+  const anio = Number(guardado.anio);
+  return {
+    periodo,
+    mes: periodo === 'personalizado_mes' && mes >= 1 && mes <= 12 ? mes : undefined,
+    anio: Number.isInteger(anio) && anio >= 1900 && anio <= 2200 ? anio : new Date().getFullYear(),
+    producto_id: Number(guardado.producto_id) > 0 ? String(guardado.producto_id) : undefined,
+  };
 }
 
 const mismosFiltros = (uno = {}, otro = {}) =>
