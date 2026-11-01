@@ -99,10 +99,11 @@ export default function ProveedorPanel({ demo = false }) {
   const volver = () => { if (sucio && !window.confirm('Tenés cambios sin guardar. ¿Querés salir del editor?')) return; setSeleccion(null); setForm(null); setSucio(false); };
   const modoPostulacion = Boolean(estado && (!estado.rol_proveedor || !estado.postulacion || repostular));
 
-  return <main className={`provider-panel gc-panel ${modoPostulacion ? 'provider-panel--application-mode' : ''}`}><header className="provider-panel__header"><div><span className="provider-panel__eyebrow">Espacio de proveedor · Gesicom</span><h1>{demo ? 'Vista del proveedor' : 'Mis servicios'}</h1><p>{demo ? 'Así se ve el espacio que recibirá un proveedor aprobado. Los datos de esta vista son de ejemplo.' : 'Mostrá tu trabajo, editá tu portafolio y compartí tu propuesta.'}</p></div><Link to="/mi-tienda/buscar-servicios">Buscar proveedores de Gesicom <ArrowRight size={18} /></Link></header>
+  return <main className={`provider-panel gc-panel ${modoPostulacion ? 'provider-panel--application-mode' : ''}`}><header className="provider-panel__header"><div><span className="provider-panel__eyebrow">Espacio de proveedor · Gesicom</span><h1>{demo ? 'Vista del proveedor' : modoPostulacion ? 'Postularme como proveedor' : 'Mis servicios'}</h1><p>{demo ? 'Así se ve el espacio que recibirá un proveedor aprobado. Los datos de esta vista son de ejemplo.' : modoPostulacion ? 'Enviá tus datos y documentación para que el equipo de Gesicom revise tu postulación.' : 'Mostrá tu trabajo, editá tu portafolio y compartí tu propuesta.'}</p></div><Link to="/mi-tienda/buscar-servicios">Volver a buscar proveedores <ArrowRight size={18} /></Link></header>
     {demo && <p className="provider-panel__notice">Vista previa de administración. Para editar servicios reales, ingresá con una cuenta de proveedor aprobada.</p>}
     {cargando ? <p role="status">Cargando tu espacio…</p> : <>
       {error && <p className="provider-panel__error" role="alert">{error}</p>}{aviso && <p className="provider-panel__success" role="status"><Check size={18} /> {aviso}</p>}
+      {modoPostulacion && estado && <Postulacion email={estado.email} nombre={estado.nombre} onEnviada={cargar} />}
       {estado?.rol_proveedor && estado.postulacion && <DocumentosProveedor documentos={estado.postulacion.documentos} tipoPostulante={estado.postulacion.tipo_postulante} onActualizar={cargar} />}
     </>}
   </main>;
