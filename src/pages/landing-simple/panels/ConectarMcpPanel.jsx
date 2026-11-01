@@ -28,22 +28,28 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
   const tiendaId = tienda?.id || landing?.tienda_id || '';
   useEffect(() => {
     let activo = true;
-    let timer;
+    let consultaEnCurso = false;
     const consultar = async () => {
+      if (!activo || consultaEnCurso) return;
+      consultaEnCurso = true;
       try {
         const estado = await landingSimpleService.estadoConexionMCP();
-        if (!activo) return;
-        const conectada = Boolean(estado.conectada);
-        setConexion({ cargando: false, conectada });
-        if (!conectada) timer = window.setTimeout(consultar, 10000);
+        if (activo) setConexion({ cargando: false, conectada: Boolean(estado.conectada) });
       } catch {
-        if (!activo) return;
-        setConexion({ cargando: false, conectada: false });
-        timer = window.setTimeout(consultar, 10000);
+        if (activo) setConexion({ cargando: false, conectada: false });
+      } finally {
+        consultaEnCurso = false;
       }
     };
+    const alVolver = () => { if (document.visibilityState === 'visible') consultar(); };
     consultar();
-    return () => { activo = false; window.clearTimeout(timer); };
+    window.addEventListener('focus', alVolver);
+    document.addEventListener('visibilitychange', alVolver);
+    return () => {
+      activo = false;
+      window.removeEventListener('focus', alVolver);
+      document.removeEventListener('visibilitychange', alVolver);
+    };
   }, []);
   const apiUrl = (() => {
     const base = apiBaseURL();
