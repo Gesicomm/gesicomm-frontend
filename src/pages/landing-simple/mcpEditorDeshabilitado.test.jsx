@@ -11,8 +11,8 @@ vi.mock('./CodigoPreview', () => ({ default: () => null }));
 
 afterEach(cleanup);
 
-it('una landing MCP existente permite editar los bloques y no ofrece conexiones MCP', () => {
-  const codigo = { html: '<main>Diseño existente</main>', css: '', js: '', generado_por_mcp: true };
+it('una landing MCP existente permite editar los bloques y ofrece conexión MCP', () => {
+  const codigo = { html: '<main><section data-gesicomm-bloque="banner">Diseño existente</section><section data-gesicomm-bloque="productos_categoria">Productos</section></main>', css: '', js: '', generado_por_mcp: true };
   render(<ConfigurarVentaCodigo
     catalogo={{ productos: [], combos: [] }} inicial={{ seleccion: [] }}
     landing={{ id: 140, content: { generado_por_ia: true, origen: 'mcp', bloques_inicio_bloqueados: true, codigo } }}
@@ -20,7 +20,7 @@ it('una landing MCP existente permite editar los bloques y no ofrece conexiones 
     onCambiarCodigo={vi.fn()} onRestaurarCodigo={vi.fn()}
   />);
   expect(screen.queryByText(/Bloques estándar bloqueados/)).toBeNull();
-  expect(screen.queryByRole('button', { name: /Conectar MCP/ })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Conectar MCP', exact: true })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Banner principal', exact: true })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Productos', exact: true })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Guardar', exact: true }).disabled).toBe(false);

@@ -517,7 +517,7 @@ const BLOQUES_INICIO_DEFAULT = [
 const BLOQUE_INICIO_FIJO = 'anuncios';
 
 function normalizarBloquesInicio(bloques) {
-  const guardados = Array.isArray(bloques) ? bloques.filter(b => b && TIPOS_BLOQUE_INICIO.includes(b.tipo)) : [];
+  const guardados = Array.isArray(bloques) ? bloques.filter(b => b && /^[a-zA-Z0-9_]{1,80}$/.test(b.tipo)) : [];
   if (!guardados.length) return BLOQUES_INICIO_DEFAULT;
   const vistos = new Set(guardados.map(b => b.tipo));
   // Si la base agregó un tipo de bloque nuevo después de que esta landing ya
@@ -792,7 +792,8 @@ export default function ConfigurarVentaCodigo({
     codigos?.inicio?.generado_por_mcp
   );
   const bloquesInicioBloqueados = MCP_EDITOR_HABILITADO && esGeneradoIa && !desbloqueadoManual
-    && landing?.content?.bloques_inicio_bloqueados !== false;
+    && landing?.content?.bloques_inicio_bloqueados !== false
+    && !/data-gesicomm-bloque\s*=/.test(codigos?.inicio?.html || landing?.content?.codigo?.html || '');
 
   function resetearPaginaInicio() {
     const base = plantillaInicioPara(tipo);
@@ -995,6 +996,19 @@ export default function ConfigurarVentaCodigo({
   const [productoEditando, setProductoEditando] = useState(null); // content_id
   const [promoEditando, setPromoEditando] = useState(null); // content_id
   const [inicioComercial, setInicioComercial] = useState(() => normalizarInicioComercial(inicioComercialDesdeVenta(ventaInicial)));
+  // En diseños MCP, la lista refleja las secciones reales, sin agregar la plantilla.
+  useEffect(() => {
+    if (!esGeneradoIa || !codigos?.inicio?.html) return;
+    const doc = new DOMParser().parseFromString(codigos.inicio.html, 'text/html');
+    const tipos = [...doc.querySelectorAll('[data-gesicomm-bloque]')].map(n => n.getAttribute('data-gesicomm-bloque')).filter(t => /^[a-zA-Z0-9_]{1,80}$/.test(t) && !['encabezado', 'footer'].includes(t));
+    if (!tipos.length) return;
+    setInicioComercial(prev => {
+      const existentes = prev.bloques.filter(b => tipos.includes(b.tipo));
+      const nuevos = tipos.filter(t => !existentes.some(b => b.tipo === t)).map(tipo => ({ tipo, visible: true }));
+      const bloques = [...existentes, ...nuevos];
+      return JSON.stringify(bloques) === JSON.stringify(prev.bloques) ? prev : { ...prev, bloques };
+    });
+  }, [esGeneradoIa, codigos?.inicio?.html]);
 
   // Todas las order bump / upsell activas de la tienda, de entrada: antes se
   // buscaban solo en los productos ya elegidos, así que con la selección
@@ -1028,6 +1042,7 @@ export default function ConfigurarVentaCodigo({
         onCambiarCodigo('inicio', 'css', actualizada.content.codigo.css || '');
         onCambiarCodigo('inicio', 'js', actualizada.content.codigo.js || '');
       }
+      if (actualizada?.content?.venta) setInicioComercial(normalizarInicioComercial(inicioComercialDesdeVenta(actualizada.content.venta)));
       const vistas = actualizada?.content?.vistas || {};
       Object.keys(vistas).forEach(vk => {
         if (vk === 'productos') {
@@ -1046,7 +1061,7 @@ export default function ConfigurarVentaCodigo({
           onCambiarCodigo(vk, 'js', vistas[vk]?.js || '');
         }
       });
-      setAvisoPreview('Vista previa sincronizada con los cambios de Claude / Codex.');
+      setAvisoPreview('Vista previa sincronizada con los cambios del cliente MCP.');
     } catch {
       setError('No se pudo sincronizar la landing desde el servidor.');
     }
@@ -2595,7 +2610,7 @@ export default function ConfigurarVentaCodigo({
           {MCP_EDITOR_HABILITADO && <button
             type="button"
             onClick={e => { e.currentTarget.closest('details').open = false; setPanelesOcultos(false); setSeccionConfig(s => s === 'mcp' ? 'inicio' : 'mcp'); }}
-            title="Conectar con Claude o Codex mediante MCP (Model Context Protocol)"
+            title="Conectar un cliente compatible con MCP (Model Context Protocol)"
             className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold transition-colors ${
               seccionConfig === 'mcp'
                 ? 'bg-primary text-primary-fg shadow-sm'
@@ -3706,7 +3721,7 @@ export default function ConfigurarVentaCodigo({
 
               {MCP_EDITOR_HABILITADO && seccionConfig === 'mcp' ? (
                 <Bloque
-                  titulo="Conexión MCP con Claude & Codex"
+                  titulo="Conectar una IA por MCP"
                   ayuda="Conectá tu asistente inteligente directamente a tu tienda y landing por Model Context Protocol."
                 >
                   <ConectarMcpPanel

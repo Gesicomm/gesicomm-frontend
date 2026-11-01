@@ -2006,6 +2006,18 @@ export function runtimeGesicomm(plantillas) {
     var contenedor = document.querySelector('.page-content');
     var mapa = {};
     for (var i = 0; i < secciones.length; i++) mapa[secciones[i].getAttribute('data-gesicomm-bloque')] = secciones[i];
+    if (!contenedor) {
+      var padres = [];
+      bloques.forEach(function (b) {
+        var el = mapa[b.tipo];
+        if (el && b.tipo !== 'anuncios' && padres.indexOf(el.parentNode) < 0) padres.push(el.parentNode);
+      });
+      padres.forEach(function (padre) {
+        var ordenados = bloques.map(function (b) { return mapa[b.tipo]; }).filter(function (el) { return el && el.parentNode === padre && el.getAttribute('data-gesicomm-bloque') !== 'anuncios'; });
+        var huecos = Array.from(padre.children).filter(function (el) { return ordenados.indexOf(el) >= 0; }).map(function (el) { var marca = document.createComment('bloque'); padre.replaceChild(marca, el); return marca; });
+        huecos.forEach(function (marca, i) { padre.replaceChild(ordenados[i], marca); });
+      });
+    }
     var configurados = {};
     for (var b = 0; b < bloques.length; b++) {
       configurados[bloques[b].tipo] = 1;
@@ -2023,7 +2035,8 @@ export function runtimeGesicomm(plantillas) {
         el.hidden = false;
         el.removeAttribute('data-gesicomm-oculto-manual');
       }
-      if (contenedor && contenedor.contains(el)) contenedor.appendChild(el); // reinserta al final, en el orden de `bloques`
+      if (contenedor && el.parentNode === contenedor) contenedor.appendChild(el);
+      // Los diseños libres pueden tener varios contenedores; conservá esa jerarquía.
     }
     for (var tipo in mapa) {
       if (tipo === 'encabezado') continue;

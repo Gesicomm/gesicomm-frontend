@@ -18,11 +18,29 @@ describe('ConectarMcpPanel', () => {
   it('renderiza título, descripción y botones de cliente', () => {
     render(<ConectarMcpPanel tienda={{ id: 5 }} landing={{ id: 12 }} />);
 
-    expect(screen.getByText(/Conexión MCP con Claude & Codex/i)).toBeInTheDocument();
+    expect(screen.getByText(/Conectar una IA por MCP/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cualquier cliente MCP' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/cliente compatible con MCP por stdio/)).toBeInTheDocument();
     expect(screen.getByText(/Claude Code \(CLI\)/i)).toBeInTheDocument();
     expect(screen.getByText(/OpenAI Codex \(CLI\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Claude Desktop/i)).toBeInTheDocument();
     expect(screen.getByText(/Codex Desktop/i)).toBeInTheDocument();
+  });
+
+  it('ofrece el paquete público en todos los clientes, incluso en localhost', () => {
+    const { container } = render(<ConectarMcpPanel tienda={{ id: 5 }} landing={{ id: 12 }} />);
+    const configuracion = JSON.parse(container.querySelector('pre').textContent);
+    expect(configuracion.mcpServers.gesicomm.command).toBe('npx');
+    expect(configuracion.mcpServers.gesicomm.args).toEqual(['-y', new URL('/conectores/gesicomm-mcp-1.2.1.tgz', window.location.origin).href]);
+    for (const name of ['Claude Code (CLI)', 'OpenAI Codex (CLI)', 'Claude Desktop', 'Codex Desktop', 'Cualquier cliente MCP']) {
+      fireEvent.click(screen.getByRole('button', { name, exact: true }));
+      const codigo = container.querySelector('pre').textContent;
+      expect(codigo).toContain('npx');
+      expect(codigo).toContain('gesicomm-mcp');
+      expect(codigo).not.toMatch(/C:[/\\]|Proyectos|bin[/\\]cli|command.*node/);
+    }
+    expect(screen.queryByRole('button', { name: /ruta local|comando universal/i })).toBeNull();
+    expect(container.textContent).not.toContain('Prueba local');
   });
 
   it('permite generar un token y muestra el comando con el token', async () => {

@@ -19,6 +19,7 @@ import { generarPreviewMensaje, generarPreviewMensajeGeneral, generarPreviewMens
 import { listaFuentes, typographyStyle } from '../../lib/typography';
 import PagoParConfig from './PagoParConfig';
 import ConexionLogistica from './ConexionLogistica';
+import ConectarMcpPanel from '../landing-simple/panels/ConectarMcpPanel';
 import DominioPropio from './DominioPropio';
 import ComboConfiguracion from '../combos/ComboConfiguracion';
 import { MetodosPagoCrud } from '../courier/MetodosPagoCrud';
@@ -130,6 +131,8 @@ const TABS = [
   { id: 'raha', label: 'Conexión a proveedor', icono: ShieldCheck, titulo: 'Conexión a proveedor', desc: 'Conectá tu tienda con nuestros proveedores.', separadorLargo: true },
 ];
 
+TABS.push({ id: 'ia', label: 'Conexión con IA', icono: Sparkles, titulo: 'Conexión con IA', desc: 'Conectá tu asistente para crear y editar tu e-commerce.' });
+
 const TABS_VALIDAS = new Set([...TABS.map(t => t.id), 'speedbox']);
 
 // Tabs cuyo contenido tiene su propio botón de guardado (componentes con su
@@ -205,7 +208,9 @@ export default function ConfigurarTienda() {
       .map((clave, i) => [clave, resultados[i].status === 'fulfilled' ? resultados[i].value : null])));
   }, []);
   useEffect(() => { cargarEstados(); }, [cargarEstados]);
-  const estadosSecciones = estadosConfiguracion(tienda, recursosEstado);
+  const estadosSecciones = { ...estadosConfiguracion(tienda, recursosEstado), ia: {
+    completo: false, texto: 'Opcional', detalle: 'Conectá tu asistente para crear o editar tu e-commerce.',
+  } };
   const actualizarPagos = useCallback(pagos => setRecursosEstado(prev => ({ ...prev, pagos })), []);
   const actualizarCostos = useCallback(costos => setRecursosEstado(prev => ({ ...prev, costos })), []);
   const [cargando, setCargando] = useState(true);
@@ -783,7 +788,7 @@ export default function ConfigurarTienda() {
             {!estadosSecciones[tabActual.id].completo && <p className="tn-section-next-step">{estadosSecciones[tabActual.id].detalle}</p>}
             <p>{tabActual.desc}</p>
           </div>
-          {tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica onEstadoChange={cargarEstados} tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
+          {tab === 'ia' ? <ConectarMcpPanel tienda={tienda} /> : tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica onEstadoChange={cargarEstados} tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
             <div className="tn-body">
 
               {ok && mensajeExito && (

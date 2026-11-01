@@ -3302,6 +3302,7 @@ export function esFichaProductoBase(html) {
  */
 export function esCheckoutBase(html) {
   const texto = String(html || '');
+  if (texto.includes(MARCA_PERSONALIZADO)) return false;
   if (!texto.trim()) return true;
   if (formatoDeBase(texto) === 'checkout') return true;
   return texto.includes('data-gesicomm-checkout-form')

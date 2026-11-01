@@ -161,7 +161,7 @@ describe('Resetear el diseño MCP y guardar la landing publicada', () => {
     });
     const vista = montar(persistida);
     fireEvent.click(await screen.findByRole('button', { name: 'Banner principal', exact: true }));
-    fireEvent.change(screen.getByLabelText('CTA'), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText('Texto del botón'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Publicar cambios' }));
     await waitFor(() => expect(landingSimpleService.actualizar).toHaveBeenCalled());
     expect(persistida.content.venta.inicio.banners[0].cta_texto).toBe('');
@@ -169,7 +169,7 @@ describe('Resetear el diseño MCP y guardar la landing publicada', () => {
     vista.unmount();
     montar(persistida);
     fireEvent.click(await screen.findByRole('button', { name: 'Banner principal', exact: true }));
-    expect(screen.getByLabelText('CTA').value).toBe('');
+    expect(screen.getByLabelText('Texto del botón').value).toBe('');
   });
 
   it('envía los productos sumados al bloque y los recupera al reabrir', async () => {

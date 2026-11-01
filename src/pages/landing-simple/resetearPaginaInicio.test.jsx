@@ -64,7 +64,7 @@ describe('Resetear página de Inicio a plantilla por defecto', () => {
     // El bloqueo desaparece y se desbloquean los bloques estándar
     expect(screen.queryByText(/Bloques estándar bloqueados \(Generada con IA \/ MCP\)/i)).toBeNull();
     expect(screen.getByText(/Página de Inicio reseteada a la plantilla por defecto/i)).toBeInTheDocument();
-    expect(screen.getByText(/Barra de anuncios/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Barra de anuncios', exact: true })).toBeInTheDocument();
     expect(screen.getByText(/Banner principal/i)).toBeInTheDocument();
   });
 

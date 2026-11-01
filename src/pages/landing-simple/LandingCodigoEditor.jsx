@@ -799,7 +799,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     codigos?.inicio?.generado_por_mcp
   );
   const bloquesInicioBloqueados = MCP_EDITOR_HABILITADO && esGeneradoIa && !desbloqueadoManual
-    && landing?.content?.bloques_inicio_bloqueados !== false;
+    && landing?.content?.bloques_inicio_bloqueados !== false
+    && !/data-gesicomm-bloque\s*=/.test(codigos?.inicio?.html || landing?.content?.codigo?.html || '');
   const creationSource = creationSourceDe(landing);
   const esGeneradaIA = creationSource === 'ai' || creationSource === 'ai_detected' || esGeneradoIa;
   const etiquetaEditor = MCP_EDITOR_HABILITADO && esGeneradoIa ? 'Generada con IA (MCP)' : (creationSource === 'ai_detected' ? 'Con IA' : esGeneradaIA ? 'Generada con IA' : 'Editor libre');

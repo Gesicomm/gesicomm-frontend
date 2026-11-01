@@ -1248,6 +1248,15 @@ describe('runtime del lienzo en blanco — inicio', () => {
     dom.window.close();
   });
 
+  it('bloques MCP: reordena un diseño libre conservando contenedores y enlaces fijos', () => {
+    const codigo = { html: '<main class="libre"><section data-gesicomm-bloque="historia">Historia</section><a id="fijo">Enlace fijo</a><article data-gesicomm-bloque="vitrina">Vitrina</article></main>', css: '', js: '' };
+    const { document, dom } = montar(codigo, { ...datos, vista: 'inicio', venta: { inicio: { bloques: [{ tipo: 'vitrina', visible: true }, { tipo: 'historia', visible: false }] } } });
+    expect([...document.querySelector('main').children].map(n => n.getAttribute('data-gesicomm-bloque') || n.id)).toEqual(['vitrina', 'fijo', 'historia']);
+    expect(document.querySelector('[data-gesicomm-bloque="historia"]').hidden).toBe(true);
+    expect(document.querySelector('[data-gesicomm-bloque="vitrina"]').hidden).toBe(false);
+    dom.window.close();
+  });
+
   it('bloques: reordena y oculta secciones del body sin lista guardada (compatibilidad total)', () => {
     const { document } = montar(PLANTILLA_INICIO, datos);
     // Sin venta.inicio.bloques, el orden original del HTML queda intacto.
