@@ -63,6 +63,7 @@ export const landingSimpleService = {
   eliminarHeroImagen: (id) => API.delete(`/mis-landings-simples/${id}/hero-imagen`).then(r => r.data),
 
   generarTokenMCP: (tiendaId) => API.post('/mcp/token', { tienda_id: tiendaId }).then(r => r.data),
+  estadoConexionMCP: () => API.get('/mcp/estado').then(r => r.data),
 
   // Fotos propias de la ficha (antes/después, ingredientes...). Las landings
   // rígidas son filas de la misma tabla Landing, así que se reusa el

@@ -104,7 +104,11 @@
    horizontal en vez de apilarse en una columna gigante. */
 .tn-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  box-sizing: border-box;
   gap: 0.5rem;
   padding: 0.5rem;
   background: var(--vit-surface);
@@ -114,7 +118,7 @@
   -ms-overflow-style: none;
 }
 .tn-tabs::-webkit-scrollbar { display: none; }
-.tn-tab-step { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.tn-tab-step { display: inline-flex; align-items: center; gap: 0.4rem; min-width: max-content; flex: 0 0 auto; }
 
 .tn-tab {
   display: inline-flex;

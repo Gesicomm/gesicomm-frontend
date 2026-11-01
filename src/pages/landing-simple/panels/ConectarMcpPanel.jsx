@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Bot,
   Terminal,
@@ -22,9 +22,29 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
   const [error, setError] = useState('');
   const [tabCliente, setTabCliente] = useState('generico');
   const [sincronizando, setSincronizando] = useState(false);
+  const [conexion, setConexion] = useState({ cargando: true, conectada: false });
 
   const landingId = landing?.id || '';
   const tiendaId = tienda?.id || landing?.tienda_id || '';
+  useEffect(() => {
+    let activo = true;
+    let timer;
+    const consultar = async () => {
+      try {
+        const estado = await landingSimpleService.estadoConexionMCP();
+        if (!activo) return;
+        const conectada = Boolean(estado.conectada);
+        setConexion({ cargando: false, conectada });
+        if (!conectada) timer = window.setTimeout(consultar, 10000);
+      } catch {
+        if (!activo) return;
+        setConexion({ cargando: false, conectada: false });
+        timer = window.setTimeout(consultar, 10000);
+      }
+    };
+    consultar();
+    return () => { activo = false; window.clearTimeout(timer); };
+  }, []);
   const apiUrl = (() => {
     const base = apiBaseURL();
     if (base && base.startsWith('http')) return base;
@@ -110,6 +130,10 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 Oficial
               </span>
             </h3>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] font-semibold ${conexion.conectada ? 'border-success/40 bg-success/10 text-success' : 'border-border bg-surface-2 text-fg-muted'}`} role="status">
+              {conexion.conectada ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+              {conexion.cargando ? 'Consultando conexión…' : conexion.conectada ? 'Conexión verificada' : 'Sin conectar · opcional'}
+            </span>
             <p className="text-base text-fg-muted mt-0.5">
               {modoProductos ? 'Compartí las fotos con tu asistente y pedile que prepare la ficha. Una vez guardada, la vas a encontrar en tu catálogo.' : 'Conectá tu asistente para crear y editar tu e-commerce.'}
             </p>

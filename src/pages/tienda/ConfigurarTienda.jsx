@@ -131,7 +131,7 @@ const TABS = [
   { id: 'raha', label: 'Conexión a proveedor', icono: ShieldCheck, titulo: 'Conexión a proveedor', desc: 'Conectá tu tienda con nuestros proveedores.', separadorLargo: true },
 ];
 
-TABS.push({ id: 'ia', label: 'Conexión con IA', icono: Sparkles, titulo: 'Conexión con IA', desc: 'Conectá tu asistente para crear y editar tu e-commerce.' });
+TABS.push({ id: 'ia', label: 'Conexión con IA', icono: Sparkles, titulo: 'Conexión con IA', desc: 'Opcional: conectá tu asistente para crear y editar tu e-commerce.' });
 
 const TABS_VALIDAS = new Set([...TABS.map(t => t.id), 'speedbox']);
 
@@ -209,7 +209,9 @@ export default function ConfigurarTienda() {
   }, []);
   useEffect(() => { cargarEstados(); }, [cargarEstados]);
   const estadosSecciones = { ...estadosConfiguracion(tienda, recursosEstado), ia: {
-    completo: false, texto: 'Opcional', detalle: 'Conectá tu asistente para crear o editar tu e-commerce.',
+    // La conexión con IA es opcional y nunca debe dejar el recorrido pendiente.
+    // El estado real de conexión se muestra dentro del panel MCP.
+    completo: true, texto: 'Opcional', detalle: 'Podés conectar tu asistente cuando quieras.',
   } };
   const actualizarPagos = useCallback(pagos => setRecursosEstado(prev => ({ ...prev, pagos })), []);
   const actualizarCostos = useCallback(costos => setRecursosEstado(prev => ({ ...prev, costos })), []);
@@ -784,9 +786,9 @@ export default function ConfigurarTienda() {
 
         <div className="tn-panel">
           <div className="tn-panel-head">
-            <div className="tn-panel-title-status"><h2>{tabActual.titulo}</h2><EstadoSeccion estado={estadosSecciones[tabActual.id]} /></div>
+            <div className="tn-panel-title-status"><h2>{tabActual.titulo}</h2>{tabActual.id !== 'ia' && <EstadoSeccion estado={estadosSecciones[tabActual.id]} />}</div>
             {!estadosSecciones[tabActual.id].completo && <p className="tn-section-next-step">{estadosSecciones[tabActual.id].detalle}</p>}
-            <p>{tabActual.desc}</p>
+            {tab !== 'ia' && <p>{tabActual.desc}</p>}
           </div>
           {tab === 'ia' ? <ConectarMcpPanel tienda={tienda} /> : tab === 'raha' || tab === 'speedbox' ? <ConexionLogistica onEstadoChange={cargarEstados} tienda={tienda} abrirValidacion={tab === 'speedbox'} /> : <form onSubmit={handleSubmit} className="tn-form">
             <div className="tn-body">
