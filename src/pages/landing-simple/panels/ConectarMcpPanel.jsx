@@ -121,6 +121,18 @@ enabled = true
 GESICOMM_API_URL = "${apiUrl}"
 GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID = "${landingId}"` : ''}`;
 
+  const datosConexion = {
+              generico: jsonDesktop, desktop: jsonDesktop, claude: comandoClaude,
+              codex: comandoCodex, 'codex-desktop': tomlCodexDesktop,
+            }[tabCliente];
+  const pasosConexion = {
+    generico: ['Abrí los ajustes de tu asistente y buscá Servidores MCP. Elegí agregar un servidor local.', 'Si acepta JSON, pegá los datos que copiaste. Si ves campos separados, ingresá el comando, los argumentos y las variables del cuadro.', 'Guardá y volvé a abrir tu asistente. Necesitás un cliente compatible con MCP por stdio.'],
+    desktop: ['En Claude Desktop, abrí Configuración → Desarrollador → Editar configuración.', 'Pegá los datos en claude_desktop_config.json. Si ya tenés servidores, agregá la entrada de Gesicom junto a ellos.', 'Guardá el archivo, cerrá Claude por completo y volvé a abrirlo.'],
+    'codex-desktop': ['Abrí el archivo config.toml de la carpeta .codex de tu usuario.', 'Agregá la configuración de Gesicom al archivo y guardalo.', 'Volvé a abrir Codex Desktop.'],
+    claude: ['Abrí la terminal donde usás Claude Code.', 'Pegá el comando y presioná Enter.', 'Cuando termine, iniciá una sesión nueva de Claude Code.'],
+    codex: ['Abrí la terminal donde usás Codex.', 'Pegá el comando y presioná Enter.', 'Cuando termine, iniciá una sesión nueva de Codex.'],
+  }[tabCliente];
+
   return (
     <div className="space-y-5 rounded-2xl border border-border bg-surface p-5 text-fg shadow-sm">
       {/* Encabezado */}
@@ -170,7 +182,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
       {/* Paso 1: Token */}
       <div className="rounded-xl border border-border bg-surface-2/60 p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold uppercase tracking-wider text-fg-muted">1 · Token de Autenticación MCP</span>
+          <span className="text-sm font-bold uppercase tracking-wider text-fg-muted">1 · Autorizá el acceso a tu cuenta</span>
           {token && (
             <span className="flex items-center gap-1 text-[13px] text-success font-medium">
               <CheckCircle2 size={13} /> Token generado (30 días)
@@ -181,7 +193,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
         {!token ? (
           <div>
             <p className="text-base text-fg-muted mb-3 leading-relaxed">
-              Generá un token para que tu cliente MCP pueda trabajar con las tiendas de tu cuenta.
+              Generá una clave de acceso para tu asistente. Sirve para las tiendas de tu cuenta y la incluimos automáticamente en la configuración del siguiente paso.
             </p>
             <button
               type="button"
@@ -216,7 +228,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
       {/* Paso 2: Conectar con tu cliente */}
       <div className="rounded-xl border border-border bg-surface-2/60 p-4 space-y-3">
-        <span className="text-sm font-bold uppercase tracking-wider text-fg-muted">2 · Conectar con tu Asistente</span>
+        <span className="text-sm font-bold uppercase tracking-wider text-fg-muted">2 · Elegí el asistente que usás</span>
 
         {/* Selector de Cliente */}
         <div className="flex flex-wrap gap-2 border-b border-border pb-2">
@@ -267,87 +279,30 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
           </button>
         </div>
 
-        {tabCliente === 'claude' && (
-          <div className="space-y-2">
-            <p className="text-base text-fg-muted">Ejecutá este comando en tu terminal para registrar el servidor MCP en Claude Code:</p>
-            <div className="relative">
-              <pre className="overflow-x-auto rounded-lg border border-border bg-surface p-3 font-mono text-sm text-fg whitespace-pre-wrap break-all">
-                {comandoClaude}
-              </pre>
-              <button
-                type="button"
-                onClick={() => copiarTexto(comandoClaude, 'claude')}
-                className="mt-2 inline-flex items-center gap-1 rounded bg-surface border border-border px-2 py-1 text-[13px] font-semibold text-fg hover:border-border-strong"
-              >
-                {copiado === 'claude' ? <Check size={12} className="text-success" /> : <Copy size={12} />}
-                {copiado === 'claude' ? 'Copiado' : 'Copiar comando'}
-              </button>
-            </div>
+        <p className="text-base text-fg-muted">Hacé estos pasos en la computadora donde usás tu asistente. Necesitás Node.js instalado para iniciar la conexión.</p>
+        {!token && <p className="text-sm font-semibold text-primary-text">Primero generá tu clave en el paso 1 para poder copiar la configuración lista para usar.</p>}
+        <section className="min-w-0 space-y-4 rounded-xl border-2 border-primary bg-surface p-4 sm:p-5">
+          <h3 className="text-xl font-bold">3 · Copiá tus datos de conexión</h3>
+          <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
+            <pre className="m-0 whitespace-pre-wrap break-all font-mono text-sm leading-relaxed text-fg">{datosConexion}</pre>
           </div>
-        )}
-
-        {tabCliente === 'codex' && (
-          <div className="space-y-2">
-            <p className="text-base text-fg-muted">Ejecutá este comando en tu terminal para registrar el servidor MCP en OpenAI Codex:</p>
-            <div className="relative">
-              <pre className="overflow-x-auto rounded-lg border border-border bg-surface p-3 font-mono text-sm text-fg whitespace-pre-wrap break-all">
-                {comandoCodex}
-              </pre>
-              <button
-                type="button"
-                onClick={() => copiarTexto(comandoCodex, 'codex')}
-                className="mt-2 inline-flex items-center gap-1 rounded bg-surface border border-border px-2 py-1 text-[13px] font-semibold text-fg hover:border-border-strong"
-              >
-                {copiado === 'codex' ? <Check size={12} className="text-success" /> : <Copy size={12} />}
-                {copiado === 'codex' ? 'Copiado' : 'Copiar comando'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {(tabCliente === 'desktop' || tabCliente === 'generico') && (
-          <div className="space-y-2">
-            {tabCliente === 'generico' ? <p className="text-base text-fg-muted">Agregá Gesicomm en la configuración MCP de tu herramienta de IA y copiá este JSON. El paquete se descarga automáticamente: no necesitás archivos del proyecto. Requiere Node.js y un cliente compatible con MCP por stdio. El formato de configuración puede variar según el cliente.</p> : <p className="text-base text-fg-muted">Pegá esta configuración dentro de tu archivo <code className="text-primary-text font-mono text-[13px]">claude_desktop_config.json</code>:</p>}
-            <div className="relative">
-              <pre className="overflow-x-auto rounded-lg border border-border bg-surface p-3 font-mono text-sm text-fg whitespace-pre-wrap">
-                {jsonDesktop}
-              </pre>
-              <button
-                type="button"
-                onClick={() => copiarTexto(jsonDesktop, 'desktop')}
-                className="mt-2 inline-flex items-center gap-1 rounded bg-surface border border-border px-2 py-1 text-[13px] font-semibold text-fg hover:border-border-strong"
-              >
-                {copiado === 'desktop' ? <Check size={12} className="text-success" /> : <Copy size={12} />}
-                {copiado === 'desktop' ? 'Copiado' : 'Copiar JSON'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {tabCliente === 'codex-desktop' && (
-          <div className="space-y-2">
-            <p className="text-base text-fg-muted">
-              Pegá esta configuración en tu archivo <code className="text-primary-text font-mono text-[13px]">~/.codex/config.toml</code> (en Windows: <code className="text-primary-text font-mono text-[13px]">%USERPROFILE%\.codex\config.toml</code>), o agregalo en la app desde <strong>Settings › MCP Servers</strong>:
-            </p>
-            <div className="relative">
-              <pre className="overflow-x-auto rounded-lg border border-border bg-surface p-3 font-mono text-sm text-fg whitespace-pre-wrap">
-                {tomlCodexDesktop}
-              </pre>
-              <button
-                type="button"
-                onClick={() => copiarTexto(tomlCodexDesktop, 'codex-desktop')}
-                className="mt-2 inline-flex items-center gap-1 rounded bg-surface border border-border px-2 py-1 text-[13px] font-semibold text-fg hover:border-border-strong"
-              >
-                {copiado === 'codex-desktop' ? <Check size={12} className="text-success" /> : <Copy size={12} />}
-                {copiado === 'codex-desktop' ? 'Copiado' : 'Copiar TOML'}
-              </button>
-            </div>
-            <p className="text-[13px] text-fg-muted flex items-center gap-1">
-              <Sparkles size={12} className="text-primary-text" />
-              <span>Tip: Si ya ejecutaste el comando de la pestaña <strong>OpenAI Codex (CLI)</strong>, Codex Desktop lo sincroniza automáticamente.</span>
-            </p>
-          </div>
-        )}
+          <button type="button" disabled={!token}
+            onClick={() => copiarTexto(datosConexion, tabCliente)}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-primary-fg disabled:opacity-50">
+            <Copy size={16} /> {copiado === tabCliente ? 'Copiado' : 'Copiar datos de conexión'}
+          </button>
+        </section>
+        <section className="space-y-2 rounded-xl border border-border bg-surface p-4">
+          <h3 className="text-lg font-bold">4 · Conectá tu asistente</h3>
+          <ol className="list-decimal space-y-2 pl-6 text-base leading-relaxed">
+            {pasosConexion.map(paso => <li key={paso}>{paso}</li>)}
+          </ol>
+        </section>
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <h3 className="text-lg font-semibold">5 · Probá la conexión</h3>
+          <p className="mt-2 text-base">Abrí un chat nuevo y preguntá <strong>“¿Qué tiendas tengo en Gesicom?”</strong>. Si aparecen tus tiendas, ya podés elegir una por su nombre y pedir tu primer cambio.</p>
+          <details className="mt-2"><summary className="cursor-pointer text-sm font-semibold">Mi asistente no encuentra Gesicom</summary><p className="mt-2 text-base">Revisá que Gesicom aparezca entre los servidores MCP de tu asistente. Si falta, volvé a copiar la configuración después de generar la clave, guardá los cambios y reiniciá el asistente. Si aparece un error sobre npx, comprobá que Node.js esté instalado.</p></details>
+        </div>
 
       </div>
 
@@ -358,7 +313,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
         </h4>
         {modoProductos ? <p className="text-base leading-relaxed">“Cargá estos productos con sus fotos. En cada ficha poné la descripción, qué incluye y las preguntas frecuentes. Avisame si falta algo.”</p> : <>
         <p className="text-base text-fg-muted leading-relaxed">
-          Podés crear tu e-commerce y editar el inicio, las categorías, las fichas de producto y el checkout. También podés mandarle fotos y datos de uno o varios productos para guardarlos en Gesicomm con su presentación, qué incluye y preguntas frecuentes.
+          Podés crear tu e-commerce y editar el inicio, las categorías, las fichas de producto y el checkout. También podés mandarle fotos y datos de uno o varios productos para guardarlos en Gesicom con su presentación, qué incluye y preguntas frecuentes.
         </p>
         <ul className="text-base leading-relaxed space-y-3 text-fg">
           <li className="flex items-start gap-2">
