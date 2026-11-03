@@ -31,7 +31,7 @@ describe('ConectarMcpPanel', () => {
     const { container } = render(<ConectarMcpPanel tienda={{ id: 5 }} landing={{ id: 12 }} />);
     const configuracion = JSON.parse(container.querySelector('pre').textContent);
     expect(configuracion.mcpServers.gesicomm.command).toBe('npx');
-    expect(configuracion.mcpServers.gesicomm.args).toEqual(['-y', new URL('/conectores/gesicomm-mcp-1.2.1.tgz', window.location.origin).href]);
+    expect(configuracion.mcpServers.gesicomm.args).toEqual(['-y', new URL('/conectores/gesicomm-mcp-1.4.0.tgz', window.location.origin).href]);
     for (const name of ['Claude Code (CLI)', 'OpenAI Codex (CLI)', 'Claude Desktop', 'Codex Desktop', 'Cualquier cliente MCP']) {
       fireEvent.click(screen.getByRole('button', { name, exact: true }));
       const codigo = container.querySelector('pre').textContent;

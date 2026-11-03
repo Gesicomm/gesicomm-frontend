@@ -94,7 +94,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
     }
   }
 
-  const paquete = new URL('/conectores/gesicomm-mcp-1.2.1.tgz', window.location.origin).href;
+  const paquete = new URL('/conectores/gesicomm-mcp-1.4.0.tgz', window.location.origin).href;
   const comandoClaude = `claude mcp add gesicomm -e GESICOMM_API_URL=${apiUrl} -e GESICOMM_TOKEN=${token || '<TU_TOKEN>'}${landingId ? ` -e GESICOMM_LANDING_ID=${landingId}` : ''} -- npx -y ${paquete}`;
   const comandoCodex = `codex mcp add gesicomm --env GESICOMM_API_URL=${apiUrl} --env GESICOMM_TOKEN=${token || '<TU_TOKEN>'}${landingId ? ` --env GESICOMM_LANDING_ID=${landingId}` : ''} -- npx -y ${paquete}`;
 
@@ -141,7 +141,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
               {conexion.cargando ? 'Consultando conexión…' : conexion.conectada ? 'Conexión verificada' : 'Sin conectar · opcional'}
             </span>
             <p className="text-base text-fg-muted mt-0.5">
-              {modoProductos ? 'Compartí las fotos con tu asistente y pedile que prepare la ficha. Una vez guardada, la vas a encontrar en tu catálogo.' : 'Conectá tu asistente para crear y editar tu e-commerce.'}
+              {modoProductos ? 'Compartí las fotos con tu asistente y pedile que prepare la ficha. Una vez guardada, la vas a encontrar en tu catálogo.' : 'Conectá tu IA una sola vez para todas tus tiendas. Al editar una página o cargar productos, elegí en qué tienda trabajar.'}
             </p>
           </div>
         </div>
@@ -181,7 +181,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
         {!token ? (
           <div>
             <p className="text-base text-fg-muted mb-3 leading-relaxed">
-              Generá un token para que tu cliente MCP pueda trabajar con tu tienda.
+              Generá un token para que tu cliente MCP pueda trabajar con las tiendas de tu cuenta.
             </p>
             <button
               type="button"
@@ -358,7 +358,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
         </h4>
         {modoProductos ? <p className="text-base leading-relaxed">“Cargá estos productos con sus fotos. En cada ficha poné la descripción, qué incluye y las preguntas frecuentes. Avisame si falta algo.”</p> : <>
         <p className="text-base text-fg-muted leading-relaxed">
-          Podés crear tu e-commerce y editar el inicio, las categorías, las fichas de producto y el checkout. Compartí una referencia o contale a tu IA cómo querés que se vea.
+          Podés crear tu e-commerce y editar el inicio, las categorías, las fichas de producto y el checkout. También podés mandarle fotos y datos de uno o varios productos para guardarlos en Gesicomm con su presentación, qué incluye y preguntas frecuentes.
         </p>
         <ul className="text-base leading-relaxed space-y-3 text-fg">
           <li className="flex items-start gap-2">
@@ -371,7 +371,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
           </li>
           <li className="flex items-start gap-2">
             <span className="text-success font-bold font-mono">›</span>
-            <span>“Rediseñá mi e-commerce con fotos grandes, estos colores y una presentación destacada de mis ofertas.”</span>
+            <span>“Buscá este termo en mi catálogo. Si todavía no está, cargalo con estas fotos, el precio y lo que incluye. Avisame si falta algún dato.”</span>
           </li>
         </ul></>}
       </div>
