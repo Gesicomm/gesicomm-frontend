@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { usePreferenciaDashboard } from '../../utils/preferenciasDashboard';
 import { useSearchParams } from 'react-router-dom';
 import { TrendingUp, LayoutDashboard, ShoppingCart, Package, UserCheck, DollarSign, PiggyBank, List, MapPin, Truck, Shuffle, Users } from 'lucide-react';
 import './CentroInteligenciaComercial.css';
@@ -58,17 +59,6 @@ const FILTROS_INICIALES = {
   ciudad: '',
 };
 
-// Filtros y reporte abierto sobreviven a recargar o a ir y volver dentro de
-// la pestaña (sessionStorage, nunca la URL).
-const CLAVE_SESION = 'gesicomm.dashboardOperativo.v1';
-function leerSesion() {
-  try {
-    return JSON.parse(sessionStorage.getItem(CLAVE_SESION) || 'null') || {};
-  } catch {
-    return {};
-  }
-}
-
 export function CentroInteligenciaComercial() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -79,16 +69,16 @@ export function CentroInteligenciaComercial() {
     }
   }, [searchParams, setSearchParams]);
 
-  const sesion = useMemo(leerSesion, []);
-  const [activeReport, setActiveReport] = useState(sesion.reporte || 'resumen');
-  const [analyticsFilters, setAnalyticsFilters] = useState({ ...FILTROS_INICIALES, ...(sesion.filtros || {}) });
+  const [sesion, setSesion, preferenciaLista] = usePreferenciaDashboard('operativo', () => ({
+    reporte: 'resumen', filtros: { ...FILTROS_INICIALES },
+  }));
+  const activeReport = sesion.reporte || 'resumen';
+  const analyticsFilters = sesion.filtros;
+  const setActiveReport = useCallback(reporte => setSesion(previo => ({ ...previo, reporte: typeof reporte === 'function' ? reporte(previo.reporte) : reporte })), [setSesion]);
+  const setAnalyticsFilters = useCallback(siguiente => setSesion(previo => ({
+    ...previo, filtros: typeof siguiente === 'function' ? siguiente(previo.filtros) : siguiente,
+  })), [setSesion]);
   const [confirmadoresDisponibles, setConfirmadoresDisponibles] = useState([]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(CLAVE_SESION, JSON.stringify({ reporte: activeReport, filtros: analyticsFilters }));
-    } catch { /* almacenamiento bloqueado: se pierde solo la preferencia */ }
-  }, [activeReport, analyticsFilters]);
 
   // Lo que reciben los reportes: el período ya traducido a fechas. Pisa
   // cualquier fecha vieja de un rango personalizado anterior.
@@ -115,6 +105,8 @@ export function CentroInteligenciaComercial() {
       default: return <ReporteResumen filters={f} setConfirmadoresDisponibles={setConfirmadoresDisponibles} onAbrirReporte={setActiveReport} />;
     }
   };
+
+  if (!preferenciaLista) return <div className="cic-wrapper">Cargando período…</div>;
 
   return (
     <div className="cic-wrapper">
