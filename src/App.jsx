@@ -464,6 +464,10 @@ function App() {
         <Route path="/mi-tienda/buscar-servicios" element={
           <PanelComercio soloUsuario><BuscarServicios /></PanelComercio>
         } />
+        <Route path="/mi-tienda/buscar-servicios/:id" element={
+          <PanelComercio soloUsuario><ServicioDetalle integrado /></PanelComercio>
+        } />
+        <Route path="/mi-tienda/proveedores/:proveedorId/conectar" element={<Navigate to="/mi-tienda?tab=raha" replace />} />
         <Route path="/mi-catalogo" element={
           <PanelComercio soloUsuario><VitrinaGrid /></PanelComercio>
         } />

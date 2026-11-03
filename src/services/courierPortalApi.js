@@ -36,6 +36,16 @@ export const courierLogin = async (payload) => {
   return data;
 };
 
+export const courierRegister = async (payload) => {
+  const { data } = await courierApi.post('/courier-auth/registro', payload);
+  return data;
+};
+
+export const getCourierApplicationGeography = async () => {
+  const { data } = await courierApi.get('/l/geografia');
+  return Array.isArray(data) ? data : [];
+};
+
 export const courierLogout = async () => {
   try {
     await courierApi.post('/courier-auth/logout');
@@ -56,6 +66,16 @@ export const getCourierPedidos = async () => {
 
 export const getCourierMetodosPago = async () => {
   const { data } = await courierApi.get('/courier-portal/metodos-pago');
+  return data;
+};
+
+export const marcarPedidoPreparadoCourier = async (id) => {
+  const { data } = await courierApi.put(`/courier-portal/pedidos/${id}/preparar`);
+  return data;
+};
+
+export const marcarPedidoDespachadoCourier = async (id) => {
+  const { data } = await courierApi.put(`/courier-portal/pedidos/${id}/despachar`);
   return data;
 };
 

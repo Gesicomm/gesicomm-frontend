@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, BriefcaseBusiness, UserRound } from 'lucide-react';
+import { ArrowRight, Package, UserRound } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import useSesion from '../../hooks/useSesion';
@@ -22,10 +22,6 @@ export default function PrimerIngreso() {
     setError('');
     try {
       await API.post('/auth/primer-ingreso', { tipo });
-      if (tipo === 'proveedor') {
-        navigate('/proveedor', { replace: true });
-        return;
-      }
       navigate(location.state?.destino || '/seleccionar-modulo', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'No pudimos guardar tu elección. Volvé a intentar.');
@@ -50,17 +46,9 @@ export default function PrimerIngreso() {
           <span>Vendé productos, ofrecé servicios o desarrollá tu marca desde tus espacios de trabajo.</span>
           <span className="first-entry__action">{enviando === 'usuario' ? 'Guardando…' : 'Continuar con Gesicom'} <ArrowRight size={19} aria-hidden="true" /></span>
         </button>
-
-        <button type="button" className="first-entry__option first-entry__option--provider" onClick={() => elegir('proveedor')} disabled={Boolean(enviando)}>
-          <span className="first-entry__icon"><BriefcaseBusiness size={29} aria-hidden="true" /></span>
-          <span className="first-entry__kind">Quiero ser proveedor</span>
-          <strong>Ofrecer mis servicios a la comunidad</strong>
-          <span>Postulate para ofrecer logística, publicidad, edición, desarrollo u otros servicios a negocios en Gesicom.</span>
-          <span className="first-entry__action">{enviando === 'proveedor' ? 'Guardando…' : 'Completar mi postulación'} <ArrowRight size={19} aria-hidden="true" /></span>
-        </button>
       </div>
 
-      <p className="first-entry__help">Si elegís proveedor, primero revisaremos tu postulación antes de incorporarte al ecosistema.</p>
+      <aside className="first-entry__manual-note"><Package size={22} aria-hidden="true" /><p><strong>¿Ofrecés mercadería?</strong> La incorporación de proveedores se coordina manualmente con el equipo Gesicom. Los servicios y la logística se gestionan por separado.</p></aside>
       {error && <p className="first-entry__error" role="alert">{error}</p>}
     </section>
   </main>;

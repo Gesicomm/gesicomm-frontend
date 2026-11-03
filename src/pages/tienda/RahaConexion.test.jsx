@@ -17,6 +17,22 @@ describe('Raha application', () => {
     expect(rahaService.guardar.mock.calls[0][0].datos.banco).toBe('Banco Itaú');
     expect(rahaService.guardar.mock.invocationCallOrder[0]).toBeLessThan(rahaService.contrato.mock.invocationCallOrder[0]);
   });
+  it('muestra el paso en curso y evita volver a guardar datos sin cambios', async () => {
+    let terminarGuardado, terminarDescarga;
+    rahaService.guardar.mockImplementation(() => new Promise(resolve => { terminarGuardado = resolve; }));
+    rahaService.contrato.mockImplementation(() => new Promise(resolve => { terminarDescarga = resolve; }));
+    render(<RahaConexion />);
+    fireEvent.change(await screen.findByLabelText('Banco'), { target: { value: 'Banco Itaú' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar contrato para firmar' }));
+    expect(screen.getByRole('button', { name: 'Guardando datos…' })).toBeDisabled();
+    await act(async () => terminarGuardado({ ...base, version: 1, datos: { banco: 'Banco Itaú' } }));
+    expect(screen.getByRole('button', { name: 'Preparando contrato…' })).toBeDisabled();
+    await act(async () => terminarDescarga());
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar contrato para firmar' }));
+    await waitFor(() => expect(rahaService.contrato).toHaveBeenCalledTimes(2));
+    expect(rahaService.guardar).toHaveBeenCalledTimes(1);
+    await act(async () => terminarDescarga());
+  });
   it('pide el contrato firmado en PDF y lo exige para enviar', async () => {
     render(<RahaConexion />);
     fireEvent.change(await screen.findByLabelText('Adjuntar Contrato marco firmado'), { target: { files: [new File(['x'], 'pagina1.jpg', { type: 'image/jpeg' })] } });

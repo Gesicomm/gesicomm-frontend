@@ -8,9 +8,9 @@
 .logistica-provider-copy { flex: 1; min-width: 0; }
 .logistica-provider-copy h3 { margin: 0 0 .5rem; font-size: 1.3rem; }
 .logistica-provider-copy p, .logistica-validation p { color: var(--vit-muted); line-height: 1.6; margin: 0; }
-.logistica-benefits { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; list-style: none; padding: 0; margin: 1rem 0 0; font-size: var(--ui-text-help, 0.875rem); }
-.logistica-benefits li { display: flex; align-items: center; gap: .5rem; }
-.logistica-benefits svg { flex-shrink: 0; color: var(--vit-accent-fg); }
+.logistica-tags { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; padding: 0; margin: 1rem 0 .75rem; }
+.logistica-tags li { display: inline-flex; align-items: center; min-height: 30px; max-width: 100%; padding: 5px 11px; border: 1px solid var(--vit-border); border-radius: 999px; background: var(--vit-surface, var(--color-surface-2)); color: var(--vit-text, var(--color-fg)); font-size: var(--ui-text-help, .875rem); line-height: 1.35; font-weight: 600; }
+.logistica-provider-copy .logistica-provider-data { color: var(--vit-muted); font-size: var(--ui-text-help, .875rem); line-height: 1.5; }
 .logistica-application, .logistica-validation { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem; border-top: 1px solid var(--vit-border); }
 .logistica-step { font-size: var(--ui-text-help, 0.875rem); font-weight: 600; color: var(--vit-muted); }
 .logistica-application p { margin: .4rem 0 0; font-size: .9rem; }
@@ -29,7 +29,7 @@
   .logistica-logo { flex-basis: 70px; height: 70px; }
   .logistica-provider-copy { flex-basis: calc(100% - 90px); }
   .logistica-provider-main > button { margin-left: auto; }
-  .logistica-benefits { display: grid; }
+  .logistica-tags { gap: .5rem; }
   .logistica-application, .logistica-validation { padding: 1rem; flex-direction: column; align-items: flex-start; }
   .logistica-tooltip { right: auto; left: 0; }
   .logistica-detail .raha { padding-inline: 1rem; }

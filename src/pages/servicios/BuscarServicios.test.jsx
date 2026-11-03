@@ -11,15 +11,16 @@ beforeEach(() => {
   API.get.mockResolvedValue({ data: { servicios: [], total: 0, pagina: 1, total_paginas: 0 } });
 });
 
-it('muestra ejemplos sin presentarlos como proveedores reales y permite filtrar', async () => {
+it('muestra el proveedor RAHA y no inventa perfiles cuando no hay publicaciones', async () => {
   render(<MemoryRouter><BuscarServicios independiente /></MemoryRouter>);
-  expect(await screen.findByText('Videos que cuentan tu historia')).toBeInTheDocument();
-  expect(screen.getByText('Vista de ejemplo')).toBeInTheDocument();
-  expect(screen.getAllByText('Ejemplo')).toHaveLength(3);
-  expect(screen.queryByRole('link', { name: /Contactar por WhatsApp/ })).not.toBeInTheDocument();
+  expect(await screen.findByText('Productos y logística para tu negocio')).toBeInTheDocument();
+  expect(screen.getByText('Proveedor Gesicom')).toBeInTheDocument();
+  expect(screen.queryByText('Vista de ejemplo')).not.toBeInTheDocument();
+  expect(screen.queryByText('Videos que cuentan tu historia')).not.toBeInTheDocument();
 
   fireEvent.change(screen.getByLabelText('Filtrar por tipo de proveedor'), { target: { value: 'envios' } });
-  await waitFor(() => expect(screen.getByText('Entregas simples, clientes felices')).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole('heading', { name: 'No encontramos servicios con esos filtros' })).toBeInTheDocument());
+  expect(screen.queryByText('Entregas simples, clientes felices')).not.toBeInTheDocument();
   expect(screen.queryByText('Videos que cuentan tu historia')).not.toBeInTheDocument();
 });
 

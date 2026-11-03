@@ -1,0 +1,16 @@
+export const RAHA_PROVEEDOR = {
+  id: 'raha',
+  nombre: 'RAHA',
+  categoria: 'productos_logistica',
+  especialidad: 'Productos, envíos y logística',
+  etiquetas: ['Productos', 'Envíos', 'Logística'],
+  oferta: 'Productos y logística para tu negocio',
+  descripcion: 'Productos de catálogo para abastecer tu tienda y opciones de logística para entregar tus pedidos.',
+  detalle_html: '<p>RAHA reúne un catálogo de productos y alternativas logísticas para ayudar a los negocios a abastecerse y gestionar sus entregas.</p><h2>Productos para tu tienda</h2><p>Explorá productos de catálogo disponibles para sumar a tu operación comercial.</p><h2>Envíos y logística</h2><p>Coordiná la preparación y entrega de pedidos con el equipo de RAHA.</p>',
+  beneficios: ['Más de 3.500 productos de catálogo', 'Entregas estimadas de 24 a 48 horas', 'Abastecimiento y logística para tu tienda'],
+  mostrarPortafolio: false,
+  imagenes: [{ storage_key: 'raha-logo', url: '/providers/raha.png', alt: 'RAHA, proveedor de productos y logística' }],
+  foto_url: '/providers/raha.png',
+  whatsapp: '',
+  proveedorGesicom: true,
+};

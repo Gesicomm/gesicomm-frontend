@@ -125,6 +125,16 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     planesService.miEstado.mockResolvedValue({ tiene_suscripcion_activa: true, suscripcion: tiendaBase.suscripcion });
   });
 
+  it('ubica Conexión a proveedor entre Analítica y Conexión con IA y abre Raha', async () => {
+    await cargarPantalla();
+    const tabs = within(screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true })).getAllByRole('tab');
+    const nombres = tabs.map(tab => tab.getAttribute('aria-label'));
+    expect(nombres.slice(-3)).toEqual(['Analítica', 'Conexión a proveedor', 'Conexión con IA']);
+    fireEvent.click(tabs.at(-2));
+    expect(await screen.findByText('Mercadería')).toBeVisible();
+    expect(screen.getByText('Fulfillment')).toBeVisible();
+  });
+
   it('edita tienda, documento/RUC, URL, contacto y analitica; guarda con el payload correcto', async () => {
     await cargarPantalla();
 

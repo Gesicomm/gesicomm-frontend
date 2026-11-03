@@ -7,6 +7,7 @@ import { notificationsService } from '../services/notifications.service';
 // administrador, y su bandeja es la sección de Abastecimiento.
 const RUTA_POR_TIPO = {
   ABASTECIMIENTO_COMPROBANTE_SUBIDO: '/abastecimiento',
+  PROVEEDOR_SOLICITUD_ACEPTADA: '/proveedor',
 };
 
 function extraerPrimerUrl(texto) {

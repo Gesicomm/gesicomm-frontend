@@ -628,7 +628,7 @@ function CourierAccessModal({ open, modo, courier, onClose, onGuardar }) {
     e.preventDefault();
     const cleanUsername = username.trim().toLowerCase();
     if (creando && !cleanUsername) return setError("El usuario es obligatorio.");
-    if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres.");
+    if ((!creando || password) && password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres.");
     if (password !== confirmPassword) return setError("Las contraseñas no coinciden.");
 
     setGuardando(true);
@@ -668,7 +668,7 @@ function CourierAccessModal({ open, modo, courier, onClose, onGuardar }) {
               className="form-input"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="courier_aex_01"
+              placeholder="courier_aex_01 o correo registrado"
               disabled={!creando}
               autoFocus={creando}
               required={creando}
@@ -676,28 +676,32 @@ function CourierAccessModal({ open, modo, courier, onClose, onGuardar }) {
           </label>
 
           <label style={styles.field}>
-            <span>Nueva contraseña</span>
+            <span>{creando ? "Contraseña inicial (opcional si ya tiene cuenta)" : "Nueva contraseña"}</span>
             <input
               className="form-input"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
+              placeholder={creando ? "Dejar en blanco para conservar su clave" : "Mínimo 6 caracteres"}
               autoFocus={!creando}
-              required
+              required={!creando}
             />
           </label>
 
           <label style={styles.field}>
-            <span>Confirmar contraseña</span>
+            <span>{creando ? "Confirmar contraseña inicial" : "Confirmar contraseña"}</span>
             <input
               className="form-input"
               type="password"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              required
+              required={!creando}
             />
           </label>
+
+          {creando && <p style={{ margin: 0, color: "var(--color-fg-muted)", fontSize: "14px", lineHeight: 1.5 }}>
+            Si el courier ya se registró, ingresá su correo y dejá las contraseñas vacías. Su clave personal se conserva.
+          </p>}
 
           {creando && (
             <label style={styles.toggle}>

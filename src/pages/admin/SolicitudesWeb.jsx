@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Mail, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import API from '../../services/api';
 import './solicitudesWeb.css';
 import CodigosPrueba from './CodigosPrueba';
 
-const TIPOS = { prueba: 'Prueba gratuita', vendedor: 'Empezar como vendedor', proveedor: 'Proveedor de servicios', demo: 'Demostración', consulta: 'Consulta comercial' };
+const TIPOS = { prueba: 'Prueba gratuita', vendedor: 'Empezar como vendedor', demo: 'Demostración', consulta: 'Consulta comercial' };
 
 export default function SolicitudesWeb() {
   const [verCodigos, setVerCodigos] = useState(false);
@@ -28,12 +27,11 @@ export default function SolicitudesWeb() {
   }, [tipo, page, revision]);
 
   return <main className="web-requests">
-    <header className="web-requests-heading"><div><h1>Solicitudes de la web</h1><p>Pruebas gratuitas, vendedores y proveedores que quieren empezar con Gesicom.</p></div>
+    <header className="web-requests-heading"><div><h1>Solicitudes de la web</h1><p>Pedidos de prueba, consultas comerciales y personas interesadas en vender con Gesicom.</p></div>
       <button type="button" onClick={() => setRevision(r => r + 1)} disabled={cargando}><RefreshCw size={18} /> Actualizar</button>
     </header>
     <button type="button" className="trial-code-toggle" aria-expanded={verCodigos} aria-controls="admin-trial-codes" onClick={() => setVerCodigos(v => !v)}>Códigos de prueba gratuita</button>
     {verCodigos && <div id="admin-trial-codes"><CodigosPrueba /></div>}
-    <p><Link to="/admin/solicitudes-proveedores">Revisar solicitudes de proveedores →</Link></p>
     <section className="web-requests-filters" aria-label="Filtros de solicitudes">
       <label>Tipo de solicitud<select value={tipo} onChange={e => { setTipo(e.target.value); setPage(1); }}><option value="">Todas las solicitudes</option>{Object.entries(TIPOS).filter(([key]) => key !== 'consulta').map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
       {!cargando && !error && <span>{resultado.total} solicitudes recibidas</span>}

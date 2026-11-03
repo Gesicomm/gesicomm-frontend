@@ -23,6 +23,8 @@ import {
   getCourierMe,
   getCourierMetodosPago,
   getCourierPedidos,
+  marcarPedidoDespachadoCourier,
+  marcarPedidoPreparadoCourier,
   marcarPedidoEntregadoCourier,
   reprogramarPedidoCourier,
   reportarNoEntregadoCourier,
@@ -63,7 +65,9 @@ function mapsUrl(pedido) {
 
 const TABS = [
   { key: "todos", label: "Todos", match: () => true },
-  { key: "por_entregar", label: "Por entregar", match: p => p.estado === "Despachado" },
+  { key: "por_preparar", label: "Por preparar", match: p => p.estado === "Confirmado" },
+  { key: "listos", label: "Listos para salir", match: p => p.estado === "Preparado" },
+  { key: "por_entregar", label: "En reparto", match: p => p.estado === "Despachado" },
   { key: "reprogramados", label: "Reprogramados", match: p => p.estado === "Reprogramado" },
   { key: "entregados", label: "Entregados", match: p => p.estado === "Entregado" },
   { key: "perdidos", label: "Perdidos", match: p => p.estado === "Perdido" },
@@ -141,10 +145,12 @@ export default function CourierPedidos() {
   }, [ordenados, tab, busqueda]);
 
   const resumen = useMemo(() => {
+    const enPreparacion = ordenados.filter(p => p.estado === "Confirmado" || p.estado === "Preparado");
     const porEntregar = ordenados.filter(p => p.estado === "Despachado" || p.estado === "Reprogramado");
     const entregados = ordenados.filter(p => p.estado === "Entregado");
     const perdidos = ordenados.filter(p => p.estado === "Perdido");
     return {
+      enPreparacion: enPreparacion.length,
       porEntregar: porEntregar.length,
       entregados: entregados.length,
       perdidos: perdidos.length,
@@ -193,20 +199,20 @@ export default function CourierPedidos() {
 
           <div className="cp-stats">
             <div className="cp-stat">
-              <strong>{resumen.porEntregar}</strong>
-              <span>Por entregar</span>
+              <strong>{resumen.enPreparacion}</strong>
+              <span>Pendientes de salida</span>
             </div>
-            <div className="cp-stat cp-stat-money">
-              <strong>{gs(resumen.aCobrar)}</strong>
-              <span>A cobrar</span>
+            <div className="cp-stat">
+              <strong>{resumen.porEntregar}</strong>
+              <span>En reparto</span>
             </div>
             <div className="cp-stat">
               <strong>{resumen.entregados}</strong>
               <span>Entregados</span>
             </div>
-            <div className="cp-stat">
-              <strong>{resumen.perdidos}</strong>
-              <span>Perdidos</span>
+            <div className="cp-stat cp-stat-money">
+              <strong>{gs(resumen.aCobrar)}</strong>
+              <span>A cobrar</span>
             </div>
           </div>
 
@@ -265,6 +271,8 @@ export default function CourierPedidos() {
               <PedidoCard
                 key={pedido.id}
                 pedido={pedido}
+                onPreparar={() => setAccion({ tipo: "preparar", pedido })}
+                onDespachar={() => setAccion({ tipo: "despachar", pedido })}
                 onEntregar={() => setAccion({ tipo: "entregar", pedido })}
                 onReprogramar={() => setAccion({ tipo: "reprogramar", pedido })}
                 onNoEntregado={() => setAccion({ tipo: "no_entregado", pedido })}
@@ -284,7 +292,7 @@ export default function CourierPedidos() {
   );
 }
 
-function PedidoCard({ pedido, onEntregar, onReprogramar, onNoEntregado }) {
+function PedidoCard({ pedido, onPreparar, onDespachar, onEntregar, onReprogramar, onNoEntregado }) {
   const [copiado, setCopiado] = useState(false);
   const nombreCliente = pedido.cliente || `${pedido.nombre_cliente || ""} ${pedido.apellido_cliente || ""}`.trim() || "Cliente";
   const telefono = pedido.telefono;
@@ -292,6 +300,8 @@ function PedidoCard({ pedido, onEntregar, onReprogramar, onNoEntregado }) {
   const maps = mapsUrl(pedido);
   const esActivo = pedido.estado !== "Entregado" && pedido.estado !== "Perdido";
   const badge = {
+    Confirmado: { label: "Por preparar", bg: "color-mix(in srgb, var(--color-primary) 14%, transparent)", fg: "var(--color-primary)" },
+    Preparado: { label: "Listo para salir", bg: "color-mix(in srgb, var(--color-accent) 14%, transparent)", fg: "var(--color-accent)" },
     Despachado: { label: "Despachado", bg: "color-mix(in srgb, var(--color-info) 14%, transparent)", fg: "var(--color-info)" },
     Reprogramado: { label: "Reprogramado", bg: "color-mix(in srgb, var(--color-warning) 14%, transparent)", fg: "var(--color-warning)" },
     Entregado: { label: "Entregado", bg: "color-mix(in srgb, var(--color-success) 14%, transparent)", fg: "var(--color-success)" },
@@ -393,16 +403,28 @@ function PedidoCard({ pedido, onEntregar, onReprogramar, onNoEntregado }) {
 
       {esActivo && (
         <div className="cp-actions">
-          <button type="button" className="cp-btn cp-btn-primary" onClick={onEntregar}>
-            <PackageCheck size={16} /> Entregado
-          </button>
-          <button type="button" className="cp-btn cp-btn-ghost" onClick={onReprogramar}>
-            <Calendar size={16} /> Reprogramar
-          </button>
-          {pedido.estado === "Despachado" && (
-            <button type="button" className="cp-btn cp-btn-danger-ghost" onClick={onNoEntregado}>
-              <PackageX size={16} /> No entregado
+          {pedido.estado === "Confirmado" ? (
+            <button type="button" className="cp-btn cp-btn-primary" onClick={onPreparar}>
+              <PackageCheck size={16} /> Preparar y cargar
             </button>
+          ) : pedido.estado === "Preparado" ? (
+            <button type="button" className="cp-btn cp-btn-primary" onClick={onDespachar}>
+              <Truck size={16} /> Despachar pedido
+            </button>
+          ) : (
+            <>
+              <button type="button" className="cp-btn cp-btn-primary" onClick={onEntregar}>
+                <PackageCheck size={16} /> Entregado
+              </button>
+              <button type="button" className="cp-btn cp-btn-ghost" onClick={onReprogramar}>
+                <Calendar size={16} /> Reprogramar
+              </button>
+              {(pedido.estado === "Despachado" || pedido.estado === "Reprogramado") && (
+                <button type="button" className="cp-btn cp-btn-danger-ghost" onClick={onNoEntregado}>
+                  <PackageX size={16} /> No entregado
+                </button>
+              )}
+            </>
           )}
         </div>
       )}
@@ -436,7 +458,11 @@ function AccionModal({ accion, metodos, onClose, onConfirmar }) {
     setError("");
     setGuardando(true);
     try {
-      if (accion.tipo === "entregar") {
+      if (accion.tipo === "preparar") {
+        await onConfirmar(() => marcarPedidoPreparadoCourier(accion.pedido.id));
+      } else if (accion.tipo === "despachar") {
+        await onConfirmar(() => marcarPedidoDespachadoCourier(accion.pedido.id));
+      } else if (accion.tipo === "entregar") {
         if (!metodoPagoId) throw new Error("Elegí el método de pago real.");
         await onConfirmar(() => marcarPedidoEntregadoCourier(accion.pedido.id, {
           metodo_pago_id: metodoPagoId,
@@ -462,16 +488,26 @@ function AccionModal({ accion, metodos, onClose, onConfirmar }) {
 
   const esEntrega = accion.tipo === "entregar";
   const esReprogramar = accion.tipo === "reprogramar";
+  const esPreparar = accion.tipo === "preparar";
+  const esDespachar = accion.tipo === "despachar";
+  const esCambioDeEtapa = esPreparar || esDespachar;
 
   return (
     <div className="cp-modal-overlay" onClick={onClose}>
       <form className="cp-modal" onSubmit={submit} onClick={e => e.stopPropagation()}>
         <h3 className="cp-modal-title">
-          {esEntrega ? "Confirmar entrega" : esReprogramar ? "Reprogramar pedido" : "Reportar no entregado"}
+          {esPreparar ? "Preparar y cargar pedido" : esDespachar ? "Despachar pedido" : esEntrega ? "Confirmar entrega" : esReprogramar ? "Reprogramar pedido" : "Reportar no entregado"}
         </h3>
         <p className="cp-modal-help">#{numeroPedidoVisible(accion.pedido)}</p>
 
-        {esEntrega ? (
+        {esCambioDeEtapa ? (
+          <div className="cp-stage-confirmation">
+            <strong>{esPreparar ? "¿Terminaste de preparar este pedido?" : "¿El pedido ya sale a reparto?"}</strong>
+            <p>{esPreparar
+              ? "Confirmá cuando los productos estén listos y cargados para el despacho."
+              : "Al confirmar, el pedido pasa a Despachado y queda listo para seguir su entrega."}</p>
+          </div>
+        ) : esEntrega ? (
           <>
             <div className="cp-expected-box">
               <span>Monto esperado</span>
@@ -516,7 +552,7 @@ function AccionModal({ accion, metodos, onClose, onConfirmar }) {
         <div className="cp-modal-actions">
           <button type="button" className="cp-btn cp-btn-ghost" onClick={onClose} disabled={guardando}>Cancelar</button>
           <button type="submit" className="cp-btn cp-btn-primary" disabled={guardando}>
-            {guardando ? "Guardando..." : "Confirmar"}
+            {guardando ? "Guardando..." : esPreparar ? "Confirmar preparación" : esDespachar ? "Despachar" : "Confirmar"}
           </button>
         </div>
       </form>

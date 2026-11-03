@@ -1,0 +1,13 @@
+.tn-provider-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  color: var(--vit-accent-fg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tn-provider-back:hover { text-decoration: underline; }
+.tn-provider-back:focus-visible { outline: 2px solid var(--vit-accent-fg); outline-offset: 4px; border-radius: 4px; }

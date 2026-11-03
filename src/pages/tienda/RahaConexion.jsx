@@ -113,18 +113,19 @@ function RahaSubida({ subida }) {
 
 // editable: se pueden quitar y subir; reemplazable: solo subir otro encima (solicitud ya enviada).
 // El contrato se arma con los datos de la solicitud: el comercio lo descarga, lo firma y lo sube escaneado.
-function RahaPasosContrato({ busy, onDescargarContrato }) {
+function RahaPasosContrato({ busy, descargaEstado, onDescargarContrato }) {
   return <div className="raha-contrato-pasos">
     <ol>
       <li>Descargalo: ya viene completado con los datos que cargaste arriba.</li>
       <li>Imprimilo, escribí la fecha y firmá donde dice «EL CLIENTE» (al final del contrato y del Anexo II).</li>
       <li>Escaneá todas las páginas en un solo PDF y subilo acá.</li>
     </ol>
-    <button type="button" className="raha-button" disabled={busy} onClick={onDescargarContrato}><Download size={16} /> Descargar contrato para firmar</button>
+    <button type="button" className="raha-button" disabled={busy} onClick={onDescargarContrato} aria-busy={Boolean(descargaEstado)}>{descargaEstado ? <Loader size={16} className="raha-spin" /> : <Download size={16} />} {descargaEstado || 'Descargar contrato para firmar'}</button>
+    {descargaEstado && <span className="raha-muted" role="status">{descargaEstado === 'Guardando datos…' ? 'Estamos guardando los datos del formulario antes de armar el contrato.' : 'Estamos preparando el archivo para descargar.'}</span>}
   </div>;
 }
 
-export function RahaDocumentos({ documentos = [], editable = false, reemplazable = editable, busy, subidas = {}, docErrores = {}, onUpload, onDelete, onDownload, onDescargarContrato }) {
+export function RahaDocumentos({ documentos = [], editable = false, reemplazable = editable, busy, descargaEstado = '', subidas = {}, docErrores = {}, onUpload, onDelete, onDownload, onDescargarContrato }) {
   return <section className="raha-section"><h3>Documentos <span className="raha-req" aria-hidden="true">*</span></h3>
     <div className="raha-docs">{TIPOS_DOC_RAHA.map(([tipo, label]) => {
       const docs = documentos.filter(doc => doc.tipo === tipo);
@@ -132,7 +133,7 @@ export function RahaDocumentos({ documentos = [], editable = false, reemplazable
       const tieneError = Boolean(docErrores[tipo]);
       return <div className={`raha-doc-group raha-doc-${tipo} ${tieneError ? 'raha-doc-group-error' : ''}`} key={tipo}>
         <div className="raha-doc-head"><strong>{label} <span className="raha-req" aria-hidden="true">*</span></strong><span className={docs.length ? 'raha-ok' : tieneError ? 'raha-error-badge' : 'raha-muted'}>{docs.length ? 'Adjuntado' : 'Obligatorio'}</span></div>
-        {tipo === 'contrato' && onDescargarContrato && <RahaPasosContrato busy={busy} onDescargarContrato={onDescargarContrato} />}
+        {tipo === 'contrato' && onDescargarContrato && <RahaPasosContrato busy={busy} descargaEstado={descargaEstado} onDescargarContrato={onDescargarContrato} />}
         <ul>{docs.map(doc => <li key={doc.id} className={subida?.estado === 'ok' ? 'raha-doc-nuevo' : ''}>
           <FileText size={16} /><span className="raha-filename">{doc.nombre}<small>{Math.ceil(doc.size / 1024)} KB</small></span>
           <button type="button" className="raha-icon" title={`Descargar ${doc.nombre}`} aria-label={`Descargar ${doc.nombre}`} disabled={busy} onClick={() => onDownload(doc)}><Download size={16} /></button>
@@ -160,6 +161,7 @@ function mensajeSubida(err) {
 export default function RahaConexion({ tienda, onSolicitudChange }) {
   const [solicitud, setSolicitud] = useState(null), [datos, setDatos] = useState({});
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
+  const [descargaEstado, setDescargaEstado] = useState('');
   const [error, setError] = useState(''), [mensaje, setMensaje] = useState(''), [consentimiento, setConsentimiento] = useState(false);
   const [subidas, setSubidas] = useState({});
   const [errores, setErrores] = useState({});
@@ -229,14 +231,17 @@ export default function RahaConexion({ tienda, onSolicitudChange }) {
       setError('Elegí el tipo de cuenta antes de descargar el contrato.');
       return;
     }
+    const datosCambiaron = Object.entries(datos).some(([key, value]) => String(value ?? '') !== String(solicitud.datos?.[key] ?? (key === 'moneda' ? 'PYG' : '')));
     action(async () => {
       let row;
-      if (editable) row = await rahaService.guardar({ datos, version: solicitud.version });
+      setDescargaEstado((editable && datosCambiaron) || tipoCuentaPendiente ? 'Guardando datos…' : 'Preparando contrato…');
+      if (editable && datosCambiaron) row = await rahaService.guardar({ datos, version: solicitud.version });
       else if (tipoCuentaPendiente) row = await rahaService.completarTipoCuenta({ tipo_cuenta: datos.tipo_cuenta, version: solicitud.version });
       if (row?.id) setSolicitud(row);
+      setDescargaEstado('Preparando contrato…');
       await rahaService.contrato();
       return row;
-    }, 'Contrato descargado. Imprimilo, firmalo y subilo escaneado en PDF.');
+    }, 'Contrato descargado. Imprimilo, firmalo y subilo escaneado en PDF.').finally(() => setDescargaEstado(''));
   }
 
   function handleChange(key, value) {
@@ -309,7 +314,7 @@ export default function RahaConexion({ tienda, onSolicitudChange }) {
   if (loading) return <div className="raha-loading"><Loader size={18} className="raha-spin" /> Cargando solicitud…</div>;
 
   return <div className="raha">
-    <div className="raha-status"><ShieldCheck size={20} /><div><strong>Solicitud de conexión Raha</strong>{solicitud && <span className={`raha-badge ${solicitud.estado}`}>{ESTADOS_RAHA[solicitud.estado]}</span>}</div>
+    <div className="raha-status"><ShieldCheck size={20} /><div><strong>Solicitud de afiliación a RAHA</strong>{solicitud && <span className={`raha-badge ${solicitud.estado}`}>{ESTADOS_RAHA[solicitud.estado]}</span>}</div>
       <button type="button" className="raha-icon" title="Actualizar solicitud" aria-label="Actualizar solicitud" disabled={busy} onClick={cargar}><RefreshCw size={16} /></button>
     </div>
     {solicitud && <RahaSemaforo estado={solicitud.estado} />}
@@ -335,7 +340,7 @@ export default function RahaConexion({ tienda, onSolicitudChange }) {
             {errores[key] && <span className="raha-error-msg" role="alert"><AlertCircle size={13} /> {errores[key]}</span>}
           </label>)}
         </div></section>)}
-        <RahaDocumentos documentos={solicitud.documentos} editable={editable} reemplazable={reemplazable} busy={busy} subidas={subidas} docErrores={docErrores} onUpload={subir} onDownload={doc => action(() => rahaService.documento(doc))} onDelete={quitar} onDescargarContrato={descargarContrato} />
+        <RahaDocumentos documentos={solicitud.documentos} editable={editable} reemplazable={reemplazable} busy={busy} descargaEstado={descargaEstado} subidas={subidas} docErrores={docErrores} onUpload={subir} onDownload={doc => action(() => rahaService.documento(doc))} onDelete={quitar} onDescargarContrato={descargarContrato} />
         {!editable && reemplazable && <p className="raha-muted">Los datos ya fueron enviados y no se pueden editar. Si Raha te pide otra copia de un documento, usá «Reemplazar archivo»: queda registrado en el seguimiento y le avisamos. PDF, JPG, PNG o WebP de hasta 8 MB.</p>}
         {editable && <section className="raha-section">
           <p className="raha-muted">Constancia y cédula en PDF, JPG, PNG o WebP; el contrato en PDF. Hasta 8 MB por archivo, uno por documento: si subís otro, reemplaza al anterior. Los documentos no se publican en tu tienda.</p>

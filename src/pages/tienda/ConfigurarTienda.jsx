@@ -91,7 +91,7 @@ const FORM_INICIAL = {
 };
 
 
-// Primero la configuración de la tienda; al final, la conexión y validación RAHA.
+// Secciones propias de la configuración de Mi negocio.
 const TABS = [
   {
     id: 'tienda',
@@ -137,7 +137,7 @@ const TABS_VALIDAS = new Set([...TABS.map(t => t.id), 'speedbox']);
 
 // Tabs cuyo contenido tiene su propio botón de guardado (componentes con su
 // propio servicio) — el footer de esta pantalla no los alcanza.
-const TABS_CON_GUARDADO_PROPIO = ['economica', 'pasarelas', 'speedbox'];
+const TABS_CON_GUARDADO_PROPIO = ['economica', 'pasarelas', 'raha', 'speedbox'];
 
 const VARIABLES_MENSAJE = [
   { variable: '{producto}', desc: 'Nombre del producto', ejemplo: 'Chomba Lacoste Clásica' },
@@ -250,6 +250,13 @@ export default function ConfigurarTienda() {
   const [avisoImagenCompartir, setAvisoImagenCompartir] = useState(null);
   const [subiendoFuente, setSubiendoFuente] = useState(false);
   const [errorFuente, setErrorFuente] = useState(null);
+
+  useEffect(() => {
+    const seccionAnterior = searchParams.get('tab');
+    if (seccionAnterior === 'buscar_proveedores') {
+      navigate('/mi-tienda?tab=raha', { replace: true });
+    }
+  }, [navigate, searchParams]);
 
   // El access token nunca vuelve del backend (ni cifrado) — solo un flag
   // de si ya hay uno guardado (tienda.meta_access_token_configurado).

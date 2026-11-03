@@ -45,7 +45,10 @@ function TutorialProvider({ modulo, search, children }) {
   const tab = tabSolicitada === 'speedbox' ? 'raha' : tabSolicitada;
   const seccion = modulo.clave === 'negocio' ? (SECCIONES_NEGOCIO[tab] ? tab : 'tienda') : null;
   const nombre = seccion ? SECCIONES_NEGOCIO[seccion] : modulo.nombre;
-  const url = seccion ? videos[`mi-negocio.${seccion}`] || videos['modulo.negocio'] : videos[`modulo.${modulo.clave}`];
+  const url = seccion ? videos[`mi-negocio.${seccion}`] || videos['modulo.negocio']
+    : modulo.clave === 'buscar_proveedores'
+      ? videos['modulo.buscar_proveedores'] || videos['mi-negocio.raha'] || videos['modulo.negocio']
+      : videos[`modulo.${modulo.clave}`];
   const video = analizarVideo(url);
   const minimizado = estado === 'minimized';
 

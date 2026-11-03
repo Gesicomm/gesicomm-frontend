@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Clock3, Package, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RefreshCw, ShieldCheck } from 'lucide-react';
 import { rahaService } from '../../services/rahaService';
 import RahaConexion, { ESTADOS_RAHA } from './RahaConexion';
 import SpeedboxConfig from './SpeedboxConfig';
@@ -9,7 +9,8 @@ import './conexion-logistica.css';
 const PROVEEDORES = [{
   id: 'raha', nombre: 'Rahá', logo: '/providers/raha.png',
   descripcion: 'Productos y logística para abastecer tu tienda y entregar a tus clientes.',
-  beneficios: [{ icono: Package, texto: 'Más de 3.500 productos' }, { icono: Clock3, texto: 'Entregas de 24 a 48 horas' }],
+  etiquetas: ['Mercadería', 'Logística', 'Almacenamiento', 'Fulfillment', 'Envíos y entregas'],
+  datoDestacado: 'Más de 3.500 productos · Entregas estimadas de 24 a 48 horas',
   obtenerSolicitud: rahaService.obtener, estados: ESTADOS_RAHA,
   solicitudAprobada: solicitud => solicitud?.estado === 'aprobada',
   Solicitud: RahaConexion, Validacion: SpeedboxConfig,
@@ -42,15 +43,16 @@ function ProveedorLogistico({ proveedor, tienda, abrirValidacion = false, onEsta
     <div className="logistica-provider-main">
       <div className="logistica-logo"><img src={proveedor.logo} alt={proveedor.nombre} /></div>
       <div className="logistica-provider-copy"><h3>{proveedor.nombre}</h3><p>{proveedor.descripcion}</p>
-        <ul className="logistica-benefits">{proveedor.beneficios.map(({ icono: Icono, texto }) => <li key={texto}><Icono size={17} />{texto}</li>)}</ul>
+        <ul className="logistica-tags" aria-label="Servicios que ofrece">{proveedor.etiquetas.map(etiqueta => <li key={etiqueta}>{etiqueta}</li>)}</ul>
+        <p className="logistica-provider-data">{proveedor.datoDestacado}</p>
       </div>
       <button type="button" className="raha-icon" aria-label={`Actualizar estado de ${proveedor.nombre}`} disabled={loading} onClick={() => { cargar(); onEstadoChange?.(); }}><RefreshCw size={16} /></button>
     </div>
     {error && <p className="raha-alert raha-error" role="alert">{error}</p>}
     <div className="logistica-application">
-      <div><span className="logistica-step">1. Solicitud de conexión</span><p role="status">{loading ? 'Consultando solicitud…' : proveedor.estados[solicitud?.estado] || 'Estado no disponible'}</p></div>
+      <div><span className="logistica-step">1. Solicitud de afiliación</span><p role="status">{loading ? 'Consultando solicitud…' : proveedor.estados[solicitud?.estado] || 'Estado no disponible'}</p></div>
       <button type="button" className="raha-button raha-primary" disabled={loading || !solicitud} aria-expanded={vista === 'solicitud'} onClick={() => setVista(vista === 'solicitud' ? 'resumen' : 'solicitud')}>
-        {solicitud?.estado === 'borrador' ? `Conectarme a ${proveedor.nombre}` : 'Ver solicitud'}<ArrowRight size={16} />
+        {solicitud?.estado === 'borrador' ? `Iniciar afiliación a ${proveedor.nombre}` : 'Ver solicitud'}<ArrowRight size={16} />
       </button>
     </div>
     {vista === 'solicitud' && <div className="logistica-detail"><Solicitud tienda={tienda} onSolicitudChange={actualizarSolicitud} /></div>}

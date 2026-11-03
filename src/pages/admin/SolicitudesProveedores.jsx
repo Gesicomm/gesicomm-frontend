@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import API from '../../services/api';
 import DocumentosProveedorAdmin from './DocumentosProveedorAdmin';
 import CatalogoProveedorRevision from './CatalogoProveedorRevision';
+import SolicitudesCouriersAdmin from './SolicitudesCouriersAdmin';
 import './solicitudesWeb.css';
 import './solicitudesProveedores.css';
 
@@ -23,6 +24,7 @@ export default function SolicitudesProveedores() {
   const [nota, setNota] = useState('');
   const [errorRevision, setErrorRevision] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [bandeja, setBandeja] = useState('proveedores');
   const enviando = useRef(false);
   const notaRef = useRef(null);
   const avisoRef = useRef(null);
@@ -72,6 +74,8 @@ export default function SolicitudesProveedores() {
   };
 
   return <main className="web-requests provider-requests">
+    <nav className="provider-status-filters provider-requests__switch" aria-label="Tipo de postulación"><button type="button" aria-pressed={bandeja === 'proveedores'} onClick={() => setBandeja('proveedores')}><span>Proveedores</span></button><button type="button" aria-pressed={bandeja === 'couriers'} onClick={() => setBandeja('couriers')}><span>Couriers</span></button></nav>
+    {bandeja === 'couriers' ? <SolicitudesCouriersAdmin /> : <>
     <header className="web-requests-heading">
       <div><span className="provider-eyebrow">Red de colaboradores</span><h1>Solicitudes de proveedores</h1><p>Revisá quién quiere ofrecer sus servicios en Gesicom y registrá tu decisión.</p></div>
       <div className="provider-header-actions"><Link to="/admin/vista-proveedor">Ver vista del proveedor <ArrowRight size={17} /></Link><button type="button" disabled={cargando || guardando} onClick={() => { setDecision(null); setRevision(r => r + 1); }}><RefreshCw size={18} /> Actualizar</button></div>
@@ -81,7 +85,7 @@ export default function SolicitudesProveedores() {
         <span>{label}</span><strong>{cargando || error ? '—' : resultado.resumen[key] ?? 0}</strong>
       </button>)}
     </nav>
-    <p className="provider-review-help">Al aceptar un perfil completo, se crea un borrador en el espacio del proveedor. Podrá preparar y publicar sus servicios. La aceptación no otorga certificación ni envía un aviso automático.</p>
+    <p className="provider-review-help">Cada solicitud llega con los datos y el acuerdo firmado por el postulante. Revisá el expediente y descargá el contrato antes de aceptar o rechazar. Al aceptar, se crea un borrador de servicio para que el proveedor lo complete y publique.</p>
     {aviso && <p className="provider-notice" role="status" tabIndex={-1} ref={avisoRef}>{aviso}</p>}
     {cargando ? <p role="status">Cargando postulaciones…</p> : error ? <div role="alert"><p>{error}</p><button type="button" onClick={() => setRevision(r => r + 1)}>Reintentar</button></div> : !resultado.solicitudes.length ?
       <div className="web-requests-empty"><Inbox size={32} /><h2>No hay solicitudes {ESTADOS[estado].toLowerCase()}</h2><p>Las postulaciones enviadas desde “Ofrecer mis servicios” llegan a esta bandeja para su revisión.</p></div> : <>
@@ -94,9 +98,9 @@ export default function SolicitudesProveedores() {
           <dl className="provider-data">
             <div><dt>Correo electrónico</dt><dd><a href={`mailto:${s.email}`}>{s.email}</a></dd></div>
             <div><dt>WhatsApp</dt><dd>{s.datos.whatsapp || 'No indicado'}</dd></div>
-            {s.datos.tipo_postulante !== 'empresa' && <div><dt>Cédula / documento</dt><dd>{s.datos.documento || 'No indicado'}</dd></div>}
+            {s.datos.tipo_postulante !== 'empresa' && <><div><dt>Cédula / documento</dt><dd>{s.datos.documento || 'No indicado'}</dd></div><div><dt>Domicilio contractual</dt><dd>{s.datos.domicilio || 'No indicado'}</dd></div></>}
             <div><dt>RUC</dt><dd>{s.datos.ruc || 'No indicado'}</dd></div>
-            {s.datos.tipo_postulante === 'empresa' && <><div><dt>Razón social</dt><dd>{s.datos.razon_social || 'No indicada'}</dd></div><div><dt>Dirección de la empresa</dt><dd>{s.datos.direccion_empresa || 'No indicada'}</dd></div></>}
+            {s.datos.tipo_postulante === 'empresa' && <><div><dt>Razón social</dt><dd>{s.datos.razon_social || 'No indicada'}</dd></div><div><dt>Domicilio legal de la empresa</dt><dd>{s.datos.direccion_empresa || 'No indicado'}</dd></div><div><dt>Representante</dt><dd>{s.nombre}</dd></div><div><dt>Documento del representante</dt><dd>{s.datos.documento_representante || 'No indicado'}</dd></div><div><dt>Cargo o calidad</dt><dd>{s.datos.cargo_representante || 'No indicado'}</dd></div></>}
           </dl>
           <DocumentosProveedorAdmin solicitud={s} onActualizar={() => setRevision(r => r + 1)} />
           {s.datos.descripcion && <div className="provider-description"><h3>Qué ofrece</h3><p>{s.datos.descripcion}</p></div>}
@@ -118,5 +122,6 @@ export default function SolicitudesProveedores() {
     {/* Un escalón más abajo que las postulaciones de arriba: allá se decide
         quién entra, acá qué mercadería trae cada proveedor aceptado. */}
     <CatalogoProveedorRevision />
+    </>}
   </main>;
 }

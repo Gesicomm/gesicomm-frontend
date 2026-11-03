@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import ServicioDetalle from './ServicioDetalle';
 
-it('abre la ficha de ejemplo con descripción, portafolio y beneficios', () => {
-  render(<MemoryRouter initialEntries={['/buscar-servicios/ejemplo-video']}><Routes><Route path="/buscar-servicios/:id" element={<ServicioDetalle />} /></Routes></MemoryRouter>);
-  expect(screen.getByRole('heading', { name: 'Videos que cuentan tu historia' })).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'Portafolio' })).toBeInTheDocument();
-  expect(screen.getAllByText('Comunicación directa')).toHaveLength(1);
+it('abre la ficha del proveedor RAHA', () => {
+  render(<MemoryRouter initialEntries={['/buscar-servicios/raha']}><Routes><Route path="/buscar-servicios/:id" element={<ServicioDetalle />} /></Routes></MemoryRouter>);
+  expect(screen.getByRole('heading', { name: 'Productos y logística para tu negocio' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Iniciar afiliación con RAHA' })).toHaveAttribute('href', '/mi-tienda/proveedores/raha/conectar');
+  expect(screen.queryByText('Videos que cuentan tu historia')).not.toBeInTheDocument();
   expect(screen.queryByRole('link', { name: /WhatsApp/ })).not.toBeInTheDocument();
 });

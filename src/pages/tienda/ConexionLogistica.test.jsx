@@ -17,10 +17,12 @@ beforeEach(() => {
 it('shows the provider and opens its existing document application on demand', async () => {
   render(<ConexionLogistica tienda={{ id: 1, nombre: 'Mi negocio' }} />);
   expect(screen.getByAltText('Rahá')).toHaveAttribute('src', '/providers/raha.png');
-  expect(screen.getByText('Más de 3.500 productos')).toBeVisible();
-  expect(screen.getByText('Entregas de 24 a 48 horas')).toBeVisible();
+  for (const etiqueta of ['Mercadería', 'Logística', 'Almacenamiento', 'Fulfillment', 'Envíos y entregas']) {
+    expect(screen.getByText(etiqueta)).toBeVisible();
+  }
+  expect(screen.getByText('Más de 3.500 productos · Entregas estimadas de 24 a 48 horas')).toBeVisible();
   expect(screen.queryByLabelText('Razón social')).not.toBeInTheDocument();
-  const conectar = await screen.findByRole('button', { name: 'Conectarme a Rahá' });
+  const conectar = await screen.findByRole('button', { name: 'Iniciar afiliación a Rahá' });
   await waitFor(() => expect(conectar).toBeEnabled());
   fireEvent.click(conectar);
   expect(await screen.findByLabelText('Razón social')).toHaveValue('Mi negocio');
@@ -64,7 +66,7 @@ it('keeps validation locked when the status cannot be fetched and allows retryin
   expect(screen.getByRole('button', { name: 'Validar cuenta' })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado de Rahá' }));
   await screen.findByText('Trámite no iniciado');
-  expect(screen.getByRole('button', { name: 'Conectarme a Rahá' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Iniciar afiliación a Rahá' })).toBeEnabled();
 });
 
 it('opens legacy validation links after approval and allows production only when all checks passed', async () => {
