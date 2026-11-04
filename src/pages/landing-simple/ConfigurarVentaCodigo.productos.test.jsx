@@ -45,6 +45,17 @@ function bloqueFicha(titulo) {
 }
 
 describe('Presentación de los productos del lienzo', () => {
+  it('permite ocultar el filtro Categoría desde Categorías y conserva las colecciones', () => {
+    montar();
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Categorías' }));
+    expect(screen.getByText('Filtros del catálogo')).toBeTruthy();
+    const categoria = screen.getByRole('checkbox', { name: 'Categoría' });
+    expect(categoria.checked).toBe(true);
+    fireEvent.click(categoria);
+    expect(datosPreview().venta.catalogo_filtros.categoria).toBe(false);
+    expect(datosPreview().venta.catalogo_filtros.etiqueta).toBeUndefined();
+  });
+
   it('guarda un contador común solo en seis fichas seleccionadas y lo recupera al reabrir', async () => {
     const productos = Array.from({ length: 7 }, (_, i) => ({ ...catalogo.productos[0], id: i + 1, slug: `producto-${i + 1}`, nombre: i === 0 ? 'Cacerola' : `Producto ${i + 1}` }));
     const guardar = montar(null, { productos, combos: [] });

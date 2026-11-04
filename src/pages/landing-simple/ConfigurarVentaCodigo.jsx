@@ -3246,7 +3246,26 @@ export default function ConfigurarVentaCodigo({
               )}
 
               {seccionConfig === 'categorias' && (
-                <Bloque
+                <>
+                  <Bloque
+                    titulo="Filtros del catálogo"
+                    ayuda="Elegí qué controles se muestran en la página de productos. Las colecciones siguen disponibles si ocultás Categoría."
+                    verDonde={() => verDonde('catalogo', null)}
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {FILTROS_CATALOGO.map(([key, label]) => (
+                        <label key={key} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-fg">
+                          <span>{label}</span>
+                          <input
+                            type="checkbox"
+                            checked={filtrosCatalogo?.[key] !== false}
+                            onChange={() => alternarFiltroCatalogo(key)}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </Bloque>
+                  <Bloque
                   titulo="Organizar productos"
                   ayuda="Marcá varios productos y ponelos en oferta (con descuento, badge y contador) o en una colección como “Ofertas del día”. Elegir una categoría también cambia la vista previa."
                   verDonde={() => verDonde('categoria', null)}
@@ -3273,7 +3292,8 @@ export default function ConfigurarVentaCodigo({
                       setVistaPreview('categoria');
                     }}
                   />
-                </Bloque>
+                  </Bloque>
+                </>
               )}
 
               {seccionConfig === 'checkout' && (
