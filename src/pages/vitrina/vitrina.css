@@ -1031,7 +1031,7 @@
 }
 
 /* ─── Chip de margen ──────────────────────────────────────────────────────
-   Tres estados semánticos reales, no "verde siempre". Vender al costo
+   Costo pendiente y tres estados de ganancia, no "verde siempre". Vender al costo
    (ganancia 0) salía en verde de éxito, que es exactamente el mensaje
    contrario al que corresponde: ahí va ámbar. El % se muestra sobre el
    precio de venta, mismo criterio que los reportes de rentabilidad. */
@@ -1075,6 +1075,12 @@
   background: color-mix(in srgb, var(--color-warning) 10%, transparent);
   border-color: color-mix(in srgb, var(--color-warning) 24%, transparent);
   color: var(--color-warning);
+}
+
+.vit-margen--pendiente {
+  background: var(--vit-surface);
+  border-color: var(--vit-border);
+  color: var(--vit-muted);
 }
 
 .vit-margen--perdida {
@@ -1130,15 +1136,19 @@
   text-decoration: none;
 }
 
-.vit-card-action:hover {
+.vit-card-action:not(:disabled):hover {
   color: var(--vit-accent-fg);
+}
+
+.vit-card-action:disabled {
+  cursor: not-allowed;
 }
 
 .vit-card-action-arrow {
   transition: transform var(--transition-fast);
 }
 
-.vit-card-action:hover .vit-card-action-arrow {
+.vit-card-action:not(:disabled):hover .vit-card-action-arrow {
   transform: translateX(3px);
 }
 

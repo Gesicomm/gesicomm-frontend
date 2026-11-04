@@ -125,6 +125,27 @@ describe('VitrinaGrid Component', () => {
     });
   });
 
+  it('distingue costo sin cargar de costo cero en productos propios', async () => {
+    vitrinaService.catalogoPaginado.mockResolvedValue({
+      items: [
+        { id: 1, tipo: 'producto', nombre: 'Gorro sin costo cargado', origen_catalogo: 'PROPIO', precio_costo: null, precio_base: 129000, precio_efectivo: 129000, creado_por: 42 },
+        { id: 2, tipo: 'producto', nombre: 'Hacha con costo cero', origen_catalogo: 'PROPIO', precio_costo: 0, precio_base: 0, precio_efectivo: 259000, creado_por: 42 },
+      ], categorias: [], proveedores: [], total: 2, totalPages: 1,
+    });
+    renderWithRouter(<VitrinaGrid />);
+
+    const gorro = (await screen.findByText('Gorro sin costo cargado')).closest('.vit-card');
+    expect(within(gorro).getByText('Sin cargar')).toBeInTheDocument();
+    expect(within(gorro).getByText('Ganancia pendiente')).toBeInTheDocument();
+    expect(within(gorro).getByRole('button', { name: /Analizar margen/ })).toBeDisabled();
+
+    const hacha = screen.getByText('Hacha con costo cero').closest('.vit-card');
+    expect(within(hacha).getByText('Gs 0')).toBeInTheDocument();
+    expect(within(hacha).getByText('Gs 259.000')).toBeInTheDocument();
+    expect(within(hacha).getByText('100%')).toBeInTheDocument();
+    expect(within(hacha).getByRole('button', { name: /Analizar margen/ })).toBeEnabled();
+  });
+
   it('avisa cuántos productos de la tienda se venden sin ganancia y los filtra en el backend', async () => {
     vitrinaService.catalogoPaginado.mockResolvedValueOnce({
       items: [{ id: 1, tipo: 'producto', nombre: 'Producto de Prueba', precio_base: 50000, precio_efectivo: 50000 }],

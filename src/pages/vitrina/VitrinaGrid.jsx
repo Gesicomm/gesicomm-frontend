@@ -57,6 +57,10 @@ function getItemKey(item) {
   return `${item.tipo}:${item.id}`;
 }
 
+function costoSinCargar(item) {
+  return item.tipo === 'producto' && item.origen_catalogo === 'PROPIO' && item.precio_costo === null;
+}
+
 /* ─── Componente: editor de precio ───────────────────────────────────── */
 function PrecioEditable({ item, onGuardar }) {
   const [valor, setValor]       = useState(item.precio_efectivo ?? '');
@@ -93,6 +97,7 @@ function PrecioEditable({ item, onGuardar }) {
 
   const numValor = parseFloat(valor) || 0;
   const ganancia = numValor - (item.precio_base || 0);
+  const faltaCosto = costoSinCargar(item);
   // Margen sobre el precio de venta (mismo criterio que los reportes de
   // rentabilidad), no markup sobre el costo: es el que se compara contra
   // el margen objetivo del negocio.
@@ -100,7 +105,7 @@ function PrecioEditable({ item, onGuardar }) {
 
   // Ganancia cero no es un éxito: significa que estás vendiendo al costo.
   // Verde solo cuando de verdad ganás; ámbar cuando empatás.
-  const estado = ganancia > 0 ? 'ok' : ganancia < 0 ? 'perdida' : 'empate';
+  const estado = faltaCosto ? 'pendiente' : ganancia > 0 ? 'ok' : ganancia < 0 ? 'perdida' : 'empate';
 
   return (
     <div className="vit-price-editor" onClick={(e) => e.stopPropagation()}>
@@ -123,11 +128,11 @@ function PrecioEditable({ item, onGuardar }) {
 
       <div className={`vit-margen vit-margen--${estado}`}>
         <span className="vit-margen-label">
-          {estado === 'perdida' ? 'Pérdida' : estado === 'empate' ? 'Sin ganancia' : 'Ganancia'}
+          {faltaCosto ? 'Ganancia pendiente' : estado === 'perdida' ? 'Pérdida' : estado === 'empate' ? 'Sin ganancia' : 'Ganancia'}
         </span>
         <span className="vit-margen-valor">
-          Gs {formatGs(ganancia)}
-          {ganancia !== 0 && (
+          {faltaCosto ? 'Cargá el costo' : `Gs ${formatGs(ganancia)}`}
+          {!faltaCosto && ganancia !== 0 && (
             <span className="vit-margen-pct">{margenPct.toFixed(0)}%</span>
           )}
         </span>
@@ -273,6 +278,7 @@ function MarcasLanding({ item, onQuitar }) {
 
 function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, filtro, seleccionable = true, onQuitarMarca = null }) {
   const esCombo = item.tipo === 'combo';
+  const faltaCosto = costoSinCargar(item);
   const esAdmin = usuarioActual?.rol === 'administrador';
   const esCreadorDirecto = usuarioActual?.id != null && item.creado_por != null && Number(item.creado_por) === Number(usuarioActual.propietarioId || usuarioActual.id);
   const mostrarStock = esCreadorDirecto && !esCombo && item.stock != null;
@@ -378,7 +384,7 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
         <dl className="vit-costos">
           <div className="vit-costo-fila">
             <dt>Te cuesta</dt>
-            <dd>Gs {formatGs(item.precio_base)}</dd>
+            <dd>{faltaCosto ? 'Sin cargar' : `Gs ${formatGs(item.precio_base)}`}</dd>
           </div>
           {item.precio_minimo ? (
             <div className="vit-costo-fila">
@@ -398,6 +404,8 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
           <button
             type="button"
             className="vit-card-action"
+            disabled={faltaCosto}
+            title={faltaCosto ? 'Ingresá 0 si el producto no tiene costo y guardalo para analizar el margen.' : undefined}
             onClick={(e) => { e.stopPropagation(); onVerSensibilidad(item); }}
           >
             <BarChart3 size={13} />

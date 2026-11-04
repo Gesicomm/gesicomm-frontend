@@ -2546,6 +2546,7 @@ export default function ProductForm() {
                         id="prod-precio-costo"
                         className="w-full"
                         value={field.value}
+                        placeholder="Sin cargar"
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         disabled={esDolarVal}

@@ -89,6 +89,7 @@ describe('Alta de producto por secciones', () => {
     await montar();
     completarIdentidad();
     completarPrecio();
+    expect(document.getElementById('prod-precio-costo')).toHaveAttribute('placeholder', 'Sin cargar');
     fireEvent.change(document.getElementById('prod-precio-costo'), { target: { value: '0' } });
     guardar();
     await screen.findByText('Catálogo guardado');
