@@ -2220,7 +2220,7 @@ export default function ProductForm() {
             </div>
           </div>
           
-          <details hidden className="prod-advanced-import" ref={importarIaRef} onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
+          <details className="prod-advanced-import" ref={importarIaRef} onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
             <summary><Bot size={18} aria-hidden="true" /> Importar con IA <ChevronDown size={16} aria-hidden="true" /></summary>
             <div className="ia-import-block">
               <div className="ia-import-heading"><h2>Importar un producto con IA</h2><button type="button" className="btn-icon" aria-label="Cerrar importación con IA" onClick={() => { importarIaRef.current.open = false; importarIaRef.current.querySelector('summary')?.focus(); }}><X size={18} /></button></div>
