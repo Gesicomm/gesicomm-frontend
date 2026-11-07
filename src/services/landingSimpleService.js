@@ -63,6 +63,7 @@ export const landingSimpleService = {
   eliminarHeroImagen: (id) => API.delete(`/mis-landings-simples/${id}/hero-imagen`).then(r => r.data),
 
   generarTokenMCP: (tiendaId) => API.post('/mcp/token', { tienda_id: tiendaId }).then(r => r.data),
+  revocarTokenMCP: () => API.post('/mcp/token/revocar').then(r => r.data),
   estadoConexionMCP: () => API.get('/mcp/estado').then(r => r.data),
 
   // Fotos propias de la ficha (antes/después, ingredientes...). Las landings
