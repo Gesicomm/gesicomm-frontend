@@ -16,7 +16,12 @@ import { landingSimpleService } from '../../../services/landingSimpleService';
 import { apiBaseURL } from '../../../utils/apiBase';
 
 export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoProductos = false }) {
-  const [token, setToken] = useState('');
+  const landingId = landing?.id || '';
+  const tiendaId = tienda?.id || landing?.tienda_id || '';
+  const tokenStorageKey = `gesicomm:mcp-token:${tiendaId || 'cuenta'}`;
+  const [token, setToken] = useState(() => {
+    try { return window.sessionStorage.getItem(tokenStorageKey) || ''; } catch { return ''; }
+  });
   const [cargandoToken, setCargandoToken] = useState(false);
   const [copiado, setCopiado] = useState('');
   const [error, setError] = useState('');
@@ -24,8 +29,9 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
   const [sincronizando, setSincronizando] = useState(false);
   const [conexion, setConexion] = useState({ cargando: true, conectada: false });
 
-  const landingId = landing?.id || '';
-  const tiendaId = tienda?.id || landing?.tienda_id || '';
+  useEffect(() => {
+    try { setToken(window.sessionStorage.getItem(tokenStorageKey) || ''); } catch { setToken(''); }
+  }, [tokenStorageKey]);
   useEffect(() => {
     let activo = true;
     let consultaEnCurso = false;
@@ -64,6 +70,9 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
       const res = await landingSimpleService.generarTokenMCP(tiendaId);
       if (res?.token) {
         setToken(res.token);
+        try { window.sessionStorage.setItem(tokenStorageKey, res.token); } catch {
+          setError('El token se generó, pero el navegador no pudo conservarlo al recargar. Copiá los datos de conexión antes de salir.');
+        }
       } else {
         setError('No se pudo generar el token.');
       }
@@ -150,7 +159,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
             </h3>
             <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] font-semibold ${conexion.conectada ? 'border-success/40 bg-success/10 text-success' : 'border-border bg-surface-2 text-fg-muted'}`} role="status">
               {conexion.conectada ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-              {conexion.cargando ? 'Consultando conexión…' : conexion.conectada ? 'Conexión verificada' : 'Sin conectar · opcional'}
+              {conexion.cargando ? 'Consultando conexión…' : conexion.conectada ? 'Conexión verificada' : token ? 'Token listo · falta conectar el asistente' : 'Sin conectar · opcional'}
             </span>
             <p className="text-base text-fg-muted mt-0.5">
               {modoProductos ? 'Compartí las fotos con tu asistente y pedile que prepare la ficha. Una vez guardada, la vas a encontrar en tu catálogo.' : 'Conectá tu IA una sola vez para todas tus tiendas. Al editar una página o cargar productos, elegí en qué tienda trabajar.'}
