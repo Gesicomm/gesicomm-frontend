@@ -372,7 +372,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 : 'text-fg-muted hover:text-fg hover:bg-surface'
             }`}
           >
-            <Terminal size={13} /> Claude Code en mi computadora
+            <Terminal size={13} /> Claude Code · Terminal
           </button>
           <button
             type="button"
@@ -383,7 +383,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 : 'text-fg-muted hover:text-fg hover:bg-surface'
             }`}
           >
-            <Code2 size={13} /> Claude Desktop
+            <Code2 size={13} /> Claude Desktop · aplicación
           </button>
           <button
             type="button"
@@ -394,7 +394,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 : 'text-fg-muted hover:text-fg hover:bg-surface'
             }`}
           >
-            <Terminal size={13} /> Codex en mi computadora
+            <Terminal size={13} /> Codex · Terminal
           </button>
           <button
             type="button"
@@ -405,14 +405,22 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 : 'text-fg-muted hover:text-fg hover:bg-surface'
             }`}
           >
-            <Bot size={13} /> Codex Desktop
+            <Bot size={13} /> Codex Desktop · aplicación
           </button>
         </div>
 
         <p className="text-base text-fg-muted">
           {tabCliente === 'web'
             ? 'Elegí esta opción si usás Lovable u otro asistente desde una página web. Gesicom se conecta directamente; no hace falta instalar programas en tu computadora.'
-            : 'Elegí esta opción si el asistente está instalado en tu computadora. Seguí los pasos para agregar Gesicom y reiniciá el asistente al terminar.'}
+            : tabCliente === 'claude'
+              ? 'Elegí esta opción si abrís Claude Code desde una terminal. Copiá el texto de abajo y pegalo en la terminal.'
+              : tabCliente === 'codex'
+                ? 'Elegí esta opción si abrís Codex desde una terminal. Copiá el texto de abajo y pegalo en la terminal.'
+                : tabCliente === 'desktop'
+                  ? 'Elegí esta opción si abrís Claude como una aplicación con ventanas y menús. Vas a agregar Gesicom desde sus ajustes.'
+                  : tabCliente === 'codex-desktop'
+                    ? 'Elegí esta opción si abrís Codex como una aplicación con ventanas y menús. Vas a agregar Gesicom a su archivo de configuración.'
+                    : 'Elegí esta opción si el asistente está instalado en tu computadora. Seguí los pasos para agregar Gesicom y reiniciá el asistente al terminar.'}
         </p>
 
         {!token && (
