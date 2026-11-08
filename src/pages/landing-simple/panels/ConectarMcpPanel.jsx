@@ -28,7 +28,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
   const [copiado, setCopiado] = useState('');
   const [error, setError] = useState('');
   const [mensajeExito, setMensajeExito] = useState('');
-  const [tabCliente, setTabCliente] = useState('lovable');
+  const [tabCliente, setTabCliente] = useState('web');
   const [sincronizando, setSincronizando] = useState(false);
   const [conexion, setConexion] = useState({ cargando: true, conectada: false });
 
@@ -69,7 +69,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
   })();
 
   async function handleGenerarToken(esRegeneracion = false) {
-    if (esRegeneracion && !window.confirm('¿Querés regenerar el token MCP? El token anterior quedará invalidado y tendrás que actualizar la URL en tu asistente o en Lovable.')) {
+    if (esRegeneracion && !window.confirm('¿Querés crear una nueva clave de conexión? La anterior dejará de funcionar y tendrás que volver a conectar tu asistente.')) {
       return;
     }
     setError('');
@@ -80,14 +80,14 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
       if (res?.token) {
         setToken(res.token);
         try { window.sessionStorage.setItem(tokenStorageKey, res.token); } catch {
-          setError('El token se generó, pero el navegador no pudo conservarlo al recargar. Copiá los datos de conexión antes de salir.');
+          setError('No se pudo guardar la clave en este navegador. Copiá los datos de conexión antes de salir.');
         }
         if (esRegeneracion) {
-          setMensajeExito('Token regenerado exitosamente. Las conexiones con el token anterior ya no tienen validez.');
+          setMensajeExito('Nueva clave creada. Volvé a conectar tu asistente con los datos actualizados.');
           setTimeout(() => setMensajeExito(''), 5000);
         }
       } else {
-        setError('No se pudo generar el token.');
+        setError('No se pudo crear la clave de conexión.');
       }
     } catch (err) {
       setError(err?.response?.data?.error || err?.message || 'Error al conectar con el servidor.');
@@ -97,7 +97,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
   }
 
   async function handleRevocarToken() {
-    if (!window.confirm('¿Seguro que querés revocar el token MCP? El asistente o Lovable perderá el acceso inmediatamente hasta que generes una nueva clave.')) {
+    if (!window.confirm('¿Seguro que querés quitar el acceso? Tu asistente dejará de conectarse hasta que vuelvas a configurarlo.')) {
       return;
     }
     setError('');
@@ -108,7 +108,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
       setToken('');
       try { window.sessionStorage.removeItem(tokenStorageKey); } catch {}
       setConexion({ cargando: false, conectada: false });
-      setMensajeExito('Token revocado correctamente. Las conexiones anteriores quedaron sin acceso.');
+      setMensajeExito('Se quitó el acceso del asistente.');
       setTimeout(() => setMensajeExito(''), 5000);
     } catch (err) {
       setError(err?.response?.data?.error || err?.message || 'Error al revocar el token.');
@@ -138,7 +138,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
   }
 
   const paquete = new URL('/conectores/gesicomm-mcp-1.4.0.tgz', window.location.origin).href;
-  const urlLovable = `${apiUrl}/mcp/sse?token=${token || '<TU_TOKEN>'}`;
+  const urlRemota = `${apiUrl}/mcp/sse?token=${token || '<TU_TOKEN>'}`;
   const comandoClaude = `claude mcp add gesicomm -e GESICOMM_API_URL=${apiUrl} -e GESICOMM_TOKEN=${token || '<TU_TOKEN>'}${landingId ? ` -e GESICOMM_LANDING_ID=${landingId}` : ''} -- npx -y ${paquete}`;
   const comandoCodex = `codex mcp add gesicomm --env GESICOMM_API_URL=${apiUrl} --env GESICOMM_TOKEN=${token || '<TU_TOKEN>'}${landingId ? ` --env GESICOMM_LANDING_ID=${landingId}` : ''} -- npx -y ${paquete}`;
 
@@ -166,7 +166,7 @@ GESICOMM_API_URL = "${apiUrl}"
 GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID = "${landingId}"` : ''}`;
 
   const datosConexion = {
-    lovable: urlLovable,
+    web: urlRemota,
     generico: jsonDesktop,
     desktop: jsonDesktop,
     claude: comandoClaude,
@@ -175,16 +175,16 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
   }[tabCliente];
 
   const pasosConexion = {
-    lovable: [
-      'En Lovable, abrí los Ajustes de tu proyecto o la sección de Integraciones → Servidores MCP.',
-      'Hacé clic en "Agregar Servidor MCP" y seleccioná transporte "SSE" (Server-Sent Events).',
-      'En el campo de URL del Servidor, pegá la dirección HTTPS completa copiada arriba (ya incluye tu clave segura de acceso).',
-      'Guardá la conexión. Lovable se conectará inmediatamente de forma remota a Gesicomm sin necesidad de abrir terminales ni ejecutar nada local.',
+    web: [
+      'En Lovable u otro asistente que usás en internet, abrí Ajustes o Integraciones y buscá la opción para conectar una herramienta o servicio.',
+      'Elegí agregar una conexión e indicá que Gesicom es un servicio disponible por internet, si te lo pregunta.',
+      'Pegá la dirección que copiaste arriba en el campo que te indique la plataforma y guardá los cambios.',
+      'Si no encontrás dónde agregar la conexión, buscá “conectar herramientas” o “integraciones” en la ayuda de ese asistente.',
     ],
     generico: [
-      'Abrí los ajustes de tu asistente y buscá Servidores MCP. Elegí agregar un servidor local.',
-      'Si acepta JSON, pegá los datos que copiaste. Si ves campos separados, ingresá el comando, los argumentos y las variables del cuadro.',
-      'Guardá y volvé a abrir tu asistente. Necesitás un cliente compatible con MCP por stdio.',
+      'Abrí los ajustes de la aplicación donde usás tu asistente y buscá la opción para agregar una conexión.',
+      'Pegá los datos copiados arriba en la configuración de nuevas conexiones.',
+      'Guardá los cambios y volvé a abrir la aplicación.',
     ],
     desktop: [
       'En Claude Desktop, abrí Configuración → Desarrollador → Editar configuración.',
@@ -218,14 +218,14 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
           </div>
           <div>
             <h3 className="font-semibold text-fg text-base flex items-center gap-2">
-              Conectar una IA por MCP
+              Conectar un asistente
               <span className="rounded-full bg-success/10 px-2 py-0.5 text-[13px] font-medium text-success border border-success/30">
                 Oficial
               </span>
             </h3>
             <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] font-semibold ${conexion.conectada ? 'border-success/40 bg-success/10 text-success' : 'border-border bg-surface-2 text-fg-muted'}`} role="status">
               {conexion.conectada ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-              {conexion.cargando ? 'Consultando conexión…' : conexion.conectada ? 'Conexión verificada' : token ? 'Token listo · falta conectar el asistente' : 'Sin conectar · opcional'}
+              {conexion.cargando ? 'Revisando conexión…' : conexion.conectada ? 'Asistente conectado' : token ? 'Clave lista · falta conectar el asistente' : 'Todavía no conectado · opcional'}
             </span>
             <p className="text-base text-fg-muted mt-0.5">
               {modoProductos ? 'Compartí las fotos con tu asistente y pedile que prepare la ficha. Una vez guardada, la vas a encontrar en tu catálogo.' : 'Conectá tu IA una sola vez para todas tus tiendas. Al editar una página o cargar productos, elegí en qué tienda trabajar.'}
@@ -261,13 +261,13 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
         </div>
       )}
 
-      {/* Paso 1: Token */}
+      {/* Paso 1: Clave de conexión */}
       <div className="rounded-xl border border-border bg-surface-2/60 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-bold uppercase tracking-wider text-fg-muted">1 · Autorizá el acceso a tu cuenta</span>
           {token && (
             <span className="flex items-center gap-1 text-[13px] text-success font-medium">
-              <CheckCircle2 size={13} /> Token generado (30 días)
+              <CheckCircle2 size={13} /> Clave creada (30 días)
             </span>
           )}
         </div>
@@ -275,7 +275,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
         {!token ? (
           <div>
             <p className="text-base text-fg-muted mb-3 leading-relaxed">
-              Generá una clave de acceso para tu asistente o plataforma en la nube (Lovable). Sirve para las tiendas de tu cuenta y la incluimos automáticamente en la configuración del siguiente paso.
+              Creá una clave para que tu asistente pueda conectarse a tus tiendas. La vas a copiar junto con las instrucciones del siguiente paso.
             </p>
             <button
               type="button"
@@ -284,7 +284,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50 transition-colors"
             >
               <Sparkles size={14} />
-              {cargandoToken ? 'Generando token...' : 'Generar Token de Acceso MCP'}
+              {cargandoToken ? 'Creando clave...' : 'Crear clave de conexión'}
             </button>
           </div>
         ) : (
@@ -294,7 +294,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 type="password"
                 readOnly
                 value={token}
-                aria-label="Token de acceso MCP"
+                aria-label="Clave de conexión"
                 className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 font-mono text-base text-fg select-all"
               />
               <button
@@ -310,7 +310,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 onClick={() => handleGenerarToken(true)}
                 disabled={cargandoToken}
                 className="inline-flex h-9 items-center gap-1 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-fg hover:border-border-strong hover:bg-surface-2 disabled:opacity-50"
-                title="Generar un nuevo token de acceso (revoca el anterior)"
+                title="Crear una clave nueva; la anterior dejará de funcionar"
               >
                 <RefreshCw size={14} className={cargandoToken ? 'animate-spin' : ''} />
                 Regenerar
@@ -320,14 +320,14 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 onClick={handleRevocarToken}
                 disabled={cargandoToken}
                 className="inline-flex h-9 items-center gap-1 rounded-lg border border-danger/40 bg-danger/10 px-3 text-sm font-semibold text-danger hover:bg-danger/20 disabled:opacity-50"
-                title="Revocar el token actual inmediatamente"
+                title="Quitar el acceso actual"
               >
                 <Trash2 size={14} />
                 Revocar
               </button>
             </div>
             <p className="text-sm text-fg-muted">
-              Al regenerar o revocar, las conexiones anteriores quedarán invalidadas de inmediato en el servidor.
+              Si creás una clave nueva o quitás el acceso, tendrás que volver a conectar el asistente.
             </p>
           </div>
         )}
@@ -335,21 +335,21 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
       {/* Paso 2: Conectar con tu cliente */}
       <div className="rounded-xl border border-border bg-surface-2/60 p-4 space-y-3">
-        <span className="text-sm font-bold uppercase tracking-wider text-fg-muted">2 · Elegí la plataforma o asistente</span>
+        <span className="text-sm font-bold uppercase tracking-wider text-fg-muted">2 · ¿Dónde usás tu asistente?</span>
 
         {/* Selector de Cliente */}
         <div className="flex flex-wrap gap-2 border-b border-border pb-2">
           <button
             type="button"
-            onClick={() => setTabCliente('lovable')}
-            aria-pressed={tabCliente === 'lovable'}
+            onClick={() => setTabCliente('web')}
+            aria-pressed={tabCliente === 'web'}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-              tabCliente === 'lovable'
+              tabCliente === 'web'
                 ? 'bg-primary text-primary-fg'
                 : 'text-fg-muted hover:text-fg hover:bg-surface'
             }`}
           >
-            <Globe size={13} /> Lovable / Remoto (HTTPS)
+            <Globe size={13} /> En la web (Lovable u otro asistente)
           </button>
           <button
             type="button"
@@ -361,7 +361,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 : 'text-fg-muted hover:text-fg hover:bg-surface'
             }`}
           >
-            Cualquier cliente MCP (stdio)
+            Otro asistente en mi computadora
           </button>
           <button
             type="button"
@@ -372,7 +372,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 : 'text-fg-muted hover:text-fg hover:bg-surface'
             }`}
           >
-            <Terminal size={13} /> Claude Code (CLI)
+            <Terminal size={13} /> Claude Code en mi computadora
           </button>
           <button
             type="button"
@@ -394,7 +394,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 : 'text-fg-muted hover:text-fg hover:bg-surface'
             }`}
           >
-            <Terminal size={13} /> OpenAI Codex (CLI)
+            <Terminal size={13} /> Codex en mi computadora
           </button>
           <button
             type="button"
@@ -410,9 +410,9 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
         </div>
 
         <p className="text-base text-fg-muted">
-          {tabCliente === 'lovable'
-            ? 'Conectá Lovable de forma remota y segura a través de HTTPS mediante Server-Sent Events (SSE). No requiere ejecutar terminales ni proxies.'
-            : 'Hacé estos pasos en la computadora donde usás tu asistente. Necesitás Node.js instalado para iniciar la conexión local.'}
+          {tabCliente === 'web'
+            ? 'Elegí esta opción si usás Lovable u otro asistente desde una página web. Gesicom se conecta directamente; no hace falta instalar programas en tu computadora.'
+            : 'Elegí esta opción si el asistente está instalado en tu computadora. Seguí los pasos para agregar Gesicom y reiniciá el asistente al terminar.'}
         </p>
 
         {!token && (
@@ -423,7 +423,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
         <section className="min-w-0 space-y-4 rounded-xl border-2 border-primary bg-surface p-4 sm:p-5">
           <h3 className="text-xl font-bold">
-            {tabCliente === 'lovable' ? '3 · Copiá tu URL de conexión remota (HTTPS / SSE)' : '3 · Copiá tus datos de conexión'}
+            {tabCliente === 'web' ? '3 · Copiá la dirección para conectar' : '3 · Copiá los datos para conectar'}
           </h3>
           <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
             <pre className="m-0 whitespace-pre-wrap break-all font-mono text-sm leading-relaxed text-fg">{datosConexion}</pre>
@@ -434,7 +434,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
             onClick={() => copiarTexto(datosConexion, tabCliente)}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-primary-fg disabled:opacity-50"
           >
-            <Copy size={16} /> {copiado === tabCliente ? 'Copiado' : tabCliente === 'lovable' ? 'Copiar URL para Lovable' : 'Copiar datos de conexión'}
+            <Copy size={16} /> {copiado === tabCliente ? 'Copiado' : tabCliente === 'web' ? 'Copiar dirección de conexión' : 'Copiar datos de conexión'}
           </button>
         </section>
 
@@ -447,11 +447,11 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
         <div className="rounded-lg border border-border bg-surface p-4">
           <h3 className="text-lg font-semibold">5 · Probá la conexión</h3>
-          <p className="mt-2 text-base">Abrí un chat nuevo y preguntá <strong>“¿Qué tiendas tengo en Gesicom?”</strong>. Si aparecen tus tiendas, ya podés elegir una por su nombre y pedir tu primer cambio.</p>
+          <p className="mt-2 text-base">Abrí un chat nuevo y pedile <strong>“Usá Gesicom para listar las tiendas de mi cuenta”</strong>. Si responde con tus tiendas, la conexión está funcionando; luego elegí una y pedile un cambio concreto.</p>
           <details className="mt-2">
             <summary className="cursor-pointer text-sm font-semibold">Mi asistente no encuentra Gesicom</summary>
             <p className="mt-2 text-base">
-              Revisá que Gesicom aparezca entre los servidores MCP de tu asistente. Si falta, volvé a copiar la configuración después de generar la clave, guardá los cambios y reiniciá el asistente. Si estás conectando desde Lovable, asegurate de haber seleccionado el transporte SSE y haber incluido el parámetro del token en la URL.
+              Revisá que Gesicom aparezca conectado en los ajustes de tu asistente. Si lo usás en la web, asegurate de haber agregado la dirección completa que copiaste. Si está instalado en tu computadora, guardá los cambios y reinicialo.
             </p>
           </details>
         </div>

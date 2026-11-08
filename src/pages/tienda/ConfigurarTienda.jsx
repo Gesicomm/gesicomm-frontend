@@ -128,10 +128,10 @@ const TABS = [
     titulo: 'Medición y píxeles',
     desc: 'Conectá Meta, Google y TikTok para medir lo que pasa en tus landings.',
   },
-  { id: 'raha', label: 'Conexión a proveedor', icono: ShieldCheck, titulo: 'Conexión a proveedor', desc: 'Conectá tu tienda con nuestros proveedores.', separadorLargo: true },
+  { id: 'raha', label: 'Proveedor', icono: ShieldCheck, titulo: 'Conexión a proveedor', desc: 'Conectá tu tienda con nuestros proveedores.', separadorLargo: true },
 ];
 
-TABS.push({ id: 'ia', label: 'Conexión con IA', icono: Sparkles, titulo: 'Conexión con IA', desc: 'Opcional: conectá tu asistente para crear y editar tu e-commerce.' });
+TABS.push({ id: 'ia', label: 'Conexión IA', icono: Sparkles, titulo: 'Conexión con IA', desc: 'Opcional: conectá tu asistente para crear y editar tu e-commerce.' });
 
 const TABS_VALIDAS = new Set([...TABS.map(t => t.id), 'speedbox']);
 
