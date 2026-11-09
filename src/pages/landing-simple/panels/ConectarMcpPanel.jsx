@@ -453,6 +453,50 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
           </ol>
         </section>
 
+        {tabCliente === 'web' && (
+          <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+            <div>
+              <h3 className="text-lg font-bold">Si estás llenando “Custom connector”</h3>
+              <p className="mt-1 text-base text-fg-muted">
+                Usá estos datos en los campos que aparecen en esa pantalla. Para esta conexión, la prueba consulta tus tiendas con la clave que creaste arriba.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
+                <p className="text-sm font-semibold text-fg">API base URL</p>
+                <code className="mt-1 block break-all text-sm text-fg">{apiUrl}</code>
+                <button type="button" onClick={() => copiarTexto(apiUrl, 'api-base')}
+                  className="mt-2 min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-fg hover:bg-surface-2">
+                  {copiado === 'api-base' ? 'Copiado' : 'Copiar dirección base'}
+                </button>
+              </div>
+              <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
+                <p className="text-sm font-semibold text-fg">Authentication</p>
+                <p className="mt-1 text-base text-fg">Elegí “Bearer token”.</p>
+                <p className="mt-1 text-sm text-fg-muted">Credential label: escribí “Clave de Gesicom”.</p>
+                <p className="mt-1 text-sm text-fg-muted">Cuando te pida “API Key”, copiá la clave del paso 1. Pegá solo la clave, sin agregar “Bearer”.</p>
+              </div>
+              <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
+                <p className="text-sm font-semibold text-fg">Test request · Method</p>
+                <p className="mt-1 text-base text-fg">GET</p>
+              </div>
+              <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
+                <p className="text-sm font-semibold text-fg">Test request · Path</p>
+                <code className="mt-1 block text-sm text-fg">/mcp/tiendas</code>
+                <button type="button" onClick={() => copiarTexto('/mcp/tiendas', 'api-test-path')}
+                  className="mt-2 min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-fg hover:bg-surface-2">
+                  {copiado === 'api-test-path' ? 'Copiado' : 'Copiar ruta de prueba'}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-base text-fg-muted">
+              “Documentation URL” es opcional; dejalo vacío. No uses “/mcp/sse” como ruta de prueba: esa dirección sirve para otro tipo de conexión y no para comprobar la clave en este formulario.
+            </p>
+          </section>
+        )}
+
         <div className="rounded-lg border border-border bg-surface p-4">
           <h3 className="text-lg font-semibold">5 · Probá la conexión</h3>
           <p className="mt-2 text-base">Abrí un chat nuevo y pedile <strong>“Usá Gesicom para listar las tiendas de mi cuenta”</strong>. Si responde con tus tiendas, la conexión está funcionando; luego elegí una y pedile un cambio concreto.</p>
