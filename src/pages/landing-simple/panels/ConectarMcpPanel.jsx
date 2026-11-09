@@ -138,6 +138,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
   }
 
   const paquete = new URL('/conectores/gesicomm-mcp-1.4.0.tgz', window.location.origin).href;
+  const urlRemotaLimpia = `${apiUrl}/mcp/sse`;
   const urlRemota = `${apiUrl}/mcp/sse?token=${token || '<TU_TOKEN>'}`;
   const comandoClaude = `claude mcp add gesicomm -e GESICOMM_API_URL=${apiUrl} -e GESICOMM_TOKEN=${token || '<TU_TOKEN>'}${landingId ? ` -e GESICOMM_LANDING_ID=${landingId}` : ''} -- npx -y ${paquete}`;
   const comandoCodex = `codex mcp add gesicomm --env GESICOMM_API_URL=${apiUrl} --env GESICOMM_TOKEN=${token || '<TU_TOKEN>'}${landingId ? ` --env GESICOMM_LANDING_ID=${landingId}` : ''} -- npx -y ${paquete}`;
@@ -176,10 +177,11 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
   const pasosConexion = {
     web: [
-      'En Lovable u otro asistente que usás en internet, abrí Ajustes o Integraciones y buscá la opción para conectar una herramienta o servicio.',
-      'Elegí agregar una conexión e indicá que Gesicom es un servicio disponible por internet, si te lo pregunta.',
-      'Pegá la dirección que copiaste arriba en el campo que te indique la plataforma y guardá los cambios.',
-      'Si no encontrás dónde agregar la conexión, buscá “conectar herramientas” o “integraciones” en la ayuda de ese asistente.',
+      'En tu agente o plataforma (en Ajustes, Conectores, Integraciones o Servidores MCP), agregá un servidor remoto.',
+      'En el campo de dirección (Server URL), pegá la dirección completa copiada arriba (ya incluye tu clave segura en el parámetro del enlace).',
+      'Si el formulario te pide método o tipo de conexión, seleccioná GET (o transporte SSE / Server-Sent Events).',
+      'En la opción de Autenticación (Authentication), seleccioná obligatoriamente "No authentication" (o "Sin autenticación" / "No auth"): la clave ya viaja incluida en la URL.',
+      'Guardá o agregá la conexión. Tu agente se conectará de inmediato y podrá acceder a las herramientas de Gesicom.',
     ],
     generico: [
       'Abrí los ajustes de la aplicación donde usás tu asistente y buscá la opción para agregar una conexión.',
@@ -349,7 +351,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
                 : 'text-fg-muted hover:text-fg hover:bg-surface'
             }`}
           >
-            <Globe size={13} /> En la web (Lovable u otro asistente)
+            <Globe size={13} /> En la web / Remoto (MCP)
           </button>
           <button
             type="button"
@@ -411,7 +413,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
         <p className="text-base text-fg-muted">
           {tabCliente === 'web'
-            ? 'Elegí esta opción si usás Lovable u otro asistente desde una página web. Gesicom se conecta directamente; no hace falta instalar programas en tu computadora.'
+            ? 'Elegí esta opción para conectar cualquier agente que uses por internet. La conexión es directa por HTTP/SSE (GET); no requiere instalar nada en tu computadora.'
             : tabCliente === 'claude'
               ? 'Elegí esta opción si abrís Claude Code desde una terminal. Copiá el texto de abajo y pegalo en la terminal.'
               : tabCliente === 'codex'
@@ -431,9 +433,10 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
         <section className="min-w-0 space-y-4 rounded-xl border-2 border-primary bg-surface p-4 sm:p-5">
           <h3 className="text-xl font-bold">
-            {tabCliente === 'web' ? '3 · Copiá la dirección para conectar' : '3 · Copiá los datos para conectar'}
+            {tabCliente === 'web' ? '3 · Dirección y parámetros de conexión' : '3 · Copiá los datos para conectar'}
           </h3>
           <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-fg-muted mb-1 block">Server URL (dirección completa con clave)</span>
             <pre className="m-0 whitespace-pre-wrap break-all font-mono text-sm leading-relaxed text-fg">{datosConexion}</pre>
           </div>
           <button
@@ -444,6 +447,26 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
           >
             <Copy size={16} /> {copiado === tabCliente ? 'Copiado' : tabCliente === 'web' ? 'Copiar dirección de conexión' : 'Copiar datos de conexión'}
           </button>
+
+          {tabCliente === 'web' && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 pt-1">
+              <div className="rounded-lg border border-border bg-surface-2 p-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Método HTTP</span>
+                <p className="mt-1 text-base font-semibold text-fg">GET</p>
+                <p className="text-sm text-fg-muted">Transporte SSE (Server-Sent Events)</p>
+              </div>
+              <div className="rounded-lg border border-border bg-surface-2 p-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Autenticación</span>
+                <p className="mt-1 text-base font-semibold text-primary-text">No authentication</p>
+                <p className="text-sm text-fg-muted">Marcá "No authentication" o "Sin autenticación". No uses OAuth.</p>
+              </div>
+              <div className="rounded-lg border border-border bg-surface-2 p-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Clave integrada</span>
+                <p className="mt-1 text-base font-semibold text-fg">Incluida en el enlace</p>
+                <p className="text-sm text-fg-muted">La URL ya lleva tu clave en ?token=... para autorizar la sesión.</p>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="space-y-2 rounded-xl border border-border bg-surface p-4">
@@ -454,47 +477,44 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
         </section>
 
         {tabCliente === 'web' && (
-          <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-            <div>
-              <h3 className="text-lg font-bold">Si estás llenando “Custom connector”</h3>
-              <p className="mt-1 text-base text-fg-muted">
-                Usá estos datos en los campos que aparecen en esa pantalla. Para esta conexión, la prueba consulta tus tiendas con la clave que creaste arriba.
+          <details className="rounded-xl border border-border bg-surface p-4">
+            <summary className="cursor-pointer text-base font-semibold text-fg hover:text-primary-text">
+              ¿Tu plataforma pide la clave en un campo separado (Bearer token / API key)?
+            </summary>
+            <div className="mt-3 space-y-3">
+              <p className="text-base text-fg-muted">
+                Si el formulario de tu asistente te pide la dirección limpia por un lado y la clave por el otro (o si estás configurando un conector REST personalizado), usá estos valores:
               </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Server URL (sin token)</span>
+                  <code className="mt-1 block break-all text-sm text-fg font-mono">{urlRemotaLimpia}</code>
+                  <button type="button" onClick={() => copiarTexto(urlRemotaLimpia, 'url-limpia')}
+                    className="mt-2 min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-fg hover:bg-surface">
+                    {copiado === 'url-limpia' ? 'Copiado' : 'Copiar URL sin token'}
+                  </button>
+                </div>
+                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Clave de acceso (API Key / Bearer Token)</span>
+                  <code className="mt-1 block break-all text-sm text-fg font-mono">{token ? `${token.slice(0, 16)}…${token.slice(-10)}` : 'Generá tu clave en el paso 1'}</code>
+                  <button type="button" disabled={!token} onClick={() => copiarTexto(token, 'token-solo')}
+                    className="mt-2 min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-fg hover:bg-surface disabled:opacity-50">
+                    {copiado === 'token-solo' ? 'Copiado' : 'Copiar solo la clave'}
+                  </button>
+                </div>
+                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Método</span>
+                  <p className="mt-1 text-base font-semibold text-fg">GET</p>
+                  <p className="text-sm text-fg-muted">Si pide ruta de prueba (Test Path), ingresá: <code className="text-xs bg-surface px-1 py-0.5 rounded border border-border">/mcp/tiendas</code></p>
+                </div>
+                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Encabezado si lo pide</span>
+                  <code className="mt-1 block break-all text-sm text-fg font-mono">Authorization: Bearer &lt;TU_CLAVE&gt;</code>
+                  <p className="text-sm text-fg-muted mt-1">Elegí "Bearer token" si ofrece selector de autenticación.</p>
+                </div>
+              </div>
             </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
-                <p className="text-sm font-semibold text-fg">API base URL</p>
-                <code className="mt-1 block break-all text-sm text-fg">{apiUrl}</code>
-                <button type="button" onClick={() => copiarTexto(apiUrl, 'api-base')}
-                  className="mt-2 min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-fg hover:bg-surface-2">
-                  {copiado === 'api-base' ? 'Copiado' : 'Copiar dirección base'}
-                </button>
-              </div>
-              <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
-                <p className="text-sm font-semibold text-fg">Authentication</p>
-                <p className="mt-1 text-base text-fg">Elegí “Bearer token”.</p>
-                <p className="mt-1 text-sm text-fg-muted">Credential label: escribí “Clave de Gesicom”.</p>
-                <p className="mt-1 text-sm text-fg-muted">Cuando te pida “API Key”, copiá la clave del paso 1. Pegá solo la clave, sin agregar “Bearer”.</p>
-              </div>
-              <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
-                <p className="text-sm font-semibold text-fg">Test request · Method</p>
-                <p className="mt-1 text-base text-fg">GET</p>
-              </div>
-              <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
-                <p className="text-sm font-semibold text-fg">Test request · Path</p>
-                <code className="mt-1 block text-sm text-fg">/mcp/tiendas</code>
-                <button type="button" onClick={() => copiarTexto('/mcp/tiendas', 'api-test-path')}
-                  className="mt-2 min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-fg hover:bg-surface-2">
-                  {copiado === 'api-test-path' ? 'Copiado' : 'Copiar ruta de prueba'}
-                </button>
-              </div>
-            </div>
-
-            <p className="text-base text-fg-muted">
-              “Documentation URL” es opcional; dejalo vacío. No uses “/mcp/sse” como ruta de prueba: esa dirección sirve para otro tipo de conexión y no para comprobar la clave en este formulario.
-            </p>
-          </section>
+          </details>
         )}
 
         <div className="rounded-lg border border-border bg-surface p-4">
