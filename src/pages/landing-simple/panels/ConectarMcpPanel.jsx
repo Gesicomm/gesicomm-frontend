@@ -137,7 +137,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
     }
   }
 
-  const paquete = new URL('/conectores/gesicomm-mcp-1.4.0.tgz', window.location.origin).href;
+  const paquete = new URL('/conectores/gesicomm-mcp-1.5.0.tgz', window.location.origin).href;
   const urlRemotaLimpia = `${apiUrl}/mcp/sse`;
   const urlRemota = `${apiUrl}/mcp/sse?token=${token || '<TU_TOKEN>'}`;
   const comandoClaude = `claude mcp add gesicomm -e GESICOMM_API_URL=${apiUrl} -e GESICOMM_TOKEN=${token || '<TU_TOKEN>'}${landingId ? ` -e GESICOMM_LANDING_ID=${landingId}` : ''} -- npx -y ${paquete}`;
