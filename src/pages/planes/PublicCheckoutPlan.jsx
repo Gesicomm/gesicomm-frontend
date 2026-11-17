@@ -1,6 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, CreditCard, Loader, ShieldCheck, AlertCircle, KeyRound, Rocket } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Lock,
+  Loader,
+  AlertCircle,
+  Tag,
+  X,
+} from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { leerRefAfiliado } from '../../services/afiliadosService';
 import { formatMoneda } from '../../utils/currency';
@@ -11,7 +20,7 @@ import './planes.css';
 function formatPrecioPlan(plan) {
   if (!plan) return '';
   if (plan.moneda === 'USD') {
-    return `$${Number(plan.precio || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    return `US$${Number(plan.precio || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   }
   return formatMoneda(plan.precio);
 }
@@ -28,11 +37,18 @@ function normalizarPlan(plan) {
 }
 
 const MASCOT_POSES = [
-  { id: 'guia', src: '/brand/mascot/guia-transparente.png', label: 'Saludar', icon: '👋' },
-  { id: 'pensando', src: '/brand/mascot/pensando-transparente.png', label: 'Pensar', icon: '💡' },
-  { id: 'analizando', src: '/brand/mascot/analizando-transparente.png', label: 'Analizar', icon: '🔍' },
-  { id: 'confirmando', src: '/brand/mascot/confirmando-transparente.png', label: 'Celebrar', icon: '🎉' },
-  { id: 'alerta', src: '/brand/mascot/alerta-transparente.png', label: 'Alerta', icon: '⚡' },
+  { id: 'guia', src: '/brand/mascot/guia-transparente.png', alt: 'Mascota de Gesicom' },
+  { id: 'pensando', src: '/brand/mascot/pensando-transparente.png', alt: 'Mascota de Gesicom pensando' },
+  { id: 'analizando', src: '/brand/mascot/analizando-transparente.png', alt: 'Mascota de Gesicom analizando' },
+  { id: 'confirmando', src: '/brand/mascot/confirmando-transparente.png', alt: 'Mascota de Gesicom confirmando' },
+  { id: 'alerta', src: '/brand/mascot/alerta-transparente.png', alt: 'Mascota de Gesicom en alerta' },
+];
+
+const DEFAULT_BENEFITS = [
+  'Herramientas de la ruta elegida',
+  'Tutoriales técnicos del sistema',
+  'Soporte técnico por WhatsApp en horario laboral',
+  'Activación inmediata',
 ];
 
 export default function PublicCheckoutPlan() {
@@ -53,39 +69,16 @@ export default function PublicCheckoutPlan() {
   const [errores, setErrores] = useState({});
   const esPlanRutas = /^(una-ruta|ambas-rutas)-(mensual|anual)$/.test(codigo);
 
-  // Código de prueba inline en el checkout
+  // Cupón promocional / código de prueba compacto
+  const [cuponAbierto, setCuponAbierto] = useState(false);
   const [codigoPrueba, setCodigoPrueba] = useState('');
   const [verificandoCodigo, setVerificandoCodigo] = useState(false);
   const [codigoValido, setCodigoValido] = useState(null);
   const [codigoError, setCodigoError] = useState('');
 
-  // Animación y reactividad autónoma de la mascota
+  // Estados contextuales para la mascota (autónomos y sobrios)
   const [hoveringSubmit, setHoveringSubmit] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [campoActivo, setCampoActivo] = useState(null);
-  const [idlePoseIndex, setIdlePoseIndex] = useState(0);
-
-  // Ciclo automático suave de poses si el usuario no interactúa
-  useEffect(() => {
-    if (campoActivo || hoveringSubmit || pagando || verificandoCodigo || codigoValido || error || codigoError) {
-      return;
-    }
-    const timer = setInterval(() => {
-      setIdlePoseIndex(prev => (prev + 1) % 3);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [campoActivo, hoveringSubmit, pagando, verificandoCodigo, codigoValido, error, codigoError]);
-
-  function handleMouseMove(e) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 16;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * -16;
-    setMousePos({ x, y });
-  }
-
-  function handleMouseLeave() {
-    setMousePos({ x: 0, y: 0 });
-  }
 
   useEffect(() => {
     let activo = true;
@@ -127,7 +120,7 @@ export default function PublicCheckoutPlan() {
   function validar() {
     const nuevosErrores = {};
     const email = form.email.trim().toLowerCase();
-    
+
     if (form.nombre.trim().length < 3) nuevosErrores.nombre = 'Ingresá tu nombre completo.';
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) nuevosErrores.email = 'Ingresá un correo válido.';
     if (form.telefono.trim().length < 6) nuevosErrores.telefono = 'Completá un teléfono válido.';
@@ -151,7 +144,7 @@ export default function PublicCheckoutPlan() {
       setCodigoError('');
     } catch (err) {
       setCodigoValido(null);
-      setCodigoError(err.response?.data?.error || err.response?.data?.message || 'Código de prueba inválido, vencido o ya usado.');
+      setCodigoError(err.response?.data?.error || err.response?.data?.message || 'Código promocional inválido, vencido o ya utilizado.');
     } finally {
       setVerificandoCodigo(false);
     }
@@ -168,7 +161,6 @@ export default function PublicCheckoutPlan() {
     if (pagando || !plan || !validar()) return;
 
     if (codigoValido) {
-      // Flujo directo con código de prueba: redirige a /registro con datos precargados
       navigate('/registro', {
         state: {
           nombre: form.nombre.trim(),
@@ -184,12 +176,12 @@ export default function PublicCheckoutPlan() {
     setPagando(true);
     setError(null);
     try {
-      const intent = await planesService.crearCheckoutIntent({ 
+      const intent = await planesService.crearCheckoutIntent({
         plan_codigo: plan.codigo,
-        ruta: 'fisico', // Exclusivo productos físicos / E-commerce
+        ruta: 'fisico',
         afiliado_codigo: leerRefAfiliado(),
       });
-      
+
       const resultado = await planesService.checkout({
         plan_codigo: plan.codigo,
         email: form.email.trim().toLowerCase(),
@@ -210,396 +202,395 @@ export default function PublicCheckoutPlan() {
     }
   }
 
-  // Determinación autónoma de la pose según la situación específica del usuario
+  // Estado autónomo de la mascota según el contexto real del usuario
+  const hasFieldErrors = Object.values(errores).some(Boolean);
+
   const currentPose = useMemo(() => {
-    if (error || codigoError) return 'alerta';
+    if (error || codigoError || hasFieldErrors) return 'alerta';
     if (hoveringSubmit || codigoValido) return 'confirmando';
     if (pagando || verificandoCodigo || campoActivo === 'codigo') return 'analizando';
     if (campoActivo) return 'pensando';
-    return ['guia', 'pensando', 'analizando'][idlePoseIndex] || 'guia';
-  }, [error, codigoError, hoveringSubmit, codigoValido, pagando, verificandoCodigo, campoActivo, idlePoseIndex]);
+    return 'guia';
+  }, [error, codigoError, hasFieldErrors, hoveringSubmit, codigoValido, pagando, verificandoCodigo, campoActivo]);
 
-  // Mensaje y estado visual reactivo según la situación específica
-  const mascotInfo = useMemo(() => {
-    if (error) {
-      return {
-        badge: 'Atención requerida',
-        badgeColor: 'text-amber-400',
-        mensaje: error,
-      };
-    }
-    if (codigoError) {
-      return {
-        badge: 'Código no válido',
-        badgeColor: 'text-amber-400',
-        mensaje: codigoError,
-      };
-    }
+  const mascotMessage = useMemo(() => {
+    if (error) return error;
+    if (codigoError) return codigoError;
+    if (hasFieldErrors) return 'Revisá los campos marcados para continuar con tu suscripción.';
+    if (pagando) return 'Conectando de forma segura con KunfuPay para procesar tu suscripción...';
+    if (verificandoCodigo) return 'Verificando tu código promocional en el sistema...';
     if (hoveringSubmit && codigoValido) {
-      return {
-        badge: '¡Listo para activar!',
-        badgeColor: 'text-emerald-400',
-        mensaje: `¡Siii! Hacé clic acá para activar tus ${codigoValido.dias} días de prueba gratis y empezar hoy mismo.`,
-      };
+      return `¡Listo! Hacé clic para activar tus ${codigoValido.dias} días gratis sin ingresar tarjeta.`;
     }
     if (hoveringSubmit) {
-      return {
-        badge: '¡Excelente decisión!',
-        badgeColor: 'text-emerald-400',
-        mensaje: '¡Qué emoción! Hacé clic para confirmar tu suscripción y empezar a vender tus productos físicos.',
-      };
+      return '¡Todo listo! Hacé clic para activar tu suscripción y empezar hoy mismo.';
     }
     if (codigoValido) {
-      return {
-        badge: '¡Cupón activado!',
-        badgeColor: 'text-emerald-400',
-        mensaje: `¡Woooow! Acceso concedido: tenés ${codigoValido.dias} días de prueba sin costo ni tarjeta hoy.`,
-      };
-    }
-    if (pagando) {
-      return {
-        badge: 'Conectando pago...',
-        badgeColor: 'text-primary',
-        mensaje: 'Un momento, estoy conectando de forma segura con la pasarela KunfuPay...',
-      };
-    }
-    if (verificandoCodigo) {
-      return {
-        badge: 'Analizando cupón...',
-        badgeColor: 'text-primary',
-        mensaje: 'Comprobando tu código de prueba gratuita en la base de datos...',
-      };
+      return `¡Código aplicado! Disfrutás ${codigoValido.dias} días de acceso gratuito sin costo hoy.`;
     }
     if (campoActivo === 'codigo') {
-      return {
-        badge: '¿Tenés código de prueba?',
-        badgeColor: 'text-primary',
-        mensaje: 'Ingresá tu código acá y hacé clic en "Canjear" para activar tus días de acceso libre.',
-      };
+      return 'Ingresá tu código promocional o de prueba y aplicá el beneficio antes de continuar.';
     }
     if (campoActivo === 'email') {
-      return {
-        badge: 'Tu correo de acceso',
-        badgeColor: 'text-primary',
-        mensaje: 'Con este correo vas a iniciar sesión en Gesicom y recibir las notificaciones de ventas.',
-      };
+      return 'Con este correo vas a acceder a tu panel y recibir las notificaciones de tus pedidos.';
     }
     if (campoActivo) {
-      return {
-        badge: 'Completando tus datos',
-        badgeColor: 'text-primary',
-        mensaje: 'Ingresá tus datos de contacto para personalizar tu panel y emitir tu comprobante.',
-      };
+      return 'Completá tus datos para dejar tu cuenta preparada al instante.';
     }
-    return {
-      badge: 'Tu compañero Gesicom',
-      badgeColor: 'text-primary',
-      mensaje: '¡Hola! Te acompaño en este paso para dejar tu tienda lista para vender productos físicos.',
-    };
-  }, [error, codigoError, hoveringSubmit, codigoValido, pagando, verificandoCodigo, campoActivo]);
+    return '¡Hola! Te acompaño en este paso para dejar tu tienda lista para vender productos físicos.';
+  }, [error, codigoError, hasFieldErrors, pagando, verificandoCodigo, hoveringSubmit, codigoValido, campoActivo]);
+
+  const beneficios = useMemo(() => {
+    if (plan?.features?.length) {
+      return plan.features.includes('Activación inmediata')
+        ? plan.features
+        : [...plan.features, 'Activación inmediata'];
+    }
+    return DEFAULT_BENEFITS;
+  }, [plan]);
+
+  const precioFormateado = formatPrecioPlan(plan);
+  const esAnual = plan?.periodicidad === 'anual';
 
   return (
-    <div className="pl-page pl-checkout-page pl-public-checkout py-6 sm:py-10">
-      <header className="flex h-16 items-center justify-between border-b border-border bg-surface px-6 no-imprimir">
-        <Link to="/" aria-label="Gesicom, ir al inicio">
-          <Logo size={28} />
-        </Link>
-        <button type="button" className="pl-volver m-0 text-sm font-semibold flex items-center gap-1.5" onClick={() => navigate(esPlanRutas ? '/#precios' : '/planes')}>
-          <ArrowLeft size={15} /> Volver a planes
-        </button>
+    <div className="gc-co-page">
+      <header className="gc-co-header no-imprimir">
+        <div className="gc-co-header-inner">
+          <Link to="/" aria-label="Gesicom, ir al inicio">
+            <Logo size={28} />
+          </Link>
+          <button
+            type="button"
+            className="gc-co-back-link"
+            onClick={() => navigate(esPlanRutas ? '/#precios' : '/planes')}
+            disabled={pagando}
+          >
+            <ArrowLeft size={15} /> Volver a planes
+          </button>
+        </div>
       </header>
 
       {cargando ? (
-        <div className="pl-cargando mt-16"><Loader size={24} className="spin-icon" /><span>Preparando checkout seguro...</span></div>
+        <div className="pl-cargando mt-16">
+          <Loader size={22} className="spin-icon" />
+          <span>Preparando tu suscripción...</span>
+        </div>
       ) : (
-        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-10">
-          <div className="pl-checkout-frame">
-            <div className="pl-checkout-card">
-              
-              {/* Columna Izquierda: Formulario Principal */}
-              <div className="pl-checkout-main-col">
-                <div>
-                  <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-                    <span className="pl-hero-eyebrow text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 text-primary">
-                      <ShieldCheck size={14} /> Checkout seguro · Cifrado SSL
-                    </span>
-                    <span className="text-xs text-muted font-medium bg-surface-2 px-2.5 py-1 rounded-full border border-border">
-                      Gestión de E-commerce · Productos físicos
-                    </span>
-                  </div>
+        <main className="gc-co-container">
+          <div className="gc-co-grid">
+            {/* Columna Izquierda — Datos y Conversión */}
+            <section className="gc-co-form-panel" aria-labelledby="checkout-heading">
+              <div className="gc-co-eyebrow">
+                <span className="gc-co-eyebrow-dot" />
+                Suscripción Gesicom
+              </div>
+              <h1 id="checkout-heading" className="gc-co-title">
+                Activá tu suscripción
+              </h1>
+              <p className="gc-co-subtitle">
+                Completá tus datos para habilitar tu espacio de e-commerce y comenzar a vender productos físicos.
+              </p>
 
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-text tracking-tight mt-1 mb-1.5">
-                    Pagá tu suscripción
-                  </h1>
-                  <p className="text-sm text-muted leading-relaxed">
-                    Ingresá tus datos para iniciar el plan y activar tu cuenta al instante para vender productos físicos.
-                  </p>
+              {error && (
+                <div className="gc-co-alert-error" role="alert">
+                  <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="gc-co-form" noValidate>
+                <div className="gc-co-fields-grid">
+                  <label className="gc-co-field">
+                    <span className="gc-co-label">Nombre completo</span>
+                    <input
+                      name="name"
+                      type="text"
+                      value={form.nombre}
+                      onChange={e => actualizar('nombre', e.target.value)}
+                      onFocus={() => setCampoActivo('nombre')}
+                      onBlur={() => setCampoActivo(null)}
+                      placeholder="Ej: Ana González"
+                      autoComplete="name"
+                      disabled={pagando}
+                      className={`gc-co-input ${errores.nombre ? 'is-error' : ''}`}
+                    />
+                    {errores.nombre && <span className="gc-co-field-error">{errores.nombre}</span>}
+                  </label>
+
+                  <label className="gc-co-field">
+                    <span className="gc-co-label">Correo electrónico</span>
+                    <input
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={e => actualizar('email', e.target.value)}
+                      onFocus={() => setCampoActivo('email')}
+                      onBlur={() => setCampoActivo(null)}
+                      placeholder="tu@email.com"
+                      autoComplete="email"
+                      disabled={pagando}
+                      className={`gc-co-input ${errores.email ? 'is-error' : ''}`}
+                    />
+                    {errores.email && <span className="gc-co-field-error">{errores.email}</span>}
+                  </label>
+
+                  <label className="gc-co-field">
+                    <span className="gc-co-label">Teléfono</span>
+                    <input
+                      name="tel"
+                      type="tel"
+                      value={form.telefono}
+                      onChange={e => actualizar('telefono', e.target.value)}
+                      onFocus={() => setCampoActivo('telefono')}
+                      onBlur={() => setCampoActivo(null)}
+                      placeholder="+595981123456"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      disabled={pagando}
+                      className={`gc-co-input ${errores.telefono ? 'is-error' : ''}`}
+                    />
+                    {errores.telefono && <span className="gc-co-field-error">{errores.telefono}</span>}
+                  </label>
+
+                  <label className="gc-co-field">
+                    <span className="gc-co-label">Número de cédula</span>
+                    <input
+                      name="document"
+                      type="text"
+                      value={form.documento}
+                      onChange={e => actualizar('documento', e.target.value)}
+                      onFocus={() => setCampoActivo('documento')}
+                      onBlur={() => setCampoActivo(null)}
+                      placeholder="Ej: 4123456"
+                      autoComplete="off"
+                      inputMode="numeric"
+                      disabled={pagando}
+                      className={`gc-co-input ${errores.documento ? 'is-error' : ''}`}
+                    />
+                    {errores.documento && <span className="gc-co-field-error">{errores.documento}</span>}
+                  </label>
                 </div>
 
-                {error && (
-                  <div className="pl-aviso pl-aviso-error py-3 px-4 text-sm rounded-xl">
-                    <AlertCircle size={17} className="shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-1">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <label className="pl-campo">
-                      <span>Nombre completo</span>
-                      <input
-                        value={form.nombre}
-                        onChange={e => actualizar('nombre', e.target.value)}
-                        onFocus={() => setCampoActivo('nombre')}
-                        onBlur={() => setCampoActivo(null)}
-                        placeholder="Ej: Ana González"
-                        autoComplete="name"
-                        disabled={pagando}
-                      />
-                      {errores.nombre && <em className="pl-campo-error">{errores.nombre}</em>}
-                    </label>
-
-                    <label className="pl-campo">
-                      <span>Correo electrónico</span>
-                      <input
-                        type="email"
-                        value={form.email}
-                        onChange={e => actualizar('email', e.target.value)}
-                        onFocus={() => setCampoActivo('email')}
-                        onBlur={() => setCampoActivo(null)}
-                        placeholder="tu@email.com"
-                        autoComplete="email"
-                        disabled={pagando}
-                      />
-                      {errores.email && <em className="pl-campo-error">{errores.email}</em>}
-                    </label>
-
-                    <label className="pl-campo">
-                      <span>Teléfono</span>
-                      <input
-                        value={form.telefono}
-                        onChange={e => actualizar('telefono', e.target.value)}
-                        onFocus={() => setCampoActivo('telefono')}
-                        onBlur={() => setCampoActivo(null)}
-                        placeholder="Ej: +595981123456"
-                        autoComplete="tel"
-                        inputMode="tel"
-                        disabled={pagando}
-                      />
-                      {errores.telefono && <em className="pl-campo-error">{errores.telefono}</em>}
-                    </label>
-
-                    <label className="pl-campo">
-                      <span>Número de cédula</span>
-                      <input
-                        value={form.documento}
-                        onChange={e => actualizar('documento', e.target.value)}
-                        onFocus={() => setCampoActivo('documento')}
-                        onBlur={() => setCampoActivo(null)}
-                        placeholder="Ej: 4123456"
-                        autoComplete="off"
-                        inputMode="numeric"
-                        disabled={pagando}
-                      />
-                      {errores.documento && <em className="pl-campo-error">{errores.documento}</em>}
-                    </label>
-                  </div>
-
-                  {/* Recuadro de cupón / código de prueba */}
-                  <div className="p-3.5 rounded-xl border border-border/80 bg-surface-2/60 flex flex-col gap-2 mt-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-text flex items-center gap-1.5">
-                        <KeyRound size={14} className="text-primary" /> ¿Tenés un código de prueba gratuita o cupón?
-                      </span>
-                      {codigoValido && (
-                        <span className="text-xs font-bold text-primary flex items-center gap-1">
-                          <Check size={13} /> Canjeado
+                {/* Cupón promocional secundario y compacto */}
+                <div className="gc-co-coupon">
+                  {codigoValido ? (
+                    <div className="gc-co-coupon-applied">
+                      <div className="gc-co-coupon-applied-info">
+                        <Check size={16} color="#20B981" className="shrink-0" />
+                        <span>
+                          Código <strong>{codigoValido.codigo}</strong> aplicado · {codigoValido.dias} días gratis
                         </span>
-                      )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={quitarCodigo}
+                        className="gc-co-coupon-remove"
+                        disabled={pagando}
+                      >
+                        Quitar
+                      </button>
                     </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={codigoPrueba}
-                        onChange={e => { setCodigoPrueba(e.target.value.toUpperCase()); setCodigoError(''); }}
-                        onFocus={() => setCampoActivo('codigo')}
-                        onBlur={() => setCampoActivo(null)}
-                        placeholder="Ej: GESI-XXXXXX"
-                        className="flex-1 bg-surface border border-border rounded-lg px-3.5 py-2 text-xs text-text uppercase tracking-wider focus:outline-none focus:border-primary"
-                        disabled={verificandoCodigo || Boolean(codigoValido)}
-                      />
-                      {codigoValido ? (
+                  ) : !cuponAbierto ? (
+                    <button
+                      type="button"
+                      className="gc-co-coupon-toggle"
+                      onClick={() => setCuponAbierto(true)}
+                      disabled={pagando}
+                    >
+                      <Tag size={14} />
+                      <span>¿Tenés un código promocional?</span>
+                    </button>
+                  ) : (
+                    <div className="gc-co-coupon-box">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] font-medium text-[#A5B5AA]">
+                          Ingresá tu código promocional o de prueba
+                        </span>
                         <button
                           type="button"
-                          onClick={quitarCodigo}
-                          className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-border hover:bg-surface text-muted hover:text-text transition-colors"
+                          onClick={() => {
+                            setCuponAbierto(false);
+                            setCodigoError('');
+                          }}
+                          className="text-[#A5B5AA] hover:text-[#F5F8F6] bg-transparent border-0 cursor-pointer p-1"
+                          aria-label="Cerrar código promocional"
                         >
-                          Quitar
+                          <X size={14} />
                         </button>
-                      ) : (
+                      </div>
+                      <div className="gc-co-coupon-row">
+                        <input
+                          type="text"
+                          value={codigoPrueba}
+                          onChange={e => {
+                            setCodigoPrueba(e.target.value.toUpperCase());
+                            setCodigoError('');
+                          }}
+                          onFocus={() => setCampoActivo('codigo')}
+                          onBlur={() => setCampoActivo(null)}
+                          placeholder="GESI-XXXXXX"
+                          className="gc-co-coupon-input"
+                          disabled={verificandoCodigo || pagando}
+                        />
                         <button
                           type="button"
                           onClick={validarCodigo}
-                          disabled={!codigoPrueba.trim() || verificandoCodigo}
-                          className="px-4 py-2 text-xs font-bold rounded-lg bg-primary text-primary-fg hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-1 shadow-sm"
+                          disabled={!codigoPrueba.trim() || verificandoCodigo || pagando}
+                          className="gc-co-coupon-btn"
                         >
-                          {verificandoCodigo ? <Loader size={12} className="spin-icon" /> : 'Canjear'}
+                          {verificandoCodigo ? (
+                            <>
+                              <Loader size={14} className="spin-icon" /> Verificando
+                            </>
+                          ) : (
+                            'Aplicar'
+                          )}
                         </button>
+                      </div>
+                      {codigoError && (
+                        <span className="gc-co-field-error" role="alert">
+                          {codigoError}
+                        </span>
                       )}
                     </div>
-                    {codigoError && <p className="text-xs text-danger m-0 font-medium">{codigoError}</p>}
-                    {codigoValido && (
-                      <p className="text-xs text-primary font-medium m-0 flex items-center gap-1.5">
-                        <Check size={13} /> ¡Código válido! Acceso libre por <strong>{codigoValido.dias} días</strong> sin pagar nada hoy.
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Acciones principales del checkout */}
-                  <div className="pt-4 border-t border-border flex items-center justify-between gap-3 flex-wrap mt-2">
-                    <span className="text-xs text-muted flex items-center gap-1.5">
-                      <ShieldCheck size={15} className="text-primary shrink-0" /> Pago seguro KunfuPay · Cancelás cuando quieras
-                    </span>
-                    <div className="flex items-center gap-2.5">
-                      <button
-                        type="button"
-                        className="pl-btn text-sm px-4 py-2.5"
-                        onClick={() => navigate(esPlanRutas ? '/#precios' : '/planes')}
-                        disabled={pagando}
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        className="pl-cta primario text-sm font-bold px-6 py-2.5 shadow-lg"
-                        disabled={pagando || !plan}
-                        onMouseEnter={() => setHoveringSubmit(true)}
-                        onMouseLeave={() => setHoveringSubmit(false)}
-                        onFocus={() => setHoveringSubmit(true)}
-                        onBlur={() => setHoveringSubmit(false)}
-                      >
-                        {pagando ? (
-                          <><Loader size={15} className="spin-icon" /> Abriendo pago...</>
-                        ) : codigoValido ? (
-                          <><Rocket size={16} /> Activar mis {codigoValido.dias} días gratis <ArrowRight size={16} /></>
-                        ) : (
-                          <><CreditCard size={16} /> Confirmar suscripción <ArrowRight size={16} /></>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-
-              {/* Columna Derecha: Escenario 3D de la Mascota y Resumen de Plan */}
-              <div className="pl-checkout-side-col">
-                {/* Escenario 3D de la Mascota Embebida */}
-                <div
-                  className="pl-mascot-stage-3d"
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <span className="pl-mascot-sparkle pl-mascot-sparkle-1" />
-                  <span className="pl-mascot-sparkle pl-mascot-sparkle-2" />
-                  <div className="pl-mascot-pedestal" />
-
-                  {/* Figura 3D grande de la Mascota con poses y perspectiva fluida */}
-                  <div
-                    className="pl-mascot-3d-wrapper"
-                    style={{
-                      transform: `perspective(500px) rotateY(${mousePos.x}deg) rotateX(${mousePos.y}deg)`,
-                    }}
-                  >
-                    {MASCOT_POSES.map(pose => {
-                      const isActive = currentPose === pose.id;
-                      return (
-                        <img
-                          key={pose.id}
-                          src={pose.src}
-                          alt={pose.label}
-                          className={`pl-mascot-img-3d ${isActive ? 'is-active' : ''} ${
-                            currentPose === 'confirmando'
-                              ? 'is-happy'
-                              : currentPose === 'analizando'
-                              ? 'is-busy'
-                              : currentPose === 'alerta'
-                              ? 'is-alert'
-                              : currentPose === 'pensando'
-                              ? 'is-thinking'
-                              : 'is-idle'
-                          }`}
-                          draggable="false"
-                        />
-                      );
-                    })}
-                  </div>
-
-                  {/* Bocadillo de diálogo 3D flotante */}
-                  <div className="pl-mascot-speech-3d">
-                    <div className="pl-mascot-speech-header">
-                      <span className="pl-mascot-speech-dot" />
-                      <span className={`pl-mascot-speech-badge ${mascotInfo.badgeColor}`}>
-                        {mascotInfo.badge}
-                      </span>
-                    </div>
-                    <p className="pl-mascot-speech-text">
-                      {mascotInfo.mensaje}
-                    </p>
-                  </div>
+                  )}
                 </div>
 
-                {/* Ficha Resumen del Plan */}
-                <div className="pt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="pl-cinta font-semibold">{plan?.etiqueta || 'Lanzamiento'}</span>
-                    <span className="text-xs font-bold uppercase tracking-wider text-primary">{plan?.moneda || 'USD'}</span>
-                  </div>
-                  <div className="mt-2">
-                    <h2 className="text-xl font-extrabold text-text tracking-tight">{plan?.nombre || 'Una ruta mensual'}</h2>
-                    <p className="text-xs text-muted mt-0.5 font-medium">Gestión de E-commerce · Productos físicos</p>
-                  </div>
-
-                  <div className="pl-precio py-3 border-y border-border/60 my-3">
-                    {codigoValido ? (
-                      <div>
-                        <span className="line-through text-muted text-sm mr-2">{formatPrecioPlan(plan)}</span>
-                        <strong className="text-3xl font-black text-primary">GRATIS</strong>
-                        <span className="text-xs text-muted block mt-1">por {codigoValido.dias} días · sin tarjeta hoy</span>
-                      </div>
+                {/* Botón Principal de Suscripción + Seguridad */}
+                <div className="gc-co-cta-wrap">
+                  <button
+                    type="submit"
+                    className="gc-co-cta"
+                    disabled={pagando || !plan}
+                    onMouseEnter={() => setHoveringSubmit(true)}
+                    onMouseLeave={() => setHoveringSubmit(false)}
+                    onFocus={() => setHoveringSubmit(true)}
+                    onBlur={() => setHoveringSubmit(false)}
+                  >
+                    {pagando ? (
+                      <>
+                        <Loader size={18} className="spin-icon" /> Conectando con KunfuPay...
+                      </>
+                    ) : codigoValido ? (
+                      <>
+                        Activar mis {codigoValido.dias} días gratis <ArrowRight size={18} />
+                      </>
                     ) : (
-                      <div>
-                        <strong className="text-3xl font-black text-text">{formatPrecioPlan(plan)}</strong>
-                        <span className="text-xs text-muted ml-1.5 font-medium">
-                          {plan?.periodicidad === 'anual' ? 'por año · pago adelantado' : 'por mes · recurrente'}
+                      <>
+                        Activar mi suscripción <ArrowRight size={18} />
+                      </>
+                    )}
+                  </button>
+
+                  <div className="gc-co-security-note">
+                    <Lock size={13} className="shrink-0" color="#20B981" />
+                    <span>
+                      Conexión cifrada SSL · Procesado por KunfuPay · Suscripción {esAnual ? 'anual' : 'mensual'}, cancelás cuando quieras.
+                    </span>
+                  </div>
+                </div>
+              </form>
+            </section>
+
+            {/* Columna Derecha — Mascota y Resumen */}
+            <aside className="gc-co-aside">
+              {/* Mascota Original de Gesicom con composición abierta y globo refinado */}
+              <div className="gc-co-companion">
+                <div className="gc-co-mascot-stage" aria-hidden="true">
+                  <div className="gc-co-mascot-ambient" />
+                  {MASCOT_POSES.map(pose => (
+                    <img
+                      key={pose.id}
+                      src={pose.src}
+                      alt={pose.alt}
+                      className={`gc-co-mascot-img ${currentPose === pose.id ? 'is-active' : ''}`}
+                      draggable="false"
+                    />
+                  ))}
+                </div>
+
+                <div className="gc-co-bubble" aria-live="polite">
+                  <div className="gc-co-bubble-identity">
+                    <i />
+                    <span>TU COMPAÑERO GESICOM</span>
+                  </div>
+                  <p className="gc-co-bubble-text">{mascotMessage}</p>
+                </div>
+              </div>
+
+              {/* Resumen de Suscripción */}
+              <div className="gc-co-summary">
+                <div className="gc-co-plan-head">
+                  <div>
+                    <h2 className="gc-co-plan-name">{plan?.nombre || 'Una ruta mensual'}</h2>
+                    <p className="gc-co-plan-scope">Gestión de E-commerce · Productos físicos</p>
+                  </div>
+                  {plan?.etiqueta && (
+                    <span className="gc-co-plan-badge">{plan.etiqueta}</span>
+                  )}
+                </div>
+
+                <div className="gc-co-price-block">
+                  {codigoValido ? (
+                    <>
+                      <div className="gc-co-price-row">
+                        <span className="gc-co-price-strike">{precioFormateado}</span>
+                        <span className="gc-co-price-amount is-free">
+                          {plan?.moneda === 'USD' ? 'US$0' : formatMoneda(0)}
+                        </span>
+                        <span className="gc-co-price-period">
+                          / {codigoValido.dias} días gratis
                         </span>
                       </div>
-                    )}
-                  </div>
-
-                  <ul className="pl-features space-y-2 my-3">
-                    {(plan?.features || [
-                      'Herramientas de la ruta elegida',
-                      'Tutoriales técnicos del sistema',
-                      'Soporte técnico por WhatsApp en horario laboral'
-                    ]).map((feature, index) => (
-                      <li key={index} className="flex items-center gap-2 text-xs text-text font-medium">
-                        <Check size={14} className="text-primary shrink-0" /> <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted font-medium">
-                    <span>Activación inmediata</span>
-                    <span className="text-primary font-semibold flex items-center gap-1">
-                      <ShieldCheck size={13} /> 100% Seguro
-                    </span>
-                  </div>
+                      <p className="gc-co-price-recurrence">
+                        Luego {precioFormateado} {esAnual ? '/ año' : '/ mes'} · Suscripción recurrente
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="gc-co-price-row">
+                        <span className="gc-co-price-amount">{precioFormateado}</span>
+                        <span className="gc-co-price-period">
+                          {esAnual ? '/ año' : '/ mes'}
+                        </span>
+                      </div>
+                      <p className="gc-co-price-recurrence">
+                        {esAnual ? 'Facturación anual recurrente.' : 'Suscripción recurrente.'}
+                      </p>
+                    </>
+                  )}
                 </div>
 
+                <ul className="gc-co-benefits">
+                  {beneficios.map((feature, index) => (
+                    <li key={index}>
+                      <Check size={16} className="gc-co-benefits-icon" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="gc-co-total-section">
+                  <div className="gc-co-total-row">
+                    <span className="gc-co-total-label">Total a pagar hoy</span>
+                    <span className="gc-co-total-value">
+                      {codigoValido
+                        ? plan?.moneda === 'USD'
+                          ? 'US$0'
+                          : formatMoneda(0)
+                        : precioFormateado}
+                    </span>
+                  </div>
+                  <p className="gc-co-billing-note">
+                    {codigoValido
+                      ? `No se realiza ningún cobro hoy. Disfrutás ${codigoValido.dias} días libres y podés cancelar antes de que finalice la prueba.`
+                      : `Facturación ${esAnual ? 'anual' : 'mensual'} automática. Podés cancelar tu suscripción en cualquier momento sin penalidades.`}
+                  </p>
+                </div>
               </div>
-            </div>
+            </aside>
           </div>
-        </div>
+        </main>
       )}
     </div>
   );
