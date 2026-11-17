@@ -36,9 +36,10 @@ export const authTrackingService = {
     return data;
   },
 
-  async consultarPagoSuscripcionPagopar(hashPedido) {
+  async consultarPagoSuscripcionPagopar(identificador) {
     const { data } = await API.post('/admin/auth-tracking/pagopar/suscripciones/consultar', {
-      hash_pedido: hashPedido,
+      identificador,
+      hash_pedido: identificador,
     });
     return data;
   },

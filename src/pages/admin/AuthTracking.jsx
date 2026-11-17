@@ -111,9 +111,15 @@ function userAgentCorto(userAgent) {
   return userAgent.slice(0, 42);
 }
 
-function formatearMonto(valor) {
+function formatearMonto(valor, moneda = 'EUR') {
   const numero = Number(valor);
   if (!Number.isFinite(numero)) return valor || '-';
+  if (moneda === 'USD') {
+    return `$ ${numero.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  }
+  if (moneda === 'EUR') {
+    return `€ ${numero.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  }
   return new Intl.NumberFormat('es-PY', {
     style: 'currency',
     currency: 'PYG',
@@ -342,8 +348,9 @@ export default function AuthTracking({ modo = 'accesos' }) {
   };
 
   const consultarPagoSuscripcion = async (pago) => {
-    if (!pago?.hash_pedido) {
-      setErrorConsulta('Ese pago todavía no tiene identificador de PagoPar para consultar.');
+    const identificador = pago?.kunfupay_session_id || pago?.hash_pedido || pago?.referencia;
+    if (!identificador) {
+      setErrorConsulta('Ese pago todavía no tiene identificador para consultar.');
       setResultadoConsulta(null);
       return;
     }
@@ -352,12 +359,12 @@ export default function AuthTracking({ modo = 'accesos' }) {
     setErrorConsulta('');
     setResultadoConsulta(null);
     try {
-      const estado = await authTrackingService.consultarPagoSuscripcionPagopar(pago.hash_pedido);
+      const estado = await authTrackingService.consultarPagoSuscripcionPagopar(identificador);
       setResultadoConsulta(estado);
       await cargar();
       window.dispatchEvent(new Event('auth-tracking:updated'));
     } catch (err) {
-      setErrorConsulta(err.response?.data?.message || 'No pudimos consultar ese pago en PagoPar.');
+      setErrorConsulta(err.response?.data?.message || 'No pudimos consultar ese pago en la pasarela.');
     } finally {
       setConsultandoPagoId(null);
     }
@@ -405,9 +412,9 @@ export default function AuthTracking({ modo = 'accesos' }) {
       <section className="at-kpis">
         {esPagos ? (
           <>
-            <Kpi icon={CreditCard} label="Neto Gesicomm" value={formatearMonto(pagosAdmin.PAID?.neto ?? 0)} note={`Bruto ${formatearMonto(pagosAdmin.PAID?.bruto ?? 0)} · comisión ${formatearMonto(pagosAdmin.PAID?.comision ?? 0)}`} tone="success" />
-            <Kpi icon={Clock3} label="Pendiente bruto" value={formatearMonto(pagosAdmin.PENDING?.bruto ?? 0)} note={`${pagosAdmin.PENDING?.cantidad ?? 0} pagos pendientes`} tone="warning" />
-            <Kpi icon={AlertTriangle} label="Fallido bruto" value={formatearMonto(pagosAdmin.FAILED?.bruto ?? 0)} note={`${pagosAdmin.FAILED?.cantidad ?? 0} pagos con error`} tone="danger" />
+            <Kpi icon={CreditCard} label="Neto Gesicomm" value={formatearMonto(pagosAdmin.PAID?.neto ?? 0, resumenFinanciero?.moneda || 'EUR')} note={`Bruto ${formatearMonto(pagosAdmin.PAID?.bruto ?? 0, resumenFinanciero?.moneda || 'EUR')} · comisión ${formatearMonto(pagosAdmin.PAID?.comision ?? 0, resumenFinanciero?.moneda || 'EUR')}`} tone="success" />
+            <Kpi icon={Clock3} label="Pendiente bruto" value={formatearMonto(pagosAdmin.PENDING?.bruto ?? 0, resumenFinanciero?.moneda || 'EUR')} note={`${pagosAdmin.PENDING?.cantidad ?? 0} pagos pendientes`} tone="warning" />
+            <Kpi icon={AlertTriangle} label="Fallido bruto" value={formatearMonto(pagosAdmin.FAILED?.bruto ?? 0, resumenFinanciero?.moneda || 'EUR')} note={`${pagosAdmin.FAILED?.cantidad ?? 0} pagos con error`} tone="danger" />
             <Kpi icon={Bell} label="Alertas de pago" value={notificaciones.length ? noLeidas : 0} note="notificaciones de pagos visibles" tone="warning" />
           </>
         ) : (
@@ -429,26 +436,29 @@ export default function AuthTracking({ modo = 'accesos' }) {
           <div className="at-panel-head">
             <div>
               <h2>Estado general de pagos Gesicomm</h2>
-              <p>Solo ingresos del sistema: suscripciones y abastecimiento. El neto descuenta comisión estimada de PagoPar.</p>
+              <p>Solo ingresos del sistema: suscripciones y abastecimiento. El neto descuenta comisión estimada de pasarela.</p>
             </div>
             <span className="at-period-pill">{resumenFinanciero.periodo_dias} días</span>
           </div>
           <div className="at-money-grid">
-            {resumenFinanciero.tipos.map((tipoPago) => (
-              <article className="at-money-card" key={tipoPago.tipo}>
-                <div>
-                  <strong>{tipoPago.label}</strong>
-                  <small>{tipoPago.cantidad_total} movimientos</small>
-                </div>
-                <div className="at-money-main">{formatearMonto(tipoPago.estados.PAID?.neto ?? 0)}</div>
-                <div className="at-money-states">
-                  <span><i className="at-dot at-dot-pedidos-pagos" /> Bruto: {formatearMonto(tipoPago.estados.PAID?.bruto ?? 0)}</span>
-                  <span><i className="at-dot at-dot-abastecimiento" /> Comisión: {formatearMonto(tipoPago.estados.PAID?.comision ?? 0)}</span>
-                  <span><i className="at-dot at-dot-pagos" /> Pendiente: {tipoPago.estados.PENDING?.cantidad ?? 0}</span>
-                  <span><i className="at-dot at-dot-fallos" /> Fallido: {tipoPago.estados.FAILED?.cantidad ?? 0}</span>
-                </div>
-              </article>
-            ))}
+            {resumenFinanciero.tipos.map((tipoPago) => {
+              const monedaResumen = resumenFinanciero.moneda || 'EUR';
+              return (
+                <article className="at-money-card" key={tipoPago.tipo}>
+                  <div>
+                    <strong>{tipoPago.label}</strong>
+                    <small>{tipoPago.cantidad_total} movimientos</small>
+                  </div>
+                  <div className="at-money-main">{formatearMonto(tipoPago.estados.PAID?.neto ?? 0, monedaResumen)}</div>
+                  <div className="at-money-states">
+                    <span><i className="at-dot at-dot-pedidos-pagos" /> Bruto: {formatearMonto(tipoPago.estados.PAID?.bruto ?? 0, monedaResumen)}</span>
+                    <span><i className="at-dot at-dot-abastecimiento" /> Comisión: {formatearMonto(tipoPago.estados.PAID?.comision ?? 0, monedaResumen)}</span>
+                    <span><i className="at-dot at-dot-pagos" /> Pendiente: {tipoPago.estados.PENDING?.cantidad ?? 0}</span>
+                    <span><i className="at-dot at-dot-fallos" /> Fallido: {tipoPago.estados.FAILED?.cantidad ?? 0}</span>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       )}
@@ -458,7 +468,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
           <div className="at-panel-head">
             <div>
               <h2>Consultar pago de suscripción</h2>
-              <p>Consultá el estado real en PagoPar desde los pagos recientes, sin cargar datos técnicos.</p>
+              <p>Consultá el estado real de los pagos recientes de suscripción, sin cargar datos técnicos.</p>
             </div>
             <CreditCard size={18} />
           </div>
@@ -470,38 +480,41 @@ export default function AuthTracking({ modo = 'accesos' }) {
               <tbody>
                 {pagosSuscripcion.length === 0 ? (
                   <tr><td colSpan={9} className="at-empty-cell">Todavía no hay pagos de suscripción para consultar.</td></tr>
-                ) : pagosSuscripcion.map((pago) => (
-                  <tr key={pago.id}>
-                    <td>
-                      <strong>#{pago.id}</strong>
-                      <small>{pago.referencia || '-'}</small>
-                    </td>
-                    <td>
-                      <strong>{pago.Suscripcion?.nombre || pago.Suscripcion?.email || 'Cliente'}</strong>
-                      <small>{pago.Suscripcion?.email || '-'}</small>
-                    </td>
-                    <td>{pago.Suscripcion?.Plan?.nombre || '-'}</td>
-                    <td>{formatearMonto(pago.monto_bruto ?? pago.monto)}</td>
-                    <td>
-                      {formatearMonto(pago.comision_pasarela_monto ?? 0)}
-                      <small>{Number(pago.comision_pasarela_pct || 0).toFixed(2)}%</small>
-                    </td>
-                    <td><strong>{formatearMonto(pago.monto_neto ?? pago.monto)}</strong></td>
-                    <td><BadgeEstadoPago estado={pago.estado} /></td>
-                    <td>{fechaHora(pago.created_at)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="at-row-action"
-                        onClick={() => consultarPagoSuscripcion(pago)}
-                        disabled={consultandoPagoId === pago.id || !pago.hash_pedido}
-                      >
-                        {consultandoPagoId === pago.id ? <Loader className="at-spin" size={14} /> : <RefreshCw size={14} />}
-                        Consultar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                ) : pagosSuscripcion.map((pago) => {
+                  const monedaPago = pago.moneda || pago.Suscripcion?.Plan?.moneda || 'EUR';
+                  return (
+                    <tr key={pago.id}>
+                      <td>
+                        <strong>#{pago.id}</strong>
+                        <small>{pago.referencia || '-'}</small>
+                      </td>
+                      <td>
+                        <strong>{pago.Suscripcion?.nombre || pago.Suscripcion?.email || 'Cliente'}</strong>
+                        <small>{pago.Suscripcion?.email || '-'}</small>
+                      </td>
+                      <td>{pago.Suscripcion?.Plan?.nombre || '-'}</td>
+                      <td>{formatearMonto(pago.monto_bruto ?? pago.monto, monedaPago)}</td>
+                      <td>
+                        {formatearMonto(pago.comision_pasarela_monto ?? 0, monedaPago)}
+                        <small>{Number(pago.comision_pasarela_pct || 0).toFixed(2)}%</small>
+                      </td>
+                      <td><strong>{formatearMonto(pago.monto_neto ?? pago.monto, monedaPago)}</strong></td>
+                      <td><BadgeEstadoPago estado={pago.estado} /></td>
+                      <td>{fechaHora(pago.created_at)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="at-row-action"
+                          onClick={() => consultarPagoSuscripcion(pago)}
+                          disabled={consultandoPagoId === pago.id || (!pago.kunfupay_session_id && !pago.hash_pedido && !pago.referencia)}
+                        >
+                          {consultandoPagoId === pago.id ? <Loader className="at-spin" size={14} /> : <RefreshCw size={14} />}
+                          Consultar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
