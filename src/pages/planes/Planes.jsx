@@ -94,6 +94,9 @@ function formatPrecioPlan(plan) {
   if (plan.moneda === 'USD') {
     return `$${Number(plan.precio || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   }
+  if (plan.moneda === 'EUR') {
+    return `€${Number(plan.precio || 0).toLocaleString('es-ES', { maximumFractionDigits: 0 })}`;
+  }
   return formatMoneda(plan.precio);
 }
 
@@ -296,8 +299,8 @@ export default function Planes() {
             </a>
           </div>
           <div className="pl-trust-row" aria-label="Señales de confianza">
-            <span><ShieldCheck size={15} /> Pago seguro con PagoPar</span>
-            <span><Zap size={15} /> Activación guiada</span>
+            <span><ShieldCheck size={15} /> Pago seguro cifrado</span>
+            <span><Zap size={15} /> Activación inmediata</span>
             <span><Users size={15} /> Hecho para comercios que venden por redes</span>
           </div>
         </div>
@@ -450,7 +453,7 @@ export default function Planes() {
                 ) : yaTienePlanPago || usuario ? (
                   <>Mejorar a {plan.nombre} <ArrowRight size={15} /></>
                 ) : (
-                  <><CreditCard size={15} /> Pagar con PagoPar <ArrowRight size={15} /></>
+                  <><CreditCard size={15} /> Suscribirme ahora <ArrowRight size={15} /></>
                 )}
               </button>
             </article>

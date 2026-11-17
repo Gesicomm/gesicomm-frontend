@@ -139,7 +139,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
     const limpios = planes.map(p => ({
       ...p,
       precio: Number(p.precio) || 0,
-      moneda: ['PYG', 'USD'].includes(p.moneda) ? p.moneda : 'PYG',
+      moneda: ['PYG', 'USD', 'EUR'].includes(p.moneda) ? p.moneda : 'EUR',
       features: p.features.map(f => f.trim()).filter(Boolean),
     }));
     setPlanes(limpios);
@@ -299,13 +299,14 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
       {cargandoPlanes ? <p className="pl-cargando" role="status"><RefreshCw size={18} className="spin-icon"/> Cargando catálogo…</p> :
       <div className="pl-catalog-grid">{planes.map((plan,i)=><section key={plan.codigo} className="pl-catalog-card" aria-labelledby={`plan-title-${plan.codigo}`}>
         <header className="pl-catalog-card-heading"><div><span className="pl-catalog-family">{plan.acceso_rutas==='elegir'?'1 ruta a elección':'2 rutas incluidas'}</span><h3 id={`plan-title-${plan.codigo}`}>{plan.nombre}</h3></div><span className="pl-catalog-period">{plan.periodicidad==='anual'?'Anual':'Mensual'}</span></header>
-        <div className="pl-catalog-price"><strong>{plan.moneda==='USD'?'US$':'₲'} {Number(plan.precio||0).toLocaleString(plan.moneda==='USD'?'en-US':'es-PY')}</strong><span>{plan.periodicidad==='anual'?'por año · pago adelantado':'por mes'}</span></div>
+        <div className="pl-catalog-price"><strong>{plan.moneda==='EUR'?'€':plan.moneda==='USD'?'US$':'₲'} {Number(plan.precio||0).toLocaleString(plan.moneda==='EUR'?'es-ES':plan.moneda==='USD'?'en-US':'es-PY')}</strong><span>{plan.periodicidad==='anual'?'por año · pago adelantado':'por mes'}</span></div>
         <p className="pl-catalog-scope">{plan.acceso_rutas==='elegir'?'E-commerce o Marca personal: el cliente elige una al contratar.':'E-commerce y Marca personal con acceso a los dos espacios.'}</p>
         <fieldset className="pl-catalog-fields" disabled={guardandoPlanes || !catalogoCargado}><legend>Precio y publicación</legend>
           <div className="pl-catalog-price-fields"><label className="pl-campo"><span>Precio del plan</span><input type="number" min="1" step="1" required value={plan.precio} onChange={e=>actualizar(i,'precio',e.target.value)}/></label>
-          <label className="pl-campo"><span>Moneda</span><select value={plan.moneda||'PYG'} onChange={e=>actualizar(i,'moneda',e.target.value)}><option value="PYG">Guaraníes (PYG)</option><option value="USD">Dólares (USD)</option></select></label></div>
+          <label className="pl-campo"><span>Moneda</span><select value={plan.moneda||'EUR'} onChange={e=>actualizar(i,'moneda',e.target.value)}><option value="EUR">Euros (EUR €)</option><option value="USD">Dólares (USD $)</option><option value="PYG">Guaraníes (PYG ₲)</option></select></label></div>
           <label className="pl-catalog-check"><input type="checkbox" checked={plan.activo!==false} onChange={e=>cambiarVisibilidad(i,e.target.checked)}/>{plan.activo!==false?<Eye size={17} aria-hidden="true"/>:<EyeOff size={17} aria-hidden="true"/>}<span>Visible en landing y /planes</span></label>
           <label className="pl-catalog-check"><input type="checkbox" checked={!!plan.destacado} disabled={plan.activo===false} onChange={e=>marcarDestacado(i,e.target.checked)}/><span>Destacar este plan</span></label>
+          {plan.kunfupay_plan_id && <p className="pl-field-nota" style={{ fontSize: '13px', color: '#10b981', marginTop: '4px' }}>✓ Conectado a KunfuPay (Plan: {plan.kunfupay_plan_id})</p>}
         </fieldset>
         <details className="pl-catalog-details"><summary>Textos y beneficios del plan</summary><div>
           {CAMPOS_EDITABLES.filter(c=>!['precio','moneda'].includes(c.campo)).map(({campo,label,tipo,ayuda})=><label key={campo} className="pl-campo"><span>{label}</span>{tipo==='area'?<textarea rows={3} value={plan[campo]||''} onChange={e=>actualizar(i,campo,e.target.value)}/>:<input value={plan[campo]||''} onChange={e=>actualizar(i,campo,e.target.value)}/>} {ayuda&&<small>{ayuda}</small>}</label>)}

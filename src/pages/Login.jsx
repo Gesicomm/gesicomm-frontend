@@ -140,12 +140,13 @@ export default function Login() {
   // quede en la URL — historial del navegador, logs de proxy, Referer. El
   // query param sigue andando como resguardo (ej: recarga de página, que
   // pierde el state) y para no romper enlaces ya generados.
+  const codigoUrlInicial = paramsIniciales.get('codigo')?.trim().toUpperCase() || '';
   const tokenSuscripcionInicial = location.state?.token || paramsIniciales.get('token') || '';
-  const esRutaRegistro = location.pathname === '/registro' || paramsIniciales.get('registro') === '1';
+  const esRutaRegistro = location.pathname === '/registro' || paramsIniciales.get('registro') === '1' || Boolean(codigoUrlInicial);
   const [activeForm, setActiveForm] = useState(esRutaRegistro ? 'register' : 'login');
 
   const [formData, setFormData] = useState({ nombre: '', telefono: '', email: '', password: '', confirmPassword: '' });
-  const [codigoPrueba, setCodigoPrueba] = useState('');
+  const [codigoPrueba, setCodigoPrueba] = useState(codigoUrlInicial);
   const [pruebaRegistro, setPruebaRegistro] = useState(null);
   const [tokenSuscripcion, setTokenSuscripcion] = useState(tokenSuscripcionInicial);
   const [suscripcionRegistro, setSuscripcionRegistro] = useState(null);
@@ -684,7 +685,7 @@ export default function Login() {
                 />
                 </div>
 
-                {!tokenSuscripcion && <details className="login-register-trial">
+                {!tokenSuscripcion && <details className="login-register-trial" open={Boolean(codigoPrueba) || undefined}>
                   <summary>
                     <span className="login-register-trial-icon"><ShieldCheck size={18} aria-hidden="true" /></span>
                     <span className="login-register-trial-copy">

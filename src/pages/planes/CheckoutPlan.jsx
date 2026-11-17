@@ -240,7 +240,7 @@ export default function CheckoutPlan() {
 
             <div className="pl-upgrade-details">
               <div>
-                <span>Teléfono para PagoPar</span>
+                <span>Teléfono de contacto</span>
                 <strong>{datos.telefono || 'Pendiente'}</strong>
               </div>
               <div>
@@ -252,7 +252,7 @@ export default function CheckoutPlan() {
             {requiereCompletar && (
               <div className="pl-upgrade-missing">
                 <h2>Completá el dato que falta</h2>
-                <p>PagoPar exige teléfono y cédula para procesar el cobro. Solo te pedimos lo que no encontramos guardado.</p>
+                <p>Se requiere teléfono y documento para identificar tu suscripción. Solo te pedimos lo que no encontramos guardado.</p>
                 <div className="pl-checkout-grid">
                   {camposFaltantes.telefono && (
                     <label className="pl-campo">

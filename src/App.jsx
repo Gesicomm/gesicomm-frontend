@@ -519,6 +519,7 @@ function App() {
           <ProtectedRoute><UserLayout><CheckoutPlan /></UserLayout></ProtectedRoute>
         } />
         <Route path="/checkout/public/:codigo" element={<PublicCheckoutPlan />} />
+        <Route path="/planes/resultado" element={<ResultadoPago />} />
         <Route path="/planes/resultado/:hash" element={<ResultadoPago />} />
         <Route path="/admin/planes" element={
           <AdminRoute><DashboardLayout><AdminPlanes /></DashboardLayout></AdminRoute>

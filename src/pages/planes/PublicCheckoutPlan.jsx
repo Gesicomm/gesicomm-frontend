@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, CreditCard, Loader, ShieldCheck, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CreditCard, Loader, ShieldCheck, AlertCircle, KeyRound } from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { leerRefAfiliado } from '../../services/afiliadosService';
 import { formatMoneda } from '../../utils/currency';
@@ -153,7 +153,7 @@ export default function PublicCheckoutPlan() {
             <div>
               <h1>Pagá el plan que elegiste</h1>
               <p>
-                Usamos estos datos para iniciar la transacción con PagoPar y precargar tu cuenta de Gesicom. 
+                Usamos estos datos para iniciar la suscripción y precargar tu cuenta de Gesicom. 
                 Después del pago podrás registrar tu cuenta o continuar con la que ya tenés.
               </p>
             </div>
@@ -165,7 +165,26 @@ export default function PublicCheckoutPlan() {
               </div>
             )}
 
-            {parametros.get('moneda_referencia') === 'USD' && <p className="pl-aviso">Los precios en USD de la portada son de referencia. PagoPar cobrará el total en guaraníes que figura en este resumen.</p>}
+            {parametros.get('moneda_referencia') === 'USD' && <p className="pl-aviso">Los precios en USD de la portada son de referencia. El cobro recurrente se procesará en la moneda oficial configurada en este resumen.</p>}
+
+            <div className="pl-codigo-acceso-banner mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-primary/10 text-primary mt-0.5 shrink-0">
+                  <KeyRound size={18} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-text">¿Tenés un código de acceso gratuito o de prueba?</p>
+                  <p className="text-[13px] text-muted mt-0.5">Podés activarlo sin ingresar tu tarjeta y disfrutar de tus días de prueba libre.</p>
+                </div>
+              </div>
+              <Link
+                to="/registro"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-primary hover:text-primary-hover hover:bg-primary/10 rounded-lg transition-colors whitespace-nowrap self-start sm:self-auto"
+              >
+                Canjear código <ArrowRight size={14} />
+              </Link>
+            </div>
+
             <form onSubmit={iniciarPago} className="pl-upgrade-missing mt-8">
               <RutaDelPlan plan={plan} value={ruta} onChange={setRuta} disabled={pagando} />
               <div className="pl-checkout-grid">
@@ -229,7 +248,7 @@ export default function PublicCheckoutPlan() {
                   {pagando ? (
                     <><Loader size={14} className="spin-icon" /> Abriendo pago...</>
                   ) : (
-                    <><CreditCard size={15} /> Pagar con PagoPar <ArrowRight size={15} /></>
+                    <><CreditCard size={15} /> Confirmar suscripción <ArrowRight size={15} /></>
                   )}
                 </button>
               </div>

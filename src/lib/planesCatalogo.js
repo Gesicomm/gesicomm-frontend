@@ -27,7 +27,9 @@ export function normalizarCatalogoPlanes(catalogo) {
     const guardado=planes.find(plan=>(plan.codigo||plan.id)===base.codigo);
     return {...base,...guardado,id:base.codigo,codigo:base.codigo,nombre:base.nombre,
       acceso_rutas:base.acceso_rutas,periodicidad:base.periodicidad,equivale:'pago',
-      features:Array.isArray(guardado?.features)?[...guardado.features]:[...base.features]};
+      features:Array.isArray(guardado?.features)?[...guardado.features]:[...base.features],
+      kunfupay_product_id: guardado?.kunfupay_product_id || null,
+      kunfupay_plan_id: guardado?.kunfupay_plan_id || null};
   });
 }
 
