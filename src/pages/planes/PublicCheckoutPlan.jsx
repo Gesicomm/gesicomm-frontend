@@ -145,131 +145,131 @@ export default function PublicCheckoutPlan() {
       </header>
 
       {cargando ? (
-        <div className="pl-cargando mt-20"><Loader size={20} className="spin-icon" /><span>Preparando checkout...</span></div>
+        <div className="pl-cargando mt-12"><Loader size={20} className="spin-icon" /><span>Preparando checkout...</span></div>
       ) : (
-        <section className="pl-upgrade-shell mt-10 max-w-5xl mx-auto p-6">
-          <main className="pl-upgrade-main">
-            <span className="pl-hero-eyebrow"><ShieldCheck size={13} /> Checkout seguro</span>
-            <div>
-              <h1>Pagá el plan que elegiste</h1>
-              <p>
-                Usamos estos datos para iniciar la suscripción y precargar tu cuenta de Gesicom. 
-                Después del pago podrás registrar tu cuenta o continuar con la que ya tenés.
-              </p>
-            </div>
-
-            {error && (
-              <div className="pl-aviso pl-aviso-error mt-6">
-                <AlertCircle size={17} />
-                <span>{error}</span>
+        <div className="max-w-5xl mx-auto px-4 py-4 sm:py-6">
+          <section className="pl-upgrade-shell">
+            <main className="pl-upgrade-main">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="pl-hero-eyebrow"><ShieldCheck size={13} /> Checkout seguro</span>
+                <Link to="/registro" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1.5 bg-primary/10 px-2.5 py-1 rounded-full">
+                  <KeyRound size={13} /> ¿Tenés código de prueba? Canjear acá
+                </Link>
               </div>
-            )}
 
-            {parametros.get('moneda_referencia') === 'USD' && <p className="pl-aviso">Los precios en USD de la portada son de referencia. El cobro recurrente se procesará en la moneda oficial configurada en este resumen.</p>}
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-text">Pagá tu suscripción</h1>
+                <p className="text-xs sm:text-sm text-muted mt-0.5">
+                  Ingresá tus datos para iniciar el plan y activar tu cuenta al instante.
+                </p>
+              </div>
 
-            <div className="pl-codigo-acceso-banner mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary mt-0.5 shrink-0">
-                  <KeyRound size={18} aria-hidden="true" />
+              {error && (
+                <div className="pl-aviso pl-aviso-error py-2 px-3 text-xs">
+                  <AlertCircle size={15} />
+                  <span>{error}</span>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-text">¿Tenés un código de acceso gratuito o de prueba?</p>
-                  <p className="text-[13px] text-muted mt-0.5">Podés activarlo sin ingresar tu tarjeta y disfrutar de tus días de prueba libre.</p>
+              )}
+
+              <form onSubmit={iniciarPago} className="pl-checkout-form flex flex-col gap-3 mt-1">
+                <RutaDelPlan plan={plan} value={ruta} onChange={setRuta} disabled={pagando} />
+
+                <div className="pl-checkout-grid">
+                  <label className="pl-campo">
+                    <span>Nombre completo</span>
+                    <input
+                      value={form.nombre}
+                      onChange={e => actualizar('nombre', e.target.value)}
+                      placeholder="Ej: Ana González"
+                      autoComplete="name"
+                      disabled={pagando}
+                    />
+                    {errores.nombre && <em className="pl-campo-error">{errores.nombre}</em>}
+                  </label>
+                  
+                  <label className="pl-campo">
+                    <span>Correo electrónico</span>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={e => actualizar('email', e.target.value)}
+                      placeholder="tu@email.com"
+                      autoComplete="email"
+                      disabled={pagando}
+                    />
+                    {errores.email && <em className="pl-campo-error">{errores.email}</em>}
+                  </label>
+
+                  <label className="pl-campo">
+                    <span>Teléfono</span>
+                    <input
+                      value={form.telefono}
+                      onChange={e => actualizar('telefono', e.target.value)}
+                      placeholder="Ej: +595981123456"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      disabled={pagando}
+                    />
+                    {errores.telefono && <em className="pl-campo-error">{errores.telefono}</em>}
+                  </label>
+                  
+                  <label className="pl-campo">
+                    <span>Número de cédula</span>
+                    <input
+                      value={form.documento}
+                      onChange={e => actualizar('documento', e.target.value)}
+                      placeholder="Ej: 4123456"
+                      autoComplete="off"
+                      inputMode="numeric"
+                      disabled={pagando}
+                    />
+                    {errores.documento && <em className="pl-campo-error">{errores.documento}</em>}
+                  </label>
                 </div>
+
+                <div className="pl-checkout-actions-bar pt-3 border-t border-border flex items-center justify-between gap-3 flex-wrap mt-2">
+                  <span className="text-xs text-muted flex items-center gap-1.5">
+                    <ShieldCheck size={14} className="text-primary shrink-0" /> Pago seguro cifrado SSL · Cancelás cuando quieras
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" className="pl-btn text-sm px-4 py-2" onClick={() => navigate(esPlanRutas ? '/#precios' : '/planes')} disabled={pagando}>
+                      Cancelar
+                    </button>
+                    <button type="submit" className="pl-cta primario text-sm font-bold px-5 py-2.5 shadow-md" disabled={pagando || !plan}>
+                      {pagando ? (
+                        <><Loader size={14} className="spin-icon" /> Abriendo pago...</>
+                      ) : (
+                        <><CreditCard size={15} /> Confirmar suscripción <ArrowRight size={15} /></>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </main>
+
+            <aside className="pl-upgrade-summary">
+              <div className="flex items-center justify-between">
+                <span className="pl-cinta">{plan?.etiqueta || 'Plan seleccionado'}</span>
+                <span className="text-xs font-semibold text-primary">{plan?.moneda || 'USD'}</span>
               </div>
-              <Link
-                to="/registro"
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-primary hover:text-primary-hover hover:bg-primary/10 rounded-lg transition-colors whitespace-nowrap self-start sm:self-auto"
-              >
-                Canjear código <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            <form onSubmit={iniciarPago} className="pl-upgrade-missing mt-8">
-              <RutaDelPlan plan={plan} value={ruta} onChange={setRuta} disabled={pagando} />
-              <div className="pl-checkout-grid">
-                <label className="pl-campo">
-                  <span>Nombre completo</span>
-                  <input
-                    value={form.nombre}
-                    onChange={e => actualizar('nombre', e.target.value)}
-                    placeholder="Ej: Ana González"
-                    autoComplete="name"
-                    disabled={pagando}
-                  />
-                  {errores.nombre && <em className="pl-campo-error">{errores.nombre}</em>}
-                </label>
-                
-                <label className="pl-campo">
-                  <span>Correo electrónico</span>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={e => actualizar('email', e.target.value)}
-                    placeholder="tu@email.com"
-                    autoComplete="email"
-                    disabled={pagando}
-                  />
-                  {errores.email && <em className="pl-campo-error">{errores.email}</em>}
-                </label>
-
-                <label className="pl-campo">
-                  <span>Teléfono</span>
-                  <input
-                    value={form.telefono}
-                    onChange={e => actualizar('telefono', e.target.value)}
-                    placeholder="Ej: +595981123456"
-                    autoComplete="tel"
-                    inputMode="tel"
-                    disabled={pagando}
-                  />
-                  {errores.telefono && <em className="pl-campo-error">{errores.telefono}</em>}
-                </label>
-                
-                <label className="pl-campo">
-                  <span>Número de cédula</span>
-                  <input
-                    value={form.documento}
-                    onChange={e => actualizar('documento', e.target.value)}
-                    placeholder="Ej: 4123456"
-                    autoComplete="off"
-                    inputMode="numeric"
-                    disabled={pagando}
-                  />
-                  {errores.documento && <em className="pl-campo-error">{errores.documento}</em>}
-                </label>
+              <div>
+                <h2 className="text-lg font-bold text-text">{plan?.nombre || 'Plan'}</h2>
+                <p className="text-xs text-muted mt-0.5">{plan?.resumen}</p>
               </div>
-
-              <div className="pl-upgrade-actions mt-8 pt-6 border-t border-border flex gap-3">
-                <button type="button" className="pl-btn" onClick={() => navigate(esPlanRutas ? '/#precios' : '/planes')} disabled={pagando}>
-                  Cancelar
-                </button>
-                <button type="submit" className="pl-cta primario" disabled={pagando || !plan}>
-                  {pagando ? (
-                    <><Loader size={14} className="spin-icon" /> Abriendo pago...</>
-                  ) : (
-                    <><CreditCard size={15} /> Confirmar suscripción <ArrowRight size={15} /></>
-                  )}
-                </button>
+              <div className="pl-precio py-2 border-y border-border/50 my-1">
+                <strong className="text-2xl font-black">{formatPrecioPlan(plan)}</strong>
+                <span className="text-xs text-muted">{plan?.periodicidad === 'anual' ? 'por año · pago adelantado' : 'por mes · recurrente'}</span>
               </div>
-            </form>
-          </main>
-
-          <aside className="pl-upgrade-summary">
-            <span className="pl-cinta">{plan?.etiqueta || 'Plan seleccionado'}</span>
-            <h2>{plan?.nombre || 'Plan'}</h2>
-            <p>{plan?.resumen}</p>
-            <div className="pl-precio">
-              <strong>{formatPrecioPlan(plan)}</strong>
-              <span>{plan?.periodicidad === 'anual' ? 'por año · pago adelantado' : plan?.periodicidad === 'unico' ? 'pago único' : 'por mes'}</span>
-            </div>
-            <ul className="pl-features">
-              {(plan?.features || []).map((feature, index) => (
-                <li key={index}><Check size={14} /> <span>{feature}</span></li>
-              ))}
-            </ul>
-          </aside>
-        </section>
+              <ul className="pl-features space-y-1.5">
+                {(plan?.features || []).map((feature, index) => (
+                  <li key={index} className="flex items-center gap-2 text-xs text-text">
+                    <Check size={13} className="text-primary shrink-0" /> <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          </section>
+        </div>
       )}
     </div>
   );
