@@ -51,6 +51,21 @@ export default function PublicCheckoutPlan() {
   const [codigoValido, setCodigoValido] = useState(null);
   const [codigoError, setCodigoError] = useState('');
 
+  // Animación y reactividad de la mascota
+  const [hoveringSubmit, setHoveringSubmit] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  function handleMouseMove(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 14;
+    const y = ((e.clientY - rect.top) / rect.height - 0.5) * -14;
+    setMousePos({ x, y });
+  }
+
+  function handleMouseLeave() {
+    setMousePos({ x: 0, y: 0 });
+  }
+
   useEffect(() => {
     let activo = true;
 
@@ -174,14 +189,15 @@ export default function PublicCheckoutPlan() {
     }
   }
 
-  // Estados visuales de la mascota
-  const mascotPose = error ? 'alerta' : pagando ? 'analizando' : codigoValido ? 'confirmando' : 'pensando';
+  // Estados visuales y mensajes de la mascota
   const mascotMessage = useMemo(() => {
     if (error) return 'Revisemos los datos ingresados para poder continuar.';
     if (pagando) return 'Un momento, estoy conectando con el pago seguro...';
-    if (codigoValido) return `¡Buenísimo! Tu código te da ${codigoValido.dias} días de prueba libre para vender productos físicos.`;
+    if (hoveringSubmit && codigoValido) return '¡Siii! Hacé clic para activar tus 10 días de prueba gratis y empezar hoy mismo.';
+    if (hoveringSubmit) return '¡Qué emoción! Estás a un solo clic de tener tu tienda lista para vender productos físicos.';
+    if (codigoValido) return `¡Woooow! Con tu código tenés ${codigoValido.dias} días libres sin tarjeta. ¡Qué empiece la fiesta de ventas!`;
     return '¡Excelente elección! Vas a gestionar tus ventas y pedidos de productos físicos con todo organizado.';
-  }, [error, pagando, codigoValido]);
+  }, [error, pagando, codigoValido, hoveringSubmit]);
 
   return (
     <div className="pl-page pl-checkout-page pl-public-checkout">
@@ -329,7 +345,15 @@ export default function PublicCheckoutPlan() {
                     <button type="button" className="pl-btn text-sm px-4 py-2" onClick={() => navigate(esPlanRutas ? '/#precios' : '/planes')} disabled={pagando}>
                       Cancelar
                     </button>
-                    <button type="submit" className="pl-cta primario text-sm font-bold px-5 py-2.5 shadow-md" disabled={pagando || !plan}>
+                    <button
+                      type="submit"
+                      className="pl-cta primario text-sm font-bold px-5 py-2.5 shadow-md"
+                      disabled={pagando || !plan}
+                      onMouseEnter={() => setHoveringSubmit(true)}
+                      onMouseLeave={() => setHoveringSubmit(false)}
+                      onFocus={() => setHoveringSubmit(true)}
+                      onBlur={() => setHoveringSubmit(false)}
+                    >
                       {pagando ? (
                         <><Loader size={14} className="spin-icon" /> Abriendo pago...</>
                       ) : codigoValido ? (
@@ -346,27 +370,32 @@ export default function PublicCheckoutPlan() {
             <aside className="pl-upgrade-summary flex flex-col justify-between">
               <div>
                 {/* Mascota viva de Gesicom acompañando la compra */}
-                <div className="pl-mascot-box mb-4 p-3 rounded-2xl bg-surface border border-primary/20 shadow-sm flex items-center gap-3">
+                <div
+                  className="pl-mascot-box mb-4 p-3 rounded-2xl bg-surface border border-primary/20 shadow-sm flex items-center gap-3 relative overflow-hidden"
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <span className="pl-mascot-sparkle pl-mascot-sparkle-1" />
+                  <span className="pl-mascot-sparkle pl-mascot-sparkle-2" />
                   <div className="relative shrink-0 flex items-center justify-center">
                     <span className="absolute inset-0 rounded-full bg-primary/20 blur-md animate-pulse" />
                     <img
-                      src={
-                        mascotPose === 'alerta'
-                          ? '/brand/mascot/alerta.png'
-                          : mascotPose === 'analizando'
-                          ? '/brand/mascot/analizando.png'
-                          : '/brand/mascot/guia-transparente.png'
-                      }
+                      src="/brand/mascot/guia-transparente.png"
                       alt="Mascota de Gesicom"
-                      className="relative z-10 w-16 h-20 sm:w-20 sm:h-24 object-contain filter drop-shadow transition-transform duration-300 hover:scale-105"
+                      style={{
+                        transform: `perspective(300px) rotateY(${mousePos.x}deg) rotateX(${mousePos.y}deg)`,
+                      }}
+                      className={`pl-mascot-avatar relative z-10 w-16 h-20 sm:w-20 sm:h-24 object-contain filter drop-shadow-md select-none pointer-events-none ${
+                        hoveringSubmit || codigoValido ? 'is-happy' : pagando ? 'is-busy' : ''
+                      }`}
                       draggable="false"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-primary block mb-1">
-                      {mascotPose === 'alerta'
-                        ? 'Atención'
-                        : mascotPose === 'analizando'
+                      {hoveringSubmit
+                        ? '¡Vamos con todo!'
+                        : pagando
                         ? 'Procesando'
                         : codigoValido
                         ? '¡Prueba activa!'

@@ -1333,3 +1333,93 @@
 .pl-access-offer .pl-access-price-note { font-size: 14px !important; color: var(--color-fg-muted); }
 .pl-access-included { display: flex; align-items: center; gap: 8px; color: var(--color-fg); font-size: 14px; }
 .pl-access-offer .pl-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+
+/* ─── Mascota interactiva en Checkout ─── */
+.pl-mascot-box {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pl-mascot-box:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.pl-mascot-avatar {
+  display: block;
+  transform-origin: bottom center;
+  transition: transform 0.15s ease-out;
+  animation: pl-mascot-idle 3.5s ease-in-out infinite;
+  filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--color-primary) 25%, transparent));
+}
+
+.pl-mascot-avatar.is-happy {
+  animation: pl-mascot-happy 0.8s ease-in-out infinite alternate !important;
+}
+
+.pl-mascot-avatar.is-busy {
+  animation: pl-mascot-busy 1.8s ease-in-out infinite !important;
+}
+
+.pl-mascot-sparkle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 12px var(--color-primary);
+  pointer-events: none;
+}
+
+.pl-mascot-sparkle-1 {
+  top: 15%;
+  right: 12%;
+  animation: pl-sparkle-pulse 2.8s ease-in-out infinite;
+}
+
+.pl-mascot-sparkle-2 {
+  bottom: 25%;
+  left: 8%;
+  width: 4px;
+  height: 4px;
+  animation: pl-sparkle-pulse 2.8s 1.2s ease-in-out infinite;
+}
+
+@keyframes pl-mascot-idle {
+  0%, 100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.5deg);
+  }
+}
+
+@keyframes pl-mascot-happy {
+  0% {
+    transform: translateY(-4px) rotate(-3deg) scale(1.04);
+  }
+  100% {
+    transform: translateY(-14px) rotate(3deg) scale(1.08);
+  }
+}
+
+@keyframes pl-mascot-busy {
+  0%, 100% {
+    transform: translateY(-2px) rotate(2deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(-2deg);
+  }
+}
+
+@keyframes pl-sparkle-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
