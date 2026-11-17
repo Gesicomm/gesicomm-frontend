@@ -140,12 +140,19 @@ export default function Login() {
   // quede en la URL — historial del navegador, logs de proxy, Referer. El
   // query param sigue andando como resguardo (ej: recarga de página, que
   // pierde el state) y para no romper enlaces ya generados.
-  const codigoUrlInicial = paramsIniciales.get('codigo')?.trim().toUpperCase() || '';
-  const tokenSuscripcionInicial = location.state?.token || paramsIniciales.get('token') || '';
+  const estadoNav = location.state || {};
+  const codigoUrlInicial = (estadoNav.codigo || paramsIniciales.get('codigo') || '').trim().toUpperCase();
+  const tokenSuscripcionInicial = estadoNav.token || paramsIniciales.get('token') || '';
   const esRutaRegistro = location.pathname === '/registro' || paramsIniciales.get('registro') === '1' || Boolean(codigoUrlInicial);
   const [activeForm, setActiveForm] = useState(esRutaRegistro ? 'register' : 'login');
 
-  const [formData, setFormData] = useState({ nombre: '', telefono: '', email: '', password: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({
+    nombre: estadoNav.nombre || '',
+    telefono: estadoNav.telefono || '',
+    email: estadoNav.email || '',
+    password: '',
+    confirmPassword: '',
+  });
   const [codigoPrueba, setCodigoPrueba] = useState(codigoUrlInicial);
   const [pruebaRegistro, setPruebaRegistro] = useState(null);
   const [tokenSuscripcion, setTokenSuscripcion] = useState(tokenSuscripcionInicial);
@@ -685,20 +692,29 @@ export default function Login() {
                 />
                 </div>
 
-                {!tokenSuscripcion && <details className="login-register-trial" open={Boolean(codigoPrueba) || undefined}>
-                  <summary>
-                    <span className="login-register-trial-icon"><ShieldCheck size={18} aria-hidden="true" /></span>
-                    <span className="login-register-trial-copy">
-                      <strong>¿Tenés un código de prueba?</strong>
-                      <small>Ingresalo para activar tu acceso</small>
+                {codigoPrueba ? (
+                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-between text-xs text-primary font-medium my-1">
+                    <span className="flex items-center gap-1.5 font-bold">
+                      <ShieldCheck size={16} /> Código de prueba aplicado: {codigoPrueba}
                     </span>
-                    <span className="login-register-trial-toggle" aria-hidden="true" />
-                  </summary>
-                  <div className="login-register-trial-content">
-                    <AuthField id="codigo_prueba" label="Código de prueba" icon={ShieldCheck} placeholder="Ingresá tu código" value={codigoPrueba} onChange={e => setCodigoPrueba(e.target.value.toUpperCase())} autoComplete="off" maxLength={40} />
-                    <p>Se activa al crear la cuenta y verificar tu correo.</p>
+                    <span className="text-[11px] bg-primary text-primary-fg px-2.5 py-0.5 rounded-full font-semibold">Prueba gratuita</span>
                   </div>
-                </details>}
+                ) : !tokenSuscripcion && (
+                  <details className="login-register-trial">
+                    <summary>
+                      <span className="login-register-trial-icon"><ShieldCheck size={18} aria-hidden="true" /></span>
+                      <span className="login-register-trial-copy">
+                        <strong>¿Tenés un código de prueba?</strong>
+                        <small>Ingresalo para activar tu acceso</small>
+                      </span>
+                      <span className="login-register-trial-toggle" aria-hidden="true" />
+                    </summary>
+                    <div className="login-register-trial-content">
+                      <AuthField id="codigo_prueba" label="Código de prueba" icon={ShieldCheck} placeholder="Ingresá tu código" value={codigoPrueba} onChange={e => setCodigoPrueba(e.target.value.toUpperCase())} autoComplete="off" maxLength={40} />
+                      <p>Se activa al crear la cuenta y verificar tu correo.</p>
+                    </div>
+                  </details>
+                )}
                 <div className="login-register-rules flex flex-wrap gap-2">
                   <PasswordRule ok={passwordChecks.length} invalid={Boolean(formData.password) && !passwordChecks.length}>8 caracteres+</PasswordRule>
                   <PasswordRule ok={passwordChecks.uppercase} invalid={Boolean(formData.password) && !passwordChecks.uppercase}>Una mayúscula</PasswordRule>

@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, CreditCard, Loader, ShieldCheck, AlertCircle, KeyRound } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CreditCard, Loader, ShieldCheck, AlertCircle, KeyRound, Rocket } from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { leerRefAfiliado } from '../../services/afiliadosService';
 import { formatMoneda } from '../../utils/currency';
 import Logo from '../../components/public/Logo';
+import API from '../../services/api';
 import './planes.css';
-import RutaDelPlan from '../../components/RutaDelPlan';
-import { accesoDelPlan } from '../../lib/rutasPlan';
 
 function formatPrecioPlan(plan) {
   if (!plan) return '';
@@ -44,10 +43,13 @@ export default function PublicCheckoutPlan() {
     documento: '',
   });
   const [errores, setErrores] = useState({});
-  const parametros = new URLSearchParams(location.search);
-  const [ruta, setRuta] = useState((location.state?.ruta || parametros.get('ruta')) === 'personal' ? 'personal' : 'fisico');
   const esPlanRutas = /^(una-ruta|ambas-rutas)-(mensual|anual)$/.test(codigo);
 
+  // Código de prueba inline en el checkout
+  const [codigoPrueba, setCodigoPrueba] = useState('');
+  const [verificandoCodigo, setVerificandoCodigo] = useState(false);
+  const [codigoValido, setCodigoValido] = useState(null);
+  const [codigoError, setCodigoError] = useState('');
 
   useEffect(() => {
     let activo = true;
@@ -100,16 +102,55 @@ export default function PublicCheckoutPlan() {
     return Object.keys(nuevosErrores).length === 0;
   }
 
-  async function iniciarPago(e) {
+  async function validarCodigo() {
+    if (!codigoPrueba.trim()) return;
+    setVerificandoCodigo(true);
+    setCodigoError('');
+    try {
+      const { data } = await API.post('/publico/verificar-codigo-prueba', {
+        codigo: codigoPrueba.trim().toUpperCase(),
+        email: form.email.trim() || undefined,
+      });
+      setCodigoValido(data);
+      setCodigoError('');
+    } catch (err) {
+      setCodigoValido(null);
+      setCodigoError(err.response?.data?.error || err.response?.data?.message || 'Código de prueba inválido, vencido o ya usado.');
+    } finally {
+      setVerificandoCodigo(false);
+    }
+  }
+
+  function quitarCodigo() {
+    setCodigoValido(null);
+    setCodigoPrueba('');
+    setCodigoError('');
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
     if (pagando || !plan || !validar()) return;
+
+    if (codigoValido) {
+      // Flujo directo con código de prueba: redirige a /registro con datos precargados
+      navigate('/registro', {
+        state: {
+          nombre: form.nombre.trim(),
+          email: form.email.trim().toLowerCase(),
+          telefono: form.telefono.trim(),
+          documento: form.documento.trim(),
+          codigo: codigoValido.codigo,
+        },
+      });
+      return;
+    }
 
     setPagando(true);
     setError(null);
     try {
       const intent = await planesService.crearCheckoutIntent({ 
         plan_codigo: plan.codigo,
-        ruta: accesoDelPlan(plan) === 'elegir' ? ruta : accesoDelPlan(plan),
+        ruta: 'fisico', // Exclusivo productos físicos / E-commerce
         afiliado_codigo: leerRefAfiliado(),
       });
       
@@ -133,6 +174,15 @@ export default function PublicCheckoutPlan() {
     }
   }
 
+  // Estados visuales de la mascota
+  const mascotPose = error ? 'alerta' : pagando ? 'analizando' : codigoValido ? 'confirmando' : 'pensando';
+  const mascotMessage = useMemo(() => {
+    if (error) return 'Revisemos los datos ingresados para poder continuar.';
+    if (pagando) return 'Un momento, estoy conectando con el pago seguro...';
+    if (codigoValido) return `¡Buenísimo! Tu código te da ${codigoValido.dias} días de prueba libre para vender productos físicos.`;
+    return '¡Excelente elección! Vas a gestionar tus ventas y pedidos de productos físicos con todo organizado.';
+  }, [error, pagando, codigoValido]);
+
   return (
     <div className="pl-page pl-checkout-page pl-public-checkout">
       <header className="flex h-16 items-center justify-between border-b border-border bg-surface px-6 no-imprimir">
@@ -152,9 +202,7 @@ export default function PublicCheckoutPlan() {
             <main className="pl-upgrade-main">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <span className="pl-hero-eyebrow"><ShieldCheck size={13} /> Checkout seguro</span>
-                <Link to="/registro" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1.5 bg-primary/10 px-2.5 py-1 rounded-full">
-                  <KeyRound size={13} /> ¿Tenés código de prueba? Canjear acá
-                </Link>
+                <span className="text-xs text-muted">Gestión de E-commerce · Productos físicos</span>
               </div>
 
               <div>
@@ -165,15 +213,13 @@ export default function PublicCheckoutPlan() {
               </div>
 
               {error && (
-                <div className="pl-aviso pl-aviso-error py-2 px-3 text-xs">
-                  <AlertCircle size={15} />
+                <div className="pl-aviso pl-aviso-error py-2.5 px-3.5 text-xs">
+                  <AlertCircle size={16} className="shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
 
-              <form onSubmit={iniciarPago} className="pl-checkout-form flex flex-col gap-3 mt-1">
-                <RutaDelPlan plan={plan} value={ruta} onChange={setRuta} disabled={pagando} />
-
+              <form onSubmit={handleSubmit} className="pl-checkout-form flex flex-col gap-3.5 mt-1">
                 <div className="pl-checkout-grid">
                   <label className="pl-campo">
                     <span>Nombre completo</span>
@@ -227,7 +273,55 @@ export default function PublicCheckoutPlan() {
                   </label>
                 </div>
 
-                <div className="pl-checkout-actions-bar pt-3 border-t border-border flex items-center justify-between gap-3 flex-wrap mt-2">
+                {/* Campo de Código de prueba directo en el formulario */}
+                <div className="p-3 rounded-xl border border-border bg-surface-2/40 flex flex-col gap-2 mt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-text flex items-center gap-1.5">
+                      <KeyRound size={13} className="text-primary" /> ¿Tenés un código de prueba gratuita o cupón?
+                    </span>
+                    {codigoValido && (
+                      <span className="text-xs font-bold text-primary flex items-center gap-1">
+                        <Check size={12} /> Canjeado
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={codigoPrueba}
+                      onChange={e => { setCodigoPrueba(e.target.value.toUpperCase()); setCodigoError(''); }}
+                      placeholder="Ej: GESI-XXXXXX"
+                      className="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-text uppercase tracking-wider focus:outline-none focus:border-primary"
+                      disabled={verificandoCodigo || Boolean(codigoValido)}
+                    />
+                    {codigoValido ? (
+                      <button
+                        type="button"
+                        onClick={quitarCodigo}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-surface text-muted hover:text-text transition-colors"
+                      >
+                        Quitar
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={validarCodigo}
+                        disabled={!codigoPrueba.trim() || verificandoCodigo}
+                        className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-fg hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-1"
+                      >
+                        {verificandoCodigo ? <Loader size={12} className="spin-icon" /> : 'Canjear'}
+                      </button>
+                    )}
+                  </div>
+                  {codigoError && <p className="text-xs text-danger m-0">{codigoError}</p>}
+                  {codigoValido && (
+                    <p className="text-xs text-primary font-medium m-0 flex items-center gap-1">
+                      <Check size={12} /> ¡Código válido! Acceso libre por <strong>{codigoValido.dias} días</strong> sin pagar nada hoy.
+                    </p>
+                  )}
+                </div>
+
+                <div className="pl-checkout-actions-bar pt-3 border-t border-border flex items-center justify-between gap-3 flex-wrap mt-1">
                   <span className="text-xs text-muted flex items-center gap-1.5">
                     <ShieldCheck size={14} className="text-primary shrink-0" /> Pago seguro cifrado SSL · Cancelás cuando quieras
                   </span>
@@ -238,6 +332,8 @@ export default function PublicCheckoutPlan() {
                     <button type="submit" className="pl-cta primario text-sm font-bold px-5 py-2.5 shadow-md" disabled={pagando || !plan}>
                       {pagando ? (
                         <><Loader size={14} className="spin-icon" /> Abriendo pago...</>
+                      ) : codigoValido ? (
+                        <><Rocket size={15} /> Activar mis {codigoValido.dias} días gratis <ArrowRight size={15} /></>
                       ) : (
                         <><CreditCard size={15} /> Confirmar suscripción <ArrowRight size={15} /></>
                       )}
@@ -247,26 +343,76 @@ export default function PublicCheckoutPlan() {
               </form>
             </main>
 
-            <aside className="pl-upgrade-summary">
-              <div className="flex items-center justify-between">
-                <span className="pl-cinta">{plan?.etiqueta || 'Plan seleccionado'}</span>
-                <span className="text-xs font-semibold text-primary">{plan?.moneda || 'USD'}</span>
-              </div>
+            <aside className="pl-upgrade-summary flex flex-col justify-between">
               <div>
-                <h2 className="text-lg font-bold text-text">{plan?.nombre || 'Plan'}</h2>
-                <p className="text-xs text-muted mt-0.5">{plan?.resumen}</p>
+                {/* Mascota viva de Gesicom acompañando la compra */}
+                <div className="pl-mascot-box mb-4 p-3 rounded-2xl bg-surface border border-primary/20 shadow-sm flex items-center gap-3">
+                  <div className="relative shrink-0 flex items-center justify-center">
+                    <span className="absolute inset-0 rounded-full bg-primary/20 blur-md animate-pulse" />
+                    <img
+                      src={
+                        mascotPose === 'alerta'
+                          ? '/brand/mascot/alerta.png'
+                          : mascotPose === 'analizando'
+                          ? '/brand/mascot/analizando.png'
+                          : '/brand/mascot/guia-transparente.png'
+                      }
+                      alt="Mascota de Gesicom"
+                      className="relative z-10 w-16 h-20 sm:w-20 sm:h-24 object-contain filter drop-shadow transition-transform duration-300 hover:scale-105"
+                      draggable="false"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary block mb-1">
+                      {mascotPose === 'alerta'
+                        ? 'Atención'
+                        : mascotPose === 'analizando'
+                        ? 'Procesando'
+                        : codigoValido
+                        ? '¡Prueba activa!'
+                        : 'Tu compañero Gesicom'}
+                    </span>
+                    <p className="text-xs text-text leading-snug m-0 font-medium">
+                      {mascotMessage}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="pl-cinta">{plan?.etiqueta || 'Plan seleccionado'}</span>
+                  <span className="text-xs font-semibold text-primary">{plan?.moneda || 'USD'}</span>
+                </div>
+                <div className="mt-1.5">
+                  <h2 className="text-lg font-bold text-text">{plan?.nombre || 'Plan'}</h2>
+                  <p className="text-xs text-muted mt-0.5">Gestión de E-commerce · Productos físicos</p>
+                </div>
+                <div className="pl-precio py-2 border-y border-border/50 my-2">
+                  {codigoValido ? (
+                    <div>
+                      <span className="line-through text-muted text-sm mr-2">{formatPrecioPlan(plan)}</span>
+                      <strong className="text-2xl font-black text-primary">GRATIS</strong>
+                      <span className="text-xs text-muted block mt-0.5">por {codigoValido.dias} días · sin tarjeta</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <strong className="text-2xl font-black text-text">{formatPrecioPlan(plan)}</strong>
+                      <span className="text-xs text-muted block mt-0.5">{plan?.periodicidad === 'anual' ? 'por año · pago adelantado' : 'por mes · recurrente'}</span>
+                    </div>
+                  )}
+                </div>
+                <ul className="pl-features space-y-1.5">
+                  {(plan?.features || []).map((feature, index) => (
+                    <li key={index} className="flex items-center gap-2 text-xs text-text">
+                      <Check size={13} className="text-primary shrink-0" /> <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="pl-precio py-2 border-y border-border/50 my-1">
-                <strong className="text-2xl font-black">{formatPrecioPlan(plan)}</strong>
-                <span className="text-xs text-muted">{plan?.periodicidad === 'anual' ? 'por año · pago adelantado' : 'por mes · recurrente'}</span>
+
+              <div className="pt-2.5 border-t border-border/50 mt-3 flex items-center justify-between text-xs text-muted">
+                <span>Activación inmediata</span>
+                <span className="font-semibold text-text">100% Seguro</span>
               </div>
-              <ul className="pl-features space-y-1.5">
-                {(plan?.features || []).map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2 text-xs text-text">
-                    <Check size={13} className="text-primary shrink-0" /> <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
             </aside>
           </section>
         </div>
