@@ -27,6 +27,14 @@ function normalizarPlan(plan) {
   };
 }
 
+const MASCOT_POSES = [
+  { id: 'guia', src: '/brand/mascot/guia-transparente.png', label: 'Saludar', icon: '👋' },
+  { id: 'pensando', src: '/brand/mascot/pensando-transparente.png', label: 'Pensar', icon: '💡' },
+  { id: 'analizando', src: '/brand/mascot/analizando-transparente.png', label: 'Analizar', icon: '🔍' },
+  { id: 'confirmando', src: '/brand/mascot/confirmando-transparente.png', label: 'Celebrar', icon: '🎉' },
+  { id: 'alerta', src: '/brand/mascot/alerta-transparente.png', label: 'Alerta', icon: '⚡' },
+];
+
 export default function PublicCheckoutPlan() {
   const { codigo } = useParams();
   const navigate = useNavigate();
@@ -54,6 +62,27 @@ export default function PublicCheckoutPlan() {
   // Animación y reactividad de la mascota
   const [hoveringSubmit, setHoveringSubmit] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [campoActivo, setCampoActivo] = useState(null);
+  const [poseOverride, setPoseOverride] = useState(null);
+  const [idlePoseIndex, setIdlePoseIndex] = useState(0);
+
+  // Ciclo automático suave de poses si el usuario no interactúa
+  useEffect(() => {
+    if (campoActivo || hoveringSubmit || pagando || verificandoCodigo || codigoValido || error || codigoError || poseOverride) {
+      return;
+    }
+    const timer = setInterval(() => {
+      setIdlePoseIndex(prev => (prev + 1) % 3);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [campoActivo, hoveringSubmit, pagando, verificandoCodigo, codigoValido, error, codigoError, poseOverride]);
+
+  function cambiarPoseManual(poseId) {
+    setPoseOverride(poseId);
+    setTimeout(() => {
+      setPoseOverride(null);
+    }, 6000);
+  }
 
   function handleMouseMove(e) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -189,15 +218,129 @@ export default function PublicCheckoutPlan() {
     }
   }
 
-  // Estados visuales y mensajes de la mascota
-  const mascotMessage = useMemo(() => {
-    if (error) return 'Revisemos los datos ingresados para poder continuar.';
-    if (pagando) return 'Un momento, estoy conectando con el pago seguro...';
-    if (hoveringSubmit && codigoValido) return '¡Siii! Hacé clic para activar tus 10 días de prueba gratis y empezar hoy mismo.';
-    if (hoveringSubmit) return '¡Qué emoción! Estás a un solo clic de tener tu tienda lista para vender productos físicos.';
-    if (codigoValido) return `¡Woooow! Con tu código tenés ${codigoValido.dias} días libres sin tarjeta. ¡Qué empiece la fiesta de ventas!`;
-    return '¡Excelente elección! Vas a gestionar tus ventas y pedidos de productos físicos con todo organizado.';
-  }, [error, pagando, codigoValido, hoveringSubmit]);
+  // Determinación de la pose activa y comportamiento dinámico
+  const currentPose = useMemo(() => {
+    if (poseOverride) return poseOverride;
+    if (error || codigoError) return 'alerta';
+    if (hoveringSubmit || codigoValido) return 'confirmando';
+    if (pagando || verificandoCodigo || campoActivo === 'codigo') return 'analizando';
+    if (campoActivo) return 'pensando';
+    return ['guia', 'pensando', 'analizando'][idlePoseIndex] || 'guia';
+  }, [poseOverride, error, codigoError, hoveringSubmit, codigoValido, pagando, verificandoCodigo, campoActivo, idlePoseIndex]);
+
+  // Mensaje y estado visual reactivo
+  const mascotInfo = useMemo(() => {
+    if (poseOverride === 'confirmando') {
+      return {
+        badge: '¡A festejar!',
+        badgeColor: 'text-emerald-400',
+        mensaje: '¡Todo listo para vender productos físicos a lo grande!',
+      };
+    }
+    if (poseOverride === 'analizando') {
+      return {
+        badge: 'Analizando',
+        badgeColor: 'text-primary',
+        mensaje: 'Revisando métricas, pedidos y stock para tener todo bajo control.',
+      };
+    }
+    if (poseOverride === 'pensando') {
+      return {
+        badge: 'Pensando',
+        badgeColor: 'text-primary',
+        mensaje: 'Planificando los próximos lanzamientos de tu e-commerce.',
+      };
+    }
+    if (poseOverride === 'alerta') {
+      return {
+        badge: 'Atención',
+        badgeColor: 'text-amber-400',
+        mensaje: '¡Ojo con este detalle! Siempre te aviso ante cualquier novedad.',
+      };
+    }
+    if (poseOverride === 'guia') {
+      return {
+        badge: '¡Hola!',
+        badgeColor: 'text-primary',
+        mensaje: '¡Hola! Soy tu compañero Gesicom y estoy acá para guiarte en cada paso.',
+      };
+    }
+    if (error) {
+      return {
+        badge: 'Revisar datos',
+        badgeColor: 'text-amber-400',
+        mensaje: error,
+      };
+    }
+    if (codigoError) {
+      return {
+        badge: 'Código no válido',
+        badgeColor: 'text-amber-400',
+        mensaje: codigoError,
+      };
+    }
+    if (hoveringSubmit && codigoValido) {
+      return {
+        badge: '¡Listo para activar!',
+        badgeColor: 'text-emerald-400',
+        mensaje: `¡Siii! Hacé clic para activar tus ${codigoValido.dias} días de prueba gratis sin pagar nada hoy.`,
+      };
+    }
+    if (hoveringSubmit) {
+      return {
+        badge: '¡Vamos con todo!',
+        badgeColor: 'text-emerald-400',
+        mensaje: '¡Qué emoción! Estás a un solo clic de tener tu tienda lista para vender productos físicos.',
+      };
+    }
+    if (codigoValido) {
+      return {
+        badge: '¡Cupón aplicado!',
+        badgeColor: 'text-emerald-400',
+        mensaje: `¡Woooow! Con tu código tenés ${codigoValido.dias} días libres sin tarjeta. ¡A vender con todo!`,
+      };
+    }
+    if (pagando) {
+      return {
+        badge: 'Conectando...',
+        badgeColor: 'text-primary',
+        mensaje: 'Un momento, estoy conectando con la pasarela segura de pago...',
+      };
+    }
+    if (verificandoCodigo) {
+      return {
+        badge: 'Verificando',
+        badgeColor: 'text-primary',
+        mensaje: 'Comprobando tu código de acceso gratuito en el sistema...',
+      };
+    }
+    if (campoActivo === 'codigo') {
+      return {
+        badge: '¿Tenés código?',
+        badgeColor: 'text-primary',
+        mensaje: 'Pegá tu código acá y dale a "Canjear" para activar tus días libres.',
+      };
+    }
+    if (campoActivo === 'email') {
+      return {
+        badge: 'Tu correo de acceso',
+        badgeColor: 'text-primary',
+        mensaje: 'Con este correo vas a ingresar a tu panel y recibir las alertas de tus ventas.',
+      };
+    }
+    if (campoActivo) {
+      return {
+        badge: 'Completando datos',
+        badgeColor: 'text-primary',
+        mensaje: 'Ingresá tus datos para dejar tu cuenta vinculada al instante.',
+      };
+    }
+    return {
+      badge: 'Tu compañero Gesicom',
+      badgeColor: 'text-primary',
+      mensaje: '¡Excelente elección! Vas a gestionar tus ventas y pedidos de productos físicos con todo organizado.',
+    };
+  }, [poseOverride, error, codigoError, hoveringSubmit, codigoValido, pagando, verificandoCodigo, campoActivo]);
 
   return (
     <div className="pl-page pl-checkout-page pl-public-checkout">
@@ -242,6 +385,8 @@ export default function PublicCheckoutPlan() {
                     <input
                       value={form.nombre}
                       onChange={e => actualizar('nombre', e.target.value)}
+                      onFocus={() => setCampoActivo('nombre')}
+                      onBlur={() => setCampoActivo(null)}
                       placeholder="Ej: Ana González"
                       autoComplete="name"
                       disabled={pagando}
@@ -255,6 +400,8 @@ export default function PublicCheckoutPlan() {
                       type="email"
                       value={form.email}
                       onChange={e => actualizar('email', e.target.value)}
+                      onFocus={() => setCampoActivo('email')}
+                      onBlur={() => setCampoActivo(null)}
                       placeholder="tu@email.com"
                       autoComplete="email"
                       disabled={pagando}
@@ -267,6 +414,8 @@ export default function PublicCheckoutPlan() {
                     <input
                       value={form.telefono}
                       onChange={e => actualizar('telefono', e.target.value)}
+                      onFocus={() => setCampoActivo('telefono')}
+                      onBlur={() => setCampoActivo(null)}
                       placeholder="Ej: +595981123456"
                       autoComplete="tel"
                       inputMode="tel"
@@ -280,6 +429,8 @@ export default function PublicCheckoutPlan() {
                     <input
                       value={form.documento}
                       onChange={e => actualizar('documento', e.target.value)}
+                      onFocus={() => setCampoActivo('documento')}
+                      onBlur={() => setCampoActivo(null)}
                       placeholder="Ej: 4123456"
                       autoComplete="off"
                       inputMode="numeric"
@@ -306,6 +457,8 @@ export default function PublicCheckoutPlan() {
                       type="text"
                       value={codigoPrueba}
                       onChange={e => { setCodigoPrueba(e.target.value.toUpperCase()); setCodigoError(''); }}
+                      onFocus={() => setCampoActivo('codigo')}
+                      onBlur={() => setCampoActivo(null)}
                       placeholder="Ej: GESI-XXXXXX"
                       className="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-text uppercase tracking-wider focus:outline-none focus:border-primary"
                       disabled={verificandoCodigo || Boolean(codigoValido)}
@@ -369,41 +522,75 @@ export default function PublicCheckoutPlan() {
 
             <aside className="pl-upgrade-summary flex flex-col justify-between">
               <div>
-                {/* Mascota viva de Gesicom acompañando la compra */}
+                {/* Mascota viva de Gesicom acompañando la compra con poses y animación */}
                 <div
-                  className="pl-mascot-box mb-4 p-3 rounded-2xl bg-surface border border-primary/20 shadow-sm flex items-center gap-3 relative overflow-hidden"
+                  className="pl-mascot-box mb-4 p-3 rounded-2xl bg-surface border border-primary/20 shadow-sm relative overflow-hidden"
                   onMouseMove={handleMouseMove}
                   onMouseLeave={handleMouseLeave}
                 >
                   <span className="pl-mascot-sparkle pl-mascot-sparkle-1" />
                   <span className="pl-mascot-sparkle pl-mascot-sparkle-2" />
-                  <div className="relative shrink-0 flex items-center justify-center">
-                    <span className="absolute inset-0 rounded-full bg-primary/20 blur-md animate-pulse" />
-                    <img
-                      src="/brand/mascot/guia-transparente.png"
-                      alt="Mascota de Gesicom"
+                  
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="relative shrink-0 flex items-center justify-center w-16 h-20 sm:w-20 sm:h-24"
                       style={{
-                        transform: `perspective(300px) rotateY(${mousePos.x}deg) rotateX(${mousePos.y}deg)`,
+                        transform: `perspective(320px) rotateY(${mousePos.x}deg) rotateX(${mousePos.y}deg)`,
+                        transition: 'transform 0.15s ease-out',
                       }}
-                      className={`pl-mascot-avatar relative z-10 w-16 h-20 sm:w-20 sm:h-24 object-contain filter drop-shadow-md select-none pointer-events-none ${
-                        hoveringSubmit || codigoValido ? 'is-happy' : pagando ? 'is-busy' : ''
-                      }`}
-                      draggable="false"
-                    />
+                    >
+                      <span className="absolute inset-0 rounded-full bg-primary/20 blur-md animate-pulse" />
+                      {MASCOT_POSES.map(pose => {
+                        const isActive = currentPose === pose.id;
+                        return (
+                          <img
+                            key={pose.id}
+                            src={pose.src}
+                            alt={pose.label}
+                            className={`pl-mascot-avatar absolute inset-0 w-full h-full object-contain filter drop-shadow-md select-none pointer-events-none transition-all duration-300 ${
+                              isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+                            } ${
+                              currentPose === 'confirmando'
+                                ? 'is-happy'
+                                : currentPose === 'analizando'
+                                ? 'is-busy'
+                                : currentPose === 'alerta'
+                                ? 'is-alert'
+                                : currentPose === 'pensando'
+                                ? 'is-thinking'
+                                : 'is-idle'
+                            }`}
+                            draggable="false"
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-[11px] font-bold uppercase tracking-wider ${mascotInfo.badgeColor} block mb-1`}>
+                        {mascotInfo.badge}
+                      </span>
+                      <p className="text-xs text-text leading-snug m-0 font-medium transition-all duration-200">
+                        {mascotInfo.mensaje}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary block mb-1">
-                      {hoveringSubmit
-                        ? '¡Vamos con todo!'
-                        : pagando
-                        ? 'Procesando'
-                        : codigoValido
-                        ? '¡Prueba activa!'
-                        : 'Tu compañero Gesicom'}
-                    </span>
-                    <p className="text-xs text-text leading-snug m-0 font-medium">
-                      {mascotMessage}
-                    </p>
+
+                  {/* Selector interactivo de estado de la mascota */}
+                  <div className="mt-2.5 pt-2 border-t border-border/50 flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-muted font-medium mr-0.5">Ánimo:</span>
+                    {MASCOT_POSES.map(pose => (
+                      <button
+                        key={pose.id}
+                        type="button"
+                        onClick={() => cambiarPoseManual(pose.id)}
+                        className={`pl-mascot-mood-chip ${currentPose === pose.id ? 'is-active' : ''}`}
+                        title={`Ver a la mascota en modo ${pose.label}`}
+                      >
+                        <span>{pose.icon}</span>
+                        <span>{pose.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
