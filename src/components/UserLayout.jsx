@@ -18,6 +18,7 @@ import NotificationBell from './NotificationBell';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
 import PerfilModal from './PerfilModal';
+import AvisoCambioIp from './AvisoCambioIp';
 import TutorialDock from './TutorialDock';
 import ContenidoPanel from './ContenidoPanel';
 import precargarSeccion from '../utils/precargaSeccion';
@@ -715,6 +716,7 @@ const UserLayout = ({ children }) => {
         usuarioActual={usuario}
         onUsuarioActualizado={(u) => setUsuario((prev) => ({ ...(prev || {}), ...u }))}
       />
+      <AvisoCambioIp usuario={usuario} />
     </div>
   );
 };
