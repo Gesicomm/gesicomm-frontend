@@ -6,7 +6,6 @@ import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio, getCourierGeogr
 import { depositoService } from "../../services/deposito.service";
 import { inventarioService } from "../../services/inventario.service";
 import { canalVentaService } from "../../services/canalVentaService";
-import { paymentGatewayService } from "../../services/paymentGatewayService";
 import { obtenerTarifaPara, buscarCourierYTarifa, buscarZonaDelivery } from "../../lib/tarifaCourier";
 import { getMediaUrl } from "../../services/api";
 import CurrencyInput from "../../components/CurrencyInput";
@@ -94,22 +93,10 @@ const indicePasoPedido = id => PASOS_PEDIDO.findIndex(paso => paso.id === id);
 
 const ERROR_KEYS_POR_PASO = {
   cliente: ["nombre_cliente", "telefono"],
-  entrega: ["ciudad", "direccion", "link_maps", "origen_preferido_id", "metodo_pago_id", "metodo_pago_canal"],
+  entrega: ["ciudad", "direccion", "link_maps", "origen_preferido_id", "metodo_pago_id"],
   productos: ["items"],
   revision: ["ruc"],
 };
-
-// Mismas 5 categorías que agrupa el backend (PagoParService.CATEGORIAS_CHECKOUT)
-// y que ya usa "Analizar margen" — solo para reconocer, al reabrir un
-// pedido, si su metodo_pago guardado es uno de estos canales (y no el
-// "PagoPar" genérico del webhook de pago online).
-const CANALES_PAGOPAR_NOMBRES = [
-  'Transferencia bancaria PagoPar',
-  'Pago con QR',
-  'Tarjetas de crédito/débito',
-  'Billeteras',
-  'Bocas de pago',
-];
 
 /**
  * Datos de cliente + entrega para precargar un pedido NUEVO a partir de uno
@@ -154,7 +141,6 @@ function buildFormFromEnvio(envio) {
       link_maps: "",
       metodo_pago: "",
       metodo_pago_id: "",
-      metodo_pago_canal: "",
       quiere_factura: false,
       razon_social: "",
       ruc: "",
@@ -207,12 +193,11 @@ function buildFormFromEnvio(envio) {
     link_maps: envio.link_maps || "",
     // Antes solo se traía en "Entregado" (único momento en que este campo
     // importaba). Ahora también lo necesita un pedido Anticipado: el método
-    // que el confirmador eligió al confirmarlo (o "PagoPar" si lo pagó
-    // online, ver pagoParBloqueado) tiene que seguir viéndose al reabrir el
+    // que el confirmador eligió al confirmarlo (o el pago online de un
+    // pedido viejo, ver pagoOnlineBloqueado) tiene que seguir viéndose al reabrir el
     // modal, no solo al entregar.
     metodo_pago: (envio.estado === "Entregado" || envio.pago_anticipado) ? (envio.metodo_pago || "") : "",
     metodo_pago_id: (envio.estado === "Entregado" || envio.pago_anticipado) ? (envio.metodo_pago_id || "") : "",
-    metodo_pago_canal: envio.pago_anticipado && CANALES_PAGOPAR_NOMBRES.includes(envio.metodo_pago) ? envio.metodo_pago : "",
     quiere_factura: tieneFactura,
     razon_social: envio.razon_social || (tieneFactura ? nombreCompleto : ""),
     ruc: envio.ruc || "",
@@ -247,10 +232,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   const esWhatsapp = String(envio?.origen || '').toUpperCase().includes('WHATSAPP');
   const editaProductosExistentes = vaAConfirmar && !envio.stock_descontado && !envio.raha_logistica?.gestionado;
   const puedeSeleccionarProductos = !modoCompletar || editaProductosExistentes;
-  // El pago online de PagoPar ya llegó solo (ver confirmacionPago.js): el
+  // Un pedido viejo pagado online ya llegó pago: el
   // confirmador no puede desmarcarlo ni elegir otro método, porque el
   // negocio ya cobró con ese y ningún otro.
-  const pagoParBloqueado = modoCompletar && envio.metodo_pago === "PagoPar";
+  const pagoOnlineBloqueado = modoCompletar && envio.metodo_pago === "PagoPar";
   // Sobre un pedido ya Entregado, el método real lo define MarcarEntregadoModal
   // (otro flujo, ya resuelto) — este selector es solo para ANTES de entregar,
   // cuando el confirmador recién se entera de que el cliente ya pagó.
@@ -271,9 +256,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   const [stockOrigenLoading, setStockOrigenLoading] = useState(false);
   const [stockOrigenError, setStockOrigenError] = useState("");
   const [metodosPago, setMetodosPago] = useState([]);
-  const [canalesPagopar, setCanalesPagopar] = useState([]);
-  const [canalesPagoparLoading, setCanalesPagoparLoading] = useState(false);
-  const [canalesPagoparError, setCanalesPagoparError] = useState("");
   const [canalesVenta, setCanalesVenta] = useState([]);
   const [ubicaciones, setUbicaciones] = useState([]);
   const [geografia, setGeografia] = useState([]);
@@ -789,7 +771,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
       // Al destildar, el método anticipado elegido deja de tener sentido:
       // si se vuelve a tildar hay que elegirlo de nuevo, no arrastrar el
       // anterior sin que nadie lo haya confirmado para este toggle.
-      const nextForm = { ...prev, pago_anticipado: nuevoValor, ...(nuevoValor ? {} : { metodo_pago_id: "", metodo_pago: "", metodo_pago_canal: "" }) };
+      const nextForm = { ...prev, pago_anticipado: nuevoValor, ...(nuevoValor ? {} : { metodo_pago_id: "", metodo_pago: "" }) };
       if (!prev.ciudad) return nextForm;
 
       if (prev.courier_id) {
@@ -1010,28 +992,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   // pedidos web lo absorbe el comercio) y parecía un error de cuenta.
   const etiquetaDelivery = deliveryLoPagaNegocio ? 'Delivery a tu cargo' : 'Delivery (incluido)';
 
-  // El método "PagoPar" del catálogo es genérico (una sola fila): con cuál
-  // de sus canales habilitados pagó el cliente (transferencia, tarjeta,
-  // QR...) se elige acá al lado, reusando el mismo agrupamiento que
-  // "Analizar margen" (SensibilidadPanel.jsx) en vez de inventar una lista
-  // paralela — pedido del usuario, 2026-10-14.
   const metodoAnticipadoSeleccionado = metodosPago.find(m => String(m.id) === String(form.metodo_pago_id));
   const comisionMetodoAnticipado = metodoAnticipadoSeleccionado?.comision_porcentaje != null
     && metodoAnticipadoSeleccionado.comision_porcentaje !== ""
     && Number.isFinite(Number(metodoAnticipadoSeleccionado.comision_porcentaje))
     ? Number(metodoAnticipadoSeleccionado.comision_porcentaje)
     : null;
-  const esPagoParSeleccionado = puedeElegirMetodoAnticipado && !pagoParBloqueado && /pagopar/i.test(metodoAnticipadoSeleccionado?.nombre || "");
-
-  useEffect(() => {
-    if (!esPagoParSeleccionado || canalesPagopar.length > 0 || canalesPagoparLoading) return;
-    setCanalesPagoparLoading(true);
-    setCanalesPagoparError("");
-    paymentGatewayService.formasPagoPagopar()
-      .then((res) => setCanalesPagopar(res?.opciones_checkout || []))
-      .catch((err) => setCanalesPagoparError(err?.response?.data?.error || "No se pudieron cargar los canales de PagoPar."))
-      .finally(() => setCanalesPagoparLoading(false));
-  }, [esPagoParSeleccionado, canalesPagopar.length, canalesPagoparLoading]);
   const montoRecalculado = (Number(subtotalProductos) || 0) + fleteAlCliente;
 
   // Sobre un pedido ya cargado se respeta su monto salvo que se toque el
@@ -1071,11 +1037,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
       // Marcar "pago anticipado" es decir que la plata ya llegó: sin elegir
       // con qué método, no hay forma de confirmar el pedido (pedido del
       // usuario, 2026-10-14) — se vuelve a contra entrega si no se sabe.
-      if (form.pago_anticipado && puedeElegirMetodoAnticipado && !pagoParBloqueado && !form.metodo_pago_id) {
+      if (form.pago_anticipado && puedeElegirMetodoAnticipado && !pagoOnlineBloqueado && !form.metodo_pago_id) {
         newErrors.metodo_pago_id = "Elegí con qué método ya pagó el cliente, o destildá \"Pago anticipado\" si todavía no llegó la plata.";
-      }
-      if (form.pago_anticipado && esPagoParSeleccionado && !form.metodo_pago_canal) {
-        newErrors.metodo_pago_canal = "Elegí con qué canal de PagoPar pagó el cliente.";
       }
       if (form.origen_preferido_id && stockOrigenLoading) {
         newErrors.origen_preferido_id = "Esperá un momento: estamos verificando el stock del depósito.";
@@ -1161,13 +1124,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     // El método de pago solo viaja cuando el confirmador lo eligió acá mismo
     // (pago anticipado, recién elegido) — en cualquier otro caso se borra:
     // contra entrega todavía no se sabe con qué va a cobrar el courier, y un
-    // pedido ya pagado con PagoPar no se vuelve a mandar porque está
+    // pedido ya pagado online no se vuelve a mandar porque está
     // bloqueado (el backend ya lo tiene).
-    const incluirMetodoAnticipado = form.pago_anticipado === true && !pagoParBloqueado && puedeElegirMetodoAnticipado;
+    const incluirMetodoAnticipado = form.pago_anticipado === true && !pagoOnlineBloqueado && puedeElegirMetodoAnticipado;
     const formSinMetodoPago = { ...form };
     delete formSinMetodoPago.metodo_pago;
     delete formSinMetodoPago.metodo_pago_id;
-    delete formSinMetodoPago.metodo_pago_canal;
     const comunes = {
       ...formSinMetodoPago,
       courier_id: pedidoRaha ? null : (form.courier_id ? Number(form.courier_id) : null),
@@ -1176,8 +1138,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
       pago_anticipado: form.pago_anticipado === true,
       origen_preferido_id: pedidoRaha ? null : (form.origen_preferido_id ? Number(form.origen_preferido_id) : null),
       monto: precioTotalVendido,
-      ...(incluirMetodoAnticipado ? { metodo_pago_id: Number(form.metodo_pago_id) } : {}),
-      ...(incluirMetodoAnticipado && esPagoParSeleccionado && form.metodo_pago_canal ? { metodo_pago_canal: form.metodo_pago_canal } : {})
+      ...(incluirMetodoAnticipado ? { metodo_pago_id: Number(form.metodo_pago_id) } : {})
     };
 
     // Confirmar es un PASO del pedido, no un efecto de guardar. Solo un
@@ -2029,18 +1990,18 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                     2026-10-14): si la plata todavía no llegó, no se confirma
                     como anticipado, se deja contra entrega. */}
                 <div className="np-row">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: pagoParBloqueado ? 'default' : 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: pagoOnlineBloqueado ? 'default' : 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={form.pago_anticipado}
-                      disabled={pagoParBloqueado}
+                      disabled={pagoOnlineBloqueado}
                       onChange={e => handlePagoAnticipadoChange(e.target.checked)}
                     />
                     <span>Pago anticipado</span>
                   </label>
                   <span className="np-hint" style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>
-                    {pagoParBloqueado
-                      ? 'Pagado online con PagoPar: no se puede destildar ni cambiar de método.'
+                    {pagoOnlineBloqueado
+                      ? 'Pagado online: no se puede destildar ni cambiar de método.'
                       : form.pago_anticipado
                       ? 'El cliente ya transfirió y confirmó el pago antes de la entrega.'
                       : 'Contra entrega: el cliente paga cuando recibe el pedido.'}
@@ -2051,13 +2012,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                   <div className="np-payment-fields">
                     <div className="np-row">
                       <label htmlFor="np-metodo-anticipado">Método de pago anticipado <span className="req">*</span></label>
-                      {pagoParBloqueado ? (
+                      {pagoOnlineBloqueado ? (
                         <div
                           id="np-metodo-anticipado"
                           className="form-input"
                           style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-fg-muted)', background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)' }}
                         >
-                          PagoPar
+                          Pago online
                         </div>
                       ) : (
                         <select
@@ -2067,7 +2028,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                           value={form.metodo_pago_id}
                           onChange={e => {
                             const metodo = metodosPago.find(m => String(m.id) === e.target.value);
-                            setForm(prev => ({ ...prev, metodo_pago_id: e.target.value, metodo_pago: metodo?.nombre || "", metodo_pago_canal: "" }));
+                            setForm(prev => ({ ...prev, metodo_pago_id: e.target.value, metodo_pago: metodo?.nombre || "" }));
                           }}
                         >
                           <option value="">-- Elegí el método --</option>
@@ -2082,42 +2043,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                         </span>
                       )}
                       {errors.metodo_pago_id && <span className="field-error">{errors.metodo_pago_id}</span>}
-                      {!pagoParBloqueado && metodosPago.filter(m => m.es_anticipado).length === 0 && (
+                      {!pagoOnlineBloqueado && metodosPago.filter(m => m.es_anticipado).length === 0 && (
                         <span id="np-metodo-anticipado-hint" className="np-hint" style={{ fontSize: '0.75rem', color: 'var(--color-warning)' }}>
                           Todavía no cargaste ningún método marcado como "Anticipado" en Mi Tienda → Métodos de pago.
                         </span>
                       )}
                     </div>
 
-                    {/* Al lado del método, alineado: el método "PagoPar" del
-                        catálogo es una sola fila, pero PagoPar en realidad
-                        habilita varios canales (transferencia, tarjeta, QR,
-                        billeteras, bocas de pago) — se reusa el mismo
-                        agrupamiento que "Analizar margen" en vez de listar
-                        uno por uno. */}
-                    {esPagoParSeleccionado && (
-                      <div className="np-row">
-                        <label htmlFor="np-canal-pagopar">Canal de PagoPar <span className="req">*</span></label>
-                        {canalesPagoparLoading ? (
-                          <div className="form-input" style={{ color: 'var(--color-fg-muted)' }}>Cargando canales...</div>
-                        ) : canalesPagoparError ? (
-                          <span className="np-hint" style={{ fontSize: '0.75rem', color: 'var(--color-danger)' }}>{canalesPagoparError}</span>
-                        ) : (
-                          <select
-                            id="np-canal-pagopar"
-                            className="form-input"
-                            value={form.metodo_pago_canal}
-                            onChange={e => setForm(prev => ({ ...prev, metodo_pago_canal: e.target.value }))}
-                          >
-                            <option value="">-- Elegí el canal --</option>
-                            {canalesPagopar.map(c => (
-                              <option key={c.id} value={c.nombre}>{c.nombre}</option>
-                            ))}
-                          </select>
-                        )}
-                        {errors.metodo_pago_canal && <span className="field-error">{errors.metodo_pago_canal}</span>}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

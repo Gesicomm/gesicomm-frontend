@@ -110,7 +110,7 @@ export default function Onboarding() {
   const [nombre, setNombre] = useState('');
   const [subdominioManual, setSubdominioManual] = useState('');
   const [subdominioEditado, setSubdominioEditado] = useState(false);
-  // PagoPar ya suele pedir comprador.documento durante el pago. Solo lo
+  // La pasarela ya suele pedir el documento durante el pago. Solo lo
   // mostramos como fallback si la suscripcion no lo trajo precargado.
   const [documento, setDocumento] = useState('');
   const [documentoPrecargado, setDocumentoPrecargado] = useState(false);

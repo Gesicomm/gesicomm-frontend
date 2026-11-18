@@ -11,7 +11,6 @@ vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue(
 vi.mock('../../services/comboAdminService', () => ({ comboAdminService: { listar: vi.fn().mockResolvedValue([]), obtener: vi.fn().mockResolvedValue(undefined) } }));
 vi.mock('../../services/landingSimpleService', () => ({ landingSimpleService: { listarPaymentLogos: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../services/productService', () => ({ productService: { detalle: vi.fn().mockResolvedValue({}), faq: vi.fn().mockResolvedValue([]) } }));
-vi.mock('./usePagoparConectado', async importOriginal => ({ ...await importOriginal(), usePagoparConectado: () => false }));
 vi.mock('./CodigoPreview', () => ({ default: ({ codigo, onNavegar }) => <div data-testid="codigo-preview">
   {codigo?.html}
   <button onClick={() => onNavegar({ destino: 'producto', producto: 'combo-99' })}>Abrir combo</button>

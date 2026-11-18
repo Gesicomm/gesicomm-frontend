@@ -229,8 +229,13 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   // CartDrawer, que es donde vive ese popup) y recién después el pedido.
   const [solicitudUpsell, setSolicitudUpsell] = useState(null);
   const camposCheckoutPendientes = useRef(null);
-  const [paymentMethodInicial, setPaymentMethodInicial] = useState(() =>
-    data?.checkout?.pasarelas?.some(p => p.provider === 'pagopar') && cargarMetodoPagoGuardado(slug) !== 'efectivo' ? 'pagopar' : 'efectivo');
+  // Solo hay pago contra entrega.
+  const [paymentMethodInicial, setPaymentMethodInicial] = useState('efectivo');
+  // Un carrito guardado de cuando había pago anticipado puede traer el
+  // descuento por pagar antes: se retira al cargar.
+  useEffect(() => {
+    if (data) cartState.cambiarMetodoPago('efectivo');
+  }, [data]);
   const checkoutDirectoPendiente = useRef(false);
   useEffect(() => {
     if (!checkoutDirectoPendiente.current || !cartState.carrito.size) return;
@@ -239,11 +244,6 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     cartState.setCarritoAbierto(false);
     navegar({ destino: 'checkout' });
   }, [cartState.carrito]);
-  useEffect(() => {
-    if (!data || data.checkout?.pasarelas?.some(p => p.provider === 'pagopar')) return;
-    setPaymentMethodInicial('efectivo');
-    cartState.cambiarMetodoPago('efectivo');
-  }, [data?.checkout?.pasarelas]);
   // Departamentos/ciudades de Paraguay para el <select> de dirección del
   // checkout propio (ver data-gesicomm-geografia). Catálogo compartido, no
   // de esta tienda: se pide una sola vez, recién al llegar a checkout (no en
@@ -373,8 +373,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     } else if (pedido?.abrir !== false) cartState.setCarritoAbierto(true);
   }
 
-  function cambiarMetodoPago(metodo) {
-    const elegido = metodo === 'pagopar' && data?.checkout?.pasarelas?.some(p => p.provider === 'pagopar') ? 'pagopar' : 'efectivo';
+  function cambiarMetodoPago() {
+    const elegido = 'efectivo';
     setPaymentMethodInicial(elegido);
     cartState.cambiarMetodoPago(elegido);
   }
@@ -390,29 +390,6 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     setCheckoutEstado({ estado: 'enviando', mensaje: 'Enviando pedido...' });
     try {
       const res = await cartState.confirmarPedido(camposCheckoutPendientes.current || {});
-      // Pago anticipado: el pedido ya existe y PagoPar devolvió dónde
-      // pagar. Sin esta redirección el cliente veía "confirmado" y nunca
-      // llegaba a pagar.
-      if (res?.payment_data?.payment_url) {
-        // 'redirigiendo' y no 'enviando': el carrito ya está vacío y el
-        // checkout mostraba "no tiene productos" mientras cargaba PagoPar.
-        setCheckoutEstado({ ...res, estado: 'redirigiendo', mensaje: 'Un momento: abrimos el pago seguro para que completes tu compra.' });
-        window.location.href = res.payment_data.payment_url;
-        return;
-      }
-      if (res?.payment_data?.error) {
-        // El pedido YA existe y el carrito quedó vacío: con estado 'error' el
-        // checkout mostraba "Tu pedido todavía no tiene productos", que no
-        // decía nada de lo que había pasado.
-        setCheckoutEstado({
-          ...res,
-          estado: 'pago_pendiente',
-          mensaje: `Recibimos tu pedido ${numeroPedidoVisible(res)}, pero no pudimos abrir el pago online en este momento.`,
-          pedido_id: res?.pedido_id,
-          numero_pedido: res?.numero_pedido,
-        });
-        return;
-      }
       setCheckoutEstado({
         ...res,
         estado: 'confirmado',

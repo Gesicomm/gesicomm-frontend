@@ -3,7 +3,7 @@ import API from './api';
 /**
  * Parámetros de configuración del sistema. Solo administradores.
  *
- * Los valores marcados como secretos (ej. el token privado de PagoPar) NUNCA
+ * Los valores marcados como secretos (ej. un token privado) NUNCA
  * vuelven por la API: el backend responde `configurado: true/false` y de
  * dónde sale el valor, pero no el valor en sí.
  */

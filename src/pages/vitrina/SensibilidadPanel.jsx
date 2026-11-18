@@ -39,38 +39,6 @@ function estadoRentabilidad(margin, minimumMargin = 0.1) {
   return { severity: 'saludable', label: RENTABILIDAD_LABELS.saludable };
 }
 
-function normalizarTexto(valor) {
-  return String(valor || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-function categoriaCheckoutPagopar(metodo = {}) {
-  const nombre = normalizarTexto(metodo.nombre);
-  if (nombre.includes('transferencia')) return { id: 'transferencia-bancaria', nombre: 'Transferencia bancaria PagoPar' };
-  if (nombre.includes('qr') || nombre.includes('pix')) return { id: 'qr', nombre: 'Pago con QR' };
-  if (/(tarjeta|mastercard|visa|american express|cabal|panal|discover|diners)/.test(nombre)) return { id: 'tarjetas', nombre: 'Tarjetas de crédito/débito' };
-  if (/(zimple|tigo money|personal pay|pago movil|wally|billetera claro|billetera|fondos)/.test(nombre)) return { id: 'billeteras', nombre: 'Billeteras' };
-  if (/(boca|acercandose|pagos habilitadas)/.test(nombre)) return { id: 'bocas-de-pago', nombre: 'Bocas de pago' };
-  return null;
-}
-
-function agruparOpcionesCheckoutPagopar(metodos = []) {
-  const orden = ['transferencia-bancaria', 'qr', 'tarjetas', 'billeteras', 'bocas-de-pago'];
-  const grupos = new Map();
-  metodos.forEach((metodo) => {
-    const categoria = categoriaCheckoutPagopar(metodo);
-    if (!categoria) return;
-    const actual = grupos.get(categoria.id) || { ...categoria, comision_porcentaje: 0 };
-    grupos.set(categoria.id, {
-      ...actual,
-      comision_porcentaje: Math.max(actual.comision_porcentaje, Number(metodo.comision_porcentaje) || 0),
-    });
-  });
-  return orden.map(id => grupos.get(id)).filter(Boolean);
-}
-
 function calcularAnalisisLocal(analisis, precio, comisionPagoPct) {
   const costos = analisis?.costos || {};
   const parametros = analisis?.parametros || {};
@@ -175,23 +143,14 @@ export default function SensibilidadPanel({ item, datos = null, etiquetaCostoCom
     },
   } : {});
   const analisis = operaciones[operacionActiva] || operaciones.propios || data;
-  const opcionesCheckoutPagopar = data?.pagopar?.opciones_checkout?.length
-    ? data.pagopar.opciones_checkout
-    : agruparOpcionesCheckoutPagopar(data?.pagopar?.metodos || []);
-  const opcionesPagoAnticipado = opcionesCheckoutPagopar.map((metodo) => ({
-    id: `pagopar-${metodo.id}`,
-    nombre: metodo.nombre,
-    comision_porcentaje: Number(metodo.comision_porcentaje) || 0,
-  }));
   const metodoOptions = [
     ...(operacionActiva === 'raha' ? [{ id: 'raha-cod', nombre: 'Pago contra entrega RAHA', comision_porcentaje: 2 }] : []),
     ...(operacionActiva === 'raha' ? [] : [{ id: 'contra-entrega', nombre: 'Pago contra entrega', comision_porcentaje: 0 }]),
     { id: 'transferencia-propia', nombre: 'Transferencia bancaria propia', comision_porcentaje: 0 },
-    ...opcionesPagoAnticipado,
   ];
   const metodoDefault = metodoOptions.find(m => String(m.id) === metodoPagoId) || metodoOptions[0] || {
       id: 'sin-comision',
-      nombre: 'Sin método PagoPar conectado',
+      nombre: 'Sin método de pago online',
       comision_porcentaje: 0,
     };
   const metodoSeleccionado = metodoOptions.find(m => String(m.id) === metodoPagoId) || metodoDefault;
@@ -276,7 +235,7 @@ export default function SensibilidadPanel({ item, datos = null, etiquetaCostoCom
                     onChange={(e) => setMetodoPagoId(e.target.value)}
                   >
                     {metodoOptions.length === 0 ? (
-                      <option value="sin-comision">Sin método PagoPar conectado</option>
+                      <option value="sin-comision">Sin método de pago online</option>
                     ) : (
                       metodoOptions.map((metodo) => (
                         <option key={metodo.id} value={metodo.id}>

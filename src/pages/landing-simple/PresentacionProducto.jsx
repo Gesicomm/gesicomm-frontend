@@ -12,7 +12,6 @@ import CurrencyInput from '../../components/CurrencyInput';
 import { getMediaUrl } from '../../services/api';
 import { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import { contenidoFicha, presentacionComercial } from './datosRuntime';
-import { AVISO_PAGO_ANTICIPADO } from './usePagoparConectado';
 import ImagenesProductoLanding from './ImagenesProductoLanding';
 import { GripVertical, Lock, Upload } from 'lucide-react';
 
@@ -428,6 +427,75 @@ function ListaPreguntas({ items, onCambiar }) {
   );
 }
 
+const COLORES_BOTON = [
+  ['fondo', 'Fondo', '#16a34a'],
+  ['texto', 'Texto', '#ffffff'],
+  ['fondo_hover', 'Fondo al pasar el mouse', '#15803d'],
+  ['texto_hover', 'Texto al pasar el mouse', '#ffffff'],
+];
+
+// Colores de UN botón (normal y al pasar el mouse). Vacío = los del diseño.
+function ColoresBotones({ valor, onCambiar, etiquetaBoton = 'Comprar ahora' }) {
+  const actual = valor && typeof valor === 'object' ? valor : {};
+  const hay = COLORES_BOTON.some(([clave]) => actual[clave]);
+  // Al editar un color del hover, la vista previa muestra ese estado; al
+  // editar uno normal, vuelve al botón sin hover.
+  const [mouse, setMouse] = useState(false);
+  const [demo, setDemo] = useState(null);
+  const timer = useRef(null);
+  const enHover = demo === null ? mouse : demo;
+  const fondo = actual.fondo || '#16a34a';
+  const texto = actual.texto || '#ffffff';
+  const fondoH = actual.fondo_hover || fondo;
+  const textoH = actual.texto_hover || texto;
+  const cambiar = (clave, color) => {
+    setDemo(clave.endsWith('_hover'));
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setDemo(null), 1500);
+    onCambiar({ ...actual, [clave]: color });
+  };
+  return (
+    <details className="group rounded-lg border border-border bg-surface sm:col-span-full">
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex gap-1" aria-hidden="true">
+          <span className="h-4 w-4 rounded border border-border" style={{ background: fondo }} />
+          <span className="h-4 w-4 rounded border border-border" style={{ background: fondoH }} />
+        </span>
+        Colores de este botón
+        <span className="ml-auto text-sm font-normal text-fg-muted">{hay ? 'Personalizados' : 'Del diseño'}</span>
+      </summary>
+      <div className="space-y-3 border-t border-border px-3 py-3">
+      <p className="text-sm leading-relaxed text-fg-muted">Solo para este botón. Sin elegir, se usan los colores del diseño.</p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {COLORES_BOTON.map(([clave, etiqueta, ejemplo]) => (
+          <label key={clave} className="flex items-center gap-3 rounded-lg border border-border bg-surface-2/60 px-3 py-2 text-sm text-fg">
+            <input type="color" className="h-9 w-11 shrink-0 cursor-pointer rounded border border-border bg-transparent" value={actual[clave] || ejemplo} onChange={e => cambiar(clave, e.target.value)} aria-label={etiqueta} />
+            <span className="min-w-0 flex-1">{etiqueta}<span className="block text-sm text-fg-muted">{actual[clave] || 'Del diseño'}</span></span>
+            {actual[clave] && <button type="button" className="text-sm font-semibold text-fg-muted hover:text-danger" onClick={() => { const { [clave]: _quitado, ...resto } = actual; onCambiar(resto); }}>Quitar</button>}
+          </label>
+        ))}
+      </div>
+      <div className="space-y-2 rounded-lg border border-dashed border-border bg-surface-2/40 px-3 py-3">
+        <p className="text-sm text-fg-muted">Vista previa {hay ? '' : '(colores del diseño)'} · pasá el mouse o tocá el botón</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onMouseEnter={() => setMouse(true)}
+            onMouseLeave={() => setMouse(false)}
+            onTouchStart={() => setMouse(v => !v)}
+            className="rounded-lg px-5 py-2.5 text-base font-semibold"
+            style={{ background: enHover ? fondoH : fondo, color: enHover ? textoH : texto, border: `1px solid ${enHover ? fondoH : fondo}`, transition: 'background-color .3s ease, color .3s ease, border-color .3s ease' }}
+          >
+            {etiquetaBoton || 'Botón'}
+          </button>
+          <span className="text-sm font-medium text-fg-muted" aria-live="polite">{enHover ? 'Al pasar el mouse' : 'Normal'}</span>
+        </div>
+      </div>
+      </div>
+    </details>
+  );
+}
+
 function ListaBotones({ titulo, ayuda, items, campoLista, max = 4, onCambiar, descuentos = false, ocultarValorWhatsapp = false }) {
   const base = Array.isArray(items) ? items : [];
   const cambiar = (idx, campoItem, valor) => onCambiar(campoLista, base.map((it, i) => (i === idx ? { ...it, [campoItem]: valor } : it)));
@@ -455,6 +523,7 @@ function ListaBotones({ titulo, ayuda, items, campoLista, max = 4, onCambiar, de
             {!ocultarValor && <input className={campo} value={boton.valor || ''} maxLength={180} placeholder={tipo === 'url' ? 'https://...' : tipo === 'whatsapp' ? 'Mensaje opcional' : 'Opcional'} onChange={e => cambiar(idx, 'valor', e.target.value)} />}
             {descuentos && <input className={campo} type="number" min="0" max="95" step="0.1" inputMode="decimal" value={boton.descuento_pct ?? ''} placeholder="Dto. %" aria-label={`Descuento del botón ${idx + 1}`} onChange={e => cambiar(idx, 'descuento_pct', e.target.value)} onBlur={e => cambiar(idx, 'descuento_pct', normalizarDescuentoBoton(e.target.value))} />}
             <button type="button" onClick={() => quitar(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button>
+            <ColoresBotones valor={boton.colores} etiquetaBoton={boton.label} onCambiar={v => cambiar(idx, 'colores', v)} />
           </div>
         );
       })}
@@ -556,9 +625,6 @@ export default function PresentacionProducto({
   pagoLogos = null,
   paymentLogosCatalogo = [],
   onPagoLogosChange = null,
-  // false = el comercio no conectó PagoPar: el pago anticipado se muestra
-  // apagado. null = todavía no se sabe, no se bloquea nada.
-  pagoparConectado = null,
   // Lo que ESTA landing guardó para el producto (solo lo que se tocó) y la
   // ficha tal como la resuelve la página. Sin ellas se calculan del item.
   propio = null,
@@ -572,7 +638,6 @@ export default function PresentacionProducto({
   onRecomendadosVisible = null,
 }) {
   const precio = Number(precioDeVenta(item)) || 0;
-  const sinPagopar = pagoparConectado === false;
   const descuento = descuentoDesdeAncla(precio, ancla);
   const src = imagenPrincipal(item);
   const titulo = item.titulo_comercial || item.nombre || 'Producto';
@@ -762,13 +827,7 @@ export default function PresentacionProducto({
           <ListaBeneficios items={beneficios} onCambiar={onCambiar} />
         </BloqueFicha>
         <BloqueFicha numero="9" titulo="Botones de contacto y pago" resumen={resumenContacto} visible={visibleBloque('contacto_pago')} onVisible={v => cambiarBloques({ contacto_pago: v, compra: v })} bloqueClave="contacto_pago" ordenIndice={ordenVisible.indexOf('contacto_pago')}>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_150px]">
-            <label className="block text-xs text-fg-muted">Botón de pago anticipado<input className={campo} value={item.cta_texto || ''} maxLength={42} placeholder="Comprar con pago anticipado" onChange={e => onCambiar('cta_texto', e.target.value)} /></label>
-            <label className={`block text-xs text-fg-muted ${sinPagopar ? 'cursor-not-allowed opacity-60' : ''}`} title={sinPagopar ? AVISO_PAGO_ANTICIPADO : undefined}>Descuento pago anticipado %<input className={`${campo} ${sinPagopar ? 'cursor-not-allowed' : ''}`} type="number" min="0" max="95" step="0.1" inputMode="decimal" disabled={sinPagopar} value={item.cta_descuento_pct ?? ''} placeholder="Ej: 10" onChange={e => onCambiar('cta_descuento_pct', e.target.value)} onBlur={e => onCambiar('cta_descuento_pct', normalizarDescuentoBoton(e.target.value))} /></label>
-          </div>
-          <p className="text-xs leading-relaxed text-fg-muted">Este botón solo aparece cuando PagoPar está activo. Abre directamente el checkout con pago anticipado seleccionado y aplica el descuento configurado. Si el cliente cambia a pago contra entrega, se retira ese descuento.</p>
-          {sinPagopar && <p className="text-xs leading-relaxed text-fg-muted">{AVISO_PAGO_ANTICIPADO} Mientras tanto el botón de pago anticipado no se muestra, ni en la vista previa ni en la tienda publicada.</p>}
-          <ListaBotones titulo="Botones de pago" ayuda="Botones secundarios como Pago contra entrega, Comprar por WhatsApp o un link de pago. Podés sumar un descuento por botón para incentivar el pago anticipado." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} descuentos />
+          <ListaBotones titulo="Botones de pago" ayuda="Botones como Pago contra entrega, Comprar por WhatsApp o un link de pago. Podés sumar un descuento por botón." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} descuentos />
           <ListaBotones titulo="Botones configurables de contacto" ayuda="Caminos de contacto adicionales de esta ficha. WhatsApp usa el mensaje configurado en Mi tienda." items={botonesContacto} campoLista="botones_contacto" onCambiar={onCambiar} ocultarValorWhatsapp />
         </BloqueFicha>
         <BloqueFicha numero="10" titulo="Disponibilidad y medios de pago" resumen={resumenPagos} visible={visibleBloque('promociones_pago')} onVisible={v => cambiarBloque('promociones_pago', v)} bloqueClave="promociones_pago" ordenIndice={ordenVisible.indexOf('promociones_pago')}>

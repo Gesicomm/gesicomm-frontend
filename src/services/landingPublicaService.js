@@ -276,15 +276,6 @@ export async function obtenerGeografiaPublica() {
   return res.json();
 }
 
-export async function consultarResultadoPagoLanding(hash) {
-  const res = await fetch(`/api/l/pagopar/resultado/${encodeURIComponent(hash)}`);
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw new Error(data?.message || 'No se pudo consultar el resultado del pago.');
-  }
-  return data;
-}
-
 /**
  * Cuenta una visita a la landing.
  *

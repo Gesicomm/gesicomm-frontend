@@ -37,7 +37,7 @@ function FilaDato({ label, valor }) {
 }
 
 /**
- * Reemplaza el redirect a PagoPar: muestra los datos de la cuenta de
+ * Reemplaza el redirect a la pasarela: muestra los datos de la cuenta de
  * Gesicomm y exige subir el comprobante de transferencia antes de habilitar
  * el envío. Subir el comprobante ES la acción de "marcar pago enviado" — no
  * hay un paso separado.

@@ -24,7 +24,6 @@ import { textoInicialFooter, codigoFooterDesdeTexto } from './paginasFooter';
 import { PAGINAS_LEGALES_CODIGO, plantillaLegalPara } from './plantillasLegalesCodigo';
 import { normalizarCombosInicio } from './combosInicio';
 import PresentacionProducto, { BLOQUES_FICHA_PANEL, ROTULOS_BLOQUES_FICHA, bloqueDeZona, llevarBloqueALaVista } from './PresentacionProducto';
-import { usePagoparConectado } from './usePagoparConectado';
 import { contentIdPanel, datosRuntimePreview, itemPanelARuntime, presentacionDelProducto, slugCategoria, textosRecomendados, TODAS_CATEGORIAS, PAYMENT_LOGOS_DEFAULT } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
@@ -2168,7 +2167,6 @@ export default function ConfigurarVentaCodigo({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productoConfigActual?.id, productoConfigActual?.tipo, fichaEnPreview?.id, fichaEnPreview?.tipo, pedirFichaProducto]);
 
-  const pagoparConectado = usePagoparConectado();
   const rotulosInicio = useMemo(() => {
     if (bloquesInicioBloqueados) return {};
     const bloques = inicioComercial.bloques;
@@ -2191,11 +2189,10 @@ export default function ConfigurarVentaCodigo({
       ? contentIdPanel(seleccion[0])
       : (productoFicha ? contentIdPanel(productoFicha) : null),
     ofertas: ofertasConImagen,
-    pagoparConectado,
     bloquesEditor: ROTULOS_BLOQUES_FICHA,
     bloquesInicioEditor: rotulosInicio,
     filtro: filtroPreview,
-  }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion, pagoparConectado, rotulosInicio, filtroPreview]);
+  }), [productosPreview, tienda, landing, ventaActual, vistaPreview, categoriaPreviewValida, productoFicha, ofertasConImagen, abreEnFicha, seleccion, rotulosInicio, filtroPreview]);
 
   // Dónde se ve cada tipo de oferta en la ficha (para resaltarla en la vista previa).
   function verOfertaEnFicha(oferta, producto) {
@@ -2821,7 +2818,6 @@ export default function ConfigurarVentaCodigo({
                         efectivo={fichaEfectiva}
                         bloqueAbierto={bloqueFichaAbierto}
                         pagoLogos={Object.fromEntries(paymentLogosCatalogo.map(l => [l.clave, (fichaEfectiva?.payment_logos || []).some(p => p.clave === l.clave)]))}
-                        pagoparConectado={pagoparConectado}
                         paymentLogosCatalogo={paymentLogosCatalogo}
                         onPagoLogosChange={(clave, activo) => cambiarPresentacion(productoConfigActual, 'payment_logos', paymentLogosCatalogo.filter(l => l.clave === clave ? activo : (fichaEfectiva?.payment_logos || []).some(p => p.clave === l.clave)))}
                         bloqueRecomendados={bloqueRecomendadosFicha}

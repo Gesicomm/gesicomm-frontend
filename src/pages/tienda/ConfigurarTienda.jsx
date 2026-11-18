@@ -17,7 +17,6 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { getMediaUrl } from '../../services/api';
 import { generarPreviewMensaje, generarPreviewMensajeGeneral, generarPreviewMensajeConfirmacion, MENSAJE_CONFIRMACION_DEFAULT } from '../../lib/mensajeWhatsapp';
 import { listaFuentes, typographyStyle } from '../../lib/typography';
-import PagoParConfig from './PagoParConfig';
 import ConexionLogistica from './ConexionLogistica';
 import ConectarMcpPanel from '../landing-simple/panels/ConectarMcpPanel';
 import DominioPropio from './DominioPropio';
@@ -224,7 +223,6 @@ export default function ConfigurarTienda() {
   const [ok, setOk] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
   const [tab, setTab] = useState(TABS_VALIDAS.has(tabInicial) ? tabInicial : 'tienda');
-  const [mostrarPagopar, setMostrarPagopar] = useState(true);
 
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
   const ultimaConsulta = useRef(0);
@@ -1561,14 +1559,6 @@ export default function ConfigurarTienda() {
                     </section>
                   </div>
 
-                  <details className="tn-payment-integration">
-                    <summary>
-                      <span className="tn-mobile-section-icon"><CreditCard size={20} /></span>
-                      <span><strong>Pagos online</strong><small>Conectar PagoPar · opcional</small></span>
-                      <ChevronDown size={18} />
-                    </summary>
-                    {mostrarPagopar && <div className="tn-embed tn-embed-pagopar"><PagoParConfig /></div>}
-                  </details>
                 </div>
               )}
 

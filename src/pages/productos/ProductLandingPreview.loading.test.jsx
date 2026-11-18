@@ -6,7 +6,6 @@ import {tiendaService} from '../../services/tiendaService';
 import {landingSimpleService} from '../../services/landingSimpleService';
 const capture=vi.hoisted(()=>({props:null}));
 vi.mock('../landing-simple/CodigoPreview',()=>({default:props=>{capture.props=props;return <iframe title="Ficha preparada"/>;}}));
-vi.mock('../landing-simple/usePagoparConectado',()=>({usePagoparConectado:()=>false}));
 vi.mock('../../services/tiendaService',()=>({tiendaService:{obtener:vi.fn()}}));
 vi.mock('../../services/landingSimpleService',()=>({landingSimpleService:{listar:vi.fn(),obtener:vi.fn()}}));
 vi.mock('../../services/ofertaService',()=>({ofertaService:{listarPorProducto:vi.fn().mockResolvedValue([])},ofertaAFormaPublica:vi.fn()}));

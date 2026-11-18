@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Save, Loader, ShieldCheck, AlertCircle, CheckCircle2, KeyRound, Phone, Info, Mail, Landmark,
+  Save, Loader, ShieldCheck, AlertCircle, CheckCircle2, KeyRound, Phone, Mail, Landmark,
 } from 'lucide-react';
 import { parametrosService } from '../../services/parametrosService';
 import './parametros.css';
@@ -9,10 +9,8 @@ import './parametros.css';
  * Configuración del sistema (solo admin).
  *
  * Estos parámetros son de GESICOMM, no de un comercio. Ojo con la diferencia:
- * las credenciales de PagoPar que se cargan acá son las que usa Gesicomm para
- * cobrar las suscripciones de sus clientes. Cada comercio carga las SUYAS en
- * /mi-tienda → Pagos, para cobrarle a sus propios compradores. Son dos cosas
- * distintas que se parecen mucho, así que la pantalla lo dice explícito.
+ * las credenciales que se cargan acá son las que usa Gesicomm para cobrar las
+ * suscripciones de sus clientes.
  *
  * El token privado nunca vuelve del backend: solo llega si está configurado o
  * no. Por eso el campo se deja vacío y vacío significa "no lo toques".
@@ -258,15 +256,6 @@ export default function Parametros() {
             </section>
           );
         })}
-
-        <div className="pa-nota">
-          <Info size={14} />
-          <span>
-            Los tokens público y privado de PagoPar son un <strong>par</strong>: se validan juntos.
-            Si regenerás en el panel de PagoPar, tenés que actualizar los dos acá o los cobros
-            van a fallar con “Token no coincide”.
-          </span>
-        </div>
 
         <div className="pa-footer">
           <span className="pa-footer-nota">

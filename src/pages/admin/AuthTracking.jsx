@@ -359,7 +359,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
     setErrorConsulta('');
     setResultadoConsulta(null);
     try {
-      const estado = await authTrackingService.consultarPagoSuscripcionPagopar(identificador);
+      const estado = await authTrackingService.consultarPagoSuscripcion(identificador);
       setResultadoConsulta(estado);
       await cargar();
       window.dispatchEvent(new Event('auth-tracking:updated'));

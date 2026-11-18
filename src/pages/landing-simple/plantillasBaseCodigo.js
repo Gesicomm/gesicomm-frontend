@@ -724,7 +724,7 @@ const LIMITED_OFFER_HTML = `<section id="ofertas" class="limited-offer" data-ges
   </div>
 </section>`;
 
-// Las políticas son obligatorias para PagoPar y para aprobar anuncios en
+// Las políticas son obligatorias para cobrar online y para aprobar anuncios en
 // Meta: van en las dos vistas aunque el diseño cambie.
 //
 // Estructura fija (nombre de la tienda + redes / Políticas / Contactos +
@@ -2044,7 +2044,7 @@ const PRODUCTO_HTML = `${headerTiendaUnico('productos')}
       <div class="buy-row" data-gesicomm-ficha-bloque="contacto_pago">
         <!-- Con paquetes, la cantidad la da el paquete elegido. -->
         <input class="qty" type="number" min="1" max="99" value="1" aria-label="Cantidad" data-gesicomm-cantidad-input data-gesicomm-sin="tiene_paquetes">
-        <button class="button-primary" type="button" data-gesicomm-comprar data-gesicomm-boton-principal-pago data-gesicomm-metodo-pago="pagopar"><span data-gesicomm-cta data-gesicomm-bind="cta_texto">Comprar con pago anticipado</span><small class="buy-discount-badge" data-gesicomm-cta-descuento></small> · <span data-gesicomm-total></span></button>
+        <button class="button-primary" type="button" data-gesicomm-comprar data-gesicomm-boton-principal-pago data-gesicomm-metodo-pago="anticipado"><span data-gesicomm-cta data-gesicomm-bind="cta_texto">Comprar con pago anticipado</span><small class="buy-discount-badge" data-gesicomm-cta-descuento></small> · <span data-gesicomm-total></span></button>
       </div>
       <div class="payment-actions" data-gesicomm-lista="botones_pago_producto" data-gesicomm-ficha-bloque="contacto_pago">
         <template><button class="payment-action" type="button"><span data-gesicomm-bind="label"></span> <small data-gesicomm-bind="descuento_label"></small></button></template>
@@ -2378,7 +2378,7 @@ const ESTRELLA_HTML = `${headerTiendaUnico('productos')}
       </div>
       <div class="steps">
         <article class="step"><h3>Lo pedís</h3><p>Tocá “Comprar ahora” y completá tus datos de entrega.</p></article>
-        <article class="step"><h3>Lo pagás</h3><p>Online con PagoPar o en efectivo al recibir, según tu ciudad.</p></article>
+        <article class="step"><h3>Lo pagás</h3><p>Online o en efectivo al recibir, según tu ciudad.</p></article>
         <article class="step"><h3>Lo recibís</h3><p>Te avisamos por WhatsApp cuando sale tu pedido.</p></article>
       </div>
     </div>
@@ -2420,7 +2420,7 @@ const ESTRELLA_HTML = `${headerTiendaUnico('productos')}
       <div class="faq-list">
         <div class="faq-item is-open">
           <button class="faq-question" type="button" aria-expanded="true"><span>¿Cómo pago?</span><span class="faq-plus" aria-hidden="true">+</span></button>
-          <div class="faq-answer"><div><p>Online con PagoPar (tarjeta, billeteras, transferencia) o en efectivo al recibir, según lo que esté habilitado en tu ciudad.</p></div></div>
+          <div class="faq-answer"><div><p>Online (tarjeta, billeteras, transferencia) o en efectivo al recibir, según lo que esté habilitado en tu ciudad.</p></div></div>
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false"><span>¿Cuánto tarda el envío?</span><span class="faq-plus" aria-hidden="true">+</span></button>
@@ -2553,7 +2553,7 @@ const COMBOS_HTML = `${headerTiendaUnico('productos')}
         </div>
         <div class="faq-item">
           <button class="faq-question" type="button" aria-expanded="false"><span>¿Cómo pago?</span><span class="faq-plus" aria-hidden="true">+</span></button>
-          <div class="faq-answer"><div><p>Online con PagoPar o en efectivo al recibir, según tu ciudad.</p></div></div>
+          <div class="faq-answer"><div><p>Online o en efectivo al recibir, según tu ciudad.</p></div></div>
         </div>
       </div>
     </div>
@@ -3013,9 +3013,7 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
             <span>Celular</span>
             <input name="telefono" autocomplete="tel" required>
           </label>
-          <!-- Correo y documento: obligatorios solo con pago anticipado (los
-               exige PagoPar). El runtime prende el "required" y el aviso segun
-               el medio de pago elegido. -->
+          <!-- Correo y documento: opcionales con pago contra entrega. -->
           <label class="lv-field">
             <span>Correo electronico</span>
             <input name="email" type="email" autocomplete="email" maxlength="160">
@@ -3063,15 +3061,8 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
           <div class="lv-field lv-wide">
             <span>Metodo de pago</span>
             <div class="lv-pay-options">
-              <label class="lv-pay-option lv-pay-option--highlight">
-                <input type="radio" name="payment_method" value="pagopar" checked>
-                <span class="lv-pay-option-copy">
-                  <strong>Pago anticipado <span class="lv-pay-option-badge">Recomendado</span></strong>
-                  <small>Tarjetas, QR o Tigo Money. Tu pedido queda confirmado al instante.</small>
-                </span>
-              </label>
               <label class="lv-pay-option">
-                <input type="radio" name="payment_method" value="contra_entrega">
+                <input type="radio" name="payment_method" value="contra_entrega" checked>
                 <span class="lv-pay-option-copy">
                   <strong>Pago contra entrega</strong>
                   <small>Pagas cuando recibis el pedido.</small>
@@ -3202,7 +3193,7 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
          "Tu pedido todavia no tiene productos" en vez de la confirmación. -->
     <section class="lv-empty-checkout" data-gesicomm-checkout-confirmado style="display:none">
       <!-- Rótulo, título y ayuda los escribe el runtime según el estado: pedido
-           confirmado, pago anticipado que no se pudo abrir, o yendo a PagoPar. -->
+           confirmado o con un error al enviar. -->
       <p class="lv-kicker" data-gesicomm-checkout="estado_rotulo">Pedido recibido</p>
       <h1 data-gesicomm-checkout="estado_titulo">¡Gracias por tu compra!</h1>
       <p data-gesicomm-checkout="mensaje"></p>

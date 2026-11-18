@@ -27,7 +27,7 @@ export default function ComboProductPagePublica({
   nombreComercio,
   // Agregar al carrito — recorrido real de compra, igual que un producto
   // individual (ver TiendaPaginaView.jsx: agrega y abre el carrito, donde
-  // se elige PagoPar o contra entrega).
+  // se elige contra entrega).
   onAgregar,
   onVolver,
   previewMode = false,

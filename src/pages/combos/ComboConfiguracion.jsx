@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Save, AlertTriangle, Info, PackageCheck, Truck, CreditCard, Lock } from 'lucide-react';
+import { Settings, Save, AlertTriangle, Info, PackageCheck, Truck, Lock } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
 import CurrencyInput from '../../components/CurrencyInput';
 import { verificarSesion } from '../../utils/auth';
@@ -9,42 +9,6 @@ import './combos.css';
 function fmtNumber(n) {
   if (n === null || n === undefined) return '';
   return String(Number(n));
-}
-
-function fmtPct(n) {
-  return `${(Number(n) || 0).toLocaleString('es-PY', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
-}
-
-function normalizarTexto(valor) {
-  return String(valor || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-function categoriaCheckoutPagopar(metodo = {}) {
-  const nombre = normalizarTexto(metodo.nombre);
-  if (nombre.includes('transferencia')) return { id: 'transferencia-bancaria', nombre: 'Transferencia bancaria PagoPar' };
-  if (nombre.includes('qr') || nombre.includes('pix')) return { id: 'qr', nombre: 'Pago con QR' };
-  if (/(tarjeta|mastercard|visa|american express|cabal|panal|discover|diners)/.test(nombre)) return { id: 'tarjetas', nombre: 'Tarjetas de crédito/débito' };
-  if (/(zimple|tigo money|personal pay|pago movil|wally|billetera claro|billetera|fondos)/.test(nombre)) return { id: 'billeteras', nombre: 'Billeteras' };
-  if (/(boca|acercandose|pagos habilitadas)/.test(nombre)) return { id: 'bocas-de-pago', nombre: 'Bocas de pago' };
-  return null;
-}
-
-function agruparOpcionesCheckoutPagopar(metodos = []) {
-  const orden = ['transferencia-bancaria', 'qr', 'tarjetas', 'billeteras', 'bocas-de-pago'];
-  const grupos = new Map();
-  metodos.forEach((metodo) => {
-    const categoria = categoriaCheckoutPagopar(metodo);
-    if (!categoria) return;
-    const actual = grupos.get(categoria.id) || { ...categoria, comision_porcentaje: 0 };
-    grupos.set(categoria.id, {
-      ...actual,
-      comision_porcentaje: Math.max(actual.comision_porcentaje, Number(metodo.comision_porcentaje) || 0),
-    });
-  });
-  return orden.map(id => grupos.get(id)).filter(Boolean);
 }
 
 const RAHA_COSTO_ENVIO_FIJO = 30000;
@@ -194,10 +158,6 @@ export default function ComboConfiguracion({ asTab = false, onConfigChange }) {
 
   const costoActual = costoSets[costosTab];
   const CostoIcono = costoActual.icono;
-  const opcionesCheckoutPagopar = config?.pagopar?.opciones_checkout?.length
-    ? config.pagopar.opciones_checkout
-    : agruparOpcionesCheckoutPagopar(config?.pagopar?.metodos || []);
-  const comisionPagopar = Number(config?.pagopar_comision_porcentaje || config?.pagopar?.comision_maxima || 0);
   const esRaha = costosTab === 'raha';
 
   if (loading) {
@@ -362,35 +322,6 @@ export default function ComboConfiguracion({ asTab = false, onConfigChange }) {
         </div>
       </div>
 
-            <div className="combo-cost-field locked combo-pagopar-costs">
-              <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span>Costos por cobro PagoPar</span>
-                <span className="combo-cost-badge locked"><Lock size={11} /> No editable</span>
-              </div>
-              <div className="combo-pagopar-summary">
-                <CreditCard size={16} />
-                <div>
-                  <strong>Opciones de checkout PagoPar · hasta {fmtPct(comisionPagopar)} usado en pricing</strong>
-                  <span>Se muestran solo las opciones que ve el cliente en el checkout. Si PagoPar devuelve varias formas internas para una opción, usamos la comisión más alta de ese grupo.</span>
-                </div>
-              </div>
-              {opcionesCheckoutPagopar.length > 0 ? (
-                <div className="combo-pagopar-methods">
-                  {opcionesCheckoutPagopar.map((metodo) => (
-                    <div className="combo-pagopar-method" key={metodo.id}>
-                      <span>{metodo.nombre}</span>
-                      <strong>{fmtPct(metodo.comision_porcentaje)}</strong>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="combo-pagopar-empty">
-                  {config?.pagopar?.error
-                    ? `No pudimos leer PagoPar: ${config.pagopar.error}`
-                    : 'Conectá o probá PagoPar para traer la comisión del pago online.'}
-                </div>
-              )}
-            </div>
 
             
 

@@ -5,7 +5,6 @@ import { tiendaService } from '../../services/tiendaService';
 import CodigoPreview from '../landing-simple/CodigoPreview';
 import { codigoFichaProducto } from '../landing-simple/fichaCodigoLanding';
 import { datosRuntimePublico } from '../landing-simple/datosRuntime';
-import { usePagoparConectado } from '../landing-simple/usePagoparConectado';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { BLOQUES_CONTENIDO_PRODUCTO } from './ProductContentBlocks';
 
@@ -79,7 +78,6 @@ export default function ProductLandingPreview({
   const [cargandoDiseno, setCargandoDiseno] = useState(true);
   const [errorDiseno, setErrorDiseno] = useState(false);
   const [reintentoDiseno, setReintentoDiseno] = useState(0);
-  const pagoparConectado = usePagoparConectado();
 
   useEffect(() => {
     if (!activo) return undefined;
@@ -221,11 +219,11 @@ export default function ProductLandingPreview({
     return {
       codigo: codigoFichaProducto(landing?.content, contentId),
       datos: {
-        ...datosRuntimePublico(data, landing?.slug || null, item, { vista: 'producto', pagoparConectado }),
+        ...datosRuntimePublico(data, landing?.slug || null, item, { vista: 'producto' }),
         ...(onSeleccionarBloque ? { editor_bloques: Object.fromEntries(BLOQUES_CONTENIDO_PRODUCTO.flatMap(b => (b.zonas || [b.destino]).map(zona => [zona, b.titulo]))), editor_seleccion: BLOQUES_CONTENIDO_PRODUCTO.find(b => b.id === seleccionBloque?.id)?.destino || null } : {}),
       },
     };
-  }, [landing, tienda, dto, producto, productoId, pagoparConectado, onSeleccionarBloque, seleccionBloque?.id]);
+  }, [landing, tienda, dto, producto, productoId, onSeleccionarBloque, seleccionBloque?.id]);
 
   const textoResenas = previewLienzo.datos.producto?.resenas_texto || '';
   useEffect(() => {

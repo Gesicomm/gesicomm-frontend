@@ -21,7 +21,8 @@ export function itemSegunMetodoPago(item, metodo) {
   if (!pct) return item;
   // El precio base se conserva entero para poder alternar sin acumular redondeos.
   const base = Number(item.precioSinDescuentoBoton ?? Math.round(Number(item.precio) * 100 / (100 - pct)));
-  const anticipado = metodo === 'pagopar';
+  // Sin pago anticipado el descuento por pagar antes no aplica.
+  const anticipado = metodo === 'anticipado';
   return { ...item, precioSinDescuentoBoton: base, descuentoBotonDisponible: pct,
     descuentoBotonPct: anticipado ? pct : null,
     precio: anticipado ? Math.round(base * (100 - pct) / 100) : base };
@@ -355,8 +356,8 @@ export function useStoreCart(slug, data, catalogoCompleto) {
 
     // Purchase de navegador, con el MISMO event_id que el backend ya mandó
     // por CAPI (Meta cuenta una sola compra). Solo viene cuando el pedido
-    // cuenta como venta ya: con PagoPar el Purchase sale del servidor recién
-    // al confirmarse el pago, y esta pantalla ya no está (se va a PagoPar).
+    // cuenta como venta ya: con pago online el Purchase sale del servidor recién
+    // al confirmarse el pago, y esta pantalla ya no está (se va a la pasarela).
     if (checkout.purchase_event_id) {
       try {
         const valor = Number(checkout.monto) || 0;

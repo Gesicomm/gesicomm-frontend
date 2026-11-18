@@ -26,7 +26,7 @@ Esto es el inicio de una conversación. Quien te pegó este mensaje todavía NO 
 NO generes HTML, CSS ni JavaScript en esa primera respuesta. Recién cuando te conteste, generás la ficha completa con el formato de abajo.
 
 ## Cómo funciona la página
-- Tu código se muestra dentro de un iframe aislado. Gesicomm inyecta un "runtime" que llena los datos reales del producto, maneja el carrito, el checkout (pago anticipado con PagoPar o pago contra entrega), los pedidos y el tracking (Meta Pixel y Conversions API). Vos NO programás nada de eso: marcás el HTML con atributos data-gesicomm-* y el runtime hace el resto.
+- Tu código se muestra dentro de un iframe aislado. Gesicomm inyecta un "runtime" que llena los datos reales del producto, maneja el carrito, el checkout (pago contra entrega), los pedidos y el tracking (Meta Pixel y Conversions API). Vos NO programás nada de eso: marcás el HTML con atributos data-gesicomm-* y el runtime hace el resto.
 - data-gesicomm-bind="campo" pone un dato del producto en ese elemento (fuera de una lista = el producto de la ficha). Si el dato está vacío, el elemento se oculta solo: no escribas textos de relleno.
 - data-gesicomm-lista="nombre" + un <template> adentro: el runtime clona el template por cada elemento de la lista. Si la lista está vacía, el contenedor se oculta. Conservá SIEMPRE el <template> y los binds de adentro.
 - data-gesicomm-si="campo" muestra el elemento solo si el producto tiene ese dato; data-gesicomm-sin="campo" al revés.
@@ -49,7 +49,7 @@ El comercio edita la ficha desde el panel "Vista producto" sin tocar código. Ca
 7. Descripción breve — "descripcion", en DOS elementos con la misma clave: la frase destacada (bind "propuesta_valor") y la descripción (bind "descripcion_ficha", respetá los saltos de línea con white-space: pre-line). La descripción va una sola vez.
 8. Beneficios principales — "beneficios": <ul data-gesicomm-lista="beneficios" data-gesicomm-limite="4"> con <template><li data-gesicomm-bind="titulo"></li></template>, como checks rápidos antes de comprar.
 9. Botones de contacto y pago — "contacto_pago", en TRES elementos con la misma clave:
-   - La fila de compra: cantidad <input data-gesicomm-cantidad-input data-gesicomm-sin="tiene_paquetes"> (con paquetes, la cantidad la da el paquete) y el botón principal <button data-gesicomm-comprar data-gesicomm-boton-principal-pago data-gesicomm-metodo-pago="pagopar"> con <span data-gesicomm-cta data-gesicomm-bind="cta_texto"></span>, <small data-gesicomm-cta-descuento></small> y el total <span data-gesicomm-total></span>. Cantidad y botón van lado a lado. Si la tienda no tiene PagoPar conectado, Gesicomm cambia solo ese botón a pago contra entrega: no lo programes vos.
+   - La fila de compra: cantidad <input data-gesicomm-cantidad-input data-gesicomm-sin="tiene_paquetes"> (con paquetes, la cantidad la da el paquete). No agregues un botón de pago anticipado: los botones de compra salen de la lista "botones_pago_producto". La cantidad va arriba de esos botones.
    - Botones de pago extra: lista "botones_pago_producto" (template con un <button> y binds "label" y "descuento_label"), por ejemplo "Pago contra entrega".
    - Botones de contacto: lista "botones_contacto_producto" (template con un <button> y bind "label"), por ejemplo "Consultar por WhatsApp".
 10. Disponibilidad y medios de pago — "promociones_pago", en dos elementos: la lista "metodos_pago_producto" (bind "texto") y los logos <div data-gesicomm-si="pago_logos_activo"> con la lista "payment_logos" (binds "imagen" y "nombre").

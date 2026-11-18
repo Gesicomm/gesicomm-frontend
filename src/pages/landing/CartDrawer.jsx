@@ -1,6 +1,6 @@
 import { numeroPedidoVisible } from '../../lib/pedidoNumero';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, ArrowRight, Check, Loader, Sparkles, Zap, MapPin, Award, ShieldCheck, Banknote, CreditCard } from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, ArrowRight, Check, Loader, Sparkles, Zap, MapPin, Award, ShieldCheck, Banknote } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
@@ -207,13 +207,8 @@ export default function CartDrawer({
     ? { '--l-primary': primarioTema, '--l-on-primary': tintaSobre(primarioTema) }
     : undefined;
 
-  // Pago anticipado = PagoPar. Sin la pasarela conectada el método que pidió
-  // el botón de la ficha no se aplica: las opciones de abajo ni se muestran,
-  // y el pedido salía igual como 'pagopar' para fallar recién al cobrar.
-  const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
-  const metodoInicial = paymentMethodInicial === 'efectivo' || (paymentMethodInicial === 'pagopar' && hasPagoPar)
-    ? paymentMethodInicial
-    : null;
+  // Solo hay pago contra entrega.
+  const metodoInicial = paymentMethodInicial === 'efectivo' ? 'efectivo' : null;
 
   useEffect(() => {
     if (!abierto || !metodoInicial) return;
@@ -246,7 +241,6 @@ export default function CartDrawer({
 
   const cantidadTotal = items.reduce((s, it) => s + it.cantidad, 0);
   const subtotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
-  const pagaOnline = form.payment_method === 'pagopar';
 
   /**
    * Qué falta para poder comprar, en el orden en que aparece en el
@@ -270,7 +264,6 @@ export default function CartDrawer({
       };
     }
     if (!form.direccion.trim()) return { campo: 'direccion', mensaje: 'Escribí la calle y el número.' };
-    if (pagaOnline && !form.documento.trim()) return { campo: 'documento', mensaje: 'Para pagar online necesitamos tu cédula.' };
     if (form.quiere_factura && !form.ruc.trim()) return { campo: 'ruc', mensaje: 'Escribí el RUC para la factura.' };
     if (form.quiere_factura && !form.razon_social.trim()) return { campo: 'razon_social', mensaje: 'Escribí la razón social para la factura.' };
     if (!acepta) return { campo: 'acepta', mensaje: 'Marcá que aceptás que usemos tus datos para el pedido.' };
@@ -429,10 +422,6 @@ export default function CartDrawer({
       // El código viaja con el pedido; el backend lo revalida y recalcula
       // el descuento por su cuenta antes de cobrar.
       const res = await onConfirmarPedido({ ...form, cupon_codigo: cupon ? cupon.codigo : null });
-      if (res?.payment_data?.payment_url) {
-        window.location.href = res.payment_data.payment_url;
-        return;
-      }
       setResultado(res);
       setPaso('confirmado');
     } catch (err) {
@@ -757,24 +746,15 @@ export default function CartDrawer({
                     />
                   </label>
 
-                  {/* La cedula no tiene que ver con la factura: la pide la
-                      pasarela para poder cobrar online. Por eso es un campo
-                      aparte y solo es obligatorio si se paga por ahi. */}
                   <label className="lp-checkout-field">
-                    <span>Cédula {pagaOnline && <em>*</em>}</span>
+                    <span>Cédula</span>
                     <input
-                      required={pagaOnline}
                       data-campo="documento"
                       value={form.documento}
                       onChange={e => actualizarCampo('documento', e.target.value)}
                       placeholder="Ej: 4123456"
                       inputMode="numeric"
                     />
-                    {pagaOnline && (
-                      <small className="lp-checkout-ayuda">
-                        Obligatorio para compras online.
-                      </small>
-                    )}
                   </label>
 
                   <label className="lp-checkout-check">
@@ -969,48 +949,6 @@ export default function CartDrawer({
                         </button>
                       )}
                     </section>
-                  )}
-
-                  {hasPagoPar && (
-                    <div className="lp-checkout-payment-methods">
-                      <p>Medio de pago</p>
-
-                      {/* El pago anticipado va primero y remarcado: le conviene
-                          al comercio (cobra seguro, sin riesgo de rechazo en
-                          la puerta) y tiene que saltar a la vista antes de que
-                          el contra entrega se vea como la opción obvia. */}
-                      <label className={`lp-pay-option lp-pay-option--highlight ${pagaOnline ? 'is-selected' : ''}`}>
-                        <input
-                          type="radio"
-                          name="payment_method"
-                          value="pagopar"
-                          checked={pagaOnline}
-                          onChange={() => actualizarCampo('payment_method', 'pagopar')}
-                        />
-                        <span className="lp-pay-option-icon"><CreditCard size={16} /></span>
-                        <span className="lp-pay-option-copy">
-                          <span className="lp-pay-option-title">
-                            Pago anticipado <span className="lp-pay-option-badge">Recomendado</span>
-                          </span>
-                          <span className="lp-pay-option-desc">Tarjetas, QR o Tigo Money. Pagás ahora y tu pedido queda confirmado al instante.</span>
-                        </span>
-                      </label>
-
-                      <label className={`lp-pay-option ${!pagaOnline ? 'is-selected' : ''}`}>
-                        <input
-                          type="radio"
-                          name="payment_method"
-                          value="efectivo"
-                          checked={!pagaOnline}
-                          onChange={() => actualizarCampo('payment_method', 'efectivo')}
-                        />
-                        <span className="lp-pay-option-icon"><Banknote size={16} /></span>
-                        <span className="lp-pay-option-copy">
-                          <span className="lp-pay-option-title">Pago contra entrega</span>
-                          <span className="lp-pay-option-desc">Pagás cuando recibís el pedido.</span>
-                        </span>
-                      </label>
-                    </div>
                   )}
 
                   {onValidarCupon && (

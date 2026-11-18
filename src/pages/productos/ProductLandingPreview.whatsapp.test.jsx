@@ -19,7 +19,6 @@ const capturado = { datos: null };
 vi.mock('../landing-simple/CodigoPreview', () => ({
   default: ({ datos }) => { capturado.datos = datos; return null; },
 }));
-vi.mock('../landing-simple/usePagoparConectado', () => ({ usePagoparConectado: () => null }));
 vi.mock('../../services/ofertaService', () => ({ ofertaService: { listarPorProducto: vi.fn().mockResolvedValue([]) }, ofertaAFormaPublica: vi.fn() }));
 vi.mock('../../services/tiendaService', () => ({
   tiendaService: {

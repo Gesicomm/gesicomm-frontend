@@ -40,7 +40,7 @@ export default function ComboProductPage({
   isMobile = false,
   previewMode = false,
   // Acción PRINCIPAL del botón: agrega al carrito y abre el carrito, donde
-  // el cliente elige el medio de pago (PagoPar o contra entrega) — mismo
+  // el cliente elige el medio de pago (contra entrega) — mismo
   // recorrido que un producto individual (ver BasicoProductPage.jsx). Un
   // combo no compra distinto de un producto: no tiene sentido abrir un
   // checkout aparte.

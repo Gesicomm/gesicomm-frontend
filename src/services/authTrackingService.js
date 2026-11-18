@@ -36,8 +36,8 @@ export const authTrackingService = {
     return data;
   },
 
-  async consultarPagoSuscripcionPagopar(identificador) {
-    const { data } = await API.post('/admin/auth-tracking/pagopar/suscripciones/consultar', {
+  async consultarPagoSuscripcion(identificador) {
+    const { data } = await API.post('/admin/auth-tracking/pagos/suscripciones/consultar', {
       identificador,
       hash_pedido: identificador,
     });
@@ -45,7 +45,7 @@ export const authTrackingService = {
   },
 
   async pagosSuscripcion({ pagina = 1, filtros = {} } = {}) {
-    const { data } = await API.post('/admin/auth-tracking/pagopar/suscripciones', { pagina, filtros });
+    const { data } = await API.post('/admin/auth-tracking/pagos/suscripciones', { pagina, filtros });
     return data;
   },
 };

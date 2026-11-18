@@ -994,24 +994,9 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
     // data-gesicomm-geografia). Se pide una sola vez en LandingCodigoPublica,
     // no por vista — por eso llega entero o vacío, nunca a medio cargar.
     geografia: Array.isArray(opciones.geografia) ? opciones.geografia : [],
-    // La tienda publicada lo sabe por las pasarelas de la respuesta; una
-    // vista previa armada con esta misma función (ficha del producto en el
-    // panel) no las trae y pasa lo que consultó: opciones.pagoparConectado.
-    pago_anticipado: pagoAnticipadoRuntime(
-      opciones.pagoparConectado ?? (Array.isArray(pasarelas) ? pasarelas.some(p => p.provider === 'pagopar') : null),
-    ),
+    // No hay pago online: el runtime oculta el pago anticipado.
+    pago_anticipado: { disponible: false },
   };
-}
-
-/**
- * Pago anticipado = PagoPar: sin la pasarela conectada no se puede cobrar
- * por adelantado y el runtime saca el botón y la opción del checkout, igual
- * en la vista previa que en la tienda publicada (ver aplicarPagoAnticipado en
- * runtimeGesicomm.js). `conectado` null = no se sabe (todavía cargando): no
- * se bloquea.
- */
-function pagoAnticipadoRuntime(conectado) {
-  return { disponible: conectado !== false };
 }
 
 /** Sentinel para "todas las categorías" en el preview del panel de categorías. */
@@ -1027,7 +1012,7 @@ function coloresTiendaPreview(tienda, landing = null) {
 }
 
 /** Datos del runtime para el preview del editor, con el catálogo del panel. */
-export function datosRuntimePreview({ productos = [], productosCategorias = productos, tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], pagoparConectado = null, bloquesEditor = null, bloquesInicioEditor = null, filtro = null }) {
+export function datosRuntimePreview({ productos = [], productosCategorias = productos, tienda, landing = null, venta, vista, productoId, categoria = null, ofertas = [], geografia = [], bloquesEditor = null, bloquesInicioEditor = null, filtro = null }) {
   // Ofertas de la tienda (panel) agrupadas por su producto, ya filtradas
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
@@ -1104,7 +1089,7 @@ export function datosRuntimePreview({ productos = [], productosCategorias = prod
     checkout_recomendados: extrasCheckout.recomendados,
     recomendados: recomendadosVista(catalogo, producto, venta),
     geografia: Array.isArray(geografia) ? geografia : [],
-    pago_anticipado: pagoAnticipadoRuntime(pagoparConectado),
+    pago_anticipado: { disponible: false },
     // Solo el editor: rótulo de cada bloque al pasar el mouse y
     // clic para abrirlo en el panel (ver bloquesEditor en el runtime).
     ...(producto && bloquesEditor ? { editor_bloques: bloquesEditor } : {}),

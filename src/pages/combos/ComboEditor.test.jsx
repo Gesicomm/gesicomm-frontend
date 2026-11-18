@@ -199,21 +199,6 @@ describe('Fase 4: de dónde sale la ganancia', () => {
     expect(screen.getByText(/Su precio de venta es igual a tu costo/)).toBeInTheDocument();
   });
 
-  it('suma la comisión de cobro al recibo para que dé lo mismo que el motor', async () => {
-    comboAdminService.obtenerConfiguracion.mockResolvedValue({
-      cpa_porcentaje: 0, costo_envio: 0, costo_confirmacion: 0, costo_empaque: 0,
-      margen_minimo: 15, umbral_excelente: 30, pagopar_comision_porcentaje: 5,
-    });
-    sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify(productos));
-    renderConPrefillCatalogo();
-    await screen.findByRole('heading', { name: '¿Cuánto descontás en cada complemento?' });
-
-    const recibo = screen.getByText(/De dónde sale lo que/).closest('.cw-recibo');
-    // 5% sobre el combo entero (100.000 + 30.000), no solo sobre el principal.
-    expect(within(recibo).getByText('Comisión de cobro (5% del precio)').nextSibling).toHaveTextContent('− 6.500 Gs');
-    const total = recibo.querySelector('.total dd').textContent;
-    expect(screen.getByText(/^Vos (ganás|perdés)$/).nextSibling.textContent).toContain(total);
-  });
 
   it('abre el mismo análisis de sensibilidad de productos con los datos del combo', async () => {
     verificarSesion.mockResolvedValue({ id: 7, rol: 'usuario' });

@@ -43,19 +43,6 @@ it('Ver todos los combos navega a la URL pública del catálogo y conserva el fi
   expect(vistas.preview.datos.filtro.tipo).toBe('combo');
 });
 
-it('el botón anticipado llega directo al checkout, conserva el carrito al cambiar de página y alterna el 10%', async () => {
-  render(<MemoryRouter initialEntries={['/l/tienda/producto-7']}><Tienda /></MemoryRouter>);
-  act(() => vistas.preview.onCheckout({ producto: 'producto-7', cantidad: 1, payment_method: 'pagopar', descuento_boton_pct: 10, checkout_directo: true }));
-  await waitFor(() => expect(screen.getByTestId('ruta').textContent).toBe('/l/tienda/checkout'));
-  expect(vistas.carrito.abierto).toBe(false);
-  expect(vistas.preview.datos.checkout_metodo_pago).toBe('pagopar');
-  expect(vistas.preview.datos.carrito.total).toBe(90000);
-  act(() => vistas.preview.onMetodoPago('contra_entrega'));
-  expect(vistas.preview.datos.checkout_metodo_pago).toBe('efectivo');
-  expect(vistas.preview.datos.carrito.total).toBe(100000);
-  act(() => vistas.preview.onMetodoPago('pagopar'));
-  expect(vistas.preview.datos.carrito.total).toBe(90000);
-});
 
 it('recargar checkout conserva contra entrega sin recuperar el descuento', () => {
   const { unmount } = render(<MemoryRouter initialEntries={['/l/tienda/producto-7']}><Tienda /></MemoryRouter>);
@@ -67,7 +54,7 @@ it('recargar checkout conserva contra entrega sin recuperar el descuento', () =>
   expect(vistas.preview.datos.carrito.total).toBe(100000);
 });
 
-it('sin PagoPar retira descuentos guardados y selecciona contra entrega', () => {
+it('retira descuentos guardados de pago anticipado y selecciona contra entrega', () => {
   const linea = { clave: 'producto-7', tipo: 'producto', contentId: 'producto-7', nombre: 'Silla', precio: 90000,
     precioSinDescuentoBoton: 100000, cantidad: 1, descuentoBotonPct: 10 };
   localStorage.setItem('gesicomm-carrito-tienda', JSON.stringify([[linea.clave, linea]]));

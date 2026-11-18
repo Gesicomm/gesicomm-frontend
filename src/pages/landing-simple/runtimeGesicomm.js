@@ -409,16 +409,14 @@ export function runtimeGesicomm(plantillas) {
     }
   }
 
-  // ─── Pago anticipado = PagoPar ──────────────────────────────────────────
-  // Solo se cobra por adelantado con PagoPar conectado (Mi tienda → Pagos).
-  // El botón de la ficha y la opción del checkout propio vienen escritos en
-  // el HTML guardado de cada landing, así que se resuelve acá y no en la
-  // plantilla. Sin la pasarela no se ofrecen, ni en la tienda publicada ni
-  // en la vista previa del editor: la preview muestra lo mismo que va a ver
-  // el cliente. El motivo se le explica al comercio en el formulario de la
-  // ficha (PresentacionProducto), no dentro de la página.
+  // ─── Pago anticipado: desactivado ───────────────────────────────────────
+  // No hay pago online. Las landings guardadas antes todavía traen en su HTML
+  // el botón y la opción del checkout con el valor viejo (METODO_LEGADO), y la
+  // plantilla base trae el botón principal como "anticipado": se
+  // ocultan acá, en la tienda publicada y en la vista previa.
+  var METODO_LEGADO = 'pagopar';
   function pagoAnticipadoDisponible() {
-    return !datos.pago_anticipado || datos.pago_anticipado.disponible !== false;
+    return false;
   }
   function bloquearPagoAnticipado(el, bloquear) {
     if (!bloquear) {
@@ -433,9 +431,9 @@ export function runtimeGesicomm(plantillas) {
   }
   function aplicarPagoAnticipado() {
     var bloquear = !pagoAnticipadoDisponible();
-    var botones = document.querySelectorAll('[data-gesicomm-metodo-pago="pagopar"]');
+    var botones = document.querySelectorAll('[data-gesicomm-metodo-pago="' + METODO_LEGADO + '"], [data-gesicomm-metodo-pago="anticipado"]');
     for (var i = 0; i < botones.length; i++) bloquearPagoAnticipado(botones[i], bloquear);
-    var radios = document.querySelectorAll('input[name="payment_method"][value="pagopar"]');
+    var radios = document.querySelectorAll('input[name="payment_method"][value="' + METODO_LEGADO + '"]');
     for (var j = 0; j < radios.length; j++) {
       var radio = radios[j];
       bloquearPagoAnticipado(radio.closest('label') || radio, bloquear);
@@ -452,7 +450,7 @@ export function runtimeGesicomm(plantillas) {
     // resumen no debe deshacer lo que el cliente acaba de seleccionar.
     if (datos.checkout_metodo_pago && datos.checkout_metodo_pago !== ultimoMetodoCheckout) {
       ultimoMetodoCheckout = datos.checkout_metodo_pago;
-      var metodo = pagoAnticipadoDisponible() && ultimoMetodoCheckout === 'pagopar' ? 'pagopar' : 'contra_entrega';
+      var metodo = 'contra_entrega';
       var elegido = document.querySelector('input[name="payment_method"][value="' + metodo + '"]')
         || (metodo === 'contra_entrega' ? document.querySelector('input[name="payment_method"][value="efectivo"]') : null);
       if (elegido) elegido.checked = true;
@@ -462,9 +460,7 @@ export function runtimeGesicomm(plantillas) {
   }
   var ultimoMetodoCheckout = null;
   // ─── Datos del comprador en el checkout ─────────────────────────────────
-  // PagoPar no abre el cobro sin el documento (cédula o RUC) y el correo del
-  // comprador, que es donde le llega el comprobante: con pago anticipado
-  // elegido los dos son obligatorios; contra entrega no. "Necesito factura"
+  // Documento y correo: opcionales con pago contra entrega. "Necesito factura"
   // muestra y exige razón social y RUC. El checkout base ya trae los campos; a uno personalizado se le
   // agregan el correo y la casilla de promociones copiando el del celular.
   function campoCheckout(form, nombre) { return form.querySelector('[name="' + nombre + '"]'); }
@@ -505,7 +501,7 @@ export function runtimeGesicomm(plantillas) {
     for (var i = 0; i < forms.length; i++) {
       var form = forms[i];
       asegurarCamposAnticipado(form);
-      var anticipado = !!form.querySelector('input[name="payment_method"][value="pagopar"]:checked');
+      var anticipado = !!form.querySelector('input[name="payment_method"][value="' + METODO_LEGADO + '"]:checked');
       exigirCampoCheckout(campoCheckout(form, 'documento'), anticipado);
       exigirCampoCheckout(campoCheckout(form, 'email'), anticipado);
       var obligatorios = form.querySelectorAll('[required]');
@@ -1477,7 +1473,7 @@ export function runtimeGesicomm(plantillas) {
     var franjas = document.querySelectorAll('main[data-gesicomm-base="catalogo"] .store-benefits');
     Array.prototype.forEach.call(franjas, function (franja) {
       var texto = franja.textContent || '';
-      if (texto.indexOf('Checkout simple') !== -1 || texto.indexOf('Procesado por PagoPar') !== -1 || texto.indexOf('Pago seguro') !== -1) franja.remove();
+      if (texto.indexOf('Checkout simple') !== -1 || texto.indexOf('Procesado por Pago') !== -1 || texto.indexOf('Pago seguro') !== -1) franja.remove();
     });
     var shells = document.querySelectorAll('.hero-shell');
     Array.prototype.forEach.call(shells, function (shell) {
@@ -1905,6 +1901,7 @@ export function runtimeGesicomm(plantillas) {
         tipo: tipo,
         valor: tipo === 'whatsapp' ? '' : valorWhatsappEditable(b.valor),
         url: urlContactoProducto(b),
+        colores: b.colores || null,
       };
     }).filter(function (b) { return b.label; }).slice(0, 4);
   }
@@ -1915,7 +1912,6 @@ export function runtimeGesicomm(plantillas) {
       var tipo = b.tipo || 'checkout';
       var valor = b.valor || '';
       var label = String(b.label || '').trim() || 'Pagar';
-      var esContraEntrega = normalizar(valor + ' ' + label).indexOf('contra entrega') !== -1 || normalizar(valor).indexOf('efectivo') !== -1;
       var descuento = descuentoBotonPct(b.descuento_pct);
       return {
         label: label,
@@ -1924,7 +1920,8 @@ export function runtimeGesicomm(plantillas) {
         descuento_pct: descuento || '',
         descuento_label: descuento ? '-' + formatoPct(descuento) + '%' : '',
         url: urlContactoProducto(b),
-        payment_method: tipo === 'checkout' && esContraEntrega ? 'efectivo' : (tipo === 'checkout' ? 'pagopar' : ''),
+        payment_method: tipo === 'checkout' ? 'efectivo' : '',
+        colores: b.colores || null,
       };
     }).filter(function (b) { return b.label; }).slice(0, 4);
   }
@@ -2754,10 +2751,12 @@ export function runtimeGesicomm(plantillas) {
             h.setAttribute('data-gesicomm-valor-pago', elemento.valor || '');
             if (elemento.payment_method) h.setAttribute('data-gesicomm-metodo-pago', elemento.payment_method);
             if (elemento.descuento_pct) h.setAttribute('data-gesicomm-descuento-pct', elemento.descuento_pct);
+            aplicarColoresBoton(h, elemento.colores);
           }
           if (nombre === 'botones_contacto_producto') {
             h.setAttribute('data-gesicomm-accion-contacto', elemento.tipo || 'whatsapp');
             h.setAttribute('data-gesicomm-valor-contacto', elemento.valor || '');
+            aplicarColoresBoton(h, elemento.colores);
           }
           bindDentro(h, elemento);
         } else if (nombre === 'imagenes') {
@@ -2947,6 +2946,33 @@ export function runtimeGesicomm(plantillas) {
     }
     ordenarHijosFicha(document.querySelector('.pdp-info'), orden, true);
     ordenarHijosFicha(document.body, orden, false);
+  }
+
+  // Colores propios de cada botón de la ficha (normal y al pasar el mouse),
+  // elegidos en el editor. Van como variables CSS en el botón; sin color
+  // elegido, el botón queda con el del diseño.
+  var COLORES_BOTON = [['fondo', '--gc-btn-fondo'], ['texto', '--gc-btn-texto'], ['fondo_hover', '--gc-btn-fondo-hover'], ['texto_hover', '--gc-btn-texto-hover']];
+  function colorBoton(v) { return typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : ''; }
+  function asegurarEstiloColoresBoton() {
+    if (document.getElementById('gc-botones-colores')) return;
+    var tag = document.createElement('style');
+    tag.id = 'gc-botones-colores';
+    tag.textContent = '[data-gc-btn-fondo]{background:var(--gc-btn-fondo) !important;border-color:var(--gc-btn-fondo) !important}'
+      + '[data-gc-btn-texto],[data-gc-btn-texto] *{color:var(--gc-btn-texto) !important}'
+      + '[data-gc-btn-fondo],[data-gc-btn-texto],[data-gc-btn-fondo-hover],[data-gc-btn-texto-hover]{transition:background-color .15s,color .15s,border-color .15s}'
+      + '[data-gc-btn-fondo-hover]:hover{background:var(--gc-btn-fondo-hover) !important;border-color:var(--gc-btn-fondo-hover) !important}'
+      + '[data-gc-btn-texto-hover]:hover,[data-gc-btn-texto-hover]:hover *{color:var(--gc-btn-texto-hover) !important}';
+    document.head.appendChild(tag);
+  }
+  function aplicarColoresBoton(h, colores) {
+    var c = colores && typeof colores === 'object' ? colores : {};
+    for (var i = 0; i < COLORES_BOTON.length; i++) {
+      var clave = COLORES_BOTON[i][0], variable = COLORES_BOTON[i][1], color = colorBoton(c[clave]);
+      var marca = 'data-gc-btn-' + clave.replace('_', '-');
+      if (color) { h.style.setProperty(variable, color); h.setAttribute(marca, ''); }
+      else { h.style.removeProperty(variable); h.removeAttribute(marca); }
+    }
+    if (colorBoton(c.fondo) || colorBoton(c.texto) || colorBoton(c.fondo_hover) || colorBoton(c.texto_hover)) asegurarEstiloColoresBoton();
   }
 
   function renderizar() {
@@ -3932,7 +3958,7 @@ export function runtimeGesicomm(plantillas) {
   var TEXTOS_ESTADO_CHECKOUT = {
     confirmado: { rotulo: 'Pedido recibido', titulo: '¡Gracias por tu compra!', ayuda: 'La tienda se va a comunicar con vos para coordinar la entrega.' },
     pago_pendiente: { rotulo: 'Pago pendiente', titulo: 'Tu pedido quedó registrado', ayuda: 'No se te cobró nada. Escribile a la tienda para coordinar el pago.' },
-    redirigiendo: { rotulo: 'Pago seguro', titulo: 'Te llevamos a PagoPar', ayuda: '' },
+    redirigiendo: { rotulo: 'Pago seguro', titulo: 'Te llevamos al pago', ayuda: '' },
   };
   function pintarCheckout() {
     var resumen = datos.carrito || { cantidad: 0, subtotal: 0, total: 0, items: [] };
@@ -3958,7 +3984,7 @@ export function runtimeGesicomm(plantillas) {
     }
     pintarCupon();
     // El pedido ya existe y el carrito quedó vacío en tres casos: confirmado,
-    // pago anticipado que no se pudo abrir, y yendo a PagoPar. En los tres se
+    // pago anticipado que no se pudo abrir, y yendo al pago. En los tres se
     // muestra el bloque del pedido; antes solo en el primero, y en los otros
     // dos el cliente veía "Tu pedido todavía no tiene productos" justo
     // después de comprar.
@@ -4562,7 +4588,7 @@ export function runtimeGesicomm(plantillas) {
     if (!t) return;
     var el;
 
-    // Va primero: sin PagoPar el pago anticipado no se ejecuta, aunque algo
+    // Va primero: el pago anticipado no se ejecuta, aunque algo
     // haya dejado el botón a la vista.
     if ((el = t.closest('[data-gesicomm-pago-bloqueado]'))) {
       e.preventDefault();
@@ -4868,7 +4894,13 @@ export function runtimeGesicomm(plantillas) {
         if (seguraPago) window.open(seguraPago, '_blank', 'noopener');
         return;
       }
-      comprar(productoActual, { cantidad: cantidadElegida(el), variante: varianteElegida, checkout_directo: el.hasAttribute('data-gesicomm-boton-principal-pago'), payment_method: el.getAttribute('data-gesicomm-metodo-pago') || 'pagopar', descuento_boton_pct: descuentoDeElemento(el) });
+      // Mismo pedido que el botón principal de la ficha: con paquetes elegidos
+      // va el paquete (y los order bumps); antes este botón mandaba siempre
+      // 1 unidad suelta y el pack elegido se perdía.
+      var paqPago = paqueteActual();
+      comprar(productoActual, paqPago
+        ? { oferta: paqPago, variante: varianteElegida, conBumps: true, payment_method: 'efectivo', descuento_boton_pct: descuentoDeElemento(el) }
+        : { cantidad: hayPaquetes() ? 1 : cantidadElegida(el), variante: varianteElegida, payment_method: 'efectivo', descuento_boton_pct: descuentoDeElemento(el) });
       return;
     }
     if ((el = t.closest('[data-gesicomm-accion-contacto]'))) {

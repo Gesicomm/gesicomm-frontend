@@ -593,7 +593,7 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
         shipping: Number(config.costo_envio),
         confirmation: Number(config.costo_confirmacion),
         packaging: Number(config.costo_empaque),
-        paymentCommissionPercentage: Number(config.pagopar_comision_porcentaje) || 0,
+        paymentCommissionPercentage: 0,
       },
       targetMargins: config.margenes_objetivo || [15, 30, 45],
       minimumMargin: Number(config.margen_minimo),
@@ -708,7 +708,6 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
             parametros,
           },
         },
-        pagopar: config.pagopar || {},
       },
     });
   };
@@ -915,7 +914,7 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
   const costoGs = Math.ceil(costo / 1000) * 1000;
   const tono = margen === null ? '' : margen <= 0 ? 'neg' : margen < margenMinimo ? 'warn' : 'pos';
   const logistica = config ? Number(config.costo_envio) + Number(config.costo_confirmacion) + Number(config.costo_empaque) : 0;
-  const comisionPct = Number(config?.pagopar_comision_porcentaje) || 0;
+  const comisionPct = 0;
   const costoProductosCombo = principal ? (principal.precio_costo || 0) + upsells.reduce((a, u) => a + (u.precio_costo || 0), 0) : 0;
   const diferenciaVsSolo = r ? utilidad - r.comparison.standaloneProfit : 0;
   const escenarios = (config?.escenarios_descuento || [0, 5, 10, 15, 20, 25, 30]).map(d => {

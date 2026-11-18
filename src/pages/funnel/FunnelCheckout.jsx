@@ -58,7 +58,6 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
   // que ya vienen resueltas en el DTO público.
   const [seleccionVariantePorOferta, setSeleccionVariantePorOferta] = useState({});
 
-  const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
   const deliveryCiudades = useDeliveryCiudades(deliveryCiudadesRecibidas, abierto);
   const opcionesDelivery = useMemo(() => prepararOpcionesDelivery(deliveryCiudades), [deliveryCiudades]);
   const productoConEnvioIncluido = itemOriginal?.envio_incluido === true || itemOriginal?.envioIncluido === true;
@@ -236,10 +235,6 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
       // componente "elegible" de cada una (si tiene).
       const ofertasConVariante = ofertas.map(o => ({ ...o, componenteVarianteId: componenteVarianteDe(o)?.id || null }));
       const res = await onConfirmar(formulario, ofertasConVariante);
-      if (res?.payment_data?.payment_url) {
-        window.location.href = res.payment_data.payment_url;
-        return;
-      }
       setConfirmado(res || {});
     } catch (err) {
       setError(err?.message || 'No se pudo enviar el pedido. Probá de nuevo.');
@@ -618,36 +613,6 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               <label style={labelStyle}>RUC (factura)</label>
               <input value={form.ruc} onChange={e => campo('ruc', e.target.value)} placeholder="Opcional" style={inputStyle} />
             </div>
-
-            {hasPagoPar && (
-              <div style={{ marginTop: '0.5rem', padding: '1rem', backgroundColor: hexToRgba(tema.texto, 0.03), borderRadius: '8px' }}>
-                <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem', color: tema.texto }}>Medio de pago</p>
-                
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', cursor: 'pointer', color: tema.texto }}>
-                  <input 
-                    type="radio" 
-                    name="payment_method" 
-                    value="efectivo"
-                    checked={form.payment_method === 'efectivo'}
-                    onChange={() => campo('payment_method', 'efectivo')}
-                    style={{ margin: 0, cursor: 'pointer', accentColor: tema.acento }}
-                  />
-                  <span style={{ fontSize: '0.85rem' }}>Pagar en efectivo</span>
-                </label>
-                
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: tema.texto }}>
-                  <input 
-                    type="radio" 
-                    name="payment_method" 
-                    value="pagopar"
-                    checked={form.payment_method === 'pagopar'}
-                    onChange={() => campo('payment_method', 'pagopar')}
-                    style={{ margin: 0, cursor: 'pointer', accentColor: tema.acento }}
-                  />
-                  <span style={{ fontSize: '0.85rem' }}>Pago online (Tarjetas, QR, Tigo Money)</span>
-                </label>
-              </div>
-            )}
 
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.8rem', color: hexToRgba(tema.texto, 0.7), cursor: 'pointer' }}>
               <input type="checkbox" checked={acepta} onChange={e => setAcepta(e.target.checked)} style={{ marginTop: '0.15rem' }} />

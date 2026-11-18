@@ -121,19 +121,15 @@ describe('Vista producto: cada campo llega a la preview', () => {
   it('5 · botones de compra, botones de pago y contacto', () => {
     montar();
     const b = bloque('Botones de contacto y pago');
-    escribir(within(b).getByLabelText('Botón de pago anticipado'), 'La quiero');
-    escribir(within(b).getByLabelText('Descuento pago anticipado %'), '10');
     const pagos = within(b).getByRole('group', { name: 'Botones de pago' });
-    escribir(within(pagos).getAllByPlaceholderText('Texto del botón')[0], 'Pagar con PagoPar');
+    escribir(within(pagos).getAllByPlaceholderText('Texto del botón')[0], 'Pagar online');
     escribir(within(pagos).getByLabelText('Descuento del botón 1'), '5');
     const contacto = within(b).getByRole('group', { name: 'Botones configurables de contacto' });
     escribir(within(contacto).getAllByPlaceholderText('Texto del botón')[0], 'Hablar con ventas');
     expect(within(contacto).queryByPlaceholderText('Mensaje opcional')).toBeNull();
     const f = ficha();
-    expect(f.txt('.buy-row [data-gesicomm-bind="cta_texto"]')).toBe('La quiero');
-    expect(f.txt('.buy-row [data-gesicomm-cta-descuento]')).toBe('-10%');
-    expect(f.txt('.buy-row [data-gesicomm-total]')).toBe('Gs 765.000');
-    expect(f.lista('.payment-actions')[0]).toBe('Pagar con PagoPar -5%');
+    // Sin pago anticipado, el primer botón de checkout sube a la fila de la cantidad.
+    expect(f.txt('.buy-row [data-gesicomm-pago-promovido]')).toBe('Pagar online -5%');
     expect(f.lista('.contact-actions')).toEqual(['Hablar con ventas']);
   }, 15000);
 

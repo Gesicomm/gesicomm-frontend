@@ -1155,7 +1155,7 @@
 .tn-token-info-note svg { flex-shrink: 0; margin-top: 0.1rem; }
 
 /* ─── Componentes embebidos ───────────────────────────────────────────── */
-/* PagoParConfig y ComboConfiguracion traen su propio contenedor (pensado
+/* ComboConfiguracion trae su propio contenedor (pensado
    para vivir como página). Acá se les saca el padding/ancho de página para
    que no queden como una caja dentro de otra caja. Solo presentación: el
    markup y la lógica de esos componentes no se tocan. */
@@ -1197,13 +1197,6 @@
   color: var(--vit-text);
 }
 
-.tn-embed-pagopar > div {
-  background: var(--vit-bg);
-  border: 1px solid var(--vit-border);
-  border-radius: 12px;
-  padding: 1.25rem;
-}
-
 .tn-embed-metodos-pago > div {
   background: var(--vit-bg) !important;
   border: 1px solid var(--vit-border) !important;
@@ -1214,12 +1207,6 @@
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-active));
   color: var(--color-primary-fg);
 }
-
-/* PagoParConfig trae su propio azul de Tailwind — se alinea al primario de
-   la app para no tener dos botones "principales" de colores distintos en
-   la misma pantalla. */
-.tn-embed-pagopar button.bg-blue-600 { background: var(--color-primary); }
-.tn-embed-pagopar button.bg-blue-600:hover { background: var(--vit-accent-hover); }
 
 /* ─── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
@@ -1252,7 +1239,6 @@
   .tn-msg-preview-bubble { max-width: 100%; }
   .tn-footer-actions { width: 100%; justify-content: flex-end; }
   .tn-embed .combo-section,
-  .tn-embed-pagopar > div { padding: 1rem; }
   .tn-tab { min-height: 44px; }
   .tn-footer-actions { flex-wrap: wrap; }
   .tn-page input:not([type="checkbox"]):not([type="color"]):not([type="file"]),
@@ -1260,7 +1246,6 @@
   .tn-page textarea { font-size: 1rem; }
   .tn-embed .combo-cost-tab { min-height: 44px; }
   .tn-embed .combo-cost-field { min-width: 0; }
-  .tn-embed .combo-pagopar-methods { grid-template-columns: minmax(0, 1fr); }
   .tn-shell > .tn-panel > .raha { padding: 0 1rem 1rem; }
 }
 

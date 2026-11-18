@@ -1550,7 +1550,7 @@ export default function MiDashboard() {
   // aparte: es el mismo tráfico de la tienda, no dos canales.
   const embudosPorTab = {
     // Al llegar a la tienda y tocar "pagar", la persona se bifurca: o paga
-    // con Pagopar (embudo Pago en Web) o llena el formulario que la manda a
+    // online (embudo Pago en Web) o llena el formulario que la manda a
     // WhatsApp (este embudo). Por eso acá no van "Al carrito" ni "Checkout":
     // son etapas previas a la bifurcación y viven en el embudo de pago.
     formularios: {

@@ -17,6 +17,7 @@ const airFryer = {
   descripcion: 'Rápida y práctica', precio: 145735, precio_antes: 180000, descuento_pct: 19,
   imagen: 'https://cdn.test/air.jpg', imagenes_url: ['https://cdn.test/air.jpg', 'https://cdn.test/air2.jpg'],
   categoria: 'Cocina', stock: 5, agotado: false, variantes: [], ofertas: [], url: '/air-fryer-26l',
+  botones_pago: [{ label: 'Pago contra entrega', tipo: 'checkout', valor: '' }],
 };
 const remera = {
   id: 'remera', referencia_id: 11, tipo: 'producto', nombre: 'Remera', precio: 50000, imagen: null,
@@ -24,6 +25,7 @@ const remera = {
   variantes: [{ id: 1, nombre: 'S', stock: 0, precio_efectivo: 50000 }, { id: 2, nombre: 'M', stock: 3, precio_efectivo: 55000 }],
   ofertas: [{ id: 77, nombre: 'Llevá 2', estrategia: 'normal', precio_efectivo: 90000, precio_normal: 100000, imagen: null }],
   url: '/remera',
+  botones_pago: [{ label: 'Pago contra entrega', tipo: 'checkout', valor: '' }],
 };
 const malicioso = {
   id: 'malo', referencia_id: 12, tipo: 'producto', nombre: '<img src=x onerror="window.__xss=1"></script><b>x</b>',
@@ -1467,7 +1469,7 @@ describe('runtime del lienzo en blanco — ficha de producto', () => {
     // Sin paquetes, para que la cantidad salga del campo de cantidad.
     const remeraSola = { ...remera, ofertas: [] };
     const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, productos: [airFryer, remeraSola], producto: remeraSola });
-    click('.buy-row [data-gesicomm-comprar]');
+    click('.buy-row [data-gesicomm-pago-promovido]');
     expect(mensajes.some(m => m.tipo === 'gesicomm:checkout')).toBe(false);
 
     click('[data-gesicomm-variante-id="2"]');
@@ -1476,17 +1478,17 @@ describe('runtime del lienzo en blanco — ficha de producto', () => {
     expect(document.querySelector('.pdp-prices [data-gesicomm-bind="precio"]').textContent).toMatch(/55\.000/);
 
     document.querySelector('[data-gesicomm-cantidad-input]').value = '3';
-    click('.buy-row [data-gesicomm-comprar]');
+    click('.buy-row [data-gesicomm-pago-promovido]');
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'remera', variante: 2, cantidad: 3 }));
   });
 
   it('comprar un paquete manda su id (y pide el talle antes)', () => {
     const { mensajes, click } = montar(PLANTILLA_PRODUCTO, datos);
     click('.paquete[data-gesicomm-paquete="77"]');
-    click('.buy-row [data-gesicomm-comprar]');
+    click('.buy-row [data-gesicomm-pago-promovido]');
     expect(mensajes.some(m => m.tipo === 'gesicomm:checkout')).toBe(false);
     click('[data-gesicomm-variante-id="2"]');
-    click('.buy-row [data-gesicomm-comprar]');
+    click('.buy-row [data-gesicomm-pago-promovido]');
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'remera', oferta: 77, variante: 2 }));
   });
 
@@ -2238,7 +2240,7 @@ describe('runtime — order bump en la ficha', () => {
     expect(document.querySelector('.bump [data-gesicomm-bind="ahorro"]').textContent).toBe('Ahorrás Gs 27.000');
     // Orden en la página: bump → botón de compra. El upsell va en checkout.
     const bumpEl = document.querySelector('.bumps');
-    const comprar = document.querySelector('.buy-row [data-gesicomm-comprar]');
+    const comprar = document.querySelector('.buy-row [data-gesicomm-pago-promovido]');
     expect(bumpEl.compareDocumentPosition(comprar) & 4).toBeTruthy();
     expect(document.querySelector('[data-gesicomm-lista="ofertas_upsell"]')).toBeNull();
     expect(document.querySelector('.upsell')).toBeNull();
@@ -2250,7 +2252,7 @@ describe('runtime — order bump en la ficha', () => {
     casilla.checked = true;
     casilla.dispatchEvent(new window.Event('change', { bubbles: true }));
     expect(document.querySelector('.bump').classList.contains('is-checked')).toBe(true);
-    click('.buy-row [data-gesicomm-comprar]');
+    click('.buy-row [data-gesicomm-pago-promovido]');
     const compras = mensajes.filter(m => m.tipo === 'gesicomm:checkout');
     expect(compras).toEqual([
       expect.objectContaining({ producto: 'air-fryer-26l', oferta: 90, abrir: false }),
@@ -2260,7 +2262,7 @@ describe('runtime — order bump en la ficha', () => {
     mensajes.length = 0;
     casilla.checked = false;
     casilla.dispatchEvent(new window.Event('change', { bubbles: true }));
-    click('.buy-row [data-gesicomm-comprar]');
+    click('.buy-row [data-gesicomm-pago-promovido]');
     expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout')).toEqual([
       expect.objectContaining({ producto: 'air-fryer-26l', oferta: null, abrir: true }),
     ]);
@@ -2285,91 +2287,64 @@ describe('runtime — order bump en la ficha', () => {
     expect(total()).toBe(gs(precio * 2 + bump.precio_efectivo));
   });
 
-  it('aplica descuento configurado por botón de pago anticipado al total y al checkout', () => {
-    const fryer = { ...datos.producto, cta_descuento_pct: '10', ofertas: [] };
-    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, productos: [fryer], producto: fryer });
-    expect(document.querySelector('.buy-row [data-gesicomm-cta-descuento]').textContent).toBe('-10%');
-    expect(document.querySelector('.buy-row [data-gesicomm-total]').textContent).toBe('Gs 131.162');
-    click('.buy-row [data-gesicomm-comprar]');
-    expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({
-      producto: 'air-fryer-26l',
-      descuento_boton_pct: 10,
-      payment_method: 'pagopar',
-      checkout_directo: true,
-    });
-  });
-
-  it('sin PagoPar conectado, la tienda publicada no ofrece el botón de pago anticipado', () => {
-    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, pago_anticipado: { disponible: false } });
-    const boton = document.querySelector('.buy-row [data-gesicomm-comprar]');
-    expect(boton.style.display).toBe('none');
-    click('.buy-row [data-gesicomm-comprar]');
-    expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout')).toEqual([]);
-  });
-
-  it('sin PagoPar conectado, la vista previa del editor tampoco muestra el botón: se ve igual que la publicada', () => {
+  it('el botón principal (pago anticipado) queda oculto y sube el contra entrega a su lugar', () => {
     const fryer = { id: 'air', tipo: 'producto', nombre: 'Air Fryer', slug: 'air', precio_efectivo: 145735, imagen: 'https://cdn.test/air.jpg' };
-    const vista = datosRuntimePreview({ productos: [fryer], venta: {}, vista: 'producto', productoId: 'air', pagoparConectado: false });
+    const vista = datosRuntimePreview({ productos: [fryer], venta: {}, vista: 'producto', productoId: 'air' });
     const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, vista);
-    const boton = document.querySelector('.buy-row [data-gesicomm-comprar]');
-    expect(boton.style.display).toBe('none');
-    expect(boton.hasAttribute('title')).toBe(false);
-    click('.buy-row [data-gesicomm-comprar]');
+    const principal = document.querySelector('.buy-row [data-gesicomm-boton-principal-pago]');
+    expect(principal.style.display).toBe('none');
+    click('.buy-row [data-gesicomm-boton-principal-pago]');
     expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout')).toEqual([]);
-    // El contra entrega sube a la fila de la cantidad: no queda el selector solo arriba.
     const fila = document.querySelector('.buy-row');
     const contraEntrega = fila.querySelector('[data-gesicomm-accion-pago="checkout"]');
     expect(contraEntrega.textContent).toMatch(/Pago contra entrega/);
     expect(fila.querySelector('[data-gesicomm-cantidad-input]').nextElementSibling).toBe(contraEntrega);
-    expect(document.querySelectorAll('[data-gesicomm-accion-pago="checkout"]')).toHaveLength(1);
     fila.querySelector('[data-gesicomm-cantidad-input]').value = '3';
     contraEntrega.dispatchEvent(new fila.ownerDocument.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({ producto: 'air', cantidad: 3, payment_method: 'efectivo' });
-    // Con PagoPar conectado (o todavía cargando) el botón sigue ahí.
-    const conPagopar = montar(PLANTILLA_PRODUCTO, datosRuntimePreview({ productos: [fryer], venta: {}, vista: 'producto', productoId: 'air', pagoparConectado: true }));
-    expect(conPagopar.document.querySelector('.buy-row [data-gesicomm-comprar]').style.display).not.toBe('none');
   });
 });
 
-describe('pago anticipado en el checkout propio', () => {
+describe('colores por botón de la ficha', () => {
+  it('cada botón lleva sus propios colores, normal y al pasar el mouse', () => {
+    const fryer = { id: 'air', tipo: 'producto', nombre: 'Air Fryer', slug: 'air', precio_efectivo: 145735, imagen: 'https://cdn.test/air.jpg',
+      botones_pago: [
+        { label: 'Rojo', tipo: 'checkout', valor: '', colores: { fondo: '#dc2626', texto: '#ffffff', fondo_hover: '#991b1b' } },
+        { label: 'Blanco', tipo: 'url', valor: 'https://x.test', colores: { fondo: '#ffffff', texto_hover: '#111111' } },
+        { label: 'Sin color', tipo: 'url', valor: 'https://y.test' },
+      ] };
+    const { document } = montar(PLANTILLA_PRODUCTO, datosRuntimePreview({ productos: [fryer], venta: {}, vista: 'producto', productoId: 'air' }));
+    const boton = texto => [...document.querySelectorAll('[data-gesicomm-accion-pago]')].find(b => b.textContent.includes(texto));
+    expect(boton('Rojo').style.getPropertyValue('--gc-btn-fondo')).toBe('#dc2626');
+    expect(boton('Rojo').style.getPropertyValue('--gc-btn-fondo-hover')).toBe('#991b1b');
+    expect(boton('Rojo').hasAttribute('data-gc-btn-texto-hover')).toBe(false);
+    expect(boton('Blanco').style.getPropertyValue('--gc-btn-fondo')).toBe('#ffffff');
+    expect(boton('Blanco').style.getPropertyValue('--gc-btn-texto-hover')).toBe('#111111');
+    expect(boton('Sin color').hasAttribute('data-gc-btn-fondo')).toBe(false);
+    expect(document.getElementById('gc-botones-colores').textContent).toContain('[data-gc-btn-fondo-hover]:hover');
+  });
+});
+
+describe('checkout propio: solo contra entrega', () => {
   const mouse = { content_id: 'mouse', referencia_id: 1, tipo: 'producto', nombre: 'Mouse', precio: 89000, imagen: 'https://cdn.test/m.jpg', stock: 4, ofertas: [] };
   const carrito = [{ clave: 'm', tipo: 'producto', contentId: 'mouse', nombre: 'Mouse', precio: 89000, cantidad: 1 }];
-  const montarCheckout = (pasarelas, opciones = {}) => montar(
-    PLANTILLA_CHECKOUT,
-    datosRuntimePublico({ catalogo_items: [mouse], content: {}, checkout: { pasarelas } }, 'tienda', null, { vista: 'checkout', carrito, ...opciones }),
-  );
   const radio = (document, valor) => document.querySelector(`input[name="payment_method"][value="${valor}"]`);
 
-  it('respeta el método que llega del botón y comunica los cambios al contenedor', () => {
-    const { document, window, mensajes, dom } = montarCheckout([{ provider: 'pagopar' }], { paymentMethod: 'efectivo' });
+  it('la plantilla base trae marcado el contra entrega', () => {
+    const { document, dom } = montar(PLANTILLA_CHECKOUT, datosRuntimePublico({ catalogo_items: [mouse], content: {}, checkout: {} }, 'tienda', null, { vista: 'checkout', carrito }));
     expect(radio(document, 'contra_entrega').checked).toBe(true);
-    radio(document, 'pagopar').checked = true;
-    radio(document, 'pagopar').dispatchEvent(new window.Event('change', { bubbles: true }));
-    expect(mensajes).toContainEqual({ tipo: 'gesicomm:metodo-pago', metodo: 'pagopar' });
+    expect(document.querySelectorAll('input[name="payment_method"]')).toHaveLength(1);
     dom.window.close();
   });
 
-  it('con PagoPar conectado sigue siendo la opción marcada', () => {
-    const { document, dom } = montarCheckout([{ provider: 'pagopar', environment: 'production' }]);
-    expect(radio(document, 'pagopar').checked).toBe(true);
-    expect(radio(document, 'pagopar').disabled).toBe(false);
-    expect(radio(document, 'pagopar').closest('label').style.display).not.toBe('none');
-    dom.window.close();
-  });
-
-  it('sin PagoPar la tienda publicada la saca y deja marcado el contra entrega', () => {
-    const { document, dom } = montarCheckout([]);
-    expect(radio(document, 'pagopar').closest('label').style.display).toBe('none');
+  it('una landing guardada con la opción vieja de pago anticipado la oculta y marca contra entrega', () => {
+    const vieja = { ...PLANTILLA_CHECKOUT, html: PLANTILLA_CHECKOUT.html.replace(
+      '<input type="radio" name="payment_method" value="contra_entrega" checked>',
+      '<input type="radio" name="payment_method" value="pagopar" checked></label><label><input type="radio" name="payment_method" value="contra_entrega">',
+    ) };
+    const { document, dom } = montar(vieja, datosRuntimePublico({ catalogo_items: [mouse], content: {}, checkout: { pasarelas: [{ provider: 'pagopar' }] } }, 'tienda', null, { vista: 'checkout', carrito }));
+    expect(radio(document, 'pagopar').disabled).toBe(true);
     expect(radio(document, 'pagopar').checked).toBe(false);
-    expect(radio(document, 'pagopar').disabled).toBe(true);
-    expect(radio(document, 'contra_entrega').checked).toBe(true);
-    dom.window.close();
-  });
-
-  it('sin PagoPar la vista previa del panel también la saca', () => {
-    const { document, dom } = montarCheckout(undefined, { pagoparConectado: false });
-    expect(radio(document, 'pagopar').closest('label').style.display).toBe('none');
-    expect(radio(document, 'pagopar').disabled).toBe(true);
     expect(radio(document, 'contra_entrega').checked).toBe(true);
     dom.window.close();
   });
@@ -2743,12 +2718,12 @@ describe('ficha: elegí tu oferta (paquetes por cantidad)', () => {
     const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, datos);
     click('.paquete[data-gesicomm-paquete="22"]');
     expect(document.querySelector('.buy-row [data-gesicomm-total]').textContent).toBe('Gs 349.000');
-    click('.buy-row [data-gesicomm-comprar]');
+    click('.buy-row [data-gesicomm-pago-promovido]');
     expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({ oferta: 22, abrir: true });
     expect(mensajes.some(m => m.tipo === 'gesicomm:evento' && m.nombre === 'PaqueteElegido')).toBe(true);
 
     click('.paquete[data-gesicomm-paquete="unidad"]');
-    click('.buy-row [data-gesicomm-comprar]');
+    click('.buy-row [data-gesicomm-pago-promovido]');
     expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({ oferta: null, cantidad: 1 });
   });
 
@@ -2940,21 +2915,15 @@ describe('runtime — checkout propio, departamento y ciudad', () => {
     dom.window.close();
   });
 
-  it('un submit programático tampoco envía datos incompletos y el pago anticipado exige correo y documento', () => {
+  it('un submit programático tampoco envía datos incompletos', () => {
     const { document, window, mensajes, dom } = prepararContraEntrega();
-    document.querySelector('[name="ciudad"]').value = 'Luque';
-    const pago = document.querySelector('[name="payment_method"][value="pagopar"]');
-    pago.checked = true;
-    pago.dispatchEvent(new window.Event('change', { bubbles: true }));
+    document.querySelector('[name="ciudad"]').value = '';
     document.querySelector('form[data-gesicomm-checkout-form]').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
     expect(mensajes.some(m => m.tipo === 'gesicomm:confirmar-checkout')).toBe(false);
-    expect(document.querySelector('[name="email"]').getAttribute('aria-invalid')).toBe('true');
-    expect(document.querySelector('[name="documento"]').getAttribute('aria-invalid')).toBe('true');
-    const contraEntrega = document.querySelector('[name="payment_method"][value="contra_entrega"]');
-    contraEntrega.checked = true;
-    contraEntrega.dispatchEvent(new window.Event('change', { bubbles: true }));
+    // Contra entrega: correo y documento son opcionales.
     expect(document.querySelector('[name="email"]').hasAttribute('aria-invalid')).toBe(false);
     expect(document.querySelector('[name="documento"]').hasAttribute('aria-invalid')).toBe(false);
+    document.querySelector('[name="ciudad"]').value = 'Luque';
     document.querySelector('.lv-submit').click();
     expect(mensajes.filter(m => m.tipo === 'gesicomm:confirmar-checkout')).toHaveLength(1);
     dom.window.close();

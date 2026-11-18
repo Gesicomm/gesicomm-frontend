@@ -188,7 +188,6 @@ function InicializarPixelPlataforma() {
 import CatalogoPublico from './pages/landing/CatalogoPublico';
 import ContactoPublico from './pages/landing/ContactoPublico';
 import LegalPagePublica from './pages/landing/LegalPagePublica';
-import ResultadoPagoTienda from './pages/landing/ResultadoPagoTienda';
 const PaginaBuilderPublica = lazy(() => import('./pages/page-builder/publico/PaginaBuilderPublica'));
 // Page Builder (privado, siempre detras de AdminRoute): mismo criterio de
 // lazy() que el resto del panel admin de arriba.
@@ -405,7 +404,7 @@ function App() {
           </AdminRoute>
         } />
 
-        {/* Parametros del sistema: credenciales de PagoPar de Gesicomm y
+        {/* Parametros del sistema: credenciales de pago de Gesicomm y
             contacto del admin. Solo administradores. */}
         <Route path="/admin/parametros" element={
           <AdminRoute><DashboardLayout><ParametrosAdmin /></DashboardLayout></AdminRoute>
@@ -516,7 +515,7 @@ function App() {
         {/* Publicas a proposito: el flujo es elegir plan -> pagar -> recien
             ahi registrarse, asi que quien las usa todavia no tiene cuenta.
             /planes/resultado/:hash es la URL DE REDIRECCIONAMIENTO que se
-            configura en el panel de PagoPar. */}
+            configura en la pasarela. */}
         <Route path="/planes" element={<Planes />} />
         <Route path="/checkout/plan/:codigo" element={
           <ProtectedRoute><UserLayout><CheckoutPlan /></UserLayout></ProtectedRoute>
@@ -605,7 +604,6 @@ function App() {
         <Route path="/terminos-servicio" element={<TerminosServicioSegunHostname />} />
         <Route path="/politica-envio" element={<PoliticaEnvioSegunHostname />} />
         <Route path="/aviso-legal" element={<AvisoLegalSegunHostname />} />
-        <Route path="/pagopar/resultado/:hash" element={<ResultadoPagoTienda />} />
         {/* Alias para pruebas locales o previsualización. En producción se usará el hostname. */}
         <Route path="/l/:slug/catalogo" element={<CatalogoPublico />} />
         <Route path="/l/:slug/categoria/:categorySlug" element={<LandingPublica vistaCodigo="categoria" />} />

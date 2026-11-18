@@ -180,88 +180,6 @@ describe('bloques de la ficha en la vista previa del editor', () => {
   }, 20000);
 });
 
-describe('checkout propio: datos que exige el pago anticipado', () => {
-  const mouse = { content_id: 'mouse', referencia_id: 1, tipo: 'producto', nombre: 'Mouse', precio: 89000, imagen: 'https://cdn.test/m.jpg', stock: 4, ofertas: [] };
-  const carrito = [{ clave: 'm', tipo: 'producto', contentId: 'mouse', nombre: 'Mouse', precio: 89000, cantidad: 1 }];
-  const checkout = (pasarelas, plantilla = PLANTILLA_CHECKOUT) => montar(
-    datosRuntimePublico({ catalogo_items: [mouse], content: {}, checkout: { pasarelas } }, 'tienda', null, { vista: 'checkout', carrito }),
-    plantilla,
-  );
-  const campo = (document, nombre) => document.querySelector(`form[data-gesicomm-checkout-form] [name="${nombre}"]`);
-  const rotulo = (document, nombre) => campo(document, nombre).closest('label').querySelector('span').textContent;
-  const elegir = (dom, valor) => {
-    const radio = dom.window.document.querySelector(`input[name="payment_method"][value="${valor}"]`);
-    radio.checked = true;
-    radio.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
-  };
-
-  it('con pago anticipado la cédula y el correo son obligatorios; contra entrega no', () => {
-    const { dom, document } = checkout([{ provider: 'pagopar' }]);
-    expect(campo(document, 'documento').required).toBe(true);
-    expect(campo(document, 'email').required).toBe(true);
-    expect(rotulo(document, 'documento')).toMatch(/\*$/);
-    elegir(dom, 'contra_entrega');
-    expect(campo(document, 'documento').required).toBe(false);
-    expect(campo(document, 'email').required).toBe(false);
-    expect(rotulo(document, 'documento')).not.toMatch(/\*/);
-    elegir(dom, 'pagopar');
-    expect(campo(document, 'documento').required).toBe(true);
-    dom.window.close();
-  }, 20000);
-
-  it('en una tienda sin PagoPar no se exige la cédula ni el correo', () => {
-    const { dom, document } = checkout([]);
-    expect(campo(document, 'documento').required).toBe(false);
-    expect(campo(document, 'email').required).toBe(false);
-    expect(campo(document, 'acepta_promociones').type).toBe('checkbox');
-    dom.window.close();
-  }, 20000);
-
-  it('el pedido lleva el correo y si aceptó recibir promociones', () => {
-    const { dom, document, mensajes } = checkout([]);
-    const llenar = (nombre, valor) => { campo(document, nombre).value = valor; };
-    llenar('nombre_cliente', 'Ana'); llenar('telefono', '0981'); llenar('direccion', 'Calle 1'); llenar('email', 'ana@correo.com');
-    const ciudad = campo(document, 'ciudad'); ciudad.add(new dom.window.Option('Luque', 'Luque')); ciudad.value = 'Luque';
-    campo(document, 'acepta_promociones').checked = true;
-    document.querySelector('form[data-gesicomm-checkout-form]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
-    const pedido = mensajes.find(m => m.tipo === 'gesicomm:confirmar-checkout');
-    expect(pedido.campos).toMatchObject({ email: 'ana@correo.com', acepta_promociones: true, payment_method: 'contra_entrega' });
-    dom.window.close();
-  }, 20000);
-
-  it('"Necesito factura" muestra y exige razón social y RUC; al destildar se vacían', () => {
-    const { dom, document } = checkout([]);
-    const factura = campo(document, 'quiere_factura');
-    const caja = campo(document, 'ruc').closest('label');
-    expect(caja.style.display).toBe('none');
-    expect(campo(document, 'ruc').required).toBe(false);
-    factura.checked = true;
-    factura.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
-    expect(caja.style.display).not.toBe('none');
-    expect(campo(document, 'ruc').required).toBe(true);
-    expect(campo(document, 'razon_social').required).toBe(true);
-    campo(document, 'ruc').value = '80012345-6';
-    factura.checked = false;
-    factura.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
-    expect(caja.style.display).toBe('none');
-    expect(campo(document, 'ruc').value).toBe('');
-    expect(campo(document, 'ruc').required).toBe(false);
-    dom.window.close();
-  }, 20000);
-
-  it('un checkout personalizado sin esos campos los recibe igual', () => {
-    const html = PLANTILLA_CHECKOUT.html
-      .replace(/<label class="lv-field">\s*<span>Correo electronico<\/span>[\s\S]*?<\/label>/, '')
-      .replace(/<label class="lv-consent lv-wide">[\s\S]*?<\/label>/, '');
-    expect(html).not.toContain('name="email"');
-    const { dom, document } = checkout([{ provider: 'pagopar' }], { ...PLANTILLA_CHECKOUT, html });
-    expect(campo(document, 'email').type).toBe('email');
-    expect(campo(document, 'email').required).toBe(true);
-    expect(campo(document, 'acepta_promociones')).toBeTruthy();
-    dom.window.close();
-  }, 20000);
-});
-
 describe('checkout propio: el pedido ya existe y el carrito quedó vacío', () => {
   const mouse = { content_id: 'mouse', referencia_id: 1, tipo: 'producto', nombre: 'Mouse', precio: 89000, imagen: 'https://cdn.test/m.jpg', stock: 4, ofertas: [] };
   const conEstado = checkoutEstado => montar(
@@ -292,7 +210,7 @@ describe('checkout propio: el pedido ya existe y el carrito quedó vacío', () =
   it('mientras abre PagoPar tampoco muestra el carrito vacío, y el pedido confirmado sigue igual', () => {
     const yendo = conEstado({ estado: 'redirigiendo', mensaje: 'Un momento' });
     expect(mostrado(yendo.document, '[data-gesicomm-checkout-vacio]')).toBe(false);
-    expect(texto(yendo.document, 'estado_titulo')).toBe('Te llevamos a PagoPar');
+    expect(texto(yendo.document, 'estado_titulo')).toBe('Te llevamos al pago');
     yendo.dom.window.close();
     const listo = conEstado({ estado: 'confirmado', mensaje: 'Pedido 3 confirmado.' });
     expect(texto(listo.document, 'estado_titulo')).toBe('¡Gracias por tu compra!');

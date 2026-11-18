@@ -234,7 +234,7 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
 
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true })).getByRole('tab', { name: /Pagos/i }));
     expect(await screen.findByTestId('metodos-pago')).toBeInTheDocument();
-    expect(screen.getByTestId('pagopar-config')).toBeInTheDocument();
+    expect(screen.queryByTestId('pagopar-config')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Guardar cambios/i })).not.toBeInTheDocument();
 
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true })).getByRole('tab', { name: /Costos/i }));
