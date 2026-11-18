@@ -578,7 +578,7 @@ function App() {
           <PanelComercio soloUsuario><Ads /></PanelComercio>
         } />
         <Route path="/afiliados" element={
-          <ProtectedRoute><UserLayout><MiAfiliado /></UserLayout></ProtectedRoute>
+          <PanelComercio soloUsuario><MiAfiliado /></PanelComercio>
         } />
         <Route path="/partner-certificado" element={
           <PanelComercio soloUsuario><PartnerCertificado /></PanelComercio>

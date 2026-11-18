@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Save, Loader, ShieldCheck, AlertCircle, CheckCircle2, KeyRound, Phone, Mail, Landmark,
+  Save, Loader, ShieldCheck, AlertCircle, CheckCircle2, KeyRound, Phone, Mail, Landmark, ShoppingBag,
 } from 'lucide-react';
 import { parametrosService } from '../../services/parametrosService';
 import './parametros.css';
@@ -18,13 +18,15 @@ import './parametros.css';
 
 const GRUPOS = [
   {
-    id: 'pagopar',
-    titulo: 'PagoPar de Gesicomm',
+    id: 'kunfupay',
+    titulo: 'Kunfupay (Recurrencia y Suscripciones)',
     icono: KeyRound,
-    desc: 'Credenciales con las que Gesicomm cobra las suscripciones de sus clientes. No son las de ningún comercio.',
+    desc: 'Credenciales con las que Gesicomm cobra las suscripciones recurrentes de sus clientes en Kunfupay.',
     campos: [
-      { clave: 'PAGOPAR_PUBLIC_KEY', label: 'Token público', placeholder: '579b67fc967f03c923969dbc08095827' },
-      { clave: 'PAGOPAR_PRIVATE_KEY', label: 'Token privado', placeholder: 'Pegalo solo si lo vas a cambiar', secreto: true },
+      { clave: 'KUNFUPAY_API_KEY', label: 'API Key (kfp_live_... o kfp_test_...)', placeholder: 'Pegala solo si la vas a cambiar', secreto: true },
+      { clave: 'KUNFUPAY_WEBHOOK_SECRET', label: 'Webhook Secret', placeholder: 'Pegalo solo si lo vas a cambiar', secreto: true },
+      { clave: 'KUNFUPAY_ENVIRONMENT', label: 'Entorno (sandbox o production)', placeholder: 'sandbox' },
+      { clave: 'KUNFUPAY_CURRENCY', label: 'Moneda (EUR o USD)', placeholder: 'EUR' },
     ],
   },
   {
@@ -79,6 +81,21 @@ const GRUPOS = [
         ],
       },
       { clave: 'ABASTECIMIENTO_ALIAS_VALOR', label: 'Número o correo del alias', placeholder: 'Según el tipo elegido arriba' },
+    ],
+  },
+  {
+    id: 'shopify',
+    titulo: 'Shopify (Integración)',
+    icono: ShoppingBag,
+    desc: 'Permisos que se muestran en la guía de conexión y se solicitan al integrar tiendas Shopify.',
+    campos: [
+      {
+        clave: 'shopify_permisos',
+        label: 'Permisos (scopes) de Shopify',
+        placeholder: '{"scopes":["read_products","write_products","read_inventory","write_inventory","read_locations","read_orders","write_orders","read_fulfillments","write_fulfillments","read_customers"]}',
+        multilinea: true,
+        ayuda: 'Podés cargarlo como JSON {"scopes":[...]} o como lista separada por comas.',
+      },
     ],
   },
 ];
