@@ -8,7 +8,6 @@ import {
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio, actualizarLeadTipoManual } from "../../services/courierApi";
 import AbastecimientoTimeline from "../../components/abastecimiento/AbastecimientoTimeline";
-import { MovilExpressSeguimiento } from "./MovilExpressSeguimiento";
 import { canalVentaService } from "../../services/canalVentaService";
 import { verificarSesion } from "../../utils/auth";
 import { numeroPedidoVisible } from "./pedidoNumero";
@@ -25,7 +24,6 @@ import {
   estadoParaSeguimiento,
   puedeEnviarSeguimiento,
   RAHA_STATUS_META,
-  estadoMovilExpress,
   paymentLine,
   esPagoAnticipado,
 } from "./orderLifecycle";
@@ -541,7 +539,7 @@ function EstadoCell({ envio, etapa, onCambiarEstado }) {
     return <RahaEstadoCell envio={envio} etapa={etapa} />;
   }
   const estado = estadoDePedido(envio, etapa);
-  const movilExpress = estadoMovilExpress(envio);
+  const movilExpress = null; // Móvil Express oculto hasta que funcione
   // En Logística, un pedido de Móvil Express muestra su guía y en qué anda
   // del lado del proveedor, no sólo el nombre del courier.
   const courier = movilExpress
@@ -812,7 +810,6 @@ function PedidoMobile({ envio, etapa, onAbrirDetalle, onAbrirResumen, onAbrirSeg
         </div>
       </footer>
       {envio.raha_logistica?.gestionado && etapa === "logistica" && <details className="pm-tracking"><summary>Ver seguimiento RAHA</summary><RahaTimeline envio={envio} /></details>}
-      {envio.movil_express?.gestionado && ["logistica", "seguimiento_envio"].includes(etapa) && <details className="pm-tracking"><summary>Ver envío de Móvil Express</summary><MovilExpressSeguimiento envio={envio} compacto /></details>}
     </article>
   );
 }
