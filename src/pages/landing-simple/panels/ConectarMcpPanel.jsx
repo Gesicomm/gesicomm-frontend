@@ -177,11 +177,11 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
   const pasosConexion = {
     web: [
-      'En tu agente o plataforma (en Ajustes, Conectores, Integraciones o Servidores MCP), agregá un servidor remoto.',
-      'En el campo de dirección (Server URL), pegá la dirección completa copiada arriba (ya incluye tu clave segura en el parámetro del enlace).',
-      'Si el formulario te pide método o tipo de conexión, seleccioná GET (o transporte SSE / Server-Sent Events).',
-      'En la opción de Autenticación (Authentication), seleccioná obligatoriamente "No authentication" (o "Sin autenticación" / "No auth"): la clave ya viaja incluida en la URL.',
-      'Guardá o agregá la conexión. Tu agente se conectará de inmediato y podrá acceder a las herramientas de Gesicom.',
+      'En Lovable (u otro agente web), entrá en el menú lateral → Connectors (o Conectores) → Add custom → MCP server ("Connect an MCP to your chat"). No uses "Custom connector" ni "Settings → MCP server".',
+      'En Server name, escribí "Gesicom".',
+      'En Server URL, pegá la URL limpia de abajo y en Authentication elegí "Bearer token or API key" pegando tu clave del paso 1 (recomendado). También podés usar la URL completa con ?token= y elegir "No authentication". Nunca dejes "OAuth (default)".',
+      'Si tu plataforma pide tipo o método HTTP (ej. otros agentes), seleccioná GET / SSE (Server-Sent Events). En Lovable no hace falta elegir transporte.',
+      'Hacé clic en Add server. Tu asistente se conectará de inmediato y podrá usar todas las herramientas de Gesicomm.',
     ],
     generico: [
       'Abrí los ajustes de la aplicación donde usás tu asistente y buscá la opción para agregar una conexión.',
@@ -413,7 +413,7 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
         <p className="text-base text-fg-muted">
           {tabCliente === 'web'
-            ? 'Elegí esta opción para conectar cualquier agente que uses por internet. La conexión es directa por HTTP/SSE (GET); no requiere instalar nada en tu computadora.'
+            ? 'Elegí esta opción para conectar Lovable o cualquier otro agente web por internet (HTTP/SSE). No requiere instalar nada en tu computadora.'
             : tabCliente === 'claude'
               ? 'Elegí esta opción si abrís Claude Code desde una terminal. Copiá el texto de abajo y pegalo en la terminal.'
               : tabCliente === 'codex'
@@ -433,39 +433,99 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
 
         <section className="min-w-0 space-y-4 rounded-xl border-2 border-primary bg-surface p-4 sm:p-5">
           <h3 className="text-xl font-bold">
-            {tabCliente === 'web' ? '3 · Dirección y parámetros de conexión' : '3 · Copiá los datos para conectar'}
+            {tabCliente === 'web' ? '3 · Datos para pegar en Lovable o tu agente web' : '3 · Copiá los datos para conectar'}
           </h3>
-          <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-fg-muted mb-1 block">Server URL (dirección completa con clave)</span>
-            <pre className="m-0 whitespace-pre-wrap break-all font-mono text-sm leading-relaxed text-fg">{datosConexion}</pre>
-          </div>
-          <button
-            type="button"
-            disabled={!token}
-            onClick={() => copiarTexto(datosConexion, tabCliente)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-primary-fg disabled:opacity-50"
-          >
-            <Copy size={16} /> {copiado === tabCliente ? 'Copiado' : tabCliente === 'web' ? 'Copiar dirección de conexión' : 'Copiar datos de conexión'}
-          </button>
 
-          {tabCliente === 'web' && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 pt-1">
-              <div className="rounded-lg border border-border bg-surface-2 p-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Método HTTP</span>
-                <p className="mt-1 text-base font-semibold text-fg">GET</p>
-                <p className="text-sm text-fg-muted">Transporte SSE (Server-Sent Events)</p>
+          {tabCliente === 'web' ? (
+            <>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3 space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted block">
+                    Server URL (recomendado con Bearer token)
+                  </span>
+                  <code className="block break-all font-mono text-sm leading-relaxed text-fg">{urlRemotaLimpia}</code>
+                  <button
+                    type="button"
+                    onClick={() => copiarTexto(urlRemotaLimpia, 'url-limpia')}
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+                  >
+                    {copiado === 'url-limpia' ? <Check size={15} /> : <Copy size={15} />}
+                    {copiado === 'url-limpia' ? 'Copiado' : 'Copiar Server URL'}
+                  </button>
+                </div>
+
+                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3 space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted block">
+                    Bearer token or API key (tu clave del paso 1)
+                  </span>
+                  <code className="block break-all font-mono text-sm leading-relaxed text-fg">
+                    {token ? `${token.slice(0, 18)}…${token.slice(-10)}` : 'Generá tu clave en el paso 1'}
+                  </code>
+                  <button
+                    type="button"
+                    disabled={!token}
+                    onClick={() => copiarTexto(token, 'token-solo')}
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-fg hover:border-border-strong disabled:opacity-50"
+                  >
+                    {copiado === 'token-solo' ? <Check size={15} className="text-success" /> : <Copy size={15} />}
+                    {copiado === 'token-solo' ? 'Copiado' : 'Copiar Bearer token'}
+                  </button>
+                </div>
               </div>
-              <div className="rounded-lg border border-border bg-surface-2 p-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Autenticación</span>
-                <p className="mt-1 text-base font-semibold text-primary-text">No authentication</p>
-                <p className="text-sm text-fg-muted">Marcá "No authentication" o "Sin autenticación". No uses OAuth.</p>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 pt-1">
+                <div className="rounded-lg border border-border bg-surface-2 p-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Server name</span>
+                  <p className="mt-1 text-base font-semibold text-fg">Gesicomm</p>
+                  <p className="text-sm text-fg-muted">Ruta en Lovable: Connectors → Add custom → MCP server.</p>
+                </div>
+                <div className="rounded-lg border border-border bg-surface-2 p-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Authentication</span>
+                  <p className="mt-1 text-base font-semibold text-primary-text">Bearer token or API key</p>
+                  <p className="text-sm text-fg-muted">No dejes "OAuth (default)" seleccionado.</p>
+                </div>
+                <div className="rounded-lg border border-border bg-surface-2 p-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Si pide transporte / método</span>
+                  <p className="mt-1 text-base font-semibold text-fg">GET · SSE</p>
+                  <p className="text-sm text-fg-muted">En Lovable este campo no existe; se detecta solo.</p>
+                </div>
               </div>
-              <div className="rounded-lg border border-border bg-surface-2 p-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Clave integrada</span>
-                <p className="mt-1 text-base font-semibold text-fg">Incluida en el enlace</p>
-                <p className="text-sm text-fg-muted">La URL ya lleva tu clave en ?token=... para autorizar la sesión.</p>
+
+              <details className="rounded-lg border border-border bg-surface-2/60 p-3">
+                <summary className="cursor-pointer text-sm font-semibold text-fg hover:text-primary-text">
+                  Alternativa: usar "No authentication" con la clave incluida en la URL
+                </summary>
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm text-fg-muted">
+                    Si tu agente no tiene campo separado para Bearer token (o preferís pegar todo junto y marcar <strong>No authentication</strong>), usá esta URL completa:
+                  </p>
+                  <pre className="m-0 whitespace-pre-wrap break-all rounded-lg border border-border bg-surface p-2.5 font-mono text-sm leading-relaxed text-fg">{datosConexion}</pre>
+                  <button
+                    type="button"
+                    disabled={!token}
+                    onClick={() => copiarTexto(datosConexion, tabCliente)}
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-fg hover:border-border-strong disabled:opacity-50"
+                  >
+                    <Copy size={15} /> {copiado === tabCliente ? 'Copiado' : 'Copiar URL completa con token'}
+                  </button>
+                </div>
+              </details>
+            </>
+          ) : (
+            <>
+              <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-fg-muted mb-1 block">Configuración para copiar</span>
+                <pre className="m-0 whitespace-pre-wrap break-all font-mono text-sm leading-relaxed text-fg">{datosConexion}</pre>
               </div>
-            </div>
+              <button
+                type="button"
+                disabled={!token}
+                onClick={() => copiarTexto(datosConexion, tabCliente)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-base font-semibold text-primary-fg disabled:opacity-50"
+              >
+                <Copy size={16} /> {copiado === tabCliente ? 'Copiado' : 'Copiar datos de conexión'}
+              </button>
+            </>
           )}
         </section>
 
@@ -475,47 +535,6 @@ GESICOMM_TOKEN = "${token || '<TU_TOKEN>'}"${landingId ? `\nGESICOMM_LANDING_ID 
             {pasosConexion.map(paso => <li key={paso}>{paso}</li>)}
           </ol>
         </section>
-
-        {tabCliente === 'web' && (
-          <details className="rounded-xl border border-border bg-surface p-4">
-            <summary className="cursor-pointer text-base font-semibold text-fg hover:text-primary-text">
-              ¿Tu plataforma pide la clave en un campo separado (Bearer token / API key)?
-            </summary>
-            <div className="mt-3 space-y-3">
-              <p className="text-base text-fg-muted">
-                Si el formulario de tu asistente te pide la dirección limpia por un lado y la clave por el otro (o si estás configurando un conector REST personalizado), usá estos valores:
-              </p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Server URL (sin token)</span>
-                  <code className="mt-1 block break-all text-sm text-fg font-mono">{urlRemotaLimpia}</code>
-                  <button type="button" onClick={() => copiarTexto(urlRemotaLimpia, 'url-limpia')}
-                    className="mt-2 min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-fg hover:bg-surface">
-                    {copiado === 'url-limpia' ? 'Copiado' : 'Copiar URL sin token'}
-                  </button>
-                </div>
-                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Clave de acceso (API Key / Bearer Token)</span>
-                  <code className="mt-1 block break-all text-sm text-fg font-mono">{token ? `${token.slice(0, 16)}…${token.slice(-10)}` : 'Generá tu clave en el paso 1'}</code>
-                  <button type="button" disabled={!token} onClick={() => copiarTexto(token, 'token-solo')}
-                    className="mt-2 min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-fg hover:bg-surface disabled:opacity-50">
-                    {copiado === 'token-solo' ? 'Copiado' : 'Copiar solo la clave'}
-                  </button>
-                </div>
-                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Método</span>
-                  <p className="mt-1 text-base font-semibold text-fg">GET</p>
-                  <p className="text-sm text-fg-muted">Si pide ruta de prueba (Test Path), ingresá: <code className="text-xs bg-surface px-1 py-0.5 rounded border border-border">/mcp/tiendas</code></p>
-                </div>
-                <div className="min-w-0 rounded-lg border border-border bg-surface-2 p-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-fg-muted">Encabezado si lo pide</span>
-                  <code className="mt-1 block break-all text-sm text-fg font-mono">Authorization: Bearer &lt;TU_CLAVE&gt;</code>
-                  <p className="text-sm text-fg-muted mt-1">Elegí "Bearer token" si ofrece selector de autenticación.</p>
-                </div>
-              </div>
-            </div>
-          </details>
-        )}
 
         <div className="rounded-lg border border-border bg-surface p-4">
           <h3 className="text-lg font-semibold">5 · Probá la conexión</h3>
