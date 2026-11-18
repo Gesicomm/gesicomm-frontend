@@ -4147,6 +4147,8 @@ function VistaPrevia({
 }) {
   const productosFicha = productos.filter(p => p.tipo === 'producto' || p.tipo === 'combo');
   const vistaSeleccionada = vista === 'catalogo' ? 'categoria' : vista;
+  const sinProductos = productos.length === 0 && modo !== 'legales';
+  const bloquearPreviewSinProducto = sinProductos && vistaSeleccionada === 'producto';
   const [marcoRef, tam] = useTamano();
   const [tutorialAbierto, setTutorialAbierto] = useState(false);
   const escritorio = dispositivo === 'escritorio';
@@ -4270,9 +4272,15 @@ function VistaPrevia({
       </div>
       )}
 
+      {sinProductos && !soloLienzo && (
+        <div className="mx-4 mb-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-fg">
+          Todavía no agregaste productos a esta página. Mostrando tu diseño HTML con las secciones de productos vacías; agregalos en <strong>Productos destacados</strong> para ver tus tarjetas reales.
+        </div>
+      )}
+
       {compacta && <div className={`ecommerce-preview-workspace${escritorio ? '' : ' is-phone'}`}>
         <section className="ecommerce-preview-monitor-area" aria-label={`Vista previa de ${escritorio ? 'escritorio' : 'celular'}`}>
-          {productos.length === 0 && modo !== 'legales' ? (
+          {bloquearPreviewSinProducto ? (
             <div className="ecommerce-preview-empty">Elegí productos y los vas a ver acá.</div>
           ) : escritorio ? (
             <div className="ecommerce-preview-monitor">
@@ -4320,7 +4328,7 @@ function VistaPrevia({
       </div>}
 
       {!compacta && <div className={`flex-1 min-h-0 min-w-0 flex justify-center ${soloLienzo ? '' : ampliada ? 'p-4 md:p-6' : 'px-4 pb-4'}`}>
-        {productos.length === 0 && modo !== 'legales' ? (
+        {bloquearPreviewSinProducto ? (
           <div className="w-full max-w-[390px] rounded-[28px] border border-dashed border-border-strong flex items-center justify-center p-8 text-center text-sm text-fg-muted">
             Elegí productos y los vas a ver acá.
           </div>
