@@ -646,6 +646,13 @@ function SeguimientoCell({ envio, onAbrir }) {
       <strong className="pt-seg__fase">
         {seg.terminado ? estado.detalle : `${seg.fase_posicion}/${seg.total_fases} · ${seg.fase_nombre}`}
       </strong>
+      {Number(seg.total_fases) > 0 && (
+        <span className="pt-seg__progreso" aria-hidden="true">
+          {Array.from({ length: Number(seg.total_fases) }, (_, i) => (
+            <i key={i} className={seg.terminado || i < Number(seg.fase_posicion) ? "is-hecho" : ""} />
+          ))}
+        </span>
+      )}
       <span className={`pt-seg__estado pt-seg__estado--${estado.tono}${estado.pulso ? " is-pulsing" : ""}`}>
         <EstadoIcono size={11} /> {estado.texto}
       </span>

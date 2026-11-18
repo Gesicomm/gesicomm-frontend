@@ -5383,3 +5383,21 @@ td.pt-empty .pt-spinner {
   cursor: pointer;
 }
 .np-cancelar-pedido:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Gestión Comercial: seguimiento compacto y clicable, etapas como recorrido ── */
+.pt-table .pt-seg { min-width: 0; max-width: 100%; width: 100%; }
+.pt-table .pt-seg--boton { position: relative; z-index: 2; cursor: pointer; }
+.pt-table .pt-seg__etapa { display: none; }
+.pt-seg__progreso { display: flex; gap: 4px; width: 100%; margin: 2px 0; }
+.pt-seg__progreso i { flex: 1; height: 5px; border-radius: 999px; background: color-mix(in srgb, var(--color-fg) 14%, transparent); }
+.pt-seg__progreso i.is-hecho { background: var(--color-success); }
+.pt-td-followup { overflow: visible; }
+
+.pt-stage-shell { background: var(--color-surface); border-radius: 14px; padding: 0.7rem 0.8rem; }
+.pt-stage-tabs { flex-wrap: nowrap; align-items: center; gap: 0; overflow-x: auto; }
+.pt-stage-tabs button { flex: 1 1 0; justify-content: center; min-height: 2.6rem; border-radius: 12px; white-space: normal; text-align: center; }
+.pt-stage-tabs button:not(:last-child) { margin-right: 1.6rem; position: relative; overflow: visible; }
+.pt-stage-tabs button:not(:last-child)::after {
+  content: "›"; position: absolute; right: -1.15rem; top: 50%; transform: translateY(-52%);
+  color: var(--color-fg-subtle); font-size: 1.4rem; font-weight: 400; pointer-events: none;
+}
