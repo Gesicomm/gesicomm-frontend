@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../utils/api';
 import { apiOrigin } from '../utils/apiBase';
-import { Plus, Trash2, Store, CheckCircle, XCircle, Loader, User, Phone, Mail, ShieldCheck, KeyRound } from 'lucide-react';
+import { Plus, Trash2, Store, CheckCircle, XCircle, Loader, User, Phone, Mail, ShieldCheck, KeyRound, ShoppingBag, Plug } from 'lucide-react';
 import { verificarSesion } from '../utils/auth';
 import PersonasPermisos from '../components/PersonasPermisos';
 import PerfilModal from '../components/PerfilModal';
 import PrivacidadDatosCard from '../components/PrivacidadDatosCard';
+import ShopifyIntegration from './ShopifyIntegration';
 
 const Settings = () => {
     const [tiendas, setTiendas] = useState([]);
@@ -21,6 +22,9 @@ const Settings = () => {
 
     const [usuario, setUsuario] = useState(null);
     const [perfilModalAbierto, setPerfilModalAbierto] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [activeTab, setActiveTab] = useState(() => (searchParams.get('tab') === 'integracion' ? 'integracion' : 'general'));
+    const [integracionTab, setIntegracionTab] = useState(() => (searchParams.get('proveedor') === 'shopify' ? 'shopify' : 'meta'));
     const puedeGestionar = usuario && (usuario.rol !== 'colaborador' || usuario.accesos?.configuracion === 'gestionar');
 
     useEffect(() => {
@@ -31,17 +35,20 @@ const Settings = () => {
         window.addEventListener('usuario-actualizado', onActualizado);
         return () => window.removeEventListener('usuario-actualizado', onActualizado);
     }, []);
-    const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
         const metaError = searchParams.get('meta_error');
         const metaSuccess = searchParams.get('meta_success');
 
         if (metaError) {
+            setActiveTab('integracion');
+            setIntegracionTab('meta');
             setError(metaError);
             setSearchParams({});
         }
         if (metaSuccess) {
+            setActiveTab('integracion');
+            setIntegracionTab('meta');
             setSuccess('Tienda conectada exitosamente.');
             setSearchParams({});
         }
@@ -141,6 +148,40 @@ const Settings = () => {
                 </div>
             )}
 
+            {/* Tabs principales de Configuración */}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', paddingBottom: '0.75rem' }}>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('general')}
+                    style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
+                        padding: '0.55rem 1rem', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
+                        border: activeTab === 'general' ? '1px solid var(--color-primary)' : '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
+                        background: activeTab === 'general' ? 'color-mix(in srgb, var(--color-primary) 14%, transparent)' : 'transparent',
+                        color: activeTab === 'general' ? 'var(--color-primary-text)' : 'var(--color-fg-muted)',
+                    }}
+                >
+                    <User size={16} />
+                    Cuenta y equipo
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('integracion')}
+                    style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
+                        padding: '0.55rem 1rem', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
+                        border: activeTab === 'integracion' ? '1px solid var(--color-primary)' : '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
+                        background: activeTab === 'integracion' ? 'color-mix(in srgb, var(--color-primary) 14%, transparent)' : 'transparent',
+                        color: activeTab === 'integracion' ? 'var(--color-primary-text)' : 'var(--color-fg-muted)',
+                    }}
+                >
+                    <Plug size={16} />
+                    Integración (Shopify y Meta)
+                </button>
+            </div>
+
+            {activeTab === 'general' && (
+            <>
             {/* Tarjeta de Perfil y Seguridad */}
             <div className="card" style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
@@ -191,7 +232,46 @@ const Settings = () => {
             </div>
 
             {usuario?.tiendaId && usuario.rol !== 'colaborador' && <PersonasPermisos />}
+            {usuario?.rol !== 'colaborador' && <PrivacidadDatosCard />}
+            </>
+            )}
 
+            {activeTab === 'integracion' && (
+            <div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+                    <button
+                        type="button"
+                        onClick={() => setIntegracionTab('meta')}
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
+                            padding: '0.5rem 0.95rem', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+                            border: integracionTab === 'meta' ? '1px solid #1877F2' : '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
+                            background: integracionTab === 'meta' ? 'rgba(24, 119, 242, 0.12)' : 'transparent',
+                            color: integracionTab === 'meta' ? '#1877F2' : 'var(--color-fg-muted)',
+                        }}
+                    >
+                        <Store size={15} />
+                        Meta Business
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setIntegracionTab('shopify')}
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
+                            padding: '0.5rem 0.95rem', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+                            border: integracionTab === 'shopify' ? '1px solid #10b981' : '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
+                            background: integracionTab === 'shopify' ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                            color: integracionTab === 'shopify' ? '#059669' : 'var(--color-fg-muted)',
+                        }}
+                    >
+                        <ShoppingBag size={15} />
+                        Shopify
+                    </button>
+                </div>
+
+                {integracionTab === 'shopify' ? (
+                    <ShopifyIntegration embeddedInSettings />
+                ) : (
             <div className="card">
                 {/* Cabecera de la sección */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -344,10 +424,12 @@ const Settings = () => {
                     </div>
                 )}
             </div>
+                )}
+            </div>
+            )}
 
             {/* Metodo 1 de /data-deletion: la pantalla que un revisor de Meta
                 sigue paso a paso durante la revision de la aplicacion. */}
-            {usuario?.rol !== 'colaborador' && <PrivacidadDatosCard />}
 
             <PerfilModal
                 isOpen={perfilModalAbierto}

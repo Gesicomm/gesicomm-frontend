@@ -30,6 +30,7 @@ const DynamicLayout = lazy(() => import('./components/DynamicLayout'));
 const Login = lazy(() => import('./pages/Login'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Settings = lazy(() => import('./pages/Settings'));
+const ShopifyIntegration = lazy(() => import('./pages/ShopifyIntegration'));
 const Ads = lazy(() => import('./pages/Ads'));
 const ProductList = lazy(() => import('./pages/productos/ProductList'));
 const ProductForm = lazy(() => import('./pages/productos/ProductForm'));
@@ -273,6 +274,8 @@ function App() {
         <Route path="/" element={<TiendaSegunHostname fuera={<PaginaPublica><Landing /></PaginaPublica>} />} />
         <Route path="/privacy" element={<PaginaPublica><Privacy /></PaginaPublica>} />
         <Route path="/terms" element={<PaginaPublica><Terms /></PaginaPublica>} />
+        <Route path="/shopify" element={<ShopifyIntegration />} />
+        <Route path="/integraciones/shopify" element={<ShopifyIntegration />} />
         <Route path="/cookies" element={<PaginaPublica><Cookies /></PaginaPublica>} />
         <Route path="/security" element={<PaginaPublica><Security /></PaginaPublica>} />
         <Route path="/compliance" element={<PaginaPublica><Compliance /></PaginaPublica>} />
