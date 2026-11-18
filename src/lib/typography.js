@@ -24,6 +24,19 @@ export const GOOGLE_FONT_HREFS = {
   'playfair-display': 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap',
 };
 
+// URLs de Google Fonts de la tipografía de la tienda, para cargarlas DENTRO
+// del iframe del lienzo: cargarFuenteRemota solo las pone en el documento del
+// panel, y el iframe es otro documento, así que la fuente elegida en Mi
+// negocio nunca se veía en la landing (2026-11-18). Outfit va aparte porque
+// en el panel sale de index.html y no de GOOGLE_FONT_HREFS.
+const OUTFIT_HREF = 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;900&display=swap';
+export function hrefsFuentesTypography(typography = {}) {
+  const t = normalizarTypography(typography);
+  return [...new Set([t.headingFont, t.bodyFont])]
+    .map(id => (id === 'outfit' ? OUTFIT_HREF : GOOGLE_FONT_HREFS[id]))
+    .filter(Boolean);
+}
+
 const fuentesCargadas = new Set();
 const fuentesCustomCargadas = new Set();
 

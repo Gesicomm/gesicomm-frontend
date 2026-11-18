@@ -28,7 +28,7 @@ import { CATALOGO_TIENDA_CSS } from './catalogoTiendaCodigo';
 import { CONFIANZA_INICIO_CSS } from './confianzaInicioCodigo';
 import { COMBOS_INICIO_CSS, COMBO_INICIO_TARJETA_HTML } from './combosInicioCodigo';
 import { conMarcaTienda, cssMarcaTienda } from './marcaTiendaCodigo';
-import { typographyCss } from '../../lib/typography';
+import { typographyCss, hrefsFuentesTypography } from '../../lib/typography';
 import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS, actualizarCreditosGesicom, adaptarLogosGesicom } from '../landing/storeCredit';
 
 // El sandbox del iframe. allow-same-origin NO va acá y no debe agregarse:
@@ -3289,7 +3289,7 @@ window.addEventListener('unhandledrejection', function (e) {
 <!-- Sin base target, un link dentro del iframe navegaría el iframe y
      dejaría la landing metida dentro de sí misma. -->
 <base target="_top">
-${linksFuentes(fonts)}
+${linksFuentes([...hrefsFuentesTypography(opciones.typography || datos?.typography), ...(Array.isArray(fonts) ? fonts : [])])}
 <style>
 html, body { margin: 0; padding: 0; }
 ${typographyCss(opciones.typography || datos?.typography)}
