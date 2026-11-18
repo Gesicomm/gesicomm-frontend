@@ -6,6 +6,7 @@ import PublicPlans from './PublicPlans';
 import ProductTour from './ProductTour';
 import GesicomMascot from '../../components/public/GesicomMascot';
 import { enviarMensajeContacto, enviarSolicitudProveedor } from '../../services/publicoService';
+import { afiliadosService, guardarRefAfiliado } from '../../services/afiliadosService';
 import '@fontsource-variable/manrope';
 import markup from './home/landing.html?raw';
 import './home/reference.css';
@@ -36,6 +37,17 @@ export default function Landing() {
   const [mascotHost, setMascotHost] = useState(null);
   const [tourHost, setTourHost] = useState(null);
   const [rutaPlanes, setRutaPlanes] = useState('fisico');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      const guardado = guardarRefAfiliado(ref);
+      if (guardado) {
+        afiliadosService.track({ codigo: guardado, landing_url: window.location.href }).catch(() => {});
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const root = rootRef.current;

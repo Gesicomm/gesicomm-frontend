@@ -6,7 +6,17 @@ import { afiliadosService } from '../../services/afiliadosService';
 import './afiliados.css';
 
 const FORM_INICIAL = { nombre: '', telefono: '', metodo_pago: 'transferencia', entidad_pago: '', titular_pago: '', documento_pago: '', cuenta_pago: '' };
-const dinero = valor => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(Number(valor) || 0);
+const dinero = (valor, moneda = 'PYG') => {
+  const num = Number(valor) || 0;
+  const code = String(moneda || 'PYG').toUpperCase();
+  if (code === 'USD') {
+    return `US$ ${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num)}`;
+  }
+  if (code === 'EUR') {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+  }
+  return new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(num);
+};
 const fecha = valor => valor ? new Intl.DateTimeFormat('es-PY', { dateStyle: 'medium', timeZone: 'America/Asuncion' }).format(new Date(valor)) : 'Sin fecha registrada';
 const ESTADOS = { pendiente: 'Pendiente', aprobada: 'Aprobada', pagada: 'Pagada', anulada: 'Anulada' };
 const errorMensaje = err => err.response?.data?.message || 'No pudimos conectar. Volvé a intentar.';
@@ -103,6 +113,7 @@ export default function MiAfiliado() {
   if (!panel) return <div className="af-page"><div className="af-shell"><h1>Quiero ser afiliado</h1><p className={sinAcceso ? '' : 'af-error'} role={sinAcceso ? 'status' : 'alert'}>{error}</p>{sinAcceso ? <Link to="/planes" className="af-btn af-primary">Ver planes</Link> : <button className="af-btn" onClick={cargar}><RefreshCw size={16} />Reintentar</button>}</div></div>;
 
   const saldo = afiliado?.resumen_comisiones || {};
+  const monedaPanel = panel.condiciones_pago?.moneda || saldo.moneda || 'PYG';
   const metricas = panel.metricas || {};
   const movimientos = (panel.movimientos || []).filter(m => filtro === 'todas' || m.estado === filtro);
   const paginas = Math.max(1, Math.ceil(movimientos.length / 8));
@@ -118,23 +129,23 @@ export default function MiAfiliado() {
         <div className="af-overview">
           <section className="af-wallet" aria-labelledby="af-wallet-title">
             <div className="af-wallet-top"><span id="af-wallet-title"><Wallet size={19} />Mi billetera</span><span className={'af-status ' + afiliado.estado}>{afiliado.estado === 'activo' ? 'Afiliación activa' : 'Afiliación pausada'}</span></div>
-            <span className="af-balance-label">Total a liquidar</span><strong className="af-balance">{dinero(saldo.total_a_liquidar)}</strong>
-            <div className="af-wallet-breakdown"><div><span>Pendiente de aprobación</span><strong>{dinero(saldo.pendiente)}</strong></div><div><span>Aprobado para pago</span><strong>{dinero(saldo.aprobada)}</strong></div></div>
-            <div className="af-wallet-paid"><span>Total depositado</span><strong>{dinero(saldo.pagada)}</strong></div>
+            <span className="af-balance-label">Total a liquidar</span><strong className="af-balance">{dinero(saldo.total_a_liquidar, monedaPanel)}</strong>
+            <div className="af-wallet-breakdown"><div><span>Pendiente de aprobación</span><strong>{dinero(saldo.pendiente, monedaPanel)}</strong></div><div><span>Aprobado para pago</span><strong>{dinero(saldo.aprobada, monedaPanel)}</strong></div></div>
+            <div className="af-wallet-paid"><span>Total depositado</span><strong>{dinero(saldo.pagada, monedaPanel)}</strong></div>
           </section>
           <section className="af-deposits" aria-labelledby="af-deposit-title"><h2 id="af-deposit-title"><CalendarDays size={18} />Depósitos</h2><dl>
             <div><dt>Días de depósito</dt><dd>{panel.condiciones_pago?.dias_deposito || 'A definir'}</dd></div>
-            <div><dt>Mínimo de liquidación</dt><dd>{panel.condiciones_pago?.minimo_liquidacion == null ? 'A definir' : dinero(panel.condiciones_pago.minimo_liquidacion)}</dd></div>
+            <div><dt>Mínimo de liquidación</dt><dd>{panel.condiciones_pago?.minimo_liquidacion == null ? 'A definir' : dinero(panel.condiciones_pago.minimo_liquidacion, monedaPanel)}</dd></div>
             <div><dt>Último depósito registrado</dt><dd>{pagos.length ? fecha(pagos[0].pagada_en) : 'Sin depósitos con fecha registrada'}</dd></div>
           </dl><p>Los días y el mínimo de pago se comunicarán al confirmar las condiciones comerciales del programa.</p></section>
         </div>
         <section className="af-referral" aria-labelledby="af-referral-title"><div><h2 id="af-referral-title">Tu enlace de afiliado</h2><span>Código: {afiliado.codigo}</span></div><div className="af-link-row"><input aria-label="Tu enlace de afiliado" value={afiliado.link || ''} readOnly onFocus={e => e.target.select()} /><button className="af-btn af-primary" onClick={copiar} disabled={!afiliado.link}><Copy size={16} />Copiar enlace</button></div><p>Comisión vigente: <strong>{afiliado.comision_pct}%</strong> · {metricas.clientes_activos || 0} clientes activos con pagos</p></section>
         <section className="af-metrics" aria-label="Resultados de tu enlace">
-          {[{ icon: MousePointer2, label: 'Visitas al enlace', value: metricas.visitas, detail: (metricas.visitantes_estimados || 0) + ' visitantes estimados por IP' }, { icon: Users, label: 'Registros atribuidos', value: metricas.registros, detail: 'Cuentas creadas con tu referencia' }, { icon: UserCheck, label: 'Clientes con pagos', value: metricas.clientes_pagados, detail: (metricas.clientes_activos || 0) + ' con suscripción activa' }, { icon: ArrowUpRight, label: 'Comisiones acumuladas', value: dinero(saldo.total_generado), detail: 'Pendientes, aprobadas y pagadas' }].map(({icon: Icon, label, value, detail}) => <div className="af-metric" key={label}><Icon size={18} /><span>{label}</span><strong>{value ?? 0}</strong><small>{detail}</small></div>)}
+          {[{ icon: MousePointer2, label: 'Visitas al enlace', value: metricas.visitas, detail: (metricas.visitantes_estimados || 0) + ' visitantes estimados por IP' }, { icon: Users, label: 'Registros atribuidos', value: metricas.registros, detail: 'Cuentas creadas con tu referencia' }, { icon: UserCheck, label: 'Clientes con pagos', value: metricas.clientes_pagados, detail: (metricas.clientes_activos || 0) + ' con suscripción activa' }, { icon: ArrowUpRight, label: 'Comisiones acumuladas', value: dinero(saldo.total_generado, monedaPanel), detail: 'Pendientes, aprobadas y pagadas' }].map(({icon: Icon, label, value, detail}) => <div className="af-metric" key={label}><Icon size={18} /><span>{label}</span><strong>{value ?? 0}</strong><small>{detail}</small></div>)}
         </section>
         <section className="af-history" aria-labelledby="af-history-title">
           <div className="af-section-head"><h2 id="af-history-title">Movimientos de comisiones</h2><label>Estado<select aria-label="Estado" value={filtro} onChange={e => { setFiltro(e.target.value); setPagina(1); }}><option value="todas">Todos</option>{Object.entries(ESTADOS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>
-          <div className="af-table-scroll"><table><thead><tr><th>Operación</th><th>Fecha</th><th>Base registrada</th><th>Porcentaje</th><th>Comisión</th><th>Estado</th><th>Depositado el</th></tr></thead><tbody>{movimientos.slice((paginaActual - 1) * 8, paginaActual * 8).map(m => <tr key={m.id}><td><strong>{m.plan}</strong><small>Comisión #{m.id}</small></td><td>{fecha(m.created_at)}</td><td>{dinero(m.monto_base)}</td><td>{m.comision_pct}%</td><td className="af-amount">{dinero(m.monto_comision)}</td><td><span className={'af-status ' + m.estado}>{ESTADOS[m.estado] || m.estado}</span></td><td>{m.estado === 'pagada' ? fecha(m.pagada_en) : '—'}</td></tr>)}</tbody></table></div>
+          <div className="af-table-scroll"><table><thead><tr><th>Operación</th><th>Fecha</th><th>Base registrada</th><th>Porcentaje</th><th>Comisión</th><th>Estado</th><th>Depositado el</th></tr></thead><tbody>{movimientos.slice((paginaActual - 1) * 8, paginaActual * 8).map(m => { const movMoneda = m.moneda || monedaPanel; return <tr key={m.id}><td><strong>{m.plan}</strong><small>Comisión #{m.id}</small></td><td>{fecha(m.created_at)}</td><td>{dinero(m.monto_base, movMoneda)}</td><td>{m.comision_pct}%</td><td className="af-amount">{dinero(m.monto_comision, movMoneda)}</td><td><span className={'af-status ' + m.estado}>{ESTADOS[m.estado] || m.estado}</span></td><td>{m.estado === 'pagada' ? fecha(m.pagada_en) : '—'}</td></tr>; })}</tbody></table></div>
           {!movimientos.length && <div className="af-empty"><Wallet size={26} /><strong>{filtro === 'todas' ? 'Todavía no hay comisiones' : 'Sin movimientos en este estado'}</strong><p>Las comisiones de tus suscripciones referidas aparecerán aquí cuando se registren.</p></div>}
           {!!movimientos.length && <div className="af-pagination"><span>{movimientos.length} movimientos · Página {paginaActual} de {paginas}</span><button className="af-icon-btn" title="Página anterior" aria-label="Página anterior" disabled={paginaActual <= 1} onClick={() => setPagina(paginaActual - 1)}><ChevronLeft size={18} /></button><button className="af-icon-btn" title="Página siguiente" aria-label="Página siguiente" disabled={paginaActual >= paginas} onClick={() => setPagina(paginaActual + 1)}><ChevronRight size={18} /></button></div>}
         </section>

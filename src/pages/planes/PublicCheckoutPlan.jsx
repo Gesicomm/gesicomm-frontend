@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { planesService } from '../../services/planesService';
-import { leerRefAfiliado } from '../../services/afiliadosService';
+import { afiliadosService, guardarRefAfiliado, leerRefAfiliado } from '../../services/afiliadosService';
 import { formatMoneda } from '../../utils/currency';
 import Logo from '../../components/public/Logo';
 import API from '../../services/api';
@@ -79,6 +79,17 @@ export default function PublicCheckoutPlan() {
   // Estados contextuales para la mascota (autónomos y sobrios)
   const [hoveringSubmit, setHoveringSubmit] = useState(false);
   const [campoActivo, setCampoActivo] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      const guardado = guardarRefAfiliado(ref);
+      if (guardado) {
+        afiliadosService.track({ codigo: guardado, landing_url: window.location.href }).catch(() => {});
+      }
+    }
+  }, [location.search]);
 
   useEffect(() => {
     let activo = true;
