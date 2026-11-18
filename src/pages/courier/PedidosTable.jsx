@@ -185,7 +185,7 @@ function EstadoBadgeDropdown({ estado, etiqueta, onChange, modoAccion = false })
   return (
     <div
       ref={ref}
-      style={{ position: "relative", display: "inline-block" }}
+      style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}
       onKeyDown={(e) => {
         if (e.key === "Escape" && open) {
           e.stopPropagation();
@@ -208,17 +208,20 @@ function EstadoBadgeDropdown({ estado, etiqueta, onChange, modoAccion = false })
           background: s.chipBg,
           color: s.chipText,
           border: `1px solid ${s.chipText}40`,
-          borderRadius: "6px",
-          padding: "4px 10px",
-          fontSize: "0.74rem",
+          borderRadius: "8px",
+          padding: "0.3rem 0.55rem",
+          fontSize: "0.8125rem",
           fontWeight: 700,
+          lineHeight: 1.25,
+          textAlign: "left",
+          maxWidth: "100%",
           cursor: sinCambios ? "default" : "pointer",
           display: "inline-flex",
           alignItems: "center",
-          gap: "6px",
+          gap: "5px",
           transition: "all 0.15s ease",
           outline: "none",
-          whiteSpace: "nowrap",
+          whiteSpace: "normal",
           userSelect: "none",
         }}
       >
