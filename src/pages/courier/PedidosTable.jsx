@@ -8,6 +8,7 @@ import {
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio, actualizarLeadTipoManual } from "../../services/courierApi";
 import AbastecimientoTimeline from "../../components/abastecimiento/AbastecimientoTimeline";
+import { MovilExpressSeguimiento } from "./MovilExpressSeguimiento";
 import { canalVentaService } from "../../services/canalVentaService";
 import { verificarSesion } from "../../utils/auth";
 import { numeroPedidoVisible } from "./pedidoNumero";
@@ -24,6 +25,7 @@ import {
   estadoParaSeguimiento,
   puedeEnviarSeguimiento,
   RAHA_STATUS_META,
+  estadoMovilExpress,
   paymentLine,
   esPagoAnticipado,
 } from "./orderLifecycle";
@@ -536,7 +538,12 @@ function EstadoCell({ envio, etapa, onCambiarEstado }) {
     return <RahaEstadoCell envio={envio} etapa={etapa} />;
   }
   const estado = estadoDePedido(envio, etapa);
-  const courier = envio.Courier?.nombre || envio.proveedor_logistico_nombre || null;
+  const movilExpress = estadoMovilExpress(envio);
+  // En Logística, un pedido de Móvil Express muestra su guía y en qué anda
+  // del lado del proveedor, no sólo el nombre del courier.
+  const courier = movilExpress
+    ? `Móvil Express${movilExpress.guia ? ` · ${movilExpress.guia}` : ""} · ${movilExpress.procesando ? "Procesando" : movilExpress.label}`
+    : envio.Courier?.nombre || envio.proveedor_logistico_nombre || null;
   const motivoDevolucionLabel = { justificada: "Devuelto justificadamente", injustificada: "Devuelto injustificadamente" }[envio.motivo_devolucion] || null;
   const secundario = etapa === "recuperacion" ? (motivoDevolucionLabel || envio.estado) : estado.id === "Confirmado"
     ? paymentLine(envio)
@@ -795,6 +802,7 @@ function PedidoMobile({ envio, etapa, onAbrirDetalle, onAbrirResumen, onAbrirSeg
         </div>
       </footer>
       {envio.raha_logistica?.gestionado && etapa === "logistica" && <details className="pm-tracking"><summary>Ver seguimiento RAHA</summary><RahaTimeline envio={envio} /></details>}
+      {envio.movil_express?.gestionado && ["logistica", "seguimiento_envio"].includes(etapa) && <details className="pm-tracking"><summary>Ver envío de Móvil Express</summary><MovilExpressSeguimiento envio={envio} compacto /></details>}
     </article>
   );
 }
@@ -1066,20 +1074,39 @@ export function PedidosTable({
   // "Entregado" es el pedido ya cerrado sobre el que se hace el escalamiento
   // de ventas, no algo para rendir (pedido del usuario, 2026-10-14).
   const viendoEntregados = etapaActiva === "logistica" && estadoActivo === "Entregado";
-  const timerRef = useRef(null);
+  const filtrosKeyRef = useRef(JSON.stringify(filtros));
+
+  // Cargar filas de la página actual: casi inmediato (40 ms para agrupar
+  // cambios simultáneos de etapa/estado) y debounce de 220 ms al escribir filtros.
   useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
+    const filtrosActual = JSON.stringify(filtros);
+    const cambioFiltro = filtrosKeyRef.current !== filtrosActual;
+    filtrosKeyRef.current = filtrosActual;
+    const delay = cambioFiltro ? 220 : 40;
+    const timer = setTimeout(() => {
       cargar(filtros, page, estadoActivo);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [filtros, page, estadoActivo, refrescarKey, cargar]);
+
+  // Los conteos y el resumen financiero no dependen de `page`: paginar entre
+  // páginas 1, 2, 3... ya no dispara 5 consultas extra de conteo en el servidor.
+  const filtrosConteoKeyRef = useRef(JSON.stringify(filtros));
+  useEffect(() => {
+    const filtrosActual = JSON.stringify(filtros);
+    const cambioFiltro = filtrosConteoKeyRef.current !== filtrosActual;
+    filtrosConteoKeyRef.current = filtrosActual;
+    const delay = cambioFiltro ? 220 : 40;
+    const timer = setTimeout(() => {
       cargarConteos(filtros, estadoActivo);
       if (viendoEntregados) {
         cargarResumenEntregados(filtros);
       } else {
         setResumenEntregados(null);
       }
-    }, 300);
-    return () => clearTimeout(timerRef.current);
-  }, [filtros, page, estadoActivo, viendoEntregados, refrescarKey, cargar, cargarConteos, cargarResumenEntregados]);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [filtros, estadoActivo, viendoEntregados, refrescarKey, cargarConteos, cargarResumenEntregados]);
 
   useEffect(() => {
     if (vista !== "kanban" || soloAbastecimiento) return;

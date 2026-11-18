@@ -596,6 +596,20 @@ button.order-alert-chip:focus-visible {
   gap: 0.25rem;
 }
 
+/* Envío gestionado por Móvil Express, en la tarjeta del Tablero. */
+.order-mex-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary-text);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 26%, transparent);
+}
+
 .order-whatsapp-action,
 .pt-whatsapp-action {
   flex: 0 0 auto;
@@ -3901,9 +3915,10 @@ button.order-alert-chip:focus-visible {
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
-  border: 1px solid color-mix(in srgb, var(--color-fg) 6%, transparent);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-fg) 1.5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 9%, transparent);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: 0 4px 20px -6px color-mix(in srgb, #000 18%, transparent);
 }
 
 .pt-kanban-wrap {
@@ -3938,80 +3953,62 @@ button.order-alert-chip:focus-visible {
 }
 .pt-table {
   width: 100%;
-  min-width: 1200px;
+  min-width: 980px;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--ui-text-help, 0.875rem);
 }
-.pt-table--followup { min-width: 1440px; }
-.pt-col-id { width: 110px; }
-.pt-col-tipo { width: 152px; }
-.pt-col-date { width: 116px; }
-.pt-col-client { width: 150px; }
-.pt-col-phone { width: 140px; }
-.pt-col-product { width: 240px; }
-.pt-col-metodo-pago { width: 176px; }
-.pt-col-total { width: 140px; }
-.pt-col-state { width: 224px; }
-.pt-col-followup { width: 240px; }
-.pt-col-action { width: 244px; }
+.pt-table--followup { min-width: 1060px; }
+.pt-col-id { width: 7.5%; }
+.pt-col-tipo { width: 9.5%; }
+.pt-col-date { width: 8%; }
+.pt-col-client { width: 11.5%; }
+.pt-col-phone { width: 8.5%; }
+.pt-col-product { width: 13.5%; }
+.pt-col-total { width: 9.5%; }
+.pt-col-metodo-pago { width: 8%; }
+.pt-col-state { width: 11%; }
+.pt-col-followup { width: 12%; }
+.pt-col-action { width: 13%; }
 .pt-th {
   text-align: left;
-  padding: 0.75rem 0.9rem;
-  font-size: var(--ui-text-help, 0.875rem);
-  font-weight: 600;
-  color: var(--color-fg-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
-  white-space: nowrap;
-  background: color-mix(in srgb, var(--color-fg) 2%, transparent);
+  padding: 0.65rem 0.48rem;
+  font-size: var(--ui-text-meta, 0.8125rem);
+  font-weight: 700;
+  color: var(--color-fg-muted);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 9%, transparent);
+  white-space: normal;
+  vertical-align: middle;
+  background: color-mix(in srgb, var(--color-fg) 3%, var(--color-surface));
+}
+.pt-th:first-child,
+.pt-td:first-child {
+  padding-left: 0.85rem;
+}
+.pt-th:last-child,
+.pt-td:last-child {
+  padding-right: 0.85rem;
 }
 .pt-th-id { text-align: left; }
 .pt-th-num { text-align: right; }
 .pt-th-product { width: auto; }
-.pt-th-courier { width: 90px; }
-.pt-th-state { width: 130px; }
-.pt-th-action { width: 244px; }
-
-/* La tabla mide ~1800 px y la Acción (lo que el comercio vino a hacer)
-   quedaba fuera de vista. Se fija a la derecha sin cambiar el orden de
-   columnas; los fondos son opacos para que el contenido no se trasluzca. */
-/* Desde 1280 px: por debajo, la columna fija tapaba casi toda la tabla
-   (el cliente quedaba cortado en su borde) y conviene el scroll normal. */
-@media (min-width: 1280px) {
-  .pt-th-action,
-  .pt-td-action {
-    position: sticky;
-    right: 0;
-    z-index: 1;
-    box-shadow: inset 1px 0 0 color-mix(in srgb, var(--color-fg) 10%, transparent),
-      -10px 0 12px -10px color-mix(in srgb, #000 70%, transparent);
-  }
-  .pt-th-action { background: color-mix(in srgb, var(--color-fg) 3.5%, var(--color-canvas)); }
-  .pt-td-action { background: color-mix(in srgb, var(--color-fg) 1.5%, var(--color-canvas)); }
-  .pt-row:hover .pt-td-action { background: color-mix(in srgb, var(--color-fg) 5.5%, var(--color-canvas)); }
-  /* Filas teñidas por etapa de seguimiento: la celda fija copia el tinte. */
-  .pt-root .pt-row[data-followup-tone] .pt-td-action {
-    background: color-mix(in srgb, var(--pt-followup-color) var(--pt-followup-fill), var(--color-surface));
-  }
-  /* El historial va al lado de la acción, no debajo. */
-  .pt-td-action .pt-row-actions { flex-wrap: nowrap; }
-  .pt-root .pt-row[data-followup-tone]:hover .pt-td-action {
-    background: color-mix(in srgb, var(--pt-followup-color) var(--pt-followup-hover-fill), var(--color-surface));
-  }
-}
+.pt-th-courier { width: auto; }
+.pt-th-state { width: auto; }
+.pt-th-action { width: auto; text-align: left; }
 
 .pt-row {
-  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 4%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.14s ease;
 }
 .pt-row:last-child { border-bottom: none; }
 .pt-row:hover { background: color-mix(in srgb, var(--color-fg) 4%, transparent); }
 
 .pt-td {
-  padding: 0.75rem 0.9rem;
+  padding: 0.68rem 0.48rem;
   color: var(--color-fg);
   vertical-align: middle;
 }
@@ -4043,9 +4040,9 @@ button.order-alert-chip:focus-visible {
   margin-top: 2px;
 }
 .pt-td-items {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.35;
   color: var(--color-fg-muted);
   font-size: var(--ui-text-help, 0.875rem);
 }
@@ -5246,11 +5243,15 @@ td.pt-empty .pt-spinner {
 .pt-tipo-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.22rem 0.55rem;
+  justify-content: center;
+  max-width: 100%;
+  padding: 0.22rem 0.5rem;
   border-radius: 999px;
-  font-size: var(--ui-text-help, 0.875rem);
+  font-size: var(--ui-text-meta, 0.8125rem);
   font-weight: 700;
-  white-space: nowrap;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
 }
 
 .pt-tipo-badge--whatsapp {
