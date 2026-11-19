@@ -52,6 +52,11 @@ const shopifyService = {
     return data;
   },
 
+  reintentarAvisos: async (shopifyTiendaId) => {
+    const { data } = await API.post('/shopify/avisos/reintentar', { shopifyTiendaId });
+    return data;
+  },
+
   syncTodo: async (shopifyTiendaId) => {
     const { data } = await API.post('/shopify/sync/todo', { shopifyTiendaId });
     return data;

@@ -117,6 +117,49 @@ export function ImportacionPedidosAviso({ importacion, onContinuar, deshabilitad
   );
 }
 
+/**
+ * Cambios de pedidos que Gesicom le manda a Shopify (confirmar, despachar,
+ * entregar, cancelar…). Se ve solo si hay algo esperando o algo que falló.
+ */
+export function AvisosShopifyAviso({ avisos, onReintentar, deshabilitado }) {
+  if (!avisos) return null;
+  const { pendientes = 0, errores = 0, ultimo_error: ultimoError } = avisos;
+  if (!errores && !pendientes) return null;
+
+  if (!errores) {
+    return (
+      <p role="status" style={{ margin: 0, fontSize: '14px', color: 'var(--color-fg-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+        <RefreshCw size={14} style={{ animation: 'spin 0.9s linear infinite' }} aria-hidden="true" />
+        {pendientes === 1 ? 'Mandando 1 cambio de pedido a Shopify…' : `Mandando ${formatearNumero(pendientes)} cambios de pedidos a Shopify…`}
+      </p>
+    );
+  }
+
+  const faltaPermiso = /permiso|access denied|scope/i.test(ultimoError || '');
+  return (
+    <div role="alert" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid color-mix(in srgb, #f59e0b 35%, transparent)', background: 'color-mix(in srgb, #f59e0b 8%, transparent)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-fg)' }}>
+          {errores === 1 ? '1 cambio no llegó a Shopify' : `${formatearNumero(errores)} cambios no llegaron a Shopify`}
+        </span>
+        <button type="button" onClick={onReintentar} disabled={deshabilitado} style={{ ...secondaryBtnStyle, padding: '0.45rem 0.85rem' }}>
+          Reintentar
+        </button>
+      </div>
+      <p style={{ margin: 0, fontSize: '16px', color: 'var(--color-fg)' }}>
+        {faltaPermiso
+          ? 'A la app de Shopify le falta un permiso. Agregalo en la configuración de la app en Shopify y tocá Reintentar.'
+          : 'En Gesicom el pedido ya cambió; falta que se refleje en Shopify.'}
+      </p>
+      {ultimoError && (
+        <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-fg-muted)', overflowWrap: 'anywhere' }}>
+          Último error: {ultimoError}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function ShopifyIntegration({ embeddedInSettings = false } = {}) {
   const { usuario, cargando: cargandoSesion } = useSesion();
   const [searchParams] = useSearchParams();
@@ -171,7 +214,7 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
 
   // Mientras alguna tienda está importando su historial, se relee el avance
   // cada pocos segundos sin mostrar el estado de carga de la pantalla.
-  const hayImportacionEnCurso = (statusData?.tiendas || []).some((t) => t.importacion_pedidos?.estado === 'en_curso');
+  const hayImportacionEnCurso = (statusData?.tiendas || []).some((t) => t.importacion_pedidos?.estado === 'en_curso' || Number(t.avisos_a_shopify?.pendientes) > 0);
   useEffect(() => {
     if (!usuario || !hayImportacionEnCurso) return undefined;
     const intervalo = setInterval(async () => {
@@ -354,6 +397,19 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
       if (activeTab === 'clientes') cargarClientesShopify(shopifyTiendaId, clienteQuery);
     } catch (err) {
       toast.error(err?.response?.data?.message || `Error al sincronizar ${tipo}.`);
+    } finally {
+      setSyncingAction('');
+    }
+  };
+
+  const reintentarAvisos = async (shopifyTiendaId) => {
+    setSyncingAction(`avisos-${shopifyTiendaId}`);
+    try {
+      const res = await shopifyService.reintentarAvisos(shopifyTiendaId);
+      toast.success(res.reintentados === 1 ? 'Reintentando 1 cambio en Shopify.' : `Reintentando ${res.reintentados || 0} cambios en Shopify.`);
+      await cargarEstado();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'No se pudo reintentar.');
     } finally {
       setSyncingAction('');
     }
@@ -808,6 +864,12 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                   </button>
                 </div>
               )}
+
+              <AvisosShopifyAviso
+                avisos={tienda.avisos_a_shopify}
+                deshabilitado={Boolean(syncingAction)}
+                onReintentar={() => reintentarAvisos(tienda.id)}
+              />
 
               <ImportacionPedidosAviso
                 importacion={tienda.importacion_pedidos}

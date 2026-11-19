@@ -2,7 +2,7 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import ShopifyIntegration, { ImportacionPedidosAviso } from './ShopifyIntegration';
+import ShopifyIntegration, { AvisosShopifyAviso, ImportacionPedidosAviso } from './ShopifyIntegration';
 import shopifyService from '../services/shopifyService';
 
 // La sesión real devuelve siempre el mismo usuario; uno nuevo por render
@@ -11,7 +11,7 @@ const sesion = { usuario: { id: 1 }, cargando: false };
 vi.mock('../hooks/useSesion', () => ({ default: () => sesion }));
 vi.mock('react-hot-toast', () => ({ default: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('../services/shopifyService', () => ({
-  default: { getStatus: vi.fn(), syncPedidos: vi.fn(), listPedidos: vi.fn(async () => ({ pedidos: [] })), listClientes: vi.fn(async () => ({ clientes: [] })), listLogs: vi.fn(async () => ({ logs: [] })) },
+  default: { getStatus: vi.fn(), syncPedidos: vi.fn(), reintentarAvisos: vi.fn(async () => ({ reintentados: 1 })), listPedidos: vi.fn(async () => ({ pedidos: [] })), listClientes: vi.fn(async () => ({ clientes: [] })), listLogs: vi.fn(async () => ({ logs: [] })) },
 }));
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.useRealTimers(); });
@@ -72,5 +72,34 @@ describe('ShopifyIntegration: avance de la importación', () => {
     render(<MemoryRouter><ShopifyIntegration /></MemoryRouter>);
     const boton = await screen.findByRole('button', { name: /Pedidos y ventas/ });
     expect(boton.disabled).toBe(true);
+  });
+});
+
+describe('AvisosShopifyAviso: cambios que Gesicom manda a Shopify', () => {
+  it('sin nada pendiente ni con error no muestra nada', () => {
+    const { container } = render(<AvisosShopifyAviso avisos={{ pendientes: 0, errores: 0 }} />);
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('mientras manda, lo dice en una línea', () => {
+    render(<AvisosShopifyAviso avisos={{ pendientes: 3, errores: 0 }} />);
+    expect(screen.getByText('Mandando 3 cambios de pedidos a Shopify…')).toBeTruthy();
+  });
+
+  it('si falta un permiso, explica qué hacer y deja reintentar', () => {
+    const onReintentar = vi.fn();
+    render(<AvisosShopifyAviso avisos={{ pendientes: 0, errores: 1, ultimo_error: 'Falta un permiso en la app de Shopify: Access denied' }} onReintentar={onReintentar} />);
+    expect(screen.getByText('1 cambio no llegó a Shopify')).toBeTruthy();
+    expect(screen.getByText(/le falta un permiso/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(onReintentar).toHaveBeenCalledTimes(1);
+  });
+
+  it('en la pantalla, Reintentar llama al servidor para esa tienda', async () => {
+    shopifyService.getStatus.mockResolvedValue({ tiendas: [{ id: 7, shop_domain: 't.myshopify.com', estado: 'conectado', currency: 'PYG', avisos_a_shopify: { pendientes: 0, errores: 2, ultimo_error: 'Shopify API 503' } }], logs: [] });
+    render(<MemoryRouter><ShopifyIntegration /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
+    await act(async () => {});
+    expect(shopifyService.reintentarAvisos).toHaveBeenCalledWith(7);
   });
 });
