@@ -47,8 +47,13 @@ const shopifyService = {
     return data;
   },
 
-  updateCotizacion: async ({ shopifyTiendaId, cotizacion_pyg }) => {
-    const { data } = await API.put('/shopify/cotizacion', { shopifyTiendaId, cotizacion_pyg });
+  updateCotizacion: async ({ shopifyTiendaId, ...cambios }) => {
+    const { data } = await API.put('/shopify/cotizacion', { shopifyTiendaId, ...cambios });
+    return data;
+  },
+
+  actualizarCotizacion: async (shopifyTiendaId) => {
+    const { data } = await API.post('/shopify/cotizacion/actualizar', { shopifyTiendaId });
     return data;
   },
 

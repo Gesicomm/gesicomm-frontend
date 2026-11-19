@@ -2,7 +2,7 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import ShopifyIntegration, { AvisosShopifyAviso, ImportacionPedidosAviso } from './ShopifyIntegration';
+import ShopifyIntegration, { AvisosShopifyAviso, CotizacionTienda, ImportacionPedidosAviso } from './ShopifyIntegration';
 import shopifyService from '../services/shopifyService';
 
 // La sesión real devuelve siempre el mismo usuario; uno nuevo por render
@@ -101,5 +101,45 @@ describe('AvisosShopifyAviso: cambios que Gesicom manda a Shopify', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
     await act(async () => {});
     expect(shopifyService.reintentarAvisos).toHaveBeenCalledWith(7);
+  });
+});
+
+describe('CotizacionTienda', () => {
+  const tienda = (c) => ({ id: 7, cotizacion: { moneda_origen: 'USD', moneda_destino: 'PYG', modo: 'auto', misma_moneda: false, vigente: 7843, automatica: 7843, automatica_at: '2026-11-19T15:00:00Z', manual: 7800, usando_manual_por_falta: false, ...c } });
+
+  it('automática: muestra la vigente, de cuándo es y la fuente', () => {
+    render(<CotizacionTienda tienda={tienda()} onGuardar={() => {}} onActualizar={() => {}} />);
+    expect(screen.getByText(/1 USD =/).textContent).toMatch(/7\.843 PYG · automática, del/);
+    expect(screen.getByRole('radio', { name: 'Automática' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('link', { name: 'ExchangeRate-API' })).toBeTruthy();
+  });
+
+  it('sin automática tomada avisa que usa la manual', () => {
+    render(<CotizacionTienda tienda={tienda({ vigente: 7800, automatica: null, automatica_at: null, usando_manual_por_falta: true })} onGuardar={() => {}} />);
+    expect(screen.getByText(/mientras tanto se usa la manual/)).toBeTruthy();
+  });
+
+  it('pasar a manual y guardar un valor', () => {
+    const onGuardar = vi.fn();
+    const { rerender } = render(<CotizacionTienda tienda={tienda()} onGuardar={onGuardar} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Manual' }));
+    expect(onGuardar).toHaveBeenCalledWith({ cotizacion_modo: 'manual' });
+    rerender(<CotizacionTienda tienda={tienda({ modo: 'manual', vigente: 7800 })} onGuardar={onGuardar} />);
+    fireEvent.change(screen.getByLabelText('1 USD ='), { target: { value: '7900' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(onGuardar).toHaveBeenLastCalledWith({ cotizacion_pyg: 7900 });
+  });
+
+  it('cambiar la moneda nacional', () => {
+    const onGuardar = vi.fn();
+    render(<CotizacionTienda tienda={tienda()} onGuardar={onGuardar} />);
+    fireEvent.change(screen.getByLabelText(/Moneda nacional/), { target: { value: 'ARS' } });
+    expect(onGuardar).toHaveBeenCalledWith({ moneda_destino: 'ARS' });
+  });
+
+  it('misma moneda: no ofrece cotización', () => {
+    render(<CotizacionTienda tienda={tienda({ moneda_origen: 'PYG', misma_moneda: true })} onGuardar={() => {}} />);
+    expect(screen.getByText(/no hace falta convertir/)).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: 'Manual' })).toBeNull();
   });
 });

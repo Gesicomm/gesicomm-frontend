@@ -160,6 +160,127 @@ export function AvisosShopifyAviso({ avisos, onReintentar, deshabilitado }) {
   );
 }
 
+const MONEDAS_NACIONALES = [
+  { codigo: 'PYG', nombre: 'Guaraní (Paraguay)' },
+  { codigo: 'ARS', nombre: 'Peso argentino' },
+  { codigo: 'BOB', nombre: 'Boliviano' },
+  { codigo: 'BRL', nombre: 'Real (Brasil)' },
+  { codigo: 'CLP', nombre: 'Peso chileno' },
+  { codigo: 'COP', nombre: 'Peso colombiano' },
+  { codigo: 'MXN', nombre: 'Peso mexicano' },
+  { codigo: 'PEN', nombre: 'Sol (Perú)' },
+  { codigo: 'UYU', nombre: 'Peso uruguayo' },
+  { codigo: 'USD', nombre: 'Dólar estadounidense' },
+  { codigo: 'EUR', nombre: 'Euro' },
+];
+
+const formatearCotizacion = (n) => new Intl.NumberFormat('es-PY', { maximumFractionDigits: 4 }).format(Number(n) || 0);
+
+/**
+ * Cotización de la tienda: automática (la toma el servidor cada 6 horas) o
+ * manual, y la moneda nacional a la que se convierte. Con la cotización del
+ * día se convierten los pedidos y los precios que cambian; los precios que ya
+ * están en moneda nacional no se mueven solos.
+ */
+export function CotizacionTienda({ tienda, onGuardar, onActualizar, deshabilitado }) {
+  const c = tienda?.cotizacion;
+  const [manual, setManual] = useState(c?.manual ? String(c.manual) : '');
+  useEffect(() => { setManual(c?.manual ? String(c.manual) : ''); }, [c?.manual]);
+  if (!c) return null;
+
+  const etiquetaGrupo = { fontSize: '14px', color: 'var(--color-fg-muted)', fontWeight: 500 };
+  const boton = (activo) => ({
+    ...secondaryBtnStyle,
+    padding: '0.45rem 0.85rem',
+    background: activo ? 'color-mix(in srgb, var(--color-primary) 16%, transparent)' : 'transparent',
+    borderColor: activo ? 'var(--color-primary)' : 'color-mix(in srgb, var(--color-fg) 16%, transparent)',
+  });
+  const tomada = c.automatica_at ? new Date(c.automatica_at).toLocaleString('es-PY', { dateStyle: 'short', timeStyle: 'short' }) : null;
+
+  return (
+    <section aria-label="Cotización" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.9rem 1rem', borderRadius: '10px', background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-fg)' }}>Cotización</span>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', ...etiquetaGrupo }}>
+          Moneda nacional
+          <select
+            value={c.moneda_destino}
+            disabled={deshabilitado}
+            onChange={(e) => onGuardar({ moneda_destino: e.target.value })}
+            style={{ ...inputStyle, width: 'auto', padding: '0.4rem 0.6rem', fontSize: '15px' }}
+          >
+            {MONEDAS_NACIONALES.map((m) => <option key={m.codigo} value={m.codigo}>{m.nombre}</option>)}
+          </select>
+        </label>
+      </div>
+
+      {c.misma_moneda ? (
+        <p style={{ margin: 0, fontSize: '16px', color: 'var(--color-fg)' }}>
+          La tienda de Shopify ya está en {c.moneda_destino}: no hace falta convertir.
+        </p>
+      ) : (
+        <>
+          <p style={{ margin: 0, fontSize: '16px', color: 'var(--color-fg)' }}>
+            1 {c.moneda_origen} = <strong>{formatearCotizacion(c.vigente)} {c.moneda_destino}</strong>
+            {c.modo === 'manual' && ' · cargada a mano'}
+            {c.modo === 'auto' && !c.usando_manual_por_falta && tomada && ` · automática, del ${tomada}`}
+          </p>
+          {c.usando_manual_por_falta && (
+            <p style={{ margin: 0, fontSize: '14px', color: '#b45309' }}>
+              Todavía no se pudo tomar la cotización automática: mientras tanto se usa la manual.
+            </p>
+          )}
+
+          <div role="radiogroup" aria-label="Cómo se calcula la cotización" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button type="button" role="radio" aria-checked={c.modo === 'auto'} disabled={deshabilitado} onClick={() => c.modo !== 'auto' && onGuardar({ cotizacion_modo: 'auto' })} style={boton(c.modo === 'auto')}>
+              Automática
+            </button>
+            <button type="button" role="radio" aria-checked={c.modo === 'manual'} disabled={deshabilitado} onClick={() => c.modo !== 'manual' && onGuardar({ cotizacion_modo: 'manual' })} style={boton(c.modo === 'manual')}>
+              Manual
+            </button>
+          </div>
+
+          {c.modo === 'auto' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button type="button" onClick={onActualizar} disabled={deshabilitado} style={{ ...secondaryBtnStyle, padding: '0.45rem 0.85rem' }}>
+                <RefreshCw size={14} aria-hidden="true" />
+                Actualizar ahora
+              </button>
+              <span style={{ fontSize: '14px', color: 'var(--color-fg-muted)' }}>
+                Se actualiza sola cada 6 horas. Fuente:{' '}
+                <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>ExchangeRate-API</a>.
+              </span>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => { e.preventDefault(); onGuardar({ cotizacion_pyg: Math.round(Number(manual)) }); }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}
+            >
+              <label htmlFor={`cotizacion-manual-${tienda.id}`} style={etiquetaGrupo}>1 {c.moneda_origen} =</label>
+              <input
+                id={`cotizacion-manual-${tienda.id}`}
+                type="number"
+                min="1"
+                inputMode="numeric"
+                value={manual}
+                onChange={(e) => setManual(e.target.value)}
+                style={{ ...inputStyle, width: '140px', padding: '0.45rem 0.7rem' }}
+              />
+              <span style={etiquetaGrupo}>{c.moneda_destino}</span>
+              <button type="submit" disabled={deshabilitado || !(Number(manual) >= 1)} style={{ ...secondaryBtnStyle, padding: '0.45rem 0.85rem' }}>
+                Guardar
+              </button>
+            </form>
+          )}
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-fg-muted)' }}>
+            Se usa para convertir los pedidos y los precios que cambian. Los precios que ya están en {c.moneda_destino} no se mueven solos cuando cambia la cotización.
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
 export default function ShopifyIntegration({ embeddedInSettings = false } = {}) {
   const { usuario, cargando: cargandoSesion } = useSesion();
   const [searchParams] = useSearchParams();
@@ -188,7 +309,6 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
 
   const [filtroTipo, setFiltroTipo] = useState('');
   const [logs, setLogs] = useState([]);
-  const [cotizacionEdit, setCotizacionEdit] = useState('');
 
   const formatGsVal = (val) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(Number(val) || 0))}`;
 
@@ -281,7 +401,6 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
   useEffect(() => {
     if (!tiendaActiva) return;
     setMostrarGuia(false);
-    setCotizacionEdit(String(tiendaActiva.cotizacion_pyg || 7800));
     if (activeTab === 'pedidos') {
       cargarPedidosShopify(tiendaActiva.id);
     } else if (activeTab === 'clientes') {
@@ -289,16 +408,29 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
     }
   }, [tiendaActiva?.id, activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleGuardarCotizacion = async (shopifyTiendaId) => {
-    const val = Math.max(1, Math.round(Number(cotizacionEdit) || 7800));
+  const guardarCotizacion = async (shopifyTiendaId, cambios) => {
     setSyncingAction(`cotiz-${shopifyTiendaId}`);
     try {
-      await shopifyService.updateCotizacion({ shopifyTiendaId, cotizacion_pyg: val });
-      toast.success(`Cotización actualizada a ${formatGsVal(val)}.`);
+      await shopifyService.updateCotizacion({ shopifyTiendaId, ...cambios });
+      toast.success('Cotización guardada.');
       await cargarEstado();
       if (activeTab === 'clientes') cargarClientesShopify(shopifyTiendaId, clienteQuery);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'No se pudo actualizar la cotización.');
+      toast.error(err?.response?.data?.message || 'No se pudo guardar la cotización.');
+    } finally {
+      setSyncingAction('');
+    }
+  };
+
+  const actualizarCotizacionAhora = async (shopifyTiendaId) => {
+    setSyncingAction(`cotiz-${shopifyTiendaId}`);
+    try {
+      const res = await shopifyService.actualizarCotizacion(shopifyTiendaId);
+      const c = res?.cotizacion;
+      toast.success(c ? `Cotización actualizada: 1 ${c.moneda_origen} = ${formatearCotizacion(c.vigente)} ${c.moneda_destino}.` : 'Cotización actualizada.');
+      await cargarEstado();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'No se pudo consultar la cotización.');
     } finally {
       setSyncingAction('');
     }
@@ -842,28 +974,12 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                 </button>
               </div>
 
-              {tienda.currency && String(tienda.currency).toUpperCase() !== 'PYG' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', padding: '0.65rem 0.9rem', borderRadius: '10px', background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)' }}>
-                  <span style={{ fontSize: '13.5px', color: 'var(--color-fg-muted)' }}>
-                    Conversión a Guaraníes (1 {tienda.currency} = Gs.):
-                  </span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={cotizacionEdit}
-                    onChange={(e) => setCotizacionEdit(e.target.value)}
-                    style={{ ...inputStyle, width: '110px', padding: '0.35rem 0.6rem', fontSize: '14px' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleGuardarCotizacion(tienda.id)}
-                    disabled={Boolean(syncingAction)}
-                    style={{ ...secondaryBtnStyle, padding: '0.38rem 0.75rem', fontSize: '13px' }}
-                  >
-                    Guardar cotización
-                  </button>
-                </div>
-              )}
+              <CotizacionTienda
+                tienda={tienda}
+                deshabilitado={Boolean(syncingAction)}
+                onGuardar={(cambios) => guardarCotizacion(tienda.id, cambios)}
+                onActualizar={() => actualizarCotizacionAhora(tienda.id)}
+              />
 
               <AvisosShopifyAviso
                 avisos={tienda.avisos_a_shopify}
