@@ -652,7 +652,7 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
                 <button
                   type="button"
                   className="spb-button"
-                  disabled={disabled || !selectedOrder || !productionConnection?.activo}
+                  disabled={disabled || !selectedOrder || (!productionConnection?.activo && !sandboxConnection?.activo)}
                   onClick={async () => {
                     if (await run('send', () => speedboxService.enviar(Number(selectedOrder)), 'Pedido enviado.')) {
                       setSelectedOrder('');
@@ -717,6 +717,7 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
               >
                 <option value="">Todos los estados RAHA</option>
                 <option value="pendiente_confirmacion">Pendiente confirmación</option>
+                <option value="cargado">Cargado</option>
                 <option value="en_camino">En camino</option>
                 <option value="entregado">Entregado</option>
                 <option value="devuelto">Devuelto</option>
