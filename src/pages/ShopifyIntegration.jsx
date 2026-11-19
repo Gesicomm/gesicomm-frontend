@@ -56,6 +56,67 @@ const secondaryBtnStyle = {
   cursor: 'pointer',
 };
 
+const formatearNumero = (n) => new Intl.NumberFormat('es-PY').format(Math.round(Number(n) || 0));
+
+/**
+ * Avance de la importación del historial de pedidos. La importación corre en
+ * segundo plano en el servidor; esto solo lee el estado que devuelve /status.
+ */
+export function ImportacionPedidosAviso({ importacion, onContinuar, deshabilitado }) {
+  if (!importacion) return null;
+  const { estado, procesados, total, errores, terminado_at: terminadoAt } = importacion;
+  const conTotal = Number.isFinite(Number(total)) && Number(total) > 0;
+  const porcentaje = conTotal ? Math.min(100, Math.round((procesados / Number(total)) * 100)) : null;
+  const enCurso = estado === 'en_curso';
+  const interrumpida = estado === 'interrumpido';
+  const conErrores = estado === 'error';
+
+  const tono = interrumpida || conErrores ? '#f59e0b' : enCurso ? 'var(--color-primary)' : '#10b981';
+  let titulo;
+  if (enCurso) titulo = 'Importando el historial de pedidos';
+  else if (interrumpida) titulo = 'La importación de pedidos se interrumpió';
+  else if (conErrores) titulo = 'Historial importado con pedidos pendientes de revisar';
+  else titulo = 'Historial de pedidos importado';
+
+  const avance = conTotal
+    ? `${formatearNumero(procesados)} de ${formatearNumero(total)} pedidos`
+    : `${formatearNumero(procesados)} pedidos`;
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', padding: '0.85rem 1rem', borderRadius: '10px', border: `1px solid color-mix(in srgb, ${tono} 35%, transparent)`, background: `color-mix(in srgb, ${tono} 8%, transparent)` }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-fg)', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+          {enCurso && <RefreshCw size={16} style={{ animation: 'spin 0.9s linear infinite' }} aria-hidden="true" />}
+          {titulo}
+        </span>
+        {interrumpida && (
+          <button type="button" onClick={onContinuar} disabled={deshabilitado} style={{ ...secondaryBtnStyle, padding: '0.45rem 0.85rem' }}>
+            Continuar importación
+          </button>
+        )}
+      </div>
+      <p style={{ margin: 0, fontSize: '16px', color: 'var(--color-fg)' }}>
+        {enCurso ? `${avance}${porcentaje !== null ? ` · ${porcentaje}%` : ''}` : avance}
+      </p>
+      {enCurso && porcentaje !== null && (
+        <div aria-hidden="true" style={{ height: '6px', borderRadius: '999px', background: 'color-mix(in srgb, var(--color-fg) 10%, transparent)', overflow: 'hidden' }}>
+          <div style={{ width: `${porcentaje}%`, height: '100%', background: tono, transition: 'width 0.4s ease' }} />
+        </div>
+      )}
+      <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-fg-muted)' }}>
+        {enCurso && 'Podés seguir usando Gesicom: los pedidos van apareciendo en Gestión Comercial y Logística a medida que entran.'}
+        {interrumpida && 'Sigue desde el último pedido que se importó, sin repetir los anteriores.'}
+        {conErrores && `${formatearNumero(errores)} pedido(s) no se pudieron importar. El detalle está en la pestaña Historial.`}
+        {estado === 'ok' && terminadoAt && `Terminó el ${new Date(terminadoAt).toLocaleString('es-PY', { dateStyle: 'short', timeStyle: 'short' })}`}
+      </p>
+    </div>
+  );
+}
+
 export default function ShopifyIntegration({ embeddedInSettings = false } = {}) {
   const { usuario, cargando: cargandoSesion } = useSesion();
   const [searchParams] = useSearchParams();
@@ -107,6 +168,23 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
       cargarEstado();
     }
   }, [usuario, cargarEstado]);
+
+  // Mientras alguna tienda está importando su historial, se relee el avance
+  // cada pocos segundos sin mostrar el estado de carga de la pantalla.
+  const hayImportacionEnCurso = (statusData?.tiendas || []).some((t) => t.importacion_pedidos?.estado === 'en_curso');
+  useEffect(() => {
+    if (!usuario || !hayImportacionEnCurso) return undefined;
+    const intervalo = setInterval(async () => {
+      try {
+        const data = await shopifyService.getStatus();
+        setStatusData(data);
+        setLogs(data.logs || []);
+      } catch {
+        // El próximo intento vuelve a probar; no se interrumpe al usuario.
+      }
+    }, 4000);
+    return () => clearInterval(intervalo);
+  }, [usuario, hayImportacionEnCurso]);
 
   useEffect(() => {
     if (!usuario || !shopParam || connectedParam !== '1') return;
@@ -263,8 +341,10 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
       const res = await fn(shopifyTiendaId);
       if (tipo === 'todo') {
         toast.success(
-          `Sincronización completa: ${res.productos?.procesados || 0} productos, ${res.stock?.actualizados || 0} stocks, ${res.clientes?.procesados || 0} clientes, ${res.pedidos?.procesados || 0} pedidos.`
+          `Sincronizados ${res.productos?.procesados || 0} productos, ${res.stock?.actualizados || 0} stocks y ${res.clientes?.procesados || 0} clientes. Los pedidos se están importando.`
         );
+      } else if (tipo === 'pedidos') {
+        toast.success('Importando el historial de pedidos. Podés seguir el avance en la tarjeta de la tienda.');
       } else {
         const count = res.procesados ?? res.actualizados ?? 0;
         toast.success(`Sincronización de ${tipo} completada (${count}).`);
@@ -729,6 +809,12 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                 </div>
               )}
 
+              <ImportacionPedidosAviso
+                importacion={tienda.importacion_pedidos}
+                deshabilitado={Boolean(syncingAction)}
+                onContinuar={() => ejecutarSync('pedidos', shopifyService.syncPedidos, tienda.id)}
+              />
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: '0.65rem' }}>
                 <button
                   type="button"
@@ -736,7 +822,7 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                   disabled={Boolean(syncingAction)}
                   style={{ ...secondaryBtnStyle, background: '#10b981', borderColor: '#10b981', color: '#ffffff', fontWeight: 600 }}
                 >
-                  <RefreshCw size={15} className={syncingAction === `todo-${tienda.id}` ? 'spin' : ''} />
+                  <RefreshCw size={15} style={syncingAction === `todo-${tienda.id}` ? { animation: 'spin 0.9s linear infinite' } : undefined} />
                   Sincronizar todo
                 </button>
                 <button
@@ -769,7 +855,7 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                 <button
                   type="button"
                   onClick={() => ejecutarSync('pedidos', shopifyService.syncPedidos, tienda.id)}
-                  disabled={Boolean(syncingAction)}
+                  disabled={Boolean(syncingAction) || tienda.importacion_pedidos?.estado === 'en_curso'}
                   style={secondaryBtnStyle}
                 >
                   <ShoppingCart size={15} />
@@ -953,8 +1039,8 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                           </td>
                           <td style={{ padding: '0.65rem 0.75rem 0.65rem 0', fontWeight: 600 }}>{log.tipo}</td>
                           <td style={{ padding: '0.65rem 0.75rem 0.65rem 0' }}>
-                            <span style={{ padding: '0.15rem 0.55rem', borderRadius: '999px', fontSize: '12px', fontWeight: 600, background: log.estado === 'ok' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(244, 63, 94, 0.14)', color: log.estado === 'ok' ? '#10b981' : '#f43f5e' }}>
-                              {log.estado}
+                            <span style={{ padding: '0.15rem 0.55rem', borderRadius: '999px', fontSize: '12px', fontWeight: 600, background: log.estado === 'ok' ? 'rgba(16, 185, 129, 0.14)' : log.estado === 'en_curso' ? 'color-mix(in srgb, var(--color-primary) 16%, transparent)' : log.estado === 'interrumpido' ? 'rgba(245, 158, 11, 0.16)' : 'rgba(244, 63, 94, 0.14)', color: log.estado === 'ok' ? '#10b981' : log.estado === 'en_curso' ? 'var(--color-primary-text, var(--color-primary))' : log.estado === 'interrumpido' ? '#b45309' : '#f43f5e' }}>
+                              {({ en_curso: 'en curso', interrumpido: 'interrumpido' })[log.estado] || log.estado}
                             </span>
                           </td>
                           <td style={{ padding: '0.65rem 0.75rem 0.65rem 0' }}>{log.cantidad}</td>
