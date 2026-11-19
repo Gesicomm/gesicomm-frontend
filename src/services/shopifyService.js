@@ -7,6 +7,11 @@ const shopifyService = {
     return data;
   },
 
+  connectWithCredentials: async ({ shop, clientId, clientSecret }) => {
+    const { data } = await API.post('/shopify/connect-credentials', { shop, clientId, clientSecret });
+    return data;
+  },
+
   connectWithToken: async ({ shop, accessToken }) => {
     const { data } = await API.post('/shopify/connect-token', { shop, accessToken });
     return data;
