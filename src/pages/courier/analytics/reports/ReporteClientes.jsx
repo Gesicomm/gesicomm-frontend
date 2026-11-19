@@ -12,6 +12,7 @@ const CALIFICACION = {
   bueno: { label: 'Bueno', icon: ThumbsUp, ayuda: 'Recibió su pedido y nunca devolvió sin motivo.' },
   problematico: { label: 'Problemático', icon: ShieldAlert, ayuda: 'Tiene al menos una devolución injustificada.' },
   sin_entregas: { label: 'Sin entregas aún', icon: Clock, ayuda: 'Todavía no recibió ningún pedido.' },
+  sin_historial: { label: 'Sin historial en Gesicom', icon: User, ayuda: 'Cliente de otra plataforma (Shopify) sin pedidos en Gesicom todavía: no se puede saber si recibió sus compras.' },
 };
 
 const SEGMENTOS = [
@@ -19,6 +20,7 @@ const SEGMENTOS = [
   { id: 'buenos', label: 'Buenos' },
   { id: 'problematicos', label: 'Problemáticos' },
   { id: 'sin_entregas', label: 'Sin entregas aún' },
+  { id: 'sin_historial', label: 'Sin historial en Gesicom' },
 ];
 
 const LIMITE = 25;

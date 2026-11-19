@@ -15,6 +15,7 @@ const CALIFICACION = {
   bueno: 'Bueno',
   problematico: 'Problemático',
   sin_entregas: 'Sin entregas aún',
+  sin_historial: 'Sin historial en Gesicom',
 };
 
 // Mismo criterio que la clave del reporte (+595): un 09… local se lleva a
