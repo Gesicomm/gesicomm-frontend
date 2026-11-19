@@ -68,7 +68,7 @@ describe('ficha v2: lo que la landing tocó manda, también vacío', () => {
   }, 20000);
 
   it('un botón sin texto vuelve a su respaldo: no hay botón de compra sin rótulo', () => {
-    expect(fichaCon({ v: 2, cta_texto: '' }).cta_texto).toBe('Comprar con pago anticipado');
+    expect(fichaCon({ v: 2, cta_texto: '' }).cta_texto).toBe('Comprar ahora');
   });
 
   it('en una ficha anterior a la v2, vacío sigue siendo "sin tocar"', () => {

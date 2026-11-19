@@ -58,6 +58,7 @@ function getItemKey(item) {
 }
 
 function costoSinCargar(item) {
+  if (item.tipo === 'combo') return item.costo_incompleto === true;
   return item.tipo === 'producto' && item.origen_catalogo === 'PROPIO' && item.precio_costo === null;
 }
 
@@ -440,7 +441,9 @@ export default function VitrinaGrid() {
   const [filtroProveedor, setFiltroProveedor] = useState('');
   const [busqueda, setBusqueda]   = useState('');
   const [busquedaAplicada, setBusquedaAplicada] = useState('');
-  const [orden, setOrden]         = useState('nombre');
+  const location = useLocation();
+  // Recién creado en Productos: arriba de todo para encontrarlo y marcarlo.
+  const [orden, setOrden]         = useState(() => (location.state?.seleccionar ? 'recientes' : 'nombre'));
   const [seleccionSensibilidad, setSeleccionSensibilidad] = useState(null);
   const [categoriasUnicas, setCategoriasUnicas] = useState([]);
   const [proveedoresUnicos, setProveedoresUnicos] = useState([]);
@@ -458,7 +461,6 @@ export default function VitrinaGrid() {
   const enOnboarding = searchParams.get('onboarding') === 'productos';
   // El filtro inicial llega por router state (ej. al guardar un producto),
   // nunca por la URL: el estado de la pantalla no va en query params.
-  const location = useLocation();
   const [filtro, setFiltro] = useState(() => location.state?.filtro === 'mios' ? 'mios' : 'todos');
   const esVistaLanding = filtro === 'landing';
   // Productos publicados en la tienda que se venden al costo o por debajo.
@@ -521,6 +523,21 @@ export default function VitrinaGrid() {
       return next;
     });
   };
+
+  // Un producto recién creado vuelve de /products/nuevo ya marcado: así
+  // "Publicar productos en la web" queda a un clic, sin buscarlo en la grilla.
+  // Viaja en el state del router, nunca en la URL.
+  const preseleccionPendiente = useRef(location.state?.seleccionar || null);
+  useEffect(() => {
+    const objetivo = preseleccionPendiente.current;
+    if (!objetivo || !items.length) return;
+    const item = items.find(i => i.tipo === objetivo.tipo && Number(i.id) === Number(objetivo.id));
+    if (!item) return;
+    preseleccionPendiente.current = null;
+    const key = getItemKey(item);
+    setSeleccionados(prev => new Set(prev).add(key));
+    setSeleccionadosData(prev => new Map(prev).set(key, item));
+  }, [items]);
 
   const limpiarSeleccion = useCallback(() => {
     setSeleccionados(new Set());

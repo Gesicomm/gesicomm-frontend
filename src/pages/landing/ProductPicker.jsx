@@ -367,6 +367,7 @@ export default function ProductPicker({
   onConfirmar,
   confirmando = false,
   errorConfirmacion = '',
+  origenInicial = 'todos',
 }) {
   const [modalInterno, setModalInterno] = useState(false);
   const modalAbierto = abierto ?? modalInterno;
@@ -380,7 +381,7 @@ export default function ProductPicker({
   const [errorCatalogoFresco, setErrorCatalogoFresco] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState('todos');
-  const [origen, setOrigen] = useState('todos');
+  const [origen, setOrigen] = useState(origenInicial);
   const [categoria, setCategoria] = useState('');
   const [marca, setMarca] = useState('');
   const [stock, setStock] = useState('todos');
@@ -560,7 +561,7 @@ export default function ProductPicker({
       ))}
 
       {modalAbierto && createPortal(
-        <div className={`lb-modal-overlay fixed inset-0 flex items-center justify-center bg-brand-ink/80 backdrop-blur-sm p-4 ${themeScopeClassName}`} style={{ zIndex: zIndexModal }}>
+        <div onClick={e => e.stopPropagation()} className={`lb-modal-overlay fixed inset-0 flex items-center justify-center bg-brand-ink/80 backdrop-blur-sm p-4 ${themeScopeClassName}`} style={{ zIndex: zIndexModal }}>
           <div role="dialog" aria-modal="true" aria-label={modalTitle} className="lb-modal-panel bg-surface-2 border border-fg/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             <div className="lb-modal-header flex items-center justify-between p-4 border-b border-fg/10 bg-fg/5">
               <h3 className="text-base font-semibold text-fg">{modalTitle}</h3>

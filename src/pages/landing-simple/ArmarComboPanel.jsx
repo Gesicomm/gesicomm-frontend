@@ -12,7 +12,7 @@ export function comboComoItemLanding(combo) {
     imagen: foto?.url || combo.producto_padre?.imagen || null,
     categoria: combo.producto_padre?.categoria || 'Combos',
     estado_venta: combo.estado === 'ACTIVO' ? 'EN_VENTA' : 'BORRADOR',
-    productos_incluidos: productos.map(p => p.nombre).join(', '),
+    productos_incluidos: productos.map(p => p.nombre),
     productos_combo: productos.map(p => ({ id: Number(p.id), nombre: p.nombre, imagen: p.imagen,
       slug: p.slug, precio: Number(p.precio_base), cantidad: 1 })),
   };

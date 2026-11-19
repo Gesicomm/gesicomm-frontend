@@ -696,7 +696,7 @@ export function runtimeGesicomm(plantillas) {
 
   function pintarTotal() {
     var destinos = document.querySelectorAll('[data-gesicomm-total]');
-    if (!destinos.length || !productoActual) return;
+    if (!productoActual) return;
     var input = document.querySelector('[data-gesicomm-cantidad-input]');
     var n = input && !hayPaquetes() ? parseInt(input.value, 10) : 1;
     var paquete = paqueteActual();
@@ -711,13 +711,14 @@ export function runtimeGesicomm(plantillas) {
     for (var i = 0; i < destinos.length; i++) {
       destinos[i].textContent = formatoPrecio(totalConDescuentoBoton(totalProducto, descuentoDeElemento(destinos[i])) + totalBumps);
     }
+    pintarTotalBotonesCheckout(totalProducto, totalBumps);
     // El texto del botón nombra TODO lo que se compra: "Comprar Pack x2 + 1
     // oferta". Antes decía solo el paquete y el total incluía además los
     // order bumps marcados, así que el precio de arriba (Gs 250.000) y el
     // del botón (Gs 370.000) no coincidían y no había forma de saber por qué.
     var ctas = document.querySelectorAll('[data-gesicomm-cta]');
     for (var j = 0; j < ctas.length; j++) {
-      var original = (productoActual && productoActual.cta_texto) || ctas[j].getAttribute('data-gesicomm-cta-original') || ctas[j].textContent || 'Comprar con pago anticipado';
+      var original = (productoActual && productoActual.cta_texto) || ctas[j].getAttribute('data-gesicomm-cta-original') || ctas[j].textContent || 'Comprar ahora';
       ctas[j].setAttribute('data-gesicomm-cta-original', original);
       var titulo = null;
       if (paquete) opcionesDePaquete().forEach(function (op) { if (String(op.id) === String(paquete.id)) titulo = op.titulo; });
@@ -726,6 +727,54 @@ export function runtimeGesicomm(plantillas) {
       ctas[j].textContent = texto;
     }
     pintarPrecioElegido();
+    pintarTotalBarraCompra(totalProducto + totalBumps, sumados > 0);
+  }
+
+  // La barra fija de compra (abajo, en el celular) muestra lo mismo que el
+  // botón: el total con los order bumps tildados. Con solo el precio del
+  // producto decía Gs 420.000 mientras el botón decía Gs 445.000.
+  function pintarTotalBarraCompra(total, conBumps) {
+    if (!(total > 0)) return;
+    var barras = document.querySelectorAll('.sticky-compra, [data-gesicomm-barra-compra]');
+    for (var i = 0; i < barras.length; i++) {
+      var precios = barras[i].querySelectorAll('[data-gesicomm-bind="precio"]');
+      for (var j = 0; j < precios.length; j++) {
+        precios[j].textContent = formatoPrecio(total);
+        precios[j].style.display = '';
+      }
+      // El tachado es el "antes" del producto: con bumps sumados ya no se
+      // compara con el total, así que se oculta mientras estén tildados.
+      var antes = barras[i].querySelectorAll('[data-gesicomm-bind="precio_antes"]');
+      for (var k = 0; k < antes.length; k++) {
+        antes[k].style.visibility = conBumps ? 'hidden' : '';
+      }
+    }
+  }
+
+  // Sin pago anticipado el botón principal (el que trae data-gesicomm-total)
+  // queda oculto, y marcar un order bump no cambiaba ningún precio a la vista.
+  // El botón que ocupa su lugar (el primero que cobra contra entrega, ver
+  // acomodarCompraSinAnticipado) muestra el mismo total en vivo:
+  // "Pago contra entrega · Gs 445.000". Los demás botones no cambian.
+  function pintarTotalBotonesCheckout(totalProducto, totalBumps) {
+    var principalOculto = !!document.querySelector('[data-gesicomm-boton-principal-pago][data-gesicomm-pago-bloqueado]')
+      || !document.querySelector('[data-gesicomm-boton-principal-pago]');
+    var reemplazo = document.querySelector('[data-gesicomm-pago-promovido]')
+      || document.querySelector('[data-gesicomm-accion-pago="checkout"]:not([data-gesicomm-pago-bloqueado])');
+    var botones = document.querySelectorAll('[data-gesicomm-accion-pago="checkout"]');
+    for (var i = 0; i < botones.length; i++) {
+      var marca = botones[i].querySelector('[data-gesicomm-total-pago]');
+      if (!principalOculto || botones[i] !== reemplazo || botones[i].querySelector('[data-gesicomm-total]') || !(totalProducto > 0)) {
+        if (marca) marca.parentNode.removeChild(marca);
+        continue;
+      }
+      if (!marca) {
+        marca = document.createElement('span');
+        marca.setAttribute('data-gesicomm-total-pago', '');
+        botones[i].appendChild(marca);
+      }
+      marca.textContent = ' · ' + formatoPrecio(totalConDescuentoBoton(totalProducto, descuentoDeElemento(botones[i])) + totalBumps);
+    }
   }
 
   function normalizarRating(valor, fallback) {
@@ -2035,7 +2084,12 @@ export function runtimeGesicomm(plantillas) {
       if (contenedor && el.parentNode === contenedor) contenedor.appendChild(el);
       // Los diseños libres pueden tener varios contenedores; conservá esa jerarquía.
     }
+    // La lista configurada es la del Inicio: en categoría, checkout o ficha
+    // un bloque propio de esa página (p. ej. agregado por MCP) no figura ahí
+    // y no por eso está "oculto". Fuera del Inicio solo vale el ocultar manual.
+    var enInicio = (datos.vista || 'inicio') === 'inicio';
     for (var tipo in mapa) {
+      if (!enInicio) break;
       if (tipo === 'encabezado') continue;
       if (Object.prototype.hasOwnProperty.call(mapa, tipo) && !configurados[tipo]) mapa[tipo].hidden = true;
     }
@@ -2494,7 +2548,7 @@ export function runtimeGesicomm(plantillas) {
     if (seccion.tipo === 'categoria') {
       base = visibles.filter(function (p) { return String(p.categoria || '') === String(seccion.categoria || ''); });
     } else if (seccion.tipo === 'ofertas') {
-      base = visibles.filter(function (p) { return Number(p.descuento_pct) > 0 || tieneEtiqueta(p, 'Oferta'); });
+      base = visibles.filter(function (p) { return tieneOfertaVisible(p) || tieneEtiqueta(p, 'Oferta'); });
     } else if (seccion.tipo === 'novedades') {
       var conEtiquetaNovedad = visibles.filter(function (p) { return tieneEtiqueta(p, 'Novedades'); });
       base = (conEtiquetaNovedad.length ? conEtiquetaNovedad : visibles.slice()).sort(function (a, b) {
@@ -3277,7 +3331,7 @@ export function runtimeGesicomm(plantillas) {
     var etiquetas = [];
     (lista || []).forEach(function (p) {
       etiquetasDe(p).forEach(function (t) { agregarEtiquetaUnica(etiquetas, t); });
-      if (Number(p.descuento_pct) > 0 || Number(p.precio_antes) > Number(p.precio)) agregarEtiquetaUnica(etiquetas, 'Oferta');
+      if (tieneOfertaVisible(p)) agregarEtiquetaUnica(etiquetas, 'Oferta');
     });
     var orden = { oferta: 0, novedades: 1, 'mas vendidos': 2 };
     return etiquetas.sort(function (a, b) {
@@ -3297,21 +3351,30 @@ export function runtimeGesicomm(plantillas) {
     return etiqueta;
   }
 
+  // "Oferta" para los filtros: descuento real en el precio, o una oferta que
+  // el cliente ve en la ficha (un paquete o un order bump). El upsell no
+  // cuenta: aparece recién en el carrito.
+  function tieneOfertaVisible(item) {
+    return Number(item.descuento_pct) > 0
+      || Number(item.precio_antes) > Number(item.precio)
+      || (Array.isArray(item.ofertas) && item.ofertas.some(function (o) { return o && (o.estrategia === 'normal' || o.estrategia === 'order_bump'); }));
+  }
+
   function productoPasaEtiqueta(item, etiqueta) {
     if (!etiqueta) return true;
-    if (normalizar(etiqueta) === 'oferta') return Number(item.descuento_pct) > 0 || Number(item.precio_antes) > Number(item.precio) || tieneEtiqueta(item, etiqueta);
+    if (normalizar(etiqueta) === 'oferta') return tieneOfertaVisible(item) || tieneEtiqueta(item, etiqueta);
     return tieneEtiqueta(item, etiqueta);
   }
 
   // Igual que productoPasaEtiqueta, pero sin el fallback por tag manual para
   // "Oferta": la pestaña "Ofertas" de la sección de productos del Inicio
-  // exige un descuento real (precio_antes > precio). El catálogo general y
+  // exige una oferta real (descuento, paquete u order bump). El catálogo general y
   // su filtro por etiqueta siguen aceptando el tag manual —
   // productoPasaEtiqueta no cambia ahí— porque ahí es una colección que el
   // comercio arma a propósito, no una promesa de "termina pronto".
   function productoPasaColeccionPc(item, etiqueta) {
     if (!etiqueta) return true;
-    if (normalizar(etiqueta) === 'oferta') return Number(item.descuento_pct) > 0 || Number(item.precio_antes) > Number(item.precio);
+    if (normalizar(etiqueta) === 'oferta') return tieneOfertaVisible(item);
     return tieneEtiqueta(item, etiqueta);
   }
 
@@ -5027,6 +5090,26 @@ export function runtimeGesicomm(plantillas) {
     if (ok) ok.style.display = '';
     form.reset();
   });
+
+  // Los botones flotantes del contenedor (carrito) viven fuera del iframe:
+  // su "right: 18px" se mide desde el borde de la ventana, mientras que el de
+  // WhatsApp (adentro) se mide desde el borde del contenido, sin la barra de
+  // desplazamiento. Avisamos cuánto ocupa esa barra para que el contenedor
+  // los ponga en la misma columna. En celulares la barra no ocupa lugar (0).
+  var anchoBarraAvisado = -1;
+  function avisarBarraScroll() {
+    var ancho = Math.max(0, Math.round(window.innerWidth - document.documentElement.clientWidth));
+    if (ancho === anchoBarraAvisado) return;
+    anchoBarraAvisado = ancho;
+    enviar({ tipo: 'gesicomm:barra-scroll', ancho: ancho });
+  }
+  avisarBarraScroll();
+  window.addEventListener('load', avisarBarraScroll);
+  window.addEventListener('resize', avisarBarraScroll);
+  // La barra aparece cuando el contenido crece (catálogo, ficha que se pinta).
+  if (typeof ResizeObserver === 'function' && document.body) {
+    try { new ResizeObserver(avisarBarraScroll).observe(document.body); } catch (e) { /* sin observer: alcanza con load/resize */ }
+  }
 
   var resizeFichaTimer = null;
   window.addEventListener('resize', function () {

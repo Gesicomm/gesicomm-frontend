@@ -179,8 +179,8 @@ describe('Alta de producto por secciones', () => {
   });
 
   it.each([
-    ['Order bump', 'order_bump', 'Precio del Producto que se Vende en la Oferta'],
-    ['Upsell', 'upsell', 'Precio del Producto que se Vende en la Oferta'],
+    ['Order bump', 'order_bump', 'Precio normal del producto'],
+    ['Upsell', 'upsell', 'Precio normal del producto'],
   ])('prepara %s con referencias correctas al producto nuevo y al complemento', async (tipo, estrategia, label) => {
     await montar();
     completarIdentidad(); completarPrecio();

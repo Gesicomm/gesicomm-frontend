@@ -1444,10 +1444,13 @@ button.lp-tier-card--imagen {
 .lp-cart-fab {
   position: fixed;
   bottom: 1.75rem;
-  right: 1.75rem;
+  /* Misma columna que el botón de WhatsApp de la tienda (right: 18px, 54px):
+     ese vive dentro del iframe y se corre lo que ocupe su barra de
+     desplazamiento, que avisa el runtime en --gc-barra-scroll-tienda. */
+  right: calc(18px + var(--gc-barra-scroll-tienda, 0px));
   z-index: 250;
-  width: 58px;
-  height: 58px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   background: var(--l-primary);
   color: var(--l-on-primary, #0b1211);
@@ -3048,9 +3051,12 @@ button.lp-tier-card--imagen {
   .lp-footer-links { align-items: center; }
 }
 
+@media (max-width: 780px) {
+  .lp-cart-fab { bottom: 5.75rem; right: calc(18px + var(--gc-barra-scroll-tienda, 0px)); width: 54px; height: 54px; }
+}
+
 @media (max-width: 480px) {
   .lp-cart-drawer { max-width: 100%; }
-  .lp-cart-fab { bottom: 1rem; right: 1rem; width: 52px; height: 52px; }
   .lp-modal-info { padding: 1.25rem; }
 }
 

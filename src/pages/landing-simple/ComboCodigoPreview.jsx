@@ -14,7 +14,7 @@ export function itemComboEnCurso({ combo, principal, upsells = [], precioTotal, 
     imagen: fotos[0] || principal?.imagen || null,
     imagenes: fotos.length ? fotos : productos.map(p => p.imagen).filter(Boolean),
     preguntas_frecuentes: faq,
-    productos_incluidos: productos.map(p => p.nombre).join(', '),
+    productos_incluidos: productos.map(p => p.nombre),
     productos_combo: productos.map(p => ({ id: Number(p.id), nombre: p.nombre, imagen: p.imagen,
       slug: p.slug, precio: Number(p.precio_base), cantidad: 1 })),
   };

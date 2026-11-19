@@ -1996,6 +1996,9 @@ section.limited-offer[data-gesicomm-flash-compacto] [data-gesicomm-flash-control
   text-decoration: none;
   transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
 }
+@media (max-width: 780px) {
+  :where(.gc-contact-float) { right: 18px; width: 54px; height: 54px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 144px); }
+}
 :where(.gc-contact-float:hover) {
   transform: translateY(-2px);
   filter: brightness(1.04);
@@ -3020,6 +3023,14 @@ main[data-gesicomm-base="catalogo"] .brand-badge {
 .bump:has(input[data-gesicomm-bump]):has(.bump-control) .bump-body {
   grid-template-columns: 28px 68px minmax(0, 1fr) !important;
 }
+/* Sin foto el runtime oculta la imagen (display: none): sin estas reglas el
+   texto caía en la columna de 68px de la foto y la tarjeta se veía aplastada. */
+.bump:has(input[data-gesicomm-bump]):has(.bump-img[style*="display: none"]) .bump-body {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+.bump:has(input[data-gesicomm-bump]):has(.bump-control):has(.bump-img[style*="display: none"]) .bump-body {
+  grid-template-columns: 28px minmax(0, 1fr) !important;
+}
 .bump:has(input[data-gesicomm-bump]) .bump-control {
   display: grid !important;
   place-items: center !important;
@@ -3134,6 +3145,9 @@ main[data-gesicomm-base="catalogo"] .brand-badge {
   grid-template-columns: 22px 48px minmax(0, 1fr) !important;
   gap: 8px !important;
   padding: 9px 10px 11px !important;
+}
+:where(main[data-gesicomm-base="checkout"], .lv-checkout-page) .lv-checkout-bumps .bump:has(input[data-gesicomm-bump]):has(.bump-img[style*="display: none"]) .bump-body {
+  grid-template-columns: 22px minmax(0, 1fr) !important;
 }
 :where(main[data-gesicomm-base="checkout"], .lv-checkout-page) .lv-checkout-bumps .bump:has(input[data-gesicomm-bump]) .bump-control {
   width: 22px !important;

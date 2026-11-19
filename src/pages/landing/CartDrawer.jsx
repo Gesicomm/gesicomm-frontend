@@ -40,7 +40,6 @@ function ofertaCheckoutPublicable(item, oferta) {
   const detalle = detalleOfertaCheckout(item, oferta);
   return Boolean(
     detalle.complementario
-    && detalle.imagen
     && detalle.precioFinal > 0
     && (detalle.precioNormal <= 0 || detalle.precioFinal <= detalle.precioNormal)
   );
@@ -1067,17 +1066,13 @@ export default function CartDrawer({
                     <h2>Esperá, tenemos una oferta para vos</h2>
                   </div>
 
-                  <div className="lp-upsell-grid">
-                    <figure className="lp-upsell-media">
-                      {detalle.imagen ? (
+                  {/* Imagen opcional: sin foto la oferta igual se muestra y el texto ocupa todo el ancho. */}
+                  <div className="lp-upsell-grid" style={detalle.imagen ? undefined : { gridTemplateColumns: 'minmax(0, 1fr)' }}>
+                    {detalle.imagen && (
+                      <figure className="lp-upsell-media">
                         <img src={getMediaUrl(detalle.imagen)} alt={detalle.complementario?.nombre || detalle.titulo} />
-                      ) : (
-                        <div className="lp-upsell-media-placeholder">
-                          <ImageOff size={26} />
-                          <span>Subí una imagen para esta oferta</span>
-                        </div>
-                      )}
-                    </figure>
+                      </figure>
+                    )}
 
                     <div className="lp-upsell-copy">
                       <h3 className="lp-upsell-title">{detalle.titulo}</h3>
@@ -1120,7 +1115,7 @@ export default function CartDrawer({
                         onClick={() => aceptarUpsell(item, oferta, componenteVarianteDe(oferta))}
                         disabled={enviando || !upsellCompleto}
                       >
-                        {upsellCompleto ? <><Plus size={18} /> Sí, agregar por {formatPrecio(detalle.precioFinal)}</> : 'Completá producto, imagen y precio'}
+                        {upsellCompleto ? <><Plus size={18} /> Sí, agregar por {formatPrecio(detalle.precioFinal)}</> : 'Completá producto y precio'}
                       </button>
                       <p className="lp-upsell-microcopy"><Check size={14} /> Se agregará con un solo clic, sin volver a completar tus datos.</p>
                     </div>

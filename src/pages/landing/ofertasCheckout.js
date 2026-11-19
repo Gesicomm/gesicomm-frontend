@@ -41,7 +41,6 @@ export function ofertaCheckoutPublicable(oferta) {
   const detalle = detalleOfertaCheckout(oferta);
   return Boolean(
     detalle.complementario
-    && detalle.imagen
     && detalle.precioFinal > 0
     && (detalle.precioNormal <= 0 || detalle.precioFinal <= detalle.precioNormal)
   );

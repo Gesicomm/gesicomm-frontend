@@ -84,6 +84,13 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
       const h = handlers.current;
       const tipo = e.data?.tipo;
       if (tipo === 'gesicomm:scroll' && preservarScrollRef.current && Number.isFinite(e.data.y)) scrollGuardado.current = Math.max(0, e.data.y);
+      // Ancho de la barra de desplazamiento del iframe: el carrito flotante
+      // (afuera) la suma a su margen para quedar en la misma columna que el
+      // botón de WhatsApp (adentro). Ver avisarBarraScroll en el runtime.
+      if (tipo === 'gesicomm:barra-scroll') {
+        const ancho = Math.min(40, Math.max(0, Number(e.data.ancho) || 0));
+        document.documentElement.style.setProperty('--gc-barra-scroll-tienda', `${ancho}px`);
+      }
       if (tipo === 'gesicomm:error-codigo') h.onError?.(e.data.mensaje);
       if (tipo === 'gesicomm:checkout') h.onCheckout?.(e.data);
       if (tipo === 'gesicomm:confirmar-checkout') h.onConfirmarCheckout?.(e.data);
@@ -139,7 +146,10 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, ty
       }
     }
     window.addEventListener('message', alMensaje);
-    return () => window.removeEventListener('message', alMensaje);
+    return () => {
+      window.removeEventListener('message', alMensaje);
+      document.documentElement.style.removeProperty('--gc-barra-scroll-tienda');
+    };
   }, []);
 
   return (

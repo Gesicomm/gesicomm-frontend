@@ -1781,7 +1781,8 @@ export default function ProductForm() {
           navigate(`/products/${nuevo.id}/editar`);
           return;
         }
-        navigate('/mi-catalogo', { state: { filtro: 'mios' } });
+        // Vuelve marcado en Mi catálogo: "Publicar productos en la web" lo suma a la tienda en un clic.
+        navigate('/mi-catalogo', { state: { filtro: 'mios', seleccionar: { tipo: 'producto', id: nuevo.id } } });
       }
     } catch (err) {
       if (productoCreadoId) {

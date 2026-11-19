@@ -129,7 +129,7 @@ describe('Vista producto: cada campo llega a la preview', () => {
     expect(within(contacto).queryByPlaceholderText('Mensaje opcional')).toBeNull();
     const f = ficha();
     // Sin pago anticipado, el primer botón de checkout sube a la fila de la cantidad.
-    expect(f.txt('.buy-row [data-gesicomm-pago-promovido]')).toBe('Pagar online -5%');
+    expect(f.txt('.buy-row [data-gesicomm-pago-promovido]')).toMatch(/^Pagar online -5% · Gs [0-9.]+$/);
     expect(f.lista('.contact-actions')).toEqual(['Hablar con ventas']);
   }, 15000);
 

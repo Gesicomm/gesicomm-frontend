@@ -253,7 +253,9 @@ function describirProducto(item, idx, principal) {
   const precio = formatearGs(item.precio_efectivo ?? item.precio_usuario ?? item.precio_base ?? item.precio);
   if (precio) lineas.push(`   Precio de referencia: ${precio} (no lo escribas en el HTML)`);
   if (item.descripcion) lineas.push(`   Descripción: ${String(item.descripcion).slice(0, 400)}`);
-  if (item.productos_incluidos?.length) lineas.push(`   Incluye: ${item.productos_incluidos.join(', ')}`);
+  // Array en el DTO; un combo recién armado lo trajo como texto y tiraba la pantalla.
+  const incluye = Array.isArray(item.productos_incluidos) ? item.productos_incluidos.join(', ') : String(item.productos_incluidos || '');
+  if (incluye) lineas.push(`   Incluye: ${incluye}`);
   // Lo cargado en Productos → Vista del producto: la IA escribe con esto, no inventa.
   if (item.propuesta_valor) lineas.push(`   Propuesta de valor: ${String(item.propuesta_valor).slice(0, 300)}`);
   const beneficios = (Array.isArray(item.beneficios) ? item.beneficios : []).map(b => b?.titulo).filter(Boolean);

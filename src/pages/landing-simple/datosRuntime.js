@@ -182,11 +182,13 @@ function normalizarOrdenMobileFicha(orden) {
   return [...limpio, ...FICHA_ORDEN_MOBILE_DEFAULT.filter(clave => !vistos.has(clave))];
 }
 
+const CTA_PAGO_ANTICIPADO_LEGADO = 'Comprar con pago anticipado';
+
 const PRESENTACION_PRODUCTO_DEFAULT = {
   resenas_texto: '',
   resenas_calificacion: 4.9,
   insignia_principal: '',
-  cta_texto: 'Comprar con pago anticipado',
+  cta_texto: 'Comprar ahora',
   cta_descuento_pct: '',
   agregar_carrito_texto: 'Agregar al carrito',
   beneficios_kicker: 'Por qué elegirlo',
@@ -403,9 +405,15 @@ export function presentacionComercial(item, venta) {
   // (el panel lo sigue mostrando, atenuado) para poder volver a mostrarlo.
   const ocultos = new Set(listaPropia('textos_ocultos') || []);
   const vacios = TEXTOS_FICHA_VACIABLES.filter(campo => ocultos.has(campo) || (propio(campo) && !String(fuente[campo]).trim()));
-  const texto = campo => {
+  const textoCrudo = campo => {
     if (propio(campo) && (TEXTOS_FICHA_VACIABLES.includes(campo) || String(fuente[campo]).trim())) return String(fuente[campo]).trim();
     return String(fuente[campo] || delProducto[campo] || PRESENTACION_PRODUCTO_DEFAULT[campo] || '').trim();
+  };
+  // El viejo texto por defecto quedó guardado en fichas de cuando había pago
+  // online; sin pago anticipado no se puede prometer (sale en Ofertas flash).
+  const texto = campo => {
+    const valor = textoCrudo(campo);
+    return campo === 'cta_texto' && valor === CTA_PAGO_ANTICIPADO_LEGADO ? PRESENTACION_PRODUCTO_DEFAULT.cta_texto : valor;
   };
   const lista = (campo) => listaPropia(campo)
     || [fuente[campo], delProducto[campo]].find(l => Array.isArray(l) && l.length) || PRESENTACION_PRODUCTO_DEFAULT[campo];

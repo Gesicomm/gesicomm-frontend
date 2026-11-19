@@ -172,7 +172,7 @@ function VistaPreviaOferta({ tipo, titulo, descripcion, imagenSrc, precioNormal,
   const descripcionSegura = descripcion?.trim() || (tipo === 'pack'
     ? 'El cliente ve este paquete como una opción dentro de la ficha del producto.'
     : tipo === 'upsell'
-      ? 'Se muestra antes de confirmar la compra, con una acción rápida para agregarlo.'
+      ? 'Aparece al pasar del carrito al checkout, con un botón para sumarlo al pedido.'
       : 'Aparece en el checkout como una casilla para agregarlo al pedido.');
 
   if (tipo === 'order_bump') {
@@ -890,19 +890,21 @@ export default function OfertasProductoTab({
               </div>
 
               <div className="combo-list-card-metrics">
-                {precioNormal !== null && (
+                {/* Mismas palabras en paquetes, bumps y upsells: "Precio normal"
+                    (tachado) y "Precio con la oferta" (lo que se cobra). */}
+                {precioNormal !== null && promoCheckout === null && (
                   <div className="combo-list-card-metric">
                     <span className="combo-list-card-metric-label">Precio normal</span>
                     <span className="combo-list-card-metric-value" style={{ textDecoration: 'line-through', opacity: 0.6 }}>{formatMoney(precioNormal)}</span>
                   </div>
                 )}
                 <div className="combo-list-card-metric">
-                  <span className="combo-list-card-metric-label">Precio aplicado</span>
-                  <span className="combo-list-card-metric-value">{formatMoney(precioOferta)}</span>
+                  <span className="combo-list-card-metric-label">{promoCheckout !== null ? 'Precio normal' : 'Precio con la oferta'}</span>
+                  <span className="combo-list-card-metric-value" style={promoCheckout !== null ? { textDecoration: 'line-through', opacity: 0.6 } : undefined}>{formatMoney(precioOferta)}</span>
                 </div>
                 {promoCheckout !== null && (
                   <div className="combo-list-card-metric">
-                    <span className="combo-list-card-metric-label">Promo en checkout</span>
+                    <span className="combo-list-card-metric-label">Precio con la oferta</span>
                     <span className="combo-list-card-metric-value" style={{ color: "var(--color-warning)" }}>{formatMoney(promoCheckout)}</span>
                   </div>
                 )}
@@ -1106,6 +1108,7 @@ export default function OfertasProductoTab({
                 onToggle={togglePicker}
                 max={esBumpOUpsell ? 1 : 20}
                 mostrarLista={false}
+                origenInicial="mios"
                 /* Por encima del modal de ofertas (.modal-overlay, z-index 1000). */
                 zIndexModal={1100}
               />
@@ -1206,7 +1209,7 @@ export default function OfertasProductoTab({
               <div className="oferta-paso-titulo">¿A qué precio?</div>
               <div className="form-grid-2">
               <div className="form-group">
-                <label>{esPack ? 'Precio del paquete' : esBumpOUpsell ? 'Precio del Producto que se Vende en la Oferta' : 'Precio del combo'}</label>
+                <label>{esPack ? 'Precio del paquete' : esBumpOUpsell ? 'Precio normal del producto' : 'Precio del combo'}</label>
                 <CurrencyInput value={form.precio} onChange={val => { precioManualRef.current = true; setForm(f => ({ ...f, precio: val })); }} />
                 {esPack && (
                   <p className="field-hint">
@@ -1261,7 +1264,7 @@ export default function OfertasProductoTab({
               <div className="oferta-paso-titulo">¿Cómo se ve?</div>
               <div className="form-grid-2">
               <div className="form-group full">
-                <label>{esPack ? 'Nombre del paquete' : form.estrategia === 'order_bump' ? 'Nombre Comercial' : 'Título de la oferta'}</label>
+                <label>{esPack ? 'Nombre del paquete' : 'Título de la oferta'}</label>
                 <input
                   value={form.nombre}
                   onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
@@ -1270,12 +1273,14 @@ export default function OfertasProductoTab({
                 />
                 {esBumpOUpsell && (
                   <small className="hint">
-                    Es la línea grande que ve el cliente. Funciona mejor en primera persona y con el beneficio: “Sí, sumá…”.
+                    {form.estrategia === 'upsell'
+                      ? 'Es la línea grande que ve el cliente en el carrito. Ej: “Sumá este complemento con descuento”.'
+                      : 'Es la línea grande que ve el cliente. Funciona mejor en primera persona y con el beneficio: “Sí, sumá…”.'}
                   </small>
                 )}
               </div>
               <div className="form-group full">
-                <label>Descripción Comercial<span className="hint">(opcional)</span></label>
+                <label>Descripción Comercial <span className="hint">(opcional)</span></label>
                 <input
                   value={form.descripcion}
                   onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}

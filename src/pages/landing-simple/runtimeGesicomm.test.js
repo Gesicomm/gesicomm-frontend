@@ -288,7 +288,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
       vista: 'catalogo',
       productos: [
         { ...airFryer, etiqueta: '' },
-        { ...remera, etiqueta: '', precio_antes: null, descuento_pct: 0 },
+        { ...remera, etiqueta: '', precio_antes: null, descuento_pct: 0, ofertas: [] },
       ],
     });
     const ids = () => [...document.querySelectorAll('#productos [data-gesicomm-item]')].map(el => el.getAttribute('data-gesicomm-item'));
@@ -1065,9 +1065,9 @@ describe('runtime del lienzo en blanco — inicio', () => {
     const { document, click } = montar(PLANTILLA_INICIO, {
       ...datos,
       productos: [
-        { ...airFryer, etiqueta: 'Novedades', precio_antes: null, descuento_pct: 0 },
-        { ...remera, etiqueta: 'Ofertas del día, Novedades', precio_antes: null, descuento_pct: 0 },
-        { ...airFryer, id: 'licuadora', nombre: 'Licuadora', etiqueta: '', precio_antes: null, descuento_pct: 0 },
+        { ...airFryer, etiqueta: 'Novedades', precio_antes: null, descuento_pct: 0, ofertas: [] },
+        { ...remera, etiqueta: 'Ofertas del día, Novedades', precio_antes: null, descuento_pct: 0, ofertas: [] },
+        { ...airFryer, id: 'licuadora', nombre: 'Licuadora', etiqueta: '', precio_antes: null, descuento_pct: 0, ofertas: [] },
       ],
       venta: { inicio: { productos_categoria: { activo: true, items: ['air-fryer-26l', 'remera', 'licuadora'], limite: 8 } } },
     });
@@ -1256,6 +1256,22 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect([...document.querySelector('main').children].map(n => n.getAttribute('data-gesicomm-bloque') || n.id)).toEqual(['vitrina', 'fijo', 'historia']);
     expect(document.querySelector('[data-gesicomm-bloque="historia"]').hidden).toBe(true);
     expect(document.querySelector('[data-gesicomm-bloque="vitrina"]').hidden).toBe(false);
+    dom.window.close();
+  });
+
+  it.each(['categoria', 'checkout', 'producto'])('bloques: en %s no oculta un bloque propio que no está en la lista del Inicio', vista => {
+    const codigo = { html: '<main><section data-gesicomm-bloque="banner_mcp">Banner propio</section><section data-gesicomm-bloque="anuncios">Anuncios</section></main>', css: '', js: '' };
+    const { document, dom } = montar(codigo, { ...datos, vista, venta: { inicio: { bloques: [{ tipo: 'anuncios', visible: false }] } } });
+    expect(document.querySelector('[data-gesicomm-bloque="banner_mcp"]').hidden).toBe(false);
+    // El ocultar manual del Inicio sigue valiendo para los globales heredados.
+    expect(document.querySelector('[data-gesicomm-bloque="anuncios"]').hidden).toBe(true);
+    dom.window.close();
+  });
+
+  it('bloques: en el Inicio sigue ocultando un bloque que no está en la lista', () => {
+    const codigo = { html: '<main><section data-gesicomm-bloque="vitrina">Vitrina</section><section data-gesicomm-bloque="suelto">Suelto</section></main>', css: '', js: '' };
+    const { document, dom } = montar(codigo, { ...datos, vista: 'inicio', venta: { inicio: { bloques: [{ tipo: 'vitrina', visible: true }] } } });
+    expect(document.querySelector('[data-gesicomm-bloque="suelto"]').hidden).toBe(true);
     dom.window.close();
   });
 
@@ -2302,6 +2318,42 @@ describe('runtime — order bump en la ficha', () => {
     fila.querySelector('[data-gesicomm-cantidad-input]').value = '3';
     contraEntrega.dispatchEvent(new fila.ownerDocument.defaultView.MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({ producto: 'air', cantidad: 3, payment_method: 'efectivo' });
+  });
+
+  it('sin pago anticipado, el contra entrega muestra el total y lo actualiza al tildar el bump', () => {
+    const vista = datosRuntimePreview({ productos: [{ id: 'air', tipo: 'producto', nombre: 'Air Fryer', slug: 'air', precio_efectivo: 250000, imagen: 'https://cdn.test/air.jpg' }], venta: {}, vista: 'producto', productoId: 'air' });
+    const conBump = { ...vista, producto: { ...vista.producto, ofertas: [bump] }, productos: [{ ...vista.producto, ofertas: [bump] }] };
+    const { window, document } = montar(PLANTILLA_PRODUCTO, conBump);
+    const contraEntrega = () => document.querySelector('.buy-row [data-gesicomm-pago-promovido]');
+    expect(contraEntrega().textContent).toMatch(/Pago contra entrega\s+· Gs 250\.000$/);
+    const casilla = document.querySelector('input[data-gesicomm-bump]');
+    casilla.checked = true;
+    casilla.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(contraEntrega().textContent).toMatch(/· Gs 313\.000$/);
+    // La barra fija de abajo dice lo mismo que el botón.
+    const barra = document.querySelector('.sticky-compra [data-gesicomm-bind="precio"]');
+    expect(barra).not.toBeNull();
+    expect(barra.textContent).toBe('Gs 313.000');
+    casilla.checked = false;
+    casilla.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(barra.textContent).toBe('Gs 250.000');
+    // Solo el botón que reemplaza al principal lleva el total.
+    expect(document.querySelectorAll('[data-gesicomm-total-pago]')).toHaveLength(1);
+  });
+});
+
+describe('filtro "Ofertas" con ofertas de la ficha', () => {
+  it('cuenta un producto con paquete u order bump aunque su precio no tenga descuento; el upsell solo no', () => {
+    const { document } = montar(PLANTILLA_INICIO, {
+      vista: 'inicio', tienda: { nombre: 'Mi Tienda' }, producto: null, recomendados: [],
+      productos: [
+        { ...airFryer, etiqueta: '', precio_antes: null, descuento_pct: 0, ofertas: [{ id: 1, estrategia: 'normal' }] },
+        { ...remera, etiqueta: '', precio_antes: null, descuento_pct: 0, ofertas: [{ id: 2, estrategia: 'upsell' }] },
+      ],
+      venta: { inicio: { productos_categoria: { activo: true, items: ['air-fryer-26l', 'remera'], limite: 8 } } },
+    });
+    const tabs = [...document.querySelectorAll('[data-gesicomm-pc-tabs] button')].map(el => el.textContent);
+    expect(tabs).toContain('Ofertas');
   });
 });
 
