@@ -1851,8 +1851,23 @@ export default function MiDashboard() {
             utils/contabilidadPedido.js. Los renglones en cero no se muestran,
             salvo Producto y Envíos. */}
         <div className="md-rentabilidad-grid">
+          {/* Reembolsos: plata devuelta sin que el pedido cambie de estado
+              (hoy llega de Shopify). El backend ya la resta de las ventas
+              netas; acá solo se muestra la cuenta para que se entienda. */}
+          {Number(kpis.reembolsos_entregados) > 0 && (
+            <>
+              <div className="md-rent-item">
+                <span className="md-rent-label">Ventas brutas <Ayuda texto="Lo que vendiste de productos en los pedidos entregados, antes de restar lo que devolviste." /></span>
+                <span className="md-rent-valor">{gs(kpis.facturacion_bruta_entregada)}</span>
+              </div>
+              <div className="md-rent-item">
+                <span className="md-rent-label">− Reembolsos <Ayuda texto="Plata que le devolviste al cliente en pedidos entregados, sin que el pedido se devuelva. No es venta, así que se resta acá y en todo el dashboard." /></span>
+                <span className="md-rent-valor">{gs(kpis.reembolsos_entregados)}</span>
+              </div>
+            </>
+          )}
           <div className="md-rent-item md-rent-destacado">
-            <span className="md-rent-label">{METRIC_TERMS.ventasNetas} <Ayuda texto={METRIC_HELP.ventasNetas} /></span>
+            <span className="md-rent-label">{Number(kpis.reembolsos_entregados) > 0 ? '= ' : ''}{METRIC_TERMS.ventasNetas} <Ayuda texto={METRIC_HELP.ventasNetas} /></span>
             <span className="md-rent-valor">{gs(kpis.facturacion_entregada)}</span>
           </div>
           <div className="md-rent-item">

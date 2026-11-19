@@ -99,6 +99,20 @@ describe('MiDashboard: métricas que no se contradicen', () => {
     expect(screen.queryByRole('row', { name: /Silla/ })).not.toBeInTheDocument();
   });
 
+  it('con reembolsos muestra la cuenta: brutas − reembolsos = netas', async () => {
+    await montar(ventasSinEntregas({ facturacion_entregada: 400000, facturacion_bruta_entregada: 600000, reembolsos_entregados: 200000 }));
+    const fila = (texto) => screen.getByText(texto, { selector: '.md-rent-label' }).closest('.md-rent-item');
+    expect(within(fila('Ventas brutas')).getByText(/600\.000/)).toBeInTheDocument();
+    expect(within(fila('− Reembolsos')).getByText(/200\.000/)).toBeInTheDocument();
+    expect(screen.getByText(/^= Ventas netas/, { selector: '.md-rent-label' })).toBeInTheDocument();
+  });
+
+  it('sin reembolsos no agrega renglones', async () => {
+    await montar(ventasSinEntregas({ facturacion_entregada: 100000 }));
+    expect(screen.queryByText('Ventas brutas', { selector: '.md-rent-label' })).not.toBeInTheDocument();
+    expect(screen.queryByText('− Reembolsos', { selector: '.md-rent-label' })).not.toBeInTheDocument();
+  });
+
   it('muestra los leads por producto cargados en Gestión Comercial', async () => {
     const ventas = ventasSinEntregas();
     ventas.ranking_productos = [{ nombre: 'Silla', leads_registrados: 2, leads_confirmados: 1, leads_entregados: 1 }];
