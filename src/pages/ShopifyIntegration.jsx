@@ -222,8 +222,17 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
   const handleCopiarPermisos = async () => {
     if (permisosRequeridos.length === 0) return;
     try {
-      await navigator.clipboard.writeText(permisosRequeridos.join(', '));
+      await navigator.clipboard.writeText(permisosRequeridos.join(','));
       toast.success('Lista de permisos copiada al portapapeles.');
+    } catch {
+      toast.error('No se pudo copiar automáticamente.');
+    }
+  };
+
+  const handleCopiarAppUrl = async () => {
+    try {
+      await navigator.clipboard.writeText('https://www.gesicomm.com/configuracion?tab=integracion&proveedor=shopify');
+      toast.success('URL de la app copiada al portapapeles.');
     } catch {
       toast.error('No se pudo copiar automáticamente.');
     }
@@ -406,18 +415,26 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                 <strong style={{ color: 'var(--color-fg)' }}>Desarrollar apps en Dev Dashboard</strong>.
               </li>
               <li>
-                En el Dev Dashboard, andá a <strong style={{ color: 'var(--color-fg)' }}>Apps</strong> →{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>Crear app</strong> →{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>Crear app de forma manual</strong>, ponéle de nombre{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>Gesicom</strong>, hacé clic en{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>Crear app</strong> y luego en{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>Lanzar</strong>.
+                En el Dev Dashboard, andá a <strong style={{ color: 'var(--color-fg)' }}>Apps → Crear app → Crear app de forma manual</strong> y configurá todo en esa misma pantalla:
+                <div style={{ fontSize: '13.5px', color: 'var(--color-fg-subtle)', marginTop: '0.3rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <span>• <strong style={{ color: 'var(--color-fg)' }}>Nombre de la app:</strong> <code style={{ color: 'var(--color-fg)' }}>Gesicom</code></span>
+                  <span>
+                    • <strong style={{ color: 'var(--color-fg)' }}>URL de la app:</strong>{' '}
+                    <code style={{ color: 'var(--color-fg)' }}>https://www.gesicomm.com/configuracion?tab=integracion&amp;proveedor=shopify</code>{' '}
+                    <button
+                      type="button"
+                      onClick={handleCopiarAppUrl}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: 'transparent', border: 'none', padding: 0, color: '#10b981', fontSize: '13px', fontWeight: 600, cursor: 'pointer', marginLeft: '0.35rem' }}
+                    >
+                      <Copy size={13} /> Copiar URL
+                    </button>
+                  </span>
+                  <span>• <strong style={{ color: 'var(--color-fg)' }}>Desmarcá</strong> la casilla <strong style={{ color: 'var(--color-fg)' }}>Incrustar app en el panel de control de Shopify</strong>.</span>
+                </div>
               </li>
               <li>
-                Entrá a <strong style={{ color: 'var(--color-fg)' }}>Versiones → Crear versión</strong>, bajá hasta{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>Acceso a la API → Alcances</strong>, marcá estos permisos (podés usar{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>Seleccionar de la lista</strong>) y hacé clic en{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>Lanzar</strong>:
+                En esa misma pantalla, bajá hasta <strong style={{ color: 'var(--color-fg)' }}>Acceso a la API → Alcances</strong>, pegá estos permisos (con el botón de abajo), y hacé clic en{' '}
+                <strong style={{ color: 'var(--color-fg)' }}>Crear app → Lanzar</strong>:
                 <div style={{ marginTop: '0.65rem', padding: '0.9rem', borderRadius: '10px', background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)' }}>
                   {permisosRequeridos.length === 0 ? (
                     <span style={{ fontSize: '14px', color: 'var(--color-fg-subtle)' }}>Cargando permisos configurados...</span>
@@ -453,13 +470,17 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                 </div>
               </li>
               <li>
-                En <strong style={{ color: 'var(--color-fg)' }}>Panel general → Instalaciones</strong>, hacé clic en{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>App de prueba</strong>, elegí tu tienda y autorizá la instalación.
+                Después de <strong style={{ color: 'var(--color-fg)' }}>Lanzar</strong>, hacé clic en{' '}
+                <strong style={{ color: 'var(--color-fg)' }}>Panel general</strong> en el menú izquierdo, buscá la tarjeta{' '}
+                <strong style={{ color: 'var(--color-fg)' }}>Instalaciones → App de prueba</strong> (puede tardar unos segundos en cargar), elegí tu tienda y tocá <strong style={{ color: 'var(--color-fg)' }}>Instalar</strong>.
+                <div style={{ fontSize: '13.5px', color: 'var(--color-fg-subtle)', marginTop: '0.2rem' }}>
+                  Al instalar se abrirá Gesicom automáticamente con tu dominio ya cargado.
+                </div>
               </li>
               <li>
-                Entrá a <strong style={{ color: 'var(--color-fg)' }}>Configuración → Credenciales</strong> en el Dev Dashboard, copiá tu{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>ID de cliente</strong> y tu{' '}
-                <strong style={{ color: 'var(--color-fg)' }}>Secreto del cliente</strong> (haciendo clic en el ojo para revelarlo) y pegalos en el formulario de abajo.
+                Volvé a la pestaña del <strong style={{ color: 'var(--color-fg)' }}>Dev Dashboard → Configuración → Credenciales</strong>, copiá tu{' '}
+                <strong style={{ color: 'var(--color-fg)' }}>ID de cliente</strong> y revelá/copiá tu{' '}
+                <strong style={{ color: 'var(--color-fg)' }}>Secreto del cliente</strong> (ícono del ojo) para pegarlos abajo.
               </li>
             </ol>
           </div>
