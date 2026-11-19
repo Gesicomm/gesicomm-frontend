@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { User, Users, Star, ShieldAlert, ThumbsUp, Clock } from 'lucide-react';
+import { User, Users, Star, ShieldAlert, ThumbsUp, Clock, Download, ChevronDown } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
 import { formatGs } from '../../../../lib/courier';
+import { exportarClientesCsv } from './exportarClientes';
 
 // Calificación por historial completo del cliente en la tienda (backend:
 // ReporteService._calificarCliente). La devolución injustificada se carga
@@ -33,6 +34,9 @@ export function ReporteClientes({ filters, modo = 'periodo', onAbrirCliente = nu
   const [paginas, setPaginas] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [menuExportar, setMenuExportar] = useState(false);
+  const [exportando, setExportando] = useState(false);
+  const [avisoExport, setAvisoExport] = useState('');
 
   useEffect(() => { setPagina(1); }, [filters, segmento]);
 
@@ -58,6 +62,32 @@ export function ReporteClientes({ filters, modo = 'periodo', onAbrirCliente = nu
   }, [filters, segmento, pagina]);
 
   const formatDate = (ymd) => (ymd ? String(ymd).slice(0, 10).split('-').reverse().join('/') : '—');
+
+  async function manejarExportar(alcance) {
+    setMenuExportar(false);
+    setAvisoExport('');
+    setExportando(true);
+    try {
+      const cantidad = await exportarClientesCsv(
+        { ...filters, calificacion: segmento === 'todos' ? undefined : segmento },
+        alcance,
+      );
+      if (cantidad === 0) {
+        setAvisoExport(
+          alcance === 'promociones'
+            ? 'No hay clientes con correo que hayan aceptado promociones con estos filtros.'
+            : alcance === 'con_correo'
+              ? 'No hay clientes con correo cargado con estos filtros.'
+              : 'No hay clientes para exportar con estos filtros.',
+        );
+      }
+    } catch (err) {
+      console.error('Error al exportar clientes:', err);
+      setAvisoExport('No se pudo generar el archivo CSV. Intentá de nuevo.');
+    } finally {
+      setExportando(false);
+    }
+  }
 
   const tarjetas = [
     { label: 'Clientes con pedido', valor: kpis.clientes_con_pedido ?? 0, sub: historial ? 'Hicieron al menos un pedido' : 'Hicieron al menos un pedido en el período', icon: User },
@@ -94,26 +124,66 @@ export function ReporteClientes({ filters, modo = 'periodo', onAbrirCliente = nu
             <h3 className="cic-card-title">Historial por cliente</h3>
             <p className="cic-card-subtitle">Las devoluciones justificadas no cuentan en contra del cliente.</p>
           </div>
-          <div className="cic-segmented" role="group" aria-label="Tipo de cliente">
-            {SEGMENTOS.map(s => (
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="cic-segmented" role="group" aria-label="Tipo de cliente">
+              {SEGMENTOS.map(s => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`cic-preset-pill ${segmento === s.id ? 'active' : ''}`}
+                  aria-pressed={segmento === s.id}
+                  onClick={() => setSegmento(s.id)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <div className="cli-export-wrap">
               <button
-                key={s.id}
                 type="button"
-                className={`cic-preset-pill ${segmento === s.id ? 'active' : ''}`}
-                aria-pressed={segmento === s.id}
-                onClick={() => setSegmento(s.id)}
+                className="cic-btn"
+                disabled={exportando || loading}
+                aria-expanded={menuExportar}
+                aria-haspopup="menu"
+                onClick={() => setMenuExportar(o => !o)}
               >
-                {s.label}
+                <Download size={16} aria-hidden="true" />
+                {exportando ? 'Exportando…' : 'Exportar CSV'}
+                <ChevronDown size={16} aria-hidden="true" />
               </button>
-            ))}
+              {menuExportar && (
+                <>
+                  <div className="cli-export-backdrop" onClick={() => setMenuExportar(false)} />
+                  <div className="cli-export-menu" role="menu">
+                    <button type="button" role="menuitem" onClick={() => manejarExportar('promociones')}>
+                      <strong>Lista para email marketing</strong>
+                      <span>Solo con correo y que aceptan promociones</span>
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => manejarExportar('con_correo')}>
+                      <strong>Solo clientes con correo</strong>
+                      <span>Todos los que dejaron correo en el checkout</span>
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => manejarExportar('todos')}>
+                      <strong>Todos los clientes</strong>
+                      <span>Incluye clientes sin correo según los filtros actuales</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
+        {avisoExport && (
+          <p role="status" className="cli-export-aviso">{avisoExport}</p>
+        )}
 
         <div className="cic-table-wrapper">
           <table className="cic-table">
             <thead>
               <tr>
                 <th>Cliente</th>
+                <th>Correo</th>
+                <th>Origen</th>
                 <th>Calificación</th>
                 <th style={{ textAlign: 'center' }}>Pedidos</th>
                 <th style={{ textAlign: 'center' }}>Recibidos</th>
@@ -125,9 +195,9 @@ export function ReporteClientes({ filters, modo = 'periodo', onAbrirCliente = nu
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando clientes...</td></tr>
+                <tr><td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando clientes...</td></tr>
               ) : data.length === 0 ? (
-                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>
+                <tr><td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>
                   {filters?.buscador
                     ? `Ningún cliente coincide con "${filters.buscador}".`
                     : segmento === 'todos'
@@ -148,6 +218,63 @@ export function ReporteClientes({ filters, modo = 'periodo', onAbrirCliente = nu
                         <div style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{row.nombre}</div>
                       )}
                       <div style={{ fontSize: '0.875rem', color: 'var(--color-fg-muted)', whiteSpace: 'nowrap' }}>{row.telefono}</div>
+                    </td>
+                    <td style={{ minWidth: 190 }}>
+                      {row.email ? (
+                        <>
+                          <div style={{ fontSize: '0.875rem', color: 'var(--color-fg)', overflowWrap: 'anywhere' }}>{row.email}</div>
+                          {row.acepta_promociones === true && (
+                            <div style={{ fontSize: '0.8125rem', color: 'var(--color-success)' }}>Acepta promociones</div>
+                          )}
+                          {row.acepta_promociones === false && (
+                            <div style={{ fontSize: '0.8125rem', color: 'var(--color-fg-muted)' }}>No acepta promos</div>
+                          )}
+                        </>
+                      ) : (
+                        <span style={{ color: 'var(--color-fg-muted)' }}>—</span>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                        {(Array.isArray(row.origenes) && row.origenes.length > 0 ? row.origenes : [row.origen || 'Gesicom']).map((orig) => {
+                          const isShopify = String(orig).toLowerCase() === 'shopify';
+                          const isDropi = String(orig).toLowerCase() === 'dropi';
+                          const bg = isShopify
+                            ? 'rgba(16, 185, 129, 0.14)'
+                            : isDropi
+                              ? 'rgba(245, 158, 11, 0.14)'
+                              : 'color-mix(in srgb, var(--color-primary) 14%, transparent)';
+                          const fg = isShopify
+                            ? '#10b981'
+                            : isDropi
+                              ? '#f59e0b'
+                              : 'var(--color-primary-text, var(--color-fg))';
+                          const bd = isShopify
+                            ? 'rgba(16, 185, 129, 0.3)'
+                            : isDropi
+                              ? 'rgba(245, 158, 11, 0.3)'
+                              : 'color-mix(in srgb, var(--color-primary) 28%, transparent)';
+                          return (
+                            <span
+                              key={orig}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                padding: '0.18rem 0.6rem',
+                                borderRadius: '999px',
+                                fontSize: '0.78rem',
+                                fontWeight: 600,
+                                background: bg,
+                                color: fg,
+                                border: `1px solid ${bd}`,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {orig}
+                            </span>
+                          );
+                        })}
+                      </div>
                     </td>
                     <td>
                       <span className={`cic-calif cic-calif-${row.calificacion}`} title={c.ayuda}>

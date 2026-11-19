@@ -1,6 +1,6 @@
 import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Users, Search, X, Phone, MessageCircle, Loader } from 'lucide-react';
+import { Users, Search, X, Phone, MessageCircle, Mail, Loader } from 'lucide-react';
 import { ReporteClientes } from '../courier/analytics/reports/ReporteClientes';
 import { clientesService } from '../../services/clientesService';
 import { numeroPedidoVisible } from '../../lib/pedidoNumero';
@@ -59,21 +59,40 @@ function FichaCliente({ cliente, onCerrar }) {
         <header className="cli-ficha-cabecera">
           <div className="min-w-0">
             <h2>{cliente.nombre}</h2>
-            <p>{cliente.telefono} · {CALIFICACION[cliente.calificacion] || 'Sin calificación'}</p>
+            <p>
+              {cliente.telefono} · {CALIFICACION[cliente.calificacion] || 'Sin calificación'}
+              {cliente.origen ? ` · Origen: ${cliente.origen}` : ''}
+            </p>
+            {cliente.email && (
+              <p className="cli-ficha-correo">
+                {cliente.email}
+                {cliente.acepta_promociones === true && ' · Acepta promociones'}
+                {cliente.acepta_promociones === false && ' · No acepta promociones'}
+              </p>
+            )}
           </div>
           <button ref={cerrarRef} type="button" className="cli-ficha-cerrar" onClick={onCerrar} aria-label="Cerrar ficha">
             <X size={20} />
           </button>
         </header>
 
-        {wa && (
+        {(wa || cliente.email) && (
           <div className="cli-ficha-acciones">
-            <a className="btn-primary" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer">
-              <MessageCircle size={16} /> Escribir por WhatsApp
-            </a>
-            <a className="btn-secondary" href={`tel:+${wa}`}>
-              <Phone size={16} /> Llamar
-            </a>
+            {wa && (
+              <>
+                <a className="btn-primary" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer">
+                  <MessageCircle size={16} /> Escribir por WhatsApp
+                </a>
+                <a className="btn-secondary" href={`tel:+${wa}`}>
+                  <Phone size={16} /> Llamar
+                </a>
+              </>
+            )}
+            {cliente.email && (
+              <a className="btn-secondary" href={`mailto:${cliente.email}`}>
+                <Mail size={16} /> Enviar correo
+              </a>
+            )}
           </div>
         )}
 
@@ -158,8 +177,8 @@ export default function Clientes() {
           type="search"
           value={texto}
           onChange={e => setTexto(e.target.value)}
-          placeholder="Buscar por nombre o teléfono"
-          aria-label="Buscar cliente por nombre o teléfono"
+          placeholder="Buscar por nombre, teléfono o correo"
+          aria-label="Buscar cliente por nombre, teléfono o correo"
         />
       </label>
 

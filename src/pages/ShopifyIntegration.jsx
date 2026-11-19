@@ -84,6 +84,9 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
 
   const [filtroTipo, setFiltroTipo] = useState('');
   const [logs, setLogs] = useState([]);
+  const [cotizacionEdit, setCotizacionEdit] = useState('');
+
+  const formatGsVal = (val) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(Number(val) || 0))}`;
 
   const cargarEstado = useCallback(async () => {
     if (!usuario) return;
@@ -157,12 +160,28 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
   useEffect(() => {
     if (!tiendaActiva) return;
     setMostrarGuia(false);
+    setCotizacionEdit(String(tiendaActiva.cotizacion_pyg || 7800));
     if (activeTab === 'pedidos') {
       cargarPedidosShopify(tiendaActiva.id);
     } else if (activeTab === 'clientes') {
       cargarClientesShopify(tiendaActiva.id, clienteQuery);
     }
   }, [tiendaActiva?.id, activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleGuardarCotizacion = async (shopifyTiendaId) => {
+    const val = Math.max(1, Math.round(Number(cotizacionEdit) || 7800));
+    setSyncingAction(`cotiz-${shopifyTiendaId}`);
+    try {
+      await shopifyService.updateCotizacion({ shopifyTiendaId, cotizacion_pyg: val });
+      toast.success(`Cotización actualizada a ${formatGsVal(val)}.`);
+      await cargarEstado();
+      if (activeTab === 'clientes') cargarClientesShopify(shopifyTiendaId, clienteQuery);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'No se pudo actualizar la cotización.');
+    } finally {
+      setSyncingAction('');
+    }
+  };
 
   const handleConectar = async (e) => {
     e.preventDefault();
@@ -244,7 +263,7 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
       const res = await fn(shopifyTiendaId);
       if (tipo === 'todo') {
         toast.success(
-          `Sincronización completa: ${res.productos?.procesados || 0} productos, ${res.stock?.actualizados || 0} stocks, ${res.pedidos?.procesados || 0} pedidos.`
+          `Sincronización completa: ${res.productos?.procesados || 0} productos, ${res.stock?.actualizados || 0} stocks, ${res.clientes?.procesados || 0} clientes, ${res.pedidos?.procesados || 0} pedidos.`
         );
       } else {
         const count = res.procesados ?? res.actualizados ?? 0;
@@ -252,6 +271,7 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
       }
       await cargarEstado();
       if (activeTab === 'pedidos') cargarPedidosShopify(shopifyTiendaId);
+      if (activeTab === 'clientes') cargarClientesShopify(shopifyTiendaId, clienteQuery);
     } catch (err) {
       toast.error(err?.response?.data?.message || `Error al sincronizar ${tipo}.`);
     } finally {
@@ -686,7 +706,30 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.65rem' }}>
+              {tienda.currency && String(tienda.currency).toUpperCase() !== 'PYG' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', padding: '0.65rem 0.9rem', borderRadius: '10px', background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)' }}>
+                  <span style={{ fontSize: '13.5px', color: 'var(--color-fg-muted)' }}>
+                    Conversión a Guaraníes (1 {tienda.currency} = Gs.):
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={cotizacionEdit}
+                    onChange={(e) => setCotizacionEdit(e.target.value)}
+                    style={{ ...inputStyle, width: '110px', padding: '0.35rem 0.6rem', fontSize: '14px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleGuardarCotizacion(tienda.id)}
+                    disabled={Boolean(syncingAction)}
+                    style={{ ...secondaryBtnStyle, padding: '0.38rem 0.75rem', fontSize: '13px' }}
+                  >
+                    Guardar cotización
+                  </button>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: '0.65rem' }}>
                 <button
                   type="button"
                   onClick={() => ejecutarSync('todo', shopifyService.syncTodo, tienda.id)}
@@ -713,6 +756,15 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                 >
                   <Boxes size={15} />
                   Stock
+                </button>
+                <button
+                  type="button"
+                  onClick={() => ejecutarSync('clientes', shopifyService.syncClientes, tienda.id)}
+                  disabled={Boolean(syncingAction)}
+                  style={secondaryBtnStyle}
+                >
+                  <Users size={15} />
+                  Clientes
                 </button>
                 <button
                   type="button"
@@ -842,7 +894,14 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
                         <td style={{ padding: '0.65rem 0.75rem 0.65rem 0', color: 'var(--color-fg-muted)' }}>{c.phone || '—'}</td>
                         <td style={{ padding: '0.65rem 0.75rem 0.65rem 0', color: 'var(--color-fg-muted)' }}>{c.city || '—'}</td>
                         <td style={{ padding: '0.65rem 0.75rem 0.65rem 0' }}>{c.orders_count}</td>
-                        <td style={{ padding: '0.65rem 0', fontWeight: 600 }}>{c.total_spent} {c.currency}</td>
+                        <td style={{ padding: '0.65rem 0', fontWeight: 600 }}>
+                          {formatGsVal(c.total_spent_gs ?? 0)}
+                          {c.currency && String(c.currency).toUpperCase() !== 'PYG' && Number(c.total_spent) > 0 && (
+                            <span style={{ marginLeft: '0.4rem', fontSize: '12.5px', fontWeight: 400, color: 'var(--color-fg-muted)' }}>
+                              ({c.total_spent} {c.currency})
+                            </span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -854,7 +913,7 @@ export default function ShopifyIntegration({ embeddedInSettings = false } = {}) 
           {activeTab === 'logs' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
-                {['', 'token', 'productos', 'stock', 'pedidos', 'webhook', 'oauth'].map((tipo) => (
+                {['', 'credentials', 'token', 'productos', 'stock', 'clientes', 'pedidos', 'webhook', 'oauth'].map((tipo) => (
                   <button
                     key={tipo || 'todos'}
                     type="button"
