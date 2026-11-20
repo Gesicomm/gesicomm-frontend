@@ -498,7 +498,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
               {step === 4 && (
                 <div className="ads-wizard-section">
-                  <h3>Tipo de campaña en Meta</h3>
+                  <h3>Tipo de Objetivo en Meta</h3>
                   <p>Elegí el objetivo que vas a configurar en el Administrador de anuncios.</p>
                   <div className="ads-objective-grid">
                     {OBJETIVOS_META.map(([value, label]) => <button key={value} type="button" className="ads-choice" aria-pressed={objetivoMeta === value} onClick={() => { setObjetivoMeta(value); setEditado(true); }}><span>{label}</span>{objetivoMeta === value && <Check size={18} aria-hidden="true" />}</button>)}
@@ -569,10 +569,10 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                 <h3>Creativos</h3>
                 <p>Subí las imágenes o videos una sola vez. Estos creativos estarán disponibles para todos los conjuntos de anuncios de la campaña.</p>
                 <div className="ads-adset-card ads-campaign-creatives">
-                  <label className="ads-upload-field"><Upload size={18} /> Subir creativos
-                    <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple onChange={e => { const nuevos = [...e.target.files].filter(f => f.size <= 25 * 1024 * 1024); setArchivos(actuales => [...actuales, ...nuevos]); setEditado(true); e.target.value = ''; }} />
+                  <label className="ads-upload-field"><Upload size={18} /> Seleccionar carpeta de creativos
+                    <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple webkitdirectory="" directory="" onChange={e => { const nuevos = [...e.target.files]; setArchivos(actuales => [...actuales, ...nuevos]); setEditado(true); e.target.value = ''; }} />
                   </label>
-                  <p className="ads-file-help">JPG, PNG, WebP, MP4 o WebM. Hasta 25 MB por archivo.</p>
+                  <p className="ads-file-help">Elegí la carpeta. Se cargarán sus archivos JPG, PNG, WebP, MP4 y WebM, sin límite de 25 MB por archivo.</p>
                   {archivos.map((file, index) => <div className="ads-creative-row" key={`${file.name}-${index}`}><span>{file.name}</span><button type="button" className="btn-icon" aria-label={`Quitar ${file.name}`} onClick={() => setArchivos(actuales => actuales.filter((_, i) => i !== index))}><X size={16} /></button></div>)}
                   {creativosGuardados.map(creativo => <div className="ads-creative-row" key={creativo.id}><span>{creativo.nombre}</span><div><button type="button" className="btn-secondary" onClick={() => descargarCreativo(creativo)}>Descargar</button><button type="button" className="btn-icon" aria-label={`Eliminar ${creativo.nombre}`} onClick={async () => { try { await metaReportesService.eliminarCreativo(campanaEditar.id, creativo.id); setCreativosGuardados(actuales => actuales.filter(x => x.id !== creativo.id)); } catch (err) { setError(err.response?.data?.message || 'No pudimos eliminar el creativo.'); } }}><Trash2 size={16} /></button></div></div>)}
                 </div>
