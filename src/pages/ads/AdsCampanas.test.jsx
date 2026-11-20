@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
 import AdsCampanas from './AdsCampanas';
 import { metaReportesService } from '../../services/metaReportesService';
+import { tiendaService } from '../../services/tiendaService';
 
 vi.mock('../../services/metaReportesService', () => ({
   metaReportesService: {
@@ -13,6 +14,7 @@ vi.mock('../../services/metaReportesService', () => ({
     eliminarCampana: vi.fn(),
   },
 }));
+vi.mock('../../services/tiendaService', () => ({ tiendaService: { obtener: vi.fn() } }));
 // El asistente de alta trae productos y categorías al abrirse; acá no se prueba.
 vi.mock('./CampanaInternaModal', () => ({ default: () => null }));
 
@@ -55,11 +57,32 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('AdsCampanas — total gastado por campaña', () => {
-  it('ofrece la descarga de la skill en la vista principal', () => {
+  it('ya no ofrece descargar la skill como archivo', () => {
     montar();
-    const enlace = screen.getByRole('link', { name: 'Descargar skill (.md)' });
-    expect(enlace).toHaveAttribute('href', '/skills/gesicom-meta-ads.md');
-    expect(enlace).toHaveAttribute('download', 'gesicom-meta-ads.md');
+    expect(screen.queryByRole('link', { name: /descargar/i })).not.toBeInTheDocument();
+  });
+
+  it('copia el prompt con los datos del comercio ya completos', async () => {
+    const writeText = vi.fn().mockResolvedValue();
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    tiendaService.obtener.mockResolvedValue({ nombre: 'Llévalo Fácil', subdominio: 'llevalofacil' });
+    const fetchOriginal = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('PROMPT') });
+    try {
+      montar();
+      fireEvent.click(screen.getByRole('button', { name: 'Copiar prompt' }));
+      await waitFor(() => expect(writeText).toHaveBeenCalled());
+      const copiado = writeText.mock.calls[0][0];
+      expect(copiado.startsWith('PROMPT')).toBe(true);
+      expect(copiado).toContain('**Tienda:** Llévalo Fácil');
+      expect(copiado).toContain('https://llevalofacil.gesicomm.com');
+      expect(copiado).toContain(`**Panel de Gesicom:** ${window.location.origin}`);
+      expect(copiado).toContain('P0003 | TERMO | WEB | CONVERSION | CBO');
+      expect(global.fetch).toHaveBeenCalledWith('/skills/gesicom-meta-ads.md');
+      expect(await screen.findByRole('button', { name: 'Prompt copiado' })).toBeInTheDocument();
+    } finally {
+      global.fetch = fetchOriginal;
+    }
   });
 
   it('muestra lo gastado en cada campaña y el total', () => {

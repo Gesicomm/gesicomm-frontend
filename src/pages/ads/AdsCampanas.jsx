@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import {
   Plus, Copy, Check, Edit2, Trash2, Archive, Play, Pause,
-  MessageCircle, Globe, Megaphone, ChevronRight, History, Wallet, RefreshCw, Download,
+  MessageCircle, Globe, Megaphone, ChevronRight, History, Wallet, RefreshCw,
 } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
+import { tiendaService } from '../../services/tiendaService';
+import { RUTA_PLANTILLA_SKILL, armarPromptSkill } from './promptSkillMeta';
 import CampanaInternaModal from './CampanaInternaModal';
 import GastoCampanaModal from './GastoCampanaModal';
 import AdsCampanaHistorial from './AdsCampanaHistorial';
@@ -40,6 +42,31 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
       setCopiadoId(id);
       setTimeout(() => setCopiadoId(null), 1800);
     }).catch(() => setErrorAccion('No pudimos copiar el nombre. Podés seleccionarlo en el detalle de la campaña.'));
+  };
+
+  // Se copia para pegarlo como mensaje: si se adjunta como archivo, ChatGPT
+  // lo trata como documento de referencia y no sigue sus instrucciones.
+  // Va con los datos del comercio para que la IA no pregunte lo que ya sabemos.
+  const copiarSkill = async () => {
+    setErrorAccion(null);
+    try {
+      const [resp, tienda] = await Promise.all([
+        fetch(RUTA_PLANTILLA_SKILL),
+        tiendaService.obtener().catch(() => null),
+      ]);
+      if (!resp.ok) throw new Error('plantilla');
+      const prompt = armarPromptSkill(await resp.text(), {
+        panelUrl: `${window.location.origin}${window.location.pathname}`,
+        tienda,
+        conexionesMeta: tiendas,
+        campanas,
+      });
+      await navigator.clipboard.writeText(prompt);
+      setCopiadoId('skill');
+      setTimeout(() => setCopiadoId(null), 2500);
+    } catch {
+      setErrorAccion('No pudimos copiar el prompt. Revisá que el navegador permita copiar al portapapeles y probá de nuevo.');
+    }
   };
 
   const cambiarEstado = async (campana, estado) => {
@@ -96,11 +123,17 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
       <div className="ads-skill-banner">
         <div>
           <strong>Skill de Meta para tu IA</strong>
-          <p>Descargá y pegá este prompt en ChatGPT para que te entreviste y te guíe creando la campaña en Gesicom y Meta.</p>
+          <p>Copiá el prompt y pegalo como mensaje en un chat nuevo de tu IA. Ya lleva tu tienda, tu Gesicom y tus campañas, así que solo te pregunta lo que falta para armar la campaña en Gesicom y en Meta.</p>
+          <p className="ads-skill-banner-hint">Pegalo como texto, no lo adjuntes como archivo: si no, lo lee como documento y no te pregunta nada.</p>
         </div>
-        <a className="btn-secondary ads-skill-banner-link" href="/skills/gesicom-meta-ads.md" download="gesicom-meta-ads.md">
-          <Download size={18} aria-hidden="true" /> Descargar skill (.md)
-        </a>
+        <div className="ads-skill-banner-actions">
+          <button type="button" className="ads-skill-banner-link" onClick={copiarSkill}>
+            {copiadoId === 'skill'
+              ? <><Check size={18} aria-hidden="true" /> Prompt copiado</>
+              : <><Copy size={18} aria-hidden="true" /> Copiar prompt</>}
+          </button>
+        </div>
+        <span className="sr-only" aria-live="polite">{copiadoId === 'skill' ? 'Prompt copiado' : ''}</span>
       </div>
       <details className="ads-guide" onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
         <summary>
