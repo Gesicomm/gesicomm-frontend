@@ -112,11 +112,10 @@
 @media (min-width: 600px) {
   .ads-adset-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ads-adset-heading { grid-column: 1 / -1; }
-  .ads-adset-name { grid-column: 1; grid-row: 2; }
-  .ads-adset-status { grid-column: 2; grid-row: 2; }
+  .ads-adset-name { grid-column: 1 / -1; grid-row: 2; }
+  .ads-adset-card:has(.ads-adset-budget) .ads-adset-name { grid-column: 1; }
   .ads-adset-description { grid-column: 1 / -1; }
-  .ads-adset-card:has(.ads-adset-budget) .ads-adset-description { grid-column: 1; }
-  .ads-adset-budget { grid-column: 2; }
+  .ads-adset-budget { grid-column: 2; grid-row: 2; }
   .ads-adset-meta-id, .ads-meta-sales { grid-column: 1 / -1; }
 }
 .ads-meta-sales { display: grid; gap: 10px; min-width: 0; padding-top: 12px; border-top: 1px solid var(--color-border); }
@@ -133,6 +132,8 @@
 .ads-meta-sales-form .btn-primary { justify-self: start; }
 .ads-skill-download { justify-self: start; }
 .ads-adset-toolbar { position: sticky; top: -1px; z-index: 1; display: flex; padding: 8px 0; background: var(--color-canvas); }
+.ads-campaign-creatives { display: flex; flex-direction: column; align-items: flex-start; }
+.ads-campaign-creatives .ads-creative-row { align-self: stretch; }
 .ads-adset-heading { display: flex; justify-content: space-between; align-items: center; }
 .ads-form-field { display: grid; gap: 6px; color: var(--color-fg); font-size: 15px; font-weight: 600; }
 .ads-form-field :is(input, textarea, select) { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-canvas); color: var(--color-fg); font: 400 16px/1.5 var(--font-sans); }

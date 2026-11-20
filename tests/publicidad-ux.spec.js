@@ -29,8 +29,8 @@ async function preparar(page, { fallo = false } = {}) {
         if (fallo) return route.fulfill({ status: 500, json: { message: 'Error de prueba' } });
         body = campanas;
       } else { body = { id: 7, ...payload, nombre_interno: payload.nombre_display, estado: 'borrador', productos: [producto], creativos, ventas_conjuntos: ventasMeta, gasto_total: 0, gasto_registros: 0 }; campanas = [body]; }
-    } else if (/\/conjuntos\/\d+\/creativos$/.test(path)) {
-      body = { id: 55, campana_id: 7, conjunto_id: Number(path.match(/\/conjuntos\/(\d+)\/creativos$/)[1]), nombre: 'creativo.png', mime: 'image/png' };
+    } else if (path === '/api/meta-reportes/campanas/7/creativos' && method === 'POST') {
+      body = { id: 55, campana_id: 7, conjunto_id: null, nombre: 'creativo.png', mime: 'image/png' };
       creativos.push(body);
       campanas[0].creativos = [...creativos];
     } else if (/\/conjuntos\/\d+\/ventas$/.test(path)) {
@@ -113,14 +113,17 @@ for (const width of [375, 1280]) {
     await expect(nombreNuevo).toBeFocused();
     expect(await cuerpoAsistente.evaluate(elemento => elemento.scrollTop)).toBe(0);
     await nombreNuevo.fill('Público recurrente');
+    await expect(modal.getByText('Estado en Meta')).toHaveCount(0);
     await modal.getByRole('button', { name: 'Siguiente', exact: true }).click();
+    await expect(modal.locator('input[type="file"]')).toHaveCount(1);
     await comprobarAncho(page, '.ads-wizard');
     await modal.locator('input[type="file"]').first().setInputFiles({ name: 'creativo.png', mimeType: 'image/png', buffer: Buffer.from('89504e470d0a1a0a', 'hex') });
     await page.screenshot({ path: testInfo.outputPath('asistente.png') });
-    await modal.getByRole('button', { name: 'Generar nombre y crear', exact: true }).click();
+    await modal.getByRole('button', { name: 'Generar campaña', exact: true }).click();
     await expect(modal).toContainText('Campaña creada');
     expect(datos.campanas()[0].tipo).toBe('web');
     expect(datos.creativos()).toHaveLength(1);
+    expect(datos.creativos()[0].conjunto_id).toBeNull();
     expect(datos.campanas()[0].configuracion_anuncios.conjuntos.map(c => c.nombre)).toEqual(['Público recurrente', 'Público nuevo']);
     await modal.getByTitle('Copiar', { exact: true }).click();
     expect(await page.evaluate(() => window.adsCopiasDePrueba.at(-1))).toBe(datos.campanas()[0].nombre_interno);

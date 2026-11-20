@@ -26,7 +26,7 @@ const OBJETIVOS_META = [
   ['OUTCOME_APP_PROMOTION', 'Promoción de aplicación'],
   ['OUTCOME_SALES', 'Ventas'],
 ];
-const nuevoConjunto = (id) => ({ id, nombre: '', descripcion: '', estado: 'PAUSED', presupuesto_diario: '' });
+const nuevoConjunto = (id) => ({ id, nombre: '', descripcion: '', presupuesto_diario: '' });
 
 /**
  * Modal "Nueva Campaña" del módulo de Reportes de Meta Ads — producto,
@@ -54,7 +54,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
   const [objetivoMeta, setObjetivoMeta] = useState(null);
   const [presupuestoDiario, setPresupuestoDiario] = useState('');
   const [conjuntos, setConjuntos] = useState([nuevoConjunto(1)]);
-  const [archivos, setArchivos] = useState({});
+  const [archivos, setArchivos] = useState([]);
   const [creativosGuardados, setCreativosGuardados] = useState([]);
   const [campanaPersistida, setCampanaPersistida] = useState(null);
   const [metaCampaignId, setMetaCampaignId] = useState('');
@@ -115,7 +115,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
       setVentasConjuntos([]);
       setMetaIntegrationId(tiendas.length === 1 ? tiendas[0].id : null);
     }
-    setArchivos({});
+    setArchivos([]);
 
     Promise.all([
       productService.buscar({ activo: true, sin_limite: true }),
@@ -222,14 +222,10 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
         : await metaReportesService.crearCampana(payload));
       setCampanaPersistida(guardada);
       if (!campanaPersistida) onCreated?.(guardada);
-      for (const creativo of creativosGuardados.filter(x => !conjuntos.some(c => c.id === x.conjunto_id))) {
-        await metaReportesService.eliminarCreativo(guardada.id, creativo.id);
-        setCreativosGuardados(actuales => actuales.filter(x => x.id !== creativo.id));
-      }
-      const pendientes = Object.entries(archivos).flatMap(([id, lista]) => lista.map(archivo => ({ id: Number(id), archivo })));
-      for (const { id, archivo } of pendientes) {
-        await metaReportesService.subirCreativo(guardada.id, id, archivo);
-        setArchivos(actuales => ({ ...actuales, [id]: (actuales[id] || []).filter(f => f !== archivo) }));
+      const pendientes = [...archivos];
+      for (const archivo of pendientes) {
+        await metaReportesService.subirCreativo(guardada.id, archivo);
+        setArchivos(actuales => actuales.filter(f => f !== archivo));
       }
       if (pendientes.length) onCreated?.(guardada);
       if (esEdicion) {
@@ -558,13 +554,12 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
               {step === 6 && <div className="ads-wizard-section">
                 <h3>Conjuntos de anuncios</h3>
-                <p>Creá al menos uno. El estado que elijas se usará al configurarlo en Meta.</p>
+                <p>Creá al menos uno. Después podrás usar los mismos creativos en todos los conjuntos.</p>
                 <div className="ads-adset-toolbar"><button type="button" className="btn-secondary ads-add-adset" onClick={agregarConjunto}><Plus size={17} /> Agregar conjunto</button></div>
                 {conjuntos.map((c, index) => <div className="ads-adset-card" data-conjunto-id={c.id} key={c.id}>
                   <div className="ads-adset-heading"><h4>Conjunto {index + 1}</h4>{conjuntos.length > 1 && <button type="button" className="btn-icon" aria-label={`Eliminar conjunto ${index + 1}`} onClick={() => { setConjuntos(actuales => actuales.filter(x => x.id !== c.id)); setEditado(true); }}><Trash2 size={18} /></button>}</div>
                   <label className="ads-form-field ads-adset-name">Nombre<input value={c.nombre} maxLength={150} onChange={e => cambiarConjunto(c.id, { nombre: e.target.value })} placeholder="Ej.: Público nuevo · Paraguay" /></label>
                   <label className="ads-form-field ads-adset-description">Descripción<textarea value={c.descripcion} maxLength={1000} rows={2} onChange={e => cambiarConjunto(c.id, { descripcion: e.target.value })} placeholder="Público, ubicación y enfoque del conjunto" /></label>
-                  <label className="ads-form-field ads-adset-status">Estado en Meta<select value={c.estado} onChange={e => cambiarConjunto(c.id, { estado: e.target.value })}><option value="PAUSED">Pausado</option><option value="ACTIVE">Activo</option></select></label>
                   {presupuesto === 'ABO' && <label className="ads-form-field ads-adset-budget">Presupuesto diario de este conjunto<NumericFormat value={c.presupuesto_diario || ''} valueIsNumericString thousandSeparator="." decimalSeparator="," decimalScale={2} allowNegative={false} inputMode="decimal" onValueChange={({ value }) => cambiarConjunto(c.id, { presupuesto_diario: value })} placeholder="Monto en la moneda de tu cuenta de Meta" /></label>}
                   {esEdicion && <label className="ads-form-field ads-adset-meta-id">ID de este conjunto en Meta<input inputMode="numeric" value={c.meta_adset_id || ''} onChange={e => cambiarConjunto(c.id, { meta_adset_id: e.target.value })} placeholder="ID numérico de Meta Ads Manager" /></label>}
                   {esEdicion && campanaEditar.configuracion_anuncios?.conjuntos?.some(actual => actual.id === c.id) && <ConjuntoVentasMeta campanaId={campanaEditar.id} conjunto={c} registros={ventasConjuntos.filter(v => v.conjunto_id === c.id)} pedidosWeb={campanaEditar.pedidos_web_trazados?.find(p => p.conjunto_id === c.id)?.total || 0} onCambio={(registro, eliminadoId) => { setVentasConjuntos(actuales => eliminadoId ? actuales.filter(v => v.id !== eliminadoId) : [...actuales.filter(v => v.id !== registro.id), registro]); onCreated?.(); }} />}
@@ -573,17 +568,15 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
               {step === 7 && <div className="ads-wizard-section">
                 <h3>Creativos</h3>
-                <p>Adjuntá imágenes o videos a cada conjunto. Se guardarán en Gesicom al crear la campaña; luego podrás usarlos como referencia al armar los anuncios en Meta.</p>
-                {conjuntos.map(c => <div className="ads-adset-card" key={c.id}>
-                  <h4>{c.nombre}</h4>
+                <p>Subí las imágenes o videos una sola vez. Estos creativos estarán disponibles para todos los conjuntos de anuncios de la campaña.</p>
+                <div className="ads-adset-card ads-campaign-creatives">
                   <label className="ads-upload-field"><Upload size={18} /> Subir creativos
-                    <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple onChange={e => { const nuevos = [...e.target.files].filter(f => f.size <= 25 * 1024 * 1024); setArchivos(actuales => ({ ...actuales, [c.id]: [...(actuales[c.id] || []), ...nuevos] })); setEditado(true); e.target.value = ''; }} />
+                    <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple onChange={e => { const nuevos = [...e.target.files].filter(f => f.size <= 25 * 1024 * 1024); setArchivos(actuales => [...actuales, ...nuevos]); setEditado(true); e.target.value = ''; }} />
                   </label>
                   <p className="ads-file-help">JPG, PNG, WebP, MP4 o WebM. Hasta 25 MB por archivo.</p>
-                  {(archivos[c.id] || []).map((file, index) => <div className="ads-creative-row" key={`${file.name}-${index}`}><span>{file.name}</span><button type="button" className="btn-icon" aria-label={`Quitar ${file.name}`} onClick={() => setArchivos(actuales => ({ ...actuales, [c.id]: actuales[c.id].filter((_, i) => i !== index) }))}><X size={16} /></button></div>)}
-                  {creativosGuardados.filter(x => x.conjunto_id === c.id).map(creativo => <div className="ads-creative-row" key={creativo.id}><span>{creativo.nombre}</span><div><button type="button" className="btn-secondary" onClick={() => descargarCreativo(creativo)}>Descargar</button><button type="button" className="btn-icon" aria-label={`Eliminar ${creativo.nombre}`} onClick={async () => { try { await metaReportesService.eliminarCreativo(campanaEditar.id, creativo.id); setCreativosGuardados(actuales => actuales.filter(x => x.id !== creativo.id)); } catch (err) { setError(err.response?.data?.message || 'No pudimos eliminar el creativo.'); } }}><Trash2 size={16} /></button></div></div>)}
-                </div>)}
-                <a className="btn-secondary ads-skill-download" href="/skills/gesicom-meta-ads.md" download="gesicom-meta-ads.md">Descargar guía para ChatGPT</a>
+                  {archivos.map((file, index) => <div className="ads-creative-row" key={`${file.name}-${index}`}><span>{file.name}</span><button type="button" className="btn-icon" aria-label={`Quitar ${file.name}`} onClick={() => setArchivos(actuales => actuales.filter((_, i) => i !== index))}><X size={16} /></button></div>)}
+                  {creativosGuardados.map(creativo => <div className="ads-creative-row" key={creativo.id}><span>{creativo.nombre}</span><div><button type="button" className="btn-secondary" onClick={() => descargarCreativo(creativo)}>Descargar</button><button type="button" className="btn-icon" aria-label={`Eliminar ${creativo.nombre}`} onClick={async () => { try { await metaReportesService.eliminarCreativo(campanaEditar.id, creativo.id); setCreativosGuardados(actuales => actuales.filter(x => x.id !== creativo.id)); } catch (err) { setError(err.response?.data?.message || 'No pudimos eliminar el creativo.'); } }}><Trash2 size={16} /></button></div></div>)}
+                </div>
               </div>}
 
             </div>
@@ -599,7 +592,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                 </button>
               ) : (
                 <button type="button" className="btn-primary" onClick={handleSubmit} disabled={guardando || !puedeAvanzar()}>
-                  {guardando ? <Loader2 size={16} className="animate-spin" /> : (esEdicion ? 'Guardar cambios' : 'Generar nombre y crear')}
+                  {guardando ? <Loader2 size={16} className="animate-spin" /> : (esEdicion ? 'Guardar cambios' : 'Generar campaña')}
                 </button>
               )}
             </div>

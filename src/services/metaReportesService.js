@@ -7,10 +7,10 @@ export const metaReportesService = {
   crearCampana: (payload) => API.post('/meta-reportes/campanas', payload).then(r => r.data),
   listarCampanas: (filtros = {}) => API.get('/meta-reportes/campanas', { params: filtros }).then(r => r.data),
   actualizarCampana: (id, payload) => API.put(`/meta-reportes/campanas/${id}`, payload).then(r => r.data),
-  subirCreativo: (campanaId, conjuntoId, archivo) => {
+  subirCreativo: (campanaId, archivo) => {
     const datos = new FormData();
     datos.append('archivo', archivo);
-    return API.post(`/meta-reportes/campanas/${campanaId}/conjuntos/${conjuntoId}/creativos`, datos).then(r => r.data);
+    return API.post(`/meta-reportes/campanas/${campanaId}/creativos`, datos).then(r => r.data);
   },
   eliminarCreativo: (campanaId, creativoId) => API.delete(`/meta-reportes/campanas/${campanaId}/creativos/${creativoId}`),
   descargarCreativo: (campanaId, creativoId) => API.get(`/meta-reportes/campanas/${campanaId}/creativos/${creativoId}`, { responseType: 'blob' }).then(r => r.data),
