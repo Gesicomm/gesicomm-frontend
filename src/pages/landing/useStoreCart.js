@@ -354,20 +354,13 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       event_source_url: window.location.href,
     });
 
-    // Purchase de navegador, con el MISMO event_id que el backend ya mandó
-    // por CAPI (Meta cuenta una sola compra). Solo viene cuando el pedido
-    // cuenta como venta ya: con pago online el Purchase sale del servidor recién
-    // al confirmarse el pago, y esta pantalla ya no está (se va a la pasarela).
-    if (checkout.purchase_event_id) {
+    // El Purchase de Meta ya NO sale del navegador: lo manda el servidor por
+    // la Conversions API recién cuando el pedido se entrega (un pedido contra
+    // entrega que se cancela no es una venta). GA y TikTok no tienen lado
+    // servidor, así que siguen registrando la compra acá.
+    if (checkout.pedido_id) {
       try {
         const valor = Number(checkout.monto) || 0;
-        trackearEvento('Purchase', checkout.purchase_event_id, {
-          value: valor,
-          currency: 'PYG',
-          content_ids: itemsCrudos.map(i => i.contentId),
-          content_type: 'product',
-          num_items: itemsCrudos.reduce((sum, item) => sum + item.cantidad, 0),
-        });
         trackearEventoGA('purchase', {
           transaction_id: String(checkout.numero_pedido || checkout.pedido_id),
           currency: 'PYG',
