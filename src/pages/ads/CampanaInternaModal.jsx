@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, MessageCircle, Globe, Package, ChevronLeft, ChevronRight, TrendingUp, Target, RefreshCw, Zap, Plus, Trash2 } from 'lucide-react';
+import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, MessageCircle, Globe, Package, ChevronLeft, ChevronRight, TrendingUp, Target, RefreshCw, Zap, Plus, Trash2, FolderOpen } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
@@ -564,8 +564,10 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
                 <h3>Creativos</h3>
                 <p>Indicá dónde está la carpeta en tu equipo. La IA usará esta ubicación como referencia para encontrar los archivos y cargarlos en Meta.</p>
                 <div className="ads-adset-card ads-campaign-creatives">
-                  <label className="ads-form-field">Ubicación de la carpeta<input value={carpetaCreativos} onChange={e => { setCarpetaCreativos(e.target.value); setEditado(true); }} placeholder="Ej.: C:\\Users\\Martin\\Videos\\Campaña verano" /></label>
-                  <p className="ads-file-help">Gesicom guarda la ubicación como referencia. Los archivos se elegirán desde tu equipo al crear los anuncios en Meta.</p>
+                  <label className="ads-upload-field"><FolderOpen size={18} /> {carpetaCreativos ? 'Cambiar carpeta de creativos' : 'Seleccionar carpeta de creativos'}
+                    <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple webkitdirectory="" directory="" onChange={e => { const primerArchivo = e.target.files?.[0]; const carpeta = primerArchivo?.webkitRelativePath?.split('/')[0]; if (carpeta) { setCarpetaCreativos(carpeta); setEditado(true); } e.target.value = ''; }} />
+                  </label>
+                  <p className="ads-file-help">{carpetaCreativos ? `Carpeta seleccionada: ${carpetaCreativos}` : 'Elegí la carpeta de tu equipo. Gesicom guardará su nombre como referencia; no cargará los archivos.'}</p>
                   {creativosGuardados.map(creativo => <div className="ads-creative-row" key={creativo.id}><span>{creativo.nombre}</span><div><button type="button" className="btn-secondary" onClick={() => descargarCreativo(creativo)}>Descargar</button><button type="button" className="btn-icon" aria-label={`Eliminar ${creativo.nombre}`} onClick={async () => { try { await metaReportesService.eliminarCreativo(campanaEditar.id, creativo.id); setCreativosGuardados(actuales => actuales.filter(x => x.id !== creativo.id)); } catch (err) { setError(err.response?.data?.message || 'No pudimos eliminar el creativo.'); } }}><Trash2 size={16} /></button></div></div>)}
                 </div>
               </div>}
