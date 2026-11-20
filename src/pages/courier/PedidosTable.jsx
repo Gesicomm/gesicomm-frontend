@@ -43,12 +43,6 @@ const TAB_ABASTECIMIENTO_CFG = {
   chipBg: "color-mix(in srgb, var(--color-primary) 14%, transparent)",
   chipText: "var(--color-primary)",
 };
-const TAB_RAHA_LOGISTICA_ID = "LogisticaRaha";
-const TAB_RAHA_LOGISTICA_CFG = {
-  label: "Envíos RAHA",
-  chipBg: "color-mix(in srgb, var(--color-info) 14%, transparent)",
-  chipText: "var(--color-info)",
-};
 const TODOS_ESTADOS_ID = "TODOS";
 
 // "En seguimiento" ya no se muestra como estado aparte: para la bandeja un
@@ -420,6 +414,12 @@ function RahaEstadoCell({ envio, etapa }) {
       tone={etapa === "seguimiento_envio" ? tonoSeguimiento(envio) : estado.tone}
     />
   );
+}
+
+// Quién gestiona el envío: RAHA (tercerizado) o la operación propia.
+function ProveedorBadge({ envio }) {
+  const raha = Boolean(envio?.raha_logistica?.gestionado);
+  return <span className={`pt-proveedor pt-proveedor--${raha ? "raha" : "propio"}`}>{raha ? "RAHA" : "Propio"}</span>;
 }
 
 function RahaTimeline({ envio }) {
@@ -794,7 +794,7 @@ function PedidoMobile({ envio, etapa, onAbrirDetalle, onAbrirResumen, onAbrirSeg
       <p className="pm-location"><MapPin size={13} />{[envio.ciudad, envio.departamento].filter(Boolean).join(" · ") || "Sin ciudad"}</p>
       <ReputacionClienteBadge reputacion={envio.reputacion_cliente} />
       <p className="pm-products">{items.length ? items.map(item => `${item.cantidad || 1} × ${item.nombre_producto}`).join(" · ") : "Consulta general · Sin productos"}</p>
-      <div className="pm-status"><EstadoCell envio={envio} etapa={etapa} onCambiarEstado={envio.raha_logistica?.gestionado ? null : onCambiarEstado} /><span>{fecha}</span></div>
+      <div className="pm-status"><EstadoCell envio={envio} etapa={etapa} onCambiarEstado={envio.raha_logistica?.gestionado ? null : onCambiarEstado} /><span>{fecha}</span>{etapa === "logistica" && <ProveedorBadge envio={envio} />}</div>
       {onAbrirSeguimiento && <section className={`pm-followup pm-followup--${estadoMensaje?.tono || "neutral"}`} aria-label={`Mensajes de ${nombre}`}>
         <div className="pm-followup-heading"><MessageCircle size={16} /><strong>{seg?.etapa_nombre || "Mensajes de seguimiento"}</strong>{estadoMensaje && <span>{estadoMensaje.texto}</span>}</div>
         <p>{seg ? seg.terminado ? "Todos los mensajes enviados" : `${seg.fase_posicion}/${seg.total_fases} · ${seg.fase_nombre}` : "Abrí el flujo para ver y enviar los mensajes de este cliente."}</p>
@@ -942,18 +942,17 @@ export function PedidosTable({
     try {
       const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE };
       if (mostrarSeguimiento) payload.incluir_seguimiento = true;
-      if (!soloAbastecimiento && etapaActiva !== "logistica") payload.seguimiento_comercial = true;
+      // Logística también proyecta el estado RAHA al estado Gesicom (cargado → Preparado, etc.)
+      // para que los envíos RAHA convivan en las mismas pestañas que los propios.
+      if (!soloAbastecimiento) payload.seguimiento_comercial = true;
       if (!soloAbastecimiento && etapaActiva === "seguimiento_envio") payload.incluir_confirmados_raha = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
-      if (!soloAbastecimiento && etapaActiva === "logistica" && estado === TAB_RAHA_LOGISTICA_ID) {
-        payload.logistica_raha = true;
-      } else if (!soloAbastecimiento && estado === TAB_ABASTECIMIENTO_ID) {
+      if (!soloAbastecimiento && estado === TAB_ABASTECIMIENTO_ID) {
         payload.abastecimiento_estado = "pagado";
       } else if (!soloAbastecimiento && estadosEtapa?.length) {
         payload.estados = etapaActiva !== "recuperacion" && estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
           ? estadosDeFiltro(estado)
           : estadosEtapa;
-        if (etapaActiva === "logistica") payload.excluir_logistica_raha = true;
       } else if (!soloAbastecimiento && estado && estado !== TODOS_ESTADOS_ID) {
         payload.estados = estadosDeFiltro(estado);
       }
@@ -977,11 +976,10 @@ export function PedidosTable({
     try {
       const payloadBase = { ...construirPayloadBase(f), limit: 100 };
       if (mostrarSeguimiento) payloadBase.incluir_seguimiento = true;
-      if (etapaActiva !== "logistica") payloadBase.seguimiento_comercial = true;
+      payloadBase.seguimiento_comercial = true;
       if (etapaActiva === "seguimiento_envio") payloadBase.incluir_confirmados_raha = true;
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (estadosEtapa?.length) payloadBase.estados = estadosEtapa;
-      if (etapaActiva === "logistica") payloadBase.excluir_logistica_raha = true;
 
       const acumulado = [];
       let pageToLoad = 1;
@@ -1035,7 +1033,7 @@ export function PedidosTable({
       // El "Por cobrar / Cobrado" del resumen se calcula sobre la misma
       // lista de estados que muestra la tabla (los conteos por pestaña no).
       const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
-      if (!soloAbastecimiento && estado !== TAB_RAHA_LOGISTICA_ID && estado !== TAB_ABASTECIMIENTO_ID) {
+      if (!soloAbastecimiento && estado !== TAB_ABASTECIMIENTO_ID) {
         if (estadosEtapa?.length) {
           payload.estados_totales = etapaActiva !== "recuperacion" && estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
             ? estadosDeFiltro(estado)
@@ -1044,8 +1042,7 @@ export function PedidosTable({
           payload.estados_totales = estadosDeFiltro(estado);
         }
       }
-      if (!soloAbastecimiento && etapaActiva === "logistica") payload.separar_logistica_raha = true;
-      if (!soloAbastecimiento && etapaActiva !== "logistica") payload.seguimiento_comercial = true;
+      if (!soloAbastecimiento) payload.seguimiento_comercial = true;
       if (!soloAbastecimiento && etapaActiva === "seguimiento_envio") payload.incluir_confirmados_raha = true;
       const res = soloAbastecimiento
         ? await getConteoPorAbastecimiento(payload)
@@ -1241,7 +1238,8 @@ export function PedidosTable({
   ].filter(Boolean);
   const esAdmin = usuarioActual?.rol === "administrador";
   const esTabAbastecimiento = !soloAbastecimiento && estadoActivo === TAB_ABASTECIMIENTO_ID;
-  const esTabRahaLogistica = !soloAbastecimiento && etapaActiva === "logistica" && estadoActivo === TAB_RAHA_LOGISTICA_ID;
+  // Los envíos RAHA conviven con los propios: se distinguen por la columna Proveedor.
+  const esLogisticaTabla = !soloAbastecimiento && etapaActiva === "logistica";
   const estaEnKanban = !soloAbastecimiento && vista === "kanban";
 
   const envios = data.data || [];
@@ -1260,9 +1258,8 @@ export function PedidosTable({
   const montoCourierEntregado = Number(resumenEntregados?.costo_total_courier || 0);
   const saldoLiquidacionEntregados = Number(resumenEntregados?.saldo_liquidacion || 0);
   const montoPendienteRendicion = Math.abs(saldoLiquidacionEntregados);
-  const tableColSpan = (soloAbastecimiento ? 9 : (mostrarSeguimiento ? 10 : 9)) + 1;
+  const tableColSpan = (soloAbastecimiento ? 9 : (mostrarSeguimiento ? 10 : 9)) + 1 + (esLogisticaTabla ? 1 : 0);
   const sumarConteos = (estados) => estados.reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
-  const totalLogisticaRaha = Number(conteos.logistica_raha || 0);
   // Cada estado cuenta en un solo casillero.
   const resumenCiclo = {
     pendientes: sumarConteos(["Pendiente", "EnSeguimiento"]),
@@ -1303,10 +1300,9 @@ export function PedidosTable({
         { key: "incidencias", label: "Incidencias", tone: "danger" },
       ];
   const estadosEtapaActiva = STAGE_TO_ESTADOS[etapaActiva] || [];
-  const totalEstadosEtapaActiva = sumarConteos(estadosEtapaActiva) + (etapaActiva === "logistica" ? totalLogisticaRaha : 0);
+  const totalEstadosEtapaActiva = sumarConteos(estadosEtapaActiva);
   const chipsEtapaActiva = etapaActiva === "recuperacion" ? [] : [
     ...(etapaActiva === "seguimiento_envio" && Number(conteos.Confirmado) > 0 ? ['Confirmado'] : []),
-    ...(etapaActiva === "logistica" ? [TAB_RAHA_LOGISTICA_ID] : []),
     ...estadosEtapaActiva.filter((st) => !ESTADOS_SIN_CHIP.has(st)),
   ];
   // Ya no existe el filtro "Todos" en las etapas con varios subfiltros:
@@ -1322,9 +1318,7 @@ export function PedidosTable({
     if (soloAbastecimiento || etapaActiva === "logistica" || chipsEtapaActiva.length <= 1) return;
     if (!chipsEtapaActiva.includes(estadoActivo)) setEstadoActivo(chipsEtapaActiva[0]);
   }, [soloAbastecimiento, etapaActiva, estadoActivo, chipsEtapaActiva.join("|")]);
-  const conteoDeFiltro = (estado) => (
-    estado === TAB_RAHA_LOGISTICA_ID ? totalLogisticaRaha : sumarConteos(estadosDeFiltro(estado))
-  );
+  const conteoDeFiltro = (estado) => sumarConteos(estadosDeFiltro(estado));
 
   return (
     <div className={`pt-root${masFilters ? " pt-filters-open" : ""}${resumenMobile ? " pt-summary-open" : ""}`} data-stage={etapaActiva} data-mobile-orders={!soloAbastecimiento}>
@@ -1336,7 +1330,14 @@ export function PedidosTable({
 
           <div className="pt-viewbar-copy">
             <strong>Pedidos</strong>
-            <span>Gestión comercial y logística · {loading ? "Cargando..." : `${totalPedidosVista.toLocaleString("es-PY")} pedido${totalPedidosVista === 1 ? "" : "s"}`}</span>
+            <span>
+              Gestión comercial y logística ·{" "}
+              {loading
+                ? "Cargando..."
+                : data.total_leads > 0 && data.total_pedidos !== undefined
+                ? `${Number(data.total_leads).toLocaleString("es-PY")} ${Number(data.total_leads) === 1 ? "lead" : "leads"} · ${Number(data.total_pedidos).toLocaleString("es-PY")} ${Number(data.total_pedidos) === 1 ? "pedido" : "pedidos"}`
+                : `${totalPedidosVista.toLocaleString("es-PY")} pedido${totalPedidosVista === 1 ? "" : "s"}`}
+            </span>
           </div>
 
           <div className="pt-view-switch" role="group" aria-label="Cambiar vista de pedidos">
@@ -1457,7 +1458,7 @@ export function PedidosTable({
         <section className="pt-status-shell" aria-label={`Filtros secundarios de ${etapaActiva}`}>
           <div className="pt-status-tabs pt-status-tabs--secondary" role="tablist">
             {chipsEtapaActiva.map((st) => {
-              const cfg = st === TAB_RAHA_LOGISTICA_ID ? TAB_RAHA_LOGISTICA_CFG : (STATUS[st] || {});
+              const cfg = STATUS[st] || {};
               const active = estadoActivo === st;
               const label = cfg.label || st;
               return [
@@ -1798,7 +1799,7 @@ export function PedidosTable({
         </section>
       ) : (
       <div className="pt-table-wrap">
-        <table className={`pt-table${mostrarSeguimiento || soloAbastecimiento ? " pt-table--followup" : ""}`}>
+        <table className={`pt-table${mostrarSeguimiento || soloAbastecimiento ? " pt-table--followup" : ""}${esLogisticaTabla ? " pt-table--proveedor" : ""}`}>
           <colgroup>
             <col className="pt-col-id" />
             <col className="pt-col-tipo" />
@@ -1809,6 +1810,7 @@ export function PedidosTable({
             <col className="pt-col-total" />
             {!soloAbastecimiento && <col className="pt-col-metodo-pago" />}
             <col className="pt-col-state" />
+            {esLogisticaTabla && <col className="pt-col-proveedor" />}
             {(mostrarSeguimiento || soloAbastecimiento) && <col className="pt-col-followup" />}
             <col className="pt-col-action" />
           </colgroup>
@@ -1834,6 +1836,7 @@ export function PedidosTable({
                 <>
                   <th className="pt-th">Método de pago</th>
                   <th className="pt-th">{ENCABEZADO_ESTADO[etapaActiva]}</th>
+                  {esLogisticaTabla && <th className="pt-th">Proveedor</th>}
                   {mostrarSeguimiento && <th className="pt-th">{["seguimiento_envio", "recuperacion"].includes(etapaActiva) ? "Mensaje de seguimiento" : "Seguimiento"}</th>}
                 </>
               )}
@@ -1854,8 +1857,6 @@ export function PedidosTable({
                 <td colSpan={tableColSpan} className="pt-empty">
                   {soloAbastecimiento
                     ? "No hay pedidos de abastecimiento que coincidan con los filtros."
-                    : esTabRahaLogistica
-                    ? "No hay envíos RAHA que coincidan con los filtros."
                     : estadoActivo === TAB_ABASTECIMIENTO_ID
                     ? "No hay pedidos con abastecimiento en seguimiento que coincidan con los filtros."
                     : estadoActivo === TODOS_ESTADOS_ID
@@ -1920,7 +1921,7 @@ export function PedidosTable({
                         setTimelineExpandidoId((prev) => (prev === e.id ? null : e.id));
                         return;
                       }
-                      if (esTabRahaLogistica && e.raha_logistica?.gestionado) {
+                      if (esLogisticaTabla && e.raha_logistica?.gestionado) {
                         setTimelineExpandidoId((prev) => (prev === e.id ? null : e.id));
                         return;
                       }
@@ -2014,6 +2015,7 @@ export function PedidosTable({
                         <td className="pt-td pt-td-state" data-label="Estado">
                           <EstadoCell envio={e} etapa={etapaActiva} onCambiarEstado={e.raha_logistica?.gestionado ? null : handleItemEstadoChange} />
                         </td>
+                        {esLogisticaTabla && <td className="pt-td pt-td-proveedor" data-label="Proveedor"><ProveedorBadge envio={e} /></td>}
                         {mostrarSeguimiento && <td className={`pt-td pt-td-followup${!e.seguimiento ? " pt-td-followup--empty" : ""}`} data-label={["seguimiento_envio", "recuperacion"].includes(etapaActiva) ? "Mensaje de seguimiento" : "Seguimiento"} onClick={(ev) => ev.stopPropagation()}>
                           <SeguimientoCell envio={e} onAbrir={onAbrirSeguimiento} />
                         </td>}
@@ -2034,7 +2036,7 @@ export function PedidosTable({
                     )}
                     <td className="pt-td pt-td-action" data-label="Acción" onClick={(ev) => ev.stopPropagation()}>
                       <div className="pt-row-actions">
-                        {!(esTabRahaLogistica && e.raha_logistica?.gestionado) && (
+                        {!(esLogisticaTabla && e.raha_logistica?.gestionado) && (
                           <AccionPrincipal
                             envio={e}
                             onAbrirDetalle={onAbrirDetalle}
@@ -2090,7 +2092,7 @@ export function PedidosTable({
                       </td>
                     </tr>
                   ),
-                  esTabRahaLogistica && timelineExpandidoId === e.id && (
+                  esLogisticaTabla && e.raha_logistica?.gestionado && timelineExpandidoId === e.id && (
                     <tr key={`${e.id}-raha-timeline`} className="pt-row-timeline">
                       <td className="pt-td" colSpan={tableColSpan}>
                         <RahaTimeline envio={e} />

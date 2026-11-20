@@ -176,7 +176,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     const guardado = content?.vistas?.[vistaActual];
     const plantilla = vistaActual === 'catalogo' ? PLANTILLA_CATALOGO
       : vistaActual === 'categoria' ? PLANTILLA_CATEGORIA : PLANTILLA_CHECKOUT;
-    const usarGuardado = guardado?.html && (vistaActual !== 'checkout' || !esCheckoutBase(guardado.html));
+    const usarGuardado = guardado?.html && (vistaActual !== 'checkout' || guardado.generado_por_mcp || !esCheckoutBase(guardado.html));
     return conGlobalesHeredados(usarGuardado ? guardado : plantilla, inicioHeredableDe(content, codigoInicio));
   }, [data?.content, codigoInicio, esFicha, productoPublico?.content_id, vistaActual]);
 

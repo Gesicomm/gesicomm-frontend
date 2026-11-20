@@ -1,30 +1,19 @@
 import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader, LayoutTemplate, Code2, ArrowRight } from 'lucide-react';
+import { Loader, Code2, ArrowRight } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
-import TemplateSelector from './TemplateSelector';
-import AILandingWizard from './AILandingWizard';
 import { leerItemsPrefill } from './prefilledLandingItems';
 
 /**
  * Primera pantalla de "/landing" cuando el comercio todavía no tiene
- * ninguna: elegir CÓMO se arma la landing, antes de elegir con qué.
+ * ninguna: crear la landing en modo Lienzo en blanco (editor libre).
  *
- *   - Template  → sigue el flujo de siempre (TemplateSelector: grilla de
- *     los templates rígidos → editor de contenido).
- *   - Lienzo en blanco → crea una landing kind='codigo' y abre el editor
- *     de HTML/CSS/JS (LandingCodigoEditor).
- *   - Generar con IA → (Oculto temporalmente) wizard propio, pero termina en el mismo editor libre
- *     que el lienzo porque el resultado técnico también es código.
- *
- * Los tres caminos terminan en la misma entidad Landing (mismo slug,
- * mismo es_home, mismo publicar). Lo que cambia es el editor real:
- * rígida usa editor estructurado; lienzo e IA usan editor libre.
+ * @deprecated El flujo de "Landing rígida" (TemplateSelector y AILandingWizard)
+ * fue retirado de la UI y queda marcado como deprecado para eliminarlo más adelante.
  */
 export default function ModoSelector({ onCreada }) {
   const navigate = useNavigate();
-  const [modo, setModo] = useState(null); // null | 'template'
   const [creando, setCreando] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,33 +31,14 @@ export default function ModoSelector({ onCreada }) {
     }
   }
 
-  if (modo === 'template') {
-    return <TemplateSelector onCreada={onCreada} onVolver={() => setModo(null)} />;
-  }
-  
-  if (modo === 'ia') {
-    return <AILandingWizard onCreada={(landing) => {
-      if (onCreada) onCreada(landing);
-      else navigate(`/landing/${landing.id}`, { replace: true });
-    }} />;
-  }
-
   return (
-    <div className="p-6 md:p-10 max-w-4xl mx-auto">
-      <div className="gc-tutorial-title-row"><h1 className="text-2xl font-bold text-fg mb-1">¿Cómo querés crear tu landing?</h1><TutorialHeaderAction /></div>
-      <p className="text-fg/50 mb-8">Elegí el punto de partida. Después vas a poder editar, publicar y ajustar la venta desde su editor.</p>
+    <div className="p-6 md:p-10 max-w-2xl mx-auto">
+      <div className="gc-tutorial-title-row"><h1 className="text-2xl font-bold text-fg mb-1">Creá tu e-commerce</h1><TutorialHeaderAction /></div>
+      <p className="text-fg/50 mb-8">Arrancá con tu lienzo en blanco y personalizá el diseño, productos y vistas desde el editor libre.</p>
 
       {error && <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/40 text-danger text-sm font-medium">{error}</div>}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Opcion
-          icono={LayoutTemplate}
-          titulo="Landing rígida"
-          descripcion="Elegís un diseño ya armado y editás contenido desde paneles. Ideal si querés una estructura guiada."
-          puntos={['Estructura y diseño resueltos', 'Catálogo, carrito y checkout incluidos', 'Se edita desde paneles']}
-          accion="Elegir landing rígida"
-          onClick={() => setModo('template')}
-        />
+      <div className="grid grid-cols-1 gap-6">
         <Opcion
           icono={Code2}
           titulo="Lienzo en blanco"

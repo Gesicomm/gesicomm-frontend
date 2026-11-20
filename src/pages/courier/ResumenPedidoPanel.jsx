@@ -2,6 +2,8 @@ import { useState } from "react";
 import { X, Copy, Check } from "lucide-react";
 import { formatGs } from "../../lib/courier";
 import { numeroPedidoVisible } from "./pedidoNumero";
+import { estadoMovilExpress } from "./orderLifecycle";
+import { MovilExpressSeguimiento } from "./MovilExpressSeguimiento";
 
 function armarTextoResumen(envio) {
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "—";
@@ -65,7 +67,8 @@ export function ResumenPedidoPanel({ open, envio, onClose }) {
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem", display: "grid", gap: "1rem" }}>
+          <MovilExpressSeguimiento envio={envio} />
           <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: "0.88rem", lineHeight: 1.6, margin: 0, color: "var(--color-fg)" }}>
             {texto}
           </pre>

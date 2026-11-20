@@ -1,0 +1,102 @@
+/*
+ * Rendiciones de Móvil Express, dentro de la pestaña Rendición.
+ *
+ * Tamaños según docs/typography.md: párrafos y campos en 16 px, ayudas en
+ * 14 px, metadatos en 13 px. Nada se achica para hacer entrar controles.
+ */
+
+.mexr {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  font-size: var(--ui-text-body, 1rem);
+  line-height: 1.55;
+}
+
+.mexr-encabezado { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.mexr-encabezado h3 { margin: 0 0 4px; font-size: var(--ui-text-card, 1.125rem); font-weight: 650; line-height: 1.4; }
+.mexr-encabezado p { margin: 0; max-width: 68ch; color: var(--color-fg-muted, #6b7280); }
+
+.mexr-icono {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; flex: 0 0 auto;
+  border: 1px solid var(--color-border, #e5e7eb); border-radius: 8px;
+  background: var(--color-canvas, #fff); color: inherit; cursor: pointer;
+}
+.mexr-icono:hover { border-color: var(--color-fg-muted, #6b7280); }
+
+.mexr-alerta { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-radius: 8px; font-size: var(--ui-text-help, 0.875rem); }
+.mexr-error { background: color-mix(in srgb, var(--color-danger, #dc2626) 10%, transparent); color: var(--color-danger, #dc2626); }
+.mexr-ok { background: color-mix(in srgb, var(--color-success, #16a34a) 12%, transparent); color: var(--color-success, #16a34a); }
+
+.mexr-vacio, .mexr-ayuda { margin: 0; font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted, #6b7280); max-width: 68ch; }
+.mexr-cargando { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--color-fg-muted, #6b7280); }
+.mexr-girar { animation: mexr-girar 1s linear infinite; }
+@keyframes mexr-girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mexr-girar { animation: none; } }
+
+.mexr-lista { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.mexr-lista > li { border: 1px solid var(--color-border, #e5e7eb); border-radius: 10px; overflow: hidden; }
+
+.mexr-fila {
+  display: grid;
+  grid-template-columns: minmax(7ch, auto) minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  gap: 12px; align-items: baseline; width: 100%;
+  padding: 14px; text-align: left; cursor: pointer;
+  border: 0; background: var(--color-canvas, #fff); color: inherit; font: inherit;
+}
+.mexr-fila:hover { background: var(--color-surface-2, rgba(127, 127, 127, 0.06)); }
+.mexr-fila:focus-visible { outline: 2px solid var(--color-accent, currentColor); outline-offset: -2px; }
+.mexr-fila-id { font-weight: 650; }
+.mexr-fila-periodo { font-size: var(--ui-text-meta, 0.8125rem); color: var(--color-fg-muted, #6b7280); }
+.mexr-fila-estado { font-size: var(--ui-text-help, 0.875rem); }
+.mexr-fila-monto { display: grid; justify-items: end; gap: 2px; }
+.mexr-fila-monto em { font-size: var(--ui-text-meta, 0.8125rem); font-style: normal; color: var(--color-fg-muted, #6b7280); }
+.mexr-fila-monto strong { font-size: var(--ui-text-body, 1rem); font-weight: 650; }
+
+.mexr-detalle { display: grid; gap: 14px; padding: 0 14px 16px; border-top: 1px solid var(--color-border, #e5e7eb); }
+
+.mexr-montos { display: grid; gap: 6px; margin: 14px 0 0; }
+.mexr-montos > div { display: flex; justify-content: space-between; gap: 12px; }
+.mexr-montos dt { margin: 0; font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted, #6b7280); }
+.mexr-montos dd { margin: 0; font-variant-numeric: tabular-nums; }
+.mexr-neto { padding-top: 6px; border-top: 1px solid var(--color-border, #e5e7eb); font-weight: 650; }
+.mexr-neto dt { color: inherit; font-size: var(--ui-text-body, 1rem); }
+
+.mexr-documentos, .mexr-acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.mexr-boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 44px; padding: 10px 16px;
+  border: 1px solid var(--color-border, #e5e7eb); border-radius: 8px;
+  background: var(--color-canvas, #fff); color: inherit;
+  font: inherit; font-size: var(--ui-text-body, 1rem); cursor: pointer;
+}
+.mexr-boton:hover:not(:disabled) { border-color: var(--color-fg-muted, #6b7280); }
+.mexr-boton:disabled { opacity: 0.55; cursor: not-allowed; }
+.mexr-primario { background: var(--color-success, #16a34a); border-color: var(--color-success, #16a34a); color: #fff; }
+
+.mexr-motivo { margin: 0; font-size: var(--ui-text-help, 0.875rem); }
+
+.mexr-formulario { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--color-border, #e5e7eb); border-radius: 8px; }
+.mexr-formulario label { display: grid; gap: 6px; }
+.mexr-etiqueta { font-size: var(--ui-text-label, 0.9375rem); font-weight: 500; }
+.mexr-formulario textarea, .mexr-formulario input[type="file"] {
+  font: inherit; font-size: var(--ui-text-body, 1rem); padding: 10px 12px;
+  border: 1px solid var(--color-border, #e5e7eb); border-radius: 6px;
+  background: var(--color-canvas, #fff); color: inherit; width: 100%;
+}
+
+.mexr-historial { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: var(--ui-text-meta, 0.8125rem); color: var(--color-fg-muted, #6b7280); }
+.mexr-historial li { display: flex; gap: 8px; }
+.mexr-historial span { flex: 0 0 9ch; }
+
+/* En celular las filas se apilan: el texto sigue en su tamaño, no se achica. */
+@media (max-width: 720px) {
+  .mexr-fila { grid-template-columns: 1fr; gap: 4px; }
+  .mexr-fila-monto { justify-items: start; }
+  .mexr-acciones > .mexr-boton, .mexr-documentos > .mexr-boton { flex: 1 1 100%; }
+  .mexr-historial li { flex-direction: column; gap: 0; }
+}

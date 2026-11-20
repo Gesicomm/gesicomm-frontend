@@ -258,6 +258,44 @@ describe('Depósitos: alta simple', () => {
     })));
     expect(await screen.findByText('Producto RAHA página 2')).toBeInTheDocument();
   });
+
+  it('muestra el costo de compra (costo_tienda/precio_base) y no el precio de venta (precio_efectivo) al abastecer', async () => {
+    depositoService.listarDepositos.mockResolvedValue({
+      data: [{ id: 50, nombre: 'Depósito Luque', ciudad: 'Luque', departamento: 'Central', direccion: 'Av. Test 123', activo: true }],
+      total: 1,
+    });
+    depositoService.listarCouriersDeposito.mockResolvedValue({ couriers: [] });
+    productService.buscar.mockResolvedValue({
+      productos: [{
+        id: 82,
+        nombre: 'Cafetera RAHA',
+        sku: 'RAHA-82',
+        categoria_id: 4,
+        precio_base: 100000,
+        costo_tienda: 100000,
+        precio_usuario: 185000,
+        precio_efectivo: 185000,
+        variantes_count: 0,
+        imagenes: [{ url: '/uploads/cafetera.jpg' }],
+      }],
+      total: 1,
+      total_paginas: 1,
+    });
+
+    render(<DepositosPage />);
+
+    expect((await screen.findAllByText('Depósito Luque')).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Administrar/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Abastecer depósito' }));
+
+    expect(await screen.findByText('Cafetera RAHA')).toBeInTheDocument();
+    expect(screen.getByText('Gs. 100.000')).toBeInTheDocument();
+    expect(screen.queryByText('Gs. 185.000')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Cafetera RAHA/ }));
+    expect(screen.getAllByText('Gs. 100.000').length).toBe(2);
+    expect(screen.queryByText('Gs. 185.000')).toBeNull();
+  });
 });
 
 describe('Depósitos: gestión de couriers', () => {

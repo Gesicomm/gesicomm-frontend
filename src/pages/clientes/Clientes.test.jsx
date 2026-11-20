@@ -9,7 +9,9 @@ vi.mock('../../services/reportesApi', () => ({ reportesService: { obtenerReporte
 vi.mock('../../services/clientesService', () => ({ clientesService: { pedidos: vi.fn() } }));
 
 const fila = {
-  cliente_key: 'TEL:595992820631', nombre: 'Martin Victorino', telefono: '0992820631', calificacion: 'recurrente',
+  cliente_key: 'TEL:595992820631', nombre: 'Martin Victorino', telefono: '0992820631',
+  email: 'martin@ejemplo.com', acepta_promociones: true,
+  calificacion: 'recurrente',
   pedidos_totales: 8, entregados: 2, devueltos: 0, cancelados: 0, total_comprado: 338000, ticket_promedio: 169000, ultimo_pedido: '2026-10-19',
 };
 
@@ -33,7 +35,7 @@ describe('Módulo Clientes', () => {
     expect(primera).not.toHaveProperty('fecha_desde');
     expect(primera).not.toHaveProperty('buscador');
 
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar cliente por nombre o teléfono' }), { target: { value: '0992' } });
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar cliente por nombre, teléfono o correo' }), { target: { value: '0992' } });
     await waitFor(() => expect(reportesService.obtenerReporteClientes.mock.calls.at(-1)[0]).toMatchObject({ buscador: '0992' }));
   });
 
@@ -47,6 +49,8 @@ describe('Módulo Clientes', () => {
     const ficha = await screen.findByRole('dialog', { name: 'Ficha de Martin Victorino' });
     expect(clientesService.pedidos).toHaveBeenCalledWith('TEL:595992820631');
     expect(within(ficha).getByRole('link', { name: /Escribir por WhatsApp/ })).toHaveAttribute('href', 'https://wa.me/595992820631');
+    expect(within(ficha).getByRole('link', { name: /Enviar correo/ })).toHaveAttribute('href', 'mailto:martin@ejemplo.com');
+    expect(within(ficha).getByText(/martin@ejemplo\.com/)).toBeInTheDocument();
     expect(await within(ficha).findByText('SOM-1047')).toBeInTheDocument();
     expect(within(ficha).getByText('2× Hidrolavadora')).toBeInTheDocument();
     expect(within(ficha).getByText('19/10/2026 · Luque')).toBeInTheDocument();
@@ -59,5 +63,28 @@ describe('Módulo Clientes', () => {
     render(<Clientes />);
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'zzz' } });
     expect(await screen.findByText('Ningún cliente coincide con "zzz".')).toBeInTheDocument();
+  });
+
+  it('muestra el correo en la tabla y permite exportar CSV para email marketing', async () => {
+    const createObjectURL = vi.fn(() => 'blob:clientes');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    reportesService.obtenerReporteClientes.mockResolvedValue({ data: [fila], kpis: {}, paginas: 1, total: 1 });
+    render(<Clientes />);
+    expect(await screen.findByText('martin@ejemplo.com')).toBeInTheDocument();
+    expect(screen.getByText('Acepta promociones')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Exportar CSV/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Lista para email marketing/ }));
+
+    await waitFor(() => expect(reportesService.obtenerReporteClientes).toHaveBeenCalledWith(
+      expect.objectContaining({ solo_acepta_promociones: true, pagina: 1, limite: 500 }),
+    ));
+    expect(createObjectURL).toHaveBeenCalled();
+
+    clickSpy.mockRestore();
+    vi.unstubAllGlobals();
   });
 });

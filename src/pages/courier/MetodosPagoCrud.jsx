@@ -234,6 +234,9 @@ export function MetodosPagoCrud({ onMetodosChange } = {}) {
         <div className="modal-overlay" onClick={() => setOpen(false)}>
           <form
             onSubmit={submit}
+            role="dialog"
+            aria-modal="true"
+            aria-label={editing ? "Editar método de pago" : "Nuevo método de pago"}
             className="modal-content"
             style={{
               background: 'var(--color-canvas)',
@@ -242,11 +245,14 @@ export function MetodosPagoCrud({ onMetodosChange } = {}) {
               boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
               color: 'var(--color-fg)',
               maxWidth: '480px',
-              padding: '1.75rem'
+              maxHeight: 'calc(100dvh - 2rem)',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '1.5rem'
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingBottom: '0.85rem', marginBottom: '1rem', flexShrink: 0 }}>
               <h3 style={{ color: 'var(--color-fg)', margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
                 {editing ? "Editar método de pago" : "Nuevo método de pago"}
               </h3>
@@ -259,13 +265,14 @@ export function MetodosPagoCrud({ onMetodosChange } = {}) {
               </button>
             </div>
 
+            <div style={{ overflowY: 'auto', flex: '1 1 auto', minHeight: 0, paddingRight: '0.25rem' }}>
             {error && (
               <div style={{ background: 'color-mix(in srgb, var(--color-danger) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)', color: 'var(--color-danger)', padding: '0.6rem 0.8rem', borderRadius: '0.5rem', fontSize: '0.8rem', marginBottom: '1rem' }}>
                 {error}
               </div>
             )}
 
-            <div className="form-grid" style={{ gap: '1.25rem' }}>
+            <div className="form-grid" style={{ gap: '1.1rem' }}>
               <div className="form-group full">
                 <label style={{ color: 'var(--color-fg-muted)', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Nombre del Método de Pago
@@ -354,8 +361,9 @@ export function MetodosPagoCrud({ onMetodosChange } = {}) {
                 </label>
               </div>
             </div>
+            </div>
 
-            <div style={{ borderTop: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingTop: '1.25rem', marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <div style={{ borderTop: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingTop: '1rem', marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', flexShrink: 0 }}>
               <button
                 type="button"
                 onClick={() => setOpen(false)}

@@ -278,7 +278,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
                   </Campo>
                 </div>
                 {datos.frecuencia && (
-                  <p className="-mt-1.5 text-xs text-fg-subtle">Se generará automáticamente cada período según la frecuencia elegida.</p>
+                  <p className="-mt-1.5 text-xs text-fg-subtle">Se registra solo cada vez que llega la fecha según la frecuencia elegida. Los meses que todavía no llegaron no lo muestran.</p>
                 )}
 
                 {error && <p className="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}

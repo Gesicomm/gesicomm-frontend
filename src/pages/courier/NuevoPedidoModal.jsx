@@ -5,6 +5,7 @@ import { ofertaService } from "../../services/ofertaService";
 import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio, getCourierGeografia, cotizarEntregaRaha } from "../../services/courierApi";
 import { depositoService } from "../../services/deposito.service";
 import { inventarioService } from "../../services/inventario.service";
+import { movilExpressService } from "../../services/movilExpressService";
 import { canalVentaService } from "../../services/canalVentaService";
 import { obtenerTarifaPara, buscarCourierYTarifa, buscarZonaDelivery } from "../../lib/tarifaCourier";
 import { getMediaUrl } from "../../services/api";
@@ -248,6 +249,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   const [couriers, setCouriers] = useState([]);
   const [cotizandoRaha, setCotizandoRaha] = useState(false);
   const [avisoTarifaRaha, setAvisoTarifaRaha] = useState('');
+  // Móvil Express: cobertura (Asunción y Gran Asunción) y cotización en vivo.
+  const [coberturaMex, setCoberturaMex] = useState([]);
+  const [cotizandoMex, setCotizandoMex] = useState(false);
+  const [avisoTarifaMex, setAvisoTarifaMex] = useState('');
   const costoManualVersion = useRef(0);
   const [courierIdsPorDeposito, setCourierIdsPorDeposito] = useState({});
   const [couriersDepositoLoading, setCouriersDepositoLoading] = useState("");
@@ -444,14 +449,87 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
     // asignado a este pedido, se sigue mostrando para no perder el dato.
     const vigentes = couriers.filter(c => c.activo !== false || String(c.id) === String(form.courier_id));
     if (!depositoSeleccionadoId) return vigentes;
-    if (!courierIdsPermitidos) return [];
-    return vigentes.filter(c => courierIdsPermitidos.has(Number(c.id)));
+    // Un courier de proveedor (Móvil Express) no pertenece a ningún depósito:
+    // es un tercero que retira de donde haga falta. El filtro por depósito es
+    // para los couriers propios, que sí se habilitan uno por uno.
+    const deProveedor = vigentes.filter(c => c.proveedor);
+    if (!courierIdsPermitidos) return deProveedor;
+    return vigentes.filter(c => c.proveedor || courierIdsPermitidos.has(Number(c.id)));
   }, [couriers, courierIdsPermitidos, depositoSeleccionadoId, pedidoRaha, form.courier_id]);
   const deliveryZonasParaOrigen = useMemo(() => {
     if (pedidoRaha) return [];
     if (!depositoSeleccionadoId || !courierIdsPermitidos) return deliveryZonas;
     return (deliveryZonas || []).filter(z => !z.courier_id || courierIdsPermitidos.has(Number(z.courier_id)));
   }, [courierIdsPermitidos, deliveryZonas, depositoSeleccionadoId, pedidoRaha]);
+
+  // El courier elegido, resuelto una vez. `proveedor` lo marca el backend
+  // (hoy 'movil-express'): el nombre es editable y no sirve para reconocerlo.
+  const courierElegido = useMemo(
+    () => couriers.find(c => String(c.id) === String(form.courier_id)) || null,
+    [couriers, form.courier_id],
+  );
+  const movilExpressElegido = courierElegido?.proveedor === 'movil-express';
+  const hayCourierMovilExpress = useMemo(
+    () => couriers.some(c => c.proveedor === 'movil-express'),
+    [couriers],
+  );
+
+  // La cobertura se pide una sola vez por apertura, y solo si el comercio
+  // tiene el proveedor conectado.
+  useEffect(() => {
+    if (!open || !hayCourierMovilExpress || coberturaMex.length) return;
+    let cancelado = false;
+    movilExpressService.cobertura()
+      .then(data => { if (!cancelado) setCoberturaMex(data?.ciudades || []); })
+      .catch(() => { if (!cancelado) setCoberturaMex([]); });
+    return () => { cancelado = true; };
+  }, [open, hayCourierMovilExpress, coberturaMex.length]);
+
+  /**
+   * Costo de envío de Móvil Express, cotizado en vivo.
+   *
+   * No hay un tarifario que se pueda listar: su API cotiza un destino por
+   * vez. El precio depende del punto de retiro, así que se manda el depósito
+   * elegido. Sin tarifa o con su API caída el costo queda en cero para carga
+   * manual, igual que la regla que ya rige para las tarifas propias: no se
+   * estima nada.
+   */
+  useEffect(() => {
+    if (!open || !movilExpressElegido || !form.ciudad) {
+      setCotizandoMex(false);
+      setAvisoTarifaMex('');
+      return;
+    }
+    let cancelado = false;
+    const version = costoManualVersion.current;
+    setCotizandoMex(true);
+    setAvisoTarifaMex('');
+    // Pequeña espera: cambiar de ciudad o de depósito varias veces seguidas
+    // no tiene por qué gastar una consulta por cada paso intermedio.
+    const temporizador = setTimeout(() => {
+      movilExpressService.cotizar({
+        ciudad: form.ciudad,
+        ...(form.origen_preferido_id ? { deposito_id: Number(form.origen_preferido_id) } : {}),
+      })
+        .then(resultado => {
+          if (cancelado || costoManualVersion.current !== version) return;
+          if (resultado?.elegible && Number.isFinite(Number(resultado.costo))) {
+            setForm(prev => ({ ...prev, costo_envio: Number(resultado.costo) }));
+            setAvisoTarifaMex('Costo exacto de Móvil Express para este destino.');
+          } else {
+            setForm(prev => ({ ...prev, costo_envio: 0 }));
+            setAvisoTarifaMex(resultado?.motivo || 'Móvil Express no tiene tarifa para este destino. Revisá el costo del envío.');
+          }
+        })
+        .catch(problema => {
+          if (cancelado) return;
+          setAvisoTarifaMex(problema?.response?.data?.message
+            || 'No pudimos consultar la tarifa de Móvil Express. Revisá el costo del envío antes de confirmar.');
+        })
+        .finally(() => { if (!cancelado) setCotizandoMex(false); });
+    }, 400);
+    return () => { cancelado = true; clearTimeout(temporizador); };
+  }, [open, movilExpressElegido, form.ciudad, form.origen_preferido_id]);
 
   useEffect(() => {
     if (!open || !pedidoRaha) return;
@@ -497,12 +575,15 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   useEffect(() => {
     if (pedidoRaha || !depositoSeleccionadoId || !courierIdsPermitidos || !form.courier_id) return;
     if (courierIdsPermitidos.has(Number(form.courier_id))) return;
+    // Un courier de proveedor no está vinculado a ningún depósito: cambiar de
+    // origen no tiene por qué desasignarlo.
+    if (courierElegido?.proveedor) return;
     setForm(prev => (
       String(prev.origen_preferido_id || "") === depositoSeleccionadoId
         ? { ...prev, courier_id: "", costo_envio: 0 }
         : prev
     ));
-  }, [courierIdsPermitidos, depositoSeleccionadoId, form.courier_id, pedidoRaha]);
+  }, [courierIdsPermitidos, courierElegido, depositoSeleccionadoId, form.courier_id, pedidoRaha]);
 
   useEffect(() => {
     if (pedidoRaha || !open || !depositoSeleccionadoId || itemsStockPedido.length === 0) {
@@ -676,8 +757,15 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
       }
     });
 
-    return Array.from(ciudades.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
-  }, [couriersParaOrigen, deliveryZonasParaOrigen, form.departamento, geografia]);
+    const lista = Array.from(ciudades.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
+
+    // Móvil Express cubre Asunción y Gran Asunción nada más. Con ese courier
+    // elegido, la lista se acota a su cobertura: ofrecer Encarnación para
+    // después responder "sin tarifa" es hacerle perder el viaje al comercio.
+    if (!movilExpressElegido || !coberturaMex.length) return lista;
+    const cubiertas = new Set(coberturaMex.map(c => normalizarBusqueda(c.nombre)));
+    return lista.filter(o => cubiertas.has(normalizarBusqueda(o.value)));
+  }, [couriersParaOrigen, deliveryZonasParaOrigen, form.departamento, geografia, movilExpressElegido, coberturaMex]);
 
   const catalogoPedidoPicker = useMemo(() => ({
     productos: productosDisponibles.map(p => ({
@@ -710,6 +798,11 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
         nextForm.departamento = departamentoSeleccionado || "";
       }
       const departamentoParaTarifa = departamentoSeleccionado !== undefined ? departamentoSeleccionado : prev.departamento;
+
+      // Con Móvil Express el costo lo pone la cotización, no el tarifario
+      // local: resolver acá cambiaría el courier por uno propio y pisaría el
+      // precio del proveedor con un cero.
+      if (movilExpressElegido) return nextForm;
 
       if (valCiudad) {
         const esAnticipado = prev.pago_anticipado;
@@ -748,8 +841,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   };
 
   const handleCourierChange = (courierId) => {
+    const elegido = couriers.find(c => String(c.id) === String(courierId));
     setForm(prev => {
       const nextForm = { ...prev, courier_id: courierId };
+      // Al pasar a Móvil Express el costo anterior deja de valer: lo cotiza
+      // el proveedor. Queda en cero hasta que vuelva la respuesta.
+      if (elegido?.proveedor) return { ...nextForm, costo_envio: 0 };
       if (courierId && prev.ciudad) {
         const esAnticipado = prev.pago_anticipado;
         const costo = obtenerTarifaPara(couriersParaOrigen, prev.ciudad, courierId, esAnticipado, itemsParaTarifa, prev.departamento);
@@ -796,10 +893,15 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
 
       if (departamento && !ciudadExisteEnDepartamento(prev.ciudad, departamento)) {
         nextForm.ciudad = "";
-        nextForm.courier_id = "";
+        // El courier de proveedor no se desasigna por cambiar de zona: no
+        // depende del tarifario local.
+        if (!movilExpressElegido) nextForm.courier_id = "";
         nextForm.costo_envio = 0;
         return nextForm;
       }
+
+      // Con Móvil Express manda la cotización, no el tarifario local.
+      if (movilExpressElegido) return nextForm;
 
       const esAnticipado = prev.pago_anticipado;
       if (prev.courier_id) {
@@ -990,7 +1092,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
   const fleteAlCliente = deliveryLoPagaNegocio ? 0 : (Number(form.costo_envio) || 0);
   // El resumen mostraba "Delivery" al lado de un total que no lo sumaba (los
   // pedidos web lo absorbe el comercio) y parecía un error de cuenta.
-  const etiquetaDelivery = deliveryLoPagaNegocio ? 'Delivery a tu cargo' : 'Delivery (incluido)';
+  const etiquetaDelivery = deliveryLoPagaNegocio ? 'Delivery a tu cargo (no se cobra)' : 'Delivery que paga el cliente';
 
   const metodoAnticipadoSeleccionado = metodosPago.find(m => String(m.id) === String(form.metodo_pago_id));
   const comisionMetodoAnticipado = metodoAnticipadoSeleccionado?.comision_porcentaje != null
@@ -1918,12 +2020,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                     checked={form.incluye_delivery}
                     onChange={e => setForm(prev => ({ ...prev, incluye_delivery: e.target.checked }))}
                   />
-                  <span style={{ color: 'var(--color-primary-text)', fontSize: '0.85rem' }}>
-                    Incluye delivery
+                  <span style={{ color: 'var(--color-primary-text)', fontSize: '0.9375rem' }}>
+                    Envío gratis para el cliente (lo pagás vos)
                   </span>
                 </label>
-                <span className="np-hint" style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>
-                  {deliveryLoPagaNegocio ? 'El envío no se suma al total del pedido.' : 'El envío se suma al total del pedido.'}
+                <span className="np-hint" style={{ fontSize: '0.8125rem', color: 'var(--color-fg-muted)' }}>
+                  {deliveryLoPagaNegocio ? 'Tildado: el envío no se le cobra al cliente y no se suma al total.' : 'Sin tildar: el cliente paga el envío y se suma al total del pedido.'}
                 </span>
               </div>
 
@@ -1946,7 +2048,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                             : "-- Sin asignar --"}
                         </option>
                         {couriersParaOrigen.map(c => (
-                          <option key={c.id} value={c.id}>{c.nombre} ({c.vehiculo})</option>
+                          // Un courier de proveedor sin la conexión lista se
+                          // muestra deshabilitado con el motivo: desaparecer
+                          // sin explicación manda a buscar qué se hizo mal.
+                          <option key={c.id} value={c.id} disabled={Boolean(c.proveedor) && c.proveedor_listo === false}>
+                            {c.proveedor
+                              ? `${c.nombre}${c.proveedor_listo === false ? ` — ${c.proveedor_motivo || 'no disponible'}` : ''}`
+                              : `${c.nombre} (${c.vehiculo})`}
+                          </option>
                         ))}
                       </>
                     )}
@@ -1978,6 +2087,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
                     prefix=""
                   />
                   {pedidoRaha && (cotizandoRaha || avisoTarifaRaha) && <span className="np-hint" role="status">{cotizandoRaha ? 'Consultando tarifa RAHA…' : avisoTarifaRaha}</span>}
+                  {movilExpressElegido && (cotizandoMex || avisoTarifaMex) && <span className="np-hint" role="status">{cotizandoMex ? 'Consultando el costo a Móvil Express…' : avisoTarifaMex}</span>}
                 </div>
 
                 {/* El toggle en sí es sobre el MOMENTO del cobro, no el

@@ -86,7 +86,7 @@ export default function RequireTienda({ children }) {
         if (resultado.activa) { setAcceso('ok'); return; }
         setAcceso(resultado.tiendas.length === 0 ? 'sin-tienda' : 'sin-tienda-activa');
       })
-      .catch(() => { if (vigente) setAcceso('sin-tienda'); });
+      .catch(() => { if (vigente) setAcceso('error'); });
 
     return () => { vigente = false; };
   }, [estado, usuario]);
@@ -98,6 +98,7 @@ export default function RequireTienda({ children }) {
   if (usuario?.rol === 'colaborador' && (!usuario.tiendaId || !rutaPermitida(usuario, location.pathname))) return <Navigate to={destinoColaborador(usuario)} replace />;
 
   if (acceso === 'pendiente') return <PantallaVerificandoSesion onReintentar={reintentar} />;
+  if (acceso === 'error') return <PantallaErrorConexion onReintentar={reintentar} />;
   if (acceso === 'sin-plan') return <Navigate to="/planes" replace />;
   if (acceso === 'sin-tienda') return <Navigate to="/onboarding" replace />;
   if (acceso === 'sin-tienda-activa') return <Navigate to="/seleccionar-tienda" state={{ desde: location.pathname }} replace />;

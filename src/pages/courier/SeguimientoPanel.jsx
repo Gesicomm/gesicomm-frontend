@@ -7,6 +7,7 @@ import { numeroPedidoVisible } from "./pedidoNumero";
 import { formatGs } from "../../lib/courier";
 import { FLOW_TYPES, fasesDeSeguimientoParaPedido, estadoParaSeguimiento, puedeEnviarSeguimiento } from "./orderLifecycle";
 import { ImagenProductoSeguimiento } from "./ImagenProductoSeguimiento";
+import { MovilExpressSeguimiento } from "./MovilExpressSeguimiento";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -380,6 +381,12 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido, onConf
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-fg-muted)" }}><Loader2 className="animate-spin" size={16} /> Cargando...</div>
           ) : (
             <div className="sp-sections" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+              {/* Envío de Móvil Express: la guía y el enlace a mano, que es
+                  lo que hay que contestarle al cliente cuando pregunta
+                  dónde está su pedido. No aparece si el pedido no salió
+                  por ellos. */}
+              <MovilExpressSeguimiento envio={envio} />
 
               {/* Etiquetas */}
               <div className="sp-tags" style={{ background: "var(--color-surface-2)", padding: "1rem", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>

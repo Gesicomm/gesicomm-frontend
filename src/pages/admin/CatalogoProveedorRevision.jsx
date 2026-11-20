@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Inbox, PackageSearch, RefreshCw, X } from 'lucide-react';
+import { Check, ImageOff, PackageSearch, RefreshCw, X } from 'lucide-react';
 import API from '../../services/api';
 import './catalogoProveedorRevision.css';
 
@@ -32,8 +32,13 @@ export default function CatalogoProveedorRevision() {
   const [nota, setNota] = useState('');
   const [errorDecision, setErrorDecision] = useState('');
   const [guardando, setGuardando] = useState(false);
+  // URLs de imagen que el navegador no pudo traer (la URL del proveedor
+  // responde con un error, una redirección a un login, o no existe).
+  const [rotas, setRotas] = useState(() => new Set());
   const notaRef = useRef(null);
   const avisoRef = useRef(null);
+
+  const marcarRota = url => setRotas(prev => (prev.has(url) ? prev : new Set(prev).add(url)));
 
   useEffect(() => {
     let vigente = true;
@@ -168,10 +173,20 @@ export default function CatalogoProveedorRevision() {
                     aria-label={`Elegir ${p.nombre}`} />
                 </label>}
 
+                {/* "Sin foto" y "la foto no carga" se veían igual —un marco
+                    vacío—, y son cosas distintas al decidir: una es un
+                    producto incompleto, la otra una URL que el proveedor
+                    tiene que corregir. */}
                 <div className="prov-producto-foto">
-                  {p.imagenes[0]
-                    ? <img src={p.imagenes[0]} alt="" loading="lazy" />
-                    : <span className="prov-producto-sinfoto"><Inbox size={22} /> Sin foto</span>}
+                  {!p.imagenes[0]
+                    ? <span className="prov-producto-sinfoto"><ImageOff size={22} /> Sin foto</span>
+                    : rotas.has(p.imagenes[0])
+                      ? <span className="prov-producto-sinfoto prov-producto-rota" title={p.imagenes[0]}>
+                        <ImageOff size={22} />
+                        <strong>No carga</strong>
+                        <small>{p.imagenes[0]}</small>
+                      </span>
+                      : <img src={p.imagenes[0]} alt="" loading="lazy" onError={() => marcarRota(p.imagenes[0])} />}
                 </div>
 
                 <div className="prov-producto-datos">
@@ -195,8 +210,12 @@ export default function CatalogoProveedorRevision() {
                     <div><dt>SKU</dt><dd>{p.sku || '—'}</dd></div>
                   </dl>
 
-                  {p.imagenes.length > 1 && <div className="prov-producto-galeria">
-                    {p.imagenes.slice(1).map(url => <img key={url} src={url} alt="" loading="lazy" />)}
+                  {/* Las miniaturas que no cargan se quitan: un marco vacío
+                      no aporta nada al lado de la foto principal. */}
+                  {p.imagenes.slice(1).some(url => !rotas.has(url)) && <div className="prov-producto-galeria">
+                    {p.imagenes.slice(1).filter(url => !rotas.has(url)).map(url => (
+                      <img key={url} src={url} alt="" loading="lazy" onError={() => marcarRota(url)} />
+                    ))}
                   </div>}
 
                   <p className="prov-producto-recibido">Recibido el {fecha(p.recibido_en)}</p>

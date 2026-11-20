@@ -1512,9 +1512,9 @@ ${FOOTER_HTML}`;
 
 // Tarjeta de order bump: la misma en la ficha y en el checkout de la tienda.
 const BUMP_CSS = `/* Order bump moderno: mini oferta clickeable, no formulario amarillo. */
-.bumps { display: grid; gap: 12px; margin-bottom: 12px; }
+.bumps { display: grid; width: 100%; min-width: 0; gap: 12px; margin-bottom: 12px; }
 .bump {
-  display: block; overflow: hidden; position: relative; cursor: pointer;
+  display: block; width: 100%; min-width: 0; box-sizing: border-box; overflow: hidden; position: relative; cursor: pointer;
   background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent 62%), var(--white);
   border: 1.5px solid color-mix(in srgb, var(--brand) 38%, var(--line));
   border-radius: 14px;

@@ -115,7 +115,7 @@
 .ecommerce-builder-config [role='tablist'][aria-label='Área de configuración'] button span { white-space: normal; overflow: visible; }
 @media (min-width: 1280px) {
   .ecommerce-builder-config { flex: 0 0 auto; width: clamp(560px, 46vw, 760px); min-width: 520px; max-width: 900px; resize: horizontal; }
-  .ecommerce-editor-width-controls { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 8px 24px; border-bottom: 1px solid var(--color-border); background: var(--color-surface); font-size: 14px; }
+  .ecommerce-editor-width-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 8px 24px; border-bottom: 1px solid var(--color-border); background: var(--color-surface); font-size: 14px; }
   .ecommerce-editor-width-controls button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; color: var(--color-fg); }
   .ecommerce-builder.is-expanded-editor .ecommerce-builder-config:not([hidden]) { width: 100%; min-width: 0; max-width: none; resize: none; }
   .ecommerce-builder.is-expanded-editor .ecommerce-builder-config:not([hidden]) + aside { display: none; }

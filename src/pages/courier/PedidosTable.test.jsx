@@ -148,13 +148,16 @@ test("las etapas incluyen Seguimiento de envío y cada una pide solo sus estados
 
   irAEtapa("Logística");
   await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]));
-  // Sin "Todos": Envíos RAHA primero, Pendiente de preparación y el resto de los estados de siempre.
-  expect(chips()).toEqual(["Envíos RAHA", "Pendiente de preparación", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
+  // Sin "Todos" ni pestaña aparte para RAHA: los envíos RAHA conviven en los mismos estados.
+  expect(chips()).toEqual(["Pendiente de preparación", "Preparado", "Despachado", "Reprogramado", "Entregado", "Devuelto", "Perdido"]);
   fireEvent.click(screen.getAllByRole("button").find((b) => b.classList.contains("pt-status-chip") && b.textContent.startsWith("Pendiente de preparación")));
   await waitFor(() => expect(ultimoPedido().estados).toEqual(["Confirmado"]));
   expect(encabezados()).toContain("Estado logístico");
   expect(encabezados()).not.toContain("Estado comercial");
   expect(encabezados()).not.toContain("Seguimiento");
+  expect(encabezados()).toContain("Proveedor");
+  expect(ultimoPedido()).toMatchObject({ seguimiento_comercial: true });
+  expect(ultimoPedido()).not.toHaveProperty("excluir_logistica_raha");
   await waitFor(() => expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento"));
 
   irAEtapa("Recompra");
@@ -193,7 +196,7 @@ test("el estado que se muestra es el de la etapa que se está mirando", async ()
   expect(estado("Cliente 5")).toHaveTextContent(/^Sin seguimiento$/);
 });
 
-test("Logística tiene el subestado Envíos RAHA y muestra solo estados RAHA sin cambio manual", async () => {
+test("Logística mezcla envíos RAHA y propios: columna Proveedor y estado RAHA mapeado a Gesicom sin cambio manual", async () => {
   getConteoPorEstado.mockResolvedValue({
     Preparado: 1,
     Despachado: 0,
@@ -231,18 +234,21 @@ test("Logística tiene el subestado Envíos RAHA y muestra solo estados RAHA sin
   const { onChangeEstado } = await montar({ esperarCliente: "Cliente 9" });
 
   irAEtapa("Logística");
-  fireEvent.click(await screen.findByRole("button", { name: /^Envíos RAHA/ }));
+  expect(screen.queryByRole("button", { name: /^Envíos RAHA/ })).not.toBeInTheDocument();
 
-  await waitFor(() => expect(ultimoPedido()).toMatchObject({ logistica_raha: true }));
+  await waitFor(() => expect(ultimoPedido()).not.toHaveProperty("logistica_raha"));
   const fila = await screen.findByText("Cliente 9").then((el) => el.closest("tr"));
   expect(within(fila).getByText("Despachado")).toBeInTheDocument();
+  expect(within(fila).getByText("RAHA", { selector: ".pt-proveedor" })).toBeInTheDocument();
   expect(within(fila).queryByText(/Tienda RAHA/)).not.toBeInTheDocument();
   expect(within(fila).queryByText(/Enviado como/)).not.toBeInTheDocument();
   expect(within(fila).queryByRole("button", { name: /Confirmado|Preparado|Despachado|En tránsito/ })).not.toBeInTheDocument();
   expect(within(fila).queryByRole("button", { name: /Ver timeline/ })).not.toBeInTheDocument();
 
   fireEvent.click(fila);
-  const estados = await screen.findByLabelText("Timeline RAHA del pedido #MIT-2809");
+  await screen.findByLabelText("Timeline RAHA del pedido #MIT-2809");
+  // La bandeja puede recargarse y reemplazar el nodo: se vuelve a buscar en cada uso.
+  const estados = new Proxy({}, { get: (_, prop) => { const nodo = screen.getByLabelText("Timeline RAHA del pedido #MIT-2809"); const v = nodo[prop]; return typeof v === 'function' ? v.bind(nodo) : v; } });
   expect(within(estados).getByText("Confirmado")).toBeInTheDocument();
   expect(within(estados).getByText("Despachado")).toBeInTheDocument();
   expect(within(estados).getByText("Preparado")).toBeInTheDocument();
@@ -291,10 +297,9 @@ test("Logística RAHA muestra cuando falta la confirmación de RAHA", async () =
 
   await montar({ esperarCliente: "Cliente 10" });
   irAEtapa("Logística");
-  fireEvent.click(await screen.findByRole("button", { name: /^Envíos RAHA/ }));
 
   const fila = await screen.findByText("Cliente 10").then((el) => el.closest("tr"));
-  expect(within(fila).getByText("Confirmado")).toBeInTheDocument();
+  expect(within(fila).getByText("Pendiente de preparación")).toBeInTheDocument();
   expect(within(fila).queryByText(/Tienda RAHA/)).not.toBeInTheDocument();
 });
 
@@ -530,7 +535,7 @@ test("Logística no muestra mensajes ni accesos a WhatsApp en tabla y Kanban", a
     })], total: 1, totalPages: 1,
   });
   const { onAbrirSeguimiento } = await montar({ etapasDisponibles: ["logistica"], initialEtapa: "logistica", initialEstado: "Confirmado" });
-  expect(encabezados()).toEqual(["Pedido", "Tipo", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Acción"]);
+  expect(encabezados()).toEqual(["Pedido", "Tipo", "Fecha", "Cliente", "Teléfono", "Producto / Oferta", "Total", "Método de pago", "Estado logístico", "Proveedor", "Acción"]);
   expect(screen.queryByText("1/3 · Pedido confirmado")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Preparar" })).toBeInTheDocument();
   expect(ultimoPedido()).not.toHaveProperty("incluir_seguimiento");

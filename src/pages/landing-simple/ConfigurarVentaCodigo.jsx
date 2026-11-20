@@ -2024,9 +2024,6 @@ export default function ConfigurarVentaCodigo({
       if (!nuevas.length) return;
       setOfertasElegidas(prev => new Set([...prev, ...nuevas.map(o => o.id)]));
       setCrossActivo(true);
-      const primera = nuevas[0];
-      const prod = porClave.get(`producto:${Number(primera.producto_ancla_id)}`);
-      if (prod) verOfertaEnFicha(primera, prod);
     });
   }
 
@@ -2117,7 +2114,7 @@ export default function ConfigurarVentaCodigo({
   const codigoCatalogoPreview = conGlobalesHeredados(codigos?.catalogo?.html ? codigos.catalogo : PLANTILLA_CATALOGO, codigoInicioPreview);
   const codigoCategoriaPreview = conGlobalesHeredados(codigos?.categoria?.html ? codigos.categoria : PLANTILLA_CATEGORIA, codigoInicioPreview);
   const codigoFichaPreview = conGlobalesHeredados(
-    esFichaProductoBase(codigos?.producto?.html) ? PLANTILLA_PRODUCTO : codigos.producto,
+    (codigos?.producto?.generado_por_mcp || !esFichaProductoBase(codigos?.producto?.html)) ? codigos.producto : PLANTILLA_PRODUCTO,
     codigoInicioPreview,
   );
   const codigoCheckoutPreview = conGlobalesHeredados(codigos?.checkout?.html ? codigos.checkout : PLANTILLA_CHECKOUT, codigoInicioPreview);
@@ -2723,7 +2720,10 @@ export default function ConfigurarVentaCodigo({
                         setResaltado(null);
                         return;
                       }
-                      verDonde(vistaDestino, null);
+                      setVistaPreview(vistaDestino);
+                      setSeccionConfig(seccionConfigDeVista(vistaDestino));
+                      setAvisoPreview('');
+                      setResaltado(null);
                     }}
                     className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold transition-colors ${seccionConfig === key ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
                   >

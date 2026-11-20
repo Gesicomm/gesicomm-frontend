@@ -1,0 +1,65 @@
+/*
+ * Bloque del envío de Móvil Express dentro de un pedido. Mismo lenguaje
+ * que el resto del panel de pedidos; tamaños según docs/typography.md
+ * (datos en 16 px, etiquetas y estados en 13–14 px).
+ */
+
+.mex-seg {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.mex-seg--compacto { padding: 10px 12px; gap: 8px; }
+
+.mex-seg-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+
+.mex-seg-marca { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; font-weight: 600; }
+.mex-seg-marca svg { flex-shrink: 0; }
+
+.mex-seg-estado {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 0.8125rem; font-weight: 600; white-space: nowrap;
+  background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  color: var(--color-fg);
+}
+.mex-seg-estado--info { background: color-mix(in srgb, var(--color-primary) 14%, transparent); color: var(--color-primary-text, var(--color-primary)); }
+.mex-seg-estado--success { background: color-mix(in srgb, var(--color-success) 16%, transparent); color: var(--color-success); }
+.mex-seg-estado--warning { background: color-mix(in srgb, var(--color-warning, #b4690e) 18%, transparent); color: var(--color-warning, #b4690e); }
+.mex-seg-estado--danger { background: color-mix(in srgb, var(--color-danger) 14%, transparent); color: var(--color-danger); }
+
+.mex-seg-girando { animation: mex-seg-girar 1s linear infinite; }
+@keyframes mex-seg-girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mex-seg-girando { animation: none; } }
+
+.mex-seg-datos { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: 0; }
+.mex-seg-datos > div { display: grid; gap: 1px; min-width: 0; }
+.mex-seg-datos dt { font-size: 0.8125rem; font-weight: 500; color: var(--color-fg-muted); }
+.mex-seg-datos dd { margin: 0; font-size: 1rem; font-weight: 600; word-break: break-all; }
+
+.mex-seg-aviso {
+  display: flex; align-items: flex-start; gap: 6px; margin: 0;
+  font-size: 0.875rem; color: var(--color-warning, var(--color-fg-muted));
+}
+.mex-seg-aviso svg { flex-shrink: 0; margin-top: 2px; }
+
+.mex-seg-link {
+  display: inline-flex; align-items: center; gap: 6px; justify-self: start;
+  min-height: 40px; padding: 8px 12px;
+  border: 1px solid var(--color-border); border-radius: 6px;
+  font-size: 0.875rem; font-weight: 600; text-decoration: none; color: inherit;
+}
+.mex-seg-link:hover { background: color-mix(in srgb, var(--color-fg) 6%, transparent); }
+
+.mex-seg-sin-link { margin: 0; font-size: 0.875rem; color: var(--color-fg-muted); }
+
+@media (max-width: 640px) {
+  .mex-seg-datos { gap: 6px 16px; }
+  .mex-seg-link { width: 100%; justify-content: center; }
+}

@@ -1650,7 +1650,9 @@ export default function ProductForm() {
           .reduce((acc, v) => acc + (parseInt(v.stock_deposito, 10) || 0), 0)
         : (parseInt(data.stock_deposito, 10) || 0);
       const stockDepositosPayload = construirStockDepositosPayload(variantesActivas);
-      const totalDistribuido = stockDepositosPayload.reduce((acc, fila) => acc + fila.cantidad, 0);
+      const totalDistribuido = tieneVariantes
+        ? variantesActivas.reduce((acc, v, idx) => acc + sumarStockDepositos(v.id ? `variante:${v.id}` : `nueva:${idx}`), 0)
+        : stockDepositosPayload.reduce((acc, fila) => acc + fila.cantidad, 0);
 
       if (stockFisicoTotal > 0 && depositosStock.length === 0) {
         setTabActiva('stock');
@@ -1663,15 +1665,9 @@ export default function ProductForm() {
       }
 
       if (tieneVariantes) {
-        const varianteNuevaConDeposito = variantesActivas.some((v) => !v.id && (parseInt(v.stock_deposito, 10) || 0) > 0);
-        if (varianteNuevaConDeposito) {
-          setTabActiva('stock');
-          throw new Error('Guardá primero las variantes nuevas y luego distribuí su stock por ubicación.');
-        }
-
-        const varianteDesbalanceada = variantesActivas.find((v) => {
+        const varianteDesbalanceada = variantesActivas.find((v, idx) => {
           const totalVariante = (parseInt(v.stock_deposito, 10) || 0);
-          const distribuidoVariante = v.id ? sumarStockDepositos(`variante:${v.id}`) : 0;
+          const distribuidoVariante = sumarStockDepositos(v.id ? `variante:${v.id}` : `nueva:${idx}`);
           return distribuidoVariante !== totalVariante;
         });
         if (varianteDesbalanceada) {
@@ -1679,6 +1675,8 @@ export default function ProductForm() {
           throw new Error('Cada variante debe tener distribuido exactamente su stock por ubicación.');
         }
       }
+
+      const hayVariantesNuevasConStock = tieneVariantes && variantesActivas.some((v, idx) => !v.id && sumarStockDepositos(`nueva:${idx}`) > 0);
 
       const payload = {
         nombre: data.nombre.trim(),
@@ -1746,8 +1744,37 @@ export default function ProductForm() {
           : {}),
       };
 
+      const distribuirStockVariantesNuevas = async (productoGuardado) => {
+        if (!hayVariantesNuevasConStock || !Array.isArray(productoGuardado?.variantes)) return;
+        const nuevasFilas = [...stockDepositosPayload];
+        variantesActivas.forEach((v, idx) => {
+          if (v.id) return;
+          const firma = firmaDeValores(v.valores);
+          const creada = productoGuardado.variantes.find(pv =>
+            (v.sku_variante && pv.sku_variante === v.sku_variante)
+            || (firma && firmaDeValores(pv.valores) === firma)
+            || (v.nombre && pv.nombre === v.nombre)
+          );
+          if (!creada?.id) return;
+          Object.entries(stockPorDeposito[`nueva:${idx}`] || {}).forEach(([depositoId, cantidad]) => {
+            const cant = parseInt(cantidad, 10) || 0;
+            if (Number(depositoId) && cant > 0) {
+              nuevasFilas.push({ deposito_id: Number(depositoId), variante_id: Number(creada.id), cantidad: cant });
+            }
+          });
+        });
+        if (nuevasFilas.length > stockDepositosPayload.length) {
+          await productService.actualizar(productoGuardado.id, {
+            ...payload,
+            variantes: productoGuardado.variantes,
+            stock_depositos: nuevasFilas,
+          });
+        }
+      };
+
       if (esEdicion) {
-        await productService.actualizar(id, payload);
+        const actualizado = await productService.actualizar(id, payload);
+        await distribuirStockVariantesNuevas(actualizado);
         for (const imgObj of imagenesNuevas) {
           await productService.subirImagen(id, prepararImagenFormData(imgObj));
         }
@@ -1759,6 +1786,7 @@ export default function ProductForm() {
         navigate('/mi-catalogo', { state: { filtro: 'mios' } });
       } else {
         const nuevo = await productService.crear(payload);
+        await distribuirStockVariantesNuevas(nuevo);
         productoCreadoId = nuevo.id;
         const avisosImagen = [];
         for (let i = 0; i < ofertasBorrador.length; i++) {
@@ -3008,29 +3036,24 @@ export default function ProductForm() {
                               <small>{distribuido}/{totalVariante} {unidadVal}{totalVariante === 1 ? '' : 's'} distribuidas</small>
                             </div>
                           </div>
-                          {!variante.id && totalVariante > 0 ? (
-                            <p className="field-hint">Guardá primero esta variante para poder asignarle stock por ubicación.</p>
-                          ) : (
-                            <div className="stock-depositos-grid compact">
-                              {depositosStock.map((dep) => (
-                                <label key={dep.id} className="stock-deposito-row">
-                                  <span>
-                                    <strong>{dep.nombre}</strong>
-                                    <small>Depósito · {dep.ciudad}</small>
-                                  </span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    className="form-control"
-                                    style={{ background: "var(--color-surface, var(--color-surface))", border: '1px solid var(--color-border, #ccc)', padding: '0.4rem', textAlign: 'center', borderRadius: '6px' }}
-                                    value={stockPorDeposito[key]?.[String(dep.id)] ?? ''}
-                                    disabled={!variante.id}
-                                    onChange={(e) => cambiarStockDeposito(key, dep.id, e.target.value)}
-                                  />
-                                </label>
-                              ))}
-                            </div>
-                          )}
+                          <div className="stock-depositos-grid compact">
+                            {depositosStock.map((dep) => (
+                              <label key={dep.id} className="stock-deposito-row">
+                                <span>
+                                  <strong>{dep.nombre}</strong>
+                                  <small>Depósito · {dep.ciudad}</small>
+                                </span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  className="form-control"
+                                  style={{ background: "var(--color-surface, var(--color-surface))", border: '1px solid var(--color-border, #ccc)', padding: '0.4rem', textAlign: 'center', borderRadius: '6px' }}
+                                  value={stockPorDeposito[key]?.[String(dep.id)] ?? ''}
+                                  onChange={(e) => cambiarStockDeposito(key, dep.id, e.target.value)}
+                                />
+                              </label>
+                            ))}
+                          </div>
                         </div>
                       );
                     })}
@@ -3945,7 +3968,11 @@ function OpcionRow({ control, register, index, onQuitar }) {
   return (
     <div className="opcion-row">
       <div className="opcion-row-header">
-        <input placeholder="Ej: Color, RAM, Talla" {...register(`opciones.${index}.nombre`)} />
+        <input
+          placeholder="Ej: Color, RAM, Talla"
+          {...register(`opciones.${index}.nombre`)}
+          onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
+        />
         <button type="button" className="btn-icon danger" onClick={onQuitar} aria-label="Quitar opción">
           <Trash2 size={14} />
         </button>
@@ -3953,7 +3980,10 @@ function OpcionRow({ control, register, index, onQuitar }) {
       <div className="opcion-row-valores">
         {valoresFields.map((vf, j) => (
           <span key={vf._rhfKey} className="opcion-valor-chip">
-            <input {...register(`opciones.${index}.valores.${j}.valor`)} />
+            <input
+              {...register(`opciones.${index}.valores.${j}.valor`)}
+              onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
+            />
             <button type="button" onClick={() => removeValor(j)} aria-label="Quitar valor">
               <X size={11} />
             </button>

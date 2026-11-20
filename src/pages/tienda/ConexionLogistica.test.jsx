@@ -1,13 +1,20 @@
 import React from 'react';
 import { beforeEach, it, expect, vi } from 'vitest';
-import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import ConexionLogistica from './ConexionLogistica';
 import { rahaService } from '../../services/rahaService';
 import { speedboxService } from '../../services/speedboxService';
 
 vi.mock('../../services/rahaService', () => ({ rahaService: { obtener: vi.fn() } }));
 vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: vi.fn() } }));
+// La pantalla ahora lista varios proveedores: Móvil Express tiene su propia
+// tarjeta y su propio servicio.
+vi.mock('../../services/movilExpressService', () => ({ movilExpressService: { obtener: vi.fn() } }));
 const solicitud = { id: 1, estado: 'borrador', version: 1, datos: {}, documentos: [], historial: [] };
+// Cada aserción se hace dentro de la tarjeta de su proveedor: los botones
+// ('Validar cuenta', 'Actualizar estado…') se repiten una vez por tarjeta.
+const tarjeta = nombre => screen.getByRole('heading', { name: nombre, level: 3 }).closest('article');
+const enRaha = () => within(tarjeta('Rahá'));
 beforeEach(() => {
   cleanup(); vi.clearAllMocks();
   rahaService.obtener.mockResolvedValue({ ...solicitud });
@@ -18,11 +25,11 @@ it('shows the provider and opens its existing document application on demand', a
   render(<ConexionLogistica tienda={{ id: 1, nombre: 'Mi negocio' }} />);
   expect(screen.getByAltText('Rahá')).toHaveAttribute('src', '/providers/raha.png');
   for (const etiqueta of ['Mercadería', 'Logística', 'Almacenamiento', 'Fulfillment', 'Envíos y entregas']) {
-    expect(screen.getByText(etiqueta)).toBeVisible();
+    expect(enRaha().getByText(etiqueta)).toBeVisible();
   }
   expect(screen.getByText('Más de 3.500 productos · Entregas estimadas de 24 a 48 horas')).toBeVisible();
   expect(screen.queryByLabelText('Razón social')).not.toBeInTheDocument();
-  const conectar = await screen.findByRole('button', { name: 'Iniciar afiliación a Rahá' });
+  const conectar = await enRaha().findByRole('button', { name: 'Iniciar afiliación a Rahá' });
   await waitFor(() => expect(conectar).toBeEnabled());
   fireEvent.click(conectar);
   expect(await screen.findByLabelText('Razón social')).toHaveValue('Mi negocio');
@@ -34,8 +41,8 @@ it.each(['borrador', 'en_revision', 'enviada_raha', 'observada', 'rechazada'])('
   rahaService.obtener.mockResolvedValue({ ...solicitud, estado });
   render(<ConexionLogistica abrirValidacion />);
   await waitFor(() => expect(rahaService.obtener).toHaveBeenCalled());
-  expect(screen.getByRole('button', { name: 'Validar cuenta' })).toBeDisabled();
-  expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent('Rahá tiene que aprobar tu solicitud');
+  expect(enRaha().getByRole('button', { name: 'Validar cuenta' })).toBeDisabled();
+  expect(enRaha().getByRole('tooltip', { hidden: true })).toHaveTextContent('Rahá tiene que aprobar tu solicitud');
   expect(speedboxService.obtener).not.toHaveBeenCalled();
   expect(screen.queryByLabelText('Public key')).not.toBeInTheDocument();
 });
@@ -43,8 +50,8 @@ it.each(['borrador', 'en_revision', 'enviada_raha', 'observada', 'rechazada'])('
 it('unlocks the real keys and sandbox checks after approval', async () => {
   rahaService.obtener.mockResolvedValue({ ...solicitud, estado: 'aprobada' });
   render(<ConexionLogistica />);
-  await screen.findByText('Validación pendiente');
-  fireEvent.click(screen.getByRole('button', { name: 'Validar cuenta' }));
+  await enRaha().findByText('Validación pendiente');
+  fireEvent.click(enRaha().getByRole('button', { name: 'Validar cuenta' }));
   expect(await screen.findByLabelText('Public key')).toBeVisible();
   expect(screen.getByLabelText('Private key')).toBeVisible();
   expect(screen.getByRole('button', { name: 'Solicitar habilitación en producción' })).toBeDisabled();
@@ -54,19 +61,19 @@ it('refreshes approval and enables the next step without reloading the page', as
   rahaService.obtener.mockResolvedValueOnce({ ...solicitud, estado: 'en_revision' }).mockResolvedValue({ ...solicitud, estado: 'aprobada' });
   render(<ConexionLogistica />);
   await screen.findByText('Enviada a Raha');
-  fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado de Rahá' }));
-  await screen.findByText('Validación pendiente');
-  expect(screen.getByRole('button', { name: 'Validar cuenta' })).toBeEnabled();
+  fireEvent.click(enRaha().getByRole('button', { name: 'Actualizar estado de Rahá' }));
+  await enRaha().findByText('Validación pendiente');
+  expect(enRaha().getByRole('button', { name: 'Validar cuenta' })).toBeEnabled();
 });
 
 it('keeps validation locked when the status cannot be fetched and allows retrying', async () => {
   rahaService.obtener.mockRejectedValueOnce(new Error('offline'));
   render(<ConexionLogistica />);
-  await screen.findByRole('alert');
-  expect(screen.getByRole('button', { name: 'Validar cuenta' })).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado de Rahá' }));
+  await enRaha().findByRole('alert');
+  expect(enRaha().getByRole('button', { name: 'Validar cuenta' })).toBeDisabled();
+  fireEvent.click(enRaha().getByRole('button', { name: 'Actualizar estado de Rahá' }));
   await screen.findByText('Trámite no iniciado');
-  expect(screen.getByRole('button', { name: 'Iniciar afiliación a Rahá' })).toBeEnabled();
+  expect(enRaha().getByRole('button', { name: 'Iniciar afiliación a Rahá' })).toBeEnabled();
 });
 
 it('opens legacy validation links after approval and allows production only when all checks passed', async () => {
@@ -80,8 +87,8 @@ it('opens legacy validation links after approval and allows production only when
 it('locks validation again if refreshing an approved application fails', async () => {
   rahaService.obtener.mockResolvedValueOnce({ ...solicitud, estado: 'aprobada' }).mockRejectedValue(new Error('offline'));
   render(<ConexionLogistica />);
-  await screen.findByText('Validación pendiente');
-  fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado de Rahá' }));
-  await screen.findByRole('alert');
-  expect(screen.getByRole('button', { name: 'Validar cuenta' })).toBeDisabled();
+  await enRaha().findByText('Validación pendiente');
+  fireEvent.click(enRaha().getByRole('button', { name: 'Actualizar estado de Rahá' }));
+  await enRaha().findByRole('alert');
+  expect(enRaha().getByRole('button', { name: 'Validar cuenta' })).toBeDisabled();
 });

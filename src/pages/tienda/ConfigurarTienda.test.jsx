@@ -129,10 +129,15 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     await cargarPantalla();
     const tabs = within(screen.getByRole('tablist', { name: 'Secciones de configuración', exact: true })).getAllByRole('tab');
     const nombres = tabs.map(tab => tab.getAttribute('aria-label'));
-    expect(nombres.slice(-3)).toEqual(['Analítica', 'Conexión a proveedor', 'Conexión con IA']);
+    // Las etiquetas de las pestañas se acortaron ('Proveedor', 'Conexión
+    // IA'); el título largo sigue siendo 'Conexión a proveedor'.
+    expect(nombres.slice(-3)).toEqual(['Analítica', 'Proveedor', 'Conexión IA']);
     fireEvent.click(tabs.at(-2));
     expect(await screen.findByText('Mercadería')).toBeVisible();
     expect(screen.getByText('Fulfillment')).toBeVisible();
+    // Rahá visible; Móvil Express oculto hasta completar su conexión.
+    expect(screen.getByRole('heading', { name: 'Rahá', level: 3 })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Móvil Express', level: 3 })).not.toBeInTheDocument();
   });
 
   it('edita tienda, documento/RUC, URL, contacto y analitica; guarda con el payload correcto', async () => {

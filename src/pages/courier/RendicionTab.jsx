@@ -3,6 +3,7 @@ import { HandCoins, RefreshCw, CheckCircle2 } from "lucide-react";
 import { formatGs } from "../../lib/courier";
 import { numeroPedidoVisible } from './pedidoNumero';
 import { previsualizarLiquidacion, confirmarLiquidacion, getLiquidacionesPorCourier, getSaldosPendientesRendicion } from "../../services/courierApi";
+import { MovilExpressRendiciones } from "./MovilExpressRendiciones";
 
 function hoy() {
   return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
@@ -242,6 +243,11 @@ export function RendicionTab({ couriers = [] }) {
           </div>
         </div>
       )}
+
+      {/* Las rendiciones de Móvil Express son otra fuente: las calcula y las
+          cierra el proveedor. Van abajo, separadas de la liquidación propia,
+          y no se muestran si el comercio no trabaja con ellos. */}
+      <MovilExpressRendiciones />
     </div>
   );
 }

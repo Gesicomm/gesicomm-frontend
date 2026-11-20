@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="Móvil Express">
+  <!--
+    PROVISORIO. Marca genérica para poder probar la pantalla: no es el logo
+    real de Móvil Express. Cuando llegue el archivo oficial, dejarlo en
+    public/providers/movil-express.png y apuntar ahí el `logo` del
+    proveedor en ConexionLogistica.jsx.
+  -->
+  <title>Móvil Express (logo provisorio)</title>
+  <defs>
+    <linearGradient id="me-fondo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f6feb" />
+      <stop offset="1" stop-color="#0b3d91" />
+    </linearGradient>
+  </defs>
+
+  <rect width="320" height="320" rx="56" fill="url(#me-fondo)" />
+
+  <!-- Camioncito: señal genérica de logística, sin imitar ninguna marca. -->
+  <g fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M60 176V104h104v72" />
+    <path d="M164 132h44l28 34v10h-72z" />
+    <path d="M60 176h176" />
+    <circle cx="106" cy="196" r="17" />
+    <circle cx="204" cy="196" r="17" />
+    <!-- Líneas de velocidad -->
+    <path d="M34 124h18M26 148h26M34 172h18" opacity="0.85" />
+  </g>
+
+  <text x="160" y="258" fill="#ffffff" font-family="'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif"
+        font-size="38" font-weight="700" text-anchor="middle">Móvil</text>
+  <text x="160" y="292" fill="#9ec5ff" font-family="'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif"
+        font-size="30" font-weight="600" letter-spacing="2" text-anchor="middle">EXPRESS</text>
+</svg>

@@ -93,7 +93,7 @@ describe('Armador compartido de combos en la landing', () => {
     expect(comboAdminService.cambiarEstado).toHaveBeenCalledWith(99, 'ACTIVO');
     expect(ofertaService.crear).not.toHaveBeenCalled();
     expect(datos().productos.map(p => p.id)).toEqual(['cacerola', 'combo-99']);
-    expect(datos().productos[1]).toMatchObject({ precio: 130000, combo_productos: [7, 8], productos_incluidos: 'Cacerola, Utensilios' });
+    expect(datos().productos[1]).toMatchObject({ precio: 130000, combo_productos: [7, 8], productos_incluidos: ['Cacerola', 'Utensilios'] });
     expect(datos().productos[1].combo_incluye).toHaveLength(2);
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ id: 7, precio_ancla: 120000, etiqueta: 'Oferta' });

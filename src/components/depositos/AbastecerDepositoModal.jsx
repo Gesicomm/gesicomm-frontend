@@ -23,8 +23,8 @@ function imagenProducto(producto) {
     || '';
 }
 
-function precioProducto(producto) {
-  return producto?.precio_efectivo ?? producto?.precio_base ?? producto?.precio ?? null;
+function costoCompraProducto(producto) {
+  return producto?.costo_tienda ?? producto?.precio_base ?? null;
 }
 
 function formatGs(value) {
@@ -301,9 +301,9 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
                       {categoriaNombre(p, categorias) && <span>{categoriaNombre(p, categorias)}</span>}
                       {Number(p.variantes_count) > 0 && <span>{p.variantes_count} variantes</span>}
                     </span>
-                    {formatGs(precioProducto(p)) && (
+                    {formatGs(costoCompraProducto(p)) && (
                       <span className="mt-2 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[12px] font-semibold text-primary-text">
-                        {formatGs(precioProducto(p))}
+                        {formatGs(costoCompraProducto(p))}
                       </span>
                     )}
                   </span>
@@ -353,8 +353,8 @@ export default function AbastecerDepositoModal({ deposito, open, onClose }) {
                       {categoriaNombre(producto, categorias) && (
                         <p className="m-0 mt-1 text-[12px] text-fg-muted">{categoriaNombre(producto, categorias)}</p>
                       )}
-                      {formatGs(precioProducto(producto)) && (
-                        <p className="m-0 mt-2 text-sm font-semibold text-primary-text">{formatGs(precioProducto(producto))}</p>
+                      {formatGs(costoCompraProducto(producto)) && (
+                        <p className="m-0 mt-2 text-sm font-semibold text-primary-text">{formatGs(costoCompraProducto(producto))}</p>
                       )}
                     </div>
                   </div>

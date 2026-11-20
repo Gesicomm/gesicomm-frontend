@@ -1,0 +1,100 @@
+/*
+ * Panel de validación de Móvil Express. Reusa los botones y las alertas de
+ * RAHA (.raha-button, .raha-icon, .raha-alert) para no tener dos lenguajes
+ * visuales en la misma pantalla; acá sólo vive la disposición propia.
+ *
+ * Tamaños según docs/typography.md: párrafos y campos en 16 px, ayudas en
+ * 14 px, metadatos en 13 px. Nada se achica para hacer entrar controles.
+ */
+
+.mex { display: grid; gap: 18px; max-width: 76ch; font-size: 1rem; line-height: 1.55; }
+
+.mex-encabezado { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.mex-encabezado h4 { margin: 0 0 4px; font-size: 1.125rem; font-weight: 650; line-height: 1.4; }
+.mex-encabezado p { margin: 0; color: var(--color-fg-muted); max-width: 68ch; }
+.mex code { font-size: 0.9375rem; padding: 1px 5px; border-radius: 4px; background: var(--color-surface-2, rgba(127, 127, 127, 0.12)); word-break: break-all; }
+
+.mex-ambiente { margin: 0; font-size: 0.875rem; color: var(--color-fg-muted); }
+.mex-pausa { color: var(--color-warning, var(--color-fg-muted)); }
+
+.mex-cargando { display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; color: var(--color-fg-muted); }
+.mex-spin { animation: mex-girar 1s linear infinite; }
+@keyframes mex-girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mex-spin { animation: none; } }
+
+/*
+ * Mapa de pasos. En escritorio es una fila de tres hitos; en celular se
+ * apila y se antepone "Paso N de 3", porque tres cajas en columna no dicen
+ * por sí solas en cuál estás.
+ */
+.mex-mapa ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+  margin: 0; padding: 0; list-style: none; }
+.mex-mapa-movil { display: none; margin: 0 0 8px; font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted); }
+
+.mex-hito { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: center; width: 100%;
+  padding: 12px; text-align: left; cursor: pointer;
+  border: 1px solid var(--color-border); border-radius: 10px;
+  background: var(--color-canvas); color: inherit; font: inherit; }
+.mex-hito:hover { border-color: color-mix(in srgb, var(--color-fg) 25%, var(--color-border)); }
+.mex-hito:focus-visible { outline: 2px solid var(--color-accent, currentColor); outline-offset: 2px; }
+.mex-hito-marca { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+  border-radius: 50%; border: 1px solid var(--color-border); }
+.mex-hito-texto { display: grid; gap: 2px; min-width: 0; }
+.mex-hito-texto strong { font-size: var(--ui-text-body, 1rem); font-weight: 600; }
+.mex-hito-texto em { font-size: var(--ui-text-help, 0.875rem); font-style: normal; color: var(--color-fg-muted); }
+
+.mex-hito[data-estado="actual"] { border-color: var(--color-accent, var(--color-fg));
+  box-shadow: inset 0 0 0 1px var(--color-accent, var(--color-fg)); }
+.mex-hito[data-estado="listo"] .mex-hito-marca { background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 45%, var(--color-border)); color: var(--color-success); }
+.mex-hito[data-estado="listo"] .mex-hito-texto em { color: var(--color-success); }
+
+/* El paso abierto: uno solo por vez, con aire propio. */
+.mex-panel { display: grid; gap: 14px; padding: 18px; border: 1px solid var(--color-border); border-radius: 12px; }
+.mex-panel h5 { margin: 0; font-size: var(--ui-text-card, 1.125rem); font-weight: 650; line-height: 1.4; }
+.mex-intro { margin: 0; color: var(--color-fg-muted); max-width: 68ch; }
+.mex-separador { width: 100%; height: 1px; margin: 2px 0; border: 0; background: var(--color-border); }
+
+.mex-navegacion { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mex-navegacion-estado { flex: 1 1 auto; text-align: center; font-size: var(--ui-text-help, 0.875rem);
+  color: var(--color-fg-muted); }
+
+.mex-campos { display: grid; gap: 12px; }
+.mex-campos label, .mex-prueba label { display: grid; gap: 6px; }
+.mex-etiqueta { font-size: 0.875rem; font-weight: 500; color: var(--color-fg); }
+.mex input[type="text"], .mex input[type="password"], .mex select {
+  font: inherit; font-size: 1rem; min-height: 44px; padding: 10px 12px;
+  border: 1px solid var(--color-border); border-radius: 6px;
+  background: var(--color-canvas); color: var(--color-fg); width: 100%;
+}
+.mex-ayuda { margin: 0; font-size: 0.875rem; color: var(--color-fg-muted); max-width: 68ch; }
+
+.mex-eleccion { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: 1rem; }
+.mex-eleccion input { width: 18px; height: 18px; margin-top: 3px; }
+.mex-eleccion em { display: block; margin-top: 2px; font-size: 0.875rem; font-style: normal; color: var(--color-fg-muted); }
+
+.mex-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.mex-dato { font-size: 0.8125rem; font-weight: 500; color: var(--color-fg-muted); }
+
+.mex-url { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 12px; border: 1px dashed var(--color-border); border-radius: 8px; }
+.mex-url code { flex: 1 1 24ch; min-width: 0; }
+
+.mex-prueba { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.mex-resultado { margin: 0; font-size: 1rem; }
+.mex-resultado-ok { color: var(--color-success); }
+.mex-activo { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 0.875rem; color: var(--color-success); }
+
+/* En celular los campos y los párrafos siguen en 16 px: se apilan, no se achican. */
+@media (max-width: 640px) {
+  .mex-mapa-movil { display: block; }
+  .mex-mapa ol { grid-template-columns: 1fr; gap: 8px; }
+  .mex-panel { padding: 14px; }
+  .mex-navegacion { flex-wrap: wrap; }
+  .mex-navegacion-estado { order: 3; flex-basis: 100%; text-align: left; }
+  .mex-navegacion > .raha-button { flex: 1 1 0; justify-content: center; }
+  .mex-prueba { grid-template-columns: 1fr; align-items: stretch; }
+  .mex-acciones > .raha-button { flex: 1 1 100%; }
+  .mex-encabezado { flex-direction: column; }
+  .mex-bloque { padding: 14px; }
+}

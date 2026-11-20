@@ -153,9 +153,9 @@ export function CentroInteligenciaComercial() {
           ))}
         </aside>
 
-        <main className="cic-content-area">
+        <div className="cic-content-area">
           {renderActiveReport()}
-        </main>
+        </div>
       </div>
     </div>
   );

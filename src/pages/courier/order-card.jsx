@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { formatGs } from "../../lib/courier";
 import { AlertCircle, Bike, Car, Clock, CreditCard, Package, Phone, ShoppingBag, MapPin, MessageCircle, Truck } from "lucide-react";
-import { STAGE_LABELS, estadoDePedido } from "./orderLifecycle";
+import { STAGE_LABELS, estadoDePedido, estadoMovilExpress } from "./orderLifecycle";
 import { numeroPedidoVisible } from "./pedidoNumero";
 
 function VehiculoIcon({ v }) {
@@ -56,6 +56,7 @@ export function OrderCard({
   const necesitaSeguimiento = seguimientoVencido || (envio.estado === "EnSeguimiento" && !seguimientoPendiente);
   const mostrarAlertas = Boolean(onAbrirSeguimiento) && (necesitaSeguimiento || seguimientoPendiente);
   const estado = estadoDePedido(envio, etapaVista);
+  const movilExpress = estadoMovilExpress(envio);
 
   const handleSeguimientoClick = (event) => {
     event.stopPropagation();
@@ -121,6 +122,14 @@ export function OrderCard({
 
       {/* Tags de condición de pago y teléfono */}
       <div className="order-card-tags" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.4rem 0' }}>
+        {/* Envío por Móvil Express: la guía en la tarjeta, para no tener que
+            abrir el pedido sólo para saber en qué anda. */}
+        {movilExpress && (
+          <span className="tag-badge order-mex-badge" title={movilExpress.guia ? `Guía ${movilExpress.guia}` : 'Móvil Express todavía no emitió la guía'}>
+            <Package size={10} style={{ display: 'inline', marginRight: '3px' }} />
+            {movilExpress.procesando ? 'Móvil Express · procesando' : `${movilExpress.label}${movilExpress.guia ? ` · ${movilExpress.guia}` : ''}`}
+          </span>
+        )}
         <span className={`tag-badge pay ${metodoYaDefinido ? "pay-collected" : pagoAnticipado ? "pay-prepaid" : "pay-cod"}`}>
           {pagoLabel}
         </span>

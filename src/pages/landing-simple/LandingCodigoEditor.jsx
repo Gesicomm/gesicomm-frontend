@@ -94,7 +94,7 @@ function codigosDesdeContent(content, fichaGeneralRespaldo = PLANTILLA_PRODUCTO,
   return {
     inicio: { ...CODIGO_VACIO, ...(content?.codigo || {}) },
     catalogo: vistas.catalogo?.html ? { ...CODIGO_VACIO, ...vistas.catalogo } : PLANTILLA_CATALOGO,
-    producto: vistas.producto?.html && !esFichaProductoBase(vistas.producto.html) ? vistas.producto : fichaGeneralRespaldo,
+    producto: vistas.producto?.html && (vistas.producto.generado_por_mcp || !esFichaProductoBase(vistas.producto.html)) ? vistas.producto : fichaGeneralRespaldo,
     categoria: vistas.categoria?.html ? { ...CODIGO_VACIO, ...vistas.categoria } : PLANTILLA_CATEGORIA,
     checkout: vistas.checkout?.html ? { ...CODIGO_VACIO, ...vistas.checkout } : PLANTILLA_CHECKOUT,
     ...propias,
@@ -555,10 +555,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     );
     // Una base retocada por el comercio (data-gesicomm-personalizado) o generada por IA/MCP ya no
     // se reemplaza: es su diseño.
-    const baseActual = !esGeneradoIa && esBaseIntacta(htmlInicioActual);
-    const codigoInicialIntacto = !esGeneradoIa && (!htmlInicioActual.trim() || htmlInicioActual.includes(MARCA_CODIGO_INICIAL));
+    const esPersonalizado = /data-gesicomm-personalizado/i.test(htmlInicioActual);
+    const baseActual = !esGeneradoIa && !esPersonalizado && esBaseIntacta(htmlInicioActual);
+    const codigoInicialIntacto = !esGeneradoIa && !esPersonalizado && (!htmlInicioActual.trim() || htmlInicioActual.includes(MARCA_CODIGO_INICIAL));
     const inicioConfigurado = nuevaVenta.inicio || nuevaVenta.inicio_comercial || {};
-    const faltanSlotsBanners = !esGeneradoIa && (
+    const faltanSlotsBanners = !esGeneradoIa && !esPersonalizado && (
       (Array.isArray(inicioConfigurado.banners) && inicioConfigurado.banners.length > 0
         && !/data-gesicomm-lista=["']banners_inicio["']/.test(htmlInicioActual)) ||
       (Array.isArray(inicioConfigurado.banners_intermedios) && inicioConfigurado.banners_intermedios.length > 0

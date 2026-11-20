@@ -1916,12 +1916,12 @@ export default function MiDashboard() {
             </div>
           )}
           <div className="md-rent-item">
-            <span className="md-rent-label">− {METRIC_TERMS.costosFijos} <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios. Se cargan en Finanzas → Control financiero con clasificación 'Fijo' (o sin clasificar: por defecto cuentan como fijos)." /></span>
+            <span className="md-rent-label">− {METRIC_TERMS.costosFijos} <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios. Se cargan en Finanzas → Control financiero con clasificación 'Fijo'. Un Gasto sin clasificar cuenta como fijo, igual que en Control financiero." /></span>
             <span className="md-rent-valor">{gs(costosFijos)}</span>
           </div>
           {costosVariables > 0 && (
             <div className="md-rent-item">
-              <span className="md-rent-label">− {METRIC_TERMS.costosVariables} <Ayuda texto="Gastos que se mueven con la venta: comisiones bancarias, marketing sin producto puntual, etc. Se cargan en Finanzas → Control financiero con clasificación 'Variable'." /></span>
+              <span className="md-rent-label">− {METRIC_TERMS.costosVariables} <Ayuda texto="Gastos que se mueven con la venta: comisiones bancarias, marketing sin producto puntual, etc. Se cargan en Finanzas → Control financiero con clasificación 'Variable'. Un Costo sin clasificar cuenta como variable, igual que en Control financiero." /></span>
               <span className="md-rent-valor">{gs(costosVariables)}</span>
             </div>
           )}
@@ -1929,6 +1929,12 @@ export default function MiDashboard() {
             <div className="md-rent-item">
               <span className="md-rent-label">− Gastos de productos <Ayuda texto="Gastos cargados en Control financiero y atados a un producto puntual." /></span>
               <span className="md-rent-valor">{gs(kpis.gastos_directos_mostrados)}</span>
+            </div>
+          )}
+          {Number(kpis.otros_ingresos) > 0 && (
+            <div className="md-rent-item">
+              <span className="md-rent-label">+ Otros ingresos <Ayuda texto="Ingresos que cargaste a mano en Control financiero y que no vienen de un pedido. No son ventas de producto, pero sí suman a tu ganancia." /></span>
+              <span className="md-rent-valor">{gs(kpis.otros_ingresos)}</span>
             </div>
           )}
           <div className="md-rent-item md-rent-destacado">

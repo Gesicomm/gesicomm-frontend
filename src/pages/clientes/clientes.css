@@ -82,6 +82,7 @@
   overflow-wrap: anywhere;
 }
 .cli-ficha-cabecera p { margin: 0.25rem 0 0; font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted); }
+.cli-ficha-correo { overflow-wrap: anywhere; color: var(--color-fg); }
 .cli-ficha-cerrar {
   display: inline-flex;
   align-items: center;

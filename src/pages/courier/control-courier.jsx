@@ -209,7 +209,7 @@ export function ControlCourier({ etapaFija } = {}) {
     // payload.estado solo viaja cuando el modal de verdad confirmó el
     // pedido (ver vaAConfirmar en NuevoPedidoModal) — no en una edición
     // sobre un pedido que ya había avanzado antes.
-    if (payload.estado === "Confirmado") {
+    if (payload.estado === "Confirmado" && tiendaContacto?.confirmacion_whatsapp_activa !== false) {
       setConfirmacionWhatsapp(actualizado);
     }
     cargarDatos();
@@ -376,8 +376,8 @@ export function ControlCourier({ etapaFija } = {}) {
         )}
       </div>
 
-      <main className="courier-container" style={{ marginTop: '1.25rem' }}>
-        {tab === "tablero" ? (
+      <div className="courier-container" style={{ marginTop: '1.25rem' }}>
+        {(tab === "tablero" || !tabsDisponibles.includes(tab)) ? (
           // Bandeja operativa: sin dashboard arriba, ocupa casi toda la
           // pantalla — los indicadores generales viven en Dashboard Operativo aparte.
           <PedidosTable
@@ -395,7 +395,7 @@ export function ControlCourier({ etapaFija } = {}) {
         ) : (
           <RendicionTab couriers={couriers} />
         )}
-      </main>
+      </div>
 
       {/* Modal único de Pedido: alta (envio=null) o completar al confirmar (envio=<registro>) */}
       <NuevoPedidoModal

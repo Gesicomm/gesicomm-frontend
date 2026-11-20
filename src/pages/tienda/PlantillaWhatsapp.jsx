@@ -4,25 +4,41 @@ import './mensajesWhatsapp.css';
 
 const DATOS = { '{producto}': 'Producto', '{precio}': 'Precio', '{url}': 'Enlace', '{cliente}': 'Cliente', '{pedido}': 'N.º de pedido', '{total}': 'Total' };
 
-export default function PlantillaWhatsapp({ titulo, uso, textareaRef, valor, onChange, placeholder, variables, onInsertar, urlPublica, preview, recomendado, guardado, abierto, onToggle, salida = false }) {
+export default function PlantillaWhatsapp({ titulo, uso, textareaRef, valor, onChange, placeholder, variables, onInsertar, urlPublica, preview, recomendado, guardado, abierto, onToggle, salida = false, activable = false, activo = true, activoGuardado = true, onToggleActivo }) {
   const id = useId();
   const [vacioEnEdicion, setVacioEnEdicion] = useState(false);
   const texto = valor || (vacioEnEdicion ? '' : recomendado);
   const personalizado = Boolean(valor && valor !== recomendado);
-  const modificado = (valor || recomendado) !== (guardado || recomendado);
+  const modificadoTexto = (valor || recomendado) !== (guardado || recomendado);
+  const modificadoActivo = activable && Boolean(activo) !== Boolean(activoGuardado);
+  const modificado = modificadoTexto || modificadoActivo;
   const Direccion = salida ? ArrowUpRight : ArrowDownLeft;
+  const estadoTexto = modificado ? 'Sin guardar' : !activo ? 'Desactivado' : personalizado ? 'Personalizado' : 'Recomendado';
   return (
-    <article className={`tn-message-card ${abierto ? 'is-open' : ''}`}>
-      <button type="button" className="tn-message-summary" onClick={onToggle} aria-expanded={abierto} aria-controls={`${id}-editor`} aria-label={`${abierto ? 'Cerrar editor' : 'Editar mensaje'}: ${titulo}`}>
-        <span className={`tn-message-icon ${salida ? 'outgoing' : ''}`}><MessageCircle size={20} aria-hidden="true" /></span>
-        <span className="tn-message-overview">
-          <span className="tn-message-title">{titulo}</span>
-          <span className="tn-message-direction"><Direccion size={13} aria-hidden="true" />{salida ? 'Negocio → Cliente' : 'Cliente → Negocio'}</span>
-          <span className="tn-message-use">{uso}</span>
-          {!abierto && <span className="tn-message-excerpt">{preview}</span>}
-        </span>
-        <span className="tn-message-summary-end"><span className={`tn-message-state ${modificado ? 'unsaved' : ''}`}>{modificado ? 'Sin guardar' : personalizado ? 'Personalizado' : 'Recomendado'}</span><ChevronDown size={18} aria-hidden="true" /></span>
-      </button>
+    <article className={`tn-message-card ${abierto ? 'is-open' : ''} ${activable && !activo ? 'is-disabled' : ''}`}>
+      <div className="tn-message-head">
+        <button type="button" className="tn-message-summary" onClick={onToggle} aria-expanded={abierto} aria-controls={`${id}-editor`} aria-label={`${abierto ? 'Cerrar editor' : 'Editar mensaje'}: ${titulo}`}>
+          <span className={`tn-message-icon ${salida ? 'outgoing' : ''}`}><MessageCircle size={20} aria-hidden="true" /></span>
+          <span className="tn-message-overview">
+            <span className="tn-message-title">{titulo}</span>
+            <span className="tn-message-direction"><Direccion size={13} aria-hidden="true" />{salida ? 'Negocio → Cliente' : 'Cliente → Negocio'}</span>
+            <span className="tn-message-use">{uso}</span>
+            {!abierto && <span className="tn-message-excerpt">{preview}</span>}
+          </span>
+          <span className="tn-message-summary-end"><span className={`tn-message-state ${modificado ? 'unsaved' : !activo ? 'off' : ''}`}>{estadoTexto}</span><ChevronDown size={18} aria-hidden="true" /></span>
+        </button>
+        {activable && (
+          <label className="tn-message-switch" title={activo ? 'Desactivar envío de confirmación por WhatsApp' : 'Activar envío de confirmación por WhatsApp'}>
+            <input
+              type="checkbox"
+              checked={Boolean(activo)}
+              onChange={e => onToggleActivo?.(e.target.checked)}
+              aria-label={`Activar o desactivar ${titulo}`}
+            />
+            <span className="tn-message-switch-track" aria-hidden="true" />
+          </label>
+        )}
+      </div>
       <div id={`${id}-editor`} className="tn-message-editor" hidden={!abierto}>
         <div className="tn-msg-grid">
           <div className="tn-msg-builder">
@@ -43,7 +59,13 @@ export default function PlantillaWhatsapp({ titulo, uso, textareaRef, valor, onC
             <span className="tn-message-help">Vista previa con datos de ejemplo. No envía mensajes.</span>
           </div>
         </div>
-        <p className="tn-message-delivery-note">{salida ? 'Al confirmar el pedido, podés revisar y editar este texto antes de enviarlo por WhatsApp.' : 'Este texto se prepara en el WhatsApp del cliente. El cliente decide si lo envía.'}</p>
+        <p className="tn-message-delivery-note">
+          {salida
+            ? (activable && !activo
+                ? 'Desactivado: al confirmar un pedido en Gestión Comercial no se abrirá ninguna ventana de WhatsApp Web.'
+                : 'Si está activo, cada vez que confirmes un pedido en Gestión Comercial se abrirá una ventana para revisar este texto y enviarlo por WhatsApp Web.')
+            : 'Este texto se prepara en el WhatsApp del cliente. El cliente decide si lo envía.'}
+        </p>
         {modificado && <p className="tn-message-dirty" role="status">Cambios sin guardar. Usá “Guardar cambios” para aplicarlos.</p>}
       </div>
     </article>

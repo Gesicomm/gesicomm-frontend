@@ -6,6 +6,7 @@ import { getCouriers, cotizarEntregaRaha } from '../../services/courierApi';
 import { depositoService } from '../../services/deposito.service';
 import { canalVentaService } from '../../services/canalVentaService';
 import { inventarioService } from '../../services/inventario.service';
+import { movilExpressService } from '../../services/movilExpressService';
 
 vi.mock('../../services/productService', () => ({
   productService: { buscar: vi.fn().mockResolvedValue({ data: [] }) },
@@ -35,6 +36,12 @@ vi.mock('../../services/inventario.service', () => ({
 }));
 vi.mock('../../services/canalVentaService', () => ({
   canalVentaService: { listar: vi.fn().mockResolvedValue([]) },
+}));
+vi.mock('../../services/movilExpressService', () => ({
+  movilExpressService: {
+    cobertura: vi.fn().mockResolvedValue({ ciudades: [] }),
+    cotizar: vi.fn().mockResolvedValue({ ok: true, elegible: false, costo: null, motivo: 'Sin tarifa.' }),
+  },
 }));
 vi.mock('../../services/api', () => ({ getMediaUrl: (x) => x }));
 vi.mock('../landing/ProductPicker', () => ({ default: ({ onToggle }) => <button type="button" onClick={() => onToggle({ id: 202, tipo: 'producto' })}>Elegir producto de prueba</button> }));
@@ -237,7 +244,7 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
     const onSubmit = vi.fn().mockResolvedValue({});
     await abrir({ ...pedidoEntregado, delivery_a_cargo: 'negocio' }, onSubmit);
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /Incluye delivery/i }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Envío gratis para el cliente/i }));
     await guardar();
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
@@ -479,5 +486,86 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0][0].pago_anticipado).toBe(true);
+  });
+});
+
+
+/**
+ * Móvil Express es un proveedor, no un motoquero del comercio: no pertenece
+ * a ningún depósito y su costo lo cotiza su API, no el tarifario local.
+ */
+describe('NuevoPedidoModal · Móvil Express', () => {
+  const COURIER_MEX = { id: 77, nombre: 'Móvil Express', vehiculo: null, activo: true, proveedor: 'movil-express', proveedor_listo: true, proveedor_motivo: null };
+  const COURIER_PROPIO = { id: 5, nombre: 'Delivery propio', vehiculo: 'Moto', activo: true, proveedor: null };
+
+  const pedido = {
+    id: 900, estado: 'Pendiente', monto: 150000, costo_envio: 0, delivery_a_cargo: 'cliente',
+    nombre_cliente: 'Ana', telefono: '0981000111', ciudad: 'Luque', departamento: 'Central',
+    direccion: 'Calle 1', items: [{ id: 1, producto_id: 201, nombre_producto: 'Producto', cantidad: 1, precio_unitario: 150000, subtotal: 150000 }],
+  };
+
+  const abrirEnEntrega = async () => {
+    const vista = render(<NuevoPedidoModal open envio={pedido} onClose={() => {}} onSubmit={vi.fn()} />);
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
+    return vista;
+  };
+
+  const selectDeCourier = (container) => Array.from(container.querySelectorAll('select'))
+    .find(select => Array.from(select.options).some(option => /Sin asignar|Móvil Express/.test(option.textContent)));
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cotizarEntregaRaha.mockResolvedValue({ cubierto: false, costo: null });
+    getCouriers.mockResolvedValue([COURIER_PROPIO, COURIER_MEX]);
+    depositoService.listarDepositos.mockResolvedValue({ data: [{ id: 10, nombre: 'Principal', ciudad: 'Luque', activo: true }] });
+    // El depósito solo habilita al courier propio: Móvil Express no está
+    // vinculado a ningún depósito y tiene que seguir apareciendo igual.
+    depositoService.listarCouriersDeposito.mockResolvedValue({ couriers: [{ id: 5, habilitado: true }] });
+    movilExpressService.cobertura.mockResolvedValue({ ciudades: [{ id: 3, nombre: 'Luque', departamento: 'Central' }] });
+  });
+  afterEach(() => cleanup());
+
+  it('sigue ofreciéndose aunque el depósito elegido no lo tenga vinculado', async () => {
+    const { container } = await abrirEnEntrega();
+    const origen = Array.from(container.querySelectorAll('select'))
+      .find(select => Array.from(select.options).some(option => option.textContent === 'Automático según stock'));
+    fireEvent.change(origen, { target: { value: '10' } });
+
+    await waitFor(() => expect(depositoService.listarCouriersDeposito).toHaveBeenCalled());
+    await waitFor(() => {
+      const opciones = Array.from(selectDeCourier(container).options).map(o => o.textContent);
+      expect(opciones.some(t => t.includes('Móvil Express'))).toBe(true);
+    });
+  });
+
+  it('al elegirlo cotiza en vivo y escribe el costo exacto', async () => {
+    movilExpressService.cotizar.mockResolvedValue({ ok: true, elegible: true, costo: 32000, ciudad_destino: 'Luque' });
+    const { container } = await abrirEnEntrega();
+    fireEvent.change(selectDeCourier(container), { target: { value: '77' } });
+
+    await waitFor(() => expect(movilExpressService.cotizar).toHaveBeenCalledWith({ ciudad: 'Luque' }));
+    await waitFor(() => expect(screen.getByText('Costo exacto de Móvil Express para este destino.')).toBeVisible());
+    expect(container.querySelector('#np-costo-envio').value).toContain('32.000');
+  });
+
+  it('sin tarifa deja el costo en cero y muestra el motivo real, sin estimar', async () => {
+    movilExpressService.cotizar.mockResolvedValue({ ok: true, elegible: false, costo: null, motivo: 'Móvil Express no tiene tarifa exacta para ese destino.' });
+    const { container } = await abrirEnEntrega();
+    fireEvent.change(selectDeCourier(container), { target: { value: '77' } });
+
+    await waitFor(() => expect(screen.getByText('Móvil Express no tiene tarifa exacta para ese destino.')).toBeVisible());
+    expect(container.querySelector('#np-costo-envio').value).toBe('0');
+  });
+
+  it('con la conexión sin terminar la opción queda deshabilitada y dice por qué', async () => {
+    getCouriers.mockResolvedValue([COURIER_PROPIO, {
+      ...COURIER_MEX, proveedor_listo: false, proveedor_motivo: 'Activá Móvil Express en Mi tienda › Proveedor.',
+    }]);
+    const { container } = await abrirEnEntrega();
+    const opcion = Array.from(selectDeCourier(container).options).find(o => o.textContent.includes('Móvil Express'));
+    expect(opcion.disabled).toBe(true);
+    expect(opcion.textContent).toContain('Activá Móvil Express');
+    expect(movilExpressService.cotizar).not.toHaveBeenCalled();
   });
 });

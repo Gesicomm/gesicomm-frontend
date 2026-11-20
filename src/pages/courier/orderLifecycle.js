@@ -72,6 +72,49 @@ export const RAHA_STATUS_META = {
   devuelto: { label: 'Devuelto', tone: 'danger' },
 };
 
+/**
+ * Estados logísticos de Móvil Express, con el nombre que ve el comercio.
+ * `in_base` y `in_route` son momentos distintos del mismo tramo, así que
+ * se nombran distinto aunque el pedido local esté Despachado en los dos.
+ */
+export const MOVIL_EXPRESS_STATUS_META = {
+  pending: { label: 'Esperando retiro', tone: 'neutral' },
+  picked_up: { label: 'Retirado', tone: 'info' },
+  in_base: { label: 'En base', tone: 'info' },
+  in_route: { label: 'En ruta', tone: 'info' },
+  delivered: { label: 'Entregado', tone: 'success' },
+  absent: { label: 'Cliente ausente', tone: 'warning' },
+  rejected: { label: 'Rechazado por el cliente', tone: 'warning' },
+  postponed: { label: 'Postergado', tone: 'warning' },
+  returning: { label: 'En devolución', tone: 'warning' },
+  returned: { label: 'Devuelto', tone: 'danger' },
+  cancelled: { label: 'Cancelado', tone: 'danger' },
+};
+
+/** Qué mostrarle al comercio sobre el envío de Móvil Express, o null si no es de ellos. */
+export function estadoMovilExpress(envio) {
+  const logistica = envio?.movil_express;
+  if (!logistica?.gestionado) return null;
+  const meta = MOVIL_EXPRESS_STATUS_META[logistica.status] || MOVIL_EXPRESS_STATUS_META.pending;
+  return {
+    ...meta,
+    guia: logistica.guide || null,
+    trackingUrl: logistica.tracking_url || null,
+    // Sin costo informado se muestra nada, no un cero: `Number(null)` es 0
+    // y eso sería un costo de envío inventado.
+    costo: logistica.service_fee === null || logistica.service_fee === undefined || logistica.service_fee === ''
+      || !Number.isFinite(Number(logistica.service_fee))
+      ? null
+      : Number(logistica.service_fee),
+    status: logistica.status || 'pending',
+    statusAt: logistica.status_at || logistica.updated_at || null,
+    // Sin guía todavía: el pedido se mandó y están procesándolo.
+    procesando: !logistica.guide && ['enviado', 'incierto'].includes(logistica.estado_envio),
+    aviso: logistica.reason || logistica.error || null,
+    enRevision: logistica.estado_envio === 'revision',
+  };
+}
+
 export function estadoParaSeguimiento(envio) {
   if (["Cancelado", "Perdido", "Devuelto", "Entregado"].includes(envio?.estado)) return envio.estado;
   if (envio?.estado_seguimiento) return envio.estado_seguimiento;
@@ -154,7 +197,7 @@ export function estadoDePedido(envio, etapaVista) {
   if (["recompra", "recuperacion"].includes(etapaVista)) return estadoDeContacto(envio, etapaVista);
   const estado = envio?.raha_logistica?.gestionado ? estadoParaSeguimiento(envio) : envio?.estado;
   const etapa = etapaDePedido({ ...envio, estado });
-  if (esRahaConfirmado(envio)) return { etapa, id: 'Confirmado', label: 'Confirmado', tone: 'success' };
+  if (esRahaConfirmado(envio)) return { etapa, id: 'Confirmado', label: etapaVista === 'logistica' ? ESTADO_DISPLAY_LABEL.Confirmado : 'Confirmado', tone: 'success' };
   if (etapa === "comercial" && estado !== "Cancelado") {
     return { etapa, id: "Pendiente", label: "Pendiente", tone: "warning" };
   }

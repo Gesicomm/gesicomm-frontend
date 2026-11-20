@@ -5,6 +5,8 @@
 .logistica-provider-main { display: flex; align-items: flex-start; gap: 1.25rem; padding: 1.5rem; }
 .logistica-logo { display: grid; place-items: center; flex: 0 0 108px; height: 108px; background: #111; border-radius: 12px; }
 .logistica-logo img { width: 100%; height: 100%; object-fit: contain; }
+/* Suplente cuando el archivo del logo todavía no está cargado. */
+.logistica-logo[data-inicial]::after { content: attr(data-inicial); color: #fff; font-size: 2.5rem; font-weight: 700; line-height: 1; }
 .logistica-provider-copy { flex: 1; min-width: 0; }
 .logistica-provider-copy h3 { margin: 0 0 .5rem; font-size: 1.3rem; }
 .logistica-provider-copy p, .logistica-validation p { color: var(--vit-muted); line-height: 1.6; margin: 0; }

@@ -24,8 +24,8 @@ export function codigoInicioHeredable(content, codigoInicio = null) {
 export function codigoFichaProducto(content, contentId, codigoInicio = null) {
   const fichaPropia = contentId ? content?.vistas?.productos?.[contentId] : null;
   const fichaGeneral = content?.vistas?.producto;
-  const ficha = fichaPropia?.html && !esFichaProductoBase(fichaPropia.html)
+  const ficha = fichaPropia?.html && (fichaPropia.generado_por_mcp || !esFichaProductoBase(fichaPropia.html))
     ? fichaPropia
-    : (fichaGeneral?.html && !esFichaProductoBase(fichaGeneral.html) ? fichaGeneral : PLANTILLA_PRODUCTO);
+    : (fichaGeneral?.html && (fichaGeneral.generado_por_mcp || !esFichaProductoBase(fichaGeneral.html)) ? fichaGeneral : PLANTILLA_PRODUCTO);
   return conGlobalesHeredados(ficha, codigoInicioHeredable(content, codigoInicio));
 }

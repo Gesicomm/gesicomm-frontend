@@ -38,13 +38,26 @@ export function PerdidaModal({ open, envio, onClose, onSubmit }) {
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
+  // "Marcar el pedido completo como Perdido" arranca tildado, así que las
+  // cantidades arrancan en todo lo disponible: antes quedaban vacías (se
+  // leían como 0) y el pedido completo se marcaba sin unidades perdidas.
+  const cantidadesCompletas = () => Object.fromEntries(
+    filas.filter((f) => f.disponible > 0).map((f) => [f.componente_id, String(f.disponible)])
+  );
+
   useEffect(() => {
     if (open) {
-      setCantidades({});
+      setCantidades(cantidadesCompletas());
       setMarcarEstado(true);
       setError(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, envio]);
+
+  const cambiarMarcarEstado = (marcar) => {
+    setMarcarEstado(marcar);
+    if (marcar) setCantidades(cantidadesCompletas());
+  };
 
   if (!open || !envio) return null;
 
@@ -78,9 +91,9 @@ export function PerdidaModal({ open, envio, onClose, onSubmit }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" style={{ maxWidth: "560px", background: "var(--color-canvas)", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "var(--color-fg)" }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="perdida-modal-titulo" style={{ maxWidth: "560px", background: "var(--color-canvas)", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "var(--color-fg)" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
-          <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h2 id="perdida-modal-titulo" style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <AlertTriangle size={18} color="var(--color-danger)" /> Registrar pérdida #{numeroPedidoVisible(envio)}
           </h2>
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
@@ -137,7 +150,7 @@ export function PerdidaModal({ open, envio, onClose, onSubmit }) {
           )}
 
           <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--color-fg)" }}>
-            <input type="checkbox" checked={marcarEstado} onChange={(e) => setMarcarEstado(e.target.checked)} />
+            <input type="checkbox" checked={marcarEstado} onChange={(e) => cambiarMarcarEstado(e.target.checked)} />
             Marcar el pedido completo como "Perdido"
           </label>
 

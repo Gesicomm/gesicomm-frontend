@@ -327,7 +327,7 @@ function App() {
 
         {/* Otras secciones */}
         <Route path="/orders" element={
-          <PanelComercio><ControlCourier /></PanelComercio>
+          <PanelComercio><ControlCourier key="todas" /></PanelComercio>
         } />
         {/* Abastecimiento: sección propia, no una pestaña dentro de Pedidos. */}
         <Route path="/abastecimiento/solicitudes/:id" element={
@@ -477,10 +477,10 @@ function App() {
           <PanelComercio soloUsuario><CambiarPrecios /></PanelComercio>
         } />
         <Route path="/mis-pedidos" element={
-          <PanelComercio soloUsuario><ControlCourier etapaFija="comercial" /></PanelComercio>
+          <PanelComercio soloUsuario><ControlCourier key="comercial" etapaFija="comercial" /></PanelComercio>
         } />
         <Route path="/gestion-logistica" element={
-          <PanelComercio soloUsuario><ControlCourier etapaFija="logistica" /></PanelComercio>
+          <PanelComercio soloUsuario><ControlCourier key="logistica" etapaFija="logistica" /></PanelComercio>
         } />
         <Route path="/dashboard-operativo" element={
           <PanelComercio soloUsuario><DashboardOperativo /></PanelComercio>

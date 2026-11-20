@@ -260,37 +260,28 @@ function ReporteBloque({ titulo, filas, totalLabel, total, tone = 'default' }) {
 function ResultadoOperativo({ resultado }) {
   if (!resultado) return null;
   const positivo = Number(resultado.utilidad_operativa) >= 0;
+  // Una sola cascada: cada total aparece una vez. Antes eran dos cajas y
+  // "Margen de contribución" se repetía como cierre de una y arranque de la
+  // otra (auditoría 2026-11-18).
+  const filas = [
+    { label: 'Ingresos totales', valor: resultado.ingresos_netos },
+    { label: '− Costos variables', valor: resultado.costos_variables, tono: 'text-danger' },
+    { label: '= Margen de contribución', valor: resultado.margen_contribucion, total: true, tono: 'text-primary-text' },
+    { label: '− Gastos fijos', valor: resultado.gastos_fijos, tono: 'text-danger' },
+    { label: `= ${METRIC_TERMS.utilidadNeta}`, valor: resultado.utilidad_operativa, total: true, tono: positivo ? 'text-success' : 'text-danger' },
+  ];
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-lg bg-surface-2 p-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-fg-muted">{METRIC_TERMS.ventasNetas}</span>
-            <strong className="text-fg">{formatMoneda(resultado.ingresos_netos)}</strong>
+      <div className="space-y-2 rounded-lg bg-surface-2 p-3">
+        {filas.map(fila => (
+          <div
+            key={fila.label}
+            className={`flex items-center justify-between gap-3 text-sm ${fila.total ? 'border-t border-border pt-2 font-bold text-fg' : 'text-fg-muted'}`}
+          >
+            <span>{fila.label}</span>
+            <strong className={fila.tono || 'text-fg'}>{formatMoneda(fila.valor)}</strong>
           </div>
-          <div className="my-1 flex items-center justify-between text-sm">
-            <span className="text-fg-muted">− Costos variables</span>
-            <strong className="text-danger">{formatMoneda(resultado.costos_variables)}</strong>
-          </div>
-          <div className="flex items-center justify-between border-t border-border pt-2 text-sm font-bold">
-            <span>Margen de contribución</span>
-            <span className="text-primary-text">{formatMoneda(resultado.margen_contribucion)}</span>
-          </div>
-        </div>
-        <div className="rounded-lg bg-surface-2 p-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-fg-muted">Margen de contribución</span>
-            <strong className="text-fg">{formatMoneda(resultado.margen_contribucion)}</strong>
-          </div>
-          <div className="my-1 flex items-center justify-between text-sm">
-            <span className="text-fg-muted">− Gastos fijos</span>
-            <strong className="text-danger">{formatMoneda(resultado.gastos_fijos)}</strong>
-          </div>
-          <div className="flex items-center justify-between border-t border-border pt-2 text-sm font-bold">
-            <span>{METRIC_TERMS.utilidadNeta}</span>
-            <span className={positivo ? 'text-success' : 'text-danger'}>{formatMoneda(resultado.utilidad_operativa)}</span>
-          </div>
-        </div>
+        ))}
       </div>
       <div className="mt-3 flex items-center justify-end gap-2 text-sm">
         <span className="text-fg-muted">{METRIC_TERMS.margen}</span>
@@ -400,7 +391,7 @@ function ReporteFlujoCajaVisual({ reporte, loading }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ReporteBloque titulo="Ingresos" filas={ingresos} totalLabel={METRIC_TERMS.ventasNetas} total={reporte.ingresos.ingresos_netos} tone="success" />
+        <ReporteBloque titulo="Ingresos" filas={ingresos} totalLabel="Ingresos totales" total={reporte.ingresos.ingresos_netos} tone="success" />
         <ReporteBloque titulo="Gastos" filas={[...reporte.gastos.costos_variables, ...reporte.gastos.gastos_fijos]} totalLabel="Gastos totales" total={reporte.gastos.gastos_totales} tone="danger" />
       </div>
 
@@ -510,7 +501,7 @@ export default function CostosGastos() {
       const c = categorias.find(c => String(c.id) === String(filtros.categoria_id));
       chips.push({ key: 'categoria_id', label: `Categoría: ${c?.nombre || filtros.categoria_id}` });
     }
-    if (filtros.estado) chips.push({ key: 'estado', label: `Estado: ${ESTADO_LABEL[filtros.estado]}` });
+    if (filtros.estado) chips.push({ key: 'estado', label: `Estado: ${filtros.estado === 'pagado' && tabMovimientos === 'ingresos' ? 'Cobrado' : ESTADO_LABEL[filtros.estado]}` });
     if (tabMovimientos !== 'ingresos' && filtros.proveedor_id) {
       const p = proveedores.find(p => String(p.id) === String(filtros.proveedor_id));
       chips.push({ key: 'proveedor_id', label: `Proveedor: ${p?.nombre || filtros.proveedor_id}` });
@@ -735,11 +726,11 @@ export default function CostosGastos() {
       </div>
 
       {/* Panel de filtros — siempre visible, sin necesidad de abrirlo */}
-      <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface p-4 md:grid-cols-4 lg:grid-cols-7">
+      <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface p-4 md:grid-cols-4 xl:grid-cols-8">
           <input
             type="text" placeholder="Buscar concepto…" value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
-            className="col-span-2 h-9 rounded-md border border-border bg-surface-2 px-3 text-sm text-fg placeholder:text-fg-subtle lg:col-span-1"
+            className="col-span-2 h-9 min-w-0 rounded-md border border-border bg-surface-2 px-3 text-sm text-fg placeholder:text-fg-subtle"
           />
           {tabMovimientos === 'todos' && (
             <select value={filtros.tipo} onChange={e => setFiltros(f => ({ ...f, tipo: e.target.value }))} className="h-9 rounded-md border border-border bg-surface-2 px-2 text-sm text-fg">
@@ -764,7 +755,7 @@ export default function CostosGastos() {
           <select value={filtros.estado} onChange={e => setFiltros(f => ({ ...f, estado: e.target.value }))} className="h-9 rounded-md border border-border bg-surface-2 px-2 text-sm text-fg">
             <option value="">Estado (todos)</option>
             <option value="pendiente">Pendiente</option>
-            <option value="pagado">Pagado</option>
+            <option value="pagado">{tabMovimientos === 'ingresos' ? 'Cobrado' : tabMovimientos === 'todos' ? 'Pagado / Cobrado' : 'Pagado'}</option>
             <option value="cancelado">Cancelado</option>
           </select>
           {tabMovimientos !== 'ingresos' && (
@@ -1079,7 +1070,7 @@ function DetalleDrawer({ registro: r, onClose, onEditar, onDuplicar, onMarcarPag
 }
 
 function EmptyState({ onRegistrar }) {
-  const ejemplos = ['Otros ingresos', 'Alquiler', 'Electricidad', 'Salarios', 'Publicidad', 'Software', 'Transporte'];
+  const ejemplos = ['Otros ingresos', 'Alquiler', 'Electricidad', 'Salarios', 'Software', 'Transporte'];
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed border-border bg-surface px-6 py-16 text-center">
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary-text">

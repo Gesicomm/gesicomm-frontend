@@ -65,6 +65,7 @@ const FORM_INICIAL = {
   mensaje_consulta_general: '',
   // Vacío = NuevoPedidoModal usa MENSAJE_CONFIRMACION_DEFAULT al ofrecer el popup.
   mensaje_confirmacion_pedido: '',
+  confirmacion_whatsapp_activa: true,
   nombre_contacto: '',
   canal_contacto: 'whatsapp',
   email: '',
@@ -300,6 +301,7 @@ export default function ConfigurarTienda() {
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
           mensaje_consulta_general: data.mensaje_consulta_general || '',
           mensaje_confirmacion_pedido: data.mensaje_confirmacion_pedido || '',
+          confirmacion_whatsapp_activa: data.confirmacion_whatsapp_activa !== false,
           nombre_contacto: data.nombre_contacto || '',
           canal_contacto: data.canal_contacto || 'whatsapp',
           email: data.email || data.email_contacto || '',
@@ -1496,8 +1498,14 @@ export default function ConfigurarTienda() {
                     <section className="tn-message-category" aria-labelledby="tn-outgoing-title"><header><h4 id="tn-outgoing-title">Mensajes que enviás</h4><p>Acompañá al cliente después de su compra.</p></header><div className="tn-message-list">
                       <PlantillaWhatsapp
                         titulo="Confirmación de pedido"
-                        uso="Al confirmar un pedido, revisás el texto antes de enviarlo."
+                        uso={form.confirmacion_whatsapp_activa
+                          ? 'Activo: cada vez que confirmes un pedido en Gestión Comercial, se abrirá una ventana para revisarlo y enviarlo por WhatsApp Web.'
+                          : 'Desactivado: al confirmar un pedido en Gestión Comercial no se abrirá el pop-up ni WhatsApp Web.'}
                         salida
+                        activable
+                        activo={form.confirmacion_whatsapp_activa}
+                        activoGuardado={tienda?.confirmacion_whatsapp_activa !== false}
+                        onToggleActivo={v => handleChange('confirmacion_whatsapp_activa', v)}
                         recomendado={MENSAJE_CONFIRMACION_DEFAULT}
                         guardado={tienda?.mensaje_confirmacion_pedido}
                         abierto={mensajeAbierto === 'confirmacion'}

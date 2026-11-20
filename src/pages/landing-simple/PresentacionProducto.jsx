@@ -111,7 +111,7 @@ const DEFAULTS_PRESENTACION = {
   beneficios_kicker: 'Por qué elegirlo',
   beneficios_titulo: 'Beneficios que se entienden rápido.',
   beneficios_subtitulo: 'Usá estos ejemplos como guía y ajustalos a lo que realmente ofrece tu producto.',
-  cta_texto: 'Comprar con pago anticipado',
+  cta_texto: 'Comprar ahora',
   cta_descuento_pct: '',
   agregar_carrito_texto: 'Agregar al carrito',
   urgencia_kicker: 'Oferta por tiempo limitado',
@@ -135,7 +135,7 @@ const DEFAULTS_PRESENTACION = {
     { label: 'Pago contra entrega', tipo: 'checkout', valor: 'efectivo' },
   ],
   botones_contacto: [
-    { label: 'Consultar por WhatsApp', tipo: 'whatsapp', valor: '' },
+    { label: 'Comprar por WhatsApp', tipo: 'whatsapp', valor: '' },
   ],
   metodos_pago: [],
   incluye_pedido: [
@@ -741,7 +741,8 @@ export default function PresentacionProducto({
   const resumenBeneficios = beneficios.length ? `${beneficios.length} beneficio${beneficios.length === 1 ? '' : 's'}` : 'Sin beneficios cargados';
   const resumenConfianza = confianza.length ? `${confianza.length} tarjeta${confianza.length === 1 ? '' : 's'}` : 'Sin tarjetas cargadas';
   const resumenPagos = `${metodosPago.length} método${metodosPago.length === 1 ? '' : 's'}`;
-  const resumenContacto = `${1 + botonesPago.length + botonesContacto.length} botón${1 + botonesPago.length + botonesContacto.length === 1 ? '' : 'es'}`;
+  const totalBotones = 1 + botonesPago.length + botonesContacto.length;
+  const resumenContacto = `${totalBotones} ${totalBotones === 1 ? 'botón' : 'botones'}`;
   const resumenIncluye = incluyePedido.length ? `${incluyePedido.length} ítem${incluyePedido.length === 1 ? '' : 's'}` : 'Sin ítems cargados';
   const resumenOpiniones = opiniones.length ? `${opiniones.length} ${opiniones.length === 1 ? 'opinión' : 'opiniones'}` : 'Sin opiniones todavía';
   const resumenPreguntas = preguntas.length ? `${preguntas.length} pregunta${preguntas.length === 1 ? '' : 's'}` : 'Sin preguntas cargadas';

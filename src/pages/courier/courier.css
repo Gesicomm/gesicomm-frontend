@@ -3978,23 +3978,81 @@ button.order-alert-chip:focus-visible {
 }
 .pt-table {
   width: 100%;
-  min-width: 980px;
+  min-width: 920px;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--ui-text-help, 0.875rem);
 }
-.pt-table--followup { min-width: 1060px; }
+/* Cada variante suma 100% exacto para que table-layout: fixed no desborde ni pise columnas. */
 .pt-col-id { width: 7.5%; }
-.pt-col-tipo { width: 9%; }
-.pt-col-date { width: 8%; }
-.pt-col-client { width: 11%; }
-.pt-col-phone { width: 8.5%; }
-.pt-col-product { width: 12%; }
+.pt-col-tipo { width: 8.5%; }
+.pt-col-date { width: 7.5%; }
+.pt-col-client { width: 12.5%; }
+.pt-col-phone { width: 10%; }
+.pt-col-product { width: 13%; }
 .pt-col-total { width: 9.5%; }
-.pt-col-metodo-pago { width: 8%; }
-.pt-col-state { width: 13%; }
-.pt-col-followup { width: 12%; }
-.pt-col-action { width: 13.5%; }
+.pt-col-metodo-pago { width: 7.5%; }
+.pt-col-state { width: 12%; }
+.pt-col-proveedor { width: 7%; }
+.pt-col-followup { width: 10.5%; }
+.pt-col-action { width: 12%; }
+
+.pt-table--followup { min-width: 960px; }
+.pt-table--followup .pt-col-id { width: 7%; }
+.pt-table--followup .pt-col-tipo { width: 7.5%; }
+.pt-table--followup .pt-col-date { width: 7%; }
+.pt-table--followup .pt-col-client { width: 11%; }
+.pt-table--followup .pt-col-phone { width: 9%; }
+.pt-table--followup .pt-col-product { width: 12%; }
+.pt-table--followup .pt-col-total { width: 8.5%; }
+.pt-table--followup .pt-col-metodo-pago { width: 7%; }
+.pt-table--followup .pt-col-state { width: 10.5%; }
+.pt-table--followup .pt-col-followup { width: 10.5%; }
+.pt-table--followup .pt-col-action { width: 10%; }
+
+/* Logística suma la columna Proveedor: 100% exacto y ancho compacto para no recortar Acción. */
+.pt-table--proveedor { min-width: 980px; }
+.pt-table--proveedor .pt-col-id { width: 7%; }
+.pt-table--proveedor .pt-col-tipo { width: 7%; }
+.pt-table--proveedor .pt-col-date { width: 7%; }
+.pt-table--proveedor .pt-col-client { width: 10.5%; }
+.pt-table--proveedor .pt-col-phone { width: 8.5%; }
+.pt-table--proveedor .pt-col-product { width: 10.5%; }
+.pt-table--proveedor .pt-col-total { width: 8.5%; }
+.pt-table--proveedor .pt-col-metodo-pago { width: 7%; }
+.pt-table--proveedor .pt-col-state { width: 14%; }
+.pt-table--proveedor .pt-td-state { min-width: 0; }
+.pt-table--proveedor .pt-td-proveedor { padding-left: 0.75rem; }
+.pt-table--proveedor .pt-col-proveedor { width: 7%; }
+.pt-table--proveedor .pt-col-action { width: 13%; }
+
+.pt-table--proveedor.pt-table--followup { min-width: 1040px; }
+.pt-table--proveedor.pt-table--followup .pt-col-id { width: 6.5%; }
+.pt-table--proveedor.pt-table--followup .pt-col-tipo { width: 6.5%; }
+.pt-table--proveedor.pt-table--followup .pt-col-date { width: 6.5%; }
+.pt-table--proveedor.pt-table--followup .pt-col-client { width: 9.5%; }
+.pt-table--proveedor.pt-table--followup .pt-col-phone { width: 8%; }
+.pt-table--proveedor.pt-table--followup .pt-col-product { width: 9.5%; }
+.pt-table--proveedor.pt-table--followup .pt-col-total { width: 8%; }
+.pt-table--proveedor.pt-table--followup .pt-col-metodo-pago { width: 6.5%; }
+.pt-table--proveedor.pt-table--followup .pt-col-state { width: 12.5%; }
+.pt-table--proveedor.pt-table--followup .pt-col-proveedor { width: 6.5%; }
+.pt-table--proveedor.pt-table--followup .pt-col-followup { width: 9%; }
+.pt-table--proveedor.pt-table--followup .pt-col-action { width: 11%; }
+.pt-proveedor {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: var(--ui-text-meta, 0.8125rem);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-fg-muted);
+  background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+}
+.pt-proveedor--raha {
+  color: var(--color-info);
+  background: color-mix(in srgb, var(--color-info) 14%, transparent);
+}
 .pt-th {
   text-align: left;
   padding: 0.65rem 0.48rem;

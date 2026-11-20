@@ -146,15 +146,16 @@ export default function CourierPedidos() {
 
   const resumen = useMemo(() => {
     const enPreparacion = ordenados.filter(p => p.estado === "Confirmado" || p.estado === "Preparado");
-    const porEntregar = ordenados.filter(p => p.estado === "Despachado" || p.estado === "Reprogramado");
+    const enReparto = ordenados.filter(p => p.estado === "Despachado");
+    const pendientesCobro = ordenados.filter(p => p.estado === "Despachado" || p.estado === "Reprogramado");
     const entregados = ordenados.filter(p => p.estado === "Entregado");
     const perdidos = ordenados.filter(p => p.estado === "Perdido");
     return {
       enPreparacion: enPreparacion.length,
-      porEntregar: porEntregar.length,
+      porEntregar: enReparto.length,
       entregados: entregados.length,
       perdidos: perdidos.length,
-      aCobrar: porEntregar.reduce((acc, p) => acc + Number(p.monto_visible_a_cobrar || 0), 0),
+      aCobrar: pendientesCobro.reduce((acc, p) => acc + Number(p.monto_visible_a_cobrar || 0), 0),
     };
   }, [ordenados]);
 

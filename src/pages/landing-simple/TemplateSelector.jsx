@@ -1,3 +1,8 @@
+/**
+ * @deprecated Selector de landings rígidas (templates prearmados).
+ * Retirado de la UI en favor de Lienzo en blanco (`ModoSelector`); mantener
+ * temporalmente hasta eliminar por completo los templates rígidos.
+ */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader, Dumbbell, Sparkles, Cpu, Store, ArrowRight, ArrowLeft, Eye } from 'lucide-react';
