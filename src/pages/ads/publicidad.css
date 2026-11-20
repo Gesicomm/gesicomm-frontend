@@ -8,6 +8,11 @@
 .ads-page :is(.btn-primary,.btn-secondary,.filter-input) { border-radius: 12px; min-height: 44px; }
 .ads-page .filter-input { width: 100%; }
 .ads-campaign-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.ads-skill-banner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 16px 18px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface); }
+.ads-skill-banner strong { color: var(--color-fg); font-size: 18px; line-height: 1.4; }
+.ads-skill-banner p { margin: 4px 0 0; color: var(--color-fg-muted); font-size: 16px; line-height: 1.5; }
+.ads-skill-banner-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; font-size: 14px; text-align: center; }
+@media (max-width: 600px) { .ads-skill-banner-link { width: 100%; } }
 .ads-state-filter { display: grid; gap: 8px; width: 200px; max-width: 100%; margin-right: auto; font-size: 14px; color: var(--color-fg-muted); }
 .ads-state-select { width: 100%; min-height: 44px; box-sizing: border-box; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-fg); font-family: inherit; font-size: 16px; line-height: 1.5; text-align: left; cursor: pointer; color-scheme: inherit; }
 .ads-state-select:focus-visible { outline: 2px solid var(--color-primary-text); outline-offset: 3px; }

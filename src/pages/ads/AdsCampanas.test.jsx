@@ -55,6 +55,13 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('AdsCampanas — total gastado por campaña', () => {
+  it('ofrece la descarga de la skill en la vista principal', () => {
+    montar();
+    const enlace = screen.getByRole('link', { name: 'Descargar skill (.md)' });
+    expect(enlace).toHaveAttribute('href', '/skills/gesicom-meta-ads.md');
+    expect(enlace).toHaveAttribute('download', 'gesicom-meta-ads.md');
+  });
+
   it('muestra lo gastado en cada campaña y el total', () => {
     montar();
     const fila = screen.getByRole('button', { name: 'P0003 | TERMO | WEB | CONVERSION | CBO', exact: true }).closest('tr');

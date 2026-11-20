@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Plus, Copy, Check, Edit2, Trash2, Archive, Play, Pause,
-  MessageCircle, Globe, Megaphone, ChevronRight, History, Wallet, RefreshCw,
+  MessageCircle, Globe, Megaphone, ChevronRight, History, Wallet, RefreshCw, Download,
 } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
 import CampanaInternaModal from './CampanaInternaModal';
@@ -93,6 +93,15 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
 
   return (
     <div className="ads-campaign-list flex flex-col gap-3">
+      <div className="ads-skill-banner">
+        <div>
+          <strong>Skill de Meta para ChatGPT</strong>
+          <p>Descargá el archivo .md para crear la misma campaña en Meta y registrar sus compras por conjunto en Gesicom.</p>
+        </div>
+        <a className="btn-secondary ads-skill-banner-link" href="/skills/gesicom-meta-ads.md" download="gesicom-meta-ads.md">
+          <Download size={18} aria-hidden="true" /> Descargar skill (.md)
+        </a>
+      </div>
       <details className="ads-guide" onKeyDown={e => { if (e.key === 'Escape') { e.currentTarget.open = false; e.currentTarget.querySelector('summary')?.focus(); } }}>
         <summary>
           <span>Cómo empezar</span>
