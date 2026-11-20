@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, MessageCircle, Globe, Package, ChevronLeft, ChevronRight, TrendingUp, Target, RefreshCw, Zap, Plus, Trash2, FolderOpen } from 'lucide-react';
+import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, MessageCircle, Globe, Package, ChevronLeft, ChevronRight, TrendingUp, Target, RefreshCw, Zap, Plus, Trash2 } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
@@ -15,7 +15,8 @@ const PASOS = [
   { id: 4, label: 'Objetivo Meta' },
   { id: 5, label: 'Presupuesto' },
   { id: 6, label: 'Conjuntos' },
-  { id: 7, label: 'Creativos' },
+  { id: 7, label: 'Anuncios' },
+  { id: 8, label: 'Nombre' },
 ];
 
 const OBJETIVOS_META = [
@@ -27,11 +28,15 @@ const OBJETIVOS_META = [
   ['OUTCOME_SALES', 'Ventas'],
 ];
 const nuevoConjunto = (id) => ({ id, nombre: '', descripcion: '', presupuesto_diario: '' });
+const nuevoAnuncio = (id) => ({ id, nombre: '' });
+const claveNombre = (nombre) => nombre.trim().toLocaleLowerCase('es');
 
 /**
  * Modal "Nueva Campaña" del módulo de Reportes de Meta Ads — producto,
- * canal, fase, objetivo Meta, presupuesto, conjuntos y creativos. Genera un nombre
- * automáticamente para copiar tal cual como nombre de la campaña real en Meta Ads Manager.
+ * canal, fase, objetivo Meta, presupuesto, conjuntos, nombres de los anuncios y
+ * nombre de la campaña (el recomendado que arma Gesicom o uno propio), para copiar
+ * tal cual en Meta Ads Manager. Los anuncios llevan el mismo nombre en Meta para
+ * poder leer las ventas por anuncio.
  * El gasto no se carga acá: va por rango de fechas en GastoCampanaModal.
  */
 export default function CampanaInternaModal({ open, onClose, onCreated, onCargarGasto = null, tiendas = [], campanaEditar = null }) {
@@ -54,8 +59,9 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
   const [objetivoMeta, setObjetivoMeta] = useState(null);
   const [presupuestoDiario, setPresupuestoDiario] = useState('');
   const [conjuntos, setConjuntos] = useState([nuevoConjunto(1)]);
-  const [carpetaCreativos, setCarpetaCreativos] = useState('');
-  const [creativosGuardados, setCreativosGuardados] = useState([]);
+  const [anuncios, setAnuncios] = useState([nuevoAnuncio(1)]);
+  const [nombreModo, setNombreModo] = useState('recomendado');
+  const [nombrePropio, setNombrePropio] = useState('');
   const [campanaPersistida, setCampanaPersistida] = useState(null);
   const [metaCampaignId, setMetaCampaignId] = useState('');
   const [ventasConjuntos, setVentasConjuntos] = useState([]);
@@ -92,15 +98,16 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
       const partes = String(campanaEditar.nombre_interno || campanaEditar.nombre_display || '').split('|').map(p => p.trim());
       setProductoSeleccionado(campanaEditar.productos?.[0] || null);
       setEmbudo(campanaEditar.tipo === 'whatsapp' ? 'WHATSAPP' : 'WEB');
-      setFase(['PRESENTACION', 'EVALUACION', 'CONVERSION', 'ASCENSION'].includes(partes.at(-2)) ? partes.at(-2) : null);
-      setPresupuesto(['ABO', 'CBO'].includes(partes.at(-1)) ? partes.at(-1) : null);
       const config = campanaEditar.configuracion_anuncios;
+      setFase(config?.fase || (['PRESENTACION', 'EVALUACION', 'CONVERSION', 'ASCENSION'].includes(partes.at(-2)) ? partes.at(-2) : null));
       setObjetivoMeta(config?.objetivo || null);
       setPresupuesto(config?.tipo_presupuesto || (['ABO', 'CBO'].includes(partes.at(-1)) ? partes.at(-1) : null));
       setPresupuestoDiario(config?.presupuesto_diario || '');
       setConjuntos(config?.conjuntos?.length ? config.conjuntos : [nuevoConjunto(1)]);
-      setCreativosGuardados(campanaEditar.creativos || []);
-      setCarpetaCreativos(config?.carpeta_creativos || '');
+      setAnuncios(config?.anuncios?.length ? config.anuncios : [nuevoAnuncio(1)]);
+      const propio = config?.nombre_modo === 'propio' || (!config?.nombre_modo && !/^P\d{4}\s*\|/.test(campanaEditar.nombre_display || ''));
+      setNombreModo(propio ? 'propio' : 'recomendado');
+      setNombrePropio(propio ? (campanaEditar.nombre_display || '') : '');
       setMetaCampaignId(campanaEditar.meta_campaign_id || '');
       setVentasConjuntos(campanaEditar.ventas_conjuntos || []);
     } else {
@@ -111,12 +118,13 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
       setObjetivoMeta(null);
       setPresupuestoDiario('');
       setConjuntos([nuevoConjunto(1)]);
-      setCreativosGuardados([]);
+      setAnuncios([nuevoAnuncio(1)]);
+      setNombreModo('recomendado');
+      setNombrePropio('');
       setMetaCampaignId('');
       setVentasConjuntos([]);
       setMetaIntegrationId(tiendas.length === 1 ? tiendas[0].id : null);
     }
-    if (!campanaEditar) setCarpetaCreativos('');
 
     Promise.all([
       productService.buscar({ activo: true, sin_limite: true }),
@@ -174,13 +182,22 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
     setEditado(true);
   };
 
+  const conjuntosValidos = conjuntos.length > 0 && conjuntos.every(c => c.nombre.trim() && (presupuesto === 'CBO' || Number(c.presupuesto_diario) > 0));
+  const anunciosCargados = anuncios.filter(a => a.nombre.trim());
+  const anunciosRepetidos = new Set(anunciosCargados.map(a => claveNombre(a.nombre))).size !== anunciosCargados.length;
+  // Una campaña nueva necesita al menos un anuncio; las viejas pueden no tenerlos.
+  const anunciosValidos = !anunciosRepetidos && (esEdicion || anunciosCargados.length > 0);
+  const nombreFinalValido = nombreModo === 'recomendado' || nombrePropio.trim().length > 0;
+
   const puedeAvanzar = () => {
     if (step === 1) return !!productoSeleccionado;
     if (step === 2) return !!embudo;
     if (step === 3) return !!fase;
     if (step === 4) return !!objetivoMeta;
     if (step === 5) return !!presupuesto && (presupuesto === 'ABO' || Number(presupuestoDiario) > 0);
-    if (step === 6 || step === 7) return conjuntos.length > 0 && conjuntos.every(c => c.nombre.trim() && (presupuesto === 'CBO' || Number(c.presupuesto_diario) > 0));
+    if (step === 6) return conjuntosValidos;
+    if (step === 7) return conjuntosValidos && anunciosValidos;
+    if (step === 8) return conjuntosValidos && anunciosValidos && nombreFinalValido;
     return true;
   };
 
@@ -194,6 +211,10 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
     return `${pId} | ${pNombre} | ${embudo} | ${fase} | ${presupuesto}`;
   };
 
+  const nombreCampana = () => (nombreModo === 'propio' ? nombrePropio.trim() : generarNombreNomenclatura());
+  const cambiarAnuncio = (id, nombre) => { setAnuncios(actuales => actuales.map(a => a.id === id ? { ...a, nombre } : a)); setEditado(true); };
+  const agregarAnuncio = () => { setAnuncios(actuales => [...actuales, nuevoAnuncio(Math.max(0, ...actuales.map(a => a.id)) + 1)]); setEditado(true); };
+
   const cambiarConjunto = (id, cambios) => { setConjuntos(actuales => actuales.map(c => c.id === id ? { ...c, ...cambios } : c)); setEditado(true); };
   const agregarConjunto = () => {
     const id = Math.max(0, ...conjuntos.map(c => c.id)) + 1;
@@ -203,11 +224,13 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
   };
 
   const handleSubmit = async () => {
-    if (!productoSeleccionado || !embudo || !fase || !presupuesto || !objetivoMeta || !conjuntos.length || !conjuntos.every(c => c.nombre.trim() && (presupuesto === 'CBO' || Number(c.presupuesto_diario) > 0)) || (presupuesto === 'CBO' && Number(presupuestoDiario) <= 0)) { setError('Completá el objetivo, el presupuesto y cada conjunto antes de guardar.'); return; }
+    if (!productoSeleccionado || !embudo || !fase || !presupuesto || !objetivoMeta || !conjuntos.length || !conjuntosValidos || (presupuesto === 'CBO' && Number(presupuestoDiario) <= 0)) { setError('Completá el objetivo, el presupuesto y cada conjunto antes de guardar.'); return; }
+    if (!anunciosValidos) { setError(anunciosRepetidos ? 'Cada anuncio necesita un nombre distinto.' : 'Cargá el nombre de al menos un anuncio.'); return; }
+    if (!nombreFinalValido) { setError('Escribí el nombre propio de la campaña.'); return; }
     setGuardando(true);
     setError(null);
     try {
-      const nombreFinal = generarNombreNomenclatura();
+      const nombreFinal = nombreCampana();
       const payload = {
         nombre_display: nombreFinal,
         producto_ids: [productoSeleccionado.id],
@@ -215,7 +238,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
         landing_id: null,
         meta_integration_id: metaIntegrationId || null,
         ...(esEdicion ? { meta_campaign_id: metaCampaignId } : {}),
-        configuracion_anuncios: { objetivo: objetivoMeta, tipo_presupuesto: presupuesto, presupuesto_diario: presupuesto === 'CBO' ? Number(presupuestoDiario) : null, carpeta_creativos: carpetaCreativos.trim() || null, conjuntos: conjuntos.map(c => ({ ...c, presupuesto_diario: presupuesto === 'ABO' ? Number(c.presupuesto_diario) : null })) },
+        configuracion_anuncios: { objetivo: objetivoMeta, tipo_presupuesto: presupuesto, presupuesto_diario: presupuesto === 'CBO' ? Number(presupuestoDiario) : null, fase, nombre_modo: nombreModo, anuncios: anunciosCargados.map(a => ({ id: a.id, nombre: a.nombre.trim() })), conjuntos: conjuntos.map(c => ({ ...c, presupuesto_diario: presupuesto === 'ABO' ? Number(c.presupuesto_diario) : null })) },
       };
 
       const guardada = campanaPersistida ? await metaReportesService.actualizarCampana(campanaPersistida.id, payload) : (esEdicion
@@ -229,7 +252,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
         setResultado(guardada);
       }
     } catch (err) {
-      setError((campanaPersistida ? 'La campaña se guardó, pero faltan creativos por subir. Reintentá. ' : '') + (err.response?.data?.message || err.message || 'Error al guardar la campaña.'));
+      setError((err.response?.data?.message || err.message || 'Error al guardar la campaña.'));
     } finally {
       setGuardando(false);
     }
@@ -241,18 +264,6 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     }).catch(() => setError('No pudimos copiar el nombre. Seleccioná el texto y copialo manualmente.'));
-  };
-
-  const descargarCreativo = async (creativo) => {
-    try {
-      const blob = await metaReportesService.descargarCreativo(campanaEditar.id, creativo.id);
-      const url = URL.createObjectURL(blob);
-      const enlace = document.createElement('a');
-      enlace.href = url;
-      enlace.download = creativo.nombre;
-      enlace.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (err) { setError(err.response?.data?.message || 'No pudimos descargar el creativo.'); }
   };
 
   return (
@@ -548,7 +559,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
               {step === 6 && <div className="ads-wizard-section">
                 <h3>Conjuntos de anuncios</h3>
-                <p>Creá al menos uno. Después podrás usar los mismos creativos en todos los conjuntos.</p>
+                <p>Creá al menos uno. En el paso siguiente cargás los anuncios, que van con el mismo nombre en todos los conjuntos.</p>
                 <div className="ads-adset-toolbar"><button type="button" className="btn-secondary ads-add-adset" onClick={agregarConjunto}><Plus size={17} /> Agregar conjunto</button></div>
                 {conjuntos.map((c, index) => <div className="ads-adset-card" data-conjunto-id={c.id} key={c.id}>
                   <div className="ads-adset-heading"><h4>Conjunto {index + 1}</h4>{conjuntos.length > 1 && <button type="button" className="btn-icon" aria-label={`Eliminar conjunto ${index + 1}`} onClick={() => { setConjuntos(actuales => actuales.filter(x => x.id !== c.id)); setEditado(true); }}><Trash2 size={18} /></button>}</div>
@@ -561,13 +572,36 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
               </div>}
 
               {step === 7 && <div className="ads-wizard-section">
-                <h3>Creativos</h3>
-                <p>Indicá dónde está la carpeta en tu equipo. La IA usará esta ubicación como referencia para encontrar los archivos y cargarlos en Meta.</p>
-                <div className="ads-adset-card ads-campaign-creatives">
-                  <button type="button" className="ads-upload-field" onClick={async () => { try { if (!window.showDirectoryPicker) { setError('Este navegador no permite seleccionar una carpeta sin cargar sus archivos. Abrí Gesicom en Chrome o Edge actualizado.'); return; } const carpeta = await window.showDirectoryPicker({ mode: 'read' }); setCarpetaCreativos(carpeta.name); setEditado(true); } catch (err) { if (err.name !== 'AbortError') setError('No pudimos seleccionar la carpeta.'); } }}><FolderOpen size={18} /> {carpetaCreativos ? 'Cambiar carpeta de creativos' : 'Seleccionar carpeta de creativos'}</button>
-                  <p className="ads-file-help">{carpetaCreativos ? `Carpeta seleccionada: ${carpetaCreativos}` : 'Elegí la carpeta de tu equipo. Gesicom guardará su nombre como referencia; no cargará los archivos.'}</p>
-                  {creativosGuardados.map(creativo => <div className="ads-creative-row" key={creativo.id}><span>{creativo.nombre}</span><div><button type="button" className="btn-secondary" onClick={() => descargarCreativo(creativo)}>Descargar</button><button type="button" className="btn-icon" aria-label={`Eliminar ${creativo.nombre}`} onClick={async () => { try { await metaReportesService.eliminarCreativo(campanaEditar.id, creativo.id); setCreativosGuardados(actuales => actuales.filter(x => x.id !== creativo.id)); } catch (err) { setError(err.response?.data?.message || 'No pudimos eliminar el creativo.'); } }}><Trash2 size={16} /></button></div></div>)}
+                <h3>Anuncios</h3>
+                <p>Escribí el nombre de cada anuncio. En Meta se crean con el mismo nombre exacto en todos los conjuntos, para saber qué anuncio trajo cada venta.</p>
+                <div className="ads-adset-card ads-ad-names">
+                  {anuncios.map((a, index) => {
+                    const repetido = Boolean(a.nombre.trim()) && anuncios.some(otro => otro.id !== a.id && otro.nombre.trim() && claveNombre(otro.nombre) === claveNombre(a.nombre));
+                    return <div className="ads-ad-name-row" key={a.id}>
+                      <label className="ads-form-field">Anuncio {index + 1}<input value={a.nombre} maxLength={150} onChange={e => cambiarAnuncio(a.id, e.target.value)} placeholder="Ej.: Video 1 · Gancho precio" aria-invalid={repetido || undefined} /></label>
+                      {anuncios.length > 1 && <button type="button" className="btn-icon" aria-label={`Eliminar anuncio ${index + 1}`} onClick={() => { setAnuncios(actuales => actuales.filter(x => x.id !== a.id)); setEditado(true); }}><Trash2 size={18} /></button>}
+                      {repetido && <p className="ads-field-error" role="alert">Este nombre ya está en otro anuncio.</p>}
+                    </div>;
+                  })}
+                  <button type="button" className="btn-secondary ads-add-adset" onClick={agregarAnuncio}><Plus size={17} /> Agregar anuncio</button>
                 </div>
+              </div>}
+
+              {step === 8 && <div className="ads-wizard-section">
+                <h3>Nombre de la campaña</h3>
+                <p>Es el nombre que va a tener la campaña en Gesicom y en Meta Ads Manager, exactamente igual.</p>
+                <div className="ads-name-options" role="radiogroup" aria-label="Nombre de la campaña">
+                  <label className={`ads-name-option${nombreModo === 'recomendado' ? ' is-selected' : ''}`}>
+                    <input type="radio" name="nombre-modo" value="recomendado" checked={nombreModo === 'recomendado'} onChange={() => { setNombreModo('recomendado'); setEditado(true); }} />
+                    <span className="ads-name-option-text"><strong>Usar nombre recomendado</strong><span className="ads-name-option-help">Lo arma Gesicom con el producto, el canal, la fase y el presupuesto.</span><code>{generarNombreNomenclatura()}</code></span>
+                  </label>
+                  <label className={`ads-name-option${nombreModo === 'propio' ? ' is-selected' : ''}`}>
+                    <input type="radio" name="nombre-modo" value="propio" checked={nombreModo === 'propio'} onChange={() => { setNombreModo('propio'); setEditado(true); }} />
+                    <span className="ads-name-option-text"><strong>Usar nombre propio</strong><span className="ads-name-option-help">Ponele el nombre que quieras.</span></span>
+                  </label>
+                  {nombreModo === 'propio' && <label className="ads-form-field">Nombre propio<input value={nombrePropio} maxLength={255} autoFocus onChange={e => { setNombrePropio(e.target.value); setEditado(true); }} placeholder="Ej.: Termo · Black Friday · Ventas" /></label>}
+                </div>
+                {esEdicion && <p className="ads-file-help">Si ya creaste la campaña en Meta y cambiás el nombre, cambialo también en Ads Manager.</p>}
               </div>}
 
             </div>
