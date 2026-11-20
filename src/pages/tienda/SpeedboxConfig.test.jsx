@@ -140,6 +140,24 @@ describe('Speedbox settings', () => {
     await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ environment: 'sandbox', activo: true, public_key: 'sbx_public', private_key: 'private_secret' }));
   });
 
+  it('saves sandbox credentials as inactive before the RAHA store is linked', async () => {
+    // Antes de "Crear tienda sandbox en RAHA" no hay tienda_id: guardar las
+    // credenciales nunca debe pedir activar, porque el backend lo rechaza
+    // con "Vinculá primero tu tienda RAHA." (service.js#configure).
+    speedboxService.obtener.mockResolvedValue({
+      ...config,
+      connection: { environment: 'sandbox', tienda_id: null, courier_id: null, activo: false, public_key: 'sbx_saved_public', has_private_key: true },
+      connections: [
+        { environment: 'sandbox', tienda_id: null, courier_id: null, activo: false, public_key: 'sbx_saved_public', has_private_key: true },
+      ],
+    });
+    render(<SpeedboxConfig />);
+    await screen.findByLabelText('Public key');
+    fireEvent.change(screen.getByLabelText('Private key'), { target: { value: 'private_secret' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar sandbox' }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ environment: 'sandbox', activo: false, public_key: 'sbx_saved_public', private_key: 'private_secret' }));
+  });
+
   it('stores production credentials separately from sandbox', async () => {
     render(<SpeedboxConfig />);
     fireEvent.change(await screen.findByLabelText('Public key producción'), { target: { value: ' sbx_live_public ' } });

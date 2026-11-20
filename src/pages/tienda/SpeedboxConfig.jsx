@@ -527,7 +527,7 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
               <div><dt>Automatización producción</dt><dd>{data.automatic_enabled && productionConnection?.activo ? 'Activa' : 'Pausada'}</dd></div>
             </dl>
             <div className="spb-actions">
-              <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('save-sandbox', () => speedboxService.guardar({ activo: true, ...credentialsPayload() }), 'Credenciales sandbox guardadas.', true)}>
+              <button type="button" className="spb-button" disabled={disabled || !credentialsAvailable} onClick={() => run('save-sandbox', () => speedboxService.guardar({ activo: Boolean(sandboxConnection?.tienda_id), ...credentialsPayload() }), 'Credenciales sandbox guardadas.', true)}>
                 <Save size={16} /> Guardar sandbox
               </button>
             </div>
