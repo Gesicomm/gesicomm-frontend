@@ -32,6 +32,8 @@ function nombresTrackeados() {
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
+  window.history.replaceState({}, '', '/');
   trackearEvento.mockClear();
   registrarEventoLanding.mockClear();
 });
@@ -88,5 +90,16 @@ describe('useStoreCart — InitiateCheckout', () => {
     await act(async () => { checkout = await result.current.confirmarPedido({ nombre_cliente: 'Ana' }); });
     expect(checkout).toMatchObject({ numero_pedido_visible: 'ALI-1001', numero_pedido_tienda: 1, tienda_id: 9 });
     expect(nombresTrackeados()).toEqual([]);
+  });
+
+  it('conserva los IDs de campaña y conjunto del enlace hasta el checkout', async () => {
+    window.history.replaceState({}, '', '/?utm_source=meta&utm_campaign=123456&utm_content=789012');
+    const { result } = renderHook(() => useStoreCart('tienda', {}, [item]), { wrapper });
+    act(() => result.current.agregarAlCarrito({ item, cantidad: 1, precio: 50000 }));
+    window.history.replaceState({}, '', '/producto');
+    await act(async () => result.current.confirmarPedido({ nombre_cliente: 'Ana' }));
+    expect(crearCheckoutLanding).toHaveBeenLastCalledWith('tienda', expect.objectContaining({
+      utm_source: 'meta', utm_campaign: '123456', utm_content: '789012',
+    }));
   });
 });

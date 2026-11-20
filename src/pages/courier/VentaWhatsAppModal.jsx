@@ -52,7 +52,7 @@ export function VentaWhatsAppModal({ open, onClose, onSubmit, lead = null }) {
     setNombreCliente(lead?.nombre_cliente || lead?.cliente || "");
     setTelefono(lead?.telefono || "");
     setItems([]);
-    setLeadTipo(lead?.lead_tipo_manual || (lead?.campana_leads?.length ? "campana" : "organico"));
+    setLeadTipo(lead?.lead_tipo_manual || "organico");
     // Sin `sin_limite` solo llegan 10 productos (paginación por defecto de
     // ProductoService.buscar) y el picker no puede ofrecer el resto del
     // catálogo — mismo criterio que NuevoPedidoModal.

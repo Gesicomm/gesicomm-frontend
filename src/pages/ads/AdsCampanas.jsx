@@ -112,7 +112,8 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
             <div>
               <span className="ads-guide-place">En Meta Ads Manager</span>
               <h3>Publicá tus anuncios</h3>
-              <p>Copiá el nombre generado en Gesicom y pegalo al crear la campaña en Meta. Allí configurás los anuncios y los publicás.</p>
+              <p>Descargá la guía de ChatGPT para reproducir en Meta el objetivo, presupuesto, conjuntos y creativos guardados en Gesicom.</p>
+              <a href="/skills/gesicom-meta-ads.md" download="gesicom-meta-ads.md">Descargar guía para ChatGPT (.md)</a>
             </div>
           </li>
           <li>
@@ -120,7 +121,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
             <div>
               <span className="ads-guide-place">De vuelta en Gesicom</span>
               <h3>Registrá lo que gastaste</h3>
-              <p>En tu campaña, elegí <strong>Cargar gasto</strong>. Indicá el rango de fechas y el monto invertido para consultar el total y su historial.</p>
+              <p>Cargá el gasto por período. Para las compras que Meta atribuye a cada conjunto, abrí <strong>Editar campaña → Conjuntos → Cargar ventas</strong>.</p>
             </div>
           </li>
         </ol>
@@ -165,9 +166,9 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
               <thead>
                 <tr>
                   <th>Campaña</th>
-                  <th className="text-right">Pedidos asociados</th>
+                  <th className="text-right">Compras atribuidas por Meta</th>
                   <th className="text-right">Gastado</th>
-                  <th className="text-right" title="Gasto cargado dividido por los pedidos asociados. Aproximado: el pedido se asocia por producto, no por clic.">Costo por pedido</th>
+                  <th className="text-right">Conjuntos</th>
                   <th>Estado en Gesicom</th>
                   <th className="text-right">Acciones</th>
                 </tr>
@@ -176,6 +177,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                 {visibles.map((c) => {
                   const badge = BADGE_ESTADO[c.estado] || BADGE_ESTADO.borrador;
                   const tieneGasto = (c.gasto_registros || 0) > 0;
+                  const comprasMeta = (c.ventas_conjuntos || []).reduce((total, registro) => total + Number(registro.compras || 0), 0);
                   // El asistente genera un nombre que ya ES el que se copia en
                   // Meta: mostrarlo dos veces solo ensancha la tabla. Las
                   // campañas viejas tienen un nombre corto + otro con código.
@@ -225,11 +227,11 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                           </div>
                         </div>
                       </td>
-                      <td data-label="Pedidos asociados"
+                      <td data-label="Compras atribuidas por Meta"
                         className="whitespace-nowrap text-right tabular-nums"
-                        title="Pedidos con al menos un producto de esta campaña, resuelto automáticamente al crearse"
+                        title="Compras que Meta atribuye a los conjuntos en los períodos cargados. No son pedidos de Gesicom."
                       >
-                        {c.leads > 0 ? c.leads : <span className="text-fg-subtle">0</span>}
+                        {(c.ventas_conjuntos || []).length ? comprasMeta : <span className="text-fg-subtle">Sin cargar</span>}
                       </td>
                       <td data-label="Gasto registrado" className="whitespace-nowrap text-right">
                         {tieneGasto ? (
@@ -239,10 +241,8 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
                           </>
                         ) : <span className="text-fg-subtle">Sin cargar</span>}
                       </td>
-                      <td data-label="Costo por pedido" className="whitespace-nowrap text-right tabular-nums">
-                        {tieneGasto && c.leads > 0
-                          ? <span className="font-semibold text-fg">{formatPYG(Math.round(c.gasto_total / c.leads))}</span>
-                          : <span className="text-fg-subtle" title={tieneGasto ? 'Todavía no hay pedidos asociados' : 'Cargá el gasto para calcularlo'}>—</span>}
+                      <td data-label="Conjuntos" className="whitespace-nowrap text-right tabular-nums">
+                        {c.configuracion_anuncios?.conjuntos?.length || <span className="text-fg-subtle">—</span>}
                       </td>
                       <td data-label="Estado en Gesicom">
                         <span className="badge" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>

@@ -42,7 +42,7 @@ export function cargarMetodoPagoGuardado(slug) {
 }
 
 const CLAVE_UTM = 'gesicomm:utm';
-const CAMPOS_UTM = ['utm_source', 'utm_medium', 'utm_campaign'];
+const CAMPOS_UTM = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
 
 /**
  * Los UTM llegan solo en la URL de entrada (el link del anuncio). Al pasar a

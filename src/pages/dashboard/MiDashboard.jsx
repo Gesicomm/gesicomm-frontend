@@ -1246,6 +1246,7 @@ const EMBUDOS_TABS = [
   { id: 'formularios', label: 'Formularios Web' },
   { id: 'lead_organico', label: 'Lead Orgánico' },
   { id: 'lead_campana', label: 'Lead Campaña WhatsApp' },
+  { id: 'lead_sin_atribuir', label: 'Lead sin atribuir' },
   { id: 'pago', label: 'Pago Web' },
 ];
 
@@ -1493,12 +1494,14 @@ export default function MiDashboard() {
   const subFunnelVacio = { total: 0, cancelados: 0, confirmados: 0, preparados: 0, despachados: 0, entregados: 0, devueltos: 0, efectividad: 0 };
   const canalVacio = {
     ...subFunnelVacio,
-    lead_organico: 0, lead_campana: 0,
+    lead_organico: 0, lead_campana: 0, lead_sin_atribuir: 0,
     organico: subFunnelVacio,
     campana: subFunnelVacio,
+    sin_atribuir: subFunnelVacio,
   };
   // Los embudos de WhatsApp y de la Web se leen por slug del catálogo.
   const canalWhatsapp = ventas?.funnel?.canales?.whatsapp || canalVacio;
+  const leadSinAtribuir = canalWhatsapp.sin_atribuir || subFunnelVacio;
   const canalLanding = ventas?.funnel?.canales?.web || canalVacio;
   const pagosOnline = ventas?.pagos_online || { pagos_realizados: 0, monto_pagado: 0 };
   const couriers = ventas?.couriers || [];
@@ -1591,11 +1594,8 @@ export default function MiDashboard() {
         pixel?.visitas_sin_filtrar ? 'Visitas totales de la tienda: un pageview no queda asociado a un producto, así que este número no se filtra por producto.' : null,
       ].filter(Boolean).join(' '),
     },
-    // "WhatsApp" ya no es un tab único: cada pedido cuenta para UNA de estas
-    // dos mitades (ver lead_organico/lead_campana en pedidosAnalyticsService
-    // getResumenFunnel — automático por producto, con override manual del
-    // vendedor vía lead_tipo_manual). Mismos 5 pasos que antes, repetidos
-    // para cada mitad en vez de un solo embudo con el desglose al pie.
+    // La procedencia de WhatsApp solo se afirma con marca explícita. Los
+    // contactos sin esa marca tienen un embudo propio.
     lead_organico: {
       pasos: [
         { label: 'Leads', valor: canalWhatsapp.organico.total, icono: <MessageCircle size={18} />, tono: 'contactos' },
@@ -1633,6 +1633,17 @@ export default function MiDashboard() {
         </>
       ),
       nota: 'Contactos cargados como leads de campaña en Gestión Comercial. Un clic en la tienda no los agrega; el lead sigue sin pedido hasta que se confirme la compra.',
+    },
+    lead_sin_atribuir: {
+      pasos: [
+        { label: 'Leads', valor: leadSinAtribuir.total, icono: <MessageCircle size={18} />, tono: 'contactos' },
+        { label: 'Pedidos Confirmados', valor: leadSinAtribuir.confirmados, icono: <CheckCircle2 size={18} />, tono: 'carrito' },
+        { label: 'Preparados', valor: leadSinAtribuir.preparados, icono: <Package size={18} />, tono: 'carrito' },
+        { label: 'Despachados', valor: leadSinAtribuir.despachados, icono: <Truck size={18} />, tono: 'checkout' },
+        { label: 'Pedidos Entregados', valor: leadSinAtribuir.entregados, icono: <PackageCheck size={18} />, tono: 'checkout' },
+      ],
+      pieFinal: <>Efectividad (Leads a Entregados): <strong>{leadSinAtribuir.efectividad}%</strong></>,
+      nota: 'Estos contactos no tienen una atribución confirmada. Compartir producto con una campaña no indica que hayan llegado desde el anuncio.',
     },
     // Sin "Al carrito": desde la ficha de producto se puede ir derecho a
     // pagar sin pasar por el carrito, y ese camino no dispara AddToCart. El
@@ -2033,7 +2044,7 @@ export default function MiDashboard() {
         )}
       </Bloque>
 
-      {/* ── Embudo de Conversión: los 4 embudos, uno a la vez por tab ──── */}
+      {/* ── Embudo de Conversión: un canal por pestaña ──── */}
       <Bloque
         id="embudo-conversion"
         mobileSection="marketing"

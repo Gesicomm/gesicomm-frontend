@@ -62,7 +62,7 @@ describe('AdsCampanas — total gastado por campaña', () => {
     expect(within(fila).getByText('hasta el 14/10/2026')).toBeInTheDocument();
 
     const sinGasto = screen.getByRole('button', { name: 'P0008 | MATE | WHATSAPP | EVALUACION | ABO', exact: true }).closest('tr');
-    expect(within(sinGasto).getByText('Sin cargar')).toBeInTheDocument();
+    expect(within(sinGasto.querySelector('[data-label="Gasto registrado"]')).getByText('Sin cargar')).toBeInTheDocument();
 
     const pie = screen.getByText('Total gastado').closest('tr');
     expect(within(pie).getByText(cifra('1.750.000'))).toBeInTheDocument();
@@ -194,11 +194,12 @@ describe('Histórico de gasto', () => {
     confirmar.mockRestore();
   });
 
-  it('muestra el costo por pedido asociado y, en borrador, ofrece activar antes que cargar gasto', () => {
-    render(<AdsCampanas campanas={[{ ...CAMPANAS[0], leads: 5 }, CAMPANAS[1]]} cargando={false} tiendas={[]} onCambio={vi.fn()} />);
+  it('muestra solo compras informadas por Meta y ofrece activar un borrador', () => {
+    render(<AdsCampanas campanas={[{ ...CAMPANAS[0], leads: 5, ventas_conjuntos: [{ id: 91, compras: 3, conjunto_id: 1 }] }, CAMPANAS[1]]} cargando={false} tiendas={[]} onCambio={vi.fn()} />);
     const filas = screen.getAllByRole('row');
     const activa = filas.find(f => f.textContent.includes('Termo'));
-    expect(within(activa).getByText(/350\.000/)).toBeInTheDocument();
+    expect(within(activa).getByText(/1\.750\.000/)).toBeInTheDocument();
+    expect(within(activa).getByText('3')).toBeInTheDocument();
     expect(within(activa).getByRole('button', { name: /Cargar gasto/ })).toBeInTheDocument();
     const borrador = filas.find(f => f.textContent.includes('Mate'));
     expect(within(borrador).getByRole('button', { name: /Marcar activa/ })).toBeInTheDocument();

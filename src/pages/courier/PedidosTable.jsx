@@ -766,8 +766,8 @@ function PedidoMobile({ envio, etapa, onAbrirDetalle, onAbrirResumen, onAbrirSeg
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "Sin nombre";
   const seg = envio.seguimiento;
   const whatsapp = String(envio.origen || "").toUpperCase().includes("WHATSAPP");
-  const leadTipo = envio.lead_tipo_manual || ((envio.campana_leads || []).length ? "campana" : "organico");
-  const origen = whatsapp ? `Lead ${leadTipo === "campana" ? "Campaña" : "Orgánico"}` : envio.origen === "LANDING" ? "Pedido web" : "Manual";
+  const leadTipo = envio.lead_tipo_manual || null;
+  const origen = whatsapp ? `Lead ${leadTipo === "campana" ? "Campaña" : leadTipo === "organico" ? "Orgánico" : "sin atribuir"}` : envio.origen === "LANDING" ? "Pedido web" : "Manual";
   const bloqueado = etapa === "seguimiento_envio" && !puedeEnviarSeguimiento(envio);
   const estadoMensaje = seg ? estadoDelSeguimiento(seg) : null;
   const { fecha } = formatFechaYHora(envio.dispatchedAt || envio.fecha, envio.hora, envio.createdAt);
@@ -1016,8 +1016,8 @@ export function PedidosTable({
   // Corrige a mano si un pedido de WhatsApp cuenta como Lead Orgánico o Lead
   // Campaña (ver columna Tipo) — el vendedor sabe cosas que el matching
   // automático por producto no puede saber (ej. llegó por recomendación
-  // aunque el producto tenga campaña activa). Alterna entre las dos, no
-  // vuelve al automático: una vez corregido, queda corregido.
+  // La marca es explícita. Un lead sin atribuir puede marcarse como campaña;
+  // las marcas existentes alternan entre campaña y orgánico.
   const handleToggleLeadTipo = async (envio, actual) => {
     try {
       await actualizarLeadTipoManual(envio.id, actual === "campana" ? "organico" : "campana");
@@ -1891,20 +1891,17 @@ export function PedidosTable({
                 // claro que todavía no es una venta confirmada — sigue
                 // siendo el mismo Envio de siempre, esto es solo la etiqueta.
                 const esWhatsapp = String(e.origen || "").toUpperCase().includes("WHATSAPP");
-                // Mismo dato que ya separa "Lead Orgánico" de "Lead Campaña"
-                // en el Dashboard General (ver pedidosAnalyticsService.js):
-                // si el pedido tiene al menos un MetaCampanaLead, su producto
-                // matcheó una campaña activa al crearse.
-                // El vendedor puede corregir el cálculo automático a mano
-                // (ver lead_tipo_manual en Envio.js) — su marca gana cuando
-                // existe, mismo criterio que pedidosAnalyticsService.js.
-                const leadTipoActual = e.lead_tipo_manual || ((e.campana_leads || []).length > 0 ? "campana" : "organico");
+                // Solo la marca explícita del vendedor identifica un lead de
+                // campaña. La coincidencia de producto ya no atribuye origen.
+                const leadTipoActual = e.lead_tipo_manual || null;
                 const tipoPedido = esWhatsapp
                   ? leadTipoActual === "campana"
                     // Texto completo, como en la vista de celular: "LO"/"LC" no
                     // se entendían sin pasar el mouse.
                     ? { label: "Lead Campaña", tono: "whatsapp", title: "Lead Campaña WhatsApp — clic para corregir a Orgánico" }
-                    : { label: "Lead Orgánico", tono: "whatsapp", title: "Lead Orgánico WhatsApp — clic para corregir a Campaña" }
+                    : leadTipoActual === "organico"
+                    ? { label: "Lead Orgánico", tono: "whatsapp", title: "Lead Orgánico WhatsApp — clic para corregir a Campaña" }
+                    : { label: "Lead sin atribuir", tono: "whatsapp", title: "Sin origen confirmado — clic para marcar como Campaña" }
                   : String(e.origen || "").toUpperCase() === "LANDING"
                   ? { label: "Pedido Web", tono: "web" }
                   : { label: "Manual", tono: "manual" };
