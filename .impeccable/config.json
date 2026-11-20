@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "*",
+        "files": [
+          "src/pages/landing-simple/construirDocumentoCodigo.fuenteTienda.test.js"
+        ],
+        "createdAt": "2026-11-18T22:41:40.912Z",
+        "reason": "Claude: font name is test fixture data for the store-font loader, not UI"
+      }
+    ]
+  }
+}

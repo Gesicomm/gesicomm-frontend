@@ -95,7 +95,7 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
     <div className="ads-campaign-list flex flex-col gap-3">
       <div className="ads-skill-banner">
         <div>
-          <strong>Skill de Meta para ChatGPT</strong>
+          <strong>Skill de Meta para tu IA</strong>
           <p>Descargá el archivo .md para crear la misma campaña en Meta y registrar sus compras por conjunto en Gesicom.</p>
         </div>
         <a className="btn-secondary ads-skill-banner-link" href="/skills/gesicom-meta-ads.md" download="gesicom-meta-ads.md">
