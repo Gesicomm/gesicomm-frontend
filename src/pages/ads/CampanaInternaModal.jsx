@@ -294,7 +294,6 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
               </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <a className="btn-secondary" href="/skills/gesicom-meta-ads.md" download="gesicom-meta-ads.md">Descargar guía de ChatGPT</a>
               {onCargarGasto && (
                 <button type="button" className="btn-secondary" onClick={() => onCargarGasto(resultado)}>Cargar gasto</button>
               )}

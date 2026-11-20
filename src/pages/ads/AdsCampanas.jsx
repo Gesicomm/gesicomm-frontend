@@ -122,7 +122,6 @@ export default function AdsCampanas({ campanas, cargando, tiendas, onCambio }) {
               <span className="ads-guide-place">En Meta Ads Manager</span>
               <h3>Publicá tus anuncios</h3>
               <p>Descargá la guía de ChatGPT para reproducir en Meta el objetivo, presupuesto, conjuntos y creativos guardados en Gesicom.</p>
-              <a href="/skills/gesicom-meta-ads.md" download="gesicom-meta-ads.md">Descargar guía para ChatGPT (.md)</a>
             </div>
           </li>
           <li>
