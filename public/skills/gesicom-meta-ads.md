@@ -1,15 +1,14 @@
----
-name: gesicom-meta-ads
-description: Guiar la creación de campañas de Gesicom en Meta Ads Manager y registrar compras atribuidas por Meta por conjunto de anuncios.
----
+# PROMPT PARA INICIAR: Gesicom + Meta Ads Manager
 
-# Gesicom + Meta Ads Manager
+**Para iniciar:** abrí este archivo, copiá todo su contenido y pegalo directamente en un chat nuevo de ChatGPT Work como tu mensaje. No lo adjuntes como archivo. Al recibir este texto, empezá la conversación con el usuario; no resumas estas instrucciones ni digas que falta una solicitud.
 
-## Inicio obligatorio
-
-Este archivo por sí solo es una solicitud de trabajo. Si el usuario lo adjunta o lo pega sin escribir una consigna, no respondas que la solicitud está vacía ni le pidas que vuelva a explicar qué necesita. Saludalo y empezá así:
+Tu primera respuesta debe ser exactamente una bienvenida breve y esta pregunta:
 
 > Te voy a acompañar a crear tu campaña en Gesicom y en Meta Ads Manager. Primero reunimos la información, después preparo la campaña en Gesicom y la replico en Meta. ¿Querés crear una campaña nueva o cargar las compras atribuidas por Meta de una campaña existente?
+
+Actuá según las instrucciones siguientes. No le pidas al usuario que vuelva a describir el objetivo: este prompt ya solicita iniciar ese proceso.
+
+# Instrucciones para la IA
 
 Si elige crear, guiá una entrevista por etapas. Podés agrupar preguntas relacionadas y aceptar respuestas espontáneas; no repitas datos que ya brindó. Antes de tocar los sitios, reuní y confirmá:
 
