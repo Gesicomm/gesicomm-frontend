@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, MessageCircle, Globe, Package, ChevronLeft, ChevronRight, TrendingUp, Target, RefreshCw, Zap, Plus, Trash2, Upload } from 'lucide-react';
+import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, MessageCircle, Globe, Package, ChevronLeft, ChevronRight, TrendingUp, Target, RefreshCw, Zap, Plus, Trash2 } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
@@ -54,7 +54,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
   const [objetivoMeta, setObjetivoMeta] = useState(null);
   const [presupuestoDiario, setPresupuestoDiario] = useState('');
   const [conjuntos, setConjuntos] = useState([nuevoConjunto(1)]);
-  const [archivos, setArchivos] = useState([]);
+  const [carpetaCreativos, setCarpetaCreativos] = useState('');
   const [creativosGuardados, setCreativosGuardados] = useState([]);
   const [campanaPersistida, setCampanaPersistida] = useState(null);
   const [metaCampaignId, setMetaCampaignId] = useState('');
@@ -100,6 +100,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
       setPresupuestoDiario(config?.presupuesto_diario || '');
       setConjuntos(config?.conjuntos?.length ? config.conjuntos : [nuevoConjunto(1)]);
       setCreativosGuardados(campanaEditar.creativos || []);
+      setCarpetaCreativos(config?.carpeta_creativos || '');
       setMetaCampaignId(campanaEditar.meta_campaign_id || '');
       setVentasConjuntos(campanaEditar.ventas_conjuntos || []);
     } else {
@@ -115,7 +116,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
       setVentasConjuntos([]);
       setMetaIntegrationId(tiendas.length === 1 ? tiendas[0].id : null);
     }
-    setArchivos([]);
+    if (!campanaEditar) setCarpetaCreativos('');
 
     Promise.all([
       productService.buscar({ activo: true, sin_limite: true }),
@@ -214,7 +215,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
         landing_id: null,
         meta_integration_id: metaIntegrationId || null,
         ...(esEdicion ? { meta_campaign_id: metaCampaignId } : {}),
-        configuracion_anuncios: { objetivo: objetivoMeta, tipo_presupuesto: presupuesto, presupuesto_diario: presupuesto === 'CBO' ? Number(presupuestoDiario) : null, conjuntos: conjuntos.map(c => ({ ...c, presupuesto_diario: presupuesto === 'ABO' ? Number(c.presupuesto_diario) : null })) },
+        configuracion_anuncios: { objetivo: objetivoMeta, tipo_presupuesto: presupuesto, presupuesto_diario: presupuesto === 'CBO' ? Number(presupuestoDiario) : null, carpeta_creativos: carpetaCreativos.trim() || null, conjuntos: conjuntos.map(c => ({ ...c, presupuesto_diario: presupuesto === 'ABO' ? Number(c.presupuesto_diario) : null })) },
       };
 
       const guardada = campanaPersistida ? await metaReportesService.actualizarCampana(campanaPersistida.id, payload) : (esEdicion
@@ -222,12 +223,6 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
         : await metaReportesService.crearCampana(payload));
       setCampanaPersistida(guardada);
       if (!campanaPersistida) onCreated?.(guardada);
-      const pendientes = [...archivos];
-      for (const archivo of pendientes) {
-        await metaReportesService.subirCreativo(guardada.id, archivo);
-        setArchivos(actuales => actuales.filter(f => f !== archivo));
-      }
-      if (pendientes.length) onCreated?.(guardada);
       if (esEdicion) {
         onClose();
       } else {
@@ -567,13 +562,10 @@ export default function CampanaInternaModal({ open, onClose, onCreated, onCargar
 
               {step === 7 && <div className="ads-wizard-section">
                 <h3>Creativos</h3>
-                <p>Subí las imágenes o videos una sola vez. Estos creativos estarán disponibles para todos los conjuntos de anuncios de la campaña.</p>
+                <p>Indicá dónde está la carpeta en tu equipo. La IA usará esta ubicación como referencia para encontrar los archivos y cargarlos en Meta.</p>
                 <div className="ads-adset-card ads-campaign-creatives">
-                  <label className="ads-upload-field"><Upload size={18} /> Seleccionar carpeta de creativos
-                    <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple webkitdirectory="" directory="" onChange={e => { const nuevos = [...e.target.files]; setArchivos(actuales => [...actuales, ...nuevos]); setEditado(true); e.target.value = ''; }} />
-                  </label>
-                  <p className="ads-file-help">Elegí la carpeta. Se cargarán sus archivos JPG, PNG, WebP, MP4 y WebM, sin límite de 25 MB por archivo.</p>
-                  {archivos.map((file, index) => <div className="ads-creative-row" key={`${file.name}-${index}`}><span>{file.name}</span><button type="button" className="btn-icon" aria-label={`Quitar ${file.name}`} onClick={() => setArchivos(actuales => actuales.filter((_, i) => i !== index))}><X size={16} /></button></div>)}
+                  <label className="ads-form-field">Ubicación de la carpeta<input value={carpetaCreativos} onChange={e => { setCarpetaCreativos(e.target.value); setEditado(true); }} placeholder="Ej.: C:\\Users\\Martin\\Videos\\Campaña verano" /></label>
+                  <p className="ads-file-help">Gesicom guarda la ubicación como referencia. Los archivos se elegirán desde tu equipo al crear los anuncios en Meta.</p>
                   {creativosGuardados.map(creativo => <div className="ads-creative-row" key={creativo.id}><span>{creativo.nombre}</span><div><button type="button" className="btn-secondary" onClick={() => descargarCreativo(creativo)}>Descargar</button><button type="button" className="btn-icon" aria-label={`Eliminar ${creativo.nombre}`} onClick={async () => { try { await metaReportesService.eliminarCreativo(campanaEditar.id, creativo.id); setCreativosGuardados(actuales => actuales.filter(x => x.id !== creativo.id)); } catch (err) { setError(err.response?.data?.message || 'No pudimos eliminar el creativo.'); } }}><Trash2 size={16} /></button></div></div>)}
                 </div>
               </div>}
