@@ -88,6 +88,38 @@
 .tn-page .tn-btn-tiendas { border-radius: 12px; min-height: 42px; }
 .tn-page .tn-group input:not([type='checkbox']):not([type='color']):not([type='file']), .tn-page .tn-group select, .tn-page .tn-group textarea, .tn-page .tn-url-prefix-wrap, .tn-page .tn-social-input-wrap { border-radius: 12px; }
 
+.tn-skill-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--vit-border);
+  border-radius: 20px;
+  background: var(--vit-surface);
+}
+.tn-skill-copy { flex: 1 1 320px; min-width: 0; }
+.tn-skill-copy h2 { margin: 0; color: var(--vit-text); font-size: var(--ui-text-card); font-weight: 650; line-height: 1.4; }
+.tn-skill-copy p { margin: 0.25rem 0 0; color: var(--vit-muted); font-size: var(--ui-text-body); line-height: 1.5; }
+.tn-skill-status { display: block; margin-top: 0.5rem; color: var(--vit-accent-fg); font-size: var(--ui-text-help); line-height: 1.5; }
+.tn-skill-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 46px;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid var(--vit-accent);
+  border-radius: 12px;
+  background: var(--vit-accent-soft);
+  color: var(--vit-accent-fg);
+  font: 600 var(--ui-text-label)/1.4 var(--font-sans);
+  cursor: pointer;
+}
+.tn-skill-button:hover { background: color-mix(in srgb, var(--vit-accent) 18%, var(--vit-surface)); }
+.tn-skill-button:focus-visible { outline: 2px solid var(--vit-accent-fg); outline-offset: 3px; }
+
 /* ─── Contenedor único ────────────────────────────────────────────────── */
 /* Sin overflow: el footer es sticky y cualquier recorte lo rompería. */
 .tn-shell {
@@ -1266,6 +1298,9 @@
   .tn-store-address { font-size: var(--ui-text-help, 0.875rem); }
   .tn-store-card-info .tn-store-eyebrow { font-size: var(--ui-text-help, 0.875rem); }
   .tn-visit-store { width: 100%; box-sizing: border-box; }
+  .tn-skill-card { padding: 1rem; border-radius: 18px; }
+  .tn-skill-copy { flex-basis: 100%; }
+  .tn-skill-button { width: 100%; }
   .tn-tab-content { gap: 0.85rem; padding-bottom: 0.5rem; }
   .tn-tabs { display: none; }
   .tn-mobile-navigation {

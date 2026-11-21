@@ -6,7 +6,7 @@ import {
   Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown,
   ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, CheckCircle2, Info,
   Store, MessageCircle, BarChart3, MousePointerClick, CreditCard, Coins,
-  ArrowRight, Palette, ImagePlus, Mail, MapPin, Share2,
+  ArrowRight, Palette, ImagePlus, Mail, MapPin, Share2, Copy,
   AtSign, Link2, User, Phone, Video, Type, ChevronDown, ExternalLink
 } from 'lucide-react';
 
@@ -29,6 +29,7 @@ import { comboAdminService } from '../../services/comboAdminService';
 import { rahaService } from '../../services/rahaService';
 import { speedboxService } from '../../services/speedboxService';
 import { estadosConfiguracion } from './estadoConfiguracion';
+import skillConfigurarTienda from './skillConfigurarTienda.txt?raw';
 import '../vitrina/vitrina.css';
 import '../landing/landing.css';
 import './tienda.css';
@@ -223,6 +224,7 @@ export default function ConfigurarTienda() {
   const [erroresValidacion, setErroresValidacion] = useState([]);
   const [ok, setOk] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
+  const [estadoCopiaSkill, setEstadoCopiaSkill] = useState('');
   const [tab, setTab] = useState(TABS_VALIDAS.has(tabInicial) ? tabInicial : 'tienda');
 
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
@@ -353,6 +355,15 @@ export default function ConfigurarTienda() {
       next.set('tab', tabId);
       return next;
     }, { replace: true });
+  }
+
+  async function copiarSkill() {
+    try {
+      await navigator.clipboard.writeText(skillConfigurarTienda);
+      setEstadoCopiaSkill('Skill copiada. Pegala en tu asistente de IA para empezar.');
+    } catch {
+      setEstadoCopiaSkill('No se pudo copiar. Revisá los permisos del portapapeles y volvé a intentar.');
+    }
   }
 
   // Chequeo de disponibilidad en vivo: solo aplica cuando la URL pública es
@@ -742,6 +753,18 @@ export default function ConfigurarTienda() {
         {tienda?.subdominio && <a className="tn-visit-store" href={`https://${tienda.dominio_propio || `${tienda.subdominio}.${tienda.dominio_base || 'gesicomm.com'}`}`} target="_blank" rel="noopener noreferrer">
           Ver mi tienda <ExternalLink size={16} aria-hidden="true" />
         </a>}
+      </section>
+
+      <section className="tn-skill-card" aria-label="Asistente para configurar tu tienda">
+        <div className="tn-skill-copy">
+          <h2>Configurá tu tienda con ayuda de IA</h2>
+          <p>Copiá la skill y pegala en tu asistente para que te entreviste y te guíe sección por sección.</p>
+          {estadoCopiaSkill && <span className="tn-skill-status" role="status" aria-live="polite">{estadoCopiaSkill}</span>}
+        </div>
+        <button type="button" className="tn-skill-button" onClick={copiarSkill}>
+          {estadoCopiaSkill.startsWith('Skill copiada') ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
+          {estadoCopiaSkill.startsWith('Skill copiada') ? 'Skill copiada' : 'Copiar skill'}
+        </button>
       </section>
 
       <div className="tn-shell">

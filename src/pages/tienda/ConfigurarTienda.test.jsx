@@ -7,6 +7,7 @@ import { tiendaService } from '../../services/tiendaService';
 import { planesService } from '../../services/planesService';
 import { getMetodosPago } from '../../services/courierApi';
 import { comboAdminService } from '../../services/comboAdminService';
+import skillConfigurarTienda from './skillConfigurarTienda.txt?raw';
 
 vi.mock('../../services/tiendaService', () => ({
   tiendaService: {
@@ -138,6 +139,17 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     // Rahá visible; Móvil Express oculto hasta completar su conexión.
     expect(screen.getByRole('heading', { name: 'Rahá', level: 3 })).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Móvil Express', level: 3 })).not.toBeInTheDocument();
+  });
+
+  it('copia la skill completa desde Mi negocio', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    await cargarPantalla();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar skill' }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(skillConfigurarTienda));
+    expect(screen.getByRole('status')).toHaveTextContent('Skill copiada');
   });
 
   it('edita tienda, documento/RUC, URL, contacto y analitica; guarda con el payload correcto', async () => {
