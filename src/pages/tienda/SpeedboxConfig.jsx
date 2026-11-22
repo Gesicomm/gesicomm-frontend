@@ -136,42 +136,17 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
   const [busy, setBusy] = useState('cargar');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [retryOrder, setRetryOrder] = useState(null);
-  const [acknowledged, setAcknowledged] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState('');
   const [publicKey, setPublicKey] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [productionPublicKey, setProductionPublicKey] = useState('');
   const [productionPrivateKey, setProductionPrivateKey] = useState('');
-  const dialogRef = useRef(null);
   const financeDialogRef = useRef(null);
   const [movement, setMovement] = useState(null);
   const [concept, setConcept] = useState('');
   const [reference, setReference] = useState('');
   const [note, setNote] = useState('');
 
-  // 1. Pedidos enviados state
-  const [pedidosItems, setPedidosItems] = useState([]);
-  const [pedidosPaginacion, setPedidosPaginacion] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
-  const [pedidosFiltros, setPedidosFiltros] = useState({ search: '', ambiente: '', estado: '', status: '' });
-  const [searchPedido, setSearchPedido] = useState('');
-  const [pedidosLoading, setPedidosLoading] = useState(false);
-
-  // 2. Importes por pedido state
-  const [importesItems, setImportesItems] = useState([]);
-  const [importesPaginacion, setImportesPaginacion] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
-  const [importesFiltros, setImportesFiltros] = useState({ search: '', pago_proveedor: '', cobro_cliente: '', estado_financiero: '' });
-  const [searchImporte, setSearchImporte] = useState('');
-  const [importesLoading, setImportesLoading] = useState(false);
-
-  // 3. Costos de reposición state
-  const [costosItems, setCostosItems] = useState([]);
-  const [costosPaginacion, setCostosPaginacion] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
-  const [costosFiltros, setCostosFiltros] = useState({ search: '', estado: '' });
-  const [searchCosto, setSearchCosto] = useState('');
-  const [costosLoading, setCostosLoading] = useState(false);
-
-  // 4. Movimientos de billetera state
+  // Movimientos de billetera state
   const [movimientosItems, setMovimientosItems] = useState([]);
   const [movimientosPaginacion, setMovimientosPaginacion] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [movimientosFiltros, setMovimientosFiltros] = useState({ search: '', movimiento: '', concepto: '' });
@@ -179,56 +154,9 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
   const [movimientosLoading, setMovimientosLoading] = useState(false);
 
   useEffect(() => {
-    if (retryOrder && dialogRef.current && !dialogRef.current.open) dialogRef.current.showModal();
-  }, [retryOrder]);
-  function closeRetry() { dialogRef.current?.close(); setRetryOrder(null); }
-
-  useEffect(() => {
     if (movement && financeDialogRef.current && !financeDialogRef.current.open) financeDialogRef.current.showModal();
   }, [movement]);
   function closeFinance() { financeDialogRef.current?.close(); setMovement(null); }
-
-  const loadPedidos = useCallback(async (page = 1, filters = pedidosFiltros, limit = pedidosPaginacion.limit) => {
-    if (typeof speedboxService.listarPedidos !== 'function') return;
-    setPedidosLoading(true);
-    try {
-      const res = await speedboxService.listarPedidos(limpiarPayload({ page, limit, ...filters }));
-      setPedidosItems(res.items || []);
-      setPedidosPaginacion(res.paginacion || { page, limit, total: (res.items || []).length, totalPages: 1 });
-    } catch (err) {
-      console.error('Error cargando pedidos:', err);
-    } finally {
-      setPedidosLoading(false);
-    }
-  }, [pedidosFiltros, pedidosPaginacion.limit]);
-
-  const loadImportes = useCallback(async (page = 1, filters = importesFiltros, limit = importesPaginacion.limit) => {
-    if (typeof speedboxService.listarImportes !== 'function') return;
-    setImportesLoading(true);
-    try {
-      const res = await speedboxService.listarImportes(limpiarPayload({ page, limit, ...filters }));
-      setImportesItems(res.items || []);
-      setImportesPaginacion(res.paginacion || { page, limit, total: (res.items || []).length, totalPages: 1 });
-    } catch (err) {
-      console.error('Error cargando importes:', err);
-    } finally {
-      setImportesLoading(false);
-    }
-  }, [importesFiltros, importesPaginacion.limit]);
-
-  const loadCostos = useCallback(async (page = 1, filters = costosFiltros, limit = costosPaginacion.limit) => {
-    if (typeof speedboxService.listarCostosReposicion !== 'function') return;
-    setCostosLoading(true);
-    try {
-      const res = await speedboxService.listarCostosReposicion(limpiarPayload({ page, limit, ...filters }));
-      setCostosItems(res.items || []);
-      setCostosPaginacion(res.paginacion || { page, limit, total: (res.items || []).length, totalPages: 1 });
-    } catch (err) {
-      console.error('Error cargando costos:', err);
-    } finally {
-      setCostosLoading(false);
-    }
-  }, [costosFiltros, costosPaginacion.limit]);
 
   const loadMovimientos = useCallback(async (page = 1, filters = movimientosFiltros, limit = movimientosPaginacion.limit) => {
     if (typeof speedboxService.listarMovimientos !== 'function') return;
@@ -243,43 +171,6 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
       setMovimientosLoading(false);
     }
   }, [movimientosFiltros, movimientosPaginacion.limit]);
-
-  // Debounced search updates
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPedidosFiltros(prev => {
-        if (prev.search === searchPedido) return prev;
-        const next = { ...prev, search: searchPedido };
-        loadPedidos(1, next);
-        return next;
-      });
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [searchPedido, loadPedidos]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setImportesFiltros(prev => {
-        if (prev.search === searchImporte) return prev;
-        const next = { ...prev, search: searchImporte };
-        loadImportes(1, next);
-        return next;
-      });
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [searchImporte, loadImportes]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCostosFiltros(prev => {
-        if (prev.search === searchCosto) return prev;
-        const next = { ...prev, search: searchCosto };
-        loadCostos(1, next);
-        return next;
-      });
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [searchCosto, loadCostos]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -310,31 +201,6 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
       setProductionPublicKey(prev => prev || production?.public_key || '');
     }
 
-    // Populate fallback items from config if provided (useful for tests and SSR)
-    if (config.orders) {
-      setPedidosItems(config.orders);
-      setPedidosPaginacion(p => ({ ...p, total: config.orders.length, totalPages: Math.ceil(config.orders.length / p.limit) || 1 }));
-      const importes = config.orders.filter(o => o.finanzas).map(o => ({
-        id: o.id,
-        envio_id: o.envio_id,
-        envio: o.envio,
-        numero_pedido_visible: o.envio ? numeroPedidoVisible(o.envio) : '-',
-        venta: o.finanzas.venta,
-        envio_cliente: o.finanzas.envio_cliente,
-        delivery_a_cargo: o.finanzas.delivery_a_cargo,
-        fulfillment: o.finanzas.fulfillment,
-        costo_abastecimiento: o.finanzas.costo_abastecimiento,
-        pago_proveedor: o.finanzas.pago_proveedor,
-        cobro_cliente: o.finanzas.cobro_cliente,
-        estado_financiero: o.finanzas.estado_financiero,
-      }));
-      setImportesItems(importes);
-      setImportesPaginacion(p => ({ ...p, total: importes.length, totalPages: Math.ceil(importes.length / p.limit) || 1 }));
-    }
-    if (config.solicitudes_abastecimiento) {
-      setCostosItems(config.solicitudes_abastecimiento);
-      setCostosPaginacion(p => ({ ...p, total: config.solicitudes_abastecimiento.length, totalPages: Math.ceil(config.solicitudes_abastecimiento.length / p.limit) || 1 }));
-    }
     if (config.events) {
       const walletEvents = config.events.filter(e => e.tipo === 'wallet.transaction');
       setMovimientosItems(walletEvents.map(e => {
@@ -360,15 +226,6 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
   async function load(resetForm = false) {
     const config = await speedboxService.obtener();
     applyConfig(config, resetForm);
-    if (typeof speedboxService.listarPedidos === 'function' && !config.orders?.length) {
-      loadPedidos(1, pedidosFiltros);
-    }
-    if (typeof speedboxService.listarImportes === 'function' && !config.orders?.length) {
-      loadImportes(1, importesFiltros);
-    }
-    if (typeof speedboxService.listarCostosReposicion === 'function' && !config.solicitudes_abastecimiento?.length) {
-      loadCostos(1, costosFiltros);
-    }
     if (typeof speedboxService.listarMovimientos === 'function' && !config.events?.length) {
       loadMovimientos(1, movimientosFiltros);
     }
@@ -379,15 +236,6 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
     speedboxService.obtener().then(config => {
       if (!mounted) return;
       applyConfig(config);
-      if (typeof speedboxService.listarPedidos === 'function' && !config.orders?.length) {
-        loadPedidos(1, pedidosFiltros);
-      }
-      if (typeof speedboxService.listarImportes === 'function' && !config.orders?.length) {
-        loadImportes(1, importesFiltros);
-      }
-      if (typeof speedboxService.listarCostosReposicion === 'function' && !config.solicitudes_abastecimiento?.length) {
-        loadCostos(1, costosFiltros);
-      }
       if (typeof speedboxService.listarMovimientos === 'function' && !config.events?.length) {
         loadMovimientos(1, movimientosFiltros);
       }
@@ -431,7 +279,6 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
   });
   const credentialsAvailable = Boolean(credentials.public_key && (credentials.private_key || sandboxConnection?.has_private_key));
   const productionCredentialsAvailable = Boolean(productionCredentials.public_key && (productionCredentials.private_key || productionConnection?.has_private_key));
-  const uncertain = retryOrder && ['incierto', 'enviando'].includes(retryOrder.estado);
   const reviews = (data?.events || []).filter(event => event.estado === 'revision' && event.tipo !== 'wallet.transaction');
   const allChecks = Object.keys(labels).every(key => Boolean(data?.checks?.[key]));
   const productionWebhookUrl = productionWebhookFromData(data);
@@ -463,8 +310,8 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
   const copySandboxWebhook = () => copyText(sandboxWebhookUrl, 'Webhook sandbox copiado.');
   const copyProductionWebhook = () => copyText(productionWebhookUrl, 'Webhook producción copiado.');
 
-  const availableReferenceOrders = (pedidosItems.length > 0 ? pedidosItems : (data?.orders || []));
-  const availableReferenceSolicitudes = (costosItems.length > 0 ? costosItems : (data?.solicitudes_abastecimiento || []));
+  const availableReferenceOrders = data?.orders || [];
+  const availableReferenceSolicitudes = data?.solicitudes_abastecimiento || [];
 
   if (busy === 'cargar') return <div className="spb-loading" role="status"><Loader size={18} className="spb-spin" /> Cargando RAHA...</div>;
   return (
@@ -506,15 +353,15 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
               <h3>Credenciales sandbox</h3>
               <span className="spb-badge spb-sandbox">Sandbox</span>
             </div>
-            <p className="spb-muted">Guardá las claves de RAHA para validar sandbox y crear pedidos automáticamente. La private key queda cifrada y no se vuelve a mostrar.</p>
+            <p className="spb-muted">Guardá la API Key y la API Secret de RAHA para validar sandbox y crear pedidos automáticamente. La API Secret queda cifrada y no se vuelve a mostrar.</p>
             <div className="spb-fields">
               <label className="spb-field" htmlFor="spb-public-key">
-                Public key
+                API Key
                 <input id="spb-public-key" value={publicKey} disabled={disabled} autoComplete="off" onChange={event => setPublicKey(event.target.value)} placeholder="sbx_..." />
               </label>
               <label className="spb-field" htmlFor="spb-private-key">
-                Private key
-                <input id="spb-private-key" value={privateKey} disabled={disabled} autoComplete="off" type="password" onChange={event => setPrivateKey(event.target.value)} placeholder={(data?.has_private_key || data?.connection?.has_private_key) ? 'Private key guardada. Pegá una nueva para reemplazarla.' : 'Pegá la private key'} />
+                API Secret
+                <input id="spb-private-key" value={privateKey} disabled={disabled} autoComplete="off" type="password" onChange={event => setPrivateKey(event.target.value)} placeholder={(data?.has_private_key || data?.connection?.has_private_key) ? 'API Secret guardada. Pegá una nueva para reemplazarla.' : 'Pegá la API Secret'} />
               </label>
             </div>
             <dl className="spb-summary">
@@ -590,12 +437,12 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
             </div>
             <div className="spb-fields">
               <label className="spb-field" htmlFor="spb-production-public-key">
-                Public key producción
+                API Key producción
                 <input id="spb-production-public-key" value={productionPublicKey} disabled={disabled} autoComplete="off" onChange={event => setProductionPublicKey(event.target.value)} placeholder="sbx_live_..." />
               </label>
               <label className="spb-field" htmlFor="spb-production-private-key">
-                Private key producción
-                <input id="spb-production-private-key" value={productionPrivateKey} disabled={disabled} autoComplete="off" type="password" onChange={event => setProductionPrivateKey(event.target.value)} placeholder={productionConnection?.has_private_key ? 'Private key producción guardada. Pegá una nueva para reemplazarla.' : 'Pegá la private key de producción'} />
+                API Secret producción
+                <input id="spb-production-private-key" value={productionPrivateKey} disabled={disabled} autoComplete="off" type="password" onChange={event => setProductionPrivateKey(event.target.value)} placeholder={productionConnection?.has_private_key ? 'API Secret producción guardada. Pegá una nueva para reemplazarla.' : 'Pegá la API Secret de producción'} />
               </label>
             </div>
             <dl className="spb-summary">
@@ -635,401 +482,8 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
             </section>
           )}
 
-          {/* 1. PEDIDOS ENVIADOS */}
-          <section className="spb-section">
-            <h3>Pedidos enviados</h3>
-            {(data.available_orders || []).length > 0 && (
-              <div className="spb-fields">
-                <label className="spb-field" htmlFor="spb-pedido">
-                  Pedido confirmado
-                  <select id="spb-pedido" value={selectedOrder} disabled={disabled} onChange={event => setSelectedOrder(event.target.value)}>
-                    <option value="">Seleccionar pedido</option>
-                    {data.available_orders.map(order => (
-                      <option key={order.id} value={order.id}>{numeroPedidoVisible(order)} - {order.cliente}</option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className="spb-button"
-                  disabled={disabled || !selectedOrder || (!productionConnection?.activo && !sandboxConnection?.activo)}
-                  onClick={async () => {
-                    if (await run('send', () => speedboxService.enviar(Number(selectedOrder)), 'Pedido enviado.')) {
-                      setSelectedOrder('');
-                      loadPedidos(1, pedidosFiltros);
-                      loadImportes(1, importesFiltros);
-                    }
-                  }}
-                >
-                  <Send size={16} /> Enviar pedido
-                </button>
-              </div>
-            )}
+          {/* MOVIMIENTOS DE BILLETERA */}
 
-            <div className="spb-toolbar">
-              <div className="spb-search-wrap">
-                <Search size={15} aria-hidden="true" />
-                <input
-                  type="text"
-                  aria-label="Buscar pedidos enviados"
-                  placeholder="Buscar pedido, ID externo, ID RAHA..."
-                  value={searchPedido}
-                  onChange={e => setSearchPedido(e.target.value)}
-                />
-              </div>
-              <select
-                aria-label="Filtrar por ambiente"
-                value={pedidosFiltros.ambiente}
-                onChange={e => {
-                  const next = { ...pedidosFiltros, ambiente: e.target.value };
-                  setPedidosFiltros(next);
-                  loadPedidos(1, next);
-                }}
-              >
-                <option value="">Todos los ambientes</option>
-                <option value="sandbox">Sandbox</option>
-                <option value="production">Producción</option>
-              </select>
-              <select
-                aria-label="Filtrar por estado de envío"
-                value={pedidosFiltros.estado}
-                onChange={e => {
-                  const next = { ...pedidosFiltros, estado: e.target.value };
-                  setPedidosFiltros(next);
-                  loadPedidos(1, next);
-                }}
-              >
-                <option value="">Todos los envíos</option>
-                <option value="enviado">Enviado</option>
-                <option value="enviando">Enviando</option>
-                <option value="incierto">Incierto</option>
-                <option value="error">Error</option>
-                <option value="pendiente">Pendiente</option>
-              </select>
-              <select
-                aria-label="Filtrar por estado RAHA"
-                value={pedidosFiltros.status}
-                onChange={e => {
-                  const next = { ...pedidosFiltros, status: e.target.value };
-                  setPedidosFiltros(next);
-                  loadPedidos(1, next);
-                }}
-              >
-                <option value="">Todos los estados RAHA</option>
-                <option value="pendiente_confirmacion">Pendiente confirmación</option>
-                <option value="cargado">Cargado</option>
-                <option value="en_camino">En camino</option>
-                <option value="entregado">Entregado</option>
-                <option value="devuelto">Devuelto</option>
-                <option value="cancelado">Cancelado</option>
-              </select>
-              {(searchPedido || pedidosFiltros.ambiente || pedidosFiltros.estado || pedidosFiltros.status) && (
-                <button
-                  type="button"
-                  className="spb-button"
-                  onClick={() => {
-                    setSearchPedido('');
-                    const next = { search: '', ambiente: '', estado: '', status: '' };
-                    setPedidosFiltros(next);
-                    loadPedidos(1, next);
-                  }}
-                  title="Limpiar filtros"
-                >
-                  <RotateCcw size={14} /> Limpiar
-                </button>
-              )}
-            </div>
-
-            <div className={`spb-table-scroll ${pedidosLoading ? 'spb-table-loading' : ''}`}>
-              <table className="spb-table">
-                <thead>
-                  <tr>
-                    <th>Pedido Gesicomm</th>
-                    <th>Ambiente</th>
-                    <th>Tienda RAHA</th>
-                    <th>ID externo</th>
-                    <th>ID RAHA</th>
-                    <th>Envio</th>
-                    <th>Estado RAHA</th>
-                    <th>HTTP</th>
-                    <th>Detalle</th>
-                    <th aria-label="Acciones" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {pedidosItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={10} className="spb-empty-row">
-                        {pedidosLoading ? 'Cargando pedidos...' : 'Sin pedidos registrados.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    pedidosItems.map(order => (
-                      <tr key={order.id}>
-                        <td>{order.numero_pedido_visible || (order.envio ? numeroPedidoVisible(order.envio) : '-')}</td>
-                        <td>{ambiente(order.environment)}</td>
-                        <td>{tiendaRaha(order)}</td>
-                        <td><code>{order.external_order_id}</code></td>
-                        <td>{order.order_id || '-'}</td>
-                        <td>{order.estado}</td>
-                        <td>{order.status || '-'}</td>
-                        <td>{order.remote_http_status || '-'}</td>
-                        <td className="spb-error-cell">{order.error || '-'}</td>
-                        <td>
-                          {['error', 'incierto', 'enviando'].includes(order.estado) && (
-                            <button
-                              type="button"
-                              className="spb-button"
-                              title="Reintentar pedido"
-                              aria-label={`Reintentar pedido ${order.envio_id}`}
-                              disabled={disabled}
-                              onClick={() => { setRetryOrder(order); setAcknowledged(false); }}
-                            >
-                              <RefreshCw size={15} />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <PaginacionDinamica
-              paginacion={pedidosPaginacion}
-              loading={pedidosLoading}
-              onChangePage={page => loadPedidos(page, pedidosFiltros)}
-              onChangeLimit={limit => {
-                setPedidosPaginacion(p => ({ ...p, limit }));
-                loadPedidos(1, pedidosFiltros, limit);
-              }}
-            />
-          </section>
-
-          {/* 2. IMPORTES POR PEDIDO */}
-          <section className="spb-section">
-            <h3>Importes por pedido</h3>
-            <div className="spb-toolbar">
-              <div className="spb-search-wrap">
-                <Search size={15} aria-hidden="true" />
-                <input
-                  type="text"
-                  aria-label="Buscar importes por pedido"
-                  placeholder="Buscar por pedido..."
-                  value={searchImporte}
-                  onChange={e => setSearchImporte(e.target.value)}
-                />
-              </div>
-              <select
-                aria-label="Filtrar por pago a proveedor"
-                value={importesFiltros.pago_proveedor}
-                onChange={e => {
-                  const next = { ...importesFiltros, pago_proveedor: e.target.value };
-                  setImportesFiltros(next);
-                  loadImportes(1, next);
-                }}
-              >
-                <option value="">Todos los pagos proveedor</option>
-                <option value="no_requiere">No requiere</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="validado">Validado</option>
-              </select>
-              <select
-                aria-label="Filtrar por cobro al cliente"
-                value={importesFiltros.cobro_cliente}
-                onChange={e => {
-                  const next = { ...importesFiltros, cobro_cliente: e.target.value };
-                  setImportesFiltros(next);
-                  loadImportes(1, next);
-                }}
-              >
-                <option value="">Todos los cobros cliente</option>
-                <option value="contra_entrega">Contra entrega</option>
-                <option value="anticipado">Anticipado</option>
-              </select>
-              <select
-                aria-label="Filtrar por estado de liquidación"
-                value={importesFiltros.estado_financiero}
-                onChange={e => {
-                  const next = { ...importesFiltros, estado_financiero: e.target.value };
-                  setImportesFiltros(next);
-                  loadImportes(1, next);
-                }}
-              >
-                <option value="">Todas las liquidaciones</option>
-                <option value="pendiente_liquidacion">Pendiente liquidación</option>
-                <option value="liquidado">Liquidado</option>
-              </select>
-              {(searchImporte || importesFiltros.pago_proveedor || importesFiltros.cobro_cliente || importesFiltros.estado_financiero) && (
-                <button
-                  type="button"
-                  className="spb-button"
-                  onClick={() => {
-                    setSearchImporte('');
-                    const next = { search: '', pago_proveedor: '', cobro_cliente: '', estado_financiero: '' };
-                    setImportesFiltros(next);
-                    loadImportes(1, next);
-                  }}
-                  title="Limpiar filtros"
-                >
-                  <RotateCcw size={14} /> Limpiar
-                </button>
-              )}
-            </div>
-
-            <div className={`spb-table-scroll ${importesLoading ? 'spb-table-loading' : ''}`}>
-              <table className="spb-table">
-                <thead>
-                  <tr>
-                    <th>Pedido</th>
-                    <th>Venta</th>
-                    <th>Envio</th>
-                    <th>Fulfillment</th>
-                    <th>Abastecimiento</th>
-                    <th>Pago proveedor</th>
-                    <th>Cobro cliente</th>
-                    <th>Liquidacion</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {importesItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="spb-empty-row">
-                        {importesLoading ? 'Cargando importes...' : 'Sin importes registrados.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    importesItems.map(item => {
-                      const venta = item.venta !== undefined ? item.venta : item.finanzas?.venta;
-                      const envioCliente = item.envio_cliente !== undefined ? item.envio_cliente : item.finanzas?.envio_cliente;
-                      const deliveryACargo = item.delivery_a_cargo || item.finanzas?.delivery_a_cargo;
-                      const fulfillment = item.fulfillment !== undefined ? item.fulfillment : item.finanzas?.fulfillment;
-                      const abastecimiento = item.costo_abastecimiento !== undefined ? item.costo_abastecimiento : item.finanzas?.costo_abastecimiento;
-                      const pagoProveedor = item.pago_proveedor || item.finanzas?.pago_proveedor;
-                      const cobroCliente = item.cobro_cliente || item.finanzas?.cobro_cliente;
-                      const liquidacion = item.estado_financiero || item.finanzas?.estado_financiero;
-
-                      return (
-                        <tr key={item.id}>
-                          <td>{item.numero_pedido_visible || (item.envio ? numeroPedidoVisible(item.envio) : '-')}</td>
-                          <td>{money(venta)}</td>
-                          <td>
-                            {money(envioCliente)}
-                            <br />
-                            <span className="spb-muted">A cargo: {deliveryACargo}</span>
-                          </td>
-                          <td>{money(fulfillment)}</td>
-                          <td>{money(abastecimiento)}</td>
-                          <td>{estado(pagoProveedor)}</td>
-                          <td>{estado(cobroCliente)}</td>
-                          <td>{estado(liquidacion)}</td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <PaginacionDinamica
-              paginacion={importesPaginacion}
-              loading={importesLoading}
-              onChangePage={page => loadImportes(page, importesFiltros)}
-              onChangeLimit={limit => {
-                setImportesPaginacion(p => ({ ...p, limit }));
-                loadImportes(1, importesFiltros, limit);
-              }}
-            />
-          </section>
-
-          {/* 3. COSTOS DE REPOSICION */}
-          <section className="spb-section">
-            <h3>Costos de reposicion</h3>
-            <div className="spb-toolbar">
-              <div className="spb-search-wrap">
-                <Search size={15} aria-hidden="true" />
-                <input
-                  type="text"
-                  aria-label="Buscar costo de reposición"
-                  placeholder="Buscar solicitud (ej: SOL-24)..."
-                  value={searchCosto}
-                  onChange={e => setSearchCosto(e.target.value)}
-                />
-              </div>
-              <select
-                aria-label="Filtrar por estado de solicitud"
-                value={costosFiltros.estado}
-                onChange={e => {
-                  const next = { ...costosFiltros, estado: e.target.value };
-                  setCostosFiltros(next);
-                  loadCostos(1, next);
-                }}
-              >
-                <option value="">Todos los estados</option>
-                <option value="pendiente_pago">Pendiente pago</option>
-                <option value="pago_validado">Pago validado</option>
-                <option value="en_transito">En tránsito</option>
-                <option value="recepcionado">Recepcionado</option>
-                <option value="cancelado">Cancelado</option>
-              </select>
-              {(searchCosto || costosFiltros.estado) && (
-                <button
-                  type="button"
-                  className="spb-button"
-                  onClick={() => {
-                    setSearchCosto('');
-                    const next = { search: '', estado: '' };
-                    setCostosFiltros(next);
-                    loadCostos(1, next);
-                  }}
-                  title="Limpiar filtros"
-                >
-                  <RotateCcw size={14} /> Limpiar
-                </button>
-              )}
-            </div>
-
-            <div className={`spb-table-scroll ${costosLoading ? 'spb-table-loading' : ''}`}>
-              <table className="spb-table">
-                <thead>
-                  <tr>
-                    <th>Solicitud</th>
-                    <th>Mercaderia</th>
-                    <th>Transporte a deposito</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {costosItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="spb-empty-row">
-                        {costosLoading ? 'Cargando costos...' : 'Sin solicitudes de reposición.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    costosItems.map(solicitud => (
-                      <tr key={solicitud.id}>
-                        <td><a href={`/mis-abastecimientos/${solicitud.id}`}>SOL-{solicitud.id}</a></td>
-                        <td>{money(solicitud.costo_producto)}</td>
-                        <td>{money(solicitud.costo_logistico)}</td>
-                        <td>{estado(solicitud.estado)}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <PaginacionDinamica
-              paginacion={costosPaginacion}
-              loading={costosLoading}
-              onChangePage={page => loadCostos(page, costosFiltros)}
-              onChangeLimit={limit => {
-                setCostosPaginacion(p => ({ ...p, limit }));
-                loadCostos(1, costosFiltros, limit);
-              }}
-            />
-          </section>
-
-          {/* 4. MOVIMIENTOS DE BILLETERA */}
           <section className="spb-section">
             <h3>Movimientos de billetera</h3>
             <div className="spb-toolbar">
@@ -1225,35 +679,6 @@ export default function SpeedboxConfig({ onConfigChange } = {}) {
         document.body
       )}
 
-      {retryOrder && (
-        <dialog ref={dialogRef} className="spb-modal" aria-labelledby="spb-retry-title" onCancel={event => { event.preventDefault(); if (!disabled) closeRetry(); }}>
-          <h3 id="spb-retry-title">Reintentar pedido {retryOrder.envio_id}</h3>
-          <p>{uncertain ? 'RAHA podría haber recibido este pedido. Verificá su ID externo antes de reenviarlo.' : 'Se enviará nuevamente el pedido con los datos corregidos.'}</p>
-          <code>{retryOrder.external_order_id}</code>
-          {uncertain && (
-            <label className="spb-checkbox">
-              <input autoFocus type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} /> Verifiqué en RAHA y el pedido no existe
-            </label>
-          )}
-          <div className="spb-actions">
-            <button type="button" className="spb-button" disabled={disabled} onClick={closeRetry}>Cancelar</button>
-            <button
-              autoFocus={!uncertain}
-              type="button"
-              className="spb-button spb-primary"
-              disabled={disabled || (uncertain && !acknowledged)}
-              onClick={async () => {
-                if (await run('retry', () => speedboxService.reintentar(retryOrder.envio_id, acknowledged), 'Pedido enviado.')) {
-                  closeRetry();
-                  loadPedidos(pedidosPaginacion.page, pedidosFiltros);
-                }
-              }}
-            >
-              <RefreshCw size={16} /> Reintentar
-            </button>
-          </div>
-        </dialog>
-      )}
     </div>
   );
 }

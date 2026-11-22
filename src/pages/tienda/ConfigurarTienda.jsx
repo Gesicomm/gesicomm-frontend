@@ -28,6 +28,7 @@ import { getMetodosPago } from '../../services/courierApi';
 import { comboAdminService } from '../../services/comboAdminService';
 import { rahaService } from '../../services/rahaService';
 import { speedboxService } from '../../services/speedboxService';
+import { landingSimpleService } from '../../services/landingSimpleService';
 import { estadosConfiguracion } from './estadoConfiguracion';
 import skillConfigurarTienda from './skillConfigurarTienda.txt?raw';
 import '../vitrina/vitrina.css';
@@ -225,9 +226,15 @@ export default function ConfigurarTienda() {
   const [ok, setOk] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
   const [estadoCopiaSkill, setEstadoCopiaSkill] = useState('');
+  const [copiandoApiKey, setCopiandoApiKey] = useState(false);
+  const [apiKeyCopiada, setApiKeyCopiada] = useState('');
   const [tab, setTab] = useState(TABS_VALIDAS.has(tabInicial) ? tabInicial : 'tienda');
 
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
+  // El subdominio que la tienda YA tiene puede estar tomado en el DNS por otro
+  // servicio (un registro específico le gana al comodín de Gesicom): la tienda
+  // está publicada pero nadie la ve. Se avisa aunque el campo no cambie.
+  const [subdominioActualTomado, setSubdominioActualTomado] = useState(false);
   const ultimaConsulta = useRef(0);
   const textareaRef = useRef(null);
   const textareaGeneralRef = useRef(null);
@@ -366,6 +373,30 @@ export default function ConfigurarTienda() {
     }
   }
 
+  async function copiarApiKey() {
+    setCopiandoApiKey(true);
+    setApiKeyCopiada('');
+    try {
+      const storageKey = `gesicomm:mcp-token:${tienda?.id || 'cuenta'}`;
+      let token = '';
+      try { token = window.sessionStorage.getItem(storageKey) || ''; } catch { token = ''; }
+      if (!token) {
+        const res = await landingSimpleService.generarTokenMCP(tienda?.id);
+        token = res?.token || '';
+        if (token) {
+          try { window.sessionStorage.setItem(storageKey, token); } catch { /* noop */ }
+        }
+      }
+      if (!token) throw new Error('No se pudo generar la API Key.');
+      await navigator.clipboard.writeText(token);
+      setApiKeyCopiada('API Key copiada. Pegala en tu asistente junto con la skill.');
+    } catch (err) {
+      setApiKeyCopiada(err?.response?.data?.error || err?.message || 'No se pudo copiar la API Key.');
+    } finally {
+      setCopiandoApiKey(false);
+    }
+  }
+
   // Chequeo de disponibilidad en vivo: solo aplica cuando la URL pública es
   // el subdominio de Gesicomm. Con dominio propio, el subdominio queda como
   // respaldo y el nombre no tiene por qué estar disponible como URL.
@@ -380,6 +411,16 @@ export default function ConfigurarTienda() {
       .then(res => { if (idConsulta === ultimaConsulta.current) setDisponibilidad(res); })
       .catch(() => { if (idConsulta === ultimaConsulta.current) setDisponibilidad({ valido: false, disponible: false, motivo: 'Error al verificar.' }); });
   }, [subdominioDebounced, debeValidarSubdominio]);
+
+  useEffect(() => {
+    setSubdominioActualTomado(false);
+    if (!tienda?.subdominio || tienda.dominio_propio) return;
+    let vigente = true;
+    tiendaService.disponibilidadSubdominio(tienda.subdominio)
+      .then(res => { if (vigente) setSubdominioActualTomado(Boolean(res?.ocupado_dns)); })
+      .catch(() => {});
+    return () => { vigente = false; };
+  }, [tienda?.subdominio, tienda?.dominio_propio]);
 
   async function subirLogo(e) {
     const archivo = e.target.files?.[0];
@@ -758,13 +799,20 @@ export default function ConfigurarTienda() {
       <section className="tn-skill-card" aria-label="Asistente para configurar tu tienda">
         <div className="tn-skill-copy">
           <h2>Configurá tu tienda con ayuda de IA</h2>
-          <p>Copiá la skill y pegala en tu asistente para que te entreviste y te guíe sección por sección.</p>
+          <p>Copiá la skill y la API Key y pegalas en tu asistente para que te entreviste, complete tu tienda y configure Rahá paso a paso.</p>
           {estadoCopiaSkill && <span className="tn-skill-status" role="status" aria-live="polite">{estadoCopiaSkill}</span>}
+          {apiKeyCopiada && <span className="tn-skill-status" role="status" aria-live="polite">{apiKeyCopiada}</span>}
         </div>
-        <button type="button" className="tn-skill-button" onClick={copiarSkill}>
-          {estadoCopiaSkill.startsWith('Skill copiada') ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
-          {estadoCopiaSkill.startsWith('Skill copiada') ? 'Skill copiada' : 'Copiar skill'}
-        </button>
+        <div className="tn-skill-actions">
+          <button type="button" className="tn-skill-button" onClick={copiarApiKey} disabled={copiandoApiKey}>
+            {copiandoApiKey ? <Loader size={18} className="spb-spin" aria-hidden="true" /> : apiKeyCopiada.startsWith('API Key copiada') ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
+            {copiandoApiKey ? 'Generando...' : apiKeyCopiada.startsWith('API Key copiada') ? 'API Key copiada' : 'Copiar API Key'}
+          </button>
+          <button type="button" className="tn-skill-button" onClick={copiarSkill}>
+            {estadoCopiaSkill.startsWith('Skill copiada') ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
+            {estadoCopiaSkill.startsWith('Skill copiada') ? 'Skill copiada' : 'Copiar skill'}
+          </button>
+        </div>
       </section>
 
       <div className="tn-shell">
@@ -905,6 +953,15 @@ export default function ConfigurarTienda() {
                               ? 'Usa tu dominio propio; el subdominio de Gesicomm queda como respaldo.'
                               : 'Así se ve tu catálogo y tus landings para los clientes.'}
                           </span>
+                          {subdominioActualTomado && !subdominioCambia && (
+                            <p className="tn-warning" role="alert">
+                              <AlertCircle size={14} />
+                              <span>
+                                Tu tienda no se está viendo en <strong>{tienda.subdominio}.{tienda?.dominio_base || 'gesicomm.com'}</strong>:
+                                esa dirección la usa otro servicio y los clientes ven un error 404. Cambiá el prefijo URL por otro y guardá.
+                              </span>
+                            </p>
+                          )}
                         </div>
 
                         <label className="tn-field">

@@ -62,38 +62,7 @@ describe('Speedbox settings', () => {
     await screen.findByText(/RAHA gestiona su propio despacho/);
     fireEvent.click(screen.getByRole('button', { name: 'Guardar sandbox' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Configura el token privado del webhook en el servidor.');
-    expect(screen.getByLabelText('Public key')).toHaveValue('sbx_saved_public');
-  });
-  it('requires reconciliation before resending an uncertain submission', async () => {
-    speedboxService.obtener.mockResolvedValue({ ...config, orders: [{ id: 1, envio_id: 31, external_order_id: 'GESICOMM-sandbox-7-31', estado: 'incierto' }] });
-    render(<SpeedboxConfig />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Reintentar pedido 31' }));
-    const modal = screen.getByRole('dialog');
-    expect(within(modal).getByRole('button', { name: 'Reintentar' })).toBeDisabled();
-    fireEvent.click(within(modal).getByRole('checkbox'));
-    fireEvent.click(within(modal).getByRole('button', { name: 'Reintentar' }));
-    await waitFor(() => expect(speedboxService.reintentar).toHaveBeenCalledWith(31, true));
-  });
-  it('shows the RAHA traceability fields for sent orders', async () => {
-    speedboxService.obtener.mockResolvedValue({ ...config, orders: [{
-      id: 1,
-      envio_id: 31,
-      envio: { numero_pedido: 903144 },
-      external_order_id: 'GESICOMM-sandbox-7-31',
-      order_id: '900000000123456',
-      environment: 'sandbox',
-      raha_tienda_id: '65',
-      raha_store_name: 'sommix',
-      estado: 'enviado',
-      status: 'pendiente_confirmacion',
-      remote_http_status: 201,
-    }] });
-    render(<SpeedboxConfig />);
-    expect(await screen.findByText('Tienda RAHA')).toBeInTheDocument();
-    expect(screen.getByText('#65 · sommix')).toBeInTheDocument();
-    expect(screen.getByText('GESICOMM-sandbox-7-31')).toBeInTheDocument();
-    expect(screen.getByText('900000000123456')).toBeInTheDocument();
-    expect(screen.getByText('201')).toBeInTheDocument();
+    expect(screen.getByLabelText('API Key')).toHaveValue('sbx_saved_public');
   });
   it('shows a pending order check until a real reception is recorded', async () => {
     render(<SpeedboxConfig />);
@@ -127,9 +96,9 @@ describe('Speedbox settings', () => {
 
   it('uses pasted sandbox keys for validation and saves them for automatic orders', async () => {
     render(<SpeedboxConfig />);
-    const publicInput = await screen.findByLabelText('Public key');
+    const publicInput = await screen.findByLabelText('API Key');
     fireEvent.change(publicInput, { target: { value: ' sbx_public ' } });
-    fireEvent.change(screen.getByLabelText('Private key'), { target: { value: ' private_secret ' } });
+    fireEvent.change(screen.getByLabelText('API Secret'), { target: { value: ' private_secret ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Probar autenticación' }));
     await waitFor(() => expect(speedboxService.probar).toHaveBeenCalledWith({ environment: 'sandbox', public_key: 'sbx_public', private_key: 'private_secret' }));
     fireEvent.click(screen.getByRole('button', { name: 'Recrear tienda sandbox en RAHA' }));
@@ -152,16 +121,16 @@ describe('Speedbox settings', () => {
       ],
     });
     render(<SpeedboxConfig />);
-    await screen.findByLabelText('Public key');
-    fireEvent.change(screen.getByLabelText('Private key'), { target: { value: 'private_secret' } });
+    await screen.findByLabelText('API Key');
+    fireEvent.change(screen.getByLabelText('API Secret'), { target: { value: 'private_secret' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar sandbox' }));
     await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ environment: 'sandbox', activo: false, public_key: 'sbx_saved_public', private_key: 'private_secret' }));
   });
 
   it('stores production credentials separately from sandbox', async () => {
     render(<SpeedboxConfig />);
-    fireEvent.change(await screen.findByLabelText('Public key producción'), { target: { value: ' sbx_live_public ' } });
-    fireEvent.change(screen.getByLabelText('Private key producción'), { target: { value: ' live_private ' } });
+    fireEvent.change(await screen.findByLabelText('API Key producción'), { target: { value: ' sbx_live_public ' } });
+    fireEvent.change(screen.getByLabelText('API Secret producción'), { target: { value: ' live_private ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar producción' }));
     await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ environment: 'production', activo: true, public_key: 'sbx_live_public', private_key: 'live_private' }));
   });
@@ -202,119 +171,8 @@ describe('Speedbox settings', () => {
   it('shows saved private key state without revealing the secret', async () => {
     render(<SpeedboxConfig />);
     expect(await screen.findByText('Guardadas o listas para validar')).toBeInTheDocument();
-    expect(screen.getByLabelText('Private key')).toHaveAttribute('placeholder', 'Private key guardada. Pegá una nueva para reemplazarla.');
-    expect(screen.getByLabelText('Private key')).toHaveValue('');
-  });
-
-  it('paginates pedidos with dynamic page changes and minimal payload', async () => {
-    speedboxService.listarPedidos.mockResolvedValue({
-      items: [{
-        id: 1,
-        envio_id: 31,
-        external_order_id: 'GESICOMM-sandbox-3-1040',
-        order_id: '900000000275054',
-        environment: 'sandbox',
-        raha_tienda_id: '67',
-        raha_store_name: 'sommix',
-        estado: 'enviado',
-        status: 'pendiente_confirmacion',
-        remote_http_status: 201,
-      }],
-      paginacion: { page: 1, limit: 10, total: 25, totalPages: 3 },
-    });
-    render(<SpeedboxConfig />);
-    expect(await screen.findByText('Mostrando 1 - 10 de 25 registros')).toBeInTheDocument();
-    expect(screen.getByText('Pág 1 de 3')).toBeInTheDocument();
-
-    const nextBtn = screen.getByRole('button', { name: 'Página siguiente' });
-    expect(nextBtn).toBeEnabled();
-
-    fireEvent.click(nextBtn);
-    await waitFor(() => {
-      expect(speedboxService.listarPedidos).toHaveBeenCalledWith({
-        page: 2,
-        limit: 10,
-      });
-    });
-  });
-
-  it('applies dynamic filter by environment and status on pedidos', async () => {
-    render(<SpeedboxConfig />);
-    await screen.findByText('Pedidos enviados');
-
-    const ambienteSelect = screen.getByLabelText('Filtrar por ambiente');
-    fireEvent.change(ambienteSelect, { target: { value: 'sandbox' } });
-
-    await waitFor(() => {
-      expect(speedboxService.listarPedidos).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        ambiente: 'sandbox',
-      });
-    });
-
-    const statusSelect = screen.getByLabelText('Filtrar por estado RAHA');
-    fireEvent.change(statusSelect, { target: { value: 'en_camino' } });
-
-    await waitFor(() => {
-      expect(speedboxService.listarPedidos).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        ambiente: 'sandbox',
-        status: 'en_camino',
-      });
-    });
-  });
-
-  it('allows changing items per page dynamically', async () => {
-    speedboxService.listarPedidos.mockResolvedValue({
-      items: [{ id: 1, envio_id: 31 }],
-      paginacion: { page: 1, limit: 10, total: 30, totalPages: 3 },
-    });
-    render(<SpeedboxConfig />);
-    await screen.findByText('Mostrando 1 - 10 de 30 registros');
-
-    const limitSelects = screen.getAllByRole('combobox', { name: /Por pág:/i });
-    fireEvent.change(limitSelects[0], { target: { value: '25' } });
-
-    await waitFor(() => {
-      expect(speedboxService.listarPedidos).toHaveBeenCalledWith({
-        page: 1,
-        limit: 25,
-      });
-    });
-  });
-
-  it('filters importes dynamically by cobro_cliente and estado_financiero', async () => {
-    render(<SpeedboxConfig />);
-    await screen.findByText('Importes por pedido');
-
-    const cobroSelect = screen.getByLabelText('Filtrar por cobro al cliente');
-    fireEvent.change(cobroSelect, { target: { value: 'contra_entrega' } });
-
-    await waitFor(() => {
-      expect(speedboxService.listarImportes).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        cobro_cliente: 'contra_entrega',
-      });
-    });
-  });
-
-  it('filters costos de reposicion dynamically by estado', async () => {
-    render(<SpeedboxConfig />);
-    await screen.findByText('Costos de reposicion');
-
-    const estadoSelect = screen.getByLabelText('Filtrar por estado de solicitud');
-    fireEvent.change(estadoSelect, { target: { value: 'pendiente_pago' } });
-
-    await waitFor(() => {
-      expect(speedboxService.listarCostosReposicion).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        estado: 'pendiente_pago',
-      });
-    });
+    expect(screen.getByLabelText('API Secret')).toHaveAttribute('placeholder', 'API Secret guardada. Pegá una nueva para reemplazarla.');
+    expect(screen.getByLabelText('API Secret')).toHaveValue('');
   });
 
   it('filters movimientos de billetera dynamically by movimiento', async () => {
