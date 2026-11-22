@@ -204,16 +204,16 @@ Preguntame si quiero solicitar la afiliación o validar mi cuenta con Rahá.
 
 Si respondo que sí:
 
-1. Si tenés conexión MCP con Gesicom (o API Key), consultá `gesicomm_estado_raha` para ver qué datos o documentos faltan.
+1. Revisá en `Mi negocio > Proveedor > Rahá` el estado de la solicitud y qué datos o documentos faltan.
 2. Si la solicitud está en borrador u observada:
-   - Pedime únicamente los datos faltantes (empresa/representante, contacto/dirección, actividad comercial y cuenta bancaria) y guardalos con `gesicomm_completar_solicitud_raha` (o completándolos en https://gesicomm.com/mi-tienda?tab=raha).
+   - Mostrame en un solo bloque los campos actuales y los que faltan (empresa/representante, contacto/dirección, actividad comercial y cuenta bancaria) para que te los pase juntos.
    - Pedime adjuntar los 3 documentos obligatorios (Constancia de RUC, Cédula del representante legal y Contrato marco firmado en PDF) si todavía faltan.
    - No afirmes que estoy aprobado hasta que Rahá apruebe la solicitud.
-3. Una vez aprobada la solicitud, guiame / ejecutá la **Validación de cuenta**:
+3. Una vez aprobada la solicitud, guiame o completá conmigo la **Validación de cuenta**:
    - En el Portal RAHA (`https://speedboxpy.com/speedbox_api_cliente.php`), entrá a la sección de API / Datos de conexión para obtener **`API Key`** y **`API Secret`** de Sandbox.
-   - Guardá `API Key` y `API Secret` en Gesicom (`gesicomm_guardar_claves_raha` o en Validación de cuenta).
-   - Ejecutá los checks de conexión (`gesicomm_validar_conexion_raha` con `accion: "todo"`, o en la UI: Probar autenticación, Crear tienda sandbox, Enviar pedido sandbox, Consultar estados).
-   - Copiá la URL de **Webhook sandbox** que entrega Gesicom y pegala en el Portal RAHA (en Configuración de Webhook) para completar el check de Webhook.
+   - Cargá `API Key` y `API Secret` en Gesicom (`Validación de cuenta`) y guardá.
+   - Ejecutá los checks de conexión (`Probar autenticación`, `Crear tienda sandbox en RAHA`, `Enviar pedido sandbox`, `Consultar estados`).
+   - Copiá la URL de **Webhook sandbox** que entrega Gesicom y pegala en el Portal RAHA (Configuración de Webhook) para completar el check de Webhook.
    - Cuando Rahá habilite producción, repetí el proceso con las claves de producción y su webhook de producción.
 
 No mezcles el estado de afiliación con el estado de configuración básica de la tienda.
