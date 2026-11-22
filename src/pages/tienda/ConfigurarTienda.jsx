@@ -28,7 +28,6 @@ import { getMetodosPago } from '../../services/courierApi';
 import { comboAdminService } from '../../services/comboAdminService';
 import { rahaService } from '../../services/rahaService';
 import { speedboxService } from '../../services/speedboxService';
-import { landingSimpleService } from '../../services/landingSimpleService';
 import { estadosConfiguracion } from './estadoConfiguracion';
 import skillConfigurarTienda from './skillConfigurarTienda.txt?raw';
 import '../vitrina/vitrina.css';
@@ -226,8 +225,6 @@ export default function ConfigurarTienda() {
   const [ok, setOk] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
   const [estadoCopiaSkill, setEstadoCopiaSkill] = useState('');
-  const [copiandoApiKey, setCopiandoApiKey] = useState(false);
-  const [apiKeyCopiada, setApiKeyCopiada] = useState('');
   const [tab, setTab] = useState(TABS_VALIDAS.has(tabInicial) ? tabInicial : 'tienda');
 
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
@@ -370,30 +367,6 @@ export default function ConfigurarTienda() {
       setEstadoCopiaSkill('Skill copiada. Pegala en tu asistente de IA para empezar.');
     } catch {
       setEstadoCopiaSkill('No se pudo copiar. Revisá los permisos del portapapeles y volvé a intentar.');
-    }
-  }
-
-  async function copiarApiKey() {
-    setCopiandoApiKey(true);
-    setApiKeyCopiada('');
-    try {
-      const storageKey = `gesicomm:mcp-token:${tienda?.id || 'cuenta'}`;
-      let token = '';
-      try { token = window.sessionStorage.getItem(storageKey) || ''; } catch { token = ''; }
-      if (!token) {
-        const res = await landingSimpleService.generarTokenMCP(tienda?.id);
-        token = res?.token || '';
-        if (token) {
-          try { window.sessionStorage.setItem(storageKey, token); } catch { /* noop */ }
-        }
-      }
-      if (!token) throw new Error('No se pudo generar la API Key.');
-      await navigator.clipboard.writeText(token);
-      setApiKeyCopiada('API Key copiada. Pegala en tu asistente junto con la skill.');
-    } catch (err) {
-      setApiKeyCopiada(err?.response?.data?.error || err?.message || 'No se pudo copiar la API Key.');
-    } finally {
-      setCopiandoApiKey(false);
     }
   }
 
@@ -799,20 +772,13 @@ export default function ConfigurarTienda() {
       <section className="tn-skill-card" aria-label="Asistente para configurar tu tienda">
         <div className="tn-skill-copy">
           <h2>Configurá tu tienda con ayuda de IA</h2>
-          <p>Copiá la skill y la API Key y pegalas en tu asistente para que te entreviste, complete tu tienda y configure Rahá paso a paso.</p>
+          <p>Copiá la skill y pegala en tu asistente para que te entreviste y te guíe sección por sección.</p>
           {estadoCopiaSkill && <span className="tn-skill-status" role="status" aria-live="polite">{estadoCopiaSkill}</span>}
-          {apiKeyCopiada && <span className="tn-skill-status" role="status" aria-live="polite">{apiKeyCopiada}</span>}
         </div>
-        <div className="tn-skill-actions">
-          <button type="button" className="tn-skill-button" onClick={copiarApiKey} disabled={copiandoApiKey}>
-            {copiandoApiKey ? <Loader size={18} className="spb-spin" aria-hidden="true" /> : apiKeyCopiada.startsWith('API Key copiada') ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
-            {copiandoApiKey ? 'Generando...' : apiKeyCopiada.startsWith('API Key copiada') ? 'API Key copiada' : 'Copiar API Key'}
-          </button>
-          <button type="button" className="tn-skill-button" onClick={copiarSkill}>
-            {estadoCopiaSkill.startsWith('Skill copiada') ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
-            {estadoCopiaSkill.startsWith('Skill copiada') ? 'Skill copiada' : 'Copiar skill'}
-          </button>
-        </div>
+        <button type="button" className="tn-skill-button" onClick={copiarSkill}>
+          {estadoCopiaSkill.startsWith('Skill copiada') ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
+          {estadoCopiaSkill.startsWith('Skill copiada') ? 'Skill copiada' : 'Copiar skill'}
+        </button>
       </section>
 
       <div className="tn-shell">
