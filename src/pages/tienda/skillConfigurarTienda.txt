@@ -202,19 +202,22 @@ La configuración como proveedor (Rahá / Speedbox) es un proceso independiente 
 
 Preguntame si quiero solicitar la afiliación o validar mi cuenta con Rahá.
 
-Si respondo que sí:
+Si respondo que sí, revisá primero en `Mi negocio > Proveedor > Rahá` en qué etapa está la solicitud:
 
-1. Revisá en `Mi negocio > Proveedor > Rahá` el estado de la solicitud y qué datos o documentos faltan.
-2. Si la solicitud está en borrador u observada:
-   - Mostrame en un solo bloque los campos actuales y los que faltan (empresa/representante, contacto/dirección, actividad comercial y cuenta bancaria) para que te los pase juntos.
-   - Pedime adjuntar los 3 documentos obligatorios (Constancia de RUC, Cédula del representante legal y Contrato marco firmado en PDF) si todavía faltan.
-   - No afirmes que estoy aprobado hasta que Rahá apruebe la solicitud.
-3. Una vez aprobada la solicitud, guiame o completá conmigo la **Validación de cuenta**:
-   - En el Portal RAHA (`https://speedboxpy.com/speedbox_api_cliente.php`), entrá a la sección de API / Datos de conexión para obtener **`API Key`** y **`API Secret`** de Sandbox.
-   - Cargá `API Key` y `API Secret` en Gesicom (`Validación de cuenta`) y guardá.
-   - Ejecutá los checks de conexión (`Probar autenticación`, `Crear tienda sandbox en RAHA`, `Enviar pedido sandbox`, `Consultar estados`).
-   - Copiá la URL de **Webhook sandbox** que entrega Gesicom y pegala en el Portal RAHA (Configuración de Webhook) para completar el check de Webhook.
-   - Cuando Rahá habilite producción, repetí el proceso con las claves de producción y su webhook de producción.
+### Flujo 1: Afiliación y firma de contrato (si está en borrador u observada)
+
+1. Mostrame en un solo bloque los campos actuales y los que faltan (empresa/representante, contacto/dirección, actividad comercial y cuenta bancaria) para que te los pase juntos.
+2. Explicame que el **Contrato marco** se descarga desde Gesicom (ya viene prellenado con los datos cargados), se completa, se firma y se sube en PDF junto con la **Constancia de RUC** y la **Cédula del representante legal**.
+3. Pedime adjuntar los documentos faltantes directamente en Gesicom y confirmame antes de enviar la solicitud.
+4. Indicame explícitamente que, una vez enviada la solicitud con sus documentos, el equipo de **Rahá** se pondrá en contacto para coordinar la firma y recepción del contrato/documentación, y posteriormente me entregará los accesos de mi cuenta de **Speedbox**.
+5. No afirmes que estoy aprobado hasta que Rahá apruebe la solicitud.
+
+### Flujo 2: Validación de cuenta en Portal Rahá (Speedbox) (si ya figura Aprobada por Rahá)
+
+1. Abrí **Validar cuenta** en Gesicom y también el enlace **Abrir portal RAHA** (`https://speedboxpy.com/speedbox_api_cliente.php`) en el navegador.
+2. Pedime que inicie sesión personalmente en el portal de Rahá/Speedbox con mi cuenta y contraseña (nunca pidas contraseñas ni `API Secret` por chat).
+3. Guiame para obtener en el portal y cargar directamente en el formulario de Gesicom la **API Key** y **API Secret** de **Sandbox** (y luego de **Producción** cuando corresponda), y hacer clic en **Guardar sandbox**.
+4. Una vez guardadas las credenciales, ejecutá los **Checks de conexión** disponibles en Gesicom (*Probar autenticación*, *Crear tienda sandbox en RAHA*, *Enviar pedido sandbox*, *Consultar estados*), ayudame a configurar las URLs de webhook en Rahá si hace falta, y verificá cuándo queda habilitado **Solicitar habilitación en producción**.
 
 No mezcles el estado de afiliación con el estado de configuración básica de la tienda.
 
