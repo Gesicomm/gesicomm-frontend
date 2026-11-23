@@ -47,8 +47,7 @@ const SECCIONES = [
           <li>La aplicación web de Gesicom y el panel de administración.</li>
           <li>La API de Gesicom (api.gesicomm.com).</li>
           <li>
-            La integración con el Pixel de Meta y Conversions API, en caso de que configures tus identificadores. Las integraciones 
-            futuras se describen en la sección «Integraciones en desarrollo».
+            Las integraciones de Meta que autorices, incluidos Pixel y Conversions API, publicidad, Páginas, Instagram y WhatsApp Business, con el alcance descrito en esta política.
           </li>
           <li>
             Las tiendas y páginas públicas que publicás con Gesicom bajo un subdominio de
@@ -156,39 +155,50 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          A la fecha de esta política (octubre 2026), <strong>Meta es la única plataforma externa que Gesicom integra.</strong> No hay
-          integración activa con Instagram, con WhatsApp Business Platform, con Shopify ni con ninguna
-          otra plataforma. Si alguna se activa en el futuro, esta política se actualizará y se
-          notificará <strong>antes</strong> de que procese datos.
+          Gesicom dispone de integraciones opcionales con las plataformas de Meta para conectar
+          cuentas publicitarias, Páginas de Facebook, cuentas profesionales de Instagram y cuentas
+          de WhatsApp Business. Las funciones disponibles dependen de tu espacio, los activos y
+          permisos que autorices y la habilitación que Meta conceda a la aplicación.
         </p>
         <p>
-          La conexión es opcional: Gesicom solo accede a Meta si vos la habilitás explícitamente
-          desde Configuración, y podés revocarla en cualquier momento.
+          La solicitud de acceso avanzado de la aplicación está en revisión. Las pruebas con
+          cuentas y activos autorizados no significan que Meta haya aprobado la incorporación
+          general de clientes externos. La conexión de cada canal es opcional e independiente
+          del acceso a tu cuenta de Gesicom.
         </p>
 
         <Subseccion titulo="4.1 Permisos que solicitamos">
           <p>
-            Al conectar Meta desde Configuración, Gesicom te pide autorización mediante OAuth para
-            tres permisos:
+            Los permisos se solicitan según el canal y la función que conectes. No todos se
+            necesitan en cada conexión:
           </p>
           <ul>
             <li>
-              <code>business_management</code>: para listar tus portafolios comerciales (Business
-              Managers) y las cuentas publicitarias que pertenecen a cada uno, y que puedas elegir
-              cuál mirar.
+              <strong>Publicidad:</strong> <code>business_management</code>, <code>ads_read</code>
+              {' '}y <code>ads_management</code> permiten identificar los activos autorizados,
+              consultar campañas, conjuntos, anuncios y métricas y realizar las acciones de
+              administración habilitadas. La creación de campañas y anuncios desde Gesicom
+              requiere tu revisión y confirmación; las pruebas presentadas a Meta se crearon
+              en pausa.
             </li>
             <li>
-              <code>ads_read</code>: para leer las campañas de esas cuentas y sus métricas.
+              <strong>Facebook e Instagram:</strong> los permisos de Páginas e Instagram permiten
+              identificar la Página y la cuenta profesional autorizadas, consultar y publicar
+              contenido, gestionar comentarios y mensajes de Instagram, recibir eventos de la
+              integración y consultar métricas.
             </li>
             <li>
-              <code>ads_management</code>: para pausar o activar una campaña de la cuenta elegida cuando lo confirmás desde Publicidad.
+              <strong>WhatsApp Business:</strong> <code>whatsapp_business_management</code> y
+              {' '}<code>whatsapp_business_messaging</code> permiten consultar y administrar
+              activos y plantillas de la cuenta autorizada y enviar y recibir mensajes mediante
+              la API.
             </li>
           </ul>
           <p>
-            Gesicom solo cambia el estado de la campaña que seleccionás y confirmás. No crea ni elimina campañas en Meta,
-            ni cambia anuncios o presupuestos. Tampoco accede a tus páginas, a tu
-            perfil personal más allá de tu identificador de usuario, a tus mensajes ni a tus
-            contactos.
+            Las operaciones se limitan a los activos autorizados y asociados a tu espacio.
+            Podés revisar los permisos en la pantalla de autorización de Meta antes de conectar.
+            La disponibilidad para clientes externos depende de las aprobaciones y restricciones
+            aplicables de Meta.
           </p>
         </Subseccion>
 
@@ -197,101 +207,129 @@ const SECCIONES = [
             encabezados={['Dato', 'Para qué lo usamos']}
             filas={[
               [
-                'Identificador y nombre de tus Business Managers',
-                'Mostrarte el selector de portafolio y nombrar la conexión en Configuración.',
+                'Identificadores y nombres de portafolios y cuentas publicitarias; estado y moneda de las cuentas autorizadas',
+                'Identificar y seleccionar los activos del negocio y mostrar sus datos en Marketing.',
               ],
               [
-                'Identificador, nombre, estado y moneda de las cuentas publicitarias propias de cada Business Manager',
-                'Mostrarte el selector de cuenta y expresar los montos en la moneda correcta.',
+                'Campañas, conjuntos y anuncios: identificadores, contenido, estado, objetivos, presupuestos y métricas disponibles',
+                'Consultar rendimiento y ejecutar las acciones de administración que confirmás en la interfaz.',
               ],
               [
-                'Campañas: nombre, estado, objetivo, fecha de inicio y presupuesto',
-                'Armar la tabla de campañas de la sección Ads.',
+                'Identificadores, nombres y datos de Páginas, cuentas profesionales de Instagram y cuentas de WhatsApp Business; número del negocio',
+                'Identificar el canal autorizado y asociarlo a tu espacio de trabajo.',
               ],
               [
-                'Métricas de campañas: gasto, compras, valor de conversión, ROAS, clics salientes y conversaciones iniciadas',
-                'Calcular costo por compra, tasa de conversión y tasa de cierre en la misma tabla.',
+                'Publicaciones, comentarios y métricas de los activos autorizados',
+                'Mostrar el contenido, permitir las acciones habilitadas y consultar su rendimiento.',
               ],
               [
-                'Tu identificador de usuario de Meta (asignado para Gesicom)',
-                'Encontrar tu conexión si pedís la eliminación de datos desde Facebook.',
+                'Mensajes y metadatos de conversación: identificadores, contacto, nombre disponible, dirección, tipo, texto, fecha y estado',
+                'Mostrar la bandeja y el historial, registrar respuestas y evitar duplicados.',
+              ],
+              [
+                'Identificador de usuario de Meta y permisos de la conexión',
+                'Asociar la autorización a tu cuenta y atender su revocación o una solicitud de eliminación.',
               ],
             ]}
           />
           <p>
-            Las campañas y sus métricas se consultan a Meta <strong>en el momento</strong> en que
-            abrís la pantalla y <strong>no se guardan</strong> en nuestra base de datos. Solo vos,
-            con tu sesión iniciada, ves los datos de tus conexiones: cada consulta se filtra por tu
-            cuenta y tu usuario de Gesicom.
+            Los datos de las integraciones se asocian al espacio de trabajo correspondiente.
+            El acceso dentro de Gesicom depende de la sesión y los permisos de las personas
+            autorizadas en ese espacio. Las consultas a Meta pueden usar caché temporal; las
+            bandejas y los registros de acciones también conservan los datos descritos a
+            continuación.
           </p>
         </Subseccion>
 
         <Subseccion titulo="4.3 Qué guardamos y cómo se elimina">
           <p>
-            De Meta guardamos únicamente el <strong>token de acceso</strong> (cifrado con
-            AES-256-GCM), el <strong>identificador y el nombre del Business Manager</strong>{' '}
-            conectado y tu <strong>identificador de usuario de Meta</strong>. Se conservan
-            mientras la conexión esté activa. El token que entrega Meta vence a los 60 días; al
-            vencer hay que volver a conectar.
+            Guardamos las credenciales de acceso cifradas, los identificadores de los activos,
+            los permisos y los datos necesarios para identificar la conexión. La vigencia de
+            una credencial depende del tipo de conexión y de Meta; la interfaz muestra el
+            vencimiento cuando está disponible.
+          </p>
+          <p>
+            Las bandejas de WhatsApp e Instagram conservan mensajes y metadatos de las
+            conversaciones que procesa la integración. También guardamos registros del
+            contenido publicado desde Gesicom y de su resultado para mostrar el historial de
+            esas acciones.
           </p>
           <ul>
             <li>
-              <strong>Si desconectás desde Configuración:</strong> revocamos la autorización ante
-              Meta y borramos el token y los datos de la conexión en el acto.
+              <strong>Si desconectás desde Gesicom:</strong> eliminamos la conexión guardada y
+              su credencial. Desconectar detiene el acceso nuevo desde esa conexión; no equivale
+              a borrar automáticamente todas las conversaciones ya registradas.
             </li>
             <li>
-              <strong>Si quitás la aplicación desde Facebook:</strong> Meta nos avisa y borramos
-              automáticamente las conexiones asociadas a tu usuario (ver la sección{' '}
-              <a href="#datos-meta">Uso y eliminación de datos obtenidos de Meta</a>).
+              <strong>Si quitás la aplicación desde Meta:</strong> al recibir y validar la
+              notificación de Meta eliminamos las conexiones asociadas a ese usuario.
+              La eliminación de los datos históricos se puede solicitar por separado.
             </li>
             <li>
-              <strong>Si eliminás tu cuenta de Gesicom:</strong> las conexiones se borran junto con
-              ella, dentro del plazo de 30 días del proceso de eliminación.
+              <strong>Si solicitás eliminar tus datos o tu cuenta:</strong> la solicitud
+              comprende también los mensajes, metadatos y registros asociados que Gesicom
+              conserve, conforme a los plazos y excepciones de la sección{' '}
+              <a href="#retencion">Cuánto tiempo conservamos los datos</a> y la página de{' '}
+              <Link to="/data-deletion">Eliminación de Datos</Link>.
             </li>
           </ul>
         </Subseccion>
 
-        <Subseccion titulo="4.4 No usamos Facebook Login para autenticarte">
+        <Subseccion titulo="4.4 Acceso a Gesicom y autorización de Meta">
           <p>
-            El acceso a Gesicom se hace con <strong>correo electrónico y contraseña propios</strong>,
-            gestionados por nosotros. Conectar Meta es una acción posterior e independiente, que
-            solo vincula tus cuentas publicitarias. Desconectar Meta no te deja fuera de Gesicom.
+            El acceso a Gesicom se hace con las credenciales de tu cuenta de Gesicom. La
+            autorización de Meta es un paso posterior e independiente para conectar los
+            activos del negocio que selecciones. Desconectar Meta no elimina tu cuenta
+            de Gesicom.
           </p>
         </Subseccion>
 
         <Subseccion titulo="4.5 Meta Pixel y Conversions API en tu vitrina">
           <p>
-            Podés cargar el identificador de{' '}
-            <strong>tu propio Meta Pixel</strong> y tu <strong>token de Conversions API (CAPI)</strong> para que se disparen eventos en la vitrina pública de tu
-            tienda. En ese caso Gesicom solo almacena esos identificadores: los eventos de navegación
-            los recibe Meta, y su tratamiento se
-            rige por la política de datos de Meta. Sos vos, como titular de esa vitrina, quien
-            responde por informarlo y por recabar el consentimiento de tus visitantes. Está
-            detallado en la <Link to="/cookies">Política de Cookies</Link>.
+            Podés cargar el identificador de <strong>tu propio Meta Pixel</strong> y tu
+            {' '}<strong>token de Conversions API (CAPI)</strong> para que se disparen eventos
+            en la vitrina pública de tu tienda. Los eventos de navegación los recibe Meta y
+            su tratamiento se rige por la política de datos de Meta. Sos vos, como titular
+            de esa vitrina, quien responde por informarlo y por recabar el consentimiento
+            de tus visitantes. Está detallado en la{' '}
+            <Link to="/cookies">Política de Cookies</Link>.
           </p>
         </Subseccion>
 
-        <Subseccion titulo="4.6 WhatsApp: un enlace, no una integración">
+        <Subseccion titulo="4.6 WhatsApp: enlace de contacto e integración API">
           <p>
-            El botón de WhatsApp de tu vitrina genera un enlace <code>wa.me</code> con el mensaje
-            ya escrito. Al tocarlo, se abre la aplicación de WhatsApp en el dispositivo de tu
-            visitante y la conversación ocurre <strong>directamente entre esa persona y vos</strong>.
+            El botón de WhatsApp de una vitrina puede generar un enlace <code>wa.me</code>.
+            En ese caso, la conversación ocurre en WhatsApp y el enlace, por sí solo, no
+            conecta su contenido a Gesicom.
           </p>
           <p>
-            Gesicom <strong>no usa la API de WhatsApp Business</strong>, no envía mensajes, no
-            recibe mensajes y <strong>no almacena ninguna conversación ni número de teléfono de
-            tus compradores por esa vía</strong>. El único número de WhatsApp que guardamos es{' '}
-            <strong>el tuyo</strong>, el que configurás como contacto de tu tienda para que el
-            enlace apunte a algún lado.
+            Por separado, la integración API de WhatsApp Business permite a un negocio
+            autorizado gestionar plantillas, enviar mensajes y recibir respuestas en la
+            bandeja de su espacio. Esta integración conserva mensajes y metadatos de
+            conversación para mostrar el historial. El envío está sujeto a las reglas de
+            WhatsApp y a los permisos concedidos.
+          </p>
+          <p>
+            La conexión por coexistencia con la app del teléfono se encuentra en pruebas.
+            Su configuración no garantiza que Meta habilite cualquier número ni sustituye
+            la comprobación de elegibilidad durante el alta.
           </p>
         </Subseccion>
 
-        <Subseccion titulo="4.7 Integraciones en desarrollo">
+        <Subseccion titulo="4.7 Funciones en pruebas y agentes de IA">
           <p>
-            Gesicom desarrolla funciones adicionales para la gestión de anuncios, páginas de Facebook, cuentas profesionales de Instagram y WhatsApp Business. Estas funciones no estarán disponibles para clientes ni tratarán sus datos mediante esas integraciones hasta que se implementen, se obtengan los permisos necesarios y el cliente autorice la conexión. Antes de activarlas, actualizaremos esta política para explicar qué datos se obtienen, para qué se usan, durante cuánto tiempo se conservan y cómo pueden eliminarse.
+            Las funciones en pruebas pueden procesar datos de las cuentas y activos
+            expresamente autorizados para esas pruebas. La disponibilidad general de
+            funciones que requieren acceso avanzado depende de la revisión de Meta.
+            Si se amplía el tratamiento, actualizaremos la información correspondiente
+            antes de ofrecer la función con ese nuevo alcance.
           </p>
           <p>
-            En particular, antes de activar cualquier agente de IA que procese conversaciones, completaremos esta sección con el proveedor real de IA, qué contenido se le transmite, la finalidad, el plazo de conservación y el procedimiento de eliminación.
+            El tratamiento de conversaciones por un agente de IA depende de la función
+            configurada y autorizada en el espacio; no se deduce de la mera existencia de
+            una bandeja manual. Si se configura ese tratamiento, debe informarse antes de
+            transmitir datos el proveedor real de IA, qué contenido se le transmite, la
+            finalidad, la conservación y el procedimiento de eliminación.
           </p>
         </Subseccion>
       </>
@@ -541,7 +579,7 @@ const SECCIONES = [
             ],
             [
               'Plataformas que vos conectás',
-              'Meta, únicamente si conectás la integración de Facebook Ads.',
+              'Meta, únicamente para los canales y activos que autorices.',
               'Únicamente los datos necesarios para la integración autorizada.',
             ],
             [
@@ -668,9 +706,14 @@ const SECCIONES = [
               'Prestación del servicio.',
             ],
             [
-              'Conexión con Meta (token cifrado, ID y nombre del Business Manager, ID de usuario de Meta)',
-              'Mientras la conexión esté activa. Se elimina de inmediato al desconectar, al quitar la app desde Facebook o al eliminar la cuenta. Las métricas de campañas no se guardan.',
+              'Conexiones de Meta (credenciales cifradas, activos, permisos y datos de identificación)',
+              'Mientras la conexión esté activa. Al desconectar se elimina la conexión y su credencial; el historial registrado se trata por separado.',
               'Consentimiento.',
+            ],
+            [
+              'Mensajes y metadatos de WhatsApp e Instagram, y registros de publicaciones',
+              'Mientras la cuenta esté activa para prestar la función autorizada, o hasta que se solicite su eliminación. A la solicitud se aplican el plazo máximo de 30 días y las excepciones descritas en Eliminación de Datos.',
+              'Prestación del servicio y gestión de la solicitud de eliminación.',
             ],
             [
               'Registros de acceso y auditoría',
@@ -1036,22 +1079,26 @@ const SECCIONES = [
             funcionalidad, y no pedimos permisos «por si acaso».
           </li>
           <li>
-            Al desconectar la integración, <strong>revocamos y eliminamos los tokens de acceso de
-            inmediato</strong> y dejamos de sincronizar datos nuevos.
+            Al desconectar la integración, eliminamos la conexión y sus credenciales
+            guardadas y dejamos de sincronizar datos nuevos desde esa conexión. La
+            desconexión no elimina automáticamente el historial ya registrado.
           </li>
           <li>
-            Eliminamos los datos obtenidos de Meta cuando ya no son necesarios para la finalidad
-            autorizada, cuando revocás el permiso, cuando eliminás tu cuenta o cuando Meta nos lo
-            requiere.
+            La eliminación de datos históricos se tramita cuando solicitás su borrado o el
+            de tu cuenta, cuando ya no son necesarios para la finalidad autorizada o cuando
+            Meta lo requiere. Se aplican el plazo máximo de 30 días y las excepciones
+            descritas en Eliminación de Datos.
           </li>
         </ul>
         <p>
-          <strong>Eliminación iniciada desde Meta.</strong> Si quitás la aplicación desde la
-          configuración de tu cuenta de Facebook, Meta nos notifica automáticamente a
-          través de nuestro <em>Data Deletion Callback</em>. Al recibir esa notificación
-          verificamos criptográficamente que provenga realmente de Meta, borramos en el acto las
-          conexiones asociadas a tu usuario de Meta y te devolvemos un código de confirmación con
-          una URL pública donde podés ver el estado del borrado. El proceso está descrito paso a paso en la página de{' '}
+          <strong>Eliminación iniciada desde Meta.</strong> Cuando Meta nos remite una solicitud
+          a través de nuestro <em>Data Deletion Callback</em>, verificamos su autenticidad,
+          eliminamos las conexiones y credenciales asociadas y registramos la solicitud con
+          un código de confirmación y una URL pública de seguimiento. La solicitud incluye
+          los datos históricos obtenidos de Meta asociados a esa autorización y permanece
+          pendiente hasta completar la verificación y el borrado correspondientes. El código
+          confirma la recepción de la solicitud, no que el borrado haya finalizado. El proceso
+          está descrito paso a paso en la página de{' '}
           <Link to="/data-deletion">Eliminación de Datos</Link>.
         </p>
       </>
@@ -1130,10 +1177,10 @@ export default function Privacy() {
   return (
     <LegalDoc
       titulo="Política de Privacidad"
-      descripcion="Cómo Gesicom recopila, usa, comparte, protege y elimina los datos personales: qué información obtenemos de Meta al conectar Facebook Ads, con qué base legal, cuánto la conservamos y cómo ejercer tus derechos bajo el RGPD, la CCPA/CPRA y la normativa de Latinoamérica."
+      descripcion="Cómo Gesicom recopila, usa, comparte, protege y elimina los datos personales: qué información obtenemos al conectar publicidad, Facebook, Instagram y WhatsApp Business, con qué base legal, cuánto la conservamos y cómo ejercer tus derechos bajo el RGPD, la CCPA/CPRA y la normativa de Latinoamérica."
       resumen="Esta política explica qué datos trata Gesicom, por qué, durante cuánto tiempo y qué control tenés sobre ellos. Está escrita para que se entienda sin ser abogado, sin perder precisión jurídica."
       ruta="/privacy"
-      actualizado="2026-10-09"
+      actualizado="2026-11-23"
       vigenteDesde="2026-08-03"
       secciones={SECCIONES}
     >
@@ -1149,3 +1196,4 @@ export default function Privacy() {
     </LegalDoc>
   );
 }
+
