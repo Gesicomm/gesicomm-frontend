@@ -195,16 +195,16 @@ export const alternarOrden = (ordenActual, campo, direccionInicial = 'DESC') => 
 
 export const BADGE_ESTADO = {
   borrador: { bg: 'rgba(156,163,175,0.12)', color: 'var(--color-fg-muted)', label: 'Borrador' },
-  activa: { bg: 'rgba(16,185,129,0.12)', color: '#10b981', label: 'Activa' },
-  pausada: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b', label: 'Pausada' },
+  activa: { bg: 'color-mix(in srgb, var(--color-success) 12%, transparent)', color: 'var(--color-success)', label: 'Activa' },
+  pausada: { bg: 'color-mix(in srgb, var(--color-warning) 12%, transparent)', color: 'var(--color-warning)', label: 'Pausada' },
   archivada: { bg: 'rgba(156,163,175,0.12)', color: 'var(--color-fg-muted)', label: 'Archivada' },
 };
 
 /** Semáforo de rendimiento por ROAS — mismo criterio en todas las vistas. */
 export const semaforoROAS = (roas) => {
   const v = Number(roas) || 0;
-  if (v >= 2) return { color: '#10b981', label: 'Rinde', nivel: 'bien' };
-  if (v >= 1) return { color: '#f59e0b', label: 'Al límite', nivel: 'atencion' };
-  if (v > 0) return { color: '#ef4444', label: 'Pierde', nivel: 'mal' };
+  if (v >= 2) return { color: 'var(--color-success)', label: 'Rinde', nivel: 'bien' };
+  if (v >= 1) return { color: 'var(--color-warning)', label: 'Al límite', nivel: 'atencion' };
+  if (v > 0) return { color: 'var(--color-danger)', label: 'Pierde', nivel: 'mal' };
   return { color: 'var(--color-fg-muted)', label: 'Sin ventas', nivel: 'sin_datos' };
 };

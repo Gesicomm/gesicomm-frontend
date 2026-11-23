@@ -1673,8 +1673,8 @@
 
 /* Estado de configuración: independiente de la pestaña seleccionada. */
 .tn-section-status { display: inline-flex; align-items: center; gap: 0.35rem; flex: 0 0 auto; padding: 0.2rem 0.55rem; border-radius: 999px; font-size: var(--ui-text-help, 0.875rem); font-weight: 700; line-height: 1.5; }
-.tn-section-status.complete { color: #15803d; background: #dcfce7; }
-.tn-section-status.pending { color: #854d0e; background: #fef3c7; }
+.tn-section-status.complete { color: var(--color-success); background: color-mix(in srgb, var(--color-success) 12%, transparent); }
+.tn-section-status.pending { color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 14%, transparent); }
 .tn-section-status.compact { width: 22px; height: 22px; padding: 0; justify-content: center; }
 .tn-mobile-section-grid button .tn-section-status { flex: 0 0 22px; }
 .tn-panel-title-status { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }

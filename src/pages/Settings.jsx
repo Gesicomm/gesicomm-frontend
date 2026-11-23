@@ -138,7 +138,7 @@ const Settings = () => {
             </div>
 
             {error && (
-                <div style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid #ff0000', padding: '1rem', color: '#ff6b6b', borderRadius: '8px', marginBottom: '1rem' }}>
+                <div style={{ background: 'color-mix(in srgb, var(--color-danger) 10%, transparent)', border: '1px solid var(--color-danger)', padding: '1rem', color: 'var(--color-danger)', borderRadius: '8px', marginBottom: '1rem' }}>
                     {error}
                 </div>
             )}
@@ -401,7 +401,7 @@ const Settings = () => {
                                             <CheckCircle size={14} /> Conectada
                                         </div>
                                     ) : (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#ff6b6b', fontSize: '0.8rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--color-danger)', fontSize: '0.8rem' }}>
                                             <XCircle size={14} /> Desconectada
                                         </div>
                                     )}
@@ -410,8 +410,8 @@ const Settings = () => {
                                         disabled={!puedeGestionar || deletingId === tienda.id}
                                         title="Desconectar tienda"
                                         style={{
-                                            background: 'transparent', border: '1px solid rgba(255,100,100,0.3)',
-                                            color: '#ff6b6b', padding: '0.4rem 0.6rem', borderRadius: '6px',
+                                            background: 'transparent', border: '1px solid color-mix(in srgb, var(--color-danger) 35%, transparent)',
+                                            color: 'var(--color-danger)', padding: '0.4rem 0.6rem', borderRadius: '6px',
                                             cursor: deletingId === tienda.id ? 'not-allowed' : 'pointer',
                                             display: 'flex', alignItems: 'center', transition: 'all 0.2s'
                                         }}

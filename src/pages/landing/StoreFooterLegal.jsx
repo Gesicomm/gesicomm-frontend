@@ -26,7 +26,7 @@ const ALPHA_FIRMA  = 0.90;
 export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isPreview = false, style }) {
   const colorTexto = tema?.texto || '#000000';
   const fondo = tema?.fondo || '#ffffff';
-  const colorLogo = contraste('#0b0f0e', fondo) >= contraste('#fafcfb', fondo) ? '#0b0f0e' : '#fafcfb';
+  const colorLogo = contraste('#080436', fondo) >= contraste('#f9f6f3', fondo) ? '#080436' : '#f9f6f3';
   const footerRef = useRef(null);
   useLayoutEffect(() => adaptarLogosGesicom(footerRef.current), [tema, style]);
   // El footer no pinta fondo propio: hereda el del template.

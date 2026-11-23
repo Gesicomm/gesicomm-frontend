@@ -409,7 +409,7 @@ const UserLayout = ({ children }) => {
       >
         <header className="sidebar-header" style={{ borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-            <Logo fondoPanel="oscuro" size={26} className="text-fg" />
+            <Logo fondoPanel="tema" size={26} className="text-fg" />
             <span style={{ fontSize: 'var(--ui-text-meta, .8125rem)', color: "var(--color-fg-muted)", textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
               Panel de Usuario
             </span>
@@ -633,7 +633,7 @@ const UserLayout = ({ children }) => {
             >
               <Menu size={20} />
             </button>
-            <Logo fondoPanel="oscuro" size={24} className="text-fg" />
+            <Logo fondoPanel="tema" size={24} className="text-fg" />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <NotificationBell 

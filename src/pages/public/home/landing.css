@@ -1,13 +1,13 @@
 /* Cambiar estos tokens actualiza toda la portada; no modifica el panel ni las tiendas. */
 .gl-landing {
-  --gc-bg: #0b0f0e;
-  --gc-surface: #0f3d2e;
+  --gc-bg: #080436;
+  --gc-surface: #1a1732;
   --gc-surface2: #174837;
   --gc-border: #365b4b;
   --gc-white: #fafcfb;
   --gc-muted: #b7c6be;
-  --gc-cyan: #22b573;
-  --gc-coral: #22b573;
+  --gc-cyan: #76e4ff;
+  --gc-coral: #feb95f;
   --gc-success: #53d99b;
   --gc-shadow: #000;
   --gc-border-strong: color-mix(in srgb, var(--gc-border) 65%, var(--gc-cyan));

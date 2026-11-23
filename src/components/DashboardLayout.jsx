@@ -82,7 +82,7 @@ const DashboardLayout = ({ children }) => {
                         >
                             <Menu size={20} />
                         </button>
-                        <Logo fondoPanel="oscuro" size={24} className="text-fg" />
+                        <Logo fondoPanel="tema" size={24} className="text-fg" />
                     </div>
                     <div className="flex items-center gap-2">
                         {campanita}
