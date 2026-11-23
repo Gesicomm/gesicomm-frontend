@@ -4,8 +4,6 @@ import base64
 import hashlib
 import hmac
 import time
-from contextlib import closing
-from threading import Lock
 import json
 import logging
 import os
@@ -16,11 +14,12 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from cupos import FUNDADORES, PRODUCTO, oferta_para
-from historial import Historial
 
 LOG = logging.getLogger(__name__)
-OFERTAS = {"founder": (FUNDADORES, 47), "starter": oferta_para(100), "scaler": ("h7n5ndcy", 77)}
+OFERTAS = {"founder": (FUNDADORES, 47), "starter": oferta_para(True), "scaler": ("h7n5ndcy", 77)}
 EMAIL = re.compile(r"[^\s@]+@[^\s@]+\.[^\s@]+")
+# Los cupos salen de la base del backend (pagos de Hotmart registrados por su webhook).
+CUPOS_URL = os.environ.get("GESICOM_CUPOS_URL", "http://gesicomm-back:3000/api/publico/hotmart/cupos")
 
 
 def consulta(url, encabezados, metodo="GET"):
@@ -86,54 +85,17 @@ def alta_confirmada(filas, email, oferta, desde):
     return False
 
 
-def sincronizar(historial):
-    altas = []
-    for fila in suscripciones():
-        if fila.get("product", {}).get("id") != PRODUCTO:
-            raise ValueError("Hotmart devolvió una suscripción de otro producto")
-        oferta = fila.get("offer", {}).get("code")
-        if not oferta:
-            raise ValueError("Hotmart no devolvió el código de oferta")
-        estado = fila.get("status")
-        if oferta != FUNDADORES or (
-            estado != "ACTIVE" and not (estado == "STARTED" and fila.get("trial") is True)
-        ):
-            continue
-        codigo = fila["subscriber_code"]
-        email = fila["subscriber"]["email"]
-        altas.append((codigo, clave_registro(email)))
-    for codigo, registro in altas:
-        historial.confirmar(codigo, registro)
-
-
-def total_fundadores(historial):
-    with closing(historial.conectar()) as db:
-        return db.execute("SELECT COUNT(*) FROM altas").fetchone()[0]
+def fundadores_agotado():
+    """True si ya no quedan cupos de Fundadores según el backend."""
+    datos = consulta(CUPOS_URL, {"Accept": "application/json"})
+    if not isinstance(datos.get("agotado"), bool):
+        raise ValueError("El backend no devolvió el estado de los cupos")
+    return datos["agotado"]
 
 
 class Registro(BaseHTTPRequestHandler):
-    bloqueo_cupos = Lock()
-    ultima_consulta_cupos = None
-
     def do_GET(self):
-        if self.path != "/cupos":
-            return self.responder(404, {"error": "Ruta inválida"})
-        try:
-            with self.bloqueo_cupos:
-                total = total_fundadores(self.server.historial)
-                ahora = time.monotonic()
-                ultima = Registro.ultima_consulta_cupos
-                if total < 100 and (ultima is None or ahora - ultima >= 30):
-                    Registro.ultima_consulta_cupos = ahora
-                    try:
-                        sincronizar(self.server.historial)
-                    except Exception as exc:
-                        LOG.warning("No se pudieron actualizar cupos: %s", type(exc).__name__)
-                    total = total_fundadores(self.server.historial)
-            return self.responder(200, {"confirmadas": min(total, 100), "agotado": total >= 100})
-        except Exception as exc:
-            LOG.warning("No se pudieron consultar los cupos: %s", type(exc).__name__)
-            return self.responder(503, {"error": "No se pudieron consultar los cupos."})
+        return self.responder(404, {"error": "Ruta inválida"})
 
     def log_message(self, formato, *args):
         return
@@ -180,11 +142,7 @@ class Registro(BaseHTTPRequestHandler):
             if plan in {"starter", "scaler"}:
                 oferta, monto = OFERTAS[plan]
             else:
-                sincronizar(self.server.historial)
-                oferta = self.server.historial.reservar(clave_registro(email))
-                if oferta is None:
-                    return self.responder(409, {"error": "Hay cupos de Fundadores pendientes de confirmación. Volvé a intentar más tarde."})
-                monto = 47 if oferta == FUNDADORES else OFERTAS["starter"][1]
+                oferta, monto = oferta_para(fundadores_agotado())
             desde = int(time.time())
             return self.responder(200, {"oferta": oferta, "mensualidad": monto, "desde": desde, "firma": firmar(email, oferta, desde)})
         except Exception as exc:
@@ -195,5 +153,4 @@ class Registro(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     servidor = ThreadingHTTPServer(("0.0.0.0", 8080), Registro)
-    servidor.historial = Historial(os.environ["GESICOM_HISTORIAL"])
     servidor.serve_forever()
