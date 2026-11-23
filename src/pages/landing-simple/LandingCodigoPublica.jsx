@@ -367,12 +367,15 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     const descuentoBoton = descuentoBotonPct(pedido?.descuento_boton_pct);
     const precio = aplicarDescuentoBoton(precioBase, descuentoBoton);
     cartState.agregarAlCarrito({ item, variante, oferta, cantidad, precio, descuentoBotonPct: descuentoBoton, precioAntesBoton: descuentoBoton ? precioBase : null });
-    if (pedido?.payment_method) cambiarMetodoPago(pedido.payment_method);
+    if (pedido?.payment_method) cambiarMetodoPago();
     if (pedido?.checkout_directo) {
       checkoutDirectoPendiente.current = true;
     } else if (pedido?.abrir !== false) cartState.setCarritoAbierto(true);
   }
 
+  // Sin pago anticipado (PagoPar se quitó el 2026-11-18): el único método
+  // del checkout es efectivo / contra entrega. Ignora a propósito lo que
+  // pida el código del comercio, incluido el METODO_LEGADO de landings viejas.
   function cambiarMetodoPago() {
     const elegido = 'efectivo';
     setPaymentMethodInicial(elegido);

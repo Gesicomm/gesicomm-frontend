@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ShoppingCart, Megaphone, ArrowRight, ShieldCheck, LockKeyhole } from 'lucide-react';
+import { ShoppingCart, Megaphone, MonitorSmartphone, ArrowRight, ShieldCheck, LockKeyhole } from 'lucide-react';
 import useSesion from '../../hooks/useSesion';
 import useRutasPlan from '../../hooks/useRutasPlan';
 import { PantallaErrorConexion, PantallaVerificandoSesion } from '../../components/EstadoSesion';
@@ -55,20 +55,21 @@ export default function SeleccionModulo() {
         <span className="module-card__description">Gestioná Gesicom, las solicitudes y los códigos de acceso.</span>
         <span className="module-card__action">Entrar al panel <ArrowRight size={19} aria-hidden="true" /></span>
       </button>}
-      {[{ruta:'fisico',nombre:'Gestión de E-commerce',Icon:ShoppingCart,texto:'Para vender productos físicos. Administrá tus tiendas, organizá pedidos y seguí entregas, costos y ganancias.'},
-        {ruta:'personal',nombre:'Marca Personal',Icon:Megaphone,texto:'Para ofrecer servicios o desarrollar tu marca personal. Prepará contenido, organizá tu agenda y acompañá a tus clientes.'}].map(({ruta,nombre,Icon,texto}) => {
+      {[{id:'fisico',ruta:'fisico',nombre:'Productos físicos',Icon:ShoppingCart,texto:'Para vender productos físicos. Administrá tus tiendas, organizá pedidos y seguí entregas, costos y ganancias.'},
+        {id:'digital',ruta:'personal',nombre:'Productos digitales',Icon:MonitorSmartphone,texto:'Para vender productos digitales o desarrollar tu marca personal. Prepará contenido, organizá tu agenda y acompañá a tus clientes.'},
+        {id:'servicios',ruta:'personal',nombre:'Servicios',Icon:Megaphone,texto:'Para ofrecer servicios o desarrollar tu marca personal. Prepará contenido, organizá tu agenda y acompañá a tus clientes.'}].map(({id,ruta,nombre,Icon,texto}) => {
         const permitido = acceso.rutas[ruta];
         const accion = permitido ? `Entrar a ${nombre}` : `Ver planes para ${nombre}`;
-        return <section className={`module-card ${permitido ? 'module-card--available' : 'module-card--locked'}`} key={ruta}>
+        return <section className={`module-card ${permitido ? 'module-card--available' : 'module-card--locked'}`} key={id}>
           <span className="module-card__icon"><Icon size={28} aria-hidden="true" /></span>
           <span className="module-card__status">{permitido ? 'Acceso incluido' : 'Otro espacio'}</span>
           <h2 className="module-card__title">{nombre}</h2>
           {!permitido && <p className="module-card__notice">No incluido en tu plan actual</p>}
-          <p className="module-card__description" id={`module-description-${ruta}`}>{texto}</p>
+          <p className="module-card__description" id={`module-description-${id}`}>{texto}</p>
           <span className="module-card__action" aria-hidden="true">
             {!permitido && <LockKeyhole size={17} />}{accion}<ArrowRight size={19} className="module-card__arrow" />
           </span>
-          <button type="button" className="module-card__hit" onClick={() => seleccionar(ruta)} aria-label={accion} aria-describedby={`module-description-${ruta}`} />
+          <button type="button" className="module-card__hit" onClick={() => seleccionar(ruta)} aria-label={accion} aria-describedby={`module-description-${id}`} />
         </section>;
       })}
     </div>

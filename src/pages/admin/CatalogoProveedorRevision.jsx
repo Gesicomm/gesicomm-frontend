@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ImageOff, PackageSearch, RefreshCw, X } from 'lucide-react';
+import { Calendar, Check, ImageOff, PackageSearch, RefreshCw, Search, X } from 'lucide-react';
 import API from '../../services/api';
 import './catalogoProveedorRevision.css';
 
@@ -15,15 +15,28 @@ import './catalogoProveedorRevision.css';
 
 const ESTADOS = { pendiente: 'Esperando revisión', aprobado: 'Aprobados', rechazado: 'Rechazados' };
 const ETIQUETAS = { pendiente: 'Pendiente', aprobado: 'Aprobado', rechazado: 'Rechazado' };
+const ORDENES = [
+  { value: 'recientes', label: 'Más recientes' },
+  { value: 'antiguos', label: 'Más antiguos' },
+  { value: 'nombre', label: 'Nombre A-Z' },
+  { value: 'precio_asc', label: 'Menor precio' },
+  { value: 'precio_desc', label: 'Mayor precio' },
+];
 const guaranies = valor => (valor == null ? 'Sin precio' : `Gs ${Number(valor).toLocaleString('es-PY')}`);
 const fecha = valor => (valor ? new Date(valor).toLocaleString('es-PY') : '—');
 
 export default function CatalogoProveedorRevision() {
   const [estado, setEstado] = useState('pendiente');
   const [proveedorId, setProveedorId] = useState('');
+  const [categoriaId, setCategoriaId] = useState('');
+  const [texto, setTexto] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const [ordenarPor, setOrdenarPor] = useState('recientes');
   const [page, setPage] = useState(1);
   const [revision, setRevision] = useState(0);
-  const [resultado, setResultado] = useState({ productos: [], proveedores: [], total: 0, total_paginas: 0, resumen: {} });
+  const [resultado, setResultado] = useState({ productos: [], proveedores: [], categorias: [], total: 0, total_paginas: 0, resumen: {} });
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
@@ -41,21 +54,65 @@ export default function CatalogoProveedorRevision() {
   const marcarRota = url => setRotas(prev => (prev.has(url) ? prev : new Set(prev).add(url)));
 
   useEffect(() => {
+    const termino = texto.trim();
+    if (termino === busqueda) return;
+    const timer = setTimeout(() => {
+      setBusqueda(termino);
+      setPage(1);
+      setDecision(null);
+    }, termino ? 220 : 0);
+    return () => clearTimeout(timer);
+  }, [texto, busqueda]);
+
+  useEffect(() => {
     let vigente = true;
     setCargando(true); setError('');
-    API.get('/publico/admin/solicitudes-proveedores/catalogo', {
-      params: { estado, page, limit: 20, ...(proveedorId ? { proveedorId } : {}) },
-    })
+    const filtros = {
+      estado,
+      page,
+      limit: 20,
+      ...(proveedorId ? { proveedorId } : {}),
+      ...(categoriaId ? { categoriaId } : {}),
+      ...(busqueda ? { busqueda } : {}),
+      ...(fechaDesde ? { fechaDesde } : {}),
+      ...(fechaHasta ? { fechaHasta } : {}),
+      ...(ordenarPor && ordenarPor !== 'recientes' ? { ordenarPor } : {}),
+    };
+    const peticion = typeof API.post === 'function'
+      ? API.post('/publico/admin/solicitudes-proveedores/catalogo/buscar', filtros)
+      : API.get('/publico/admin/solicitudes-proveedores/catalogo', { params: filtros });
+
+    peticion
       .then(({ data }) => {
         if (!vigente) return;
         if (page > 1 && !data.productos.length) { setPage(p => p - 1); return; }
-        setResultado(data);
+        setResultado({
+          productos: data.productos || [],
+          proveedores: data.proveedores || [],
+          categorias: data.categorias || [],
+          total: data.total || 0,
+          total_paginas: data.total_paginas || 0,
+          resumen: data.resumen || {},
+        });
         setElegidos([]);
       })
       .catch(err => { if (vigente) setError(err.response?.data?.message || 'No pudimos cargar el catálogo de los proveedores. Volvé a intentar.'); })
       .finally(() => { if (vigente) setCargando(false); });
     return () => { vigente = false; };
-  }, [estado, proveedorId, page, revision]);
+  }, [estado, proveedorId, categoriaId, busqueda, fechaDesde, fechaHasta, ordenarPor, page, revision]);
+
+  const hayFiltrosActivos = Boolean(texto.trim() || busqueda || proveedorId || categoriaId || fechaDesde || fechaHasta || ordenarPor !== 'recientes');
+  const limpiarFiltros = () => {
+    setTexto('');
+    setBusqueda('');
+    setProveedorId('');
+    setCategoriaId('');
+    setFechaDesde('');
+    setFechaHasta('');
+    setOrdenarPor('recientes');
+    setPage(1);
+    setDecision(null);
+  };
 
   useEffect(() => { if (decision) notaRef.current?.focus(); }, [decision]);
   useEffect(() => { if (aviso) avisoRef.current?.focus(); }, [aviso]);
@@ -109,16 +166,114 @@ export default function CatalogoProveedorRevision() {
       </button>)}
     </nav>
 
-    {resultado.proveedores.length > 0 && (
-      <div className="prov-catalogo-filtro">
+    <section className="prov-catalogo-filtros" aria-label="Filtros de productos">
+      <div className="prov-catalogo-campo prov-catalogo-campo--busqueda">
+        <label htmlFor="prov-catalogo-busqueda">Buscar producto</label>
+        <div className="prov-catalogo-input-wrap">
+          <Search size={16} className="prov-catalogo-input-icon" aria-hidden="true" />
+          <input
+            id="prov-catalogo-busqueda"
+            type="search"
+            value={texto}
+            disabled={guardando}
+            placeholder="Nombre, SKU o referencia…"
+            onChange={e => setTexto(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                const termino = texto.trim();
+                if (termino !== busqueda) {
+                  setBusqueda(termino);
+                  setPage(1);
+                  setDecision(null);
+                }
+              }
+            }}
+          />
+          {texto && (
+            <button
+              type="button"
+              className="prov-catalogo-input-clear"
+              aria-label="Limpiar búsqueda"
+              disabled={guardando}
+              onClick={() => { setTexto(''); setBusqueda(''); setPage(1); setDecision(null); }}
+            >
+              <X size={15} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="prov-catalogo-campo">
         <label htmlFor="prov-catalogo-proveedor">Proveedor</label>
         <select id="prov-catalogo-proveedor" value={proveedorId} disabled={guardando}
           onChange={e => { setProveedorId(e.target.value); setPage(1); setDecision(null); }}>
           <option value="">Todos los proveedores</option>
-          {resultado.proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre} ({p.pendientes})</option>)}
+          {resultado.proveedores.map(p => (
+            <option key={p.id} value={p.id}>
+              {p.nombre} ({p.en_estado ?? p.pendientes ?? 0})
+            </option>
+          ))}
         </select>
       </div>
-    )}
+
+      {resultado.categorias?.length > 0 && (
+        <div className="prov-catalogo-campo">
+          <label htmlFor="prov-catalogo-categoria">Categoría</label>
+          <select id="prov-catalogo-categoria" value={categoriaId} disabled={guardando}
+            onChange={e => { setCategoriaId(e.target.value); setPage(1); setDecision(null); }}>
+            <option value="">Todas las categorías</option>
+            {resultado.categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div className="prov-catalogo-campo">
+        <label htmlFor="prov-catalogo-desde">Desde fecha</label>
+        <div className="prov-catalogo-input-wrap">
+          <Calendar size={16} className="prov-catalogo-input-icon" aria-hidden="true" />
+          <input
+            id="prov-catalogo-desde"
+            type="date"
+            value={fechaDesde}
+            max={fechaHasta || undefined}
+            disabled={guardando}
+            onChange={e => { setFechaDesde(e.target.value); setPage(1); setDecision(null); }}
+          />
+        </div>
+      </div>
+
+      <div className="prov-catalogo-campo">
+        <label htmlFor="prov-catalogo-hasta">Hasta fecha</label>
+        <div className="prov-catalogo-input-wrap">
+          <Calendar size={16} className="prov-catalogo-input-icon" aria-hidden="true" />
+          <input
+            id="prov-catalogo-hasta"
+            type="date"
+            value={fechaHasta}
+            min={fechaDesde || undefined}
+            disabled={guardando}
+            onChange={e => { setFechaHasta(e.target.value); setPage(1); setDecision(null); }}
+          />
+        </div>
+      </div>
+
+      <div className="prov-catalogo-campo">
+        <label htmlFor="prov-catalogo-orden">Ordenar por</label>
+        <select id="prov-catalogo-orden" value={ordenarPor} disabled={guardando}
+          onChange={e => { setOrdenarPor(e.target.value); setPage(1); setDecision(null); }}>
+          {ORDENES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
+
+      {hayFiltrosActivos && (
+        <div className="prov-catalogo-filtros-acciones">
+          <button type="button" className="prov-catalogo-limpiar" disabled={guardando} onClick={limpiarFiltros}>
+            <X size={16} /> Limpiar filtros
+          </button>
+        </div>
+      )}
+    </section>
 
     {aviso && <p className="provider-notice" role="status" tabIndex={-1} ref={avisoRef}>{aviso}</p>}
 
@@ -126,8 +281,21 @@ export default function CatalogoProveedorRevision() {
       : error ? <div role="alert"><p>{error}</p><button type="button" onClick={() => setRevision(r => r + 1)}>Reintentar</button></div>
         : !resultado.productos.length ? <div className="web-requests-empty">
           <PackageSearch size={32} />
-          <h3>No hay productos {estado === 'pendiente' ? 'esperando revisión' : ESTADOS[estado].toLowerCase()}</h3>
-          <p>Cuando un proveedor cargue su catálogo con su API Key, cada producto llega acá antes de publicarse.</p>
+          <h3>
+            {hayFiltrosActivos
+              ? 'No encontramos productos con esos filtros'
+              : `No hay productos ${estado === 'pendiente' ? 'esperando revisión' : ESTADOS[estado].toLowerCase()}`}
+          </h3>
+          <p>
+            {hayFiltrosActivos
+              ? 'Probá cambiar el nombre, el rango de fechas o limpiar los filtros.'
+              : 'Cuando un proveedor cargue su catálogo con su API Key, cada producto llega acá antes de publicarse.'}
+          </p>
+          {hayFiltrosActivos && (
+            <button type="button" onClick={limpiarFiltros} style={{ marginTop: 12 }}>
+              Limpiar filtros
+            </button>
+          )}
         </div> : <>
 
           {estado === 'pendiente' && <div className="prov-catalogo-barra">

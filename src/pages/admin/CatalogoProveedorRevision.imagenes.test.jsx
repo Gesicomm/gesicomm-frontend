@@ -11,7 +11,7 @@ import React from 'react';
 import CatalogoProveedorRevision from './CatalogoProveedorRevision';
 import API from '../../services/api';
 
-vi.mock('../../services/api', () => ({ default: { get: vi.fn(), patch: vi.fn() } }));
+vi.mock('../../services/api', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
 
 const producto = (extra) => ({
   id: 1, nombre: 'Vaso térmico', sku: '2900002540895', descripcion: null, categoria: 'Bazar',
@@ -20,12 +20,21 @@ const producto = (extra) => ({
   proveedor: { id: 15, nombre: 'Casa Paraná', logo_url: null }, ...extra,
 });
 
-function montar(productos) {
-  API.get.mockResolvedValue({ data: {
-    productos, proveedores: [{ id: 15, nombre: 'Casa Paraná', pendientes: productos.length }],
-    total: productos.length, pagina: 1, total_paginas: 1,
-    resumen: { pendiente: productos.length, aprobado: 0, rechazado: 0 },
-  } });
+function montar(productos, extraData = {}) {
+  const payload = {
+    data: {
+      productos,
+      proveedores: [{ id: 15, nombre: 'Casa Paraná', pendientes: productos.length, en_estado: productos.length }],
+      categorias: [{ id: 4, nombre: 'Bazar' }, { id: 7, nombre: 'Decoración' }],
+      total: productos.length,
+      pagina: 1,
+      total_paginas: 1,
+      resumen: { pendiente: productos.length, aprobado: 0, rechazado: 0 },
+      ...extraData,
+    },
+  };
+  API.post.mockResolvedValue(payload);
+  API.get.mockResolvedValue(payload);
   return render(<CatalogoProveedorRevision />);
 }
 
@@ -60,5 +69,47 @@ describe('fotos en la cola de revisión', () => {
 
     await waitFor(() => expect(document.querySelectorAll('.prov-producto-galeria img')).toHaveLength(1));
     expect(document.querySelector('.prov-producto-galeria img').getAttribute('src')).toBe(buena);
+  });
+
+  it('permite filtrar por nombre, proveedor, categoría, fechas y orden y limpiar los filtros', async () => {
+    montar([producto()]);
+    expect(await screen.findByText('Vaso térmico')).toBeInTheDocument();
+
+    const inputBusqueda = screen.getByLabelText('Buscar producto');
+    fireEvent.change(inputBusqueda, { target: { value: 'Bonsai' } });
+    fireEvent.keyDown(inputBusqueda, { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(API.post).toHaveBeenLastCalledWith(
+        '/publico/admin/solicitudes-proveedores/catalogo/buscar',
+        expect.objectContaining({ busqueda: 'Bonsai', estado: 'pendiente', page: 1 }),
+      );
+    });
+
+    fireEvent.change(screen.getByLabelText('Desde fecha'), { target: { value: '2026-11-01' } });
+    fireEvent.change(screen.getByLabelText('Hasta fecha'), { target: { value: '2026-11-23' } });
+    fireEvent.change(screen.getByLabelText('Categoría'), { target: { value: '7' } });
+    fireEvent.change(screen.getByLabelText('Ordenar por'), { target: { value: 'nombre' } });
+
+    await waitFor(() => {
+      expect(API.post).toHaveBeenLastCalledWith(
+        '/publico/admin/solicitudes-proveedores/catalogo/buscar',
+        expect.objectContaining({
+          busqueda: 'Bonsai',
+          categoriaId: '7',
+          fechaDesde: '2026-11-01',
+          fechaHasta: '2026-11-23',
+          ordenarPor: 'nombre',
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Limpiar filtros/i }));
+    await waitFor(() => {
+      expect(API.post).toHaveBeenLastCalledWith(
+        '/publico/admin/solicitudes-proveedores/catalogo/buscar',
+        { estado: 'pendiente', page: 1, limit: 20 },
+      );
+    });
   });
 });

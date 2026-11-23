@@ -1246,8 +1246,10 @@ const EMBUDOS_TABS = [
   { id: 'formularios', label: 'Formularios Web' },
   { id: 'lead_organico', label: 'Lead Orgánico' },
   { id: 'lead_campana', label: 'Lead Campaña WhatsApp' },
-  { id: 'lead_sin_atribuir', label: 'Lead sin atribuir' },
-  { id: 'pago', label: 'Pago Web' },
+  // Ocultas por ahora (pedido de Martín, 2026-11-23). Los cálculos de
+  // embudosPorTab siguen intactos: para volver a mostrarlas, descomentar.
+  // { id: 'lead_sin_atribuir', label: 'Lead sin atribuir' },
+  // { id: 'pago', label: 'Pago Web' },
 ];
 
 /** Recuerda si un bloque del dashboard está minimizado — en sessionStorage,
