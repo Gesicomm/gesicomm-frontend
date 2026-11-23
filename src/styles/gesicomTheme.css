@@ -46,9 +46,9 @@
   --color-info: #096078;
   --color-info-fg: var(--gc-white);
   --color-overlay: rgb(8 4 54 / 65%);
-  --bg-sidebar: var(--gc-night);
-  --text-sidebar-foreground: var(--gc-ivory);
-  --text-muted-foreground: var(--gc-nav-muted);
+  --bg-sidebar: var(--color-surface);
+  --text-sidebar-foreground: var(--color-fg);
+  --text-muted-foreground: var(--color-fg-muted);
   --bg-primary: var(--color-primary);
   --bg-primary-soft: color-mix(in srgb, var(--color-primary) 12%, transparent);
   --border-border: var(--color-border);
@@ -76,10 +76,14 @@
   --color-danger-fg: var(--gc-night);
   --color-info: var(--gc-ice);
   --color-info-fg: var(--gc-night);
+  --bg-sidebar: var(--gc-night);
+  --text-sidebar-foreground: var(--gc-ivory);
+  --text-muted-foreground: var(--gc-nav-muted);
 }
 
-/* El menú usa roles propios porque permanece oscuro en ambos temas. */
-.gc-panel .gc-navigation {
+/* En modo oscuro el menú usa el azul noche de marca; en modo claro toma los
+   colores claros del panel. */
+:root[data-theme='dark'] .gc-panel .gc-navigation {
   --color-canvas: var(--gc-night);
   --color-surface: var(--gc-night);
   --color-surface-2: var(--gc-nav-raised);

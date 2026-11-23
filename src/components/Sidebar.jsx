@@ -125,7 +125,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
         }`}
       >
         <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4">
-          <Logo fondoPanel="oscuro" size={26} className="text-fg" />
+          <Logo fondoPanel="tema" size={26} className="text-fg" />
           <div className="flex items-center gap-1">
             <ThemeToggle className="h-8 w-8 !border-none" />
             <button
