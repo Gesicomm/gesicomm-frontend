@@ -583,9 +583,9 @@ const SECCIONES = [
               'Únicamente los datos necesarios para la integración autorizada.',
             ],
             [
-              'Proveedor de procesamiento de pagos',
-              'Cobro de la suscripción y emisión de comprobantes.',
-              'Datos de facturación. Los datos de la tarjeta los procesa el proveedor, no Gesicom.',
+              'Proveedores de procesamiento de pagos (Hotmart)',
+              'Cobro de la suscripción y emisión de comprobantes. Hotmart nos avisa el estado de cada compra y suscripción para asociarla a tu cuenta y gestionar tu acceso.',
+              'Hotmart puede enviarnos nombre, correo, teléfono, dirección o documento, según los datos que tenga. Guardamos solo nombre, correo y teléfono junto a la suscripción, más el estado y el importe de cada cobro. Los datos de la tarjeta los procesa el proveedor, no Gesicom.',
             ],
             [
               'Herramientas de analítica',
@@ -606,6 +606,11 @@ const SECCIONES = [
           notaAlPie="La lista nominal y actualizada de subprocesadores está disponible escribiendo a contacto@gesicomm.com. Notificamos con antelación razonable la incorporación de un subprocesador nuevo."
         />
 
+        <p>
+          Los datos que recibimos de la plataforma de pagos se usan solo para gestionar tu
+          suscripción y tu acceso. No los sumamos a campañas de correo ni de WhatsApp sin tu
+          consentimiento.
+        </p>
         <p>
           Todos nuestros subprocesadores están vinculados por contratos que les imponen
           obligaciones de confidencialidad y de seguridad equivalentes a las nuestras, y que les
@@ -724,6 +729,11 @@ const SECCIONES = [
               'Registros técnicos del servidor',
               'Hasta 90 días.',
               'Diagnóstico y seguridad.',
+            ],
+            [
+              'Avisos técnicos de la plataforma de pagos (estado de compra y suscripción, sin datos de tarjeta)',
+              'Hasta 90 días. El historial de cobros se conserva como documentación contable.',
+              'Conciliación de cobros y diagnóstico.',
             ],
             [
               'Solicitudes de eliminación de datos',
