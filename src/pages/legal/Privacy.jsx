@@ -262,8 +262,10 @@ const SECCIONES = [
             </li>
             <li>
               <strong>Si quitás la aplicación desde Meta:</strong> al recibir y validar la
-              notificación de Meta eliminamos las conexiones asociadas a ese usuario.
-              La eliminación de los datos históricos se puede solicitar por separado.
+              notificación de Meta eliminamos en el acto las conexiones y credenciales
+              asociadas a ese usuario. La misma solicitud incluye los mensajes, metadatos y
+              registros obtenidos de Meta con esa autorización, que eliminamos dentro del
+              plazo máximo de 30 días. No hace falta pedirlo por separado.
             </li>
             <li>
               <strong>Si solicitás eliminar tus datos o tu cuenta:</strong> la solicitud
@@ -316,7 +318,7 @@ const SECCIONES = [
           </p>
         </Subseccion>
 
-        <Subseccion titulo="4.7 Funciones en pruebas y agentes de IA">
+        <Subseccion titulo="4.7 Funciones en pruebas">
           <p>
             Las funciones en pruebas pueden procesar datos de las cuentas y activos
             expresamente autorizados para esas pruebas. La disponibilidad general de
@@ -324,12 +326,43 @@ const SECCIONES = [
             Si se amplía el tratamiento, actualizaremos la información correspondiente
             antes de ofrecer la función con ese nuevo alcance.
           </p>
+        </Subseccion>
+
+        <Subseccion titulo="4.8 Asistente de respuestas con IA">
           <p>
-            El tratamiento de conversaciones por un agente de IA depende de la función
-            configurada y autorizada en el espacio; no se deduce de la mera existencia de
-            una bandeja manual. Si se configura ese tratamiento, debe informarse antes de
-            transmitir datos el proveedor real de IA, qué contenido se le transmite, la
-            finalidad, la conservación y el procedimiento de eliminación.
+            En Marca Personal, cada negocio puede activar un asistente que redacta respuestas a
+            mensajes de WhatsApp, mensajes directos de Instagram y comentarios de Instagram.
+            Viene <strong>apagado</strong> y se activa canal por canal. Cuando una persona del
+            equipo atiende la conversación, el asistente no envía.
+          </p>
+          <TablaLegal
+            encabezados={['Aspecto', 'Detalle']}
+            filas={[
+              [
+                'Proveedor de IA',
+                'OpenAI, mediante su API. El motor que arma cada consulta corre en los servidores de Gesicom.',
+              ],
+              [
+                'Qué se transmite',
+                'El mensaje o comentario recibido, hasta 20 mensajes anteriores de esa conversación, recortados, el canal, y la información e instrucciones que el negocio cargó en el asistente. No se transmiten credenciales de Meta ni datos de otras conversaciones.',
+              ],
+              [
+                'Para qué',
+                'Redactar una respuesta a esa conversación o derivarla a una persona. No se usa para crear perfiles ni para publicidad.',
+              ],
+              [
+                'Conservación en Gesicom',
+                'La respuesta y su registro quedan en la bandeja de la marca junto con la conversación, con los mismos plazos y la misma eliminación que los demás mensajes.',
+              ],
+              [
+                'Conservación en el proveedor',
+                'Según las condiciones de la API de OpenAI, los datos enviados por la API no se usan para entrenar sus modelos y pueden conservarse por un plazo limitado para control de abusos.',
+              ],
+            ]}
+          />
+          <p>
+            El negocio que activa el asistente es responsable de informar a sus contactos que
+            pueden recibir respuestas automáticas.
           </p>
         </Subseccion>
       </>
@@ -581,6 +614,11 @@ const SECCIONES = [
               'Plataformas que vos conectás',
               'Meta, únicamente para los canales y activos que autorices.',
               'Únicamente los datos necesarios para la integración autorizada.',
+            ],
+            [
+              'Proveedor de inteligencia artificial (OpenAI)',
+              'Redactar respuestas del asistente de Marca Personal, solo en los canales donde el negocio lo activó.',
+              'El mensaje recibido, parte del historial de esa conversación y la información que el negocio cargó en el asistente. Ver la sección 4.8.',
             ],
             [
               'Proveedor de procesamiento de pagos',

@@ -57,7 +57,7 @@ const SECCIONES = [
             configuraciones.
           </li>
           <li>
-            <strong>Integraciones:</strong> las conexiones con plataformas de terceros que el Cliente habilita desde su cuenta. A la fecha de estos Términos, la única integración activa es la configuración manual del Meta Pixel y Conversions API. Gesicom está desarrollando integraciones adicionales mediante API que se incorporarán a esta definición cuando estén disponibles.
+            <strong>Integraciones:</strong> las conexiones con plataformas de terceros que el Cliente habilita desde su cuenta. Incluye la configuración del Meta Pixel y Conversions API y las conexiones con Meta descritas en la sección 8: cuentas publicitarias, Páginas de Facebook, cuentas profesionales de Instagram y cuentas de WhatsApp Business.
           </li>
           <li>
             <strong>Suscripción:</strong> el plan contratado, con su alcance funcional, sus límites
@@ -348,7 +348,7 @@ const SECCIONES = [
           </ul>
         </Subseccion>
 
-        <Subseccion titulo="8.2 Meta y Facebook Ads">
+        <Subseccion titulo="8.2 Meta: publicidad, Facebook, Instagram y WhatsApp">
           <p>
             Gesicom permite conectar los activos de Meta que autorices para usar las funciones
             habilitadas en tu espacio: cuentas publicitarias, Páginas de Facebook, cuentas
@@ -403,6 +403,30 @@ const SECCIONES = [
             de esa opción no garantiza su disponibilidad para cualquier número; Meta debe
             confirmar la elegibilidad durante el alta.
           </p>
+        </Subseccion>
+
+        <Subseccion titulo="8.4 Asistente de respuestas con IA">
+          <p>
+            En Marca Personal podés activar, canal por canal, un asistente que redacta respuestas
+            con inteligencia artificial a mensajes de WhatsApp, mensajes directos de Instagram y
+            comentarios de Instagram. Viene apagado: solo funciona en los canales donde lo
+            activás y deja de enviar mientras una persona de tu equipo atiende la conversación.
+          </p>
+          <ul>
+            <li>
+              Sos responsable de la información y las instrucciones que le cargás, y de revisar
+              que sus respuestas sean correctas para tu negocio.
+            </li>
+            <li>
+              Tenés que informar a tus contactos que pueden recibir respuestas automáticas y
+              ofrecerles hablar con una persona. El asistente respeta las ventanas de respuesta
+              de WhatsApp e Instagram.
+            </li>
+            <li>
+              Qué datos se transmiten al proveedor de IA y cuánto se conservan está en la{' '}
+              <Link to="/privacy">Política de Privacidad</Link>.
+            </li>
+          </ul>
         </Subseccion>
       </>
     ),

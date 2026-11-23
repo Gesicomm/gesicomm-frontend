@@ -303,6 +303,7 @@ const SECCIONES = [
             <li>Las conexiones con Meta y sus credenciales, si autorizaste una integración.</li>
             <li>Los mensajes y metadatos de WhatsApp e Instagram que Gesicom conserve en tu espacio.</li>
             <li>Los registros de publicaciones realizadas desde Gesicom y sus estados.</li>
+            <li>La configuración del asistente de IA y el registro de las respuestas que redactó.</li>
             <li>Los usuarios y empleados asociados a la cuenta.</li>
             <li>La configuración económica, los precios propios y los reportes.</li>
           </ul>
