@@ -22,3 +22,6 @@ jobs:
           git reset --hard FETCH_HEAD
           cd ~/gesicomm
           docker compose up -d --build frontend
+          # El servicio de registro (Hotmart) lee su código de registro/ por
+          # montaje de solo lectura; se reinicia para tomar la versión nueva.
+          docker restart gesicom-registro >/dev/null 2>&1 || echo "gesicom-registro no está corriendo"
