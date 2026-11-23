@@ -57,9 +57,9 @@
 .af-history td small { display: block; margin-top: 5px; color: var(--color-fg-muted); }
 .af-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
 .af-status { display: inline-block; width: fit-content; font-size: var(--ui-text-help, 0.875rem); padding: 4px 8px; border-radius: 4px; background: var(--color-surface-2); color: var(--color-fg-muted); }
-.af-status.activo, .af-status.pagada { color: #22a77a; background: rgba(34,167,122,.1); }
+.af-status.activo, .af-status.pagada { color: var(--color-success); background: color-mix(in srgb, var(--color-success) 10%, transparent); }
 .af-status.aprobada { color: var(--color-primary-text); background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
-.af-status.pendiente { color: #ba8a18; background: rgba(186,138,24,.1); }
+.af-status.pendiente { color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 10%, transparent); }
 .af-empty { display: grid; justify-items: center; text-align: center; gap: 10px; padding: 36px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-fg-muted); }
 .af-empty strong { color: var(--color-fg); font-size: 14px; }
 .af-empty p { font-size: var(--ui-text-help, 0.875rem); margin: 0; line-height: 1.6; }
