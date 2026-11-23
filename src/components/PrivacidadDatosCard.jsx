@@ -118,8 +118,8 @@ const PrivacidadDatosCard = () => {
                     type="button"
                     onClick={() => setAbierto(true)}
                     style={{
-                        background: 'transparent', border: '1px solid rgba(255,100,100,0.35)',
-                        color: '#ff6b6b', padding: '0.6rem 1.1rem', borderRadius: '8px',
+                        background: 'transparent', border: '1px solid color-mix(in srgb, var(--color-danger) 35%, transparent)',
+                        color: 'var(--color-danger)', padding: '0.6rem 1.1rem', borderRadius: '8px',
                         cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
                         fontSize: '0.85rem', fontWeight: 600
                     }}
@@ -187,7 +187,7 @@ const PrivacidadDatosCard = () => {
 
                     <div style={{ marginBottom: '1.1rem' }}>
                         <label htmlFor="password-eliminacion" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem' }}>
-                            Confirmá con tu contraseña <span style={{ color: '#ff6b6b' }}>*</span>
+                            Confirmá con tu contraseña <span style={{ color: 'var(--color-danger)' }}>*</span>
                         </label>
                         <input
                             id="password-eliminacion"
@@ -223,8 +223,8 @@ const PrivacidadDatosCard = () => {
 
                     {error && (
                         <div style={{
-                            background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.35)',
-                            padding: '0.85rem 1rem', color: '#ff6b6b', borderRadius: '8px',
+                            background: 'color-mix(in srgb, var(--color-danger) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--color-danger) 35%, transparent)',
+                            padding: '0.85rem 1rem', color: 'var(--color-danger)', borderRadius: '8px',
                             marginBottom: '1.1rem', fontSize: '0.85rem'
                         }}>
                             {error}
