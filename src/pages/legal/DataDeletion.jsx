@@ -194,8 +194,8 @@ const SECCIONES = [
           </li>
         </ol>
         <p>
-          Cuando lo hacés, Meta nos notifica automáticamente a través de nuestro{' '}
-          <strong>Data Deletion Callback</strong>. Al recibir esa notificación:
+          Cuando Meta nos remite una solicitud de eliminación a través de nuestro{' '}
+          <strong>Data Deletion Callback</strong>, seguimos este proceso:
         </p>
         <ul>
           <li>
@@ -209,11 +209,18 @@ const SECCIONES = [
             Devolvemos a Meta ese código y una <strong>URL pública de seguimiento</strong>, con el
             formato <code>gesicomm.com/data-deletion/estado/&lt;código&gt;</code>.
           </li>
-          <li>Revocamos los tokens y eliminamos los datos obtenidos de Meta.</li>
+          <li>
+            Eliminamos las conexiones y sus credenciales guardadas. La solicitud comprende
+            también los mensajes, metadatos y registros históricos obtenidos de Meta que
+            estén asociados a esa autorización.
+          </li>
+          <li>
+            La solicitud permanece pendiente hasta completar la verificación y la eliminación
+            de los datos correspondientes, con las excepciones descritas en esta página.
+            Recibir un código no significa que el borrado ya haya terminado. Se aplica el
+            mismo plazo máximo de 30 días.
+          </li>
         </ul>
-        <p className="mt-4 text-sm text-fg-muted">
-          (Flujo verificado en prueba controlada con cuenta de prueba, septiembre 2026)
-        </p>
         <p>
           La eliminación por esta vía alcanza a los datos obtenidos de las plataformas de Meta. Si
           además querés eliminar el resto de tu información en Gesicom, usá el método 1 o el
@@ -293,12 +300,19 @@ const SECCIONES = [
             <li>Los datos de tus clientes cargados en el CRM.</li>
             <li>Los envíos, couriers, tarifas y hojas de ruta.</li>
             <li>Las tiendas y landings publicadas, que dejan de estar accesibles.</li>
-            <li>El token de acceso de Meta, si conectaste la integración.</li>
+            <li>Las conexiones con Meta y sus credenciales, si autorizaste una integración.</li>
+            <li>Los mensajes y metadatos de WhatsApp e Instagram que Gesicom conserve en tu espacio.</li>
+            <li>Los registros de publicaciones realizadas desde Gesicom y sus estados.</li>
             <li>Los usuarios y empleados asociados a la cuenta.</li>
             <li>La configuración económica, los precios propios y los reportes.</li>
           </ul>
           <p className="mt-4 mb-6 text-sm text-fg-muted">
-            Esta lista corresponde al estado actual del producto (septiembre 2026). Cuando se activen los módulos de mensajería (WhatsApp Business, Instagram DM) o de IA, se ampliará para incluir conversaciones, medios y datos procesados por el agente.
+            La solicitud comprende los datos de las integraciones que hayas autorizado, también
+            cuando se hayan usado en pruebas. Desconectar un canal elimina su conexión guardada,
+            pero no equivale a borrar automáticamente el historial de mensajes ya registrado.
+            Podés incluir ese historial en una solicitud de eliminación por las vías de esta página.
+            El borrado de datos en Gesicom no elimina por sí solo las conversaciones que Meta,
+            el destinatario u otro participante conserven fuera de nuestra plataforma.
           </p>
         </Subseccion>
 
@@ -497,9 +511,10 @@ export default function DataDeletion() {
       descripcion="Cómo solicitar la eliminación completa de tus datos personales en Gesicom: desde tu cuenta, mediante el formulario público sin iniciar sesión, o desde la configuración de Meta. Plazo máximo de 30 días, con verificación de identidad y seguimiento por código."
       resumen="Podés pedir que eliminemos todos tus datos personales en cualquier momento, sin costo y sin dar explicaciones. Acá está el cómo, el cuándo y el qué se elimina exactamente."
       ruta="/data-deletion"
-      actualizado="2026-10-09"
+      actualizado="2026-11-23"
       vigenteDesde="2026-08-03"
       secciones={SECCIONES}
     />
   );
 }
+

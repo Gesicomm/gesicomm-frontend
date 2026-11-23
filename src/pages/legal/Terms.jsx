@@ -350,9 +350,22 @@ const SECCIONES = [
 
         <Subseccion titulo="8.2 Meta y Facebook Ads">
           <p>
-            Gesicom permite al Cliente ingresar su ID de Meta Pixel y token de Conversions API (CAPI) para enviar eventos desde su vitrina, y conectar sus cuentas publicitarias mediante OAuth con los permisos <code>ads_read</code>, <code>business_management</code> y <code>ads_management</code>. Gesicom consulta campañas y métricas y permite pausar o activar una campaña cuando el Cliente confirma la acción en Publicidad. No crea campañas en Meta ni modifica anuncios o presupuestos. El uso de esta integración está sujeto a las Meta Platform Terms, las
-            Developer Policies, las Community Standards y las Advertising Policies de Meta. En
-            particular:
+            Gesicom permite conectar los activos de Meta que autorices para usar las funciones
+            habilitadas en tu espacio: cuentas publicitarias, Páginas de Facebook, cuentas
+            profesionales de Instagram y cuentas de WhatsApp Business. Las funciones pueden
+            incluir consulta de campañas y métricas, creación y administración de campañas y
+            anuncios, publicación de contenido, gestión de comentarios y mensajes de Instagram
+            y mensajería de WhatsApp. La publicación y la creación de campañas requieren la
+            confirmación prevista en la interfaz. También podés configurar Meta Pixel y
+            Conversions API para enviar eventos desde tu vitrina.
+          </p>
+          <p>
+            La solicitud de acceso avanzado de la aplicación está en revisión. Las pruebas
+            realizadas con cuentas autorizadas no implican disponibilidad general para
+            clientes externos ni aprobación de Meta. El uso de las funciones disponibles
+            está sujeto a los permisos del activo conectado, a las Meta Platform Terms, las
+            Developer Policies, las Community Standards y las Advertising Policies de Meta.
+            En particular:
           </p>
           <ul>
             <li>
@@ -371,20 +384,24 @@ const SECCIONES = [
           </ul>
         </Subseccion>
 
-        <Subseccion titulo="8.3 WhatsApp: enlace, no integración">
+        <Subseccion titulo="8.3 WhatsApp: enlaces e integración de mensajería">
           <p>
-            Gesicom <strong>no usa la API de WhatsApp Business</strong>. El botón de tu vitrina
-            genera un enlace <code>wa.me</code> que abre la aplicación en el dispositivo de quien
-            te consulta, y la conversación transcurre directamente entre esa persona y vos.
+            El enlace de contacto de una vitrina abre WhatsApp y no implica por sí solo que
+            Gesicom procese la conversación. La integración API de WhatsApp Business es una
+            función separada: permite al negocio autorizado gestionar plantillas, enviar
+            mensajes y recibir respuestas desde la bandeja de su espacio de Gesicom.
           </p>
           <p>
-            En consecuencia, Gesicom no envía ni recibe mensajes, no accede a su contenido y no
-            responde por lo que ocurra en esas conversaciones. El cumplimiento de las políticas de
-            WhatsApp respecto del número que publicás, y de la normativa de protección de datos
-            aplicable a esos intercambios, corresponde exclusivamente a vos.
+            Su uso está sujeto a los permisos de conexión y a las políticas de WhatsApp,
+            incluidos el consentimiento, las plantillas y las reglas de respuesta aplicables.
+            Los datos que procesa y conserva la integración se describen en la{' '}
+            <Link to="/privacy">Política de Privacidad</Link> y en{' '}
+            <Link to="/data-deletion">Eliminación de Datos</Link>.
           </p>
           <p>
-            Gesicom está desarrollando un módulo de integración con WhatsApp Business API. Cuando esté disponible, se describirá en una subsección específica de esta sección 8, con los permisos, datos y responsabilidades correspondientes.
+            La coexistencia con la app del teléfono se encuentra en pruebas. La configuración
+            de esa opción no garantiza su disponibilidad para cualquier número; Meta debe
+            confirmar la elegibilidad durante el alta.
           </p>
         </Subseccion>
       </>
@@ -1007,12 +1024,13 @@ export default function Terms() {
   return (
     <LegalDoc
       titulo="Términos y Condiciones"
-      descripcion="Condiciones de uso del servicio Gesicom: registro y cuenta, responsabilidades, propiedad intelectual, integración con Meta para Facebook Ads, suscripciones y reembolsos, limitación de responsabilidad, ley aplicable y resolución de conflictos."
+      descripcion="Condiciones de uso del servicio Gesicom: registro y cuenta, responsabilidades, propiedad intelectual, integraciones con Meta para publicidad, Facebook, Instagram y WhatsApp Business, suscripciones y reembolsos, limitación de responsabilidad, ley aplicable y resolución de conflictos."
       resumen="Estas condiciones regulan la relación entre Gesicom y quienes usan la plataforma. Definen qué podés hacer, qué nos comprometemos a hacer y qué pasa cuando algo sale mal."
       ruta="/terms"
-      actualizado="2026-10-09"
+      actualizado="2026-11-23"
       vigenteDesde="2026-09-10"
       secciones={SECCIONES}
     />
   );
 }
+
