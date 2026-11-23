@@ -2,7 +2,6 @@
 .gc-services-standalone { min-height: 100vh; background: var(--color-canvas); }
 .gc-services-sitehead { max-width: 1440px; margin: 0 auto 32px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .gc-services-brand { color: var(--svc-ink); text-decoration: none; font-size: 18px; font-weight: 750; display: inline-flex; align-items: center; gap: 10px; }
-.gc-services-brandmark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: #0f3d2e; color: #fff; font-size: 20px; }
 .gc-services-back { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 650; color: var(--svc-ink); text-decoration: none; }
 .gc-services-back:hover { color: var(--color-primary-text); }
 .gc-services-hero, .gc-services-content { max-width: 1440px; margin-inline: auto; }

@@ -1,4 +1,11 @@
-import { useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
+
+/**
+ * Solo lo usa el prerender de las páginas legales en el build
+ * (src/prerender/paginasLegales.jsx): en el servidor los efectos no corren, así
+ * que el título y la descripción se entregan por acá para escribirlos en el HTML.
+ */
+export const SeoPrerender = createContext(null);
 
 export const SITIO = 'https://gesicomm.com';
 export const NOMBRE_SITIO = 'Gesicom';
@@ -37,6 +44,8 @@ export default function Seo({
   // nueva en cada render. Serializarlo evita que el efecto se vuelva a
   // ejecutar y reescriba el <head> en cada render del padre.
   const schemaSerializado = schema ? JSON.stringify(schema) : null;
+  const prerender = useContext(SeoPrerender);
+  if (prerender) Object.assign(prerender, { titulo: tituloCompleto, descripcion, url });
 
   useEffect(() => {
     const tituloAnterior = document.title;

@@ -64,6 +64,7 @@ const TutorialesSistema = lazy(() => import('./pages/admin/TutorialesSistema'));
 const EliminacionDatosAdmin = lazy(() => import('./pages/admin/EliminacionDatos'));
 const AdminPlanes = lazy(() => import('./pages/planes/AdminPlanes'));
 const MiAfiliado = lazy(() => import('./pages/afiliados/MiAfiliado'));
+const TutorEdicion = lazy(() => import('./pages/TutorEdicion'));
 const PartnerCertificado = lazy(() => import('./pages/partner/PartnerCertificado'));
 const AuthTracking = lazy(() => import('./pages/admin/AuthTracking'));
 const SeleccionModulo = lazy(() => import('./pages/auth/SeleccionModulo'));
@@ -576,6 +577,9 @@ function App() {
         } />
         <Route path="/mis-anuncios" element={
           <PanelComercio soloUsuario><Ads /></PanelComercio>
+        } />
+        <Route path="/tutor-edicion" element={
+          <PanelComercio soloUsuario><TutorEdicion /></PanelComercio>
         } />
         <Route path="/afiliados" element={
           <PanelComercio soloUsuario><MiAfiliado /></PanelComercio>

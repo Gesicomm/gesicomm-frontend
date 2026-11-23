@@ -72,7 +72,7 @@ const DashboardLayout = ({ children }) => {
             <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
             <div className="flex min-w-0 flex-1 flex-col">
-                <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4 lg:hidden">
+                <header className="gc-navigation flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4 lg:hidden">
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
@@ -82,7 +82,7 @@ const DashboardLayout = ({ children }) => {
                         >
                             <Menu size={20} />
                         </button>
-                        <Logo size={24} className="text-fg" />
+                        <Logo fondoPanel="oscuro" size={24} className="text-fg" />
                     </div>
                     <div className="flex items-center gap-2">
                         {campanita}

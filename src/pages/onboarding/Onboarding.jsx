@@ -380,7 +380,7 @@ export default function Onboarding() {
     <div className="onb-page">
       <div className="onb-card">
         <div className="onb-brand">
-          <Logo size={24} />
+          <Logo fondoPanel="tema" size={24} />
         </div>
 
         <div className="onb-steps" aria-label="Pasos del onboarding">

@@ -4,9 +4,12 @@
  * El wordmark se escribe **Gesicom**, con una sola m. El dominio sigue
  * siendo gesicomm.com (con dos): es una URL, no la marca — no unificar.
  *
- * El círculo hereda el color del tema. Check y punto usan el acento de marca.
+ * El círculo y el texto heredan el color del lugar donde se usa (en el menú
+ * oscuro quedan claros). Check y punto usan el verde de marca.
+ * `fondoPanel` se acepta por compatibilidad con los llamados existentes.
  */
-export default function Logo({ size = 32, conTexto = true, className = '' }) {
+// eslint-disable-next-line no-unused-vars
+export default function Logo({ size = 32, conTexto = true, className = '', fondoPanel }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <svg
@@ -25,8 +28,8 @@ export default function Logo({ size = 32, conTexto = true, className = '' }) {
           strokeWidth="13"
           strokeLinecap="butt"
         />
-        <path d="M26 52 L42 68 L77 31" fill="none" stroke="var(--color-brand-coral)" strokeWidth="13" strokeLinecap="square" strokeLinejoin="miter" />
-        <circle cx="83" cy="18" r="8" fill="var(--color-brand-coral)" />
+        <path d="M26 52 L42 68 L77 31" fill="none" stroke="var(--color-brand-coral, #22b573)" strokeWidth="13" strokeLinecap="square" strokeLinejoin="miter" />
+        <circle cx="83" cy="18" r="8" fill="var(--color-brand-coral, #22b573)" />
       </svg>
 
       {conTexto && (

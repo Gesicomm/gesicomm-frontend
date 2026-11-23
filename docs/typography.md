@@ -5,26 +5,29 @@ referencia en nuevos componentes y al modificar pantallas existentes.
 
 ## Identidad
 
-Plus Jakarta Sans Variable es la fuente del panel: profesional, cercana y
-consistente con la marca. Ya está autoalojada mediante Fontsource. Usar
-`var(--font-sans)` con los fallbacks definidos en `src/index.css`. No añadir una
-segunda fuente decorativa. Mantener los números financieros alineados cuando
-corresponda; reservar monoespaciada para código o registros técnicos.
+El panel usa Inter Variable en la interfaz e Instrument Sans Variable en
+titulares y cifras destacadas. Ambas fuentes se autoalojan mediante Fontsource.
+Usar los roles `--font-sans` y `--font-display` de
+`src/styles/gesicomTheme.css`. Alinear importes a la derecha y usar cifras tabulares.
 
 Las fuentes elegidas por un comercio para su tienda pública y las vistas previas
 de esas fuentes son independientes de la tipografía del panel.
 
 ## Escala
 
-| Uso | Tamaño | Peso | Interlineado |
+| Uso | Escritorio | Celular | Peso |
 | --- | --- | --- | --- |
-| Título de página | 28–32 px (1.75–2 rem) | 700–750 | 1.2–1.3 |
-| Título de sección | 20–22 px (1.25–1.375 rem) | 650–700 | 1.35 |
-| Título de tarjeta | 17–18 px (1.0625–1.125 rem) | 600–650 | 1.4 |
-| Párrafos y entradas de formulario | 16 px (1 rem) | 400–450 | 1.5–1.6 |
-| Botones y etiquetas | 14–16 px (0.875–1 rem) | 500–600 | 1.4–1.5 |
-| Ayudas y datos secundarios | 14 px (0.875 rem) | 400–500 | 1.5–1.6 |
-| Estados breves, hora y metadatos | 13 px (0.8125 rem) | 500–600 | 1.4–1.5 |
+| Título de página | 32 px | 26 px | 700 |
+| Título de sección | 28 px | 22 px | 700 |
+| Título de tarjeta | 18 px | 18 px | 600–700 |
+| Pestañas destacadas | 18 px | 16 px | 600–700 |
+| Descripción destacada | 17 px | 16 px | 400 |
+| Párrafos y campos | 16 px | 16 px | 400–500 |
+| Menú, botones y encabezados de tabla | 14 px | 14 px | 600–700 |
+| Datos de tabla | 14 px | 14 px | 400–500 |
+| Estados y notas | 13 px | 13 px | 500–600 |
+
+Usar un interlineado de 1,2 en títulos y 1,5 en párrafos.
 
 Tokens compartidos: `src/styles/settingsTypography.css`. No usar menos de 13 px
 para texto de interfaz que una persona deba leer. Una instrucción esencial es
@@ -37,8 +40,7 @@ texto de cuerpo, no una nota pequeña.
   detalles secundarios. No bajar opacidad al texto para crear jerarquía.
 - No resolver desbordamientos achicando letras: permitir saltos, apilar controles,
   ampliar tarjetas o mover opciones secundarias a un desplegable.
-- En celular conservar párrafos y campos de 16 px. Los títulos pueden pasar a
-  28 px; las ayudas siguen en 14 px.
+- En celular conservar párrafos y campos de 16 px.
 - Preferir frase normal sobre mayúsculas pequeñas en etiquetas. Mantener los
   bloques redondeados y separados, con espacio proporcionado al texto.
 - Conservar las flechas del recorrido de configuración de Mi negocio.

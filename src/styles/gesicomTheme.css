@@ -1,0 +1,222 @@
+/* Identidad del panel. Los portales montados en body reciben los mismos roles.
+   Paleta verde Gesicom (Negro, Bosque, Acento, Blanco y Gris) sobre la estructura nueva.
+   Los nombres --gc-* se conservan porque los consumen varias pantallas. */
+:root {
+  --gc-night: #0b0f0e;
+  --gc-ivory: #fafcfb;
+  --gc-white: #fff;
+  --gc-lavender: #eef2f0;
+  --gc-ice: #53d99b;
+  --gc-amber: #22b573;
+  --gc-red: #22b573;
+  --gc-red-dark: #b91c1c;
+  --gc-secondary: #435b4d;
+  --gc-line: #d5e2da;
+  --gc-nav-muted: #b2bdb5;
+  --gc-nav-raised: #232b26;
+  --font-sans: 'Inter Variable', Inter, system-ui, sans-serif;
+  --font-display: 'Instrument Sans Variable', 'Instrument Sans', var(--font-sans);
+  --color-canvas: var(--gc-ivory);
+  --color-surface: var(--gc-white);
+  --color-surface-2: var(--gc-lavender);
+  --color-surface-3: #e2e8e4;
+  --color-border: var(--gc-line);
+  --color-border-strong: #9db6a7;
+  --color-fg: var(--gc-night);
+  --color-fg-muted: var(--gc-secondary);
+  --color-fg-subtle: #526858;
+  --color-primary: var(--gc-amber);
+  --color-primary-hover: #36c88a;
+  --color-primary-active: #179c60;
+  --color-primary-fg: var(--gc-night);
+  --color-primary-text: #087d4b;
+  --color-accent: var(--gc-amber);
+  --color-accent-hover: #36c88a;
+  --color-accent-fg: var(--gc-night);
+  --color-accent-text: #087d4b;
+  --color-focus: #087d4b;
+  --color-selection: var(--gc-amber);
+  --color-selection-fg: var(--gc-night);
+  --color-placeholder: #85938d;
+  --color-placeholder-fg: var(--gc-white);
+  --color-success: #047857;
+  --color-success-fg: var(--gc-white);
+  --color-warning: #946000;
+  --color-warning-fg: var(--gc-white);
+  --color-danger: var(--gc-red-dark);
+  --color-danger-fg: var(--gc-white);
+  --color-info: #176a99;
+  --color-info-fg: var(--gc-white);
+  --color-overlay: rgb(11 15 14 / 65%);
+  --bg-sidebar: var(--gc-night);
+  --text-sidebar-foreground: var(--gc-ivory);
+  --text-muted-foreground: var(--gc-nav-muted);
+  --bg-primary: var(--color-primary);
+  --bg-primary-soft: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  --border-border: var(--color-border);
+}
+
+:root[data-theme='dark'] {
+  --color-canvas: #141916;
+  --color-surface: #1b221e;
+  --color-surface-2: #232b26;
+  --color-surface-3: #2d3730;
+  --color-border: #39473e;
+  --color-border-strong: #54645a;
+  --color-fg: #f0f3f0;
+  --color-fg-muted: #b2bdb5;
+  --color-fg-subtle: #99a69d;
+  --color-primary: #25b978;
+  --color-primary-hover: #38c98b;
+  --color-primary-active: #198e5b;
+  --color-primary-fg: #08120d;
+  --color-accent: #25b978;
+  --color-accent-hover: #38c98b;
+  --color-accent-fg: #08120d;
+  --color-selection: #25b978;
+  --color-selection-fg: #08120d;
+  --color-focus: var(--gc-ice);
+  --color-primary-text: #57d99e;
+  --color-accent-text: #57d99e;
+  --color-placeholder: #64736a;
+  --color-success: #49d5a0;
+  --color-success-fg: #08120d;
+  --color-warning: #d9ac51;
+  --color-warning-fg: #211a0a;
+  --color-danger: #f17b7d;
+  --color-danger-fg: #210e0e;
+  --color-info: #78b9d4;
+  --color-info-fg: #091319;
+  --color-overlay: rgb(7 12 9 / 68%);
+}
+
+/* El menú usa roles propios porque permanece oscuro en ambos temas. */
+.gc-panel .gc-navigation {
+  --color-canvas: var(--gc-night);
+  --color-surface: var(--gc-night);
+  --color-surface-2: var(--gc-nav-raised);
+  --color-surface-3: #2d3730;
+  --color-border: #39473e;
+  --color-border-strong: #54645a;
+  --color-fg: var(--gc-ivory);
+  --color-fg-muted: var(--gc-nav-muted);
+  --color-fg-subtle: var(--gc-nav-muted);
+  --color-primary-text: var(--gc-ice);
+  --color-accent-text: var(--gc-ice);
+  --color-danger: #f17b7d;
+  --color-focus: var(--gc-ice);
+  background-color: var(--gc-night);
+  color: var(--gc-ivory);
+}
+
+.gc-approved-logo {
+  display: block;
+  flex: none;
+  object-fit: contain;
+}
+
+.gc-approved-logo-wordmark {
+  inline-size: clamp(120px, 11vw, 152px);
+  block-size: auto;
+}
+
+.gc-brand-avatar {
+  display: block;
+  inline-size: 36px;
+  block-size: 36px;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--ui-radius-control);
+  background: var(--gc-night);
+}
+
+.gc-brand-avatar img { display: block; object-fit: contain; }
+
+@scope (body:has(.gc-panel, .onb-page, .st-page)) to (.tn-typography-preview, .monaco-editor, [data-typography-preview], .sitio-publico) {
+  :is(.gc-panel, .onb-page, .st-page) { font-family: var(--font-sans); }
+  :is(h1, h2, h3, h4) { font-family: var(--font-display); }
+  :is(.pt-td-num, .pt-th-num) { font-variant-numeric: tabular-nums; }
+  :is(.pt-td-num, .pt-th-num) { text-align: right; }
+  :is(.md-hero-numero, .md-rent-valor, .md-kpi-value) {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+  .md-rent-valor { text-align: right; }
+  p.md-mobile-intro { font-size: var(--ui-text-intro) !important; }
+  button:is(.md-tab, .tn-tab) { font-size: var(--ui-text-tab) !important; font-weight: 600; }
+  :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+  }
+  :is(input:not([type]), input:is([type='text'], [type='number'], [type='search'], [type='email'], [type='password'], [type='tel'], [type='url'], [type='date']), textarea, select):not(:disabled) {
+    background-color: var(--color-surface);
+    border-color: var(--color-border-strong);
+    color: var(--color-fg);
+  }
+  :is(input, textarea)::placeholder {
+    color: var(--color-fg-muted);
+    opacity: 1;
+  }
+  .form-error-banner {
+    color: var(--color-danger);
+    background: color-mix(in srgb, var(--color-danger) 7%, var(--color-surface));
+    border: 1px solid var(--color-danger);
+    border-radius: var(--ui-radius-control);
+    padding: var(--ui-space-3);
+  }
+  [aria-invalid='true']:not(:disabled) {
+    border-color: var(--color-danger);
+    border-style: dashed;
+  }
+  :is(.btn-primary, .btn-nuevo-pedido, .gc-button-primary, .btn-confirmar-pedido) {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-primary-fg);
+    font-weight: 700;
+  }
+  :is(.btn-primary, .btn-nuevo-pedido, .gc-button-primary, .btn-confirmar-pedido):hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    color: var(--color-primary-fg);
+  }
+  :is(.btn-secondary, .gc-button-secondary, .np-nav-action, .np-secondary-action) {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
+    color: var(--color-fg);
+    font-weight: 600;
+  }
+  :is(.btn-secondary, .gc-button-secondary, .np-nav-action, .np-secondary-action):hover:not(:disabled) {
+    background: var(--color-surface-2);
+    color: var(--color-fg);
+  }
+  .np-cancelar-pedido {
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
+  }
+  .gc-button-destructive {
+    background: var(--gc-red-dark);
+    border: 1px solid var(--gc-red-dark);
+    color: var(--gc-white);
+  }
+  .gc-button-destructive:hover:not(:disabled) { background: #991b1b; }
+  :is(.gc-explore, button[role='tab'][aria-selected='true'], .md-tab.activo, .tn-tab[aria-current='step'], .vit-filter-btn.active, .combo-filter-btn.active, .tab-btn.active, .lb-segmented button.active, .pl-tabs button.activo, .lms-step-nav-btn.active) {
+    background: var(--color-selection);
+    color: var(--color-selection-fg);
+  }
+  :is(thead, .pt-header, .pt-head) { background-color: var(--color-surface-2); }
+  :is(th, .pt-th) { color: var(--color-fg); font-weight: 700; }
+  :is(.pt-table, .modal-content, .np-modal-container, .gc-dialog) {
+    background-color: var(--color-surface);
+    color: var(--color-fg);
+  }
+  :is(.btn-primary, .btn-secondary, .btn-nuevo-pedido, .gc-button-primary, .gc-button-secondary, .gc-button-destructive, .gc-explore, .btn-confirmar-pedido, .np-nav-action, .np-secondary-action) {
+    border-radius: var(--ui-radius-control);
+  }
+  :is(button, input, select, textarea):disabled { cursor: not-allowed; }
+  button:disabled { opacity: .55; }
+  @media (pointer: coarse), (max-width: 767px) {
+    :is(.btn-primary, .btn-secondary, .btn-nuevo-pedido, .gc-button-primary, .gc-button-secondary, .gc-button-destructive, .gc-explore, .btn-confirmar-pedido, .np-nav-action, .np-secondary-action, .gc-navigation a, .gc-navigation button) {
+      min-height: var(--ui-touch-target);
+    }
+  }
+}

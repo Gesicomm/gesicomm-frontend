@@ -7,7 +7,7 @@ import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS, adaptarLogosGesicom } f
  * Footer legal de las landings y funnels públicos.
  *
  * El footer hereda el tema del comercio; la firma de Gesicom conserva
- * verde de marca y su símbolo propio.
+ * su símbolo y adapta el contraste al fondo del comercio.
  *
  * Sobre las opacidades: antes eran 0,4 para el texto y 0,6 para los enlaces,
  * y encima se multiplicaban por clases Tailwind (`opacity-80`, `opacity-75`),
@@ -15,7 +15,7 @@ import { CREDITO_GESICOM_CONTENIDO, CREDITO_GESICOM_CSS, adaptarLogosGesicom } f
  * eso todavía se leía; sobre el fondo oscuro de Tech (#0B1220) daba 2,4:1
  * contra un mínimo AA de 4,5:1 — el footer directamente desaparecía. Ahora
  * las opacidades del texto del comercio no se apilan. La firma de marca
- * usa verde sólido, independiente del tema.
+ * mantiene los colores de marca.
  */
 
 // Opacidades del texto del comercio; la marca tiene su propio color sólido.

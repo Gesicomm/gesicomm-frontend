@@ -48,6 +48,14 @@
     "gestionable": true
   },
   {
+    "clave": "tutor_edicion",
+    "nombre": "Tutor de edición con IA",
+    "ruta": "/tutor-edicion",
+    "icono": "Sparkles",
+    "seccion": "MARKETING",
+    "gestionable": false
+  },
+  {
     "clave": "comercial",
     "nombre": "Gestión Comercial",
     "ruta": "/mis-pedidos",

@@ -25,3 +25,4 @@ pnpm-debug.log*
 # Sistema operativo
 .DS_Store
 Thumbs.db
+dist-ssr/

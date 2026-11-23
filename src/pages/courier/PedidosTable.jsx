@@ -1344,6 +1344,7 @@ export function PedidosTable({
             <button
               type="button"
               className={vista === "tabla" ? "active" : ""}
+              aria-pressed={vista === "tabla"}
               onClick={() => setVista("tabla")}
             >
               <Table2 size={15} />
@@ -1352,6 +1353,7 @@ export function PedidosTable({
             <button
               type="button"
               className={vista === "kanban" ? "active" : ""}
+              aria-pressed={vista === "kanban"}
               onClick={() => setVista("kanban")}
             >
               <Columns3 size={15} />

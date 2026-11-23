@@ -33,6 +33,7 @@ const POR_RUTA = {
   '/finanzas/costos-gastos': () => import('../pages/finanzas/CostosGastos'),
   '/importada-de-china': () => import('../pages/importada-china/ImportadaChina'),
   '/afiliados': () => import('../pages/afiliados/MiAfiliado'),
+  '/tutor-edicion': () => import('../pages/TutorEdicion'),
   '/partner-certificado': () => import('../pages/partner/PartnerCertificado'),
   '/academia': () => import('../pages/educacion/EducacionView'),
   '/configuracion': () => import('../pages/Settings'),

@@ -37,11 +37,11 @@ function normalizarPlan(plan) {
 }
 
 const MASCOT_POSES = [
-  { id: 'guia', src: '/brand/mascot/guia-transparente.png', alt: 'Mascota de Gesicom' },
-  { id: 'pensando', src: '/brand/mascot/pensando-transparente.png', alt: 'Mascota de Gesicom pensando' },
-  { id: 'analizando', src: '/brand/mascot/analizando-transparente.png', alt: 'Mascota de Gesicom analizando' },
-  { id: 'confirmando', src: '/brand/mascot/confirmando-transparente.png', alt: 'Mascota de Gesicom confirmando' },
-  { id: 'alerta', src: '/brand/mascot/alerta-transparente.png', alt: 'Mascota de Gesicom en alerta' },
+  { id: 'guia', src: '/brand/identidad/gesicom-avatar.png', alt: 'Mascota de Gesicom' },
+  { id: 'pensando', src: '/brand/identidad/gesicom-avatar.png', alt: 'Mascota de Gesicom pensando' },
+  { id: 'analizando', src: '/brand/identidad/gesicom-avatar.png', alt: 'Mascota de Gesicom analizando' },
+  { id: 'confirmando', src: '/brand/identidad/gesicom-avatar.png', alt: 'Mascota de Gesicom confirmando' },
+  { id: 'alerta', src: '/brand/identidad/gesicom-avatar.png', alt: 'Mascota de Gesicom en alerta' },
 ];
 
 const DEFAULT_BENEFITS = [

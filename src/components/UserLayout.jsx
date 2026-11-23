@@ -350,7 +350,12 @@ const UserLayout = ({ children }) => {
 
   const renderSidebarDinamico = () => {
     const contexto = 'ecommerce';
-    const modulosBase = progresoSidebar.modulos;
+    const tutor = MODULOS_ACCESO.find((modulo) => modulo.clave === 'tutor_edicion');
+    const modulosBase = progresoSidebar.modulos
+      .filter((item) => item.path !== tutor.ruta)
+      .flatMap((item) => item.path === '/mis-anuncios' && item.contexto === contexto
+        ? [item, { ...item, path: tutor.ruta, label: tutor.nombre, icono: tutor.icono }]
+        : [item]);
     const grupos = modulosBase
       .filter((item) => item.contexto === contexto)
       // La configuración de flujos se abre desde Gestión Comercial.
@@ -395,7 +400,7 @@ const UserLayout = ({ children }) => {
       )}
 
       <aside
-        className={`sidebar fixed inset-y-0 left-0 transition-transform duration-200 ease-out z-40 ${
+        className={`gc-navigation sidebar fixed inset-y-0 left-0 transition-transform duration-200 ease-out z-40 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } ${
           desktopClosed ? 'lg:hidden' : 'lg:static lg:translate-x-0'
@@ -404,7 +409,7 @@ const UserLayout = ({ children }) => {
       >
         <header className="sidebar-header" style={{ borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-            <Logo size={26} className="text-fg" />
+            <Logo fondoPanel="oscuro" size={26} className="text-fg" />
             <span style={{ fontSize: 'var(--ui-text-meta, .8125rem)', color: "var(--color-fg-muted)", textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
               Panel de Usuario
             </span>
@@ -569,14 +574,9 @@ const UserLayout = ({ children }) => {
             title="Editar perfil y contraseña"
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
-              <div style={{
-                width: '36px', height: '36px', borderRadius: '12px',
-                background: "color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-primary-text)",
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 'var(--ui-text-meta, .8125rem)', fontWeight: 'bold', flexShrink: 0
-              }}>
-                {usuario?.nombre ? usuario.nombre.slice(0, 1).toUpperCase() : <User size={12} />}
-              </div>
+              <span className="gc-brand-avatar" aria-hidden="true">
+                  <img src="/brand/identidad/gesicom-avatar.png" alt="" width="36" height="36" />
+                </span>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <span style={{
                   display: 'block',
@@ -617,7 +617,7 @@ const UserLayout = ({ children }) => {
       </aside>
 
       <div className="flex min-w-0 min-h-0 flex-1 flex-col">
-        <header className={`flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4 ${desktopClosed ? '' : 'lg:hidden'}`}>
+        <header className={`gc-navigation flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4 ${desktopClosed ? '' : 'lg:hidden'}`}>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -633,7 +633,7 @@ const UserLayout = ({ children }) => {
             >
               <Menu size={20} />
             </button>
-            <Logo size={24} className="text-fg" />
+            <Logo fondoPanel="oscuro" size={24} className="text-fg" />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <NotificationBell 

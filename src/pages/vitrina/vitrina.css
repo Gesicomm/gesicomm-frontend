@@ -164,9 +164,9 @@
 .vit-header-text {}
 
 .vit-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-.vit-export-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; border: 1px solid var(--color-success); border-radius: 9px; background: var(--color-success); color: var(--color-success-fg); font: inherit; font-size: var(--ui-text-help, 0.875rem); font-weight: 600; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 5px #04785720; transition: background 150ms, box-shadow 150ms, opacity 150ms; }
-.vit-export-button:hover:not(:disabled) { filter: brightness(0.92); box-shadow: 0 3px 8px #04785730; }
-.vit-export-button:focus-visible { outline: 3px solid #04785750; outline-offset: 3px; }
+.vit-export-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; border: 1px solid var(--color-border-strong); border-radius: var(--ui-radius-control); background: var(--color-surface); color: var(--color-fg); font: inherit; font-size: var(--ui-text-label); font-weight: 600; white-space: nowrap; cursor: pointer; transition: background 150ms, opacity 150ms; }
+.vit-export-button:hover:not(:disabled) { background: var(--color-surface-2); }
+.vit-export-button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 .vit-export-button:disabled { opacity: .7; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .vit-export-button { transition: none; } }
 .vit-meta-export-anchor { position: relative; }
@@ -181,7 +181,7 @@
 .vit-meta-icon-button:hover { background: var(--vit-card-hover-bg); color: var(--vit-text); }
 .vit-meta-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; font-size: var(--ui-text-help, 0.875rem); }
 .vit-meta-badge { padding: 3px 7px; border-radius: 5px; color: var(--vit-muted); background: var(--vit-card-hover-bg); font-size: var(--ui-text-help, 0.875rem); font-weight: 600; }
-.vit-meta-badge.active { color: #047857; background: #10b9811a; }
+.vit-meta-badge.active { color: var(--color-success); background: color-mix(in srgb, var(--color-success) 10%, transparent); }
 .vit-meta-url-label { display: block; margin-bottom: 7px; font-size: var(--ui-text-help, 0.875rem); color: var(--vit-muted); }
 .vit-meta-url { display: flex; border: 1px solid var(--vit-border); border-radius: 8px; overflow: hidden; }
 .vit-meta-url input { width: 100%; min-width: 0; padding: 10px; border: 0; background: var(--vit-bg); color: var(--vit-text); font-size: var(--ui-text-help, 0.875rem); text-overflow: ellipsis; }

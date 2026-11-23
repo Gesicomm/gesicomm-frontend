@@ -225,7 +225,7 @@ const SECCIONES = [
             ],
             [
               'Data Deletion Callback',
-              'Implementado. Meta nos notifica cuando alguien quita la aplicación; verificamos el signed_request por HMAC-SHA256 contra el App Secret y devolvemos url y confirmation_code.',
+              'Implementado. Verificamos el signed_request por HMAC-SHA256 contra el App Secret, eliminamos en el acto las conexiones y credenciales de ese usuario de Meta, devolvemos url y confirmation_code, y completamos la eliminación de mensajes y registros asociados dentro de los 30 días.',
             ],
             [
               'Uso limitado de los datos de la plataforma',
@@ -237,11 +237,11 @@ const SECCIONES = [
             ],
             [
               'Permisos mínimos necesarios',
-              'Actualmente no se solicita ningún permiso a través de OAuth. Las futuras integraciones solicitarán únicamente los permisos que su funcionalidad requiera.',
+              'Cada conexión pide solo los permisos de su canal: publicidad, Facebook e Instagram, o WhatsApp Business. El detalle por permiso está en la sección 4.1.',
             ],
             [
               'Eliminación al revocar el permiso',
-              'Al desconectar la integración se revocan y eliminan los tokens de inmediato y cesa la sincronización. (Preparado para cuando se activen integraciones con token; verificado en prueba controlada).',
+              'Al desconectar una integración se elimina su credencial y cesa el acceso nuevo. Los mensajes y registros ya guardados se eliminan cuando se pide la eliminación de datos o de la cuenta.',
             ],
             [
               'Seguridad de los datos de la plataforma',
@@ -256,15 +256,48 @@ const SECCIONES = [
 
         <Subseccion titulo="4.1 Alcance real de nuestra integración">
           <p>
-            A la fecha de esta política (septiembre de 2026), Gesicom no tiene activa ninguna integración que consuma datos de la plataforma de Meta mediante OAuth. Únicamente permite al cliente ingresar su propio ID de Meta Pixel y token CAPI para enviar eventos desde su vitrina hacia Meta. No usamos Facebook Login, la Marketing API, la Pages API, la Instagram Graph API ni la WhatsApp Business Platform.
+            El negocio conecta sus activos de Meta mediante el inicio de sesión de Facebook, como
+            un paso aparte del acceso a Gesicom. Cada conexión pide solo los permisos de su canal:
+          </p>
+          <TablaLegal
+            encabezados={['Canal', 'Permisos', 'Para qué']}
+            filas={[
+              [
+                'Publicidad (Marketing API)',
+                'ads_read, ads_management, business_management y el nivel de acceso a la Marketing API',
+                'Listar portafolios y cuentas publicitarias, consultar campañas y métricas, y ejecutar las acciones que el negocio confirma en la interfaz.',
+              ],
+              [
+                'Páginas de Facebook',
+                'pages_show_list, pages_read_engagement, pages_manage_posts',
+                'Elegir la Página de la marca, listar sus publicaciones y publicar contenido.',
+              ],
+              [
+                'Instagram profesional (API de Instagram con inicio de sesión de Facebook)',
+                'instagram_basic, instagram_content_publish, instagram_manage_comments, instagram_manage_messages, instagram_manage_insights, pages_manage_metadata',
+                'Identificar la cuenta vinculada a la Página, publicar, gestionar comentarios, leer y responder mensajes directos y consultar métricas.',
+              ],
+              [
+                'WhatsApp Business Platform',
+                'whatsapp_business_management, whatsapp_business_messaging',
+                'Elegir el número del negocio, gestionar plantillas y enviar y recibir mensajes.',
+              ],
+              [
+                'Perfil básico',
+                'public_profile',
+                'Identificar al usuario de Meta que autoriza la conexión.',
+              ],
+            ]}
+          />
+          <p>
+            Además, el negocio puede cargar su propio ID de Meta Pixel y su token de Conversions
+            API para enviar eventos desde su vitrina. La solicitud de acceso avanzado de la
+            aplicación está en revisión: hasta su aprobación, las funciones que lo requieren solo
+            operan con cuentas que tienen un rol en la aplicación.
           </p>
           <p>
-            Gesicom está desarrollando módulos adicionales que usarán las APIs de Meta. Cada módulo se describirá en esta sección cuando esté activo, detallando los productos, permisos y datos involucrados.
-          </p>
-          <p>
-            Lo declaramos explícitamente porque el principio de minimización de permisos es un
-            requisito de las Developer Policies, y porque solicitar alcances que no se usan es una
-            de las causas más frecuentes de rechazo en la revisión de aplicaciones.
+            Qué datos se obtienen con cada permiso, cuánto se conservan y cómo se eliminan está en
+            la <Link to="/privacy">Política de Privacidad</Link>.
           </p>
         </Subseccion>
       </>
@@ -475,7 +508,7 @@ export default function Compliance() {
       descripcion="Cómo cumple Gesicom con el RGPD, la CCPA/CPRA, las Meta Platform Terms y la normativa de protección de datos de Latinoamérica, incluyendo el Data Deletion Callback de Meta, los DPA y la gestión de subprocesadores."
       resumen="Un resumen del marco normativo que nos aplica y de las medidas concretas con las que lo cumplimos. Incluye lo que sí tenemos y, con la misma claridad, lo que todavía no."
       ruta="/compliance"
-      actualizado="2026-09-24"
+      actualizado="2026-11-23"
       vigenteDesde="2026-08-03"
       secciones={SECCIONES}
     />
