@@ -207,6 +207,39 @@ function TiendaSegunHostname({ vistaCodigo = null, fuera }) {
   return esHostnameDeTienda() ? <LandingPublica vistaCodigo={vistaCodigo} /> : fuera;
 }
 
+// En gesicomm.com la portada es la página estática que sirve nginx
+// (registro/web/inicio.html). Si se llega a "/" navegando dentro de la app
+// (logo, "Volver" del login), React mostraba la home vieja de Landing.jsx
+// sin pedirle nada al servidor; recargar trae la portada real.
+const PORTADA_ESTATICA = /^(www\.)?gesicomm\.com$/i;
+
+const CLAVE_RECARGA_PORTADA = 'gesicom:recarga-portada';
+
+// Si recién recargamos y el servidor igual devolvió la app, no insistir.
+function recargaRecientePortada() {
+  try {
+    const ultima = Number(sessionStorage.getItem(CLAVE_RECARGA_PORTADA) || 0);
+    return Date.now() - ultima < 10000;
+  } catch {
+    return false;
+  }
+}
+
+function IrAPortadaEstatica() {
+  useEffect(() => {
+    try { sessionStorage.setItem(CLAVE_RECARGA_PORTADA, String(Date.now())); } catch { /* sin almacenamiento */ }
+    window.location.reload();
+  }, []);
+  return null;
+}
+
+function PortadaPrincipal() {
+  if (typeof window !== 'undefined' && PORTADA_ESTATICA.test(window.location.hostname) && !recargaRecientePortada()) {
+    return <IrAPortadaEstatica />;
+  }
+  return <PaginaPublica><Landing /></PaginaPublica>;
+}
+
 const FUERA_DE_TIENDA = <PaginaPublica><NotFound /></PaginaPublica>;
 
 function CatalogoSegunHostname() {
@@ -271,7 +304,7 @@ function App() {
             POST https://api.gesicomm.com/api/meta/data-deletion-callback
             ───────────────────────────────────────────────────────── */}
         <Route path="/test-builder" element={<TestRenderer />} />
-        <Route path="/" element={<TiendaSegunHostname fuera={<PaginaPublica><Landing /></PaginaPublica>} />} />
+        <Route path="/" element={<TiendaSegunHostname fuera={<PortadaPrincipal />} />} />
         <Route path="/privacy" element={<PaginaPublica><Privacy /></PaginaPublica>} />
         <Route path="/terms" element={<PaginaPublica><Terms /></PaginaPublica>} />
         <Route path="/shopify" element={<ShopifyIntegration />} />
