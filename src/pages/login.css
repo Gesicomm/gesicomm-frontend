@@ -21,6 +21,16 @@
 
 .login-header-brand { color: var(--color-fg); text-decoration: none; }
 .login-header-brand > span { gap: 9px; }
+.login-header-brand > span::after {
+  content: 'TU NEGOCIO, EN MARCHA';
+  margin-left: 12px;
+  padding-left: 18px;
+  border-left: 1px solid var(--color-border);
+  color: var(--color-fg-muted);
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: .025em;
+}
 .login-header-actions { display: flex; align-items: center; gap: 12px; }
 .login-header-actions > button { width: 44px; height: 44px; }
 .login-back {
