@@ -17,13 +17,42 @@ import {
 import { landingSimpleService } from '../../../services/landingSimpleService';
 import { apiBaseURL } from '../../../utils/apiBase';
 
+const CUENTA_TOKEN_KEY = 'gesicomm:mcp-token:cuenta';
+
+function leerTokenAlmacenado(tokenStorageKey) {
+  for (const storage of [window.localStorage, window.sessionStorage]) {
+    try {
+      const porTienda = storage?.getItem(tokenStorageKey);
+      if (porTienda) return porTienda;
+      const porCuenta = storage?.getItem(CUENTA_TOKEN_KEY);
+      if (porCuenta) return porCuenta;
+    } catch {}
+  }
+  return '';
+}
+
+function guardarTokenAlmacenado(tokenStorageKey, valor) {
+  let ok = false;
+  for (const storage of [window.localStorage, window.sessionStorage]) {
+    try {
+      if (valor) {
+        storage?.setItem(tokenStorageKey, valor);
+        storage?.setItem(CUENTA_TOKEN_KEY, valor);
+      } else {
+        storage?.removeItem(tokenStorageKey);
+        storage?.removeItem(CUENTA_TOKEN_KEY);
+      }
+      ok = true;
+    } catch {}
+  }
+  return ok;
+}
+
 export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoProductos = false }) {
   const landingId = landing?.id || '';
   const tiendaId = tienda?.id || landing?.tienda_id || '';
   const tokenStorageKey = `gesicomm:mcp-token:${tiendaId || 'cuenta'}`;
-  const [token, setToken] = useState(() => {
-    try { return window.sessionStorage.getItem(tokenStorageKey) || ''; } catch { return ''; }
-  });
+  const [token, setToken] = useState(() => leerTokenAlmacenado(tokenStorageKey));
   const [cargandoToken, setCargandoToken] = useState(false);
   const [copiado, setCopiado] = useState('');
   const [error, setError] = useState('');
@@ -33,7 +62,8 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
   const [conexion, setConexion] = useState({ cargando: true, conectada: false });
 
   useEffect(() => {
-    try { setToken(window.sessionStorage.getItem(tokenStorageKey) || ''); } catch { setToken(''); }
+    const guardado = leerTokenAlmacenado(tokenStorageKey);
+    if (guardado) setToken(guardado);
   }, [tokenStorageKey]);
 
   useEffect(() => {
@@ -44,7 +74,13 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
       consultaEnCurso = true;
       try {
         const estado = await landingSimpleService.estadoConexionMCP();
-        if (activo) setConexion({ cargando: false, conectada: Boolean(estado.conectada) });
+        if (activo) {
+          setConexion({ cargando: false, conectada: Boolean(estado?.conectada) });
+          if (estado?.token) {
+            setToken(estado.token);
+            guardarTokenAlmacenado(tokenStorageKey, estado.token);
+          }
+        }
       } catch {
         if (activo) setConexion({ cargando: false, conectada: false });
       } finally {
@@ -60,7 +96,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
       window.removeEventListener('focus', alVolver);
       document.removeEventListener('visibilitychange', alVolver);
     };
-  }, []);
+  }, [tokenStorageKey]);
 
   const apiUrl = (() => {
     const base = apiBaseURL();
@@ -79,7 +115,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
       const res = await landingSimpleService.generarTokenMCP(tiendaId);
       if (res?.token) {
         setToken(res.token);
-        try { window.sessionStorage.setItem(tokenStorageKey, res.token); } catch {
+        if (!guardarTokenAlmacenado(tokenStorageKey, res.token)) {
           setError('No se pudo guardar la clave en este navegador. Copiá los datos de conexión antes de salir.');
         }
         if (esRegeneracion) {
@@ -106,7 +142,7 @@ export default function ConectarMcpPanel({ tienda, landing, onSincronizar, modoP
     try {
       await landingSimpleService.revocarTokenMCP();
       setToken('');
-      try { window.sessionStorage.removeItem(tokenStorageKey); } catch {}
+      guardarTokenAlmacenado(tokenStorageKey, '');
       setConexion({ cargando: false, conectada: false });
       setMensajeExito('Se quitó el acceso del asistente.');
       setTimeout(() => setMensajeExito(''), 5000);
