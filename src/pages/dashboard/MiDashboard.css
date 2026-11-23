@@ -295,9 +295,14 @@
 
 /* ── Hero: plata confirmada ────────────────────────────────────────── */
 .md-hero {
-  background:
-    radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--md-confirmado) 12%, transparent), transparent 60%),
-    linear-gradient(155deg, var(--md-surface-2) 0%, var(--md-surface) 100%);
+  --md-ink: var(--gc-ivory);
+  --md-ink-muted: var(--gc-nav-muted);
+  --md-ink-faint: var(--gc-nav-muted);
+  --md-surface-alt: var(--gc-nav-raised);
+  --md-confirmado: var(--gc-ice);
+  --color-focus: var(--gc-ice);
+  background: var(--gc-night);
+  color: var(--md-ink);
   border: 1px solid var(--md-border);
   border-radius: 8px;
   padding: clamp(1.2rem, 2.3vw, 2rem);
@@ -343,7 +348,7 @@
   font-weight: 560;
   font-size: clamp(2.4rem, 4.5vw, 4.8rem);
   letter-spacing: 0;
-  line-height: 1;
+  line-height: var(--ui-leading-heading);
   color: var(--md-ink);
   margin: 0.4rem 0 0;
   font-variant-numeric: tabular-nums;
@@ -1353,9 +1358,6 @@
    sin un halo verde detrás que ensucie el fondo del dashboard. */
 :root[data-theme='dark'] .user-layout-container .md-page {
   --md-confirmado-soft: var(--md-surface-2);
-}
-:root[data-theme='dark'] .user-layout-container .md-page .md-hero {
-  background: var(--md-surface);
 }
 :root[data-theme='dark'] .user-layout-container .md-page .md-rent-item.md-rent-destacado {
   border-color: var(--md-border);

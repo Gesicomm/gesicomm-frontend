@@ -25,7 +25,7 @@ export default function ConfirmDialog({
       role="presentation"
     >
       <div
-        className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
+        className="gc-dialog w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="alertdialog"
         aria-modal="true"
@@ -45,7 +45,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="rounded-md border border-border px-3.5 py-2 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:cursor-not-allowed disabled:opacity-60"
+            className="gc-button-secondary px-3.5 py-2 transition-colors"
           >
             {cancelLabel}
           </button>
@@ -53,8 +53,8 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`rounded-md px-3.5 py-2 text-sm font-semibold text-fg transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-              danger ? 'bg-danger hover:bg-danger/90' : 'bg-primary hover:bg-primary-hover'
+            className={`px-3.5 py-2 font-semibold transition-colors ${
+              danger ? 'gc-button-destructive' : 'gc-button-primary'
             }`}
           >
             {loading ? 'Procesando…' : confirmLabel}

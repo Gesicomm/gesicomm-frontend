@@ -114,7 +114,7 @@ export default function ResetPassword() {
         <section className="w-full max-w-[460px]">
           <div className="rounded-xl border border-border bg-surface/90 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.34)] backdrop-blur sm:p-8">
             <Link to="/" className="mb-7 flex justify-center text-fg">
-              <Logo size={34} />
+              <Logo fondoPanel="tema" size={34} />
             </Link>
 
             {error && (

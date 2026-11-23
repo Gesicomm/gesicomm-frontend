@@ -1418,7 +1418,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
 
         {/* Error de guardado (servidor) */}
         {submitError && (
-          <div className="form-error-banner" style={{ margin: '1rem 1.5rem 0' }}>
+          <div role="alert" className="form-error-banner" style={{ margin: '1rem 1.5rem 0' }}>
             <AlertCircle size={18} />
             <span>{submitError}</span>
           </div>
@@ -1426,7 +1426,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, client
 
         {/* Banner Global de Errores de validación */}
         {Object.values(errors).some(Boolean) && (
-          <div className="form-error-banner" style={{ margin: '1rem 1.5rem 0' }}>
+          <div role="alert" className="form-error-banner" style={{ margin: '1rem 1.5rem 0' }}>
             <AlertCircle size={18} />
             <div>
               <strong>Por favor corrige los siguientes campos:</strong>

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Check, Pause, Play } from 'lucide-react';
 import './GesicomMascot.css';
 
-const POSES = ['pensando', 'analizando', 'confirmando', 'alerta'];
 const DEMO = [
   { label: 'Anotá', pose: 'pensando', title: 'Dale forma a tu idea.', note: 'Mi próxima gran idea', detail: 'Anotá tus ideas y definí qué querés ofrecer.' },
   { label: 'Organizá', pose: 'analizando', title: 'Cada cosa en su lugar.', note: 'Productos, pedidos y clientes', detail: 'Organizá tus productos y seguí cada pedido de tus clientes.' },
@@ -46,7 +45,7 @@ export default function GesicomMascot({ variant = 'landing', pose = 'pensando', 
       <div className="gc-mascot-scene">
         <div className="gc-mascot-orbit" aria-hidden="true" />
         <div className="gc-mascot-character">
-          {POSES.map((name, index) => <img key={name} src={`/brand/mascot/${name}.png`} width={name === 'pensando' ? 475 : name === 'confirmando' ? 491 : 510} height={name === 'alerta' ? 519 : 505} alt={name === activePose ? 'La mascota de Gesicom, un bolígrafo con ojos verdes' : ''} aria-hidden={name !== activePose} className={name === activePose ? 'is-active' : ''} decoding="async" fetchpriority={index === 0 ? 'high' : 'auto'} draggable="false" />)}
+          <img src="/brand/identidad/gesicom-avatar.png" width="1241" height="1268" alt="Avatar de Gesicom, un lápiz con check azul y punto rojo" className="is-active" decoding="async" draggable="false" />
         </div>
         <div className="gc-mascot-paper" key={`${activePose}-${note}`}>
           <span className="gc-mascot-paper-label">{demo ? 'Una idea. Un plan. Un nuevo paso.' : 'Vamos paso a paso'}</span>

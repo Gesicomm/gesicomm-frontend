@@ -6,6 +6,7 @@ export function moduloDeRuta(ruta) {
   if (/^\/(mi-catalogo|products|combos|categorias)(\/|$)/.test(path)) return 'productos';
   if (/^\/(landing|mi-landing)(\/|$)/.test(path)) return 'ecommerce';
   if (path === '/pedidos/configuracion') return 'comercial';
+  if (path === '/tutor-edicion') return 'publicidad';
   return modulos.find(m => m.ruta === path)?.clave;
 }
 export function destinoColaborador(usuario) {

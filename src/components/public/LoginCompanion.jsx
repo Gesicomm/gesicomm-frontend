@@ -54,7 +54,7 @@ export default function LoginCompanion({ form, busy, error, success }) {
       <div className="login-companion-art" aria-hidden="true">
         <span className="login-companion-orbit login-companion-orbit--outer" />
         <span className="login-companion-orbit login-companion-orbit--inner" />
-        <img className="login-companion-avatar" src="/brand/mascot/guia-transparente.png" alt="" width="248" height="320" draggable="false" />
+        <img className="login-companion-avatar" src="/brand/identidad/gesicom-avatar-transparente.png" alt="" width="1241" height="1268" draggable="false" />
         <span className="login-companion-spark login-companion-spark--one" />
         <span className="login-companion-spark login-companion-spark--two" />
       </div>

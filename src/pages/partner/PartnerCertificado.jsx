@@ -1,3 +1,4 @@
+import Logo from '../../components/public/Logo';
 import { TutorialHeaderAction } from '../../components/TutorialDock';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, BadgeCheck, BriefcaseBusiness, Check, CheckCircle2, FileText, GraduationCap, Globe2, Loader2, Repeat2, X } from 'lucide-react';
@@ -72,7 +73,7 @@ export default function PartnerCertificado() {
   return <div className="pc-page"><div className="pc-shell">
     <header className="pc-nav"><span><BadgeCheck size={20} />Programa Partner Certificado</span><div className="gc-tutorial-heading-actions"><TutorialHeaderAction /><button className="pc-text-btn" onClick={() => setModal(true)}><FileText size={15} />Términos y condiciones</button></div></header>
     <section className="pc-intro">
-      <img src="/brand/gesicomm-isotipo.svg" width="64" height="64" alt="Gesicom" className="pc-brand" />
+      <Logo conTexto={false} size={64} className="pc-brand" />
       <span className="pc-eyebrow">Tecnología Gesicom. Tu propio negocio.</span>
       <h1>Conviértete en Partner Certificado Gesicom y construye tu propio negocio tecnológico.</h1>
       <p className="pc-lead">Una oportunidad para crear un negocio de alcance internacional, respaldado por la tecnología de Gesicom.</p>

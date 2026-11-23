@@ -1,3 +1,4 @@
+import Logo from '../../components/public/Logo';
 import { useEffect, useState } from 'react';
 import { ArrowRight, MapPin, Search, SlidersHorizontal, Sparkles, Users, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
@@ -53,7 +54,7 @@ export default function BuscarServicios({ independiente = false, integrado = fal
   const paginasDirectorio = resultado?.total_paginas || 0;
 
   return <div className={`gc-services ${independiente ? 'gc-services-standalone' : ''}`}>
-    {independiente && <header className="gc-services-sitehead"><Link to="/" className="gc-services-brand"><span className="gc-services-brandmark">G</span> Gesicom</Link><Link to={rutaDeSistema || '/'} className="gc-services-back">{rutaDeSistema ? 'Volver a mi sistema' : 'Volver al inicio'} <ArrowRight size={16} /></Link></header>}
+    {independiente && <header className="gc-services-sitehead"><Link to="/" className="gc-services-brand"><Logo /></Link><Link to={rutaDeSistema || '/'} className="gc-services-back">{rutaDeSistema ? 'Volver a mi sistema' : 'Volver al inicio'} <ArrowRight size={16} /></Link></header>}
     <section className="gc-services-hero" aria-labelledby="gc-services-title">
       <div className="gc-services-hero-copy"><span className="gc-services-eyebrow"><Sparkles size={16} /> Red de colaboradores Gesicom</span>
         <h1 id="gc-services-title">Encontrá el talento que <em>hace avanzar</em> tu negocio.</h1>

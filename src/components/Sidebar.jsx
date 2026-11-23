@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Package, Users, User,
+  LayoutDashboard, Package, Users,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
   GraduationCap, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, ShieldAlert
 } from 'lucide-react';
@@ -120,12 +120,12 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-shrink-0 flex-col border-r border-border bg-surface transition-transform duration-200 ease-out lg:static lg:translate-x-0 ${
+        className={`gc-navigation fixed inset-y-0 left-0 z-40 flex w-64 flex-shrink-0 flex-col border-r border-border bg-surface transition-transform duration-200 ease-out lg:static lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4">
-          <Logo size={26} className="text-fg" />
+          <Logo fondoPanel="oscuro" size={26} className="text-fg" />
           <div className="flex items-center gap-1">
             <ThemeToggle className="h-8 w-8 !border-none" />
             <button
@@ -217,14 +217,9 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
               title="Editar perfil y contraseña"
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
-                <div style={{
-                  width: '26px', height: '26px', borderRadius: '50%',
-                  background: "color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-primary-text)",
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '11px', fontWeight: 'bold', flexShrink: 0
-                }}>
-                  {usuario?.nombre ? usuario.nombre.slice(0, 1).toUpperCase() : <User size={13} />}
-                </div>
+                <span className="gc-brand-avatar" aria-hidden="true">
+                  <img src="/brand/identidad/gesicom-avatar.png" alt="" width="36" height="36" />
+                </span>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <span style={{
                     display: 'block',

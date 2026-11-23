@@ -18,7 +18,7 @@ import { trackearEvento, trackearEventoPersonalizado, generarEventId } from '../
 
 const INPUT_CLASS = 'h-12 w-full rounded-lg border border-border bg-surface-2/80 px-11 pr-12 text-sm text-fg outline-none transition-all placeholder:text-fg-subtle hover:border-border-strong focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-70';
 const LABEL_CLASS = 'mb-2 block text-sm font-semibold text-fg';
-const LINK_CLASS = 'cursor-pointer font-semibold text-primary-text transition-colors hover:text-accent-text';
+const LINK_CLASS = 'cursor-pointer font-semibold text-accent-text transition-colors hover:text-accent-text';
 
 const OTP_TTL = 15 * 60; // 15 minutos en segundos
 
@@ -498,7 +498,7 @@ export default function Login() {
   return (
     <div className="gc-panel login-page text-fg">
       <header className="login-header">
-      <Link to="/" className="login-header-brand" aria-label="Gesicom, ir al inicio"><Logo size={38} /></Link>
+      <Link to="/" className="login-header-brand" aria-label="Gesicom, ir al inicio"><Logo fondoPanel="tema" size={38} /></Link>
       <div className="login-header-actions"><ThemeToggle />
       <Link
         to="/"
@@ -739,7 +739,7 @@ export default function Login() {
             {activeForm === 'verify' && (
               <div className="flex flex-col gap-5">
                 <div className="text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/12 text-primary-text">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/12 text-accent-text">
                     <ShieldCheck size={24} />
                   </div>
                   <h2 className="m-0 mb-1 text-2xl font-bold">Verificá tu correo</h2>

@@ -139,12 +139,12 @@
   --color-fg: #f0f3f0;
   --color-fg-muted: #b2bdb5;
   --color-fg-subtle: #99a69d;
-  --color-primary: #25b978;
-  --color-primary-hover: #38c98b;
+  --color-primary: var(--gc-amber);
+  --color-primary-hover: var(--color-primary-hover);
   --color-primary-active: #198e5b;
   --color-primary-fg: #08120d;
-  --color-primary-text: #57d99e;
-  --color-focus: #57d99e;
+  --color-primary-text: var(--gc-ice);
+  --color-focus: var(--gc-ice);
 }
 
 :root[data-theme='dark'] .module-card {

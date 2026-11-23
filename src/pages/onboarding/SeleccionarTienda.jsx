@@ -111,7 +111,7 @@ export default function SeleccionarTienda() {
     <div className="onb-page st-page">
       <div className="onb-card st-card">
         <div className="onb-brand">
-          <Logo size={24} />
+          <Logo fondoPanel="tema" size={24} />
         </div>
 
         <div className="onb-step-content">
