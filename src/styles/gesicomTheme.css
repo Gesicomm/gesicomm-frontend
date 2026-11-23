@@ -1,53 +1,51 @@
-/* Identidad del panel. Los portales montados en body reciben los mismos roles.
-   Paleta verde Gesicom (Negro, Bosque, Acento, Blanco y Gris) sobre la estructura nueva.
-   Los nombres --gc-* se conservan porque los consumen varias pantallas. */
+/* Identidad del panel. Los portales montados en body reciben los mismos roles. */
 :root {
-  --gc-night: #0b0f0e;
-  --gc-ivory: #fafcfb;
+  --gc-night: #080436;
+  --gc-ivory: #f9f6f3;
   --gc-white: #fff;
-  --gc-lavender: #eef2f0;
-  --gc-ice: #53d99b;
-  --gc-amber: #22b573;
-  --gc-red: #22b573;
-  --gc-red-dark: #b91c1c;
-  --gc-secondary: #435b4d;
-  --gc-line: #d5e2da;
-  --gc-nav-muted: #b2bdb5;
-  --gc-nav-raised: #232b26;
+  --gc-lavender: #f3f2ff;
+  --gc-ice: #76e4ff;
+  --gc-amber: #feb95f;
+  --gc-red: #f71735;
+  --gc-red-dark: #a7102c;
+  --gc-secondary: #514c72;
+  --gc-line: #d9d5e7;
+  --gc-nav-muted: #d9d5e7;
+  --gc-nav-raised: #211a54;
   --font-sans: 'Inter Variable', Inter, system-ui, sans-serif;
   --font-display: 'Instrument Sans Variable', 'Instrument Sans', var(--font-sans);
   --color-canvas: var(--gc-ivory);
   --color-surface: var(--gc-white);
   --color-surface-2: var(--gc-lavender);
-  --color-surface-3: #e2e8e4;
+  --color-surface-3: #e9e6fa;
   --color-border: var(--gc-line);
-  --color-border-strong: #9db6a7;
+  --color-border-strong: #766e91;
   --color-fg: var(--gc-night);
   --color-fg-muted: var(--gc-secondary);
-  --color-fg-subtle: #526858;
+  --color-fg-subtle: var(--gc-secondary);
   --color-primary: var(--gc-amber);
-  --color-primary-hover: #36c88a;
-  --color-primary-active: #179c60;
+  --color-primary-hover: #ffc87f;
+  --color-primary-active: #efa33d;
   --color-primary-fg: var(--gc-night);
-  --color-primary-text: #087d4b;
-  --color-accent: var(--gc-amber);
-  --color-accent-hover: #36c88a;
+  --color-primary-text: #714206;
+  --color-accent: var(--gc-ice);
+  --color-accent-hover: #a2eeff;
   --color-accent-fg: var(--gc-night);
-  --color-accent-text: #087d4b;
-  --color-focus: #087d4b;
-  --color-selection: var(--gc-amber);
+  --color-accent-text: #096078;
+  --color-focus: var(--gc-night);
+  --color-selection: var(--gc-ice);
   --color-selection-fg: var(--gc-night);
-  --color-placeholder: #85938d;
+  --color-placeholder: var(--gc-secondary);
   --color-placeholder-fg: var(--gc-white);
-  --color-success: #047857;
+  --color-success: #096044;
   --color-success-fg: var(--gc-white);
-  --color-warning: #946000;
+  --color-warning: #754604;
   --color-warning-fg: var(--gc-white);
   --color-danger: var(--gc-red-dark);
   --color-danger-fg: var(--gc-white);
-  --color-info: #176a99;
+  --color-info: #096078;
   --color-info-fg: var(--gc-white);
-  --color-overlay: rgb(11 15 14 / 65%);
+  --color-overlay: rgb(8 4 54 / 65%);
   --bg-sidebar: var(--gc-night);
   --text-sidebar-foreground: var(--gc-ivory);
   --text-muted-foreground: var(--gc-nav-muted);
@@ -57,37 +55,27 @@
 }
 
 :root[data-theme='dark'] {
-  --color-canvas: #141916;
-  --color-surface: #1b221e;
-  --color-surface-2: #232b26;
-  --color-surface-3: #2d3730;
-  --color-border: #39473e;
-  --color-border-strong: #54645a;
-  --color-fg: #f0f3f0;
-  --color-fg-muted: #b2bdb5;
-  --color-fg-subtle: #99a69d;
-  --color-primary: #25b978;
-  --color-primary-hover: #38c98b;
-  --color-primary-active: #198e5b;
-  --color-primary-fg: #08120d;
-  --color-accent: #25b978;
-  --color-accent-hover: #38c98b;
-  --color-accent-fg: #08120d;
-  --color-selection: #25b978;
-  --color-selection-fg: #08120d;
+  --color-canvas: #100d26;
+  --color-surface: #1a1732;
+  --color-surface-2: #262142;
+  --color-surface-3: #322b50;
+  --color-border: #463e60;
+  --color-border-strong: #8f85ae;
+  --color-fg: var(--gc-ivory);
+  --color-fg-muted: #d9d5e7;
+  --color-fg-subtle: #c2b8db;
   --color-focus: var(--gc-ice);
-  --color-primary-text: #57d99e;
-  --color-accent-text: #57d99e;
-  --color-placeholder: #64736a;
-  --color-success: #49d5a0;
-  --color-success-fg: #08120d;
-  --color-warning: #d9ac51;
-  --color-warning-fg: #211a0a;
-  --color-danger: #f17b7d;
-  --color-danger-fg: #210e0e;
-  --color-info: #78b9d4;
-  --color-info-fg: #091319;
-  --color-overlay: rgb(7 12 9 / 68%);
+  --color-primary-text: var(--gc-amber);
+  --color-accent-text: var(--gc-ice);
+  --color-placeholder: #514c72;
+  --color-success: #88e5be;
+  --color-success-fg: var(--gc-night);
+  --color-warning: var(--gc-amber);
+  --color-warning-fg: var(--gc-night);
+  --color-danger: #ff99aa;
+  --color-danger-fg: var(--gc-night);
+  --color-info: var(--gc-ice);
+  --color-info-fg: var(--gc-night);
 }
 
 /* El menú usa roles propios porque permanece oscuro en ambos temas. */
@@ -95,15 +83,15 @@
   --color-canvas: var(--gc-night);
   --color-surface: var(--gc-night);
   --color-surface-2: var(--gc-nav-raised);
-  --color-surface-3: #2d3730;
-  --color-border: #39473e;
-  --color-border-strong: #54645a;
+  --color-surface-3: #332969;
+  --color-border: #453c73;
+  --color-border-strong: #9188b7;
   --color-fg: var(--gc-ivory);
   --color-fg-muted: var(--gc-nav-muted);
   --color-fg-subtle: var(--gc-nav-muted);
-  --color-primary-text: var(--gc-ice);
+  --color-primary-text: var(--gc-amber);
   --color-accent-text: var(--gc-ice);
-  --color-danger: #f17b7d;
+  --color-danger: #ff99aa;
   --color-focus: var(--gc-ice);
   background-color: var(--gc-night);
   color: var(--gc-ivory);
@@ -198,7 +186,7 @@
     border: 1px solid var(--gc-red-dark);
     color: var(--gc-white);
   }
-  .gc-button-destructive:hover:not(:disabled) { background: #991b1b; }
+  .gc-button-destructive:hover:not(:disabled) { background: #890d24; }
   :is(.gc-explore, button[role='tab'][aria-selected='true'], .md-tab.activo, .tn-tab[aria-current='step'], .vit-filter-btn.active, .combo-filter-btn.active, .tab-btn.active, .lb-segmented button.active, .pl-tabs button.activo, .lms-step-nav-btn.active) {
     background: var(--color-selection);
     color: var(--color-selection-fg);
