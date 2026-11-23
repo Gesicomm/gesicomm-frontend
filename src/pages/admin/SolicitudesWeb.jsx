@@ -3,6 +3,7 @@ import { Mail, RefreshCw } from 'lucide-react';
 import API from '../../services/api';
 import './solicitudesWeb.css';
 import CodigosPrueba from './CodigosPrueba';
+import ProspectosRegistroPanel from './ProspectosRegistroPanel';
 
 const TIPOS = { prueba: 'Prueba gratuita', vendedor: 'Empezar como vendedor', demo: 'Demostración', consulta: 'Consulta comercial' };
 
@@ -32,6 +33,8 @@ export default function SolicitudesWeb() {
     </header>
     <button type="button" className="trial-code-toggle" aria-expanded={verCodigos} aria-controls="admin-trial-codes" onClick={() => setVerCodigos(v => !v)}>Códigos de prueba gratuita</button>
     {verCodigos && <div id="admin-trial-codes"><CodigosPrueba /></div>}
+    <ProspectosRegistroPanel revision={revision} />
+    <h2 className="web-requests-section-heading">Consultas generales y formularios comerciales</h2>
     <section className="web-requests-filters" aria-label="Filtros de solicitudes">
       <label>Tipo de solicitud<select value={tipo} onChange={e => { setTipo(e.target.value); setPage(1); }}><option value="">Todas las solicitudes</option>{Object.entries(TIPOS).filter(([key]) => key !== 'consulta').map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
       {!cargando && !error && <span>{resultado.total} solicitudes recibidas</span>}

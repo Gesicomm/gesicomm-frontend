@@ -30,6 +30,7 @@
  const dialogo = document.getElementById('oferta-workshop');
  let revision = 0;
  let urlWorkshop;
+ let confirmacionAlta = null;
  function vigilarAlta(email, datos) {
    const actual = ++revision;
    const limite = Date.now() + 15 * 60 * 1000;
@@ -40,11 +41,15 @@
          method: 'POST', headers: {'Content-Type':'application/json'},
          body: JSON.stringify({accion:'confirmacion', email, oferta:datos.oferta, desde:datos.desde, firma:datos.firma})
        });
-       if (respuesta.ok && (await respuesta.json()).confirmada === true && actual === revision) {
-         ++revision;
-         pago.hidden = true;
-         dialogo.showModal();
-         return;
+       if (respuesta.ok) {
+         const resultado = await respuesta.json();
+         if (resultado.confirmada === true && actual === revision) {
+           confirmacionAlta = resultado;
+           ++revision;
+           pago.hidden = true;
+           dialogo.showModal();
+           return;
+         }
        }
      } catch {}
      if (actual === revision) setTimeout(consultar, 15000);
@@ -53,14 +58,38 @@
  }
  dialogo.addEventListener('close', () => {
    if (dialogo.returnValue !== 'pagar') {
+     if (confirmacionAlta?.tiene_cuenta) {
+       window.location.assign('/login');
+       return;
+     }
+     if (confirmacionAlta?.token_registro) {
+       window.location.assign('/registro?token=' + encodeURIComponent(confirmacionAlta.token_registro));
+       return;
+     }
      pago.hidden = false;
      const encabezado = pago.querySelector('h2');
      pago.replaceChildren(encabezado);
      encabezado.textContent = 'Tu prueba de Gesicom ya está activa';
+     const avisoCorreo = document.createElement('p');
+     avisoCorreo.textContent = 'También te enviamos un correo con el enlace para activar tu acceso. Al crear tu contraseña te llegará un código de verificación de 6 dígitos por correo.';
      const enlace = document.createElement('a');
-     enlace.href = '/login';
-     enlace.textContent = 'Ir a Gesicom';
-     pago.append(enlace);
+     if (confirmacionAlta?.tiene_cuenta) {
+       enlace.href = '/login';
+       enlace.textContent = 'Ingresar a Gesicom';
+       pago.append(avisoCorreo, enlace);
+     } else if (confirmacionAlta?.token_registro) {
+       enlace.href = '/registro?token=' + encodeURIComponent(confirmacionAlta.token_registro);
+       enlace.textContent = 'Crear mi contraseña y entrar a Gesicom';
+       pago.append(avisoCorreo, enlace);
+     } else {
+       enlace.href = '/registro';
+       enlace.textContent = 'Crear mi cuenta y entrar a Gesicom';
+       const enlaceLogin = document.createElement('a');
+       enlaceLogin.href = '/login';
+       enlaceLogin.textContent = '¿Ya tenés cuenta? Ingresar';
+       enlaceLogin.style.marginLeft = '14px';
+       pago.append(avisoCorreo, enlace, enlaceLogin);
+     }
      encabezado.focus();
    }
  });
@@ -118,16 +147,24 @@
    try {
      const contacto = [nombre, apellido, email, telefono, pais].join('\n');
      if (guardado !== contacto) {
-       const registro = await fetch('/registro/contacto', {
+       const registro = await fetch('/registro/prospecto', {
          method: 'POST', headers: {'Content-Type': 'application/json'},
-         body: JSON.stringify({area:'comercial',nombre:nombreCompleto || 'Registro desde la portada',email,asunto:'Gesicom · Activación de suscripción',mensaje:(pais ? 'País: '+pais+'\n' : 'Origen: portada de Gesicom\n')+'Teléfono: '+telefono})
+         body: JSON.stringify({
+           etapa: 'checkout_iniciado',
+           origen: accesoDirecto ? 'portada' : 'crear_cuenta',
+           nombre: nombreCompleto || '',
+           email,
+           telefono,
+           pais: pais || '',
+           ...(plan ? { plan } : {}),
+         })
        });
        if (registro.status === 429) {
          const segundos = Number(registro.headers.get('Retry-After'));
          const plazo = Number.isFinite(segundos) && segundos > 0 ? 'aproximadamente ' + Math.ceil(segundos / 60) + ' min' : 'un rato';
          throw Error('Hay demasiados intentos desde esta conexión. Volvé a intentar en ' + plazo + '.');
        }
-       if (!registro.ok || !(await registro.json()).mensaje?.id) throw Error('No pudimos guardar tus datos. Volvé a intentar en unos minutos.');
+       if (!registro.ok || !(await registro.json()).prospecto?.id) throw Error('No pudimos guardar tus datos. Volvé a intentar en unos minutos.');
        guardado = contacto;
      }
      const respuesta = await fetch('/registro/oferta', {

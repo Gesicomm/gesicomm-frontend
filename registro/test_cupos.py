@@ -21,6 +21,40 @@ class CuposTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 servidor.fundadores_agotado()
 
+    def test_buscar_alta_confirmada_y_activar_en_backend(self):
+        desde = 1700000000
+        filas = [
+            {
+                "product": {"id": servidor.PRODUCTO},
+                "offer": {"code": FUNDADORES},
+                "subscriber": {"email": "Prueba@Example.com", "name": "Martin", "phone": "+595992820631"},
+                "subscriber_code": "SUB-1",
+                "status": "STARTED",
+                "trial": True,
+                "accession_date": (desde + 10) * 1000,
+                "date_next_charge": (desde + 259200) * 1000,
+            }
+        ]
+        fila = servidor.buscar_alta_confirmada(filas, "prueba@example.com", FUNDADORES, desde)
+        self.assertIsNotNone(fila)
+        self.assertTrue(servidor.alta_confirmada(filas, "prueba@example.com", FUNDADORES, desde))
+
+        with mock.patch.dict("os.environ", {"HOTMART_HOTTOK": "secreto-hottok"}):
+            with mock.patch.object(
+                servidor,
+                "consulta",
+                return_value={"activada": True, "tiene_cuenta": False, "token_registro": "tok-abc"},
+            ) as consulta:
+                res = servidor.activar_en_backend(fila, "prueba@example.com", FUNDADORES)
+
+        self.assertEqual(res.get("token_registro"), "tok-abc")
+        self.assertEqual(consulta.call_args.args[1]["X-HOTMART-HOTTOK"], "secreto-hottok")
+        self.assertEqual(consulta.call_args.kwargs["cuerpo"]["subscriber_code"], "SUB-1")
+
+        with mock.patch.dict("os.environ", {}, clear=True):
+            with mock.patch.object(servidor, "HOTTOK_FILE", "/no/existe/hottok.txt"):
+                self.assertEqual(servidor.activar_en_backend(fila, "prueba@example.com", FUNDADORES), {})
+
 
 if __name__ == "__main__":
     unittest.main()

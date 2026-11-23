@@ -20,10 +20,16 @@ OFERTAS = {"founder": (FUNDADORES, 47), "starter": oferta_para(True), "scaler": 
 EMAIL = re.compile(r"[^\s@]+@[^\s@]+\.[^\s@]+")
 # Los cupos salen de la base del backend (pagos de Hotmart registrados por su webhook).
 CUPOS_URL = os.environ.get("GESICOM_CUPOS_URL", "http://gesicomm-back:3000/api/publico/hotmart/cupos")
+CONFIRMACION_URL = os.environ.get(
+    "GESICOM_CONFIRMACION_URL",
+    "http://gesicomm-back:3000/api/webhooks/hotmart/confirmacion-api",
+)
+HOTTOK_FILE = os.environ.get("HOTMART_HOTTOK_FILE", "/datos/hottok.txt")
 
 
-def consulta(url, encabezados, metodo="GET"):
-    with urlopen(Request(url, headers=encabezados, method=metodo), timeout=8) as respuesta:
+def consulta(url, encabezados, metodo="GET", cuerpo=None):
+    datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
+    with urlopen(Request(url, data=datos, headers=encabezados, method=metodo), timeout=8) as respuesta:
         return json.load(respuesta)
 
 
@@ -68,7 +74,7 @@ def firmar(email, oferta, desde):
     return hmac.new(clave, mensaje, hashlib.sha256).hexdigest()
 
 
-def alta_confirmada(filas, email, oferta, desde):
+def buscar_alta_confirmada(filas, email, oferta, desde):
     for fila in filas:
         suscriptor = fila.get("subscriber") or {}
         if (
@@ -81,8 +87,48 @@ def alta_confirmada(filas, email, oferta, desde):
         ):
             fecha = fila.get("accession_date")
             if isinstance(fecha, (int, float)) and fecha >= desde * 1000:
-                return True
-    return False
+                return fila
+    return None
+
+
+def alta_confirmada(filas, email, oferta, desde):
+    return buscar_alta_confirmada(filas, email, oferta, desde) is not None
+
+
+def leer_hottok():
+    hottok = os.environ.get("HOTMART_HOTTOK", "").strip()
+    if hottok:
+        return hottok
+    ruta = Path(HOTTOK_FILE)
+    if ruta.is_file():
+        return ruta.read_text().strip() or None
+    return None
+
+
+def activar_en_backend(fila, email, oferta):
+    hottok = leer_hottok()
+    if not hottok:
+        return {}
+    suscriptor = fila.get("subscriber") or {}
+    cuerpo = {
+        "email": email.strip().lower(),
+        "oferta": oferta,
+        "subscriber_code": str(fila.get("subscriber_code") or "").strip(),
+        "nombre": suscriptor.get("name"),
+        "telefono": suscriptor.get("phone"),
+        "date_next_charge": fila.get("date_next_charge"),
+    }
+    try:
+        datos = consulta(
+            CONFIRMACION_URL,
+            {"Content-Type": "application/json", "X-HOTMART-HOTTOK": hottok},
+            metodo="POST",
+            cuerpo=cuerpo,
+        )
+        return datos if isinstance(datos, dict) else {}
+    except Exception as exc:
+        LOG.warning("No se pudo activar el alta en el backend: %s", type(exc).__name__)
+        return {}
 
 
 def fundadores_agotado():
@@ -134,8 +180,15 @@ class Registro(BaseHTTPRequestHandler):
                     or not 0 <= time.time() - desde <= 3600
                     or not hmac.compare_digest(firmar(email, oferta, desde), firma)):
                     return self.responder(403, {"error": "Sesión de activación inválida."})
-                confirmada = alta_confirmada(suscripciones(), email, oferta, desde)
-                return self.responder(200, {"confirmada": confirmada})
+                fila = buscar_alta_confirmada(suscripciones(), email, oferta, desde)
+                if fila is None:
+                    return self.responder(200, {"confirmada": False})
+                activacion = activar_en_backend(fila, email, oferta)
+                return self.responder(200, {
+                    "confirmada": True,
+                    "tiene_cuenta": bool(activacion.get("tiene_cuenta")),
+                    "token_registro": activacion.get("token_registro"),
+                })
             plan = solicitud.get("plan")
             if plan is not None and (not isinstance(plan, str) or plan not in OFERTAS):
                 return self.responder(400, {"error": "El plan seleccionado no está disponible."})

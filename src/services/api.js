@@ -44,6 +44,7 @@ const LECTURAS_POR_POST = [
   /\/vitrina\/(?:catalogo-paginado|precios\/buscar)$/,
   /\/depositos\/listado$/,
   /\/mi-tienda\/fulfillment\/depositos$/,
+  /\/publico\/admin\/prospectos-registro\/(?:buscar|exportar)$/,
 ];
 const esLecturaPorPost = (url) => !!url && LECTURAS_POR_POST.some((r) => r.test(String(url).split('?')[0]));
 

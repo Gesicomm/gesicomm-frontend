@@ -283,6 +283,19 @@
     const telefono = document.getElementById('gc-prueba-whatsapp').value.trim();
     const estado = document.getElementById('gc-prueba-estado');
     try {
+      fetch('/registro/prospecto', {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          etapa: 'datos_completados',
+          origen: 'portada',
+          email: correo,
+          telefono,
+        }),
+      }).catch(() => {});
+    } catch {}
+    try {
       sessionStorage.setItem('gesicom:prueba:portada', JSON.stringify({correo, telefono}));
       window.location.assign('/crear-cuenta?origen=portada');
     } catch {
