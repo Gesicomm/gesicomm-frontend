@@ -11,7 +11,9 @@ import './styles/systemTypography.css'
 import './styles/panelComponents.css'
 import './styles/gesicomTheme.css'
 import { registerChunkRecovery } from './lib/chunkRecovery'
+import { prepararActivacion } from './lib/prepararActivacion'
 
+prepararActivacion(window)
 registerChunkRecovery(window, import.meta.url)
 
 ReactDOM.createRoot(document.getElementById('root')).render(

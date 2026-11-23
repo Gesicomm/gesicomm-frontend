@@ -255,3 +255,11 @@
 @media (prefers-reduced-motion: reduce) {
   .login-page *, .login-page *::before, .login-page *::after { transition: none !important; animation: none !important; }
 }
+
+.login-activation-summary { display: grid; grid-column: 1 / -1; gap: 10px; min-width: 0; }
+.login-activation-summary strong { display: flex; align-items: center; gap: 8px; font-size: var(--ui-text-body); }
+.login-activation-summary p { margin: 0; font-size: var(--ui-text-body); line-height: 1.5; overflow-wrap: anywhere; }
+.login-activation-summary button { justify-self: start; padding: 0; font-size: var(--ui-text-label); text-align: left; color: var(--color-fg); text-decoration: underline; text-underline-offset: 3px; }
+.login-register-fields--activation > label:nth-child(3) { grid-column: auto; }
+.login-register-fields--activation input { background: var(--color-surface-2); color: var(--color-fg); border-color: var(--color-border-strong); }
+.login-register-fields--activation input::placeholder { color: var(--color-fg-muted); opacity: 1; }

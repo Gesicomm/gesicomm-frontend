@@ -23,6 +23,10 @@
 (() => {
  const form = document.getElementById('activar');
  const campos = ['fn','ln','em','wa','pais'].map(id => document.getElementById(id));
+ const ayudaCorreo = document.createElement('small');
+ ayudaCorreo.textContent = 'Revisá bien tu correo: ahí recibirás el enlace para verificarlo, crear tu contraseña y entrar a Gesicom.';
+ ayudaCorreo.style.cssText = 'display:block;font-size:14px;line-height:1.5;margin-top:6px';
+ campos[2].after(ayudaCorreo);
  const pago = document.getElementById('pago');
  const estado = document.getElementById('estado');
  const boton = form.querySelector('button[type=submit]');
@@ -63,7 +67,7 @@
        return;
      }
      if (confirmacionAlta?.token_registro) {
-       window.location.assign('/registro?token=' + encodeURIComponent(confirmacionAlta.token_registro));
+       window.location.assign('/activar-cuenta#comprobante=' + encodeURIComponent(confirmacionAlta.token_registro));
        return;
      }
      pago.hidden = false;
@@ -71,16 +75,29 @@
      pago.replaceChildren(encabezado);
      encabezado.textContent = 'Tu prueba de Gesicom ya está activa';
      const avisoCorreo = document.createElement('p');
-     avisoCorreo.textContent = 'También te enviamos un correo con el enlace para activar tu acceso. Al crear tu contraseña te llegará un código de verificación de 6 dígitos por correo.';
+     avisoCorreo.textContent = 'Te enviamos un correo con el botón Activar mi cuenta. Abrilo, creá tu contraseña y entrá a Gesicom sin copiar ningún código.';
      const enlace = document.createElement('a');
      if (confirmacionAlta?.tiene_cuenta) {
        enlace.href = '/login';
        enlace.textContent = 'Ingresar a Gesicom';
        pago.append(avisoCorreo, enlace);
      } else if (confirmacionAlta?.token_registro) {
-       enlace.href = '/registro?token=' + encodeURIComponent(confirmacionAlta.token_registro);
-       enlace.textContent = 'Crear mi contraseña y entrar a Gesicom';
-       pago.append(avisoCorreo, enlace);
+       const reenviar = document.createElement('button');
+       reenviar.type = 'button';
+       reenviar.textContent = 'Reenviar enlace de activación';
+       reenviar.addEventListener('click', async () => {
+         reenviar.disabled = true;
+         try {
+           const respuesta = await fetch('https://api.gesicomm.com/api/suscripciones/reenviar-activacion', {
+             method: 'POST', headers: {'Content-Type':'application/json'},
+             body: JSON.stringify({token:confirmacionAlta.token_registro})
+           });
+           if (!respuesta.ok) throw Error('No pudimos reenviar el enlace. Probá nuevamente en unos minutos.');
+           avisoCorreo.textContent = 'Enlace reenviado. Revisá tu bandeja de entrada y Spam.';
+         } catch (error) { avisoCorreo.textContent = error.message; }
+         finally { reenviar.disabled = false; }
+       });
+       pago.append(avisoCorreo, reenviar);
      } else {
        enlace.href = '/registro';
        enlace.textContent = 'Crear mi cuenta y entrar a Gesicom';

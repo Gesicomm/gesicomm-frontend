@@ -54,6 +54,7 @@ const Planes = lazy(() => import('./pages/planes/Planes'));
 const CheckoutPlan = lazy(() => import('./pages/planes/CheckoutPlan'));
 const PublicCheckoutPlan = lazy(() => import('./pages/planes/PublicCheckoutPlan'));
 const ResultadoPago = lazy(() => import('./pages/planes/ResultadoPago'));
+const ActivacionPendiente = lazy(() => import('./pages/planes/ActivacionPendiente'));
 const ParametrosAdmin = lazy(() => import('./pages/admin/Parametros'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const RahaSolicitudes = lazy(() => import('./pages/admin/RahaSolicitudes'));
@@ -557,6 +558,7 @@ function App() {
         <Route path="/checkout/public/:codigo" element={<PublicCheckoutPlan />} />
         <Route path="/planes/resultado" element={<ResultadoPago />} />
         <Route path="/planes/resultado/:hash" element={<ResultadoPago />} />
+        <Route path="/activar-cuenta" element={<ActivacionPendiente />} />
         <Route path="/admin/planes" element={
           <AdminRoute><DashboardLayout><AdminPlanes /></DashboardLayout></AdminRoute>
         } />

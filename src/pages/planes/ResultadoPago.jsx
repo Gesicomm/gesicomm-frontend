@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Loader, CheckCircle2, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { trackearEvento, generarEventId } from '../../lib/metaPixel';
+import CorreoActivacionPendiente from './CorreoActivacionPendiente';
 import './planes.css';
 
 /**
@@ -82,6 +83,7 @@ export default function ResultadoPago() {
     });
   }, [estado]);
 
+
   if (error) {
     return (
       <div className="pl-page pl-resultado">
@@ -145,7 +147,7 @@ export default function ResultadoPago() {
   }
 
   return (
-    <div className="pl-page pl-resultado">
+    <div className="gc-panel pl-page pl-resultado">
       <div className="pl-estado ok">
         <CheckCircle2 size={44} />
         <h1>¡Pago acreditado!</h1>
@@ -155,21 +157,7 @@ export default function ResultadoPago() {
         </p>
 
         {estado.token_registro ? (
-          <>
-            <p>Último paso: creá tu cuenta con <strong>{estado.email}</strong> para entrar al sistema.</p>
-            <p className="pl-field-nota">
-              Si cerrás esta pantalla o se corta la conexión, no perdés el pago:
-              entrá de nuevo a Crear cuenta y usá ese mismo correo. Al verificarlo,
-              recuperamos tu plan automáticamente.
-            </p>
-            <button
-              type="button"
-              className="pl-cta primario"
-              onClick={() => navigate('/registro', { state: { token: estado.token_registro } })}
-            >
-              Crear mi cuenta <ArrowRight size={16} />
-            </button>
-          </>
+          <CorreoActivacionPendiente email={estado.email} token={estado.token_registro} onActualizar={datos => setEstado(prev => ({ ...prev, ...datos }))} />
         ) : (
           <>
             <p>Tu cuenta ya está creada. Ya podés continuar con tu plan activo.</p>

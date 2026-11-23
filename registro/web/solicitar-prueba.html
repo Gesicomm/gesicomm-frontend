@@ -2,6 +2,10 @@
 (() => {
  const form = document.getElementById('trial-form');
  const [nombre, correo, telefono] = form.querySelectorAll('input');
+ const ayudaCorreo = document.createElement('small');
+ ayudaCorreo.textContent = 'Revisá bien tu correo: ahí recibirás el enlace para verificarlo, crear tu contraseña y entrar a Gesicom.';
+ ayudaCorreo.style.cssText = 'display:block;font-size:14px;line-height:1.5;margin-top:6px';
+ correo.after(ayudaCorreo);
  const boton = form.querySelector('button[type=submit]');
  const estadoPaso1 = document.getElementById('estado-paso1');
  const key = 'gesicom:prueba:preview';

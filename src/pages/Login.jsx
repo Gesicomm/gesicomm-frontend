@@ -143,6 +143,7 @@ export default function Login() {
   const estadoNav = location.state || {};
   const codigoUrlInicial = (estadoNav.codigo || paramsIniciales.get('codigo') || '').trim().toUpperCase();
   const tokenSuscripcionInicial = estadoNav.token || paramsIniciales.get('token') || '';
+  const tokenActivacionInicial = estadoNav.activacion || paramsIniciales.get('activacion') || '';
   const esRutaRegistro = location.pathname === '/registro' || paramsIniciales.get('registro') === '1' || Boolean(codigoUrlInicial);
   const [activeForm, setActiveForm] = useState(esRutaRegistro ? 'register' : 'login');
 
@@ -156,8 +157,13 @@ export default function Login() {
   const [codigoPrueba, setCodigoPrueba] = useState(codigoUrlInicial);
   const [pruebaRegistro, setPruebaRegistro] = useState(null);
   const [tokenSuscripcion, setTokenSuscripcion] = useState(tokenSuscripcionInicial);
+  const [tokenActivacion, setTokenActivacion] = useState(tokenActivacionInicial);
   const [suscripcionRegistro, setSuscripcionRegistro] = useState(null);
-  const [validandoSuscripcion, setValidandoSuscripcion] = useState(Boolean(tokenSuscripcionInicial));
+  const [validandoSuscripcion, setValidandoSuscripcion] = useState(Boolean(tokenSuscripcionInicial || tokenActivacionInicial));
+  const [editarDatosCompra, setEditarDatosCompra] = useState(false);
+  const tieneEnlaceCompra = Boolean(tokenSuscripcion || tokenActivacion);
+  const activandoCompra = Boolean(tieneEnlaceCompra && suscripcionRegistro);
+  const faltanDatosCompra = formData.nombre.trim().length < 3 || formData.telefono.replace(/\D/g, '').length < 6;
   const [pendingEmail, setPendingEmail] = useState('');
   // El backend detectó un token_suscripcion válido pero de OTRO correo: la
   // cuenta se crea igual (free), pero no debe sentirse como un alta
@@ -192,13 +198,15 @@ export default function Login() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = location.state?.token || params.get('token') || '';
+    const activacion = location.state?.activacion || params.get('activacion') || '';
     const debeRegistrar = location.pathname === '/registro' || params.get('registro') === '1';
 
     if (debeRegistrar) setActiveForm('register');
-    setTokenSuscripcion(token);
+    setTokenSuscripcion(activacion ? '' : token);
+    setTokenActivacion(activacion);
     setSuscripcionRegistro(null);
 
-    if (!token) {
+    if (!token && !activacion) {
       setValidandoSuscripcion(false);
       return;
     }
@@ -206,27 +214,32 @@ export default function Login() {
     let activo = true;
     setValidandoSuscripcion(true);
     setError(null);
-    api.get(`/api/suscripciones/token/${token}`)
+    api.get(`/api/suscripciones/${activacion ? 'activacion' : 'token'}/${encodeURIComponent(activacion || token)}`)
       .then((data) => {
         if (!activo) return;
         setSuscripcionRegistro(data);
+        setEditarDatosCompra(String(data.nombre || '').trim().length < 3 || String(data.telefono || '').replace(/\D/g, '').length < 6);
         setFormData(prev => ({
           ...prev,
-          nombre: prev.nombre || data.nombre || '',
-          telefono: prev.telefono || data.telefono || '',
+          nombre: data.nombre || prev.nombre || '',
+          telefono: data.telefono || prev.telefono || '',
           email: data.email || prev.email,
         }));
         setPendingEmail(data.email || '');
       })
       .catch((err) => {
-        if (activo) setError(err.response?.data?.error || err.message || 'Ese enlace de registro no es válido.');
+        if (activo) {
+          setTokenSuscripcion('');
+          setTokenActivacion('');
+          setError('No pudimos validar este enlace. Si ya tenés cuenta, iniciá sesión. Si todavía no la creaste, usá el mismo correo del pago: vincularemos tu plan al verificarlo.');
+        }
       })
       .finally(() => {
         if (activo) setValidandoSuscripcion(false);
       });
 
     return () => { activo = false; };
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, location.state?.token, location.state?.activacion]);
 
   // Countdown del OTP
   useEffect(() => {
@@ -364,8 +377,24 @@ export default function Login() {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         token_suscripcion: tokenSuscripcion || undefined,
-        codigo_prueba: !tokenSuscripcion && codigoPrueba.trim() ? codigoPrueba.trim().toUpperCase() : undefined,
+        token_activacion: tokenActivacion || undefined,
+        codigo_prueba: !tieneEnlaceCompra && codigoPrueba.trim() ? codigoPrueba.trim().toUpperCase() : undefined,
       });
+      if (res.cuenta_activada) {
+        // El backend validó el enlace enviado al correo y consumió la compra.
+        // Iniciamos sesión con la contraseña recién elegida, sin otro formulario.
+        try {
+          const acceso = await api.post('/api/auth/login', { email: formData.email.trim().toLowerCase(), password: formData.password });
+          sembrarSesionDelLogin(acceso.usuario);
+          if (Array.isArray(acceso.tiendas)) sembrarEnSesion('tiendas/mias', acceso.tiendas);
+          trackearEvento('CompleteRegistration', generarEventId(), { content_name: 'activacion_con_plan' });
+          navigate('/seleccionar-modulo', { replace: true });
+        } catch {
+          switchForm('login');
+          setSuccess('Tu cuenta ya está activada. Iniciá sesión con la contraseña que acabás de crear.');
+        }
+        return;
+      }
       if (res.requiere_verificacion) {
         setPruebaRegistro(res.prueba || null);
         setPendingEmail(res.email || formData.email);
@@ -410,7 +439,7 @@ export default function Login() {
       setSuccess(res.message);
       setTimeout(() => {
         const destinoCuenta = tokenSuscripcion || res.suscripcion_vinculada
-          ? '/onboarding'
+          ? '/seleccionar-modulo'
           : ['solo_pedidos', 'colaborador'].includes(res.usuario?.rol)
             ? '/mis-pedidos'
             : '/seleccionar-modulo';
@@ -602,10 +631,10 @@ export default function Login() {
             {activeForm === 'register' && (
               <form onSubmit={handleRegister} noValidate className="login-register-form">
                 <div>
-                  <h2 className="m-0 text-2xl font-bold">Crear cuenta</h2>
+                  <h2 className="m-0 text-2xl font-bold">{activandoCompra ? 'Creá tu contraseña' : 'Crear cuenta'}</h2>
                   <p className="mt-2 text-base leading-6 text-fg-muted">
-                    {tokenSuscripcion
-                      ? `Activá ${suscripcionRegistro?.plan?.nombre || 'tu plan'} y prepará tu espacio.`
+                    {activandoCompra
+                      ? tokenActivacion ? 'Tu correo quedó verificado con este enlace. Creá tu contraseña para entrar a Gesicom.' : 'Tu plan ya está confirmado. Creá tu contraseña y verificá tu correo para entrar a Gesicom.'
                       : 'Creá tu cuenta y verificá tu correo. Después elegí el espacio y el plan para tu negocio.'}
                   </p>
                 </div>
@@ -615,17 +644,21 @@ export default function Login() {
                     Validando tu pago...
                   </div>
                 )}
-                {tokenSuscripcion && suscripcionRegistro?.documento && (
-                  <div className="login-register-notice rounded-lg border border-success/20 bg-success/10 px-3.5 py-3 text-sm leading-6 text-success">
-                    Precargamos tus datos del pago. Revisalos antes de continuar.
+                {activandoCompra && (
+                  <div className="login-activation-summary rounded-lg border border-success/20 bg-success/10 px-3.5 py-3" role="status">
+                    <strong><CheckCircle2 size={19} aria-hidden="true" /> {suscripcionRegistro.plan?.nombre || 'Plan confirmado'}</strong>
+                    <p>{formData.email}</p>
+                    <p>Acceso a productos físicos, productos digitales y servicios.</p>
+                    {!faltanDatosCompra && <button type="button" className={`${LINK_CLASS} bg-transparent border-none`} onClick={() => setEditarDatosCompra(value => !value)} aria-expanded={editarDatosCompra}>{editarDatosCompra ? 'Ocultar datos de la compra' : 'Revisar datos de la compra'}</button>}
                   </div>
                 )}
-                {!tokenSuscripcion && (
+                {!tieneEnlaceCompra && (
                   <div className="login-register-notice rounded-lg border border-primary/20 bg-primary/10 px-3.5 py-3 text-sm leading-6 text-fg-muted">
                     ¿Ya tenés un plan? Registrate con el mismo correo del pago y lo vinculamos al verificar tu cuenta.
                   </div>
                 )}
-                <div className="login-register-fields">
+                <div className={`login-register-fields${activandoCompra ? ' login-register-fields--activation' : ''}`}>
+                {(!activandoCompra || faltanDatosCompra || editarDatosCompra) && <>
                 <AuthField
                   id="nombre"
                   label="Nombre completo"
@@ -645,6 +678,8 @@ export default function Login() {
                   onChange={handleInputChange}
                   autoComplete="tel"
                 />
+                </>}
+                {!activandoCompra &&
                 <AuthField
                   id="email"
                   label="Correo electrónico"
@@ -654,8 +689,9 @@ export default function Login() {
                   value={formData.email}
                   onChange={handleInputChange}
                   autoComplete="email"
-                  disabled={Boolean(tokenSuscripcion)}
+                  disabled={tieneEnlaceCompra}
                 />
+                }
                 <AuthField
                   id="password"
                   label="Contraseña"
@@ -692,14 +728,14 @@ export default function Login() {
                 />
                 </div>
 
-                {codigoPrueba ? (
+                {!tieneEnlaceCompra && codigoPrueba ? (
                   <div className="p-3 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-between text-xs text-primary font-medium my-1">
                     <span className="flex items-center gap-1.5 font-bold">
                       <ShieldCheck size={16} /> Código de prueba aplicado: {codigoPrueba}
                     </span>
                     <span className="text-[11px] bg-primary text-primary-fg px-2.5 py-0.5 rounded-full font-semibold">Prueba gratuita</span>
                   </div>
-                ) : !tokenSuscripcion && (
+                ) : !tieneEnlaceCompra && (
                   <details className="login-register-trial">
                     <summary>
                       <span className="login-register-trial-icon"><ShieldCheck size={18} aria-hidden="true" /></span>
@@ -727,7 +763,7 @@ export default function Login() {
                   disabled={loading || validandoSuscripcion}
                   className="group mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-fg shadow-[0_14px_34px_rgba(61,95,163,0.28)] transition-all hover:-translate-y-0.5 hover:bg-primary-hover disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
                 >
-                  {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+                  {loading ? 'Preparando tu acceso...' : activandoCompra ? tokenActivacion ? 'Crear contraseña y entrar' : 'Crear contraseña y continuar' : 'Crear cuenta'}
                   {!loading && <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />}
                 </button>
                 <p className="m-0 text-center text-sm text-fg-muted">¿Ya tenés cuenta? <button type="button" onClick={() => switchForm('login')} className={`${LINK_CLASS} bg-transparent border-none`}>Iniciá sesión</button></p>
