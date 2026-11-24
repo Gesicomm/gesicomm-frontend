@@ -81,7 +81,7 @@ function iconoRedSvg(red) {
 /** true si hay al menos un dato de contacto para mostrar. */
 export function contactoTieneDatos(contacto) {
   if (!contacto) return false;
-  return ['telefono', 'email', 'direccion', 'horarios', ...REDES.map(r => r.key)]
+  return ['telefono', 'email', 'direccion', 'google_maps_url', 'horarios', ...REDES.map(r => r.key)]
     .some(k => String(contacto[k] || '').trim());
 }
 
@@ -106,10 +106,12 @@ function contactoHtml(contacto) {
       return href ? `<a class="gcx-chip" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${esc(r.label)}" title="${esc(r.label)}">${iconoRedSvg(r)}<span>${esc(r.label)}</span></a>` : '';
     })
     .join('');
+  const mapsUrl = /^https?:\/\//i.test(contacto.google_maps_url || '') ? hrefSeguro(contacto.google_maps_url) : null;
   const datos = [
     contacto.telefono && `<li><span>Teléfono</span><a href="tel:${esc(String(contacto.telefono).replace(/[^\d+]/g, ''))}">${esc(contacto.telefono)}</a></li>`,
     contacto.email && `<li><span>Email</span><a href="mailto:${esc(contacto.email)}">${esc(contacto.email)}</a></li>`,
     (contacto.direccion || contacto.ciudad) && `<li><span>Dirección</span>${esc([contacto.direccion, contacto.ciudad, contacto.pais].filter(Boolean).join(', '))}</li>`,
+    mapsUrl && `<li><span>Ubicación</span><a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">Ver en Google Maps</a></li>`,
     contacto.horarios && `<li><span>Horarios</span>${esc(contacto.horarios)}</li>`,
   ].filter(Boolean).join('');
   return `<section class="gcx-section" id="contacto"><div class="gcx-wrap gcx-contacto">`

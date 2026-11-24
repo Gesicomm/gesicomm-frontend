@@ -219,6 +219,7 @@ export function mapPublicDtoToTemplateData(dto) {
       email: dto?.contacto_email || dto?.contacto_landing?.email || '',
       direccion: dto?.contacto_direccion || dto?.contacto_landing?.direccion || '',
       ciudad: dto?.contacto_landing?.ciudad || '',
+      google_maps_url: dto?.contacto_landing?.google_maps_url || '',
       pais: dto?.contacto_landing?.pais || '',
       horarios: dto?.contacto_landing?.horarios || '',
       instagram: dto?.contacto_instagram || dto?.contacto_landing?.instagram || '',

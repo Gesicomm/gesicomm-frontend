@@ -77,6 +77,7 @@ const FORM_INICIAL = {
   youtube: '',
   direccion_publica: '',
   ciudad_publica: '',
+  google_maps_url: '',
   horario_atencion: '',
   deposito_departamento: '',
   deposito_ciudad: '',
@@ -318,6 +319,7 @@ export default function ConfigurarTienda() {
           youtube: data.youtube || '',
           direccion_publica: data.direccion_publica || '',
           ciudad_publica: data.ciudad_publica || '',
+          google_maps_url: data.google_maps_url || '',
           horario_atencion: data.horario_atencion || '',
           deposito_departamento: data.deposito_departamento || '',
           deposito_ciudad: data.deposito_ciudad || '',
@@ -1496,6 +1498,18 @@ export default function ConfigurarTienda() {
                             value={form.horario_atencion}
                             onChange={val => handleChange('horario_atencion', val)}
                           />
+                        </label>
+                        <label className="tn-field tn-field-ancho">
+                          <span className="tn-field-label">Enlace de Google Maps <em>(opcional)</em></span>
+                          <input
+                            type="url"
+                            value={form.google_maps_url}
+                            onChange={e => handleChange('google_maps_url', e.target.value)}
+                            placeholder="https://maps.app.goo.gl/..."
+                            maxLength={2000}
+                            aria-describedby="tn-google-maps-help"
+                          />
+                          <span id="tn-google-maps-help" className="tn-field-label">Pegá el enlace de tu local desde Compartir en Google Maps.</span>
                         </label>
                       </div>
                     </div>

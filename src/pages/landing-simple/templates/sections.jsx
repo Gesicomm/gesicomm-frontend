@@ -225,7 +225,7 @@ export function DatosContactoSection({ contacto, acento, tituloClase, bordeSuave
   const ubicacion = [contacto?.direccion, contacto?.ciudad, contacto?.pais].filter(Boolean).join(', ');
 
   const filas = [
-    ubicacion && { Icon: MapPin, valor: ubicacion, href: `https://maps.google.com/?q=${encodeURIComponent(ubicacion)}`, label: 'Dirección' },
+    (ubicacion || contacto?.google_maps_url) && { Icon: MapPin, valor: ubicacion || 'Ver ubicación en Google Maps', href: /^https?:\/\//i.test(contacto?.google_maps_url || '') ? contacto.google_maps_url : `https://maps.google.com/?q=${encodeURIComponent(ubicacion)}`, label: 'Dirección' },
     contacto?.telefono && { Icon: Phone, valor: contacto.telefono, href: `tel:${contacto.telefono.replace(/\D/g, '')}`, label: 'Teléfono' },
     contacto?.email && { Icon: Mail, valor: contacto.email, href: `mailto:${contacto.email}`, label: 'Email' },
     contacto?.horarios && { Icon: Clock, valor: contacto.horarios, href: null, label: 'Horarios' },

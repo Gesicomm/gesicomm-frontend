@@ -48,6 +48,7 @@ function contactoDesdeData(data) {
     email: data?.contacto_email || data?.contacto_landing?.email || '',
     direccion: data?.contacto_direccion || data?.contacto_landing?.direccion || '',
     ciudad: data?.contacto_landing?.ciudad || '',
+    google_maps_url: data?.contacto_landing?.google_maps_url || '',
     pais: data?.contacto_landing?.pais || '',
     horarios: data?.contacto_landing?.horarios || '',
     nombre_contacto: data?.contacto_landing?.nombre || '',

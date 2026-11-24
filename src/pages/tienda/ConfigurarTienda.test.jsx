@@ -141,6 +141,16 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     expect(screen.queryByRole('heading', { name: 'Móvil Express', level: 3 })).not.toBeInTheDocument();
   });
 
+  it('carga el enlace de Maps guardado y permite quitarlo', async () => {
+    tiendaService.obtener.mockResolvedValue({ ...tiendaBase, google_maps_url: 'https://maps.app.goo.gl/local' });
+    renderizar('/mi-tienda?tab=contacto');
+    const input = await screen.findByLabelText(/Enlace de Google Maps/);
+    expect(input).toHaveValue('https://maps.app.goo.gl/local');
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /Guardar cambios/i }));
+    await waitFor(() => expect(tiendaService.actualizar).toHaveBeenCalledWith(expect.objectContaining({ google_maps_url: '' })));
+  });
+
   it('copia la skill completa desde Mi negocio', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
@@ -189,6 +199,7 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     fireEvent.change(screen.getByPlaceholderText('tupagina'), { target: { value: 'sommixparaguay' } });
     fireEvent.change(screen.getByPlaceholderText('Ej: Asunción, Paraguay'), { target: { value: 'Asuncion, Paraguay' } });
     fireEvent.change(screen.getByPlaceholderText('Ej: Av. España 1234, Edificio Central piso 3'), { target: { value: 'Av. Test 123' } });
+    fireEvent.change(screen.getByLabelText(/Enlace de Google Maps/), { target: { value: 'https://maps.app.goo.gl/local' } });
     fireEvent.change(screen.getByPlaceholderText('Ej: Hola, me interesa {producto}'), {
       target: { value: 'Hola, quiero saber de {producto} a {precio}' },
     });
@@ -205,6 +216,7 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
       facebook: 'sommixparaguay',
       ciudad_publica: 'Asuncion, Paraguay',
       direccion_publica: 'Av. Test 123',
+      google_maps_url: 'https://maps.app.goo.gl/local',
       mensaje_contacto: 'Hola, quiero saber de {producto} a {precio}',
     });
 
