@@ -51,18 +51,6 @@ const GRUPOS = [
         ayuda: 'A este correo llega el aviso cuando un pedido confirmado requiere pago o acreditación de abastecimiento.',
         tipo: 'email',
       },
-      {
-        clave: 'BREVO_LEADS_LIST_ID',
-        label: 'ID de lista en Brevo para leads (sin comprar)',
-        placeholder: 'Ej: 12',
-        ayuda: 'Opcional. Si cargás el ID numérico de tu lista en Brevo, los prospectos de prueba gratuita se agregan automáticamente para campañas.',
-      },
-      {
-        clave: 'BREVO_CLIENTES_LIST_ID',
-        label: 'ID de lista en Brevo para clientes activos',
-        placeholder: 'Ej: 15',
-        ayuda: 'Opcional. Al activar la prueba o comprar en Hotmart, el contacto pasa a esta lista y sale de la lista de leads.',
-      },
     ],
   },
   {

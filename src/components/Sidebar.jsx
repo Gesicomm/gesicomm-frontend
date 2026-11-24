@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Package, Users,
+  LayoutDashboard, Package, Users, UserCheck,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
   GraduationCap, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, ShieldAlert
 } from 'lucide-react';
@@ -200,6 +200,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/admin/tracking-onboarding', label: 'Onboarding y login', icon: <ShieldCheck />, badge: alertasAccesos > 0 ? alertasAccesos : null })}
             {renderLink({ path: '/admin/tracking-pagos', label: 'Tracking de pagos', icon: <CreditCard />, badge: alertasPagos > 0 ? alertasPagos : null })}
             {renderLink({ path: '/admin/eliminacion-datos', label: 'Eliminación de datos', icon: <ShieldAlert /> })}
+            {renderLink({ path: '/admin/prospectos', label: 'Prospectos', icon: <UserCheck /> })}
             {renderLink({ path: '/admin/solicitudes-web', label: 'Solicitudes de la web', icon: <Users /> })}
             {renderLink({ path: '/admin/solicitudes-proveedores', label: 'Solicitudes de proveedores', icon: <Users />, multiline: true })}
             {renderLink({ path: '/admin/codigos-prueba', label: 'Códigos de acceso', icon: <KeyRound /> })}
