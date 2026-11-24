@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, AlertTriangle, CreditCard, GraduationCap, KeyRound, RefreshCw, ShieldCheck, Users, Activity, UserPlus, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { authTrackingService } from '../../services/authTrackingService';
+import { formatearResumenMonedas } from '../../utils/monedaPagos';
 import './AdminDashboard.css';
 
 const numero = value => Number(value || 0).toLocaleString('es-PY');
-const monto = value => new Intl.NumberFormat('es-PY', {style:'currency',currency:'PYG',maximumFractionDigits:0}).format(Number(value || 0));
 const ACCIONES = [
   {path:'/admin/codigos-prueba',icon:KeyRound,title:'Dar acceso de prueba',text:'Elegí el plan y los días. Enviá el código por correo.'},
   {path:'/admin/planes',icon:CreditCard,title:'Administrar planes',text:'Precios, duración y espacios incluidos.'},
@@ -35,6 +35,9 @@ export default function AdminDashboard() {
   const resumen=datos.resumen;
   // Separar los cobros del sistema de las ventas o el abastecimiento de tiendas.
   const suscripciones=datos.pagos?.tipos?.find(tipo=>tipo.tipo==='suscripciones');
+  const monedaSuscripciones=(suscripciones?.moneda&&suscripciones.moneda!=='MULTI')
+    ? suscripciones.moneda
+    : (datos.pagos?.moneda&&datos.pagos.moneda!=='MULTI' ? datos.pagos.moneda : 'PYG');
   const pagado=suscripciones?.estados?.PAID;
   const pendientes=suscripciones?.estados?.PENDING;
   const fallidos=suscripciones?.estados?.FAILED;
@@ -51,7 +54,7 @@ export default function AdminDashboard() {
       <Indicador icon={Users} label="Usuarios del sistema" value={valor(resumen,'usuarios_total')} note={resumen?`${numero(resumen.usuarios_verificados)} con correo verificado`:'Sin datos disponibles'} />
       <Indicador icon={UserPlus} label="Nuevos registros" value={valor(resumen,'registros_periodo')} note={`En los últimos ${dias} días`} />
       <Indicador icon={Activity} label="Sesiones activas" value={valor(resumen,'sesiones_activas')} note="Actividad reciente en la plataforma" />
-      <Indicador icon={CreditCard} label="Cobrado en suscripciones" value={pagado?monto(pagado.bruto):'—'} note={pagado?`${numero(pagado.cantidad)} pagos confirmados · importe bruto`:'Sin datos disponibles'} />
+      <Indicador icon={CreditCard} label="Cobrado en suscripciones" value={pagado?formatearResumenMonedas(suscripciones,'PAID','bruto',monedaSuscripciones):'—'} note={pagado?`${numero(pagado.cantidad)} pagos confirmados · importe bruto`:'Sin datos disponibles'} />
     </section>
     <div className="admin-home-columns">
       <section className="admin-home-panel"><header className="admin-home-panel-heading"><div><h2>Tu mesa de trabajo</h2><p>Las tareas de administración, a un clic.</p></div></header><div className="admin-home-shortcuts">{ACCIONES.map(({path,icon:Icon,title,text})=><Link to={path} key={path}><span className="admin-home-shortcut-icon"><Icon size={22} aria-hidden="true" /></span><span><strong>{title}</strong><span>{text}</span></span><ArrowRight size={18} aria-hidden="true" /></Link>)}</div></section>

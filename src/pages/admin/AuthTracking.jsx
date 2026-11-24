@@ -19,6 +19,7 @@ import {
   Wifi,
 } from 'lucide-react';
 import { authTrackingService } from '../../services/authTrackingService';
+import { formatearMontoMoneda, formatearResumenMonedas } from '../../utils/monedaPagos';
 import './AuthTracking.css';
 
 const EVENTOS = [
@@ -109,22 +110,6 @@ function userAgentCorto(userAgent) {
   if (userAgent.includes('Firefox/')) return 'Firefox';
   if (userAgent.includes('Safari/')) return 'Safari';
   return userAgent.slice(0, 42);
-}
-
-function formatearMonto(valor, moneda = 'EUR') {
-  const numero = Number(valor);
-  if (!Number.isFinite(numero)) return valor || '-';
-  if (moneda === 'USD') {
-    return `$ ${numero.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-  }
-  if (moneda === 'EUR') {
-    return `€ ${numero.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-  }
-  return new Intl.NumberFormat('es-PY', {
-    style: 'currency',
-    currency: 'PYG',
-    maximumFractionDigits: 0,
-  }).format(numero);
 }
 
 function Kpi({ icon: Icon, label, value, note, tone = 'neutral' }) {
@@ -334,6 +319,10 @@ export default function AuthTracking({ modo = 'accesos' }) {
   const noLeidas = useMemo(() => notificaciones.filter((n) => !n.leida).length, [notificaciones]);
   const serie = resumen?.serie || [];
   const pagosAdmin = resumenFinanciero?.totales?.estados || {};
+  const monedaTotales = resumenFinanciero?.moneda && resumenFinanciero.moneda !== 'MULTI'
+    ? resumenFinanciero.moneda
+    : 'USD';
+  const totalesBloque = resumenFinanciero?.totales || { moneda: monedaTotales, estados: pagosAdmin };
 
   const marcarLeidas = async () => {
     setMarcando(true);
@@ -412,9 +401,9 @@ export default function AuthTracking({ modo = 'accesos' }) {
       <section className="at-kpis">
         {esPagos ? (
           <>
-            <Kpi icon={CreditCard} label="Neto Gesicomm" value={formatearMonto(pagosAdmin.PAID?.neto ?? 0, resumenFinanciero?.moneda || 'EUR')} note={`Bruto ${formatearMonto(pagosAdmin.PAID?.bruto ?? 0, resumenFinanciero?.moneda || 'EUR')} · comisión ${formatearMonto(pagosAdmin.PAID?.comision ?? 0, resumenFinanciero?.moneda || 'EUR')}`} tone="success" />
-            <Kpi icon={Clock3} label="Pendiente bruto" value={formatearMonto(pagosAdmin.PENDING?.bruto ?? 0, resumenFinanciero?.moneda || 'EUR')} note={`${pagosAdmin.PENDING?.cantidad ?? 0} pagos pendientes`} tone="warning" />
-            <Kpi icon={AlertTriangle} label="Fallido bruto" value={formatearMonto(pagosAdmin.FAILED?.bruto ?? 0, resumenFinanciero?.moneda || 'EUR')} note={`${pagosAdmin.FAILED?.cantidad ?? 0} pagos con error`} tone="danger" />
+            <Kpi icon={CreditCard} label="Neto Gesicomm" value={formatearResumenMonedas(totalesBloque, 'PAID', 'neto', monedaTotales)} note={`Bruto ${formatearResumenMonedas(totalesBloque, 'PAID', 'bruto', monedaTotales)} · comisión ${formatearResumenMonedas(totalesBloque, 'PAID', 'comision', monedaTotales)}`} tone="success" />
+            <Kpi icon={Clock3} label="Pendiente bruto" value={formatearResumenMonedas(totalesBloque, 'PENDING', 'bruto', monedaTotales)} note={`${pagosAdmin.PENDING?.cantidad ?? 0} pagos pendientes`} tone="warning" />
+            <Kpi icon={AlertTriangle} label="Fallido bruto" value={formatearResumenMonedas(totalesBloque, 'FAILED', 'bruto', monedaTotales)} note={`${pagosAdmin.FAILED?.cantidad ?? 0} pagos con error`} tone="danger" />
             <Kpi icon={Bell} label="Alertas de pago" value={notificaciones.length ? noLeidas : 0} note="notificaciones de pagos visibles" tone="warning" />
           </>
         ) : (
@@ -442,17 +431,19 @@ export default function AuthTracking({ modo = 'accesos' }) {
           </div>
           <div className="at-money-grid">
             {resumenFinanciero.tipos.map((tipoPago) => {
-              const monedaResumen = resumenFinanciero.moneda || 'EUR';
+              const monedaTipo = tipoPago.moneda && tipoPago.moneda !== 'MULTI'
+                ? tipoPago.moneda
+                : (tipoPago.tipo === 'abastecimiento' ? 'PYG' : 'USD');
               return (
                 <article className="at-money-card" key={tipoPago.tipo}>
                   <div>
                     <strong>{tipoPago.label}</strong>
                     <small>{tipoPago.cantidad_total} movimientos</small>
                   </div>
-                  <div className="at-money-main">{formatearMonto(tipoPago.estados.PAID?.neto ?? 0, monedaResumen)}</div>
+                  <div className="at-money-main">{formatearResumenMonedas(tipoPago, 'PAID', 'neto', monedaTipo)}</div>
                   <div className="at-money-states">
-                    <span><i className="at-dot at-dot-pedidos-pagos" /> Bruto: {formatearMonto(tipoPago.estados.PAID?.bruto ?? 0, monedaResumen)}</span>
-                    <span><i className="at-dot at-dot-abastecimiento" /> Comisión: {formatearMonto(tipoPago.estados.PAID?.comision ?? 0, monedaResumen)}</span>
+                    <span><i className="at-dot at-dot-pedidos-pagos" /> Bruto: {formatearResumenMonedas(tipoPago, 'PAID', 'bruto', monedaTipo)}</span>
+                    <span><i className="at-dot at-dot-abastecimiento" /> Comisión: {formatearResumenMonedas(tipoPago, 'PAID', 'comision', monedaTipo)}</span>
                     <span><i className="at-dot at-dot-pagos" /> Pendiente: {tipoPago.estados.PENDING?.cantidad ?? 0}</span>
                     <span><i className="at-dot at-dot-fallos" /> Fallido: {tipoPago.estados.FAILED?.cantidad ?? 0}</span>
                   </div>
@@ -481,7 +472,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
                 {pagosSuscripcion.length === 0 ? (
                   <tr><td colSpan={9} className="at-empty-cell">Todavía no hay pagos de suscripción para consultar.</td></tr>
                 ) : pagosSuscripcion.map((pago) => {
-                  const monedaPago = pago.moneda || pago.Suscripcion?.Plan?.moneda || 'EUR';
+                  const monedaPago = pago.moneda || pago.Suscripcion?.Plan?.moneda || 'USD';
                   return (
                     <tr key={pago.id}>
                       <td>
@@ -493,12 +484,12 @@ export default function AuthTracking({ modo = 'accesos' }) {
                         <small>{pago.Suscripcion?.email || '-'}</small>
                       </td>
                       <td>{pago.Suscripcion?.Plan?.nombre || '-'}</td>
-                      <td>{formatearMonto(pago.monto_bruto ?? pago.monto, monedaPago)}</td>
+                      <td>{formatearMontoMoneda(pago.monto_bruto ?? pago.monto, monedaPago)}</td>
                       <td>
-                        {formatearMonto(pago.comision_pasarela_monto ?? 0, monedaPago)}
+                        {formatearMontoMoneda(pago.comision_pasarela_monto ?? 0, monedaPago)}
                         <small>{Number(pago.comision_pasarela_pct || 0).toFixed(2)}%</small>
                       </td>
-                      <td><strong>{formatearMonto(pago.monto_neto ?? pago.monto, monedaPago)}</strong></td>
+                      <td><strong>{formatearMontoMoneda(pago.monto_neto ?? pago.monto, monedaPago)}</strong></td>
                       <td><BadgeEstadoPago estado={pago.estado} /></td>
                       <td>{fechaHora(pago.created_at)}</td>
                       <td>
@@ -536,7 +527,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
               </div>
               <div>
                 <span>Monto</span>
-                <strong>{formatearMonto(resultadoConsulta.monto)}</strong>
+                <strong>{formatearMontoMoneda(resultadoConsulta.monto, resultadoConsulta.moneda || resultadoConsulta.plan?.moneda || 'USD')}</strong>
               </div>
               <div>
                 <span>Suscripción</span>

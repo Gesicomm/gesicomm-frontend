@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Loader, CheckCircle2, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { trackearEvento, generarEventId } from '../../lib/metaPixel';
+import { formatearMontoMoneda } from '../../utils/monedaPagos';
 import CorreoActivacionPendiente from './CorreoActivacionPendiente';
 import './planes.css';
 
@@ -14,18 +15,6 @@ import './planes.css';
  */
 const INTENTOS_MAX = 10;
 const ESPERA_MS = 3000;
-
-function formatMontoConMoneda(monto, moneda) {
-  if (monto === null || monto === undefined || isNaN(monto)) return '—';
-  const val = Number(monto);
-  if (moneda === 'EUR') {
-    return `€${val.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-  }
-  if (moneda === 'USD') {
-    return `$${val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-  }
-  return `${val.toLocaleString('es-PY', { maximumFractionDigits: 0 })} Gs`;
-}
 
 export default function ResultadoPago() {
   const { hash } = useParams();
@@ -79,7 +68,7 @@ export default function ResultadoPago() {
       content_name: estado.plan?.nombre,
       content_ids: estado.plan?.codigo ? [estado.plan.codigo] : undefined,
       value: Number(estado.monto || 0),
-      currency: estado.moneda || estado.plan?.moneda || 'PYG',
+      currency: estado.moneda || estado.plan?.moneda || 'USD',
     });
   }, [estado]);
 
@@ -153,7 +142,7 @@ export default function ResultadoPago() {
         <h1>¡Pago acreditado!</h1>
         <p>
           Tu plan <strong>{estado.plan?.nombre}</strong> quedó activo
-          {estado.monto ? <> por {formatMontoConMoneda(estado.monto, estado.moneda || estado.plan?.moneda)}</> : null}.
+          {estado.monto ? <> por {formatearMontoMoneda(estado.monto, estado.moneda || estado.plan?.moneda || 'USD')}</> : null}.
         </p>
 
         {estado.token_registro ? (
