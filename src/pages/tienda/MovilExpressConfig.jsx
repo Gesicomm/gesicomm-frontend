@@ -69,7 +69,7 @@ export default function MovilExpressConfig({ onConfigChange }) {
   const [aviso, setAviso] = useState('');
   const [indice, setIndice] = useState(0);
   const [tocado, setTocado] = useState(false);
-  const [form, setForm] = useState({ public_id: '', secret: '', usa_clave_plataforma: false });
+  const [form, setForm] = useState({ public_id: '', secret: '' });
   const [prueba, setPrueba] = useState({ ciudad: '', resultado: null });
 
   const conexion = datos?.conexion || null;
@@ -82,7 +82,6 @@ export default function MovilExpressConfig({ onConfigChange }) {
     try {
       const respuesta = await movilExpressService.obtener();
       setDatos(respuesta);
-      setForm(previo => ({ ...previo, usa_clave_plataforma: respuesta.conexion?.usa_clave_plataforma ?? false }));
       return respuesta;
     } catch (problema) {
       setError(problema?.response?.data?.message || 'No pudimos consultar el estado de la conexión.');
@@ -196,49 +195,34 @@ export default function MovilExpressConfig({ onConfigChange }) {
               depósitos como puntos de retiro posibles.
             </p>
 
-            <label className="mex-eleccion">
-              <input
-                type="checkbox"
-                checked={form.usa_clave_plataforma}
-                disabled={ocupado}
-                onChange={evento => setForm(previo => ({ ...previo, usa_clave_plataforma: evento.target.checked }))}
-              />
-              <span>
-                Usar el convenio de Gesicom
-                <em>Los envíos salen por la conexión corporativa y no necesitás clave propia.</em>
-              </span>
-            </label>
-
-            {!form.usa_clave_plataforma && (
-              <div className="mex-campos">
-                <label>
-                  <span className="mex-etiqueta">Identificador público</span>
-                  <input
-                    type="text"
-                    autoComplete="off"
-                    placeholder={conexion?.public_id_visible || 'mxt_…'}
-                    value={form.public_id}
-                    disabled={ocupado}
-                    onChange={evento => setForm(previo => ({ ...previo, public_id: evento.target.value.trim() }))}
-                  />
-                </label>
-                <label>
-                  <span className="mex-etiqueta">Secreto</span>
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder={conexion?.tiene_clave ? 'Guardado · escribí uno nuevo para reemplazarlo' : 'El secreto que te dieron'}
-                    value={form.secret}
-                    disabled={ocupado}
-                    onChange={evento => setForm(previo => ({ ...previo, secret: evento.target.value }))}
-                  />
-                </label>
-                <p className="mex-ayuda">
-                  Se guarda cifrado y no se vuelve a mostrar. Móvil Express la entrega una sola vez: si la perdés, hay
-                  que pedir una nueva.
-                </p>
-              </div>
-            )}
+            <div className="mex-campos">
+              <label>
+                <span className="mex-etiqueta">Identificador público</span>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  placeholder={conexion?.public_id_visible || 'mxt_…'}
+                  value={form.public_id}
+                  disabled={ocupado}
+                  onChange={evento => setForm(previo => ({ ...previo, public_id: evento.target.value.trim() }))}
+                />
+              </label>
+              <label>
+                <span className="mex-etiqueta">Secreto</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={conexion?.tiene_clave ? 'Guardado · escribí uno nuevo para reemplazarlo' : 'El secreto que te dieron'}
+                  value={form.secret}
+                  disabled={ocupado}
+                  onChange={evento => setForm(previo => ({ ...previo, secret: evento.target.value }))}
+                />
+              </label>
+              <p className="mex-ayuda">
+                Se guarda cifrado y no se vuelve a mostrar. Móvil Express la entrega una sola vez: si la perdés, hay
+                que pedir una nueva.
+              </p>
+            </div>
 
             <div className="mex-acciones">
               <button
@@ -247,7 +231,7 @@ export default function MovilExpressConfig({ onConfigChange }) {
                 disabled={ocupado}
                 onClick={() => ejecutar('clave', async () => {
                   await movilExpressService.guardar({
-                    usa_clave_plataforma: form.usa_clave_plataforma,
+                    usa_clave_plataforma: false,
                     ...(form.public_id ? { public_id: form.public_id } : {}),
                     ...(form.secret ? { secret: form.secret } : {}),
                   });

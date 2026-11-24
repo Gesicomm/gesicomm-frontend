@@ -96,12 +96,12 @@ describe('asistente de Móvil Express', () => {
     await waitFor(() => expect(screen.getByPlaceholderText('El secreto que te dieron')).toHaveValue(''));
   });
 
-  it('con el convenio de Gesicom no pide claves', async () => {
-    movilExpressService.obtener.mockResolvedValue(estado({ usa_clave_plataforma: true, tiene_clave: true }));
+  it('siempre pide la clave propia del comercio y no ofrece clave corporativa compartida', async () => {
+    movilExpressService.obtener.mockResolvedValue(estado({ usa_clave_plataforma: true, tiene_clave: false }));
     render(<MovilExpressConfig />);
     await screen.findByRole('heading', { name: 'Clave de la conexión', level: 5 });
-    expect(screen.queryByPlaceholderText('mxt_…')).not.toBeInTheDocument();
-    expect(screen.getByText('Los envíos salen por la conexión corporativa y no necesitás clave propia.')).toBeVisible();
+    expect(screen.getByPlaceholderText('mxt_…')).toBeVisible();
+    expect(screen.queryByText(/Usar el convenio de Gesicom/)).not.toBeInTheDocument();
   });
 
   it('avisa cuando Móvil Express deja el comercio en revisión', async () => {
