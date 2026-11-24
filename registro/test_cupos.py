@@ -43,7 +43,12 @@ class CuposTest(unittest.TestCase):
             {
                 "product": {"id": servidor.PRODUCTO},
                 "offer": {"code": FUNDADORES},
-                "subscriber": {"email": "Prueba@Example.com", "name": "Martin", "phone": "+595992820631"},
+                "subscriber": {
+                    "email": "Prueba@Example.com",
+                    "name": "Martin",
+                    "phone": "+595992820631",
+                    "address": {"country": "Paraguay"},
+                },
                 "subscriber_code": "SUB-1",
                 "status": "STARTED",
                 "trial": True,
@@ -66,6 +71,7 @@ class CuposTest(unittest.TestCase):
         self.assertEqual(res.get("token_registro"), "tok-abc")
         self.assertEqual(consulta.call_args.args[1]["X-HOTMART-HOTTOK"], "secreto-hottok")
         self.assertEqual(consulta.call_args.kwargs["cuerpo"]["subscriber_code"], "SUB-1")
+        self.assertEqual(consulta.call_args.kwargs["cuerpo"]["pais"], "Paraguay")
 
         with mock.patch.dict("os.environ", {}, clear=True):
             with mock.patch.object(servidor, "HOTTOK_FILE", "/no/existe/hottok.txt"):

@@ -221,7 +221,27 @@ window.__gcTrackMeta=function(evento,params,eventId){try{if(typeof window.fbq!==
    boton.disabled = true;
    estado.textContent = 'Guardando tus datos y verificando la oferta…';
    try {
-     const contacto = [nombre, apellido, email, telefono, pais].join('\n');
+     let datos = null;
+     let errorOferta = null;
+     const ofertas = anual ? {'2vonlzpl':470, 'xjewaydj':570} : {'0h9kqefg':47, 'ac3huzol':57, 'h7n5ndcy':77};
+     const codigos = anual ? {founder:'2vonlzpl',starter:'xjewaydj'} : {founder:'0h9kqefg',starter:'ac3huzol',scaler:'h7n5ndcy'};
+     let cambioAStarter = false;
+     try {
+       const respuesta = await fetch('/registro/oferta', {
+         method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, periodicidad, ...(plan ? {plan} : {})})
+       });
+       datos = await respuesta.json();
+       if (!respuesta.ok) throw Error(datos.error || 'No se pudo verificar la oferta.');
+       cambioAStarter = plan === 'founder' && datos.oferta === codigos.starter && datos.mensualidad === (anual ? 570 : 57);
+       if (plan && datos.oferta !== codigos[plan] && !cambioAStarter) throw Error('No se pudo confirmar el plan seleccionado.');
+       if (ofertas[datos.oferta] !== datos.mensualidad || !datos.mensualidad) throw Error('No se pudo confirmar el precio.');
+       if ((datos.periodicidad || 'mensual') !== periodicidad) throw Error('No se pudo confirmar el período de facturación.');
+     } catch (err) {
+       errorOferta = err;
+     }
+     const planResuelto = (!errorOferta && cambioAStarter) ? 'starter' : (plan || 'founder');
+     const ofertaResuelta = !errorOferta ? datos?.oferta : undefined;
+     const contacto = [nombre, apellido, email, telefono, pais, planResuelto, periodicidad, ofertaResuelta || ''].join('\n');
      if (guardado !== contacto) {
        const registro = await fetch('/registro/prospecto', {
          method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -232,7 +252,9 @@ window.__gcTrackMeta=function(evento,params,eventId){try{if(typeof window.fbq!==
            email,
            telefono,
            pais: pais || '',
-           ...(plan ? { plan } : {}),
+           plan: planResuelto,
+           periodicidad,
+           ...(ofertaResuelta ? { oferta_hotmart: ofertaResuelta } : {}),
          })
        });
        if (registro.status === 429) {
@@ -243,17 +265,7 @@ window.__gcTrackMeta=function(evento,params,eventId){try{if(typeof window.fbq!==
        if (!registro.ok || !(await registro.json()).prospecto?.id) throw Error('No pudimos guardar tus datos. Volvé a intentar en unos minutos.');
        guardado = contacto;
      }
-     const respuesta = await fetch('/registro/oferta', {
-       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, periodicidad, ...(plan ? {plan} : {})})
-     });
-     const datos = await respuesta.json();
-     if (!respuesta.ok) throw Error(datos.error || 'No se pudo verificar la oferta.');
-     const ofertas = anual ? {'2vonlzpl':470, 'xjewaydj':570} : {'0h9kqefg':47, 'ac3huzol':57, 'h7n5ndcy':77};
-     const codigos = anual ? {founder:'2vonlzpl',starter:'xjewaydj'} : {founder:'0h9kqefg',starter:'ac3huzol',scaler:'h7n5ndcy'};
-     const cambioAStarter = plan === 'founder' && datos.oferta === codigos.starter && datos.mensualidad === (anual ? 570 : 57);
-     if (plan && datos.oferta !== codigos[plan] && !cambioAStarter) throw Error('No se pudo confirmar el plan seleccionado.');
-     if (ofertas[datos.oferta] !== datos.mensualidad || !datos.mensualidad) throw Error('No se pudo confirmar el precio.');
-     if ((datos.periodicidad || 'mensual') !== periodicidad) throw Error('No se pudo confirmar el período de facturación.');
+     if (errorOferta) throw errorOferta;
      const url = new URL('https://pay.hotmart.com/D108595206C');
      const parametros = new URLSearchParams({off:datos.oferta,checkoutMode:'2',email});
      if (nombreCompleto) parametros.set('name', nombreCompleto);

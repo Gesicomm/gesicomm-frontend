@@ -125,12 +125,15 @@ def activar_en_backend(fila, email, oferta):
     if not hottok:
         return {}
     suscriptor = fila.get("subscriber") or {}
+    direccion = suscriptor.get("address") or (fila.get("buyer") or {}).get("address") or {}
+    pais = direccion.get("country") or direccion.get("country_iso") or suscriptor.get("country")
     cuerpo = {
         "email": email.strip().lower(),
         "oferta": oferta,
         "subscriber_code": str(fila.get("subscriber_code") or "").strip(),
         "nombre": suscriptor.get("name"),
         "telefono": suscriptor.get("phone"),
+        "pais": pais,
         "date_next_charge": fila.get("date_next_charge"),
     }
     try:

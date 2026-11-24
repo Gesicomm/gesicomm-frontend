@@ -68,7 +68,8 @@ window.__gcTrackMeta=function(evento,params,eventId){try{if(typeof window.fbq!==
          nombre: nombreLimpio,
          email: correoLimpio,
          telefono: telefonoLimpio,
-         ...(Object.hasOwn(planes, plan) ? { plan } : {}),
+         plan: Object.hasOwn(planes, plan) ? plan : 'founder',
+         periodicidad: anual ? 'anual' : 'mensual',
        }),
      });
      if (registro.status === 429) {
