@@ -141,6 +141,16 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     expect(screen.queryByRole('heading', { name: 'Móvil Express', level: 3 })).not.toBeInTheDocument();
   });
 
+  it('muestra la ciudad y el departamento iniciales y permite editarlos', async () => {
+    tiendaService.obtener.mockResolvedValue({ ...tiendaBase, ciudad_publica: 'San Lorenzo - Central' });
+    renderizar('/mi-tienda?tab=contacto');
+    const ciudad = await screen.findByLabelText(/Ciudad \/ Departamento/);
+    expect(ciudad).toHaveValue('San Lorenzo - Central');
+    fireEvent.change(ciudad, { target: { value: 'Luque - Central' } });
+    fireEvent.click(screen.getByRole('button', { name: /Guardar cambios/i }));
+    await waitFor(() => expect(tiendaService.actualizar).toHaveBeenCalledWith(expect.objectContaining({ ciudad_publica: 'Luque - Central' })));
+  });
+
   it('carga el enlace de Maps guardado y permite quitarlo', async () => {
     tiendaService.obtener.mockResolvedValue({ ...tiendaBase, google_maps_url: 'https://maps.app.goo.gl/local' });
     renderizar('/mi-tienda?tab=contacto');
@@ -197,7 +207,7 @@ describe('ConfigurarTienda — flujo integral de configuracion', () => {
     fireEvent.change(screen.getByPlaceholderText('Ej: contacto@tutienda.com'), { target: { value: 'hola@sommix.com.py' } });
     fireEvent.change(screen.getAllByPlaceholderText('tu_handle')[0], { target: { value: '@sommixpy' } });
     fireEvent.change(screen.getByPlaceholderText('tupagina'), { target: { value: 'sommixparaguay' } });
-    fireEvent.change(screen.getByPlaceholderText('Ej: Asunción, Paraguay'), { target: { value: 'Asuncion, Paraguay' } });
+    fireEvent.change(screen.getByPlaceholderText('Ej: San Lorenzo - Central'), { target: { value: 'Asuncion, Paraguay' } });
     fireEvent.change(screen.getByPlaceholderText('Ej: Av. España 1234, Edificio Central piso 3'), { target: { value: 'Av. Test 123' } });
     fireEvent.change(screen.getByLabelText(/Enlace de Google Maps/), { target: { value: 'https://maps.app.goo.gl/local' } });
     fireEvent.change(screen.getByPlaceholderText('Ej: Hola, me interesa {producto}'), {

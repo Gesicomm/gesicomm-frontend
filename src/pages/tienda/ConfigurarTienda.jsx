@@ -1477,11 +1477,12 @@ export default function ConfigurarTienda() {
                     <div className="tn-group-body">
                       <div className="tn-fields">
                         <label className="tn-field">
-                          <span className="tn-field-label">Ciudad / Localidad <em>(opcional)</em></span>
+                          <span className="tn-field-label">Ciudad / Departamento <em>(opcional)</em></span>
                           <input
                             value={form.ciudad_publica}
                             onChange={e => handleChange('ciudad_publica', e.target.value)}
-                            placeholder="Ej: Asunción, Paraguay"
+                            placeholder="Ej: San Lorenzo - Central"
+                            maxLength={203}
                           />
                         </label>
                         <label className="tn-field">
