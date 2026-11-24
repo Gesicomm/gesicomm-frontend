@@ -56,14 +56,15 @@ export default function SeleccionModulo() {
         <span className="module-card__action">Entrar al panel <ArrowRight size={19} aria-hidden="true" /></span>
       </button>}
       {[{id:'fisico',ruta:'fisico',nombre:'Productos físicos',Icon:ShoppingCart,texto:'Para vender productos físicos. Administrá tus tiendas, organizá pedidos y seguí entregas, costos y ganancias.'},
-        {id:'digital',ruta:'personal',nombre:'Productos digitales',Icon:MonitorSmartphone,texto:'Para vender productos digitales o desarrollar tu marca personal. Prepará contenido, organizá tu agenda y acompañá a tus clientes.'},
-        {id:'servicios',ruta:'personal',nombre:'Servicios',Icon:Megaphone,texto:'Para ofrecer servicios o desarrollar tu marca personal. Prepará contenido, organizá tu agenda y acompañá a tus clientes.'}].map(({id,ruta,nombre,Icon,texto}) => {
+        {id:'digital',ruta:'personal',nombre:'Productos digitales',beta:true,Icon:MonitorSmartphone,texto:'Para vender productos digitales o desarrollar tu marca personal. Prepará contenido, organizá tu agenda y acompañá a tus clientes.'},
+        {id:'servicios',ruta:'personal',nombre:'Servicios',beta:true,Icon:Megaphone,texto:'Para ofrecer servicios o desarrollar tu marca personal. Prepará contenido, organizá tu agenda y acompañá a tus clientes.'}].map(({id,ruta,nombre,beta,Icon,texto}) => {
         const permitido = acceso.rutas[ruta];
         const accion = permitido ? `Entrar a ${nombre}` : `Ver planes para ${nombre}`;
         return <section className={`module-card ${permitido ? 'module-card--available' : 'module-card--locked'}`} key={id}>
           <span className="module-card__icon"><Icon size={28} aria-hidden="true" /></span>
           <span className="module-card__status">{permitido ? 'Acceso incluido' : 'Otro espacio'}</span>
-          <h2 className="module-card__title">{nombre}</h2>
+          <h2 className="module-card__title">{nombre}{beta && <span className="module-card__beta">Beta</span>}</h2>
+          {beta && <p className="module-card__beta-note">Módulo en beta: ya podés usarlo y lo seguimos mejorando.</p>}
           {!permitido && <p className="module-card__notice">No incluido en tu plan actual</p>}
           <p className="module-card__description" id={`module-description-${id}`}>{texto}</p>
           <span className="module-card__action" aria-hidden="true">
