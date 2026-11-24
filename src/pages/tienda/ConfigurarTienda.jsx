@@ -23,6 +23,7 @@ import DominioPropio from './DominioPropio';
 import ComboConfiguracion from '../combos/ComboConfiguracion';
 import { MetodosPagoCrud } from '../courier/MetodosPagoCrud';
 import HorarioPicker from './HorarioPicker';
+import CiudadPublicaSelect from './CiudadPublicaSelect';
 import PlantillaWhatsapp from './PlantillaWhatsapp';
 import { getMetodosPago } from '../../services/courierApi';
 import { comboAdminService } from '../../services/comboAdminService';
@@ -1476,15 +1477,10 @@ export default function ConfigurarTienda() {
                     </div>
                     <div className="tn-group-body">
                       <div className="tn-fields">
-                        <label className="tn-field">
-                          <span className="tn-field-label">Ciudad / Departamento <em>(opcional)</em></span>
-                          <input
-                            value={form.ciudad_publica}
-                            onChange={e => handleChange('ciudad_publica', e.target.value)}
-                            placeholder="Ej: San Lorenzo - Central"
-                            maxLength={203}
-                          />
-                        </label>
+                        <CiudadPublicaSelect
+                          value={form.ciudad_publica}
+                          onChange={valor => handleChange('ciudad_publica', valor)}
+                        />
                         <label className="tn-field">
                           <span className="tn-field-label">Dirección <em>(opcional)</em></span>
                           <input
