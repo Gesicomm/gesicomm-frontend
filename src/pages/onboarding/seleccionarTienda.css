@@ -22,7 +22,8 @@
 .st-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 84px; padding: 16px; border: 0; background: transparent; color: var(--color-fg); text-align: left; cursor: pointer; transition: background 150ms ease; }
 .st-item:hover:not(:disabled) { background: var(--color-surface-2); }
 .st-item-logo { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; background: var(--color-surface-2); color: var(--color-fg-muted); }
-.st-item-logo img { width: 100%; height: 100%; object-fit: cover; }
+.st-item-logo.has-image { background: #fff; border-color: rgb(15 23 42 / 12%); padding: 4px; }
+.st-item-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .st-item-info { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
 .st-item-info strong { font-size: 0.95rem; font-weight: 700; overflow-wrap: anywhere; }
 .st-item-info small { font-size: var(--ui-text-help, 0.875rem); color: var(--color-fg-muted); overflow-wrap: anywhere; }

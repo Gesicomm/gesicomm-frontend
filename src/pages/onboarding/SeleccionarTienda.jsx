@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Loader, Plus, Power, Store, Trash2 } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
+import { getMediaUrl } from '../../services/api';
 import Logo from '../../components/public/Logo';
 import './onboarding.css';
 import './seleccionarTienda.css';
@@ -127,7 +128,9 @@ export default function SeleccionarTienda() {
 
           {tiendas && (
             <div className="st-lista">
-              {tiendas.map((tienda) => (
+              {tiendas.map((tienda) => {
+                const iconoTienda = tienda.favicon_imagen || tienda.logo_imagen;
+                return (
                 <div key={tienda.id} className="st-tienda">
                 <button
                   type="button"
@@ -136,8 +139,8 @@ export default function SeleccionarTienda() {
                   disabled={ocupado || confirmacionAbierta}
                   onClick={() => elegir(tienda)}
                 >
-                  <span className="st-item-logo">
-                    {tienda.logo_imagen ? <img src={tienda.logo_imagen} alt="" /> : <Store size={18} />}
+                  <span className={`st-item-logo${iconoTienda ? ' has-image' : ''}`}>
+                    {iconoTienda ? <img src={getMediaUrl(iconoTienda)} alt="" /> : <Store size={18} />}
                   </span>
                   <span className="st-item-info">
                     <strong>{tienda.nombre}</strong>
@@ -205,7 +208,8 @@ export default function SeleccionarTienda() {
                   </div>
                 ) : null}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
