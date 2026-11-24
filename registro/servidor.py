@@ -17,6 +17,21 @@ from cupos import FUNDADORES, PRODUCTO, oferta_para
 
 LOG = logging.getLogger(__name__)
 OFERTAS = {"founder": (FUNDADORES, 47), "starter": oferta_para(True), "scaler": ("h7n5ndcy", 77)}
+OFERTAS_ANUALES = {"founder": ("2vonlzpl", 470), "starter": ("xjewaydj", 570)}
+
+
+def resolver_oferta(plan=None, periodicidad="mensual", agotado=False):
+    if periodicidad not in {"mensual", "anual"}:
+        raise ValueError("El período seleccionado no está disponible.")
+    if plan is not None and plan not in OFERTAS:
+        raise ValueError("El plan seleccionado no está disponible.")
+    elegido = plan or "founder"
+    if elegido == "founder" and agotado:
+        elegido = "starter"
+    ofertas = OFERTAS_ANUALES if periodicidad == "anual" else OFERTAS
+    if elegido not in ofertas:
+        raise ValueError("Este plan solo tiene facturación mensual.")
+    return ofertas[elegido]
 EMAIL = re.compile(r"[^\s@]+@[^\s@]+\.[^\s@]+")
 # Los cupos salen de la base del backend (pagos de Hotmart registrados por su webhook).
 CUPOS_URL = os.environ.get("GESICOM_CUPOS_URL", "http://gesicomm-back:3000/api/publico/hotmart/cupos")
@@ -175,7 +190,7 @@ class Registro(BaseHTTPRequestHandler):
                 oferta = solicitud.get("oferta")
                 desde = solicitud.get("desde")
                 firma = solicitud.get("firma")
-                if (oferta not in {valor[0] for valor in OFERTAS.values()}
+                if (oferta not in {valor[0] for valor in [*OFERTAS.values(), *OFERTAS_ANUALES.values()]}
                     or type(desde) is not int or not isinstance(firma, str)
                     or not 0 <= time.time() - desde <= 3600
                     or not hmac.compare_digest(firmar(email, oferta, desde), firma)):
@@ -192,12 +207,13 @@ class Registro(BaseHTTPRequestHandler):
             plan = solicitud.get("plan")
             if plan is not None and (not isinstance(plan, str) or plan not in OFERTAS):
                 return self.responder(400, {"error": "El plan seleccionado no está disponible."})
-            if plan in {"starter", "scaler"}:
-                oferta, monto = OFERTAS[plan]
-            else:
-                oferta, monto = oferta_para(fundadores_agotado())
+            periodicidad = solicitud.get("periodicidad", "mensual")
+            try:
+                oferta, monto = resolver_oferta(plan, periodicidad, fundadores_agotado() if plan in {None, "founder"} else False)
+            except (ValueError, TypeError):
+                return self.responder(400, {"error": "El plan o período seleccionado no está disponible."})
             desde = int(time.time())
-            return self.responder(200, {"oferta": oferta, "mensualidad": monto, "desde": desde, "firma": firmar(email, oferta, desde)})
+            return self.responder(200, {"oferta": oferta, "mensualidad": monto, "precio": monto, "periodicidad": periodicidad, "desde": desde, "firma": firmar(email, oferta, desde)})
         except Exception as exc:
             LOG.warning("No se pudo resolver la oferta: %s", type(exc).__name__)
             return self.responder(503, {"error": "No pudimos verificar la oferta. Volvé a intentar en unos minutos."})

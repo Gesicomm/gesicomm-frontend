@@ -10,14 +10,16 @@
  const estadoPaso1 = document.getElementById('estado-paso1');
  const key = 'gesicom:prueba:preview';
  const plan = new URLSearchParams(location.search).get('plan');
+ const anual = new URLSearchParams(location.search).get('billing') === 'annual' && plan !== 'scaler';
  if (plan === 'builder') {
    document.getElementById('registro-prueba').hidden = true;
    document.getElementById('acceso-builder').hidden = false;
    document.title = 'Builder T2E · Gesicom';
+   document.querySelector('#acceso-builder h1').textContent = 'Builder T2E · USD ' + (anual ? '370 al año' : '37 al mes');
    return;
  }
- const planes = {founder:'Starter Founder · USD 47 al mes',starter:'Starter · USD 57 al mes',scaler:'Scaler · USD 77 al mes'};
- const destino = Object.hasOwn(planes,plan) ? '/crear-cuenta?plan='+plan : '/crear-cuenta';
+ const planes = {founder:'Starter Founder · USD '+(anual?'470 al año':'47 al mes'),starter:'Starter · USD '+(anual?'570 al año':'57 al mes'),scaler:'Scaler · USD 77 al mes'};
+ const destino = Object.hasOwn(planes,plan) ? '/crear-cuenta?'+new URLSearchParams({plan,billing:anual?'annual':'monthly'}) : '/crear-cuenta';
  if (Object.hasOwn(planes, plan)) {
    const elegido = document.createElement('p');
    elegido.textContent = planes[plan];
